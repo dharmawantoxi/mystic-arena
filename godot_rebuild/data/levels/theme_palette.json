@@ -1,0 +1,2540 @@
+{
+  "forest": {
+    "radiant_grass_1": [
+      28,
+      55,
+      32
+    ],
+    "radiant_grass_2": [
+      38,
+      72,
+      42
+    ],
+    "dire_earth_1": [
+      45,
+      32,
+      28
+    ],
+    "dire_earth_2": [
+      65,
+      45,
+      38
+    ],
+    "transition_1": [
+      55,
+      55,
+      42
+    ],
+    "path_stone_1": [
+      58,
+      52,
+      45
+    ],
+    "path_stone_3": [
+      115,
+      105,
+      90
+    ],
+    "river_mid": [
+      35,
+      12,
+      34
+    ],
+    "river_light": [
+      91,
+      22,
+      48
+    ]
+  },
+  "desert": {
+    "radiant_grass_1": [
+      155,
+      115,
+      60
+    ],
+    "radiant_grass_2": [
+      180,
+      135,
+      75
+    ],
+    "dire_earth_1": [
+      95,
+      55,
+      30
+    ],
+    "dire_earth_2": [
+      125,
+      75,
+      40
+    ],
+    "transition_1": [
+      135,
+      100,
+      60
+    ],
+    "path_stone_1": [
+      110,
+      85,
+      55
+    ],
+    "path_stone_3": [
+      180,
+      145,
+      100
+    ],
+    "river_mid": [
+      25,
+      79,
+      34
+    ],
+    "river_light": [
+      62,
+      139,
+      42
+    ]
+  },
+  "ice": {
+    "radiant_grass_1": [
+      180,
+      200,
+      220
+    ],
+    "radiant_grass_2": [
+      200,
+      220,
+      235
+    ],
+    "dire_earth_1": [
+      60,
+      80,
+      105
+    ],
+    "dire_earth_2": [
+      85,
+      105,
+      130
+    ],
+    "transition_1": [
+      120,
+      145,
+      170
+    ],
+    "path_stone_1": [
+      90,
+      110,
+      135
+    ],
+    "path_stone_3": [
+      160,
+      180,
+      205
+    ],
+    "river_mid": [
+      50,
+      100,
+      150
+    ],
+    "river_light": [
+      100,
+      160,
+      210
+    ]
+  },
+  "volcanic": {
+    "radiant_grass_1": [
+      75,
+      35,
+      20
+    ],
+    "radiant_grass_2": [
+      100,
+      50,
+      28
+    ],
+    "dire_earth_1": [
+      45,
+      18,
+      12
+    ],
+    "dire_earth_2": [
+      65,
+      28,
+      18
+    ],
+    "transition_1": [
+      85,
+      42,
+      25
+    ],
+    "path_stone_1": [
+      55,
+      32,
+      22
+    ],
+    "path_stone_3": [
+      115,
+      78,
+      55
+    ],
+    "river_mid": [
+      180,
+      55,
+      12
+    ],
+    "river_light": [
+      240,
+      120,
+      30
+    ]
+  },
+  "haunted": {
+    "radiant_grass_1": [
+      8,
+      25,
+      27
+    ],
+    "radiant_grass_2": [
+      12,
+      47,
+      44
+    ],
+    "dire_earth_1": [
+      10,
+      7,
+      19
+    ],
+    "dire_earth_2": [
+      27,
+      12,
+      37
+    ],
+    "transition_1": [
+      25,
+      25,
+      35
+    ],
+    "path_stone_1": [
+      25,
+      25,
+      34
+    ],
+    "path_stone_3": [
+      88,
+      86,
+      94
+    ],
+    "river_mid": [
+      7,
+      54,
+      61
+    ],
+    "river_light": [
+      17,
+      119,
+      108
+    ]
+  },
+  "ocean": {
+    "radiant_grass_1": [
+      45,
+      75,
+      80
+    ],
+    "radiant_grass_2": [
+      75,
+      110,
+      105
+    ],
+    "dire_earth_1": [
+      5,
+      18,
+      42
+    ],
+    "dire_earth_2": [
+      12,
+      35,
+      70
+    ],
+    "transition_1": [
+      55,
+      90,
+      100
+    ],
+    "path_stone_1": [
+      45,
+      35,
+      25
+    ],
+    "path_stone_3": [
+      110,
+      85,
+      55
+    ],
+    "river_mid": [
+      15,
+      55,
+      105
+    ],
+    "river_light": [
+      40,
+      130,
+      200
+    ]
+  },
+  "abyss": {
+    "radiant_grass_1": [
+      5,
+      4,
+      6
+    ],
+    "radiant_grass_2": [
+      12,
+      8,
+      10
+    ],
+    "dire_earth_1": [
+      2,
+      2,
+      3
+    ],
+    "dire_earth_2": [
+      8,
+      5,
+      6
+    ],
+    "transition_1": [
+      15,
+      10,
+      12
+    ],
+    "path_stone_1": [
+      8,
+      6,
+      7
+    ],
+    "path_stone_3": [
+      40,
+      25,
+      24
+    ],
+    "river_mid": [
+      85,
+      15,
+      15
+    ],
+    "river_light": [
+      180,
+      35,
+      25
+    ]
+  },
+  "nethervenom": {
+    "radiant_grass_1": [
+      6,
+      16,
+      8
+    ],
+    "radiant_grass_2": [
+      14,
+      34,
+      18
+    ],
+    "dire_earth_1": [
+      4,
+      4,
+      10
+    ],
+    "dire_earth_2": [
+      10,
+      8,
+      20
+    ],
+    "transition_1": [
+      14,
+      26,
+      16
+    ],
+    "path_stone_1": [
+      10,
+      14,
+      9
+    ],
+    "path_stone_3": [
+      44,
+      56,
+      38
+    ],
+    "river_mid": [
+      60,
+      90,
+      15
+    ],
+    "river_light": [
+      140,
+      190,
+      35
+    ]
+  },
+  "soulforged": {
+    "radiant_grass_1": [
+      28,
+      26,
+      38
+    ],
+    "radiant_grass_2": [
+      46,
+      42,
+      56
+    ],
+    "dire_earth_1": [
+      4,
+      6,
+      10
+    ],
+    "dire_earth_2": [
+      8,
+      12,
+      20
+    ],
+    "transition_1": [
+      24,
+      28,
+      38
+    ],
+    "path_stone_1": [
+      12,
+      14,
+      20
+    ],
+    "path_stone_3": [
+      48,
+      54,
+      68
+    ],
+    "river_mid": [
+      15,
+      100,
+      140
+    ],
+    "river_light": [
+      55,
+      190,
+      230
+    ]
+  },
+  "radiant": {
+    "radiant_grass_1": [
+      35,
+      22,
+      5
+    ],
+    "radiant_grass_2": [
+      70,
+      46,
+      10
+    ],
+    "dire_earth_1": [
+      10,
+      15,
+      40
+    ],
+    "dire_earth_2": [
+      18,
+      26,
+      60
+    ],
+    "transition_1": [
+      48,
+      32,
+      10
+    ],
+    "path_stone_1": [
+      40,
+      26,
+      8
+    ],
+    "path_stone_3": [
+      110,
+      76,
+      22
+    ],
+    "river_mid": [
+      200,
+      130,
+      30
+    ],
+    "river_light": [
+      230,
+      165,
+      40
+    ]
+  },
+  "abyssal": {
+    "radiant_grass_1": [
+      5,
+      15,
+      30
+    ],
+    "radiant_grass_2": [
+      15,
+      40,
+      70
+    ],
+    "dire_earth_1": [
+      5,
+      20,
+      40
+    ],
+    "dire_earth_2": [
+      10,
+      45,
+      65
+    ],
+    "transition_1": [
+      30,
+      55,
+      65
+    ],
+    "path_stone_1": [
+      10,
+      30,
+      50
+    ],
+    "path_stone_3": [
+      50,
+      100,
+      130
+    ],
+    "river_mid": [
+      20,
+      60,
+      110
+    ],
+    "river_light": [
+      50,
+      130,
+      190
+    ]
+  },
+  "eldritch": {
+    "radiant_grass_1": [
+      5,
+      20,
+      25
+    ],
+    "radiant_grass_2": [
+      20,
+      55,
+      60
+    ],
+    "dire_earth_1": [
+      8,
+      3,
+      20
+    ],
+    "dire_earth_2": [
+      30,
+      12,
+      55
+    ],
+    "transition_1": [
+      15,
+      60,
+      90
+    ],
+    "path_stone_1": [
+      10,
+      35,
+      45
+    ],
+    "path_stone_3": [
+      55,
+      130,
+      125
+    ],
+    "river_mid": [
+      15,
+      60,
+      90
+    ],
+    "river_light": [
+      40,
+      140,
+      180
+    ]
+  },
+  "sanctum": {
+    "radiant_grass_1": [
+      35,
+      40,
+      50
+    ],
+    "radiant_grass_2": [
+      85,
+      90,
+      105
+    ],
+    "dire_earth_1": [
+      10,
+      20,
+      45
+    ],
+    "dire_earth_2": [
+      25,
+      50,
+      105
+    ],
+    "transition_1": [
+      60,
+      65,
+      80
+    ],
+    "path_stone_1": [
+      30,
+      35,
+      45
+    ],
+    "path_stone_3": [
+      120,
+      128,
+      145
+    ],
+    "river_mid": [
+      130,
+      180,
+      235
+    ],
+    "river_light": [
+      200,
+      225,
+      250
+    ]
+  },
+  "eternalflame": {
+    "radiant_grass_1": [
+      45,
+      14,
+      8
+    ],
+    "radiant_grass_2": [
+      95,
+      28,
+      12
+    ],
+    "dire_earth_1": [
+      25,
+      4,
+      2
+    ],
+    "dire_earth_2": [
+      60,
+      12,
+      4
+    ],
+    "transition_1": [
+      70,
+      22,
+      8
+    ],
+    "path_stone_1": [
+      35,
+      12,
+      6
+    ],
+    "path_stone_3": [
+      110,
+      45,
+      16
+    ],
+    "river_mid": [
+      255,
+      120,
+      25
+    ],
+    "river_light": [
+      255,
+      200,
+      60
+    ]
+  },
+  "primordial": {
+    "radiant_grass_1": [
+      5,
+      15,
+      8
+    ],
+    "radiant_grass_2": [
+      18,
+      45,
+      22
+    ],
+    "dire_earth_1": [
+      18,
+      12,
+      5
+    ],
+    "dire_earth_2": [
+      55,
+      35,
+      15
+    ],
+    "transition_1": [
+      55,
+      60,
+      35
+    ],
+    "path_stone_1": [
+      25,
+      18,
+      10
+    ],
+    "path_stone_3": [
+      95,
+      70,
+      35
+    ],
+    "river_mid": [
+      55,
+      140,
+      55
+    ],
+    "river_light": [
+      130,
+      220,
+      100
+    ]
+  },
+  "celestialpeaks": {
+    "radiant_grass_1": [
+      60,
+      40,
+      20
+    ],
+    "radiant_grass_2": [
+      110,
+      75,
+      45
+    ],
+    "dire_earth_1": [
+      25,
+      10,
+      8
+    ],
+    "dire_earth_2": [
+      60,
+      18,
+      15
+    ],
+    "transition_1": [
+      80,
+      55,
+      35
+    ],
+    "path_stone_1": [
+      30,
+      20,
+      12
+    ],
+    "path_stone_3": [
+      95,
+      65,
+      35
+    ],
+    "river_mid": [
+      175,
+      185,
+      210
+    ],
+    "river_light": [
+      225,
+      230,
+      245
+    ]
+  },
+  "cosmic": {
+    "radiant_grass_1": [
+      25,
+      10,
+      60
+    ],
+    "radiant_grass_2": [
+      60,
+      25,
+      120
+    ],
+    "dire_earth_1": [
+      5,
+      0,
+      15
+    ],
+    "dire_earth_2": [
+      15,
+      8,
+      35
+    ],
+    "transition_1": [
+      40,
+      18,
+      85
+    ],
+    "path_stone_1": [
+      20,
+      12,
+      40
+    ],
+    "path_stone_3": [
+      75,
+      45,
+      130
+    ],
+    "river_mid": [
+      135,
+      55,
+      220
+    ],
+    "river_light": [
+      200,
+      130,
+      255
+    ]
+  },
+  "royal": {
+    "radiant_grass_1": [
+      80,
+      55,
+      10
+    ],
+    "radiant_grass_2": [
+      115,
+      85,
+      20
+    ],
+    "dire_earth_1": [
+      25,
+      15,
+      8
+    ],
+    "dire_earth_2": [
+      55,
+      35,
+      20
+    ],
+    "transition_1": [
+      60,
+      42,
+      15
+    ],
+    "path_stone_1": [
+      45,
+      5,
+      15
+    ],
+    "path_stone_3": [
+      165,
+      30,
+      45
+    ],
+    "river_mid": [
+      40,
+      90,
+      190
+    ],
+    "river_light": [
+      120,
+      180,
+      250
+    ]
+  },
+  "violet": {
+    "radiant_grass_1": [
+      15,
+      5,
+      35
+    ],
+    "radiant_grass_2": [
+      40,
+      15,
+      80
+    ],
+    "dire_earth_1": [
+      20,
+      5,
+      45
+    ],
+    "dire_earth_2": [
+      60,
+      20,
+      120
+    ],
+    "transition_1": [
+      55,
+      25,
+      100
+    ],
+    "path_stone_1": [
+      35,
+      15,
+      70
+    ],
+    "path_stone_3": [
+      100,
+      55,
+      170
+    ],
+    "river_mid": [
+      85,
+      20,
+      145
+    ],
+    "river_light": [
+      170,
+      55,
+      230
+    ]
+  },
+  "crimson": {
+    "radiant_grass_1": [
+      30,
+      5,
+      10
+    ],
+    "radiant_grass_2": [
+      80,
+      10,
+      25
+    ],
+    "dire_earth_1": [
+      8,
+      5,
+      12
+    ],
+    "dire_earth_2": [
+      25,
+      15,
+      20
+    ],
+    "transition_1": [
+      60,
+      12,
+      25
+    ],
+    "path_stone_1": [
+      15,
+      4,
+      8
+    ],
+    "path_stone_3": [
+      90,
+      15,
+      30
+    ],
+    "river_mid": [
+      160,
+      25,
+      50
+    ],
+    "river_light": [
+      220,
+      50,
+      90
+    ]
+  },
+  "spectral": {
+    "radiant_grass_1": [
+      2,
+      8,
+      12
+    ],
+    "radiant_grass_2": [
+      10,
+      25,
+      35
+    ],
+    "dire_earth_1": [
+      5,
+      10,
+      12
+    ],
+    "dire_earth_2": [
+      20,
+      10,
+      40
+    ],
+    "transition_1": [
+      15,
+      40,
+      45
+    ],
+    "path_stone_1": [
+      5,
+      10,
+      12
+    ],
+    "path_stone_3": [
+      70,
+      85,
+      95
+    ],
+    "river_mid": [
+      10,
+      60,
+      55
+    ],
+    "river_light": [
+      30,
+      160,
+      140
+    ]
+  },
+  "sundered": {
+    "radiant_grass_1": [
+      18,
+      12,
+      8
+    ],
+    "radiant_grass_2": [
+      48,
+      34,
+      22
+    ],
+    "dire_earth_1": [
+      8,
+      5,
+      3
+    ],
+    "dire_earth_2": [
+      25,
+      18,
+      12
+    ],
+    "transition_1": [
+      60,
+      40,
+      22
+    ],
+    "path_stone_1": [
+      15,
+      10,
+      7
+    ],
+    "path_stone_3": [
+      95,
+      70,
+      45
+    ],
+    "river_mid": [
+      95,
+      40,
+      8
+    ],
+    "river_light": [
+      200,
+      100,
+      25
+    ]
+  },
+  "empyrean": {
+    "radiant_grass_1": [
+      35,
+      20,
+      3
+    ],
+    "radiant_grass_2": [
+      105,
+      70,
+      15
+    ],
+    "dire_earth_1": [
+      55,
+      55,
+      70
+    ],
+    "dire_earth_2": [
+      110,
+      110,
+      130
+    ],
+    "transition_1": [
+      110,
+      90,
+      40
+    ],
+    "path_stone_1": [
+      45,
+      30,
+      8
+    ],
+    "path_stone_3": [
+      200,
+      155,
+      60
+    ],
+    "river_mid": [
+      240,
+      180,
+      55
+    ],
+    "river_light": [
+      255,
+      230,
+      130
+    ]
+  },
+  "solaris": {
+    "radiant_grass_1": [
+      55,
+      30,
+      5
+    ],
+    "radiant_grass_2": [
+      125,
+      80,
+      15
+    ],
+    "dire_earth_1": [
+      75,
+      15,
+      15
+    ],
+    "dire_earth_2": [
+      145,
+      30,
+      30
+    ],
+    "transition_1": [
+      120,
+      70,
+      18
+    ],
+    "path_stone_1": [
+      50,
+      28,
+      8
+    ],
+    "path_stone_3": [
+      205,
+      160,
+      50
+    ],
+    "river_mid": [
+      180,
+      100,
+      15
+    ],
+    "river_light": [
+      240,
+      165,
+      40
+    ]
+  },
+  "abysstide": {
+    "radiant_grass_1": [
+      5,
+      25,
+      25
+    ],
+    "radiant_grass_2": [
+      15,
+      55,
+      55
+    ],
+    "dire_earth_1": [
+      5,
+      30,
+      30
+    ],
+    "dire_earth_2": [
+      15,
+      65,
+      65
+    ],
+    "transition_1": [
+      20,
+      60,
+      58
+    ],
+    "path_stone_1": [
+      6,
+      28,
+      28
+    ],
+    "path_stone_3": [
+      45,
+      110,
+      105
+    ],
+    "river_mid": [
+      15,
+      100,
+      90
+    ],
+    "river_light": [
+      30,
+      190,
+      170
+    ]
+  },
+  "crimsonmatriarch": {
+    "radiant_grass_1": [
+      8,
+      5,
+      10
+    ],
+    "radiant_grass_2": [
+      25,
+      18,
+      25
+    ],
+    "dire_earth_1": [
+      25,
+      3,
+      8
+    ],
+    "dire_earth_2": [
+      75,
+      10,
+      20
+    ],
+    "transition_1": [
+      70,
+      20,
+      30
+    ],
+    "path_stone_1": [
+      10,
+      6,
+      12
+    ],
+    "path_stone_3": [
+      70,
+      50,
+      60
+    ],
+    "river_mid": [
+      75,
+      10,
+      20
+    ],
+    "river_light": [
+      155,
+      25,
+      40
+    ]
+  },
+  "astral": {
+    "radiant_grass_1": [
+      5,
+      8,
+      25
+    ],
+    "radiant_grass_2": [
+      18,
+      25,
+      55
+    ],
+    "dire_earth_1": [
+      5,
+      15,
+      55
+    ],
+    "dire_earth_2": [
+      15,
+      55,
+      145
+    ],
+    "transition_1": [
+      35,
+      50,
+      100
+    ],
+    "path_stone_1": [
+      8,
+      12,
+      32
+    ],
+    "path_stone_3": [
+      55,
+      70,
+      120
+    ],
+    "river_mid": [
+      15,
+      55,
+      145
+    ],
+    "river_light": [
+      55,
+      130,
+      235
+    ]
+  },
+  "shadowchain": {
+    "radiant_grass_1": [
+      15,
+      5,
+      25
+    ],
+    "radiant_grass_2": [
+      35,
+      15,
+      55
+    ],
+    "dire_earth_1": [
+      5,
+      3,
+      10
+    ],
+    "dire_earth_2": [
+      20,
+      12,
+      35
+    ],
+    "transition_1": [
+      40,
+      20,
+      70
+    ],
+    "path_stone_1": [
+      10,
+      6,
+      18
+    ],
+    "path_stone_3": [
+      65,
+      40,
+      90
+    ],
+    "river_mid": [
+      65,
+      15,
+      90
+    ],
+    "river_light": [
+      145,
+      40,
+      180
+    ]
+  },
+  "frostveil": {
+    "radiant_grass_1": [
+      5,
+      8,
+      20
+    ],
+    "radiant_grass_2": [
+      15,
+      22,
+      45
+    ],
+    "dire_earth_1": [
+      5,
+      25,
+      45
+    ],
+    "dire_earth_2": [
+      20,
+      70,
+      110
+    ],
+    "transition_1": [
+      25,
+      45,
+      85
+    ],
+    "path_stone_1": [
+      7,
+      10,
+      25
+    ],
+    "path_stone_3": [
+      50,
+      65,
+      105
+    ],
+    "river_mid": [
+      20,
+      70,
+      110
+    ],
+    "river_light": [
+      60,
+      160,
+      220
+    ]
+  },
+  "warshade": {
+    "radiant_grass_1": [
+      5,
+      10,
+      12
+    ],
+    "radiant_grass_2": [
+      15,
+      25,
+      30
+    ],
+    "dire_earth_1": [
+      2,
+      20,
+      25
+    ],
+    "dire_earth_2": [
+      10,
+      65,
+      80
+    ],
+    "transition_1": [
+      25,
+      45,
+      55
+    ],
+    "path_stone_1": [
+      6,
+      11,
+      14
+    ],
+    "path_stone_3": [
+      45,
+      65,
+      78
+    ],
+    "river_mid": [
+      10,
+      65,
+      80
+    ],
+    "river_light": [
+      30,
+      155,
+      180
+    ]
+  },
+  "outlaw": {
+    "radiant_grass_1": [
+      30,
+      22,
+      16
+    ],
+    "radiant_grass_2": [
+      70,
+      50,
+      35
+    ],
+    "dire_earth_1": [
+      30,
+      8,
+      10
+    ],
+    "dire_earth_2": [
+      75,
+      15,
+      20
+    ],
+    "transition_1": [
+      80,
+      55,
+      40
+    ],
+    "path_stone_1": [
+      22,
+      16,
+      12
+    ],
+    "path_stone_3": [
+      95,
+      70,
+      50
+    ],
+    "river_mid": [
+      75,
+      15,
+      20
+    ],
+    "river_light": [
+      150,
+      35,
+      40
+    ]
+  },
+  "hexbound": {
+    "radiant_grass_1": [
+      25,
+      15,
+      40
+    ],
+    "radiant_grass_2": [
+      55,
+      35,
+      80
+    ],
+    "dire_earth_1": [
+      35,
+      8,
+      12
+    ],
+    "dire_earth_2": [
+      75,
+      18,
+      25
+    ],
+    "transition_1": [
+      70,
+      40,
+      90
+    ],
+    "path_stone_1": [
+      18,
+      10,
+      30
+    ],
+    "path_stone_3": [
+      90,
+      60,
+      125
+    ],
+    "river_mid": [
+      45,
+      90,
+      20
+    ],
+    "river_light": [
+      110,
+      180,
+      50
+    ]
+  },
+  "voidbound": {
+    "radiant_grass_1": [
+      15,
+      8,
+      30
+    ],
+    "radiant_grass_2": [
+      35,
+      20,
+      60
+    ],
+    "dire_earth_1": [
+      25,
+      5,
+      45
+    ],
+    "dire_earth_2": [
+      85,
+      20,
+      145
+    ],
+    "transition_1": [
+      50,
+      28,
+      90
+    ],
+    "path_stone_1": [
+      12,
+      7,
+      25
+    ],
+    "path_stone_3": [
+      80,
+      45,
+      125
+    ],
+    "river_mid": [
+      85,
+      20,
+      145
+    ],
+    "river_light": [
+      175,
+      55,
+      235
+    ]
+  },
+  "earthborn": {
+    "radiant_grass_1": [
+      25,
+      22,
+      20
+    ],
+    "radiant_grass_2": [
+      58,
+      55,
+      50
+    ],
+    "dire_earth_1": [
+      10,
+      8,
+      6
+    ],
+    "dire_earth_2": [
+      35,
+      30,
+      25
+    ],
+    "transition_1": [
+      60,
+      55,
+      48
+    ],
+    "path_stone_1": [
+      20,
+      18,
+      16
+    ],
+    "path_stone_3": [
+      100,
+      95,
+      85
+    ],
+    "river_mid": [
+      20,
+      80,
+      30
+    ],
+    "river_light": [
+      60,
+      170,
+      70
+    ]
+  },
+  "heartbane": {
+    "radiant_grass_1": [
+      30,
+      20,
+      40
+    ],
+    "radiant_grass_2": [
+      75,
+      55,
+      90
+    ],
+    "dire_earth_1": [
+      8,
+      4,
+      15
+    ],
+    "dire_earth_2": [
+      28,
+      18,
+      40
+    ],
+    "transition_1": [
+      60,
+      40,
+      90
+    ],
+    "path_stone_1": [
+      12,
+      6,
+      20
+    ],
+    "path_stone_3": [
+      70,
+      45,
+      95
+    ],
+    "river_mid": [
+      110,
+      15,
+      70
+    ],
+    "river_light": [
+      200,
+      40,
+      130
+    ]
+  },
+  "sunfist": {
+    "radiant_grass_1": [
+      5,
+      10,
+      25
+    ],
+    "radiant_grass_2": [
+      18,
+      30,
+      55
+    ],
+    "dire_earth_1": [
+      55,
+      25,
+      3
+    ],
+    "dire_earth_2": [
+      140,
+      65,
+      8
+    ],
+    "transition_1": [
+      45,
+      60,
+      95
+    ],
+    "path_stone_1": [
+      10,
+      16,
+      32
+    ],
+    "path_stone_3": [
+      55,
+      75,
+      115
+    ],
+    "river_mid": [
+      140,
+      65,
+      8
+    ],
+    "river_light": [
+      200,
+      155,
+      40
+    ]
+  },
+  "voidwing": {
+    "radiant_grass_1": [
+      8,
+      3,
+      15
+    ],
+    "radiant_grass_2": [
+      25,
+      10,
+      45
+    ],
+    "dire_earth_1": [
+      30,
+      15,
+      55
+    ],
+    "dire_earth_2": [
+      75,
+      40,
+      120
+    ],
+    "transition_1": [
+      45,
+      22,
+      80
+    ],
+    "path_stone_1": [
+      10,
+      6,
+      25
+    ],
+    "path_stone_3": [
+      65,
+      55,
+      100
+    ],
+    "river_mid": [
+      90,
+      20,
+      110
+    ],
+    "river_light": [
+      170,
+      45,
+      190
+    ]
+  },
+  "crimsondevourer": {
+    "radiant_grass_1": [
+      5,
+      3,
+      5
+    ],
+    "radiant_grass_2": [
+      18,
+      12,
+      18
+    ],
+    "dire_earth_1": [
+      25,
+      0,
+      5
+    ],
+    "dire_earth_2": [
+      80,
+      5,
+      15
+    ],
+    "transition_1": [
+      45,
+      30,
+      38
+    ],
+    "path_stone_1": [
+      8,
+      5,
+      8
+    ],
+    "path_stone_3": [
+      55,
+      45,
+      52
+    ],
+    "river_mid": [
+      80,
+      5,
+      15
+    ],
+    "river_light": [
+      170,
+      20,
+      35
+    ]
+  },
+  "elementweave": {
+    "radiant_grass_1": [
+      15,
+      8,
+      25
+    ],
+    "radiant_grass_2": [
+      40,
+      22,
+      60
+    ],
+    "dire_earth_1": [
+      5,
+      15,
+      40
+    ],
+    "dire_earth_2": [
+      20,
+      60,
+      130
+    ],
+    "transition_1": [
+      55,
+      35,
+      85
+    ],
+    "path_stone_1": [
+      12,
+      7,
+      22
+    ],
+    "path_stone_3": [
+      75,
+      48,
+      105
+    ],
+    "river_mid": [
+      80,
+      20,
+      130
+    ],
+    "river_light": [
+      170,
+      60,
+      220
+    ]
+  },
+  "tempest": {
+    "radiant_grass_1": [
+      5,
+      10,
+      30
+    ],
+    "radiant_grass_2": [
+      15,
+      30,
+      75
+    ],
+    "dire_earth_1": [
+      5,
+      15,
+      50
+    ],
+    "dire_earth_2": [
+      20,
+      60,
+      160
+    ],
+    "transition_1": [
+      30,
+      55,
+      110
+    ],
+    "path_stone_1": [
+      8,
+      14,
+      38
+    ],
+    "path_stone_3": [
+      50,
+      78,
+      145
+    ],
+    "river_mid": [
+      20,
+      60,
+      160
+    ],
+    "river_light": [
+      60,
+      140,
+      240
+    ]
+  },
+  "sawmill": {
+    "radiant_grass_1": [
+      25,
+      40,
+      20
+    ],
+    "radiant_grass_2": [
+      55,
+      90,
+      45
+    ],
+    "dire_earth_1": [
+      18,
+      15,
+      12
+    ],
+    "dire_earth_2": [
+      45,
+      40,
+      35
+    ],
+    "transition_1": [
+      55,
+      65,
+      45
+    ],
+    "path_stone_1": [
+      20,
+      18,
+      14
+    ],
+    "path_stone_3": [
+      100,
+      92,
+      80
+    ],
+    "river_mid": [
+      110,
+      30,
+      8
+    ],
+    "river_light": [
+      220,
+      90,
+      20
+    ]
+  },
+  "croweye": {
+    "radiant_grass_1": [
+      5,
+      3,
+      8
+    ],
+    "radiant_grass_2": [
+      18,
+      12,
+      22
+    ],
+    "dire_earth_1": [
+      30,
+      6,
+      8
+    ],
+    "dire_earth_2": [
+      85,
+      15,
+      20
+    ],
+    "transition_1": [
+      40,
+      28,
+      50
+    ],
+    "path_stone_1": [
+      8,
+      5,
+      12
+    ],
+    "path_stone_3": [
+      55,
+      38,
+      65
+    ],
+    "river_mid": [
+      85,
+      15,
+      20
+    ],
+    "river_light": [
+      170,
+      35,
+      45
+    ]
+  },
+  "crystalstorm": {
+    "radiant_grass_1": [
+      5,
+      30,
+      40
+    ],
+    "radiant_grass_2": [
+      15,
+      75,
+      90
+    ],
+    "dire_earth_1": [
+      25,
+      5,
+      55
+    ],
+    "dire_earth_2": [
+      75,
+      25,
+      130
+    ],
+    "transition_1": [
+      30,
+      90,
+      105
+    ],
+    "path_stone_1": [
+      8,
+      18,
+      25
+    ],
+    "path_stone_3": [
+      55,
+      110,
+      130
+    ],
+    "river_mid": [
+      75,
+      25,
+      130
+    ],
+    "river_light": [
+      155,
+      60,
+      220
+    ]
+  },
+  "eternalwarlord": {
+    "radiant_grass_1": [
+      25,
+      10,
+      15
+    ],
+    "radiant_grass_2": [
+      70,
+      20,
+      30
+    ],
+    "dire_earth_1": [
+      35,
+      0,
+      5
+    ],
+    "dire_earth_2": [
+      110,
+      10,
+      20
+    ],
+    "transition_1": [
+      65,
+      30,
+      40
+    ],
+    "path_stone_1": [
+      16,
+      8,
+      12
+    ],
+    "path_stone_3": [
+      85,
+      40,
+      50
+    ],
+    "river_mid": [
+      110,
+      10,
+      20
+    ],
+    "river_light": [
+      200,
+      30,
+      40
+    ]
+  },
+  "explosiveart": {
+    "radiant_grass_1": [
+      5,
+      5,
+      8
+    ],
+    "radiant_grass_2": [
+      18,
+      18,
+      24
+    ],
+    "dire_earth_1": [
+      60,
+      5,
+      8
+    ],
+    "dire_earth_2": [
+      130,
+      15,
+      20
+    ],
+    "transition_1": [
+      45,
+      35,
+      50
+    ],
+    "path_stone_1": [
+      10,
+      8,
+      12
+    ],
+    "path_stone_3": [
+      70,
+      60,
+      75
+    ],
+    "river_mid": [
+      130,
+      15,
+      20
+    ],
+    "river_light": [
+      200,
+      30,
+      35
+    ]
+  },
+  "sandshadow": {
+    "radiant_grass_1": [
+      25,
+      8,
+      10
+    ],
+    "radiant_grass_2": [
+      65,
+      18,
+      22
+    ],
+    "dire_earth_1": [
+      55,
+      15,
+      8
+    ],
+    "dire_earth_2": [
+      120,
+      35,
+      20
+    ],
+    "transition_1": [
+      90,
+      30,
+      32
+    ],
+    "path_stone_1": [
+      22,
+      10,
+      12
+    ],
+    "path_stone_3": [
+      105,
+      45,
+      48
+    ],
+    "river_mid": [
+      120,
+      35,
+      20
+    ],
+    "river_light": [
+      180,
+      60,
+      30
+    ]
+  },
+  "emberweaver": {
+    "radiant_grass_1": [
+      35,
+      8,
+      15
+    ],
+    "radiant_grass_2": [
+      85,
+      20,
+      30
+    ],
+    "dire_earth_1": [
+      85,
+      20,
+      10
+    ],
+    "dire_earth_2": [
+      160,
+      45,
+      20
+    ],
+    "transition_1": [
+      110,
+      35,
+      45
+    ],
+    "path_stone_1": [
+      22,
+      8,
+      14
+    ],
+    "path_stone_3": [
+      110,
+      40,
+      55
+    ],
+    "river_mid": [
+      160,
+      45,
+      20
+    ],
+    "river_light": [
+      230,
+      100,
+      30
+    ]
+  },
+  "skyfury": {
+    "radiant_grass_1": [
+      12,
+      12,
+      15
+    ],
+    "radiant_grass_2": [
+      35,
+      35,
+      42
+    ],
+    "dire_earth_1": [
+      35,
+      18,
+      8
+    ],
+    "dire_earth_2": [
+      90,
+      50,
+      20
+    ],
+    "transition_1": [
+      60,
+      55,
+      60
+    ],
+    "path_stone_1": [
+      10,
+      10,
+      14
+    ],
+    "path_stone_3": [
+      70,
+      70,
+      82
+    ],
+    "river_mid": [
+      140,
+      45,
+      15
+    ],
+    "river_light": [
+      230,
+      105,
+      30
+    ]
+  },
+  "moonreaper": {
+    "radiant_grass_1": [
+      25,
+      22,
+      45
+    ],
+    "radiant_grass_2": [
+      45,
+      42,
+      70
+    ],
+    "dire_earth_1": [
+      18,
+      10,
+      30
+    ],
+    "dire_earth_2": [
+      40,
+      25,
+      60
+    ],
+    "transition_1": [
+      50,
+      45,
+      75
+    ],
+    "path_stone_1": [
+      35,
+      30,
+      55
+    ],
+    "path_stone_3": [
+      95,
+      90,
+      135
+    ],
+    "river_mid": [
+      55,
+      20,
+      110
+    ],
+    "river_light": [
+      140,
+      70,
+      220
+    ]
+  },
+  "moonfang": {
+    "radiant_grass_1": [
+      35,
+      40,
+      60
+    ],
+    "radiant_grass_2": [
+      60,
+      68,
+      90
+    ],
+    "dire_earth_1": [
+      30,
+      18,
+      55
+    ],
+    "dire_earth_2": [
+      65,
+      45,
+      115
+    ],
+    "transition_1": [
+      60,
+      60,
+      80
+    ],
+    "path_stone_1": [
+      45,
+      48,
+      62
+    ],
+    "path_stone_3": [
+      130,
+      135,
+      155
+    ],
+    "river_mid": [
+      70,
+      45,
+      125
+    ],
+    "river_light": [
+      140,
+      105,
+      195
+    ]
+  },
+  "emberlion": {
+    "radiant_grass_1": [
+      35,
+      30,
+      28
+    ],
+    "radiant_grass_2": [
+      60,
+      55,
+      50
+    ],
+    "dire_earth_1": [
+      30,
+      8,
+      2
+    ],
+    "dire_earth_2": [
+      85,
+      20,
+      8
+    ],
+    "transition_1": [
+      80,
+      70,
+      60
+    ],
+    "path_stone_1": [
+      30,
+      25,
+      22
+    ],
+    "path_stone_3": [
+      115,
+      105,
+      92
+    ],
+    "river_mid": [
+      90,
+      20,
+      5
+    ],
+    "river_light": [
+      220,
+      90,
+      20
+    ]
+  },
+  "lunarherald": {
+    "radiant_grass_1": [
+      12,
+      16,
+      28
+    ],
+    "radiant_grass_2": [
+      28,
+      34,
+      52
+    ],
+    "dire_earth_1": [
+      25,
+      8,
+      40
+    ],
+    "dire_earth_2": [
+      55,
+      25,
+      90
+    ],
+    "transition_1": [
+      45,
+      48,
+      70
+    ],
+    "path_stone_1": [
+      18,
+      20,
+      32
+    ],
+    "path_stone_3": [
+      90,
+      95,
+      125
+    ],
+    "river_mid": [
+      50,
+      90,
+      140
+    ],
+    "river_light": [
+      120,
+      180,
+      230
+    ]
+  },
+  "moonborn": {
+    "radiant_grass_1": [
+      35,
+      33,
+      45
+    ],
+    "radiant_grass_2": [
+      70,
+      66,
+      85
+    ],
+    "dire_earth_1": [
+      25,
+      8,
+      12
+    ],
+    "dire_earth_2": [
+      70,
+      18,
+      25
+    ],
+    "transition_1": [
+      70,
+      65,
+      85
+    ],
+    "path_stone_1": [
+      40,
+      38,
+      55
+    ],
+    "path_stone_3": [
+      135,
+      132,
+      158
+    ],
+    "river_mid": [
+      60,
+      35,
+      95
+    ],
+    "river_light": [
+      110,
+      65,
+      155
+    ]
+  },
+  "hollowbane": {
+    "radiant_grass_1": [
+      8,
+      10,
+      18
+    ],
+    "radiant_grass_2": [
+      22,
+      24,
+      36
+    ],
+    "dire_earth_1": [
+      60,
+      15,
+      0
+    ],
+    "dire_earth_2": [
+      140,
+      45,
+      5
+    ],
+    "transition_1": [
+      45,
+      46,
+      62
+    ],
+    "path_stone_1": [
+      15,
+      16,
+      26
+    ],
+    "path_stone_3": [
+      78,
+      80,
+      102
+    ],
+    "river_mid": [
+      140,
+      45,
+      5
+    ],
+    "river_light": [
+      230,
+      95,
+      15
+    ]
+  }
+}

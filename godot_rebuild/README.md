@@ -311,8 +311,12 @@ dan reset AI. Jalankan oracle tanpa
 `--write` untuk mendeteksi drift. Menu kini menawarkan 54 konfigurasi dengan
 unlock berdasarkan predecessor dan mengunci difficulty sesuai run yang
 tersimpan. Level 2–54 adalah **mode uji eksperimental**, bukan parity penuh:
-map/theme masih memakai arena prototipe, sedangkan balance, boss/presentasi,
-reward unlock dan kemenangan tiap level perlu validasi manual tersendiri.
+geometri map masih arena prototipe, tetapi warna tanah/jalur memakai palet
+sumber per 54 tema. Dekorasi/river/fog/FX, balance, boss/presentasi dan
+kemenangan tiap level tetap perlu validasi manual tersendiri. Oracle
+`level_theme_source_oracle.py` mengekstrak sembilan warna dari setiap tema
+`map_components/_bundle.py` tanpa mengimpor Pygame; laboratorium tetap memakai
+palet asalnya. Ini port warna, **bukan** seluruh renderer peta Python.
 
 ## Progres level (domain + save pengembangan terpisah)
 

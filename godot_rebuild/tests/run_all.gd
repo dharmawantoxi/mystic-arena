@@ -81,6 +81,7 @@ const BossPresentationChecks = preload("res://tests/boss_presentation_checks.gd"
 const SiegeChecks = preload("res://tests/siege_checks.gd")
 const CombatChecks = preload("res://tests/combat_checks.gd")
 const LevelCatalogChecks = preload("res://tests/level_catalog_checks.gd")
+const LevelThemeChecks = preload("res://tests/level_theme_checks.gd")
 const LevelProgressChecks = preload("res://tests/level_progress_checks.gd")
 const LevelProgressStoreChecks = preload("res://tests/level_progress_store_checks.gd")
 const LevelProgressStore = preload("res://scripts/match/level_progress_store.gd")
@@ -118,6 +119,7 @@ func _physics_steps(count: int) -> void:
 func _run() -> void:
 	_check(Engine.physics_ticks_per_second == 60, "physics frequency is 60 Hz")
 	LevelCatalogChecks.new().run(_check)
+	LevelThemeChecks.new().run(_check)
 	LevelProgressChecks.new().run(_check)
 	LevelProgressStoreChecks.new().run(_check)
 	ThorneChecks.new().run(_check)
@@ -596,6 +598,10 @@ func _test_level_selection_scene(app: Node) -> void:
 	_check(
 		world.level_number == 2 and world.difficulty == "normal" and world.economy.gold[0] == 1100,
 		"Level 2 selection reaches configured arena and opening economy"
+	)
+	_check(
+		screen.arena.terrain_palette["radiant_grass_1"] == Color8(155, 115, 60),
+		"Desert arena uses the source level 2 terrain palette"
 	)
 	screen.get_node("%RestartButton").pressed.emit()
 	await _settle()

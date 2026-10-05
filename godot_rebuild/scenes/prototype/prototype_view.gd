@@ -6,6 +6,7 @@ const HeroState = preload("res://scripts/combat/hero_state.gd")
 const BossState = preload("res://scripts/match/boss_state.gd")
 const HeroMarker = preload("res://scripts/ui/hero_marker.gd")
 const BossFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
+const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 
 
 func _draw() -> void:
@@ -13,6 +14,7 @@ func _draw() -> void:
 		super._draw()
 		return
 	var world := session.world as Prototype
+	terrain_palette = TerrainPalette.for_level(world.level_config)
 	draw_set_transform(world.boss_presentation_offset(), 0.0, Vector2.ONE)
 	super._draw()
 	var match_session := session as PrototypeSession

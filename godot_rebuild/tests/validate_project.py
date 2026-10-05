@@ -359,6 +359,9 @@ check(boss_level_twenty_fixture() == json.loads((ROOT / "tests/fixtures/boss_lev
 check("BossLevelTwentyChecks.new().run(_check)" in ai_tests, "Boss level twenty native suite must run")
 
 from level_catalog_source_oracle import check as check_level_catalog
+from level_theme_source_oracle import check as check_level_themes
+check(check_level_themes() == 54, "All 54 native terrain palettes must match source")
+check("LevelThemeChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"), "Native terrain palette suite must run")
 from level_economy_source_oracle import check as check_level_economy
 check(check_level_catalog() == 54, "All 54 native level entries must match Python source")
 check(check_level_economy() == 162, "All level economy fixtures must match Python source")
