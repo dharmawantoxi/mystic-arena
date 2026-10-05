@@ -128,6 +128,19 @@ func run(check: Callable) -> void:
 				),
 				"9d lethal Miasma must not credit its stored owner " + _label(row)
 			)
+			check.call(
+				(
+					int(expected.get("last_hit_source_id", 0)) == -1
+					and (
+						int(native_old.get("last_hit_source_id", -1))
+						== int(native_old.get("owner_id", -2))
+					)
+				),
+				(
+					"9d event owner is preserved but lethal boss credit source is omitted "
+					+ _label(row)
+				)
+			)
 		elif String(row.get("scenario", "")) == "miasma_nonlethal_then_hero_lethal":
 			check.call(
 				(

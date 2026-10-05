@@ -39,13 +39,14 @@ func deal_damage_from(
 		var current_pos: Variant = source.get("position")
 		if current_pos is Vector2:
 			origin = current_pos
-	var hit_source_id := source_id
-	if tgt is BossState:
+	var landed: bool = world._deliver_hit(
+		source_id, source_team, tgt, amount, school, origin, damage_type
+	)
+	if landed and tgt is BossState:
 		# Layer 9d: `_tick_miasma` calls `Boss.take_damage(damage, team, "magic")`
-		# with no `source=`. Keep the stored owner's team/origin, but don't let a
-		# poison tick become the hero's lethal boss hit in `_process_boss_kill`.
-		hit_source_id = -1
-	world._deliver_hit(hit_source_id, source_team, tgt, amount, school, origin, damage_type)
+		# with no `source=`. Preserve the owner ID in hit/death event records for
+		# the merged Miasma tracker, but remove it from the lethal boss-credit key.
+		(tgt as BossState).last_hit_source_id = -1
 	return amount
 
 
