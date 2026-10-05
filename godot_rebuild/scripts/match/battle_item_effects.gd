@@ -17,13 +17,17 @@ func deal_damage(target_id: int, _source_team: int, amount: int, school: String 
 	return amount
 
 
+## Layer 9c: `damage_type` is forwarded to `_deliver_hit` so the hit reaches
+## `BossState.take_damage` as magic, not as the "normal" default that arms
+## `BossState.blind_live` against the (possibly blinded) stored owner.
 func deal_damage_from(
 	source_id: int,
 	source_team: int,
 	source_pos: Vector2,
 	target_id: int,
 	amount: int,
-	school: String = "magic"
+	school: String = "magic",
+	damage_type: String = "magic"
 ) -> int:
 	var tgt: Object = world.get_unit(target_id)
 	if tgt == null:
@@ -34,7 +38,7 @@ func deal_damage_from(
 		var current_pos: Variant = source.get("position")
 		if current_pos is Vector2:
 			origin = current_pos
-	world._deliver_hit(source_id, source_team, tgt, amount, school, origin)
+	world._deliver_hit(source_id, source_team, tgt, amount, school, origin, damage_type)
 	return amount
 
 
