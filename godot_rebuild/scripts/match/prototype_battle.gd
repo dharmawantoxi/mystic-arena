@@ -112,6 +112,9 @@ var enemy_speed_mult := 1.0
 var boss_table: Dictionary = {}
 var boss_rng := RandomNumberGenerator.new()
 var active_boss: BossState = null
+# Layer 9b: all hero inventories in this match share the source's target-keyed
+# Miasma registry; tracker owner fields retain last-applier credit.
+var _miasma_registry: Dictionary = {}
 var pending_mini_bosses: Array[Dictionary] = []
 var true_boss_spawned := false
 var red_towers_destroyed := 0
@@ -1906,7 +1909,43 @@ func _hero_enemy_list() -> Array:
 	return enemies
 
 
+func _bind_miasma_registry(hero: HeroState) -> void:
+	var inventory_miasma: Dictionary = hero.items.miasma
+	for key in inventory_miasma.keys():
+		var target_id: int = int(key)
+		var local_tracker: Dictionary = inventory_miasma[target_id]
+		var shared_tracker: Dictionary = _miasma_registry.get(target_id, {})
+		var source_id: int = int(local_tracker.get("source_id", hero.id))
+		var source_team: int = int(local_tracker.get("source_team", hero.team))
+		var source_pos: Vector2 = local_tracker.get("source_pos", hero.position) as Vector2
+		if source_id < 0:
+			source_id = hero.id
+			source_team = hero.team
+			source_pos = hero.position
+		if shared_tracker.is_empty():
+			local_tracker["source_id"] = source_id
+			local_tracker["source_team"] = source_team
+			local_tracker["source_pos"] = source_pos
+			_miasma_registry[target_id] = local_tracker
+			continue
+		shared_tracker["source_id"] = source_id
+		shared_tracker["source_team"] = source_team
+		shared_tracker["source_pos"] = source_pos
+		shared_tracker["damage"] = maxi(
+			int(shared_tracker.get("damage", 0)), int(local_tracker.get("damage", 0))
+		)
+		shared_tracker["timer"] = maxi(
+			int(shared_tracker.get("timer", 0)), int(local_tracker.get("timer", 0))
+		)
+		shared_tracker["tick_cd"] = mini(
+			int(shared_tracker.get("tick_cd", 0)), int(local_tracker.get("tick_cd", 0))
+		)
+	hero.items.miasma = _miasma_registry
+
+
 func _battle_item_effects(source_hero: HeroState) -> BattleItemEffects:
+	_bind_miasma_registry(source_hero)
+	source_hero.items.miasma = _miasma_registry
 	var bus := BattleItemEffects.new()
 	bus.world = self
 	bus.dealer_id = source_hero.id
@@ -1953,6 +1992,7 @@ func _tick_hero_items(hero: HeroState) -> void:
 		)
 	)
 	var enemies: Array = _hero_enemy_list()
+	_bind_miasma_registry(hero)
 	hero.items.tick_miasma(1, enemies, _battle_item_effects(hero))
 	hero.items.tick_auto(1, enemies, _battle_item_effects(hero), _item_rng)
 	# Apply HP regen result back to hero.
@@ -2182,6 +2222,7 @@ func hero_basic_attack(hero_id: int, target_id: int) -> bool:
 		if bool(cr[0]):
 			raw = int(float(raw) * float(cr[1]))
 			is_crit = true
+	_bind_miasma_registry(hero)
 	var bus := _battle_item_effects(hero)
 	if not hero.is_melee and hero.settings().id != "morgath":
 		_hero_ranged_spawn(hero, target, raw)

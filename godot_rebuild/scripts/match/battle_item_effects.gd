@@ -17,6 +17,27 @@ func deal_damage(target_id: int, _source_team: int, amount: int, school: String 
 	return amount
 
 
+func deal_damage_from(
+	source_id: int,
+	source_team: int,
+	source_pos: Vector2,
+	target_id: int,
+	amount: int,
+	school: String = "magic"
+) -> int:
+	var tgt: Object = world.get_unit(target_id)
+	if tgt == null:
+		return 0
+	var origin := source_pos
+	var source: Object = world.get_unit(source_id)
+	if source != null:
+		var current_pos: Variant = source.get("position")
+		if current_pos is Vector2:
+			origin = current_pos
+	world._deliver_hit(source_id, source_team, tgt, amount, school, origin)
+	return amount
+
+
 func apply_stun(target_id: int, duration: int) -> void:
 	var t: Object = world.get_unit(target_id)
 	if t is HeroState:

@@ -1510,6 +1510,96 @@ for _row in _poly["cases"]:
           and _row["expected_without_exact_sort"] == [["unit_a", 35, "magic"], ["unit_b" if _row["scenario"] != "boss_first_despite_insertion" else "boss", 35, "magic"]],
           "9a exact and epsilon-sort payload " + _row["boss_type"] + "/" + _row["scenario"])
 
+from boss_miasma_source_oracle import source_fixture as miasma_fixture
+_miasma = miasma_fixture()
+_miasma_file = json.loads((ROOT / "tests/fixtures/boss_miasma_source.json").read_text())
+check(_miasma == _miasma_file, "9b Miasma fixture matches Python source execution")
+check(_miasma["source"]["ast_shape"] == {
+    "global_target_key": True,
+    "source_replaced": True,
+    "damage_max": True,
+    "timer_max": True,
+    "tick_cd_min": True,
+    "tick_uses_stored_source": True,
+    "tick_reset_30": True,
+}, "9b Python AST proves shared-target merge and stored-source tick")
+check(len(_miasma["cases"]) == 864
+      and len({row["boss_type"] for row in _miasma["cases"]}) == 216
+      and _miasma["source"]["boss_types"] == 216,
+      "9b four cases for each of 216 bosses")
+_miasma_inventory = (ROOT / "scripts/match/hero_item_inventory.gd").read_text()
+_miasma_prototype = (ROOT / "scripts/match/prototype_battle.gd").read_text()
+_miasma_bus = (ROOT / "scripts/match/battle_item_effects.gd").read_text()
+_miasma_effects = (ROOT / "scripts/match/item_effects.gd").read_text()
+check("func _bind_miasma_registry(hero: HeroState) -> void" in _miasma_prototype
+      and "source_hero.items.miasma = _miasma_registry" in _miasma_prototype
+      and _miasma_prototype.count("_bind_miasma_registry(hero)") >= 2,
+      "9b on-hit/tick hero inventories bind or merge into the match Miasma registry")
+check('prev["source_id"] = hero_id' in _miasma_inventory
+      and 'prev["source_team"] = hero_team' in _miasma_inventory
+      and 'effects.deal_damage_from(' in _miasma_inventory,
+      "9b native reapply transfers source and tick uses stored owner")
+check("func deal_damage_from(" in _miasma_effects
+      and "func deal_damage_from(" in _miasma_bus
+      and "world._deliver_hit(source_id, source_team, tgt, amount, school, origin)" in _miasma_bus,
+      "9b damage bridge delivers poison using the stored source hero")
+check('const BossMiasmaChecks = preload("res://tests/boss_miasma_checks.gd")' in ai_tests
+      and "BossMiasmaChecks.new().run(_check)" in ai_tests,
+      "9b real-path boss Miasma replay registered")
+
+
+def _miasma_events_match(actual, expected):
+    if len(actual) != len(expected):
+        return False
+    for actual_row, expected_row in zip(actual, expected):
+        if (int(float(actual_row[0])) != int(float(expected_row[0]))
+                or str(actual_row[1]) != str(expected_row[1])
+                or int(float(actual_row[2])) != int(float(expected_row[2]))):
+            return False
+    return True
+
+
+_expected_frames = {
+    "same_frame_reapply": [15, "hero_b"],
+    "reapply_near_tick": [1, "hero_b"],
+    "reapply_after_first_tick": [15, "hero_b"],
+    "reapplying_hero_dies": [30, "hero_b"],
+}
+_old_frames = {
+    "same_frame_reapply": [],
+    "reapply_near_tick": [],
+    "reapply_after_first_tick": [[15, "hero_a"]],
+    "reapplying_hero_dies": [[30, "hero_a"]],
+}
+for _row in _miasma["cases"]:
+    _data = _miasma["source"]["on_attack"]
+    _damage = max(6, min(int(_data["cap_damage"]),
+                         int(float(_row["boss_max_hp"]) * float(_data["max_hp_pct_per_tick"]))))
+    _scenario = _row["scenario"]
+    _tracker = _row["expected"]["tracker"]
+    _pre = int(_row["pre_frames"])
+    _old_trackers = _row["native_old"]["trackers"]
+    _old_a = next(t for t in _old_trackers if t["owner"] == "hero_a")
+    _old_b = next(t for t in _old_trackers if t["owner"] == "hero_b")
+    _check_expected = [[*_expected_frames[_scenario], _damage]]
+    _check_old = [[frame, owner, _damage] for frame, owner in _old_frames[_scenario]]
+    check(_tracker["count"] == 1 and _tracker["owner"] == "hero_b"
+          and int(_tracker["damage"]) == _damage
+          and int(_tracker["timer"]) == int(_data["duration"])
+          and int(_tracker["tick_cd"]) == (2 if _pre == 14 else int(_data["tick"])),
+          "9b merged tracker values " + _row["boss_type"] + "/" + _scenario)
+    check(_miasma_events_match(_row["expected"]["events"], _check_expected)
+          and _miasma_events_match(_row["native_old"]["events"], _check_old)
+          and not _miasma_events_match(_check_expected, _check_old),
+          "9b expected-vs-old gameplay events " + _row["boss_type"] + "/" + _scenario)
+    check(_row["native_old"]["tracker_count"] == 2
+          and len(_old_trackers) == 2
+          and int(_old_a["timer"]) == int(_data["duration"]) - _pre
+          and int(_old_a["tick_cd"]) == int(_data["tick"]) - _pre
+          and int(_old_b["timer"]) == int(_data["duration"])
+          and int(_old_b["tick_cd"]) == int(_data["tick"]),
+          "9b per-inventory counterfactual trackers " + _row["boss_type"] + "/" + _scenario)
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")
