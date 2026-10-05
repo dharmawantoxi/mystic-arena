@@ -3,6 +3,7 @@ extends "res://scripts/match/item_effects.gd"
 ## effect calls into real _deliver_hit / debuff field mutations.
 
 const HeroState = preload("res://scripts/combat/hero_state.gd")
+const BossState = preload("res://scripts/match/boss_state.gd")
 var world: Object = null
 var dealer_id: int = -1
 var dealer_team: int = -1
@@ -38,7 +39,13 @@ func deal_damage_from(
 		var current_pos: Variant = source.get("position")
 		if current_pos is Vector2:
 			origin = current_pos
-	world._deliver_hit(source_id, source_team, tgt, amount, school, origin, damage_type)
+	var hit_source_id := source_id
+	if tgt is BossState:
+		# Layer 9d: `_tick_miasma` calls `Boss.take_damage(damage, team, "magic")`
+		# with no `source=`. Keep the stored owner's team/origin, but don't let a
+		# poison tick become the hero's lethal boss hit in `_process_boss_kill`.
+		hit_source_id = -1
+	world._deliver_hit(hit_source_id, source_team, tgt, amount, school, origin, damage_type)
 	return amount
 
 
