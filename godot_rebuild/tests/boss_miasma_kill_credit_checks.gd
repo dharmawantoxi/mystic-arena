@@ -130,14 +130,16 @@ func run(check: Callable) -> void:
 			)
 			check.call(
 				(
-					int(expected.get("last_hit_source_id", 0)) == -1
+					int(expected.get("last_hit_source_id", -1)) == int(expected.get("owner_id", -2))
 					and (
 						int(native_old.get("last_hit_source_id", -1))
 						== int(native_old.get("owner_id", -2))
 					)
+					and bool(expected.get("last_hit_is_miasma_tick", false))
+					and not bool(native_old.get("last_hit_is_miasma_tick", true))
 				),
 				(
-					"9d event owner is preserved but lethal boss credit source is omitted "
+					"9d event owner is preserved while only the Miasma lethal hit is uncredited "
 					+ _label(row)
 				)
 			)
@@ -223,6 +225,7 @@ func _replay(
 		"miniboss_kill_count": world.miniboss_kill_count,
 		"trueboss_kill_count": world.trueboss_kill_count,
 		"last_hit_source_id": boss.last_hit_source_id,
+		"last_hit_is_miasma_tick": boss.last_hit_is_miasma_tick,
 		"owner_id": hero.id,
 	}
 

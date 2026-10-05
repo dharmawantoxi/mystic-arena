@@ -907,6 +907,8 @@ func _process_boss_kill(boss: BossState) -> void:
 	# addressable in the registry, so a killer that died in the same tick still
 	# resolves. Source also guards `killer is victim`, impossible here: a
 	# BossState can never come back from the HeroState cast.
+	if boss.last_hit_is_miasma_tick:
+		return
 	var killer := get_unit(boss.last_hit_source_id) as HeroState
 	if killer == null or killer.team == boss.team:
 		return
@@ -1389,6 +1391,7 @@ func _deliver_hit(
 		if dealt < 0:
 			return false
 		boss.last_hit_source_id = source_id
+		boss.last_hit_is_miasma_tick = false
 		_record(
 			{
 				"kind": "hit",

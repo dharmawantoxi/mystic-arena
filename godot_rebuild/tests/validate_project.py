@@ -1718,10 +1718,13 @@ check(all(
     for row in _miasma_kill_cases
 ), "9d only lethal Miasma diverges; direct-hero and nonlethal controls match")
 _miasma_kill_bus = (ROOT / "scripts/match/battle_item_effects.gd").read_text(encoding="utf-8")
+_miasma_kill_proto = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
 check("if landed and tgt is BossState:" in _miasma_kill_bus
-      and "(tgt as BossState).last_hit_source_id = -1" in _miasma_kill_bus
-      and "var landed: bool = world._deliver_hit(" in _miasma_kill_bus,
-      "9d item bus preserves event attribution but omits Miasma boss kill credit")
+      and "(tgt as BossState).last_hit_is_miasma_tick = true" in _miasma_kill_bus
+      and "var landed: bool = world._deliver_hit(" in _miasma_kill_bus
+      and "if boss.last_hit_is_miasma_tick:" in _miasma_kill_proto
+      and "boss.last_hit_is_miasma_tick = false" in _miasma_kill_proto,
+      "9d event source is retained while Miasma hits are excluded from boss kill credit")
 check('const BossMiasmaKillCreditChecks = preload("res://tests/boss_miasma_kill_credit_checks.gd")' in ai_tests
       and "BossMiasmaKillCreditChecks.new().run(_check)" in ai_tests,
       "9d production-path replay is registered")

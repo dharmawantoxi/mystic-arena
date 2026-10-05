@@ -104,6 +104,7 @@ var attack_facing := 0.0
 var attack_lock_timer := 0
 var basic_attack_seq := 0
 var last_hit_source_id := -1
+var last_hit_is_miasma_tick := false
 # Preserve `TowerDebuffMixin._tick_tower_debuffs` from_team at the boss damage boundary.
 var last_damage_from_team := -1
 # Layer 8d source smart-ability state. These fields are gameplay state; the
@@ -214,6 +215,7 @@ func setup(boss_type_value: String, lane_path: PackedVector2Array, table: Dictio
 	entrance_text = String(stats["entrance_text"])
 	_set_colors(stats)
 	team = 1  # Source Boss.__init__: team = "red".
+	last_hit_is_miasma_tick = false
 	last_damage_from_team = -1
 	rebuild_definition()
 	direction = -1

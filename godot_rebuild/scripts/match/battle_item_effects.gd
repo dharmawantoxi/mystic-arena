@@ -44,9 +44,9 @@ func deal_damage_from(
 	)
 	if landed and tgt is BossState:
 		# Layer 9d: `_tick_miasma` calls `Boss.take_damage(damage, team, "magic")`
-		# with no `source=`. Preserve the owner ID in hit/death event records for
-		# the merged Miasma tracker, but remove it from the lethal boss-credit key.
-		(tgt as BossState).last_hit_source_id = -1
+		# with no `source=`. Preserve the stored owner ID for 9b hit-event replay,
+		# but mark this hit so `_process_boss_kill` cannot credit that owner.
+		(tgt as BossState).last_hit_is_miasma_tick = true
 	return amount
 
 
