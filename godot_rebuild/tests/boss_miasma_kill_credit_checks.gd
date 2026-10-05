@@ -143,6 +143,8 @@ func _replay(
 ) -> Dictionary:
 	helper._reset_world(world, false)
 	world.legacy_miasma = legacy
+	world.miniboss_kill_count = 0
+	world.trueboss_kill_count = 0
 	world._miasma_registry.clear()
 	world.deliveries = {}
 	world.hit_order = []
