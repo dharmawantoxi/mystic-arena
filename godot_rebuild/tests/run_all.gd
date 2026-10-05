@@ -83,6 +83,8 @@ const CombatChecks = preload("res://tests/combat_checks.gd")
 const LevelCatalogChecks = preload("res://tests/level_catalog_checks.gd")
 const LevelProgressChecks = preload("res://tests/level_progress_checks.gd")
 const LevelProgressStoreChecks = preload("res://tests/level_progress_store_checks.gd")
+const LevelProgressStore = preload("res://scripts/match/level_progress_store.gd")
+const SCENE_PROGRESS_PATH := "user://level_progress_scene_test.json"
 const APP = preload("res://app/App.tscn")
 const SIMULATION = preload("res://scripts/simulation/sandbox_simulation.gd")
 
@@ -554,12 +556,16 @@ func _test_siege_scene(app: Node) -> void:
 
 
 func _test_prototype_scene(app: Node) -> void:
+	for path in [SCENE_PROGRESS_PATH, SCENE_PROGRESS_PATH + ".bak", SCENE_PROGRESS_PATH + ".tmp"]:
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(path)
 	var baseline: int = get_node_count()
 	for cycle in range(3):
 		app.current_screen.get_node("%PrototypeButton").pressed.emit()
 		app.current_screen.get_node("%PrototypeButton").pressed.emit()
 		await _settle()
 		var screen = app.current_screen
+		screen.progress_path = SCENE_PROGRESS_PATH
 		var session = screen.simulation
 		var world = session.world
 		session.set_physics_process(false)
@@ -758,6 +764,19 @@ func _test_prototype_scene(app: Node) -> void:
 			),
 			"match result opens automatically for either team"
 		)
+		var progress := LevelProgressStore.load_state(SCENE_PROGRESS_PATH)
+		var reward: int = [3000, 0, 1500][cycle]
+		var total: int = [3000, 3000, 4500][cycle]
+		_check(
+			(
+				progress.get("meta_gold", -1) == total
+				and not screen.get_node("%SaveRetryButton").visible
+				and screen.get_node("HUD/PauseOverlay/Center/Card/Column/Hint").text.contains(
+					"+%d Meta Gold" % reward
+				)
+			),
+			"match result commits one development reward per victory or defeat"
+		)
 		_check(
 			(
 				not screen.get_node("%ResumeButton").visible
@@ -809,3 +828,43 @@ func _test_prototype_scene(app: Node) -> void:
 			"prototype exits paused/result cleanly"
 		)
 		_check(get_node_count() == baseline, "prototype cycles do not leak scene nodes")
+	# Corrupt saves must not be overwritten; the result overlay allows retry
+	# after the user restores/removes the corrupt development file.
+	var corrupt_file := FileAccess.open(SCENE_PROGRESS_PATH, FileAccess.WRITE)
+	corrupt_file.store_string("broken")
+	corrupt_file.close()
+	app.current_screen.get_node("%PrototypeButton").pressed.emit()
+	await _settle()
+	var retry_screen = app.current_screen
+	retry_screen.progress_path = SCENE_PROGRESS_PATH
+	var retry_session = retry_screen.simulation
+	retry_session.set_physics_process(false)
+	var retry_world = retry_session.world
+	var enemy = retry_world.nexuses[1]
+	enemy.shield_active = false
+	enemy.shield = 0
+	enemy.hp = 1
+	var ally = retry_world.spawn_unit(retry_session.DEFINITIONS[0], 0, 1)
+	ally.position = enemy.position - Vector2(20, 0)
+	retry_world.apply_hit(ally.id, enemy.id)
+	await _settle()
+	_check(retry_screen.get_node("%SaveRetryButton").visible, "Corrupt save exposes retry")
+	_check(
+		FileAccess.get_file_as_string(SCENE_PROGRESS_PATH) == "broken",
+		"Corrupt progress is never overwritten automatically"
+	)
+	DirAccess.remove_absolute(SCENE_PROGRESS_PATH)
+	retry_screen.get_node("%SaveRetryButton").pressed.emit()
+	_check(
+		(
+			LevelProgressStore.load_state(SCENE_PROGRESS_PATH).get("meta_gold", -1) == 3000
+			and not retry_screen.get_node("%SaveRetryButton").visible
+		),
+		"Explicit retry commits after progress is repaired"
+	)
+	retry_screen.get_node("%MenuButton").pressed.emit()
+	await _settle()
+	_check(get_node_count() == baseline, "retry scene leaves no orphan nodes")
+	for path in [SCENE_PROGRESS_PATH, SCENE_PROGRESS_PATH + ".bak", SCENE_PROGRESS_PATH + ".tmp"]:
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(path)

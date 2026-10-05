@@ -26,7 +26,7 @@ Tidak memerlukan Python, pip, converter, addon, atau C++ untuk menjalankan clien
 - Gold pasif bertambah tiap detik; kill memberi reward. HUD menampilkan saldo, wave dan HP/shield nexus. Slot/range preview ditampilkan ketika dipilih.
 - **Kaizen biru + merah** (kit prototipe): spawn gratis kedua tim, Q/W/E/R hanya biru, klik-kanan jalan/ikuti hanya biru, hunt `< 900`, push ke nexus lawan, retreat `< 20%` HP, regen pasif, upgrade emas biru, respawn 10 dtk di spawn tim. **Biru dan merah auto-cast R→E→W→Q tiap 20 tick** (sumber v27: default aktif); tombol **Auto-cast** pada hero biru adalah penanda status dan hanya bisa memaksa aktif (sumber v29: tidak bisa dimatikan). QWER manual biru tetap tersedia dan berbagi cooldown dengan auto-cast. Bukan item atau AIPlayer.
 - **Lawan sementara, bukan AI asli:** membeli tiga Archer berbayar pada detik 5/10/15. Lawan belum melakukan upgrade; hero merah/boss dan castle auto-scaling belum ada.
-- Nexus hancur membuka hasil otomatis dan menghentikan simulasi. **Mulai ulang** mereset seluruh saldo, slot, queue dan hasil; **Menu** kembali ke menu utama. Tidak ada progres disimpan.
+- Nexus hancur membuka hasil otomatis dan menghentikan simulasi. **Mulai ulang** mereset saldo pertandingan, slot, queue dan hasil; **Menu** kembali ke menu utama. Hasil kini menyimpan reward/progres level 1 dalam file development Godot yang terpisah dari save Python; kegagalan ditampilkan dengan tombol coba lagi.
 - Esc/Jeda dan kehilangan fokus menghentikan wave, combat dan income serta membatalkan transaksi tertunda. Lanjutkan secara eksplisit; hasil akhir tidak bisa dilanjutkan.
 
 Detail harga, reset HP/shield dan pola tembak: [kontrak upgrade Archer](UPGRADE_CONTRACT.md) dan [kontrak nexus](NEXUS_CONTRACT.md).
@@ -94,7 +94,7 @@ Keyboard Tab dan Enter juga dapat digunakan untuk navigasi tombol. Klik panel HU
 - Simulasi demonstrasi dengan 60 physics tick/detik, terpisah dari render/UI.
 - Pause/resume, restart, kembali ke menu, cleanup screen, dan pause saat kehilangan fokus.
 - Adapter input mouse/touch; event mouse sintetis tidak menggandakan command touch.
-- Lokasi data development terpisah (`MysticArenaRebuildDev`). Adapter progres development ada, tetapi scene belum membacanya/menulisnya; slot save Python tidak disentuh.
+- Lokasi data development terpisah (`MysticArenaRebuildDev`). Scene pertandingan awal menyimpan progres ke `user://level_progress_v1.json` setelah hasil; slot save Python tidak disentuh.
 - Validator statis, runner tes native Godot, script PowerShell untuk Windows, dan workflow CI baru.
 
 ## Yang belum dimigrasikan
@@ -312,7 +312,7 @@ dan reset AI. Jalankan oracle tanpa
 level 2–54 di menu: prototipe pemain tetap memuat level 1. Map/theme, reward
 persisten, balancing dan kemenangan tiap level perlu verifikasi tersendiri.
 
-## Progres level (domain in-memory, belum save)
+## Progres level (domain + save pengembangan terpisah)
 
 `scripts/match/level_progress.gd` memindahkan kebijakan reward
 `Game._grant_meta_reward`: kalah 0, menang pertama memakai reward level,
@@ -321,10 +321,10 @@ replay menang pertama memakai reward replay, replay berikutnya memakai 200
 setelah 54 completion. Hasil adalah salinan state tanpa mutasi masukan;
 ID level di luar katalog ditolak. Tes native mencakup semua 54 reward level,
 replay, loss, dan unlock akhir. `PrototypeBattle.claim_level_result(state)`
-menjadi batas hasil match eksplisit dan menolak klaim kedua, tetapi **belum**
-dipanggil scene atau dihubungkan ke `SaveManager`, pembelian permanen, atau
-auto-unlock boss. Pemilik save kelak harus memanggilnya satu kali lalu commit
-state hasilnya; jangan membayar reward langsung dari tiap tick.
+menjadi batas hasil match eksplisit dan menolak klaim kedua. Scene memakai
+`commit_level_result` agar penulisan development-save mendahului penandaan
+klaim. Belum terhubung ke `SaveManager` Python, pembelian permanen atau
+auto-unlock boss; jangan membayar reward langsung dari tiap tick.
 
 ## Penyimpanan progres pengembangan (belum terhubung ke scene)
 
@@ -337,11 +337,12 @@ memulihkannya sebelum menulis lagi. Tes native memakai path
 `user://level_progress_test_only.json` dan `user://level_claim_test_only.json`
 lalu menghapusnya, tidak menyentuh progres pengguna. World menyediakan
 `commit_level_result(path)` yang memuat state, menghitung reward, menyimpan,
-dan hanya menandai klaim selesai **setelah write sukses**. Save rusak atau
-backup belum dipulihkan menolak commit, bukan memulai akun kosong.
-**Scene belum memanggil adapter ini**, jadi belum ada reward permanen saat
-bermain atau migrasi save/cloud/Python. Verifikasi native Windows wajib
-dilakukan sebelum mengaktifkan penulisan progres pemain.
+dan hanya menandai klaim selesai **setelah write sukses**. Scene pertandingan
+awal memanggilnya saat hasil dan menampilkan reward pada overlay. Save rusak
+atau backup belum dipulihkan menampilkan kegagalan dan tombol coba lagi;
+file lama tidak ditimpa otomatis. Ini **hanya progres development Godot**:
+belum ada migrasi slot save/cloud/Python, reward boss/shop permanen atau
+pilihan level 2–54 di menu. Uji juga pada Windows sebelum distribusi.
 
 ## Reset AI tanpa seed
 

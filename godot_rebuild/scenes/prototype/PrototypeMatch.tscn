@@ -51,7 +51,7 @@ text = "Pertandingan awal"
 layout_mode = 2
 theme_override_font_sizes/font_size = 15
 theme_override_colors/font_color = Color(0.59, 0.67, 0.66, 1)
-text = "Lv.1 · normal · lawan terjadwal · tanpa save"
+text = "Lv.1 · normal · lawan AI · progres pengembangan terpisah"
 
 [node name="Counters" type="VBoxContainer" parent="HUD/TopBar/Row"]
 layout_mode = 2
@@ -254,10 +254,18 @@ text = "Permainan Dijeda"
 horizontal_alignment = 1
 
 [node name="Hint" type="Label" parent="HUD/PauseOverlay/Center/Card/Column"]
+unique_name_in_owner = true
 layout_mode = 2
-text = "Simulasi berhenti. Tidak ada progres yang disimpan."
+text = "Simulasi dijeda. Progres disimpan setelah hasil pertandingan."
 theme_override_font_sizes/font_size = 17
 horizontal_alignment = 1
+
+[node name="SaveRetryButton" type="Button" parent="HUD/PauseOverlay/Center/Card/Column"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+custom_minimum_size = Vector2(0, 54)
+text = "Coba simpan lagi"
 
 [node name="ResumeButton" type="Button" parent="HUD/PauseOverlay/Center/Card/Column"]
 unique_name_in_owner = true
