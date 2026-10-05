@@ -20,13 +20,17 @@ static func _read_state(path: String) -> Dictionary:
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		return {}
-	var parsed: Variant = JSON.parse_string(file.get_as_text())
-	if not (parsed is Dictionary) or int(parsed.get("version", -1)) != VERSION:
+	var decoder := JSON.new()
+	if decoder.parse(file.get_as_text()) != OK:
+		return {}
+	var parsed: Variant = decoder.data
+	if not (parsed is Dictionary) or _disk_integer(parsed.get("version")) != VERSION:
 		return {}
 	var state: Variant = parsed.get("state")
-	if not (state is Dictionary) or not _valid(state):
+	if not (state is Dictionary):
 		return {}
-	return state.duplicate(true)
+	var normalized := _normalize_disk_state(state)
+	return normalized if _valid(normalized) else {}
 
 
 static func recover_backup(path: String = PATH) -> bool:
@@ -72,12 +76,45 @@ static func save_state(state: Dictionary, path: String = PATH) -> bool:
 	return true
 
 
+## Godot JSON decodes numeric values as floats. Convert only exact, bounded
+## integers; never truncate fractional/corrupt currency or completion IDs.
+static func _disk_integer(value: Variant) -> Variant:
+	if value is int:
+		return value
+	if value is float and not is_nan(value) and not is_inf(value):
+		if absf(value) <= 9007199254740991.0 and floor(value) == value:
+			return int(value)
+	return null
+
+
+static func _normalize_disk_state(state: Dictionary) -> Dictionary:
+	var copy := state.duplicate(true)
+	copy["meta_gold"] = _disk_integer(copy.get("meta_gold"))
+	var completed: Variant = copy.get("completed_levels", [])
+	if completed is Array:
+		var converted: Array = []
+		for value in completed:
+			converted.append(_disk_integer(value))
+		copy["completed_levels"] = converted
+	var counts: Variant = copy.get("replay_reward_counts", {})
+	if counts is Dictionary:
+		for key in counts:
+			counts[key] = _disk_integer(counts[key])
+	if copy.has("last_played_level"):
+		copy["last_played_level"] = _disk_integer(copy["last_played_level"])
+	return copy
+
+
 static func _valid(state: Dictionary) -> bool:
 	if not state.has("meta_gold"):
 		return false
 	var gold: Variant = state["meta_gold"]
 	if not (gold is int) or gold < 0:
 		return false
+	if state.has("last_played_level"):
+		var last: Variant = state["last_played_level"]
+		if not (last is int) or last < 1 or last > 54:
+			return false
 	var completed: Variant = state.get("completed_levels", [])
 	var counts: Variant = state.get("replay_reward_counts", {})
 	if not (completed is Array) or not (counts is Dictionary):
