@@ -312,9 +312,10 @@ dan reset AI. Jalankan oracle tanpa
 unlock berdasarkan predecessor dan mengunci difficulty sesuai run yang
 tersimpan. Level 2–54 adalah **mode uji eksperimental**, bukan parity penuh:
 geometri lane masih arena prototipe; warna tanah/jalur dan 61 titik spline
-sungai memakai sumber Python untuk semua 54 tema. Sungai Godot digambar
-sebagai polyline 44px (bukan tile/bank/foam/animasi Python); dekorasi, fog,
-FX, balance, boss/presentasi dan kemenangan tiap level tetap perlu validasi.
+sungai memakai sumber Python untuk semua 54 tema. River layer kini memakai
+1.878 perintah rect sumber (tile 16px, tepi, buih statis) yang diraster sekali
+per scene/tema ke tekstur transparan; air **animasi**, dekorasi, fog, FX,
+balance dan visual GPU tetap perlu validasi manual.
 Oracle `level_theme_source_oracle.py` mengekstrak 12 warna/tema dan river
 `PathGenerator.generate_river(1280, 720)` tanpa mengimpor Pygame;
 laboratorium tetap memakai palet asalnya. Ini **belum** seluruh renderer Python.

@@ -7,6 +7,8 @@ const BossState = preload("res://scripts/match/boss_state.gd")
 const HeroMarker = preload("res://scripts/ui/hero_marker.gd")
 const BossFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
+const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
+var cached_river_theme := ""
 
 
 func _draw() -> void:
@@ -16,6 +18,10 @@ func _draw() -> void:
 	var world := session.world as Prototype
 	terrain_palette = TerrainPalette.for_level(world.level_config)
 	terrain_river = TerrainPalette.river_path()
+	var map_theme: String = String(world.level_config.get("map_theme", "forest"))
+	if river_texture == null or cached_river_theme != map_theme:
+		river_texture = ImageTexture.create_from_image(RiverTiles.raster(terrain_palette))
+		cached_river_theme = map_theme
 	draw_set_transform(world.boss_presentation_offset(), 0.0, Vector2.ONE)
 	super._draw()
 	var match_session := session as PrototypeSession

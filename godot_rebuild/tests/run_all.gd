@@ -82,6 +82,7 @@ const SiegeChecks = preload("res://tests/siege_checks.gd")
 const CombatChecks = preload("res://tests/combat_checks.gd")
 const LevelCatalogChecks = preload("res://tests/level_catalog_checks.gd")
 const LevelThemeChecks = preload("res://tests/level_theme_checks.gd")
+const RiverTilesChecks = preload("res://tests/river_tiles_checks.gd")
 const LevelProgressChecks = preload("res://tests/level_progress_checks.gd")
 const LevelProgressStoreChecks = preload("res://tests/level_progress_store_checks.gd")
 const LevelProgressStore = preload("res://scripts/match/level_progress_store.gd")
@@ -120,6 +121,7 @@ func _run() -> void:
 	_check(Engine.physics_ticks_per_second == 60, "physics frequency is 60 Hz")
 	LevelCatalogChecks.new().run(_check)
 	LevelThemeChecks.new().run(_check)
+	RiverTilesChecks.new().run(_check)
 	LevelProgressChecks.new().run(_check)
 	LevelProgressStoreChecks.new().run(_check)
 	ThorneChecks.new().run(_check)
@@ -610,6 +612,10 @@ func _test_level_selection_scene(app: Node) -> void:
 			and screen.arena.terrain_river[60] == Vector2(1280, 520)
 		),
 		"Selected match view follows the source river spline"
+	)
+	_check(
+		screen.arena.river_texture != null and screen.arena.cached_river_theme == "desert",
+		"Selected map caches the source tiled river layer"
 	)
 	screen.get_node("%RestartButton").pressed.emit()
 	await _settle()

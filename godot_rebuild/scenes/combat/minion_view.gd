@@ -8,6 +8,7 @@ var session: Session
 # Empty in the laboratory/siege. Prototype supplies source terrain colors.
 var terrain_palette: Dictionary = {}
 var terrain_river: PackedVector2Array = PackedVector2Array()
+var river_texture: Texture2D
 
 
 func _ready() -> void:
@@ -46,12 +47,12 @@ func _draw() -> void:
 			)
 	if session == null:
 		return
-	if terrain_river.size() > 1 and not terrain_palette.is_empty():
-		# Same 61 source spline points and 44px width. This is a lightweight
-		# polyline, not Python's tiled banks, foam or animated water yet.
+	if river_texture != null:
+		draw_texture(river_texture, Vector2.ZERO)
+	elif terrain_river.size() > 1 and not terrain_palette.is_empty():
+		# Fallback for an unavailable cached texture, not the primary path.
 		draw_polyline(terrain_river, terrain_palette["river_mid"], 44, true)
 		draw_polyline(terrain_river, terrain_palette["river_deep"], 32, true)
-		draw_polyline(terrain_river, terrain_palette["river_light"], 1.5, true)
 	for path in session.world.paths:
 		var stone := Color("314440")
 		var edge := Color("587160")

@@ -360,8 +360,11 @@ check("BossLevelTwentyChecks.new().run(_check)" in ai_tests, "Boss level twenty 
 
 from level_catalog_source_oracle import check as check_level_catalog
 from level_theme_source_oracle import check as check_level_themes
+from river_tiles_source_oracle import check as check_river_tiles
 check(check_level_themes() == 54, "All 54 native terrain palettes must match source")
+check(check_river_tiles() == 1878, "Source tiled river drawing must match native fixture")
 check("LevelThemeChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"), "Native terrain palette suite must run")
+check("RiverTilesChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"), "Native river tiles suite must run")
 from level_economy_source_oracle import check as check_level_economy
 check(check_level_catalog() == 54, "All 54 native level entries must match Python source")
 check(check_level_economy() == 162, "All level economy fixtures must match Python source")
