@@ -164,7 +164,6 @@ func _replay(
 		check.call(false, "9d Miasma owner spawns " + _label(row))
 		return {}
 	hero.position = boss.position + Vector2(-40.0, 0.0)
-	hero.previous_position = hero.position
 	hero.target_id = boss.id
 	hero.attack_timer = 0
 	hero.items.hero_melee_flag = 1
