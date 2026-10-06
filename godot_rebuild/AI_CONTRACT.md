@@ -512,6 +512,23 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      terdekat lintas-lane). Catatan penting: `_try_auto_cast` sumber mengisi
      `hero.target` (port: `hero.target_id` lewat gate skill), sehingga uji
      lane-order wajib menaruh ancaman di luar `skill_range` 100 px.
+   - [x] **6g.** Kontrol hero AI hanya didispatch sekali per production tick.
+     Source `AIPlayer.update` memanggil `_control_heroes` satu kali sebelum
+     pemeriksaan `think_timer`, dan `Game.update` memanggil `self.ai.update`
+     satu kali. Native sebelumnya mengontrol hero langsung dari `step_tick`,
+     lalu mengulanginya lewat `_step_ai()` → `AiController.tick()` →
+     `AiPolicy.advance()`. `PrototypeBattle.step_tick()` kini memilih controller
+     saat `ai_enabled`, atau jalur kontrol mandiri hanya ketika flag kontrol
+     hero aktif; kedua jalur tidak lagi berjalan bersama.
+     Oracle AST read-only `ai_control_tick_source_oracle.py` mengeksekusi
+     `AIPlayer.update` untuk tick menunggu dan tick `think_timer` habis, dengan
+     `expected.control_calls = 1` dan counterfactual `native_old = 2`.
+     `ai_control_tick_checks.gd` mereplay `PrototypeBattle.step_tick()` produksi
+     dengan controller nyata dan spy turunan `AiHeroControl`, serta menjaga
+     jalur kontrol mandiri. CI Godot 4.7.2 hijau: [run 37484094587](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37484094587),
+     **1.490.521 native checks**; `validate_project.py` lokal **11.521 static
+     checks**. Batas: dispatch tepat sekali saja; tidak mengubah kebijakan,
+     transaksi, balance, visual, UI, settings, atau sumber Python.
    - [x] **7a.** Castle AI naik level otomatis mengikuti wave: port
      `Game._auto_scale_ai_castle` (`_core.py:1856`, dipanggil dari
      `update_waves`) — wave ≥4/7/10/13 menaikkan nexus merah ke level 2/3/4/5
@@ -1030,16 +1047,15 @@ Lapisan **9i** (`ddeb0fc`, CI [37471123194](https://github.com/dharmawantoxi/mys
 
 Oracle AST read-only `boss_item_reflect_carapace_source_oracle.py` mengeksekusi `notify_damage_taken` asli (victim Kaizen biru bervest Razor, `thorn_timer` 270 vs 0, damage masuk 200 -> pantulan 170) bersama `Boss.take_damage`, `resolve_damage_school` dan kredit kill `Game`: **864 kasus = 1 lengan x 4 skenario x 216 tipe boss** (`reflect_vs_boss_resist`, kontrol identik `reflect_to_minion_unchanged` dan `reflect_thorn_inactive`, `reflect_lethal_no_credit` yang bentuk panggilannya divergen tetapi kedua kolom sama-sama tanpa kredit); tiap baris membawa `expected` dan `native_old` dengan rekaman `boss_schools`/`boss_damage_types`, dan fixture mengunci arity 3 plus fallback arity 2, kedua gate thorn/razor, guard penyerang hidup + tim musuh, dan entry point `Hero.take_damage`. `boss_item_reflect_carapace_checks.gd` mereplay urutan produksi (`set_hero_runtime` -> `notify_damage_taken` dengan bus produksi/legacy) ke `_deliver_hit` -> `BossState.take_damage` -> `_process_boss_result` untuk kedua kolom. Terukur: seluruh 216 tipe boss mencatat gap MR (Abaddon 118 vs 107), penyerang minion memakan pantulan penuh 170 yang identik di kedua kolom, dan reflect lethal menyimpan `last_hit_source_id = -1` di kedua kolom. CI Godot 4.7.2 hijau pertama tanpa perbaikan harness: **1.490.506 native checks**; `validate_project.py` **11.505 static checks**; gdtoolkit 4.5.0 dan `git diff --check` bersih. Batas slice: hanya lengan reflect; ketujuh situs magic tanpa-source kini tertutup semua (enam `tick_auto` 9h + satu reflect 9i); hero, balance, FX/presentation, UI, project settings, sumber Python, dan CI tidak diubah.
 
-> Pesan siap-salin (setelah 9i): lanjutkan di branch `arena/7fcc727a-mystic-arena`
-> (PR selalu draft; jangan merge tanpa perintah "merge now"). State terakhir:
-> main = de156a4 (merge PR #320, layer 9g), plus commit 9h `6472952` dan 9i
-> `ddeb0fc` di branch ini (enam lengan magic auto/active + reflect Thornmail
-> pada boss memakai bus source-less, CI hijau run 37471123194: 1.490.506
-> native checks, validate 11.505 static). Tugas berikutnya: pilih slice
-> layer-9 berikutnya (ketujuh situs magic tanpa-source sudah tertutup; kandidat
-> perlu diaudit ulang dari `hero_item_inventory.gd`). Ikuti gaya acceptance
-> repo (oracle AST + fixture expected/native_old 216 boss + replay produksi +
-> registrasi run_all/validate, tanpa perubahan balance/visual/UI). Satu
-> sub-layer per commit; pipeline gdformat -> gdlint -> gdparse ->
-> git diff --check -> validate_project.py -> commit -> push -> gh run watch,
-> lalu docs commit terpisah. Sumber Python read-only. Hanya ubah godot_rebuild.
+> Pesan siap-salin (setelah 6g): lanjutkan di branch sesi `arena/3fbd0205-mystic-arena`
+> (PR selalu draft; jangan merge tanpa perintah persis "merge now"). Base sesi:
+> `16cd55d` (merge PR #321, layer 9h/9i). Layer 6g: commit `6249f5a` ditambah
+> perbaikan harness `2fa1245`; CI final run `37484094587` hijau dengan **1.490.521
+> native checks**, `validate_project.py` lokal **11.521 static checks**. Tugas
+> berikutnya: audit singkat source/contract production-match untuk SATU gap yang
+> dapat dibuktikan; jika tidak konkret/kontrak ambigu, berhenti dan tanyakan.
+> Satu sub-layer saja, oracle AST read-only, fixture expected/native_old bila
+> relevan, replay production, run_all/validation, pipeline gdformat -> gdlint ->
+> gdparse -> git diff --check -> validate_project.py, commit code -> push ->
+> `gh run watch`, kemudian commit docs terpisah. Hanya ubah `godot_rebuild`;
+> sumber Python read-only. Jangan merge tanpa perintah persis "merge now".
