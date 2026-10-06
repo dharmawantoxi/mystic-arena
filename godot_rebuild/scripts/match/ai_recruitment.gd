@@ -10,10 +10,12 @@ func try_buy(world: World, draft: Draft) -> bool:
 	if world == null or draft == null or not world.is_running():
 		return false
 	var owned: Array = []
-	for unit in world.units:
-		if unit.is_hero and unit.team == world.RED:
-			# Includes dead heroes, but never a stale/non-authoritative receipt.
-			if world.get_unit(unit.id) != unit:
-				return false
-			owned.append(unit.definition.id)
-	return draft.try_buy(owned, world.economy.gold[world.RED], world._buy_ai_hero)
+	for unit in world._ai_roster():
+		# Includes dead AI-owned heroes, but never a stale/non-authoritative receipt.
+		if world.get_unit(unit.id) != unit or unit.definition == null:
+			return false
+		owned.append(unit.definition.id)
+	# The free scene mirror affects physical spacing, not source AI ownership.
+	return draft.try_buy(
+		owned, world.economy.gold[world.RED], world._buy_ai_hero, world._red_hero_count()
+	)

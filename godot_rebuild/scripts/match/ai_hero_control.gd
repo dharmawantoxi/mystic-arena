@@ -1,7 +1,7 @@
 extends RefCounted
 ## Port of AIPlayer._control_heroes / _assign_hero_lane (layer 6a): the AI keeps
-## every living red hero busy each tick through the same auto-cast path the
-## player uses, and only assigns a lane when the hero has neither an attack
+## each living AI-owned red hero busy each tick through the same auto-cast path
+## the player uses, and only assigns a lane when the hero has neither an attack
 ## target nor a destination. Layer 8h mirrors Hero._try_auto_cast's nearest
 ## target handoff for boss heroes before this lane gate.
 ##
@@ -9,8 +9,9 @@ extends RefCounted
 ## tie-break is the dict insertion order top -> mid -> bot, the fallback park x
 ## is 600 and the tower approach stops 60 px short.
 ##
-## The world is duck-typed: `units` (heroes and minions, each carrying
-## is_hero/team/alive/lane/position), `try_auto_cast(hero)` and
+## The world is duck-typed: production worlds expose `_ai_roster()`; standalone
+## oracle worlds fall back to `units`. Heroes carry is_hero/team/alive/lane/position;
+## the world also exposes `try_auto_cast(hero)` and
 ## `move_to(hero, point, auto)`. The source AI is always the red side
 ## (`self.team == "red"`), so RED_TEAM mirrors MinionBattle.RED. `towers` is
 ## the caller's `all_towers` list
@@ -32,9 +33,12 @@ var total_skills_cast := 0
 
 
 func control_heroes(world: Object, towers: Array) -> void:
+	# Source AIPlayer._control_heroes iterates its own heroes list, not all red
+	# heroes in Game. Standalone oracle worlds without that roster use their units.
+	var roster: Array = world.call("_ai_roster") if world.has_method("_ai_roster") else world.units
 	# Source: hero.skill_timer == 0 gates the auto-cast attempt; the lane is
 	# only assigned when `not hero.target and not hero.destination`.
-	for unit in world.units:
+	for unit in roster:
 		if not unit.is_hero or unit.team != RED_TEAM or not unit.alive:
 			continue
 		var hero: Object = unit

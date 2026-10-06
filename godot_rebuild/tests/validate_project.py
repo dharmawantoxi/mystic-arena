@@ -71,6 +71,7 @@ check((ROOT / "AI_CONTRACT.md").is_file(), "AI policy scope must be documented")
 check((ROOT / "tests/fixtures/ai_policy_source.json").is_file(), "AI policy needs source oracle fixture")
 check("control_heroes.call()" in ai_policy, "AI must control heroes before thinking")
 from ai_control_tick_source_oracle import source_fixture as ai_control_tick_source_fixture
+from ai_roster_source_oracle import source_fixture as ai_roster_source_fixture
 check("AIControlTickChecks.new().run(_check)" in ai_tests,
       "Production AI control tick replay must run")
 check((ROOT / "tests/fixtures/ai_control_tick_source.json").is_file(),
@@ -79,6 +80,14 @@ if (ROOT / "tests/fixtures/ai_control_tick_source.json").is_file():
     check(ai_control_tick_source_fixture() == json.loads(
         (ROOT / "tests/fixtures/ai_control_tick_source.json").read_text(encoding="utf-8")),
         "Production AI control tick source fixture drift")
+check("AIRosterChecks.new().run(_check)" in ai_tests,
+      "Production AI roster ownership replay must run")
+check((ROOT / "tests/fixtures/ai_roster_source.json").is_file(),
+      "AI roster ownership requires a source fixture")
+if (ROOT / "tests/fixtures/ai_roster_source.json").is_file():
+    check(ai_roster_source_fixture() == json.loads(
+        (ROOT / "tests/fixtures/ai_roster_source.json").read_text(encoding="utf-8")),
+        "AI roster ownership source fixture drift")
 
 check("AIDraftChecks.new().run(_check)" in ai_tests, "AI draft suite must remain in the native runner")
 recruitment = json.loads((ROOT / "data/ai/recruitment.json").read_text(encoding="utf-8"))
