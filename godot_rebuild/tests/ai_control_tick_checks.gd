@@ -6,7 +6,7 @@ const FIXTURE := "res://tests/fixtures/ai_control_tick_source.json"
 
 
 class ControlSpy:
-	extends RefCounted
+	extends "res://scripts/match/ai_hero_control.gd"
 	var calls := 0
 
 	func control_heroes(_world: Object, _towers: Array) -> void:
