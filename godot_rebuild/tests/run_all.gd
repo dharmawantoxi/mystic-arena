@@ -98,6 +98,9 @@ const SIMULATION = preload("res://scripts/simulation/sandbox_simulation.gd")
 
 var failures: Array[String] = []
 var checks := 0
+# Per-prefix failure histogram printed after the final summary so the CI
+# annotation (which keeps the last 60 log lines) names every failing area.
+var failure_groups: Dictionary = {}
 
 
 func _initialize() -> void:
@@ -109,6 +112,16 @@ func _check(condition: bool, message: String) -> void:
 	if not condition:
 		failures.append(message)
 		printerr("FAIL: " + message)
+		var key := _failure_key(message)
+		failure_groups[key] = int(failure_groups.get(key, 0)) + 1
+
+
+func _failure_key(message: String) -> String:
+	var words: PackedStringArray = message.split(" ", false)
+	var head: Array[String] = []
+	for index in range(mini(3, words.size())):
+		head.append(words[index])
+	return " ".join(head)
 
 
 func _settle() -> void:
@@ -297,7 +310,15 @@ func _run() -> void:
 		quit(0)
 	else:
 		printerr("FAILED: %d of %d checks" % [failures.size(), checks])
+		_report_failure_groups()
 		quit(1)
+
+
+func _report_failure_groups() -> void:
+	var keys: Array = failure_groups.keys()
+	keys.sort()
+	for key: String in keys:
+		printerr("FAIL-GROUP: %s x%d" % [key, int(failure_groups[key])])
 
 
 func _test_simulation() -> void:

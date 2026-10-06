@@ -408,28 +408,43 @@ func _same_numbers(left: Variant, right: Variant) -> bool:
 	return true
 
 
+func _field_matches(actual: Variant, expected: Variant, field: String) -> bool:
+	# JSON numbers arrive as floats and the string-array fields (`boss_schools`,
+	# `boss_damage_types`) must never go through `int()`: compare per field type.
+	if field in NUMBER_FIELDS:
+		return int(actual) == int(expected)
+	if field in NUMBER_LIST_FIELDS:
+		return _same_numbers(actual, expected)
+	if field in TEXT_LIST_FIELDS:
+		return _same_text(actual, expected)
+	return bool(actual) == bool(expected)
+
+
 func _matches(actual: Dictionary, expected: Dictionary) -> bool:
 	for field: String in RESULT_FIELDS:
 		if not actual.has(field) or not expected.has(field):
 			return false
-		var value: Variant = expected[field]
-		if value is bool:
-			if bool(actual[field]) != bool(value):
-				return false
-		elif field == "regular_hits":
-			if not _same_numbers(actual[field], value):
-				return false
-		elif int(actual[field]) != int(value):
+		if not _field_matches(actual[field], expected[field], field):
 			return false
 	return true
 
 
 func _same_result(left: Dictionary, right: Dictionary) -> bool:
 	for field: String in RESULT_FIELDS:
-		if field == "regular_hits":
-			if not _same_numbers(left.get(field, []), right.get(field, [])):
-				return false
-		elif left.get(field) != right.get(field):
+		if not left.has(field) or not right.has(field):
+			return false
+		if not _field_matches(left[field], right[field], field):
+			return false
+	return true
+
+
+func _same_text(left: Variant, right: Variant) -> bool:
+	var a: Array = left if left is Array else []
+	var b: Array = right if right is Array else []
+	if a.size() != b.size():
+		return false
+	for index in range(a.size()):
+		if String(a[index]) != String(b[index]):
 			return false
 	return true
 
