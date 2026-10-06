@@ -614,6 +614,9 @@ func _hero_red_retreat(check: Callable) -> void:
 	commanded.hp = commanded.max_hp * 0.1
 	ordered.step_tick()
 	check.call(commanded.is_retreating, "the red hero retreats on its own first")
+	# This fixture is acting as the source AIPlayer, unlike setup_arena's free
+	# mirrored Kaizen, so explicitly place the test hero in its owned roster.
+	ordered.ai_hero_ids.append(commanded.id)
 	ordered.ai_hero_control_enabled = true
 	ordered.step_tick()
 	check.call(
