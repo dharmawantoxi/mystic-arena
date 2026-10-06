@@ -45,12 +45,18 @@ const CHAIN_FULL := "chain_slots_fill_before_boss"
 const CLEAVE_ITEM := "cleave_axe"
 const CHAIN_ITEM := "fenrir_chain"
 # Native delivery schools for the two arms. Arc chain deals
-# `effects.deal_damage(..., "magic")` like the source third positional argument.
-# Cleave still splashes physical onto regular units, but layer 9e delivers the
-# boss arm as "neutral": the source call `u.take_damage(splash, h.team)` passes
-# no school, so `resolve_damage_school` returns `None` for the boss.
+# `effects.deal_damage(..., "magic")` like the source third positional argument
+# and keeps that school for regular units. Cleave still splashes physical onto
+# regular units, but layer 9e delivers the boss arm as "neutral": the source
+# call `u.take_damage(splash, h.team)` passes no school, so
+# `resolve_damage_school` returns `None` for the boss. Layer 9g applies the same
+# boss delivery to the arc chain (`u.take_damage(chain["damage"], h.team,
+# "magic")` keeps the magic `damage_type` but no `source` and no `school`), so
+# the boss arm is recorded as neutral here while `chain_damage_type` stays the
+# source's magic argument.
 const CLEAVE_SCHOOL := "neutral"
-const CHAIN_SCHOOL := "magic"
+const CHAIN_BOSS_SCHOOL := "neutral"
+const CHAIN_SOURCE_DAMAGE_TYPE := "magic"
 const BASIC_DAMAGE := 50
 const SEED_SCAN_LIMIT := 4096
 
@@ -275,7 +281,7 @@ func _check_fixture_payloads(check: Callable, fixture: Dictionary) -> void:
 				and _same_roles(exp.get("chain_roles", []), ["target", "minion", "boss"])
 				and _same_numbers(without.get("boss_hits", []), [])
 				and _same_roles(without.get("chain_roles", []), ["target", "minion"])
-				and String(exp.get("chain_damage_type", "")) == CHAIN_SCHOOL
+				and String(exp.get("chain_damage_type", "")) == CHAIN_SOURCE_DAMAGE_TYPE
 			)
 		else:
 			full_rows = (
@@ -438,7 +444,7 @@ func _replay_cases(check: Callable, fixture: Dictionary) -> void:
 		)
 		if wants_boss and scenario == CHAIN_BOSS:
 			chain_school = (
-				chain_school and (got.get("boss_schools", []) as Array) == [CHAIN_SCHOOL]
+				chain_school and (got.get("boss_schools", []) as Array) == [CHAIN_BOSS_SCHOOL]
 			)
 		elif wants_boss:
 			chain_school = (
@@ -451,7 +457,7 @@ func _replay_cases(check: Callable, fixture: Dictionary) -> void:
 		contrast_rows, "pre-layer scan matches the world.units-only column for all 864 cases"
 	)
 	check.call(boss_damage, "the boss only loses hp when the source list reaches it")
-	check.call(chain_school, "boss splash stays physical and boss chain damage stays magic")
+	check.call(chain_school, "boss splash and boss chain keep the source-less neutral school")
 
 
 func _live_match_contrasts(check: Callable, fixture: Dictionary) -> void:

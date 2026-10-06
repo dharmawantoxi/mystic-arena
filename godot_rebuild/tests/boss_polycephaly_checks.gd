@@ -55,9 +55,17 @@ func run(check: Callable) -> void:
 		for i in range(mini(world.hit_order.size(), expected.size())):
 			var tid: int = int(world.hit_order[i])
 			var hit: Array = world.deliveries[tid][0]
-			check.call(String(world.roles[tid]) == String(expected[i][0]), "9a exact hit order")
+			# The fixture's third element is the source's third positional
+			# argument (`u.take_damage(dmg, h.team, "magic")` => `damage_type`
+			# "magic", `school=None`). The native recording stores the delivered
+			# school, and layer 9g keeps the boss arm sourceless: no school
+			# reaches `resolve_damage_school`, so the boss row is recorded as
+			# "neutral" while regular units keep the declared magic school.
+			var school: String = (
+				"neutral" if String(expected[i][0]) == "boss" else String(expected[i][2])
+			)
 			check.call(
-				int(hit[0]) == int(expected[i][1]) and String(hit[1]) == String(expected[i][2]),
+				int(hit[0]) == int(expected[i][1]) and String(hit[1]) == school,
 				"9a 35 magic damage from source"
 			)
 		helper._reset_world(world, false)

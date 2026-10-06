@@ -78,6 +78,7 @@ const BossMiasmaKillCreditChecks = preload("res://tests/boss_miasma_kill_credit_
 const BossItemCleaveChainChecks = preload("res://tests/boss_item_cleave_chain_checks.gd")
 const BossItemCleaveDamageChecks = preload("res://tests/boss_item_cleave_damage_checks.gd")
 const BossItemBashDamageChecks = preload("res://tests/boss_item_bash_damage_checks.gd")
+const BossItemMagicDamageChecks = preload("res://tests/boss_item_magic_damage_checks.gd")
 const BossHeroAIChecks = preload("res://tests/boss_hero_ai_checks.gd")
 const BossPresentationChecks = preload("res://tests/boss_presentation_checks.gd")
 const SiegeChecks = preload("res://tests/siege_checks.gd")
@@ -97,6 +98,9 @@ const SIMULATION = preload("res://scripts/simulation/sandbox_simulation.gd")
 
 var failures: Array[String] = []
 var checks := 0
+# Per-prefix failure histogram printed after the final summary so the CI
+# annotation (which keeps the last 60 log lines) names every failing area.
+var failure_groups: Dictionary = {}
 
 
 func _initialize() -> void:
@@ -108,6 +112,16 @@ func _check(condition: bool, message: String) -> void:
 	if not condition:
 		failures.append(message)
 		printerr("FAIL: " + message)
+		var key := _failure_key(message)
+		failure_groups[key] = int(failure_groups.get(key, 0)) + 1
+
+
+func _failure_key(message: String) -> String:
+	var words: PackedStringArray = message.split(" ", false)
+	var head: Array[String] = []
+	for index in range(mini(3, words.size())):
+		head.append(words[index])
+	return " ".join(head)
 
 
 func _settle() -> void:
@@ -191,6 +205,7 @@ func _run() -> void:
 	BossItemCleaveChainChecks.new().run(_check)
 	BossItemCleaveDamageChecks.new().run(_check)
 	BossItemBashDamageChecks.new().run(_check)
+	BossItemMagicDamageChecks.new().run(_check)
 	BossPolycephalyChecks.new().run(_check)
 	BossMiasmaChecks.new().run(_check)
 	BossMiasmaBlindChecks.new().run(_check)
@@ -295,7 +310,15 @@ func _run() -> void:
 		quit(0)
 	else:
 		printerr("FAILED: %d of %d checks" % [failures.size(), checks])
+		_report_failure_groups()
 		quit(1)
+
+
+func _report_failure_groups() -> void:
+	var keys: Array = failure_groups.keys()
+	keys.sort()
+	for key: String in keys:
+		printerr("FAIL-GROUP: %s x%d" % [key, int(failure_groups[key])])
 
 
 func _test_simulation() -> void:
