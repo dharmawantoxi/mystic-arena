@@ -2052,6 +2052,88 @@ check('const BossItemAutoMagicDamageChecks = preload("res://tests/boss_item_auto
       "9h production-path auto magic replay is registered")
 
 
+# ── 9i: the Thornmail reflect on the attacking boss uses the source shape ──
+from boss_item_reflect_carapace_source_oracle import source_fixture as reflect_fixture
+_reflect = reflect_fixture()
+_reflect_file = json.loads(
+    (ROOT / "tests/fixtures/boss_item_reflect_carapace_source.json").read_text(encoding="utf-8")
+)
+check(_reflect == _reflect_file,
+      "9i reflect carapace fixture matches Python source execution")
+_reflect_cases = _reflect.get("cases", [])
+_reflect_types = {row["boss_type"] for row in _reflect_cases}
+_reflect_scenarios = {
+    "reflect_vs_boss_resist",
+    "reflect_to_minion_unchanged",
+    "reflect_thorn_inactive",
+    "reflect_lethal_no_credit",
+}
+check(len(_reflect_cases) == 864
+      and _reflect_types == set(boss_motion_source_types())
+      and all(sum(row["boss_type"] == boss for row in _reflect_cases) == 4
+              for boss in _reflect_types)
+      and {row["arm"] for row in _reflect_cases} == {"reflect"}
+      and {row["scenario"] for row in _reflect_cases} == _reflect_scenarios
+      and all("expected" in row and "native_old" in row for row in _reflect_cases),
+      "9i four expected/counterfactual reflect cases cover every boss type")
+_reflect_shape = _reflect.get("source", {}).get("ast_shape", {})
+_reflect_expected_shape = {
+    "reflect_take_damage_positional_args": 3,
+    "reflect_take_damage_keywords": [],
+    "reflect_take_damage_third_arg": "'magic'",
+    "reflect_take_damage_fallback_positional_args": 2,
+    "reflect_take_damage_fallback_keywords": [],
+    "reflect_pct_needs_thorn_timer": True,
+    "reflect_pct_needs_razor": True,
+    "reflect_guard_requires_alive_attacker": True,
+    "reflect_guard_requires_enemy_team": True,
+    "notify_is_reached_from_hero_take_damage": True,
+    "notify_wraps_reflect_in_try_except": True,
+    "boss_blind_block_requires_source": True,
+    "boss_school_comes_from_resolver": True,
+    "resolver_returns_none_without_school_or_source": True,
+    "boss_lethal_branch_stores_source": True,
+}
+check(_reflect_shape == _reflect_expected_shape,
+      "9i Python AST proves the reflect arm omits source and school")
+_reflect_controls = set(
+    _reflect.get("source", {}).get("arm", {}).get("control_scenarios", []))
+check(all(
+    (row["expected"] == row["native_old"]) == (row["scenario"] in _reflect_controls)
+    for row in _reflect_cases
+), "9i only the proccing reflect scenarios diverge; the controls match")
+check(all(
+    row["expected"]["regular_hits"] == row["native_old"]["regular_hits"]
+    and row["expected"]["reflect_sent"] == row["native_old"]["reflect_sent"]
+    for row in _reflect_cases
+), "9i the minion payload and the reflect math keep their values in both columns")
+check(all(
+    row["expected"]["owner_kills"] == 0 and row["expected"]["boss_counter"] == 0
+    and row["native_old"]["owner_kills"] == 0 and row["native_old"]["boss_counter"] == 0
+    for row in _reflect_cases
+    if row["scenario"] == "reflect_lethal_no_credit"
+), "9i a lethal reflect credits nobody in either column")
+check(all(
+    row["expected"]["boss_hp_loss"] >= row["native_old"]["boss_hp_loss"]
+    for row in _reflect_cases
+    if row["scenario"] == "reflect_vs_boss_resist"
+) and any(
+    row["expected"]["boss_hp_loss"] != row["native_old"]["boss_hp_loss"]
+    for row in _reflect_cases
+    if row["scenario"] == "reflect_vs_boss_resist"
+), "9i boss magic resist no longer cuts the reflected payload")
+_reflect_bus = (ROOT / "scripts/match/reflect_item_effects.gd").read_text(encoding="utf-8")
+check("attacker is BossState" in _reflect_bus
+      and 'world._deliver_hit(-1, src_team, attacker, amount, "neutral", attacker.position, "magic")'
+      in _reflect_bus
+      and _auto_dmg_inv.count("effects.deal_damage(source_id, hero_team, dmg, \"magic\")") == 1,
+      "9i the reflect bus sends the boss the source-less neutral magic hit")
+check('const BossItemReflectCarapaceChecks = preload("res://tests/boss_item_reflect_carapace_checks.gd")'
+      in ai_tests
+      and "BossItemReflectCarapaceChecks.new().run(_check)" in ai_tests,
+      "9i production-path reflect replay is registered")
+
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")
