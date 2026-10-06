@@ -516,9 +516,11 @@ func tick_auto(dt: int, enemies: Array, effects: ItemEffects, _rng: RandomNumber
 				var epos: Vector2 = _enemy_pos(enemies, eid)
 				if hero_position.distance_to(epos) <= root_r:
 					effects.apply_stun(eid, root_dur)
-				if dmg > 0:
-					effects.deal_damage(eid, hero_team, dmg, "magic")
-				rooted.append(eid)
+					if dmg > 0:
+						# Layer 9h: source `e.take_damage(act["damage"], h.team,
+						# "magic")` (`hero_items.py:2209`) omits `source=`.
+						effects.deal_damage_magic_sourceless(eid, hero_team, dmg, "magic")
+					rooted.append(eid)
 			effects.notify(hero_id, "BINDING CHAINS!")
 			effects.chain_fx(hero_id, rooted)
 	# Sanguine Thorn: Soul Rend on current target.
@@ -556,7 +558,9 @@ func tick_auto(dt: int, enemies: Array, effects: ItemEffects, _rng: RandomNumber
 			for i in range(mini(near_ids.size(), tgt_count)):
 				var eid: int = near_ids[i]
 				if dmg > 0:
-					effects.deal_damage(eid, hero_team, dmg, "magic")
+					# Layer 9h: source `e.take_damage(act["damage"], h.team,
+					# "magic")` (`hero_items.py:2257`) omits `source=`.
+					effects.deal_damage_magic_sourceless(eid, hero_team, dmg, "magic")
 				zapped.append(eid)
 			if zapped.size() > 0:
 				effects.chain_fx(hero_id, zapped)
@@ -580,7 +584,9 @@ func tick_auto(dt: int, enemies: Array, effects: ItemEffects, _rng: RandomNumber
 			var hit: Array = []
 			for eid in near_ids:
 				if dmg > 0:
-					effects.deal_damage(eid, hero_team, dmg, "magic")
+					# Layer 9h: source `e.take_damage(act["damage"], h.team,
+					# "magic")` (`hero_items.py:2286`) omits `source=`.
+					effects.deal_damage_magic_sourceless(eid, hero_team, dmg, "magic")
 				effects.apply_slow(eid, slow, slow_dur)
 				hit.append(eid)
 			effects.notify(hero_id, "ARCTIC BLAST!")
@@ -618,7 +624,9 @@ func tick_auto(dt: int, enemies: Array, effects: ItemEffects, _rng: RandomNumber
 			var hit: Array = []
 			for eid in near_ids:
 				if dmg > 0:
-					effects.deal_damage(eid, hero_team, dmg, "magic")
+					# Layer 9h: source `e.take_damage(act["damage"], h.team,
+					# "magic")` (`hero_items.py:2329`) omits `source=`.
+					effects.deal_damage_magic_sourceless(eid, hero_team, dmg, "magic")
 				effects.apply_burn(eid, burn_dps_v, burn_dur, hero_team)
 				hit.append(eid)
 			effects.notify(hero_id, "BRAND BURST!")
@@ -635,7 +643,9 @@ func tick_auto(dt: int, enemies: Array, effects: ItemEffects, _rng: RandomNumber
 			var hit: Array = []
 			for eid in near_ids:
 				if dmg > 0:
-					effects.deal_damage(eid, hero_team, dmg, "magic")
+					# Layer 9h: source `e.take_damage(act["damage"], h.team,
+					# "magic")` (`hero_items.py:2358`) omits `source=`.
+					effects.deal_damage_magic_sourceless(eid, hero_team, dmg, "magic")
 				effects.apply_silence(eid, sil_dur)
 				hit.append(eid)
 			effects.notify(hero_id, "ARCANE NOVA!")
@@ -648,7 +658,9 @@ func tick_auto(dt: int, enemies: Array, effects: ItemEffects, _rng: RandomNumber
 			fulgur_cd = int(act.get("cooldown", 0))
 			var dmg := int(act.get("damage", 0))
 			if dmg > 0:
-				effects.deal_damage(tgt_id, hero_team, dmg, "magic")
+				# Layer 9h: source `tgt.take_damage(act["damage"], h.team,
+				# "magic")` (`hero_items.py:2377`) omits `source=`.
+				effects.deal_damage_magic_sourceless(tgt_id, hero_team, dmg, "magic")
 			effects.notify(tgt_id, "ENERGY BLAST!")
 	# Hex Idol: Hex (stun + silence) on target.
 	if has("hex_idol") and hex_cd <= 0:
