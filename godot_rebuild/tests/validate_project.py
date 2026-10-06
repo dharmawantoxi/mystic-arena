@@ -1753,6 +1753,66 @@ check('const BossMiasmaKillCreditChecks = preload("res://tests/boss_miasma_kill_
       "9d production-path replay is registered")
 
 
+# ── 9e: the cleave splash arm on the active boss uses the source call shape ──
+from boss_item_cleave_damage_source_oracle import source_fixture as cleave_damage_fixture
+_cleave_dmg = cleave_damage_fixture()
+_cleave_dmg_file = json.loads(
+    (ROOT / "tests/fixtures/boss_item_cleave_damage_source.json").read_text(encoding="utf-8")
+)
+check(_cleave_dmg == _cleave_dmg_file,
+      "9e cleave damage fixture matches Python source execution")
+_cleave_dmg_cases = _cleave_dmg.get("cases", [])
+_cleave_dmg_types = {row["boss_type"] for row in _cleave_dmg_cases}
+_cleave_dmg_scenarios = {
+    "cleave_school_vs_boss_armor",
+    "cleave_blind_owner_still_lands",
+    "cleave_lethal_without_kill_credit",
+    "cleave_outside_radius_control",
+}
+check(len(_cleave_dmg_cases) == 864
+      and _cleave_dmg_types == set(boss_motion_source_types())
+      and all(sum(row["boss_type"] == boss for row in _cleave_dmg_cases) == 4
+              for boss in _cleave_dmg_types)
+      and all({row["scenario"] for row in _cleave_dmg_cases
+               if row["boss_type"] == boss} == _cleave_dmg_scenarios
+              for boss in _cleave_dmg_types)
+      and all("expected" in row and "native_old" in row for row in _cleave_dmg_cases),
+      "9e four expected/counterfactual cleave cases cover every boss type")
+check(_cleave_dmg.get("source", {}).get("ast_shape", {}) == {
+    "cleave_take_damage_positional_args": 2,
+    "cleave_take_damage_keywords": [],
+    "boss_blind_block_requires_source": True,
+    "boss_school_comes_from_resolver": True,
+    "resolver_returns_none_without_school_or_source": True,
+    "boss_lethal_branch_stores_source": True,
+}, "9e Python AST proves the cleave splash omits both source and school")
+check(all(
+    (row["expected"] == row["native_old"])
+    == (row["scenario"] == "cleave_outside_radius_control")
+    for row in _cleave_dmg_cases
+), "9e only the boss arm scenarios diverge; the out-of-radius control matches")
+check(all(
+    row["expected"]["minion_hits"] == row["native_old"]["minion_hits"] == [25]
+    and row["expected"]["target_hits"] == row["native_old"]["target_hits"] == []
+    for row in _cleave_dmg_cases
+), "9e the regular-unit cleave arm keeps its payload in both columns")
+check(all(
+    row["expected"]["owner_kills"] == 0 and row["native_old"]["owner_kills"] == 1
+    for row in _cleave_dmg_cases
+    if row["scenario"] == "cleave_lethal_without_kill_credit"
+), "9e a lethal cleave splash credits nobody in the source column")
+_cleave_dmg_bus = (ROOT / "scripts/match/battle_item_effects.gd").read_text(encoding="utf-8")
+check('world._deliver_hit(-1, src_team, boss, splash, "neutral", src_pos)' in _cleave_dmg_bus
+      and 'world._deliver_hit(dealer_id, src_team, u, splash, "physical", src_pos)'
+      in _cleave_dmg_bus,
+      "9e the boss cleave arm is source-less and school-less while units stay physical")
+check('const BossItemCleaveDamageChecks = preload("res://tests/boss_item_cleave_damage_checks.gd")'
+      in ai_tests
+      and "BossItemCleaveDamageChecks.new().run(_check)" in ai_tests,
+      "9e production-path cleave replay is registered")
+
+
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

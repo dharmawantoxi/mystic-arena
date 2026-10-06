@@ -199,7 +199,15 @@ func cleave_splash(
 	# from the main target, exactly like the unit loop above.
 	var boss: Object = _onhit_boss(src_team, target_id)
 	if boss != null and center_pos.distance_to(boss.position) <= radius:
-		world._deliver_hit(dealer_id, src_team, boss, splash, "physical", src_pos)
+		# Layer 9e: the source splash is `u.take_damage(splash, h.team)`
+		# (`hero_items.py:2516`) - two positional arguments, so `Boss.take_damage`
+		# runs with `source=None` and `school=None`. That skips the Solar Brand
+		# blind block (it needs `source is not None`), makes
+		# `resolve_damage_school('normal', None, None)` return `None` so boss armor
+		# never cuts the splash, and leaves `_killed_by = None` on a lethal hit so
+		# `Game._process_boss_kill` credits nobody. Non-boss victims keep the
+		# physical delivery above, exactly as before this layer.
+		world._deliver_hit(-1, src_team, boss, splash, "neutral", src_pos)
 
 
 func chain_targets(target_id: int, src_team: int, radius: float, count: int) -> Array:
