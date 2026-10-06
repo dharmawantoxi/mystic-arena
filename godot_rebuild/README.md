@@ -312,11 +312,13 @@ dan reset AI. Jalankan oracle tanpa
 unlock berdasarkan predecessor dan mengunci difficulty sesuai run yang
 tersimpan. Level 2–54 adalah **mode uji eksperimental**, bukan parity penuh:
 277 titik jalur lane dan 61 titik spline sungai tetap dari sumber Python.
-Tiga lane kini diraster dari **6.654 perintah sumber** (batu, border, lumut,
-retakan), di atas layer sungai **1.878 perintah sumber** (tile, tepi, buih
-statis). Setiap layer menjadi tekstur transparan sekali per scene/tema 54 level.
-Retakan 1px memakai Bresenham Godot (piksel bisa berbeda dari Pygame);
-animasi air, dekorasi, fog, FX, balance dan visual GPU masih perlu validasi.
+Tiga lane diraster dari **6.654 perintah sumber** (batu, border, lumut,
+retakan), di atas sungai **1.878 perintah** (tile, tepi, buih statis); border
+map/spike memakai **1.323 perintah** sumber. Setiap layer menjadi tekstur
+transparan sekali per scene (lane/sungai bergantung tema 54 level; border
+tema-independen). Retakan 1px memakai Bresenham dan edge segitiga spike
+memakai rasterizer Godot, jadi piksel tepi dapat berbeda dari Pygame.
+Animasi air, dekorasi, fog, FX, balance dan visual GPU masih perlu validasi.
 Oracle `level_theme_source_oracle.py` mengekstrak 12 warna/tema dan river
 `PathGenerator.generate_river(1280, 720)` tanpa mengimpor Pygame;
 laboratorium tetap memakai palet asalnya. Ini **belum** seluruh renderer Python.

@@ -10,6 +10,7 @@ var terrain_palette: Dictionary = {}
 var terrain_river: PackedVector2Array = PackedVector2Array()
 var river_texture: Texture2D
 var lane_texture: Texture2D
+var wall_texture: Texture2D
 
 
 func _ready() -> void:
@@ -65,6 +66,8 @@ func _draw() -> void:
 				edge = terrain_palette["path_stone_3"]
 			draw_polyline(path, stone, 32, true)
 			draw_polyline(path, edge, 1.5, true)
+	if wall_texture != null:
+		draw_texture(wall_texture, Vector2.ZERO)
 	_draw_base(Layout.BLUE_BASE, Color("73cbbb"))
 	_draw_base(Layout.RED_BASE, Color("d78579"))
 	for unit in session.world.units:

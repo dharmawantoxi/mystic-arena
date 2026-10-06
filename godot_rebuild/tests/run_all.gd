@@ -84,6 +84,7 @@ const LevelCatalogChecks = preload("res://tests/level_catalog_checks.gd")
 const LevelThemeChecks = preload("res://tests/level_theme_checks.gd")
 const RiverTilesChecks = preload("res://tests/river_tiles_checks.gd")
 const LaneTilesChecks = preload("res://tests/lane_tiles_checks.gd")
+const WallTilesChecks = preload("res://tests/wall_tiles_checks.gd")
 const LevelProgressChecks = preload("res://tests/level_progress_checks.gd")
 const LevelProgressStoreChecks = preload("res://tests/level_progress_store_checks.gd")
 const LevelProgressStore = preload("res://scripts/match/level_progress_store.gd")
@@ -124,6 +125,7 @@ func _run() -> void:
 	LevelThemeChecks.new().run(_check)
 	RiverTilesChecks.new().run(_check)
 	LaneTilesChecks.new().run(_check)
+	WallTilesChecks.new().run(_check)
 	LevelProgressChecks.new().run(_check)
 	LevelProgressStoreChecks.new().run(_check)
 	ThorneChecks.new().run(_check)
@@ -620,6 +622,7 @@ func _test_level_selection_scene(app: Node) -> void:
 		"Selected map caches the source tiled river layer"
 	)
 	_check(screen.arena.lane_texture != null, "Selected map caches source cobblestone lanes")
+	_check(screen.arena.wall_texture != null, "Selected map caches source border wall")
 	screen.get_node("%RestartButton").pressed.emit()
 	await _settle()
 	_check(

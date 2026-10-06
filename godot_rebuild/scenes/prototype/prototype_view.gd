@@ -9,6 +9,7 @@ const BossFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
+const WallTiles = preload("res://scripts/ui/wall_tiles.gd")
 var cached_river_theme := ""
 
 
@@ -23,6 +24,8 @@ func _draw() -> void:
 	if river_texture == null or cached_river_theme != map_theme:
 		river_texture = ImageTexture.create_from_image(RiverTiles.raster(terrain_palette))
 		lane_texture = ImageTexture.create_from_image(LaneTiles.raster(terrain_palette))
+		if wall_texture == null:
+			wall_texture = ImageTexture.create_from_image(WallTiles.raster())
 		cached_river_theme = map_theme
 	draw_set_transform(world.boss_presentation_offset(), 0.0, Vector2.ONE)
 	super._draw()
