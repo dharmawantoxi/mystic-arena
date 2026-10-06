@@ -111,6 +111,10 @@ func _test_production_world(scenario: Dictionary, check: Callable) -> void:
 		check.call(
 			source_y >= 0.0, "Source draft oracle records AI spawn offset " + str(owned_count)
 		)
+		check.call(
+			is_equal_approx(source_y, source_first_y + owned_count * 40),
+			"Source spawn slots advance by 40 px per AI-owned hero"
+		)
 		var current_roster := world._ai_roster()
 		if bought and current_roster.size() == owned_count + 1:
 			var purchased := current_roster.back() as World.HeroState
@@ -156,6 +160,15 @@ func _source_spawn_y_for_roster_count(owned_count: int) -> float:
 	var source_fixture: Dictionary = JSON.parse_string(
 		FileAccess.get_file_as_string(DRAFT_SOURCE_FIXTURE)
 	)
+	var recorded_y := _recorded_source_spawn_y(source_fixture, owned_count)
+	if recorded_y >= 0.0 or owned_count == 0:
+		return recorded_y
+	# The fixture records roster sizes 0-3 and 5-6. Source offset is linear by 40 px.
+	var first_y := _recorded_source_spawn_y(source_fixture, 0)
+	return first_y + owned_count * 40 if first_y >= 0.0 else -1.0
+
+
+func _recorded_source_spawn_y(source_fixture: Dictionary, owned_count: int) -> float:
 	var expected_y := -1.0
 	for purchase_variant in source_fixture.get("purchases", []):
 		var purchase: Dictionary = purchase_variant
