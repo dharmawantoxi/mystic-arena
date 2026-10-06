@@ -50,6 +50,26 @@ func deal_damage_from(
 	return amount
 
 
+func deal_damage_sourceless(
+	target_id: int, source_team: int, amount: int, school: String = "physical"
+) -> int:
+	# Layer 9f: `_on_hit_common` lands the Abyss Breaker Bash with
+	# `target.take_damage(bash["damage"], h.team)` (`hero_items.py:2542`). For the
+	# active boss that means `Boss.take_damage(damage, from_team)`: the Solar
+	# Brand blind block is skipped (it needs `source is not None`),
+	# `resolve_damage_school('normal', None, None)` returns `None` so boss armor
+	# never cuts the bonus damage, and a lethal bash leaves `_killed_by = None`
+	# so `Game._process_boss_kill` credits nobody. Regular victims keep the
+	# declared school and the dealing hero as source, exactly as before.
+	var tgt: Object = world.get_unit(target_id)
+	if tgt == null:
+		return 0
+	if tgt is BossState:
+		world._deliver_hit(-1, source_team, tgt, amount, "neutral", dealer_pos)
+		return amount
+	return deal_damage(target_id, source_team, amount, school)
+
+
 func apply_stun(target_id: int, duration: int) -> void:
 	var t: Object = world.get_unit(target_id)
 	if t is HeroState:
@@ -199,7 +219,15 @@ func cleave_splash(
 	# from the main target, exactly like the unit loop above.
 	var boss: Object = _onhit_boss(src_team, target_id)
 	if boss != null and center_pos.distance_to(boss.position) <= radius:
-		world._deliver_hit(dealer_id, src_team, boss, splash, "physical", src_pos)
+		# Layer 9e: the source splash is `u.take_damage(splash, h.team)`
+		# (`hero_items.py:2516`) - two positional arguments, so `Boss.take_damage`
+		# runs with `source=None` and `school=None`. That skips the Solar Brand
+		# blind block (it needs `source is not None`), makes
+		# `resolve_damage_school('normal', None, None)` return `None` so boss armor
+		# never cuts the splash, and leaves `_killed_by = None` on a lethal hit so
+		# `Game._process_boss_kill` credits nobody. Non-boss victims keep the
+		# physical delivery above, exactly as before this layer.
+		world._deliver_hit(-1, src_team, boss, splash, "neutral", src_pos)
 
 
 func chain_targets(target_id: int, src_team: int, radius: float, count: int) -> Array:

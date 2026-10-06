@@ -44,9 +44,12 @@ const CHAIN_BOSS := "fenrir_chain_hits_boss"
 const CHAIN_FULL := "chain_slots_fill_before_boss"
 const CLEAVE_ITEM := "cleave_axe"
 const CHAIN_ITEM := "fenrir_chain"
-# Native delivery schools for the two arms (unchanged by this layer): cleave
-# splashes physical, arc chain deals `effects.deal_damage(..., "magic")`.
-const CLEAVE_SCHOOL := "physical"
+# Native delivery schools for the two arms. Arc chain deals
+# `effects.deal_damage(..., "magic")` like the source third positional argument.
+# Cleave still splashes physical onto regular units, but layer 9e delivers the
+# boss arm as "neutral": the source call `u.take_damage(splash, h.team)` passes
+# no school, so `resolve_damage_school` returns `None` for the boss.
+const CLEAVE_SCHOOL := "neutral"
 const CHAIN_SCHOOL := "magic"
 const BASIC_DAMAGE := 50
 const SEED_SCAN_LIMIT := 4096

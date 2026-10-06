@@ -880,7 +880,9 @@ func _on_hit_common(
 		if rng.randf() < float(bash_dict.get("chance", 0.0)):
 			bash_cd = int(bash_dict.get("cooldown", 0))
 			effects.apply_stun(target_id, int(bash_dict.get("stun", 0)))
-			effects.deal_damage(target_id, hero_team, int(bash_dict.get("damage", 0)), "physical")
+			effects.deal_damage_sourceless(
+				target_id, hero_team, int(bash_dict.get("damage", 0)), "physical"
+			)
 			effects.notify(target_id, "BASH!")
 	# Fenrir Chain / Thunder Coil: arc chain.
 	var chain: Variant = get_on_attack_chain()
