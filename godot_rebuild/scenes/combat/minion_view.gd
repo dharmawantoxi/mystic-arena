@@ -11,6 +11,7 @@ var terrain_river: PackedVector2Array = PackedVector2Array()
 var river_texture: Texture2D
 var lane_texture: Texture2D
 var wall_texture: Texture2D
+var terrain_texture: Texture2D
 
 
 func _ready() -> void:
@@ -22,31 +23,40 @@ func _process(_delta: float) -> void:
 
 
 func _draw() -> void:
-	if terrain_palette.is_empty():
-		draw_rect(Rect2(0, 0, 1280, 720), Color("10252a"))
+	if terrain_texture != null:
+		draw_texture(terrain_texture, Vector2.ZERO)
 	else:
-		# The map is still procedural: only source terrain palette has moved.
-		draw_rect(Rect2(0, 0, 640, 720), terrain_palette["radiant_grass_1"])
-		draw_rect(Rect2(640, 0, 640, 720), terrain_palette["dire_earth_1"])
-		draw_rect(Rect2(600, 0, 80, 720), terrain_palette["transition_1"])
-	for x in range(0, 1280, 40):
-		var grid := Color("172d31")
-		if not terrain_palette.is_empty():
-			grid = (
-				terrain_palette["radiant_grass_2"] if x < 640 else terrain_palette["dire_earth_2"]
-			)
-			grid = grid.darkened(0.12)
-		draw_line(Vector2(x, 0), Vector2(x, 720), grid)
-	for y in range(0, 720, 40):
 		if terrain_palette.is_empty():
-			draw_line(Vector2(0, y), Vector2(1280, y), Color("172d31"))
+			draw_rect(Rect2(0, 0, 1280, 720), Color("10252a"))
 		else:
-			draw_line(
-				Vector2(0, y), Vector2(640, y), terrain_palette["radiant_grass_2"].darkened(0.12)
-			)
-			draw_line(
-				Vector2(640, y), Vector2(1280, y), terrain_palette["dire_earth_2"].darkened(0.12)
-			)
+			# Fallback without a cached source texture.
+			draw_rect(Rect2(0, 0, 640, 720), terrain_palette["radiant_grass_1"])
+			draw_rect(Rect2(640, 0, 640, 720), terrain_palette["dire_earth_1"])
+			draw_rect(Rect2(600, 0, 80, 720), terrain_palette["transition_1"])
+		for x in range(0, 1280, 40):
+			var grid := Color("172d31")
+			if not terrain_palette.is_empty():
+				grid = (
+					terrain_palette["radiant_grass_2"]
+					if x < 640
+					else terrain_palette["dire_earth_2"]
+				)
+				grid = grid.darkened(0.12)
+			draw_line(Vector2(x, 0), Vector2(x, 720), grid)
+		for y in range(0, 720, 40):
+			if terrain_palette.is_empty():
+				draw_line(Vector2(0, y), Vector2(1280, y), Color("172d31"))
+			else:
+				draw_line(
+					Vector2(0, y),
+					Vector2(640, y),
+					terrain_palette["radiant_grass_2"].darkened(0.12)
+				)
+				draw_line(
+					Vector2(640, y),
+					Vector2(1280, y),
+					terrain_palette["dire_earth_2"].darkened(0.12)
+				)
 	if session == null:
 		return
 	if river_texture != null:

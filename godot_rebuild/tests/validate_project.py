@@ -363,6 +363,8 @@ from level_theme_source_oracle import check as check_level_themes
 from river_tiles_source_oracle import check as check_river_tiles
 from lane_tiles_source_oracle import check as check_lane_tiles
 from wall_tiles_source_oracle import check as check_wall_tiles
+from terrain_source_oracle import check as check_terrain
+check(check_terrain() == 8091, "Source terrain drawing must match native fixture")
 check(check_level_themes() == 54, "All 54 native terrain palettes must match source")
 check(check_river_tiles() == 1878, "Source tiled river drawing must match native fixture")
 check(check_lane_tiles() == 6654, "Source cobblestone drawing must match native fixture")
@@ -371,6 +373,7 @@ check("LevelThemeChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_t
 check("RiverTilesChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"), "Native river tiles suite must run")
 check("LaneTilesChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"), "Native cobblestone suite must run")
 check("WallTilesChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"), "Native border wall suite must run")
+check("TerrainTilesChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"), "Native terrain suite must run")
 from level_economy_source_oracle import check as check_level_economy
 check(check_level_catalog() == 54, "All 54 native level entries must match Python source")
 check(check_level_economy() == 162, "All level economy fixtures must match Python source")

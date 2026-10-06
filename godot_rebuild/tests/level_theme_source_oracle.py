@@ -11,8 +11,10 @@ ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "map_components/_bundle.py"
 OUTPUT = ROOT / "godot_rebuild/data/levels/theme_palette.json"
 RIVER_OUTPUT = ROOT / "godot_rebuild/data/levels/river_path.json"
-KEYS = ("radiant_grass_1", "radiant_grass_2", "dire_earth_1", "dire_earth_2",
-        "transition_1", "path_stone_1", "path_stone_2", "path_stone_3", "path_stone_4",
+KEYS = ("radiant_grass_1", "radiant_grass_2", "radiant_grass_3", "radiant_grass_4",
+        "radiant_grass_high", "dire_earth_1", "dire_earth_2", "dire_earth_3",
+        "dire_earth_4", "dire_ash", "dire_burnt", "transition_1", "transition_2",
+        "path_stone_1", "path_stone_2", "path_stone_3", "path_stone_4",
         "path_moss", "path_crack", "radiant_moss", "river_deep", "river_mid",
         "river_light", "river_glow", "river_foam")
 
