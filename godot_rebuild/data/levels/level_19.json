@@ -1,0 +1,23 @@
+{
+  "level_number": 19,
+  "name": "Violet Court",
+  "description": "Face Vaelindra, the Violet Sovereign",
+  "enemy_hp_mult": 1.19,
+  "enemy_damage_mult": 1.19,
+  "enemy_speed_mult": 1.19,
+  "castle_start_level": 1,
+  "starting_gold": 1000,
+  "starting_castle_level": 1,
+  "map_theme": "violet",
+  "bgm_track": "bgm_battle.wav",
+  "mini_bosses": {
+    "10": "akahime",
+    "18": "nyxthrael",
+    "25": "sylvantheros"
+  },
+  "true_boss": "vaelindra",
+  "meta_gold_reward_win": 3000,
+  "meta_gold_reward_replay": 1500,
+  "meta_gold_reward_lose": 0,
+  "unlock_after_level": 18
+}

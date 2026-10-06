@@ -1,0 +1,23 @@
+{
+  "level_number": 21,
+  "name": "The Hollow Veil",
+  "description": "Face Nexthyrius, the Chained Hollow",
+  "enemy_hp_mult": 1.21,
+  "enemy_damage_mult": 1.21,
+  "enemy_speed_mult": 1.21,
+  "castle_start_level": 1,
+  "starting_gold": 1000,
+  "starting_castle_level": 1,
+  "map_theme": "spectral",
+  "bgm_track": "bgm_battle.wav",
+  "mini_bosses": {
+    "10": "kurogari",
+    "18": "morvekhar",
+    "25": "vorgath"
+  },
+  "true_boss": "nexthyrius",
+  "meta_gold_reward_win": 3000,
+  "meta_gold_reward_replay": 1500,
+  "meta_gold_reward_lose": 0,
+  "unlock_after_level": 20
+}

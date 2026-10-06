@@ -1,0 +1,23 @@
+{
+  "level_number": 6,
+  "name": "Admiral's Cove",
+  "description": "Face Kunkka, the Admiral of the Fleet",
+  "enemy_hp_mult": 1.06,
+  "enemy_damage_mult": 1.06,
+  "enemy_speed_mult": 1.06,
+  "castle_start_level": 1,
+  "starting_gold": 1000,
+  "starting_castle_level": 1,
+  "map_theme": "ocean",
+  "bgm_track": "bgm_battle.wav",
+  "mini_bosses": {
+    "10": "gravewake",
+    "18": "syrentha",
+    "25": "thalgryn"
+  },
+  "true_boss": "kunkka",
+  "meta_gold_reward_win": 3000,
+  "meta_gold_reward_replay": 1500,
+  "meta_gold_reward_lose": 0,
+  "unlock_after_level": 5
+}

@@ -1,0 +1,23 @@
+{
+  "level_number": 41,
+  "name": "The Sawmill Warlord",
+  "description": "Face Grimkor, the Sawmill Warlord",
+  "enemy_hp_mult": 1.41,
+  "enemy_damage_mult": 1.41,
+  "enemy_speed_mult": 1.41,
+  "castle_start_level": 1,
+  "starting_gold": 1000,
+  "starting_castle_level": 1,
+  "map_theme": "sawmill",
+  "bgm_track": "bgm_battle.wav",
+  "mini_bosses": {
+    "10": "emberwick",
+    "18": "grondarthul",
+    "25": "xareth"
+  },
+  "true_boss": "grimkor",
+  "meta_gold_reward_win": 3000,
+  "meta_gold_reward_replay": 1500,
+  "meta_gold_reward_lose": 0,
+  "unlock_after_level": 40
+}

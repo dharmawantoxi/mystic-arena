@@ -10,6 +10,8 @@ const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
 
 var current_screen: Node
 var transition_pending := false
+var prototype_level := 1
+var prototype_difficulty := "normal"
 
 @onready var screen_root: Control = $ScreenRoot
 
@@ -24,7 +26,11 @@ func show_menu() -> void:
 	_request_screen(MENU)
 
 
-func start_prototype() -> void:
+func start_prototype(level_number: int = 1, difficulty: String = "normal") -> void:
+	if transition_pending:
+		return
+	prototype_level = level_number
+	prototype_difficulty = difficulty
 	_request_screen(PROTOTYPE)
 
 
@@ -53,6 +59,14 @@ func _install_screen(scene: PackedScene) -> void:
 		screen_root.remove_child(current_screen)
 		current_screen.queue_free()
 	current_screen = scene.instantiate()
+	if scene == PROTOTYPE:
+		# Configure before the session's _ready creates the arena.
+		if not current_screen.get_node("Simulation").configure_level(
+			prototype_level, prototype_difficulty
+		):
+			current_screen.free()
+			current_screen = MENU.instantiate()
+			scene = MENU
 	screen_root.add_child(current_screen)
 	if scene == MENU:
 		current_screen.connect("play_requested", start_match)

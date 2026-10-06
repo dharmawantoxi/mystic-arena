@@ -1,0 +1,974 @@
+[
+  {
+    "level": 1,
+    "difficulty": "easy",
+    "gold": 1250,
+    "passive": 3.75
+  },
+  {
+    "level": 1,
+    "difficulty": "normal",
+    "gold": 1000,
+    "passive": 3.0
+  },
+  {
+    "level": 1,
+    "difficulty": "hard",
+    "gold": 750,
+    "passive": 2.25
+  },
+  {
+    "level": 2,
+    "difficulty": "easy",
+    "gold": 1375,
+    "passive": 4.125
+  },
+  {
+    "level": 2,
+    "difficulty": "normal",
+    "gold": 1100,
+    "passive": 3.3
+  },
+  {
+    "level": 2,
+    "difficulty": "hard",
+    "gold": 825,
+    "passive": 2.4749999999999996
+  },
+  {
+    "level": 3,
+    "difficulty": "easy",
+    "gold": 1500,
+    "passive": 4.5
+  },
+  {
+    "level": 3,
+    "difficulty": "normal",
+    "gold": 1200,
+    "passive": 3.6
+  },
+  {
+    "level": 3,
+    "difficulty": "hard",
+    "gold": 900,
+    "passive": 2.7
+  },
+  {
+    "level": 4,
+    "difficulty": "easy",
+    "gold": 1625,
+    "passive": 4.875
+  },
+  {
+    "level": 4,
+    "difficulty": "normal",
+    "gold": 1300,
+    "passive": 3.9
+  },
+  {
+    "level": 4,
+    "difficulty": "hard",
+    "gold": 975,
+    "passive": 2.925
+  },
+  {
+    "level": 5,
+    "difficulty": "easy",
+    "gold": 1750,
+    "passive": 5.25
+  },
+  {
+    "level": 5,
+    "difficulty": "normal",
+    "gold": 1400,
+    "passive": 4.2
+  },
+  {
+    "level": 5,
+    "difficulty": "hard",
+    "gold": 1050,
+    "passive": 3.1500000000000004
+  },
+  {
+    "level": 6,
+    "difficulty": "easy",
+    "gold": 1875,
+    "passive": 5.625
+  },
+  {
+    "level": 6,
+    "difficulty": "normal",
+    "gold": 1500,
+    "passive": 4.5
+  },
+  {
+    "level": 6,
+    "difficulty": "hard",
+    "gold": 1125,
+    "passive": 3.375
+  },
+  {
+    "level": 7,
+    "difficulty": "easy",
+    "gold": 2000,
+    "passive": 6.0
+  },
+  {
+    "level": 7,
+    "difficulty": "normal",
+    "gold": 1600,
+    "passive": 4.8
+  },
+  {
+    "level": 7,
+    "difficulty": "hard",
+    "gold": 1200,
+    "passive": 3.5999999999999996
+  },
+  {
+    "level": 8,
+    "difficulty": "easy",
+    "gold": 2125,
+    "passive": 6.375
+  },
+  {
+    "level": 8,
+    "difficulty": "normal",
+    "gold": 1700,
+    "passive": 5.1
+  },
+  {
+    "level": 8,
+    "difficulty": "hard",
+    "gold": 1275,
+    "passive": 3.8249999999999997
+  },
+  {
+    "level": 9,
+    "difficulty": "easy",
+    "gold": 2250,
+    "passive": 6.75
+  },
+  {
+    "level": 9,
+    "difficulty": "normal",
+    "gold": 1800,
+    "passive": 5.4
+  },
+  {
+    "level": 9,
+    "difficulty": "hard",
+    "gold": 1350,
+    "passive": 4.050000000000001
+  },
+  {
+    "level": 10,
+    "difficulty": "easy",
+    "gold": 2375,
+    "passive": 7.124999999999999
+  },
+  {
+    "level": 10,
+    "difficulty": "normal",
+    "gold": 1900,
+    "passive": 5.699999999999999
+  },
+  {
+    "level": 10,
+    "difficulty": "hard",
+    "gold": 1425,
+    "passive": 4.2749999999999995
+  },
+  {
+    "level": 11,
+    "difficulty": "easy",
+    "gold": 2500,
+    "passive": 7.5
+  },
+  {
+    "level": 11,
+    "difficulty": "normal",
+    "gold": 2000,
+    "passive": 6.0
+  },
+  {
+    "level": 11,
+    "difficulty": "hard",
+    "gold": 1500,
+    "passive": 4.5
+  },
+  {
+    "level": 12,
+    "difficulty": "easy",
+    "gold": 2625,
+    "passive": 7.875
+  },
+  {
+    "level": 12,
+    "difficulty": "normal",
+    "gold": 2100,
+    "passive": 6.3
+  },
+  {
+    "level": 12,
+    "difficulty": "hard",
+    "gold": 1575,
+    "passive": 4.725
+  },
+  {
+    "level": 13,
+    "difficulty": "easy",
+    "gold": 2750,
+    "passive": 8.25
+  },
+  {
+    "level": 13,
+    "difficulty": "normal",
+    "gold": 2200,
+    "passive": 6.6
+  },
+  {
+    "level": 13,
+    "difficulty": "hard",
+    "gold": 1650,
+    "passive": 4.949999999999999
+  },
+  {
+    "level": 14,
+    "difficulty": "easy",
+    "gold": 2875,
+    "passive": 8.625
+  },
+  {
+    "level": 14,
+    "difficulty": "normal",
+    "gold": 2300,
+    "passive": 6.9
+  },
+  {
+    "level": 14,
+    "difficulty": "hard",
+    "gold": 1725,
+    "passive": 5.175000000000001
+  },
+  {
+    "level": 15,
+    "difficulty": "easy",
+    "gold": 3000,
+    "passive": 9.0
+  },
+  {
+    "level": 15,
+    "difficulty": "normal",
+    "gold": 2400,
+    "passive": 7.2
+  },
+  {
+    "level": 15,
+    "difficulty": "hard",
+    "gold": 1800,
+    "passive": 5.4
+  },
+  {
+    "level": 16,
+    "difficulty": "easy",
+    "gold": 3125,
+    "passive": 9.375
+  },
+  {
+    "level": 16,
+    "difficulty": "normal",
+    "gold": 2500,
+    "passive": 7.5
+  },
+  {
+    "level": 16,
+    "difficulty": "hard",
+    "gold": 1875,
+    "passive": 5.625
+  },
+  {
+    "level": 17,
+    "difficulty": "easy",
+    "gold": 3250,
+    "passive": 9.75
+  },
+  {
+    "level": 17,
+    "difficulty": "normal",
+    "gold": 2600,
+    "passive": 7.8
+  },
+  {
+    "level": 17,
+    "difficulty": "hard",
+    "gold": 1950,
+    "passive": 5.85
+  },
+  {
+    "level": 18,
+    "difficulty": "easy",
+    "gold": 3375,
+    "passive": 10.125
+  },
+  {
+    "level": 18,
+    "difficulty": "normal",
+    "gold": 2700,
+    "passive": 8.1
+  },
+  {
+    "level": 18,
+    "difficulty": "hard",
+    "gold": 2025,
+    "passive": 6.074999999999999
+  },
+  {
+    "level": 19,
+    "difficulty": "easy",
+    "gold": 3500,
+    "passive": 10.499999999999998
+  },
+  {
+    "level": 19,
+    "difficulty": "normal",
+    "gold": 2800,
+    "passive": 8.399999999999999
+  },
+  {
+    "level": 19,
+    "difficulty": "hard",
+    "gold": 2100,
+    "passive": 6.299999999999999
+  },
+  {
+    "level": 20,
+    "difficulty": "easy",
+    "gold": 3625,
+    "passive": 10.875
+  },
+  {
+    "level": 20,
+    "difficulty": "normal",
+    "gold": 2900,
+    "passive": 8.7
+  },
+  {
+    "level": 20,
+    "difficulty": "hard",
+    "gold": 2175,
+    "passive": 6.5249999999999995
+  },
+  {
+    "level": 21,
+    "difficulty": "easy",
+    "gold": 3750,
+    "passive": 11.25
+  },
+  {
+    "level": 21,
+    "difficulty": "normal",
+    "gold": 3000,
+    "passive": 9.0
+  },
+  {
+    "level": 21,
+    "difficulty": "hard",
+    "gold": 2250,
+    "passive": 6.75
+  },
+  {
+    "level": 22,
+    "difficulty": "easy",
+    "gold": 3875,
+    "passive": 11.625
+  },
+  {
+    "level": 22,
+    "difficulty": "normal",
+    "gold": 3100,
+    "passive": 9.3
+  },
+  {
+    "level": 22,
+    "difficulty": "hard",
+    "gold": 2325,
+    "passive": 6.9750000000000005
+  },
+  {
+    "level": 23,
+    "difficulty": "easy",
+    "gold": 4000,
+    "passive": 12.0
+  },
+  {
+    "level": 23,
+    "difficulty": "normal",
+    "gold": 3200,
+    "passive": 9.6
+  },
+  {
+    "level": 23,
+    "difficulty": "hard",
+    "gold": 2400,
+    "passive": 7.199999999999999
+  },
+  {
+    "level": 24,
+    "difficulty": "easy",
+    "gold": 4125,
+    "passive": 12.374999999999998
+  },
+  {
+    "level": 24,
+    "difficulty": "normal",
+    "gold": 3300,
+    "passive": 9.899999999999999
+  },
+  {
+    "level": 24,
+    "difficulty": "hard",
+    "gold": 2475,
+    "passive": 7.424999999999999
+  },
+  {
+    "level": 25,
+    "difficulty": "easy",
+    "gold": 4250,
+    "passive": 12.75
+  },
+  {
+    "level": 25,
+    "difficulty": "normal",
+    "gold": 3400,
+    "passive": 10.2
+  },
+  {
+    "level": 25,
+    "difficulty": "hard",
+    "gold": 2550,
+    "passive": 7.6499999999999995
+  },
+  {
+    "level": 26,
+    "difficulty": "easy",
+    "gold": 4375,
+    "passive": 13.125
+  },
+  {
+    "level": 26,
+    "difficulty": "normal",
+    "gold": 3500,
+    "passive": 10.5
+  },
+  {
+    "level": 26,
+    "difficulty": "hard",
+    "gold": 2625,
+    "passive": 7.875
+  },
+  {
+    "level": 27,
+    "difficulty": "easy",
+    "gold": 4500,
+    "passive": 13.5
+  },
+  {
+    "level": 27,
+    "difficulty": "normal",
+    "gold": 3600,
+    "passive": 10.8
+  },
+  {
+    "level": 27,
+    "difficulty": "hard",
+    "gold": 2700,
+    "passive": 8.100000000000001
+  },
+  {
+    "level": 28,
+    "difficulty": "easy",
+    "gold": 4625,
+    "passive": 13.875
+  },
+  {
+    "level": 28,
+    "difficulty": "normal",
+    "gold": 3700,
+    "passive": 11.1
+  },
+  {
+    "level": 28,
+    "difficulty": "hard",
+    "gold": 2775,
+    "passive": 8.325
+  },
+  {
+    "level": 29,
+    "difficulty": "easy",
+    "gold": 4750,
+    "passive": 14.25
+  },
+  {
+    "level": 29,
+    "difficulty": "normal",
+    "gold": 3800,
+    "passive": 11.4
+  },
+  {
+    "level": 29,
+    "difficulty": "hard",
+    "gold": 2850,
+    "passive": 8.55
+  },
+  {
+    "level": 30,
+    "difficulty": "easy",
+    "gold": 4875,
+    "passive": 14.625
+  },
+  {
+    "level": 30,
+    "difficulty": "normal",
+    "gold": 3900,
+    "passive": 11.7
+  },
+  {
+    "level": 30,
+    "difficulty": "hard",
+    "gold": 2925,
+    "passive": 8.774999999999999
+  },
+  {
+    "level": 31,
+    "difficulty": "easy",
+    "gold": 5000,
+    "passive": 15.0
+  },
+  {
+    "level": 31,
+    "difficulty": "normal",
+    "gold": 4000,
+    "passive": 12.0
+  },
+  {
+    "level": 31,
+    "difficulty": "hard",
+    "gold": 3000,
+    "passive": 9.0
+  },
+  {
+    "level": 32,
+    "difficulty": "easy",
+    "gold": 5125,
+    "passive": 15.374999999999998
+  },
+  {
+    "level": 32,
+    "difficulty": "normal",
+    "gold": 4100,
+    "passive": 12.299999999999999
+  },
+  {
+    "level": 32,
+    "difficulty": "hard",
+    "gold": 3075,
+    "passive": 9.225
+  },
+  {
+    "level": 33,
+    "difficulty": "easy",
+    "gold": 5250,
+    "passive": 15.75
+  },
+  {
+    "level": 33,
+    "difficulty": "normal",
+    "gold": 4200,
+    "passive": 12.6
+  },
+  {
+    "level": 33,
+    "difficulty": "hard",
+    "gold": 3150,
+    "passive": 9.45
+  },
+  {
+    "level": 34,
+    "difficulty": "easy",
+    "gold": 5375,
+    "passive": 16.125
+  },
+  {
+    "level": 34,
+    "difficulty": "normal",
+    "gold": 4300,
+    "passive": 12.9
+  },
+  {
+    "level": 34,
+    "difficulty": "hard",
+    "gold": 3225,
+    "passive": 9.675
+  },
+  {
+    "level": 35,
+    "difficulty": "easy",
+    "gold": 5500,
+    "passive": 16.5
+  },
+  {
+    "level": 35,
+    "difficulty": "normal",
+    "gold": 4400,
+    "passive": 13.2
+  },
+  {
+    "level": 35,
+    "difficulty": "hard",
+    "gold": 3300,
+    "passive": 9.899999999999999
+  },
+  {
+    "level": 36,
+    "difficulty": "easy",
+    "gold": 5625,
+    "passive": 16.875
+  },
+  {
+    "level": 36,
+    "difficulty": "normal",
+    "gold": 4500,
+    "passive": 13.5
+  },
+  {
+    "level": 36,
+    "difficulty": "hard",
+    "gold": 3375,
+    "passive": 10.125
+  },
+  {
+    "level": 37,
+    "difficulty": "easy",
+    "gold": 5750,
+    "passive": 17.25
+  },
+  {
+    "level": 37,
+    "difficulty": "normal",
+    "gold": 4600,
+    "passive": 13.799999999999999
+  },
+  {
+    "level": 37,
+    "difficulty": "hard",
+    "gold": 3450,
+    "passive": 10.35
+  },
+  {
+    "level": 38,
+    "difficulty": "easy",
+    "gold": 5875,
+    "passive": 17.625
+  },
+  {
+    "level": 38,
+    "difficulty": "normal",
+    "gold": 4700,
+    "passive": 14.1
+  },
+  {
+    "level": 38,
+    "difficulty": "hard",
+    "gold": 3525,
+    "passive": 10.575
+  },
+  {
+    "level": 39,
+    "difficulty": "easy",
+    "gold": 6000,
+    "passive": 18.0
+  },
+  {
+    "level": 39,
+    "difficulty": "normal",
+    "gold": 4800,
+    "passive": 14.4
+  },
+  {
+    "level": 39,
+    "difficulty": "hard",
+    "gold": 3600,
+    "passive": 10.8
+  },
+  {
+    "level": 40,
+    "difficulty": "easy",
+    "gold": 6125,
+    "passive": 18.375
+  },
+  {
+    "level": 40,
+    "difficulty": "normal",
+    "gold": 4900,
+    "passive": 14.7
+  },
+  {
+    "level": 40,
+    "difficulty": "hard",
+    "gold": 3675,
+    "passive": 11.024999999999999
+  },
+  {
+    "level": 41,
+    "difficulty": "easy",
+    "gold": 6250,
+    "passive": 18.75
+  },
+  {
+    "level": 41,
+    "difficulty": "normal",
+    "gold": 5000,
+    "passive": 15.0
+  },
+  {
+    "level": 41,
+    "difficulty": "hard",
+    "gold": 3750,
+    "passive": 11.25
+  },
+  {
+    "level": 42,
+    "difficulty": "easy",
+    "gold": 6375,
+    "passive": 19.125
+  },
+  {
+    "level": 42,
+    "difficulty": "normal",
+    "gold": 5100,
+    "passive": 15.299999999999999
+  },
+  {
+    "level": 42,
+    "difficulty": "hard",
+    "gold": 3825,
+    "passive": 11.475
+  },
+  {
+    "level": 43,
+    "difficulty": "easy",
+    "gold": 6500,
+    "passive": 19.5
+  },
+  {
+    "level": 43,
+    "difficulty": "normal",
+    "gold": 5200,
+    "passive": 15.6
+  },
+  {
+    "level": 43,
+    "difficulty": "hard",
+    "gold": 3900,
+    "passive": 11.7
+  },
+  {
+    "level": 44,
+    "difficulty": "easy",
+    "gold": 6625,
+    "passive": 19.875
+  },
+  {
+    "level": 44,
+    "difficulty": "normal",
+    "gold": 5300,
+    "passive": 15.9
+  },
+  {
+    "level": 44,
+    "difficulty": "hard",
+    "gold": 3975,
+    "passive": 11.925
+  },
+  {
+    "level": 45,
+    "difficulty": "easy",
+    "gold": 6750,
+    "passive": 20.25
+  },
+  {
+    "level": 45,
+    "difficulty": "normal",
+    "gold": 5400,
+    "passive": 16.2
+  },
+  {
+    "level": 45,
+    "difficulty": "hard",
+    "gold": 4050,
+    "passive": 12.149999999999999
+  },
+  {
+    "level": 46,
+    "difficulty": "easy",
+    "gold": 6875,
+    "passive": 20.625
+  },
+  {
+    "level": 46,
+    "difficulty": "normal",
+    "gold": 5500,
+    "passive": 16.5
+  },
+  {
+    "level": 46,
+    "difficulty": "hard",
+    "gold": 4125,
+    "passive": 12.375
+  },
+  {
+    "level": 47,
+    "difficulty": "easy",
+    "gold": 7000,
+    "passive": 20.999999999999996
+  },
+  {
+    "level": 47,
+    "difficulty": "normal",
+    "gold": 5600,
+    "passive": 16.799999999999997
+  },
+  {
+    "level": 47,
+    "difficulty": "hard",
+    "gold": 4200,
+    "passive": 12.599999999999998
+  },
+  {
+    "level": 48,
+    "difficulty": "easy",
+    "gold": 7125,
+    "passive": 21.375
+  },
+  {
+    "level": 48,
+    "difficulty": "normal",
+    "gold": 5700,
+    "passive": 17.1
+  },
+  {
+    "level": 48,
+    "difficulty": "hard",
+    "gold": 4275,
+    "passive": 12.825000000000001
+  },
+  {
+    "level": 49,
+    "difficulty": "easy",
+    "gold": 7250,
+    "passive": 21.75
+  },
+  {
+    "level": 49,
+    "difficulty": "normal",
+    "gold": 5800,
+    "passive": 17.4
+  },
+  {
+    "level": 49,
+    "difficulty": "hard",
+    "gold": 4350,
+    "passive": 13.049999999999999
+  },
+  {
+    "level": 50,
+    "difficulty": "easy",
+    "gold": 7375,
+    "passive": 22.125
+  },
+  {
+    "level": 50,
+    "difficulty": "normal",
+    "gold": 5900,
+    "passive": 17.7
+  },
+  {
+    "level": 50,
+    "difficulty": "hard",
+    "gold": 4425,
+    "passive": 13.274999999999999
+  },
+  {
+    "level": 51,
+    "difficulty": "easy",
+    "gold": 7500,
+    "passive": 22.5
+  },
+  {
+    "level": 51,
+    "difficulty": "normal",
+    "gold": 6000,
+    "passive": 18.0
+  },
+  {
+    "level": 51,
+    "difficulty": "hard",
+    "gold": 4500,
+    "passive": 13.5
+  },
+  {
+    "level": 52,
+    "difficulty": "easy",
+    "gold": 7625,
+    "passive": 22.874999999999996
+  },
+  {
+    "level": 52,
+    "difficulty": "normal",
+    "gold": 6100,
+    "passive": 18.299999999999997
+  },
+  {
+    "level": 52,
+    "difficulty": "hard",
+    "gold": 4575,
+    "passive": 13.724999999999998
+  },
+  {
+    "level": 53,
+    "difficulty": "easy",
+    "gold": 7750,
+    "passive": 23.25
+  },
+  {
+    "level": 53,
+    "difficulty": "normal",
+    "gold": 6200,
+    "passive": 18.6
+  },
+  {
+    "level": 53,
+    "difficulty": "hard",
+    "gold": 4650,
+    "passive": 13.950000000000001
+  },
+  {
+    "level": 54,
+    "difficulty": "easy",
+    "gold": 7875,
+    "passive": 23.625
+  },
+  {
+    "level": 54,
+    "difficulty": "normal",
+    "gold": 6300,
+    "passive": 18.9
+  },
+  {
+    "level": 54,
+    "difficulty": "hard",
+    "gold": 4725,
+    "passive": 14.174999999999999
+  }
+]

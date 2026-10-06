@@ -1,0 +1,23 @@
+{
+  "level_number": 8,
+  "name": "Nethervenom Expanse",
+  "description": "Face Vhoreth'zir, the Nethervenom Wyrm",
+  "enemy_hp_mult": 1.08,
+  "enemy_damage_mult": 1.08,
+  "enemy_speed_mult": 1.08,
+  "castle_start_level": 1,
+  "starting_gold": 1000,
+  "starting_castle_level": 1,
+  "map_theme": "nethervenom",
+  "bgm_track": "bgm_battle.wav",
+  "mini_bosses": {
+    "10": "xirthalis",
+    "18": "vhyssarion",
+    "25": "vaerith"
+  },
+  "true_boss": "vhorethzir",
+  "meta_gold_reward_win": 3000,
+  "meta_gold_reward_replay": 1500,
+  "meta_gold_reward_lose": 0,
+  "unlock_after_level": 7
+}

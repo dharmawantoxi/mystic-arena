@@ -1,0 +1,23 @@
+{
+  "level_number": 54,
+  "name": "The Substitute Shinigami",
+  "description": "Face Kurosaki Hollowbane, the Substitute Shinigami",
+  "enemy_hp_mult": 1.54,
+  "enemy_damage_mult": 1.54,
+  "enemy_speed_mult": 1.54,
+  "castle_start_level": 1,
+  "starting_gold": 1000,
+  "starting_castle_level": 1,
+  "map_theme": "hollowbane",
+  "bgm_track": "bgm_battle.wav",
+  "mini_bosses": {
+    "10": "obanai",
+    "18": "sanguire",
+    "25": "sasori"
+  },
+  "true_boss": "hollowbane",
+  "meta_gold_reward_win": 3000,
+  "meta_gold_reward_replay": 1500,
+  "meta_gold_reward_lose": 0,
+  "unlock_after_level": 53
+}

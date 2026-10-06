@@ -358,6 +358,29 @@ from boss_level_twenty_source_oracle import source_fixture as boss_level_twenty_
 check(boss_level_twenty_fixture() == json.loads((ROOT / "tests/fixtures/boss_level_twenty_source.json").read_text()), "Boss level twenty source behavior drift")
 check("BossLevelTwentyChecks.new().run(_check)" in ai_tests, "Boss level twenty native suite must run")
 
+from level_catalog_source_oracle import check as check_level_catalog
+from level_theme_source_oracle import check as check_level_themes
+from river_tiles_source_oracle import check as check_river_tiles
+from lane_tiles_source_oracle import check as check_lane_tiles
+from wall_tiles_source_oracle import check as check_wall_tiles
+from terrain_source_oracle import check as check_terrain
+check(check_terrain() == 8091, "Source terrain drawing must match native fixture")
+check(check_level_themes() == 54, "All 54 native terrain palettes must match source")
+check(check_river_tiles() == 1878, "Source tiled river drawing must match native fixture")
+check(check_lane_tiles() == 6654, "Source cobblestone drawing must match native fixture")
+check(check_wall_tiles() == 1323, "Source border wall drawing must match native fixture")
+check("LevelThemeChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"), "Native terrain palette suite must run")
+check("RiverTilesChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"), "Native river tiles suite must run")
+check("LaneTilesChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"), "Native cobblestone suite must run")
+check("WallTilesChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"), "Native border wall suite must run")
+check("TerrainTilesChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"), "Native terrain suite must run")
+from level_economy_source_oracle import check as check_level_economy
+check(check_level_catalog() == 54, "All 54 native level entries must match Python source")
+check(check_level_economy() == 162, "All level economy fixtures must match Python source")
+check("LevelCatalogChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"), "Native level catalog suite must run")
+check("LevelProgressChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"), "Native level progress suite must run")
+check("LevelProgressStoreChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"), "Native progress storage suite must run")
+check("func configure_level(number: int" in (ROOT / "scripts/simulation/prototype_session.gd").read_text(encoding="utf-8"), "Match session must expose pre-arena level selection")
 check((ROOT / "data/levels/level_1.json").is_file(), "Level 1 config needs source data")
 if (ROOT / "data/levels/level_1.json").is_file() and (ROOT / "tests/fixtures/match_source.json").is_file():
     _match_fixture = json.loads((ROOT / "tests/fixtures/match_source.json").read_text(encoding="utf-8"))

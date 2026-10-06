@@ -80,6 +80,16 @@ const BossHeroAIChecks = preload("res://tests/boss_hero_ai_checks.gd")
 const BossPresentationChecks = preload("res://tests/boss_presentation_checks.gd")
 const SiegeChecks = preload("res://tests/siege_checks.gd")
 const CombatChecks = preload("res://tests/combat_checks.gd")
+const LevelCatalogChecks = preload("res://tests/level_catalog_checks.gd")
+const LevelThemeChecks = preload("res://tests/level_theme_checks.gd")
+const RiverTilesChecks = preload("res://tests/river_tiles_checks.gd")
+const LaneTilesChecks = preload("res://tests/lane_tiles_checks.gd")
+const WallTilesChecks = preload("res://tests/wall_tiles_checks.gd")
+const TerrainTilesChecks = preload("res://tests/terrain_tiles_checks.gd")
+const LevelProgressChecks = preload("res://tests/level_progress_checks.gd")
+const LevelProgressStoreChecks = preload("res://tests/level_progress_store_checks.gd")
+const LevelProgressStore = preload("res://scripts/match/level_progress_store.gd")
+const SCENE_PROGRESS_PATH := "user://level_progress_scene_test.json"
 const APP = preload("res://app/App.tscn")
 const SIMULATION = preload("res://scripts/simulation/sandbox_simulation.gd")
 
@@ -112,6 +122,14 @@ func _physics_steps(count: int) -> void:
 
 func _run() -> void:
 	_check(Engine.physics_ticks_per_second == 60, "physics frequency is 60 Hz")
+	LevelCatalogChecks.new().run(_check)
+	LevelThemeChecks.new().run(_check)
+	RiverTilesChecks.new().run(_check)
+	LaneTilesChecks.new().run(_check)
+	WallTilesChecks.new().run(_check)
+	TerrainTilesChecks.new().run(_check)
+	LevelProgressChecks.new().run(_check)
+	LevelProgressStoreChecks.new().run(_check)
 	ThorneChecks.new().run(_check)
 	GrimjawChecks.new().run(_check)
 	SylaraChecks.new().run(_check)
@@ -251,6 +269,7 @@ func _run() -> void:
 	await _test_combat_scene(app)
 	await _test_siege_scene(app)
 	await _test_prototype_scene(app)
+	await _test_level_selection_scene(app)
 	await ForgeSceneChecks.new().run(self, app, _check)
 	await AIShieldSceneChecks.new().run(self, app, _check)
 	await UpgradeSceneChecks.new().run(self, app, _check)
@@ -547,13 +566,90 @@ func _test_siege_scene(app: Node) -> void:
 		_check(get_node_count() == baseline, "siege cycles leave no orphan scene nodes")
 
 
+func _test_level_selection_scene(app: Node) -> void:
+	var path := "user://level_selection_scene_test.json"
+	for suffix in ["", ".tmp", ".bak"]:
+		if FileAccess.file_exists(path + suffix):
+			DirAccess.remove_absolute(path + suffix)
+	_check(
+		LevelProgressStore.save_state(
+			{
+				"meta_gold": 3000,
+				"completed_levels": [1],
+				"replay_reward_counts": {},
+				"run_difficulty": "normal"
+			},
+			path
+		),
+		"Seed isolated level unlock state"
+	)
+	var menu = app.current_screen
+	menu.progress_path = path
+	menu.refresh_levels()
+	_check(
+		(
+			menu.get_node("%LevelChoice").is_item_disabled(2)
+			and not menu.get_node("%LevelChoice").is_item_disabled(1)
+		),
+		"Only completed predecessor unlocks next level in menu"
+	)
+	menu.get_node("%LevelChoice").select(2)
+	menu.get_node("%PrototypeButton").pressed.emit()
+	await _settle()
+	_check(app.current_screen.name == "MainMenu", "Locked level cannot launch via forged selection")
+	menu.get_node("%LevelChoice").select(1)
+	menu.get_node("%PrototypeButton").pressed.emit()
+	await _settle()
+	var screen = app.current_screen
+	screen.progress_path = path
+	var world = screen.simulation.world
+	_check(
+		world.level_number == 2 and world.difficulty == "normal" and world.economy.gold[0] == 1100,
+		"Level 2 selection reaches configured arena and opening economy"
+	)
+	_check(
+		screen.arena.terrain_palette["radiant_grass_1"] == Color8(155, 115, 60),
+		"Desert arena uses the source level 2 terrain palette"
+	)
+	_check(
+		(
+			screen.arena.terrain_river.size() == 61
+			and screen.arena.terrain_river[0] == Vector2(0, 200)
+			and screen.arena.terrain_river[60] == Vector2(1280, 520)
+		),
+		"Selected match view follows the source river spline"
+	)
+	_check(
+		screen.arena.river_texture != null and screen.arena.cached_river_theme == "desert",
+		"Selected map caches the source tiled river layer"
+	)
+	_check(screen.arena.lane_texture != null, "Selected map caches source cobblestone lanes")
+	_check(screen.arena.wall_texture != null, "Selected map caches source border wall")
+	_check(screen.arena.terrain_texture != null, "Selected map caches source terrain")
+	screen.get_node("%RestartButton").pressed.emit()
+	await _settle()
+	_check(
+		app.current_screen.simulation.world.level_number == 2, "Restart retains selected encounter"
+	)
+	app.current_screen.get_node("%BackButton").pressed.emit()
+	await _settle()
+	_check(app.current_screen.name == "MainMenu", "Selected level exits cleanly")
+	for suffix in ["", ".tmp", ".bak"]:
+		if FileAccess.file_exists(path + suffix):
+			DirAccess.remove_absolute(path + suffix)
+
+
 func _test_prototype_scene(app: Node) -> void:
+	for path in [SCENE_PROGRESS_PATH, SCENE_PROGRESS_PATH + ".bak", SCENE_PROGRESS_PATH + ".tmp"]:
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(path)
 	var baseline: int = get_node_count()
 	for cycle in range(3):
 		app.current_screen.get_node("%PrototypeButton").pressed.emit()
 		app.current_screen.get_node("%PrototypeButton").pressed.emit()
 		await _settle()
 		var screen = app.current_screen
+		screen.progress_path = SCENE_PROGRESS_PATH
 		var session = screen.simulation
 		var world = session.world
 		session.set_physics_process(false)
@@ -752,6 +848,19 @@ func _test_prototype_scene(app: Node) -> void:
 			),
 			"match result opens automatically for either team"
 		)
+		var progress := LevelProgressStore.load_state(SCENE_PROGRESS_PATH)
+		var reward: int = [3000, 0, 1500][cycle]
+		var total: int = [3000, 3000, 4500][cycle]
+		_check(
+			(
+				progress.get("meta_gold", -1) == total
+				and not screen.get_node("%SaveRetryButton").visible
+				and screen.get_node("HUD/PauseOverlay/Center/Card/Column/Hint").text.contains(
+					"+%d Meta Gold" % reward
+				)
+			),
+			"match result commits one development reward per victory or defeat"
+		)
 		_check(
 			(
 				not screen.get_node("%ResumeButton").visible
@@ -803,3 +912,43 @@ func _test_prototype_scene(app: Node) -> void:
 			"prototype exits paused/result cleanly"
 		)
 		_check(get_node_count() == baseline, "prototype cycles do not leak scene nodes")
+	# Corrupt saves must not be overwritten; the result overlay allows retry
+	# after the user restores/removes the corrupt development file.
+	var corrupt_file := FileAccess.open(SCENE_PROGRESS_PATH, FileAccess.WRITE)
+	corrupt_file.store_string("broken")
+	corrupt_file.close()
+	app.current_screen.get_node("%PrototypeButton").pressed.emit()
+	await _settle()
+	var retry_screen = app.current_screen
+	retry_screen.progress_path = SCENE_PROGRESS_PATH
+	var retry_session = retry_screen.simulation
+	retry_session.set_physics_process(false)
+	var retry_world = retry_session.world
+	var enemy = retry_world.nexuses[1]
+	enemy.shield_active = false
+	enemy.shield = 0
+	enemy.hp = 1
+	var ally = retry_world.spawn_unit(retry_session.DEFINITIONS[0], 0, 1)
+	ally.position = enemy.position - Vector2(20, 0)
+	retry_world.apply_hit(ally.id, enemy.id)
+	await _settle()
+	_check(retry_screen.get_node("%SaveRetryButton").visible, "Corrupt save exposes retry")
+	_check(
+		FileAccess.get_file_as_string(SCENE_PROGRESS_PATH) == "broken",
+		"Corrupt progress is never overwritten automatically"
+	)
+	DirAccess.remove_absolute(SCENE_PROGRESS_PATH)
+	retry_screen.get_node("%SaveRetryButton").pressed.emit()
+	_check(
+		(
+			LevelProgressStore.load_state(SCENE_PROGRESS_PATH).get("meta_gold", -1) == 3000
+			and not retry_screen.get_node("%SaveRetryButton").visible
+		),
+		"Explicit retry commits after progress is repaired"
+	)
+	retry_screen.get_node("%MenuButton").pressed.emit()
+	await _settle()
+	_check(get_node_count() == baseline, "retry scene leaves no orphan nodes")
+	for path in [SCENE_PROGRESS_PATH, SCENE_PROGRESS_PATH + ".bak", SCENE_PROGRESS_PATH + ".tmp"]:
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(path)

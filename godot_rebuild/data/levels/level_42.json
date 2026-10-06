@@ -1,0 +1,23 @@
+{
+  "level_number": 42,
+  "name": "The Crow-Eyed",
+  "description": "Face Kaineroth, the Crow-Eyed",
+  "enemy_hp_mult": 1.42,
+  "enemy_damage_mult": 1.42,
+  "enemy_speed_mult": 1.42,
+  "castle_start_level": 1,
+  "starting_gold": 1000,
+  "starting_castle_level": 1,
+  "map_theme": "croweye",
+  "bgm_track": "bgm_battle.wav",
+  "mini_bosses": {
+    "10": "kaedrin",
+    "18": "morvaeth2",
+    "25": "vardrok"
+  },
+  "true_boss": "kaineroth",
+  "meta_gold_reward_win": 3000,
+  "meta_gold_reward_replay": 1500,
+  "meta_gold_reward_lose": 0,
+  "unlock_after_level": 41
+}

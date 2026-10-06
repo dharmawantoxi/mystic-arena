@@ -1,0 +1,23 @@
+{
+  "level_number": 36,
+  "name": "The Sunfist",
+  "description": "Face Kaerinya, the Sunfist",
+  "enemy_hp_mult": 1.36,
+  "enemy_damage_mult": 1.36,
+  "enemy_speed_mult": 1.36,
+  "castle_start_level": 1,
+  "starting_gold": 1000,
+  "starting_castle_level": 1,
+  "map_theme": "sunfist",
+  "bgm_track": "bgm_battle.wav",
+  "mini_bosses": {
+    "10": "nyxallaria",
+    "18": "vhaerinth",
+    "25": "xharokh"
+  },
+  "true_boss": "kaerinya",
+  "meta_gold_reward_win": 3000,
+  "meta_gold_reward_replay": 1500,
+  "meta_gold_reward_lose": 0,
+  "unlock_after_level": 35
+}

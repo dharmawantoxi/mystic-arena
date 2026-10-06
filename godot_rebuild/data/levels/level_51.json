@@ -1,0 +1,23 @@
+{
+  "level_number": 51,
+  "name": "The Emberlion Ronin",
+  "description": "Face Kaithros, the Emberlion Ronin",
+  "enemy_hp_mult": 1.51,
+  "enemy_damage_mult": 1.51,
+  "enemy_speed_mult": 1.51,
+  "castle_start_level": 1,
+  "starting_gold": 1000,
+  "starting_castle_level": 1,
+  "map_theme": "emberlion",
+  "bgm_track": "bgm_battle.wav",
+  "mini_bosses": {
+    "10": "aurelian",
+    "18": "morvath",
+    "25": "pyrhaan"
+  },
+  "true_boss": "kaithros",
+  "meta_gold_reward_win": 3000,
+  "meta_gold_reward_replay": 1500,
+  "meta_gold_reward_lose": 0,
+  "unlock_after_level": 50
+}

@@ -1,0 +1,23 @@
+{
+  "level_number": 40,
+  "name": "The Tempest Weaver",
+  "description": "Face Thal'ryndel, the Tempest Weaver",
+  "enemy_hp_mult": 1.4,
+  "enemy_damage_mult": 1.4,
+  "enemy_speed_mult": 1.4,
+  "castle_start_level": 1,
+  "starting_gold": 1000,
+  "starting_castle_level": 1,
+  "map_theme": "tempest",
+  "bgm_track": "bgm_battle.wav",
+  "mini_bosses": {
+    "10": "urgharun",
+    "18": "yhoranth",
+    "25": "zulkhaven"
+  },
+  "true_boss": "thalryndel",
+  "meta_gold_reward_win": 3000,
+  "meta_gold_reward_replay": 1500,
+  "meta_gold_reward_lose": 0,
+  "unlock_after_level": 39
+}

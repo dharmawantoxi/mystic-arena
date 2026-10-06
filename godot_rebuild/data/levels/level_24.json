@@ -1,0 +1,23 @@
+{
+  "level_number": 24,
+  "name": "The Sunborn Herald",
+  "description": "Face Solareth, the Sunborn Herald",
+  "enemy_hp_mult": 1.24,
+  "enemy_damage_mult": 1.24,
+  "enemy_speed_mult": 1.24,
+  "castle_start_level": 1,
+  "starting_gold": 1000,
+  "starting_castle_level": 1,
+  "map_theme": "solaris",
+  "bgm_track": "bgm_battle.wav",
+  "mini_bosses": {
+    "10": "khalzaredh",
+    "18": "nyxaroth",
+    "25": "veshtrax"
+  },
+  "true_boss": "solareth",
+  "meta_gold_reward_win": 3000,
+  "meta_gold_reward_replay": 1500,
+  "meta_gold_reward_lose": 0,
+  "unlock_after_level": 23
+}

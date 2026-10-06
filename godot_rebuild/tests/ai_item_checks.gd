@@ -2288,6 +2288,29 @@ func _test_ai_restart(check: Callable) -> void:
 	var other := AiBuild.new()
 	other.rng.seed = 12
 	check.call(builder.rng.randf() == other.rng.randf(), "Restart must reseed the build RNG")
+	var draft_probe := RandomNumberGenerator.new()
+	draft_probe.seed = 13
+	check.call(
+		world.ai_draft.rng.randf() == draft_probe.randf(), "Restart must reseed the draft RNG"
+	)
+	# Switching back to an unseeded match must discard the old seed label and
+	# both adapters' seeded streams; no probabilistic draw comparison needed.
+	world.ai_controller.policy.level_number = 54
+	world.ai_draft.level_number = 54
+	check.call(world.ai_controller.policy.action_budget() > 1, "Elite AI needs extra actions")
+	check.call(world.ai_draft.hero_pool().size() > 6, "Late-level draft includes boss heroes")
+	world.reset_ai()
+	check.call(world.ai_controller.match_seed == -1, "Unseeded restart clears the AI seed")
+	check.call(
+		world.ai_controller.policy.level_number == 1 and world.ai_draft.level_number == 1,
+		"Restart restores level 1 AI policy and recruitment pool"
+	)
+	check.call(world.ai_controller.policy.action_budget() == 1, "Reset removes elite extra actions")
+	check.call(world.ai_draft.hero_pool().size() == 6, "Reset removes late-level boss recruits")
+	check.call(world.ai_controller.ticks == 0, "Unseeded restart resets the AI clock")
+	world.reset_ai(11)
+	probe.rng.seed = 11
+	check.call(world.ai_controller.draw() == probe.draw(), "Seeding after unseeded reset replays")
 
 
 func _test_ai_shield_nexus(check: Callable) -> void:

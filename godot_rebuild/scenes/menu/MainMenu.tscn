@@ -62,6 +62,24 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Dunia yang sama. Fondasi yang baru."
 
+[node name="LevelPicker" type="HBoxContainer" parent="Content/Column"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="LevelLabel" type="Label" parent="Content/Column/LevelPicker"]
+layout_mode = 2
+text = "Level uji (belum parity penuh):"
+
+[node name="LevelChoice" type="OptionButton" parent="Content/Column/LevelPicker"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(330, 46)
+
+[node name="DifficultyChoice" type="OptionButton" parent="Content/Column/LevelPicker"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(180, 46)
+
 [node name="Actions" type="HBoxContainer" parent="Content/Column"]
 layout_mode = 2
 theme_override_constants/separation = 12
@@ -101,8 +119,8 @@ text = "Keluar"
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 17
-text = "TAHAP 05 · Upgrade Archer level 1–6
-Wave otomatis, gold, build/sell. Belum AI asli, upgrade nexus, hero, boss atau save."
+text = "REBUILD EKSPERIMENTAL · 54 konfigurasi level, belum parity penuh
+AI, boss, ekonomi dan progres development aktif; map/theme, reward dan save Python belum dipindahkan."
 
 [node name="Fill" type="Control" parent="Content/Column"]
 layout_mode = 2

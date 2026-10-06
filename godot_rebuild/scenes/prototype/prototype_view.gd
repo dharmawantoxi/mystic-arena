@@ -6,6 +6,12 @@ const HeroState = preload("res://scripts/combat/hero_state.gd")
 const BossState = preload("res://scripts/match/boss_state.gd")
 const HeroMarker = preload("res://scripts/ui/hero_marker.gd")
 const BossFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
+const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
+const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
+const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
+const WallTiles = preload("res://scripts/ui/wall_tiles.gd")
+const TerrainTiles = preload("res://scripts/ui/terrain_tiles.gd")
+var cached_river_theme := ""
 
 
 func _draw() -> void:
@@ -13,6 +19,16 @@ func _draw() -> void:
 		super._draw()
 		return
 	var world := session.world as Prototype
+	terrain_palette = TerrainPalette.for_level(world.level_config)
+	terrain_river = TerrainPalette.river_path()
+	var map_theme: String = String(world.level_config.get("map_theme", "forest"))
+	if river_texture == null or cached_river_theme != map_theme:
+		terrain_texture = ImageTexture.create_from_image(TerrainTiles.raster(terrain_palette))
+		river_texture = ImageTexture.create_from_image(RiverTiles.raster(terrain_palette))
+		lane_texture = ImageTexture.create_from_image(LaneTiles.raster(terrain_palette))
+		if wall_texture == null:
+			wall_texture = ImageTexture.create_from_image(WallTiles.raster())
+		cached_river_theme = map_theme
 	draw_set_transform(world.boss_presentation_offset(), 0.0, Vector2.ONE)
 	super._draw()
 	var match_session := session as PrototypeSession

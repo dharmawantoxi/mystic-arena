@@ -1,0 +1,23 @@
+{
+  "level_number": 5,
+  "name": "The Haunted Veil",
+  "description": "Face Krobellus, the Death Prophet",
+  "enemy_hp_mult": 1.05,
+  "enemy_damage_mult": 1.05,
+  "enemy_speed_mult": 1.05,
+  "castle_start_level": 1,
+  "starting_gold": 1000,
+  "starting_castle_level": 1,
+  "map_theme": "haunted",
+  "bgm_track": "bgm_battle.wav",
+  "mini_bosses": {
+    "10": "nyxara",
+    "18": "gravefang",
+    "25": "vhalzun"
+  },
+  "true_boss": "krobellus",
+  "meta_gold_reward_win": 3000,
+  "meta_gold_reward_replay": 1500,
+  "meta_gold_reward_lose": 0,
+  "unlock_after_level": 4
+}

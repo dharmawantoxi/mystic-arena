@@ -6,7 +6,9 @@ const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd"
 const Structure = preload("res://scripts/combat/structure_state.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const ItemForgePanel = preload("res://scripts/ui/item_forge_panel.gd")
+const ProgressStore = preload("res://scripts/match/level_progress_store.gd")
 
+var progress_path := ProgressStore.PATH
 var result_shown := false
 var forge_panel: ItemForgePanel
 @onready var match_session: PrototypeSession = $Simulation
@@ -18,6 +20,15 @@ func _ready() -> void:
 	arena.session = simulation
 	UI_THEME.title(%ArenaTitle, 23)
 	UI_THEME.title(%PauseTitle, 32)
+	var selected_world := match_session.world as Prototype
+	$HUD/TopBar/Row/Names/Description.text = (
+		"Lv.%d · %s · %s · uji konfigurasi, belum parity penuh"
+		% [
+			selected_world.level_number,
+			selected_world.difficulty,
+			selected_world.level_config.get("name", "?")
+		]
+	)
 	%BuildButton.pressed.connect(
 		func() -> void: match_session.request_build(match_session.selected_slot_id)
 	)
@@ -63,6 +74,8 @@ func _ready() -> void:
 	%RestartButton.pressed.connect(func() -> void: restart_requested.emit())
 	%MenuButton.pressed.connect(func() -> void: menu_requested.emit())
 	%BackButton.pressed.connect(func() -> void: menu_requested.emit())
+	%SaveRetryButton.pressed.connect(_save_result)
+	%SaveRetryButton.hide()
 	%PauseButton.grab_focus()
 
 
@@ -277,6 +290,20 @@ func _process(_delta: float) -> void:
 		%ArenaTitle.text = "BIRU MENANG" if world.winner == 0 else "MERAH MENANG"
 		%PauseButton.text = "Hasil [Esc]"
 		pause_match()
+		_save_result()
+
+
+func _save_result() -> void:
+	var world := simulation.world as Prototype
+	if world.is_running():
+		return
+	var committed := world.commit_level_result(progress_path)
+	if committed.is_empty():
+		%Hint.text = ("Progres BELUM tersimpan. Periksa file progres, lalu coba lagi.")
+		%SaveRetryButton.show()
+		return
+	%Hint.text = ("+%d Meta Gold tersimpan (save pengembangan Godot)." % int(committed.reward))
+	%SaveRetryButton.hide()
 
 
 func _build_forge_ui() -> void:
