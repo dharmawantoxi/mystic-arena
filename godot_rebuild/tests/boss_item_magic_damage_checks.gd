@@ -269,9 +269,11 @@ func _replay(
 	world.deliveries = {}
 	world.types = {}
 	var hp_before := boss.hp
-	hero.items.on_basic_attack_hit(
-		victim_id, BASIC_DAMAGE, _candidates(target, regular, boss), rng, bus
-	)
+	# Production enemy list: units in spawn order with the living boss appended
+	# last (`_hero_enemy_list`), matching the source
+	# `_all_units = minions + heroes + [active_boss]`. `UnitState` has no
+	# `max_hp`, so the hand-built entries would drop the minion definition hp.
+	hero.items.on_basic_attack_hit(victim_id, BASIC_DAMAGE, world._hero_enemy_list(), rng, bus)
 	if boss.defeated:
 		world._process_boss_result()
 	return {
@@ -327,22 +329,12 @@ func _spawn_units(
 		hero.position,
 		hero.target_id
 	)
+	# The oracle seeds `owner.is_melee_hero = arm != "polycephaly"` with
+	# `range` 70/130 (`is_melee_hero` is the `< 110` rule in the source), and
+	# Polycephaly only fires for a ranged owner.
+	hero.items.hero_melee_flag = 0 if arm == "polycephaly" else 1
+	hero.items.hero_range = 130.0 if arm == "polycephaly" else 70.0
 	return [boss, hero, target, regular]
-
-
-func _candidates(target: UnitState, regular: UnitState, boss: BossState) -> Array:
-	# Source order: minions, heroes, then the living boss appended last.
-	return [_entry(target), _entry(regular), _entry(boss)]
-
-
-func _entry(unit: UnitState) -> Dictionary:
-	return {
-		"id": int(unit.id),
-		"alive": unit.alive,
-		"team": unit.team,
-		"pos": unit.position,
-		"max_hp": int(unit.max_hp),
-	}
 
 
 func _chance_of(arm_meta: Dictionary) -> float:
