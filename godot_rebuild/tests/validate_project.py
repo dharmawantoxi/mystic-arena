@@ -1873,6 +1873,104 @@ check('const BossItemBashDamageChecks = preload("res://tests/boss_item_bash_dama
 
 
 
+# ── 9g: the on-hit magic arms on the active boss use the source call shape ──
+from boss_item_magic_damage_source_oracle import source_fixture as magic_damage_fixture
+_magic_dmg = magic_damage_fixture()
+_magic_dmg_file = json.loads(
+    (ROOT / "tests/fixtures/boss_item_magic_damage_source.json").read_text(encoding="utf-8")
+)
+check(_magic_dmg == _magic_dmg_file,
+      "9g magic damage fixture matches Python source execution")
+_magic_dmg_cases = _magic_dmg.get("cases", [])
+_magic_dmg_types = {row["boss_type"] for row in _magic_dmg_cases}
+_magic_dmg_arms = {"chain", "pierce_bash", "polycephaly", "empower"}
+_magic_dmg_scenarios = {
+    arm: {
+        arm + "_magic_arm_vs_boss_resist",
+        arm + "_blind_owner_still_lands",
+        arm + "_lethal_without_kill_credit",
+        _magic_dmg.get("source", {}).get("arms", {}).get(arm, {}).get("control_scenario"),
+    }
+    for arm in _magic_dmg_arms
+}
+check(len(_magic_dmg_cases) == 3456
+      and _magic_dmg_types == set(boss_motion_source_types())
+      and all(sum(row["boss_type"] == boss for row in _magic_dmg_cases) == 16
+              for boss in _magic_dmg_types)
+      and {row["arm"] for row in _magic_dmg_cases} == _magic_dmg_arms
+      and all({row["scenario"] for row in _magic_dmg_cases if row["arm"] == arm}
+              == _magic_dmg_scenarios[arm]
+              for arm in _magic_dmg_arms)
+      and all("expected" in row and "native_old" in row for row in _magic_dmg_cases),
+      "9g sixteen expected/counterfactual magic arm cases cover every boss type")
+check(_magic_dmg.get("source", {}).get("ast_shape", {}) == {
+    "chain_take_damage_positional_args": 3,
+    "chain_take_damage_keywords": [],
+    "chain_take_damage_third_arg": "'magic'",
+    "pierce_bash_take_damage_positional_args": 3,
+    "pierce_bash_take_damage_keywords": [],
+    "pierce_bash_take_damage_third_arg": "'magic'",
+    "polycephaly_take_damage_positional_args": 3,
+    "polycephaly_take_damage_keywords": [],
+    "polycephaly_take_damage_third_arg": "'magic'",
+    "empower_take_damage_positional_args": 3,
+    "empower_take_damage_keywords": [],
+    "empower_take_damage_third_arg": "'magic'",
+    "boss_blind_block_requires_source": True,
+    "boss_school_comes_from_resolver": True,
+    "resolver_returns_none_without_school_or_source": True,
+    "boss_lethal_branch_stores_source": True,
+    "arms_are_reached_from_basic_attack": True,
+    "chain_uses_the_chain_getter": True,
+    "pierce_uses_the_cudgel_bash_block": True,
+}, "9g Python AST proves all four magic arms omit source and school")
+check(_magic_dmg.get("source", {}).get("owner_true_strike") == {
+    "chain": False,
+    "pierce_bash": True,
+    "polycephaly": False,
+    "empower": False,
+}, "9g only Sundering Cudgel carries true strike against the blind gate")
+_magic_controls = {name: arm["control_scenario"]
+                   for name, arm in _magic_dmg.get("source", {}).get("arms", {}).items()}
+check(all(
+    (row["expected"] == row["native_old"]) == (row["scenario"] == _magic_controls[row["arm"]])
+    for row in _magic_dmg_cases
+), "9g only the proccing magic arm scenarios diverge; the gate controls match")
+check(all(
+    row["expected"]["regular_hits"] == row["native_old"]["regular_hits"]
+    for row in _magic_dmg_cases
+), "9g the regular-unit arm of every magic effect keeps its payload in both columns")
+check(all(
+    row["expected"]["owner_kills"] == 0 and row["expected"]["boss_counter"] == 0
+    and row["native_old"]["owner_kills"] == 1 and row["native_old"]["boss_counter"] == 1
+    for row in _magic_dmg_cases
+    if row["scenario"].endswith("lethal_without_kill_credit")
+), "9g a lethal magic proc credits nobody in the source column")
+check(all(
+    row["expected"]["boss_hp_loss"] > 0 and row["native_old"]["boss_hp_loss"] == 0
+    for row in _magic_dmg_cases
+    if row["scenario"].endswith("blind_owner_still_lands") and row["arm"] != "pierce_bash"
+), "9g a blinded owner still lands the source-less magic proc")
+check(all(
+    row["expected"]["boss_hp_loss"] > 0 and row["native_old"]["boss_hp_loss"] > 0
+    for row in _magic_dmg_cases
+    if row["scenario"].endswith("blind_owner_still_lands") and row["arm"] == "pierce_bash"
+), "9g Sundering Cudgel true strike pierces blind in both columns")
+_magic_dmg_base = (ROOT / "scripts/match/item_effects.gd").read_text(encoding="utf-8")
+_magic_dmg_bus = (ROOT / "scripts/match/battle_item_effects.gd").read_text(encoding="utf-8")
+_magic_dmg_inv = (ROOT / "scripts/match/hero_item_inventory.gd").read_text(encoding="utf-8")
+check("func deal_damage_magic_sourceless(" in _magic_dmg_base
+      and "func deal_damage_magic_sourceless(" in _magic_dmg_bus
+      and 'world._deliver_hit(-1, source_team, tgt, amount, "neutral", dealer_pos, "magic")'
+      in _magic_dmg_bus
+      and _magic_dmg_inv.count("effects.deal_damage_magic_sourceless(") == 4,
+      "9g the four on-hit magic arms route through the typed source-less bus entry")
+check('const BossItemMagicDamageChecks = preload("res://tests/boss_item_magic_damage_checks.gd")'
+      in ai_tests
+      and "BossItemMagicDamageChecks.new().run(_check)" in ai_tests,
+      "9g production-path magic arm replay is registered")
+
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

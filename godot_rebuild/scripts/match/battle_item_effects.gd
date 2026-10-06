@@ -70,6 +70,31 @@ func deal_damage_sourceless(
 	return deal_damage(target_id, source_team, amount, school)
 
 
+func deal_damage_magic_sourceless(
+	target_id: int, source_team: int, amount: int, school: String = "magic"
+) -> int:
+	# Layer 9g: the on-hit magic arms (arc chain `hero_items.py:2568`,
+	# Sundering Cudgel Piercing Bash `:2589`, Polycephaly multishot `:2633`,
+	# Runic Gavel Empower Strike `:2648`) call
+	# `take_damage(damage, h.team, "magic")` - three positional arguments, so
+	# `Boss.take_damage` runs with `damage_type="magic"` and `source=None`. The
+	# native bus used to send those arms through `deal_damage`, which delivered
+	# `damage_type="normal"` with the dealing hero as source: the Solar Brand
+	# blind gate swallowed the hit for a blinded owner, `school="magic"` cut it
+	# by boss magic resist while the source resolves no school at all
+	# (`resolve_damage_school('magic', None, None)` returns `None`,
+	# `_entity.py:106-130`), and a lethal hit credited the owner with the kill.
+	# Regular victims keep the declared school and the dealing hero as source,
+	# exactly as before this layer.
+	var tgt: Object = world.get_unit(target_id)
+	if tgt == null:
+		return 0
+	if tgt is BossState:
+		world._deliver_hit(-1, source_team, tgt, amount, "neutral", dealer_pos, "magic")
+		return amount
+	return deal_damage(target_id, source_team, amount, school)
+
+
 func apply_stun(target_id: int, duration: int) -> void:
 	var t: Object = world.get_unit(target_id)
 	if t is HeroState:

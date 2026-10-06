@@ -895,7 +895,11 @@ func _on_hit_common(
 			if hit.is_empty():
 				hit = [target_id]
 			for tid in hit:
-				effects.deal_damage(int(tid), hero_team, int(ch["damage"]), "magic")
+				# Layer 9g: source `u.take_damage(chain["damage"], h.team,
+				# "magic")` (`hero_items.py:2568`) omits `source=`.
+				effects.deal_damage_magic_sourceless(
+					int(tid), hero_team, int(ch["damage"]), "magic"
+				)
 			effects.chain_fx(hero_id, hit)
 	if target_id < 0:
 		return
@@ -905,7 +909,11 @@ func _on_hit_common(
 		if rng.randf() < float(pb.get("chance", 0.0)):
 			pierce_bash_cd = int(pb.get("cooldown", 0))
 			effects.apply_stun(target_id, int(pb.get("stun", 0)))
-			effects.deal_damage(target_id, hero_team, int(pb.get("damage", 0)), "magic")
+			# Layer 9g: `target.take_damage(b["damage"], h.team, "magic")`
+			# (`hero_items.py:2589`), no `source=`.
+			effects.deal_damage_magic_sourceless(
+				target_id, hero_team, int(pb.get("damage", 0)), "magic"
+			)
 			effects.notify(target_id, "PIERCE!")
 	# Frostbound Eye: Frostbite (slow + atk_slow + anti_heal).
 	if has("frostbound_eye"):
@@ -939,7 +947,9 @@ func _on_hit_common(
 			for index in range(count):
 				var eid: int = int(extras[index])
 				if splash > 0:
-					effects.deal_damage(eid, hero_team, splash, "magic")
+					# Layer 9g: `u.take_damage(dmg, h.team, "magic")`
+					# (`hero_items.py:2633`), no `source=`.
+					effects.deal_damage_magic_sourceless(eid, hero_team, splash, "magic")
 				apply_miasma(
 					eid,
 					_enemy_alive(enemies, eid),
@@ -953,7 +963,9 @@ func _on_hit_common(
 	if has("runic_gavel") and empower_charge <= 0:
 		var bonus: int = consume_empower_strike()
 		if bonus > 0:
-			effects.deal_damage(target_id, hero_team, bonus, "magic")
+			# Layer 9g: `target.take_damage(bonus, h.team, "magic")`
+			# (`hero_items.py:2648`), no `source=`.
+			effects.deal_damage_magic_sourceless(target_id, hero_team, bonus, "magic")
 			effects.notify(target_id, "EMPOWER!")
 	# Vine Rod: Entangle (root = 100% slow).
 	if has("vine_rod") and vine_cd <= 0:

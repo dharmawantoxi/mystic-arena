@@ -44,6 +44,19 @@ func deal_damage_sourceless(
 	return deal_damage(target_id, source_team, amount, school)
 
 
+## Deal damage with the source call shape that omits `source=` but keeps the
+## magic `damage_type`. Layer 9g: the on-hit magic arms call
+## `target.take_damage(damage, h.team, "magic")` (`hero_items.py:2568, 2589,
+## 2633, 2648`), three positional arguments, so a boss victim runs
+## `Boss.take_damage` (`bosses/base_boss.py:5978`) with
+## `damage_type="magic"`, `source=None`, `school=None`. Buses without a boss
+## registry keep the declared school.
+func deal_damage_magic_sourceless(
+	target_id: int, source_team: int, amount: int, school: String = "magic"
+) -> int:
+	return deal_damage(target_id, source_team, amount, school)
+
+
 ## Apply a stun for `duration` ticks.
 func apply_stun(_target_id: int, _duration: int) -> void:
 	pass
