@@ -32,6 +32,18 @@ func deal_damage_from(
 	return deal_damage(target_id, _source_team, amount, school)
 
 
+## Deal damage with the source call shape that omits both `source=` and
+## `school=`. Layer 9f: the Abyss Breaker Bash arm calls
+## `target.take_damage(bash["damage"], h.team)` (`hero_items.py:2542`), two
+## positional arguments, so a boss victim runs `Boss.take_damage` with
+## `source=None` and `school=None`. Buses without a boss registry simply keep
+## the declared school.
+func deal_damage_sourceless(
+	target_id: int, source_team: int, amount: int, school: String = "physical"
+) -> int:
+	return deal_damage(target_id, source_team, amount, school)
+
+
 ## Apply a stun for `duration` ticks.
 func apply_stun(_target_id: int, _duration: int) -> void:
 	pass

@@ -50,6 +50,26 @@ func deal_damage_from(
 	return amount
 
 
+func deal_damage_sourceless(
+	target_id: int, source_team: int, amount: int, school: String = "physical"
+) -> int:
+	# Layer 9f: `_on_hit_common` lands the Abyss Breaker Bash with
+	# `target.take_damage(bash["damage"], h.team)` (`hero_items.py:2542`). For the
+	# active boss that means `Boss.take_damage(damage, from_team)`: the Solar
+	# Brand blind block is skipped (it needs `source is not None`),
+	# `resolve_damage_school('normal', None, None)` returns `None` so boss armor
+	# never cuts the bonus damage, and a lethal bash leaves `_killed_by = None`
+	# so `Game._process_boss_kill` credits nobody. Regular victims keep the
+	# declared school and the dealing hero as source, exactly as before.
+	var tgt: Object = world.get_unit(target_id)
+	if tgt == null:
+		return 0
+	if tgt is BossState:
+		world._deliver_hit(-1, source_team, tgt, amount, "neutral", dealer_pos)
+		return amount
+	return deal_damage(target_id, source_team, amount, school)
+
+
 func apply_stun(target_id: int, duration: int) -> void:
 	var t: Object = world.get_unit(target_id)
 	if t is HeroState:
