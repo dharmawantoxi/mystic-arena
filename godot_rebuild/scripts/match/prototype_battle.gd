@@ -410,9 +410,13 @@ func step_tick() -> void:
 		_tick_auras_and_items()
 		_tick_item_debuffs()
 		_step_hero_respawns()
-		# Source Game.update runs the AI right after the entity loop.
-		_step_ai_heroes()
-		_step_ai()
+		# The active AI controller owns hero control through its per-tick
+		# callback. Keep standalone hero control available when only that flag
+		# is enabled, but never dispatch it twice in one production tick.
+		if ai_enabled:
+			_step_ai()
+		elif ai_hero_control_enabled:
+			_step_ai_heroes()
 
 
 func get_slot(id: int) -> Slot:
