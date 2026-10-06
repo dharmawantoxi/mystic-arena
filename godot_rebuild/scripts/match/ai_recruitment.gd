@@ -15,7 +15,4 @@ func try_buy(world: World, draft: Draft) -> bool:
 		if world.get_unit(unit.id) != unit or unit.definition == null:
 			return false
 		owned.append(unit.definition.id)
-	# The free scene mirror affects physical spacing, not source AI ownership.
-	return draft.try_buy(
-		owned, world.economy.gold[world.RED], world._buy_ai_hero, world._red_hero_count()
-	)
+	return draft.try_buy(owned, world.economy.gold[world.RED], world._buy_ai_hero)

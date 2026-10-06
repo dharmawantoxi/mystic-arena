@@ -75,7 +75,7 @@ func choose_target(available: Array, owned_types: Array) -> String:
 	return ""
 
 
-func try_buy(owned_types: Array, gold: int, purchase: Callable, spawn_count: int = -1) -> bool:
+func try_buy(owned_types: Array, gold: int, purchase: Callable) -> bool:
 	# Do not filter out dead heroes. The 5-hero cap belongs to AIPlayer._ai_step,
 	# not this method; owned_types must reflect the authoritative complete roster.
 	var available: Array = []
@@ -97,11 +97,9 @@ func try_buy(owned_types: Array, gold: int, purchase: Callable, spawn_count: int
 	if gold < purchase_target_cost:
 		return false
 	var origin: Array = _metadata.spawn_origin
-	# Source ties placement to AIPlayer.heroes. A prototype-only red mirror may
-	# occupy a physical slot without being an AI-owned hero, so callers can pass
-	# the scene's spacing count separately from logical ownership.
-	var position_count := owned_types.size() if spawn_count < 0 else spawn_count
-	var point := Vector2(origin[0], origin[1] + position_count * 40 - 40)
+	# Source ties placement to AIPlayer.heroes; scene-only red heroes do not
+	# consume an AI-owned position slot.
+	var point := Vector2(origin[0], origin[1] + owned_types.size() * 40 - 40)
 	# Native adapter failure (e.g. capacity) must not release the saved draft.
 	if not purchase.call(purchase_target, purchase_target_cost, point):
 		return false

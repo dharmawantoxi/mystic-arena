@@ -506,14 +506,13 @@ func _buy_ai_hero(hero_type: String, cost: int, pos: Vector2) -> bool:
 				if unit.definition.id == hero_type:
 					transaction_error = "owned"
 					break
-		var red_hero_count := _red_hero_count()
-		if transaction_error.is_empty() and roster.size() >= 5:
-			transaction_error = "capacity"
-		elif (
-			transaction_error.is_empty()
-			and pos != RED_HERO_SPAWN + Vector2(0, red_hero_count * 40 - 40)
-		):
-			transaction_error = "position"
+			if transaction_error.is_empty() and roster.size() >= 5:
+				transaction_error = "capacity"
+			elif (
+				transaction_error.is_empty()
+				and pos != RED_HERO_SPAWN + Vector2(0, roster.size() * 40 - 40)
+			):
+				transaction_error = "position"
 	if not transaction_error.is_empty():
 		return false
 	var hero := spawn_hero(kit, RED, pos)
@@ -1391,15 +1390,6 @@ func _ai_roster() -> Array:
 		if hero != null and hero.team == RED:
 			heroes.append(hero)
 	return heroes
-
-
-func _red_hero_count() -> int:
-	# Physical spawn spacing still includes the prototype's free red mirror.
-	var count := 0
-	for unit in units:
-		if unit.is_hero and unit.team == RED:
-			count += 1
-	return count
 
 
 func _ai_living_towers() -> Array:
