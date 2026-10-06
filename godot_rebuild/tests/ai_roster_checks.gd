@@ -108,7 +108,9 @@ func _test_production_world(scenario: Dictionary, check: Callable) -> void:
 		var position := Vector2(World.RED_HERO_SPAWN.x, source_y)
 		var bought := world._buy_ai_hero(hero_type, int(definition.cost), position)
 		check.call(bought, "AI purchase registers owned kit: " + hero_type)
-		check.call(source_y >= 0.0, "Source draft oracle records AI spawn offset " + str(owned_count))
+		check.call(
+			source_y >= 0.0, "Source draft oracle records AI spawn offset " + str(owned_count)
+		)
 		var current_roster := world._ai_roster()
 		if bought and current_roster.size() == owned_count + 1:
 			var purchased := current_roster.back() as World.HeroState
