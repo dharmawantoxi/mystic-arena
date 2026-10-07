@@ -11,6 +11,7 @@ const Economy = preload("res://scripts/match/match_economy.gd")
 const Forge = preload("res://scripts/match/forge.gd")
 const AiHeroControl = preload("res://scripts/match/ai_hero_control.gd")
 const Tactical = preload("res://scripts/match/tactical_commands.gd")
+const AudioRuntime = preload("res://scripts/audio/audio_runtime.gd")
 const AiController = preload("res://scripts/match/ai_controller.gd")
 const AiBuild = preload("res://scripts/match/ai_build.gd")
 const AiRecruitment = preload("res://scripts/match/ai_recruitment.gd")
@@ -237,7 +238,7 @@ func setup_arena() -> bool:
 	# Free mirrored Kaizen pair. Not a catalog purchase, not AIPlayer.
 	spawn_hero(KAIZEN, BLUE, HERO_SPAWN)
 	spawn_hero(KAIZEN, RED, RED_HERO_SPAWN)
-	AudioManager.play("hero_spawn")
+	AudioRuntime.play("hero_spawn")
 	return true
 
 
@@ -392,7 +393,7 @@ func step_tick() -> void:
 	)
 	wave_count = scheduler.wave
 	if batch.started:
-		AudioManager.play("wave_start")
+		AudioRuntime.play("wave_start")
 		for nexus in nexuses:
 			if nexus != null:
 				nexus.set_wave(wave_count)
@@ -406,7 +407,7 @@ func step_tick() -> void:
 		_spawn_match_minion(MINIONS[spawn.kind], spawn.team, spawn.lane)
 	super.step_tick()
 	if winner in [BLUE, RED] and not _audio_result_announced:
-		AudioManager.play("victory" if winner == BLUE else "defeat")
+		AudioRuntime.play("victory" if winner == BLUE else "defeat")
 		_audio_result_announced = true
 	# Source Game.update runs living Hero.update calls before Boss.update. Keep
 	# the boss's target/attack phase after hero hits and movement from this tick.

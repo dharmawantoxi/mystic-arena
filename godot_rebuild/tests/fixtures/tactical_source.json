@@ -5557,7 +5557,7 @@
    ]
   },
   {
-   "name": "protect_tower_zero_threat_prefers_lowest_hp",
+   "name": "protect_tower_zero_threat_keeps_list_order",
    "world": {
     "state": "playing",
     "wave": 1,
@@ -5603,22 +5603,22 @@
     ],
     "towers": [
      {
-      "id": 20,
-      "name": "Archer 20",
+      "id": 21,
+      "name": "Archer 21",
       "team": "blue",
-      "x": 300,
-      "y": 200,
-      "hp": 500,
+      "x": 500,
+      "y": 340,
+      "hp": 800,
       "max_hp": 800,
       "alive": true
      },
      {
-      "id": 21,
-      "name": "Archer 21",
+      "id": 22,
+      "name": "Archer 22",
       "team": "blue",
       "x": 900,
       "y": 340,
-      "hp": 700,
+      "hp": 800,
       "max_hp": 800,
       "alive": true
      }
@@ -5669,19 +5669,19 @@
     0.8
    ],
    "notifications": [
-    "PROTECT TOWER! 3 heroes defending Archer 20!"
+    "PROTECT TOWER! 3 heroes defending Archer 21!"
    ],
    "final": {
     "active_command": "protect_tower",
     "command_timer": 600,
-    "command_target": 20,
+    "command_target": 21,
     "gather_point": [
-     300.0,
-     200.0
+     500.0,
+     340.0
     ],
     "gather_point_timer": 150,
     "cooldown": 30,
-    "feedback_text": "PROTECT TOWER! 3 heroes defending Archer 20!",
+    "feedback_text": "PROTECT TOWER! 3 heroes defending Archer 21!",
     "feedback_timer": 180,
     "feedback_color": [
      100,
@@ -5693,7 +5693,7 @@
      255,
      100
     ],
-    "status_text": "PROTECT_TOWER Archer 20 (10s) [HOLD]",
+    "status_text": "PROTECT_TOWER Archer 21 (10s) [HOLD]",
     "held_command": "protect_tower",
     "hold_elapsed": 0,
     "hold_has_fired": true,
@@ -5707,8 +5707,8 @@
       "hp": 1000.0,
       "alive": true,
       "destination": [
-       330.0,
-       200.0
+       530.0,
+       340.0
       ],
       "destination_auto": false,
       "follow": null,
@@ -5723,8 +5723,8 @@
       "hp": 1000.0,
       "alive": true,
       "destination": [
-       280.0,
-       234.64102172851562
+       480.0,
+       374.6410217285156
       ],
       "destination_auto": false,
       "follow": null,
@@ -5739,8 +5739,8 @@
       "hp": 1000.0,
       "alive": true,
       "destination": [
-       275.0,
-       156.69873046875
+       475.0,
+       296.69873046875
       ],
       "destination_auto": false,
       "follow": null,
@@ -5750,7 +5750,7 @@
      }
     ],
     "red_heroes": [],
-    "threatened_tower": 20,
+    "threatened_tower": 21,
     "nearest_enemy": 91,
     "enemies_near_castle": 0
    },
@@ -5758,14 +5758,14 @@
     {
      "active_command": "protect_tower",
      "command_timer": 600,
-     "command_target": 20,
+     "command_target": 21,
      "gather_point": [
-      300.0,
-      200.0
+      500.0,
+      340.0
      ],
      "gather_point_timer": 150,
      "cooldown": 30,
-     "feedback_text": "PROTECT TOWER! 3 heroes defending Archer 20!",
+     "feedback_text": "PROTECT TOWER! 3 heroes defending Archer 21!",
      "feedback_timer": 180,
      "feedback_color": [
       100,
@@ -5777,7 +5777,7 @@
       255,
       100
      ],
-     "status_text": "PROTECT_TOWER Archer 20 (10s) [HOLD]",
+     "status_text": "PROTECT_TOWER Archer 21 (10s) [HOLD]",
      "held_command": "protect_tower",
      "hold_elapsed": 0,
      "hold_has_fired": true,
@@ -5791,8 +5791,8 @@
        "hp": 1000.0,
        "alive": true,
        "destination": [
-        330.0,
-        200.0
+        530.0,
+        340.0
        ],
        "destination_auto": false,
        "follow": null,
@@ -5807,8 +5807,8 @@
        "hp": 1000.0,
        "alive": true,
        "destination": [
-        280.0,
-        234.64102172851562
+        480.0,
+        374.6410217285156
        ],
        "destination_auto": false,
        "follow": null,
@@ -5823,8 +5823,8 @@
        "hp": 1000.0,
        "alive": true,
        "destination": [
-        275.0,
-        156.69873046875
+        475.0,
+        296.69873046875
        ],
        "destination_auto": false,
        "follow": null,
@@ -5834,14 +5834,14 @@
       }
      ],
      "red_heroes": [],
-     "threatened_tower": 20,
+     "threatened_tower": 21,
      "nearest_enemy": 91,
      "enemies_near_castle": 0
     }
    ]
   },
   {
-   "name": "protect_tower_fallback_front_tower",
+   "name": "protect_tower_outer_bonus_and_threat_score",
    "world": {
     "state": "playing",
     "wave": 1,
@@ -6140,6 +6140,348 @@
      ],
      "red_heroes": [],
      "threatened_tower": 22,
+     "nearest_enemy": 40,
+     "enemies_near_castle": 0
+    }
+   ]
+  },
+  {
+   "name": "protect_tower_stable_distance_tie",
+   "world": {
+    "state": "playing",
+    "wave": 1,
+    "mouse": [
+     0,
+     0
+    ],
+    "selected_hero": null,
+    "heroes": [
+     {
+      "id": 1,
+      "name": "Hero 1",
+      "team": "blue",
+      "x": 400,
+      "y": 340,
+      "hp": 1000,
+      "max_hp": 1000,
+      "range": 110,
+      "alive": true
+     },
+     {
+      "id": 2,
+      "name": "Hero 2",
+      "team": "blue",
+      "x": 600,
+      "y": 340,
+      "hp": 1000,
+      "max_hp": 1000,
+      "range": 110,
+      "alive": true
+     },
+     {
+      "id": 3,
+      "name": "Hero 3",
+      "team": "blue",
+      "x": 500,
+      "y": 240,
+      "hp": 1000,
+      "max_hp": 1000,
+      "range": 110,
+      "alive": true
+     },
+     {
+      "id": 4,
+      "name": "Hero 4",
+      "team": "blue",
+      "x": 500,
+      "y": 440,
+      "hp": 1000,
+      "max_hp": 1000,
+      "range": 110,
+      "alive": true
+     }
+    ],
+    "towers": [
+     {
+      "id": 21,
+      "name": "Archer 21",
+      "team": "blue",
+      "x": 500,
+      "y": 340,
+      "hp": 600,
+      "max_hp": 800,
+      "alive": true
+     }
+    ],
+    "minions": [
+     {
+      "id": 40,
+      "name": "Goblin 40",
+      "team": "red",
+      "x": 520,
+      "y": 360,
+      "hp": 100,
+      "max_hp": 100,
+      "alive": true
+     },
+     {
+      "id": 41,
+      "name": "Goblin 41",
+      "team": "red",
+      "x": 540,
+      "y": 320,
+      "hp": 100,
+      "max_hp": 100,
+      "alive": true
+     },
+     {
+      "id": 42,
+      "name": "Goblin 42",
+      "team": "red",
+      "x": 480,
+      "y": 380,
+      "hp": 100,
+      "max_hp": 100,
+      "alive": true
+     }
+    ],
+    "enemy_heroes": [],
+    "boss": null,
+    "blue_castle": {
+     "id": 90,
+     "name": "Blue Castle",
+     "team": "blue",
+     "x": 100,
+     "y": 620,
+     "hp": 5000,
+     "max_hp": 5000
+    },
+    "red_castle": {
+     "id": 91,
+     "name": "Red Castle",
+     "team": "red",
+     "x": 1180,
+     "y": 100,
+     "hp": 5000,
+     "max_hp": 5000
+    }
+   },
+   "actions": [
+    [
+     "hold",
+     "protect_tower",
+     0,
+     0,
+     false,
+     -1,
+     false
+    ],
+    [
+     "snapshot"
+    ]
+   ],
+   "returned": [
+    true
+   ],
+   "sounds": [
+    "ui_click"
+   ],
+   "sound_volumes": [
+    0.8
+   ],
+   "notifications": [
+    "PROTECT TOWER! 3 heroes defending Archer 21!"
+   ],
+   "final": {
+    "active_command": "protect_tower",
+    "command_timer": 600,
+    "command_target": 21,
+    "gather_point": [
+     500.0,
+     340.0
+    ],
+    "gather_point_timer": 150,
+    "cooldown": 30,
+    "feedback_text": "PROTECT TOWER! 3 heroes defending Archer 21!",
+    "feedback_timer": 180,
+    "feedback_color": [
+     100,
+     255,
+     100
+    ],
+    "command_color": [
+     100,
+     255,
+     100
+    ],
+    "status_text": "PROTECT_TOWER Archer 21 (10s) [HOLD]",
+    "held_command": "protect_tower",
+    "hold_elapsed": 0,
+    "hold_has_fired": true,
+    "gather_push_fired": false,
+    "auto_check_timer": 0,
+    "heroes": [
+     {
+      "id": 1,
+      "x": 400.0,
+      "y": 340.0,
+      "hp": 1000.0,
+      "alive": true,
+      "destination": [
+       530.0,
+       340.0
+      ],
+      "destination_auto": false,
+      "follow": null,
+      "target": null,
+      "is_retreating": false,
+      "damage_dealt": 0
+     },
+     {
+      "id": 2,
+      "x": 600.0,
+      "y": 340.0,
+      "hp": 1000.0,
+      "alive": true,
+      "destination": [
+       480.0,
+       374.6410217285156
+      ],
+      "destination_auto": false,
+      "follow": null,
+      "target": null,
+      "is_retreating": false,
+      "damage_dealt": 0
+     },
+     {
+      "id": 3,
+      "x": 500.0,
+      "y": 240.0,
+      "hp": 1000.0,
+      "alive": true,
+      "destination": [
+       475.0,
+       296.69873046875
+      ],
+      "destination_auto": false,
+      "follow": null,
+      "target": null,
+      "is_retreating": false,
+      "damage_dealt": 0
+     },
+     {
+      "id": 4,
+      "x": 500.0,
+      "y": 440.0,
+      "hp": 1000.0,
+      "alive": true,
+      "destination": null,
+      "destination_auto": false,
+      "follow": null,
+      "target": null,
+      "is_retreating": false,
+      "damage_dealt": 0
+     }
+    ],
+    "red_heroes": [],
+    "threatened_tower": 21,
+    "nearest_enemy": 40,
+    "enemies_near_castle": 0
+   },
+   "trace": [
+    {
+     "active_command": "protect_tower",
+     "command_timer": 600,
+     "command_target": 21,
+     "gather_point": [
+      500.0,
+      340.0
+     ],
+     "gather_point_timer": 150,
+     "cooldown": 30,
+     "feedback_text": "PROTECT TOWER! 3 heroes defending Archer 21!",
+     "feedback_timer": 180,
+     "feedback_color": [
+      100,
+      255,
+      100
+     ],
+     "command_color": [
+      100,
+      255,
+      100
+     ],
+     "status_text": "PROTECT_TOWER Archer 21 (10s) [HOLD]",
+     "held_command": "protect_tower",
+     "hold_elapsed": 0,
+     "hold_has_fired": true,
+     "gather_push_fired": false,
+     "auto_check_timer": 0,
+     "heroes": [
+      {
+       "id": 1,
+       "x": 400.0,
+       "y": 340.0,
+       "hp": 1000.0,
+       "alive": true,
+       "destination": [
+        530.0,
+        340.0
+       ],
+       "destination_auto": false,
+       "follow": null,
+       "target": null,
+       "is_retreating": false,
+       "damage_dealt": 0
+      },
+      {
+       "id": 2,
+       "x": 600.0,
+       "y": 340.0,
+       "hp": 1000.0,
+       "alive": true,
+       "destination": [
+        480.0,
+        374.6410217285156
+       ],
+       "destination_auto": false,
+       "follow": null,
+       "target": null,
+       "is_retreating": false,
+       "damage_dealt": 0
+      },
+      {
+       "id": 3,
+       "x": 500.0,
+       "y": 240.0,
+       "hp": 1000.0,
+       "alive": true,
+       "destination": [
+        475.0,
+        296.69873046875
+       ],
+       "destination_auto": false,
+       "follow": null,
+       "target": null,
+       "is_retreating": false,
+       "damage_dealt": 0
+      },
+      {
+       "id": 4,
+       "x": 500.0,
+       "y": 440.0,
+       "hp": 1000.0,
+       "alive": true,
+       "destination": null,
+       "destination_auto": false,
+       "follow": null,
+       "target": null,
+       "is_retreating": false,
+       "damage_dealt": 0
+      }
+     ],
+     "red_heroes": [],
+     "threatened_tower": 21,
      "nearest_enemy": 40,
      "enemies_near_castle": 0
     }

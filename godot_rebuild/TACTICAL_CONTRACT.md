@@ -126,9 +126,11 @@ di posisi yang sama (setelah `_step_hero_respawns()`, sebelum dispatch AI).
 2. Jarak dihitung `sqrt(dx*dx + dy*dy)` di double, bukan `Vector2.distance_to`
    (f32); sumber memakai `math.hypot`. Skenario oracle menjaga margin dari
    ambang sehingga hasilnya identik.
-3. `AudioManager` hasil migrasi audio tidak punya parameter volume; hanya NAMA
-   suara (`ui_click`, `hero_skill`) yang dipertahankan. Volume sumber (0.8/0.9)
-   direkam fixture sebagai kontrak.
+3. Audio: panggilan memakai `scripts/audio/audio_runtime.gd` (aksesor statis
+   aman untuk runner headless `--script`, tempat nama autoload bukan global) dan
+   facade hasil migrasi tidak punya parameter volume; hanya NAMA suara
+   (`ui_click`, `hero_skill`) yang dipertahankan. Volume sumber (0.8/0.9) direkam
+   fixture sebagai kontrak.
 4. `_set_feedback` sumber juga memanggil `ui.add_notification` (no-op di sumber)
    dan `effects.add_damage_number` (presentasi). Rebuild menyimpan teks/warna/
    timer banner; `draw_ui` diport ke `prototype_view.gd` (fade in/out 30 tick,

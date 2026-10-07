@@ -15,10 +15,10 @@ extends RefCounted
 ## copied. The world is duck-typed like `ai_hero_control.gd`: `is_running()`,
 ## `units`, `structures`, `nexuses`, `active_boss`, `wave_count`, `get_unit()`,
 ## `move_to(hero, point, auto)` and optionally `_ai_roster()` (= `game.ai.heroes`).
-## Arithmetic runs in doubles and becomes a `Vector2` (f32) only at the final
-## call, so the formation math matches Python.
+## Arithmetic runs in doubles and becomes a `Vector2` (f32) only at the final call.
 
 const StructureState = preload("res://scripts/combat/structure_state.gd")
+const AudioRuntime = preload("res://scripts/audio/audio_runtime.gd")
 const LaneLayout = preload("res://scripts/data/lane_layout.gd")
 
 const GATHER := "gather"
@@ -105,8 +105,8 @@ var auto_check_timer := 0
 # the Godot stream is not claimed identical to CPython's Mersenne Twister.
 var auto_roll_override: Callable
 var auto_rng := RandomNumberGenerator.new()
-# Parity seam for the migrated audio facade: the source plays `ui_click`
-# (gather/protect) and `hero_skill` (attack orders) only when not silent.
+# Parity seam for the migrated audio facade (`ui_click` / `hero_skill`, silent
+# refreshes stay quiet). History is bounded so long matches do not grow it.
 var sound_history: Array[String] = []
 
 
@@ -742,7 +742,7 @@ func play_sound(sound: String) -> void:
 	sound_history.append(sound)
 	if sound_history.size() > SOUND_HISTORY_LIMIT:
 		sound_history.pop_front()
-	AudioManager.play(sound)
+	AudioRuntime.play(sound)
 
 
 func auto_roll() -> float:

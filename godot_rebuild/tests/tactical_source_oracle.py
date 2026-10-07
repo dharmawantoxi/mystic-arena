@@ -455,18 +455,36 @@ def scenarios():
               minions=(minion(40, "red", 520, 360), minion(41, "red", 540, 320))),
         [["kill", 20], ["hold", "protect_tower", 0, 0, False, 20, False], ["snapshot"]],
     )
+    # Every score is exactly 0 (full HP, nobody nearby, x >= 400 so no outer
+    # bonus): the source then sorts by hp_ratio, which is a stable no-op, and
+    # keeps the FIRST tower of the list.
     add(
-        "protect_tower_zero_threat_prefers_lowest_hp",
+        "protect_tower_zero_threat_keeps_list_order",
         world(heroes=THREE_HEROES,
-              towers=(tower(20, "blue", 300, 200, hp=500), tower(21, "blue", 900, 340, hp=700))),
+              towers=(tower(21, "blue", 500, 340, hp=800), tower(22, "blue", 900, 340, hp=800))),
         [["hold", "protect_tower", 0, 0, False, -1, False], ["snapshot"]],
     )
+    # The `(-x, hp_ratio)` fallback inside command_protect_tower is unreachable
+    # in the source (_find_most_threatened_tower only returns None when there is
+    # no blue tower at all, and then the order is refused); this scenario locks
+    # the reachable path: the highest threat score wins, outer bonus included.
     add(
-        "protect_tower_fallback_front_tower",
+        "protect_tower_outer_bonus_and_threat_score",
         world(heroes=THREE_HEROES,
               towers=(tower(20, "blue", 300, 200, hp=800), tower(21, "blue", 500, 340, hp=800),
                       tower(22, "blue", 640, 640, hp=800)),
               minions=(minion(40, "red", 660, 620),)),
+        [["hold", "protect_tower", 0, 0, False, -1, False], ["snapshot"]],
+    )
+    # Four heroes equidistant from the tower: Python's stable `sorted` keeps the
+    # roster order, and three of them are sent because threat >= 3.
+    add(
+        "protect_tower_stable_distance_tie",
+        world(heroes=(hero(1, 400, 340), hero(2, 600, 340), hero(3, 500, 240),
+                      hero(4, 500, 440)),
+              towers=(tower(21, "blue", 500, 340, hp=600),),
+              minions=(minion(40, "red", 520, 360), minion(41, "red", 540, 320),
+                       minion(42, "red", 480, 380))),
         [["hold", "protect_tower", 0, 0, False, -1, False], ["snapshot"]],
     )
     add(

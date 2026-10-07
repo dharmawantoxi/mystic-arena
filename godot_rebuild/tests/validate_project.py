@@ -94,6 +94,21 @@ for path in sorted((ROOT / "assets/audio").iterdir()):
         f"Audio container does not match its extension: {path.name}",
     )
 
+# The headless `--script` runner has no autoload globals: a domain script that
+# names `AudioManager` directly fails to load, and every inner class extending it
+# degrades to RefCounted (the native suite then crashes in the implicit
+# constructor). Gameplay code must use the static audio_runtime accessor.
+check((ROOT / "scripts/audio/audio_runtime.gd").is_file(),
+      "Audio needs the headless-safe runtime accessor")
+for path in sorted(ROOT.rglob("*.gd")):
+    if ".godot" in path.parts or path.parent.name == "audio":
+        continue
+    check("AudioManager." not in path.read_text(encoding="utf-8"),
+          f"Direct autoload access breaks the headless runner: {path}")
+tactical_gd = (ROOT / "scripts/match/tactical_commands.gd").read_text(encoding="utf-8")
+check("AudioRuntime.play(" in tactical_gd,
+      "Tactical orders must play their source sounds through the safe accessor")
+
 sim = (ROOT / "scripts/simulation/sandbox_simulation.gd").read_text(encoding="utf-8")
 check("func _physics_process(" in sim, "Simulation must own fixed ticks")
 check("func _process(" not in sim, "Simulation must not tick on render frames")
