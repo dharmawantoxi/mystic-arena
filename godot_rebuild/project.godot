@@ -11,7 +11,6 @@ config/use_custom_user_dir=true
 config/custom_user_dir_name="MysticArenaRebuildDev"
 
 [autoload]
-
 AudioManager="*res://scripts/audio/audio_manager.gd"
 
 [display]
