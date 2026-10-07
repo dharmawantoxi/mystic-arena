@@ -58,8 +58,14 @@ const GRIMJAW = preload("res://data/heroes/grimjaw.tres")
 const SYLARA = preload("res://data/heroes/sylara.tres")
 const VEX = preload("res://data/heroes/vex.tres")
 const ZEPHYR = preload("res://data/heroes/zephyr.tres")
-const PLAYABLE_AI_HEROES = preload("res://scripts/data/hero_roster.gd").DEFINITIONS
+const HERO_ROSTER = preload("res://scripts/data/hero_roster.gd").DEFINITIONS
+# Kept as an alias because the red recruitment adapters predate the player shop.
+const PLAYABLE_AI_HEROES = HERO_ROSTER
+const STARTER_HEROES: Array[String] = ["thorne", "grimjaw", "vex", "sylara", "kaizen", "zephyr"]
+const MAX_HEROES_OWNED := 5
 const HERO_SPAWN := Vector2(220, 540)
+# Source MapRenderer.radiant_shop_pos. Game.try_buy_hero adds (80 + n*30 - 30, 10).
+const PLAYER_HERO_SHOP := Vector2(340, 540)
 # Source AIPlayer: RED_BASE_X - 60, RED_BASE_Y + 30. Not a shop purchase.
 const RED_HERO_SPAWN := Vector2(1120, 130)
 const HERO_HUNT_RANGE := 900.0
@@ -89,6 +95,9 @@ var ai_enabled := false
 var ai_hero_control_enabled := false
 # Ownership is explicit: the free mirrored red Kaizen is not an AIPlayer hero.
 var ai_hero_ids: Array[int] = []
+# The blue mirror is the prototype's already-active Kaizen. It occupies the
+# source five-hero roster so player purchases cannot duplicate or exceed cap.
+var player_hero_ids: Array[int] = []
 # Layer 6c: the action adapters and the persistent draft target the red side.
 var ai_draft := AiDraft.new()
 var ai_build := AiBuild.new()
@@ -128,7 +137,9 @@ var _mini_boss_schedule: Dictionary = {}
 var bosses_defeated_this_run := 0
 var bosses_defeated_this_match: Array[String] = []
 var unlocked_bosses: Array[String] = []
-var purchased_heroes: Array[String] = []
+# Starter unlocks cost zero in the source meta shop. Until that separate menu
+# is migrated, expose the same six purchased starters to the in-match shop.
+var purchased_heroes: Array[String] = STARTER_HEROES.duplicate()
 var heroes_unlocked_this_match: Array[String] = []
 var boss_rewards: Array[Dictionary] = []
 # Layer 8l: source Game.miniboss_kill_count / trueboss_kill_count. Only a real
@@ -178,6 +189,50 @@ func configure_level(number: int) -> bool:
 	return true
 
 
+func configure_player_profile(state: Dictionary) -> bool:
+	# Profile data must be installed before setup so no live roster can be
+	# relabelled as purchased. Old development saves simply keep free starters.
+	if _arena_initialized or not structures.is_empty() or not units.is_empty():
+		return false
+	var bought: Variant = state.get("purchased_heroes", [])
+	var defeated: Variant = state.get("unlocked_bosses", [])
+	if not (bought is Array) or not (defeated is Array):
+		return false
+	var next_purchased: Array[String] = STARTER_HEROES.duplicate()
+	var next_unlocked: Array[String] = []
+	for value in bought:
+		var hero_type := String(value)
+		if not HERO_ROSTER.has(hero_type):
+			return false
+		if not next_purchased.has(hero_type):
+			next_purchased.append(hero_type)
+	for value in defeated:
+		var hero_type := String(value)
+		var definition: HeroDefinition = HERO_ROSTER.get(hero_type) as HeroDefinition
+		if definition == null or not definition.is_boss_hero:
+			return false
+		if not next_unlocked.has(hero_type):
+			next_unlocked.append(hero_type)
+	purchased_heroes = next_purchased
+	unlocked_bosses = next_unlocked
+	return true
+
+
+func player_profile_state(state: Dictionary) -> Dictionary:
+	var merged := state.duplicate(true)
+	var bought: Array = merged.get("purchased_heroes", [])
+	var defeated: Array = merged.get("unlocked_bosses", [])
+	for hero_type in purchased_heroes:
+		if not bought.has(hero_type):
+			bought.append(hero_type)
+	for hero_type in unlocked_bosses:
+		if not defeated.has(hero_type):
+			defeated.append(hero_type)
+	merged["purchased_heroes"] = bought
+	merged["unlocked_bosses"] = defeated
+	return merged
+
+
 ## Explicit result boundary for a future save adapter. It is not called from
 ## step_tick: only the owner of persistent state may commit the returned copy.
 func claim_level_result(state: Dictionary, is_replay: bool = false) -> Dictionary:
@@ -188,6 +243,7 @@ func claim_level_result(state: Dictionary, is_replay: bool = false) -> Dictionar
 	)
 	if result.is_empty():
 		return {}
+	result["state"] = player_profile_state(result.state)
 	_level_result_claimed = true
 	return result
 
@@ -208,7 +264,10 @@ func commit_level_result(
 	var result := LevelProgress.apply_result(
 		state, level_number, winner == BLUE, is_replay, difficulty
 	)
-	if result.is_empty() or not LevelProgressStore.save_state(result.state, path):
+	if result.is_empty():
+		return {}
+	result["state"] = player_profile_state(result.state)
+	if not LevelProgressStore.save_state(result.state, path):
 		return {}
 	_level_result_claimed = true
 	return result
@@ -225,9 +284,15 @@ func setup_arena() -> bool:
 	spawn_structure(NEXUS, BLUE, LaneLayout.BLUE_BASE)
 	spawn_structure(NEXUS, RED, LaneLayout.RED_BASE)
 	_apply_castle_start_levels()
-	# Free mirrored Kaizen pair. Not a catalog purchase, not AIPlayer.
-	spawn_hero(KAIZEN, BLUE, HERO_SPAWN)
-	spawn_hero(KAIZEN, RED, RED_HERO_SPAWN)
+	# Keep the existing free mirror for prototype compatibility, but register
+	# blue Kaizen as the first player-roster slot. The red mirror remains outside
+	# AIPlayer ownership.
+	var blue_kaizen := spawn_hero(KAIZEN, BLUE, HERO_SPAWN)
+	if blue_kaizen == null:
+		return false
+	player_hero_ids.append(blue_kaizen.id)
+	if spawn_hero(KAIZEN, RED, RED_HERO_SPAWN) == null:
+		return false
 	AudioManager.play("hero_spawn")
 	return true
 
@@ -482,6 +547,68 @@ func _build_tower_for(team: int, slot_id: int, path: String, reserve: int = 0) -
 	economy.spend(team, Economy.BUILD_COST)
 	slot.structure_id = tower.id
 	_record({"kind": "build", "team": team, "slot_id": slot.id, "target_id": tower.id})
+	return true
+
+
+func player_roster() -> Array:
+	# Source game.heroes contains paid player heroes in summon order and keeps
+	# dead/respawning entries. Explicit IDs prevent enemy/free entities from
+	# leaking into duplicate checks or the five-hero cap.
+	var result: Array = []
+	for hero_id in player_hero_ids:
+		var hero := get_unit(hero_id) as HeroState
+		if hero != null and hero.team == BLUE:
+			result.append(hero)
+	return result
+
+
+func player_hero_spawn_position(owned_count: int) -> Vector2:
+	# Game.try_buy_hero: radiant shop + (80 + len(heroes)*30 - 30, 10).
+	return PLAYER_HERO_SHOP + Vector2(50 + owned_count * 30, 10)
+
+
+func buy_player_hero(hero_type: String) -> bool:
+	# Atomic port of Game.try_buy_hero. Permanent unlock currency is separate;
+	# this transaction spends only match gold and summons one real native kit.
+	transaction_error = ""
+	var kit: HeroDefinition = HERO_ROSTER.get(hero_type) as HeroDefinition
+	var roster := player_roster()
+	if not is_running():
+		transaction_error = "finished"
+	elif hero_type not in purchased_heroes:
+		transaction_error = "locked"
+	elif kit == null or kit.id != hero_type or kit.cost <= 0:
+		transaction_error = "kit"
+	elif roster.size() != player_hero_ids.size():
+		transaction_error = "registry"
+	else:
+		for hero in roster:
+			if get_unit(hero.id) != hero or hero.definition == null:
+				transaction_error = "registry"
+				break
+			if hero.definition.id == hero_type:
+				transaction_error = "owned"
+				break
+		if transaction_error.is_empty() and roster.size() >= MAX_HEROES_OWNED:
+			transaction_error = "capacity"
+		elif transaction_error.is_empty() and economy.gold[BLUE] < kit.cost:
+			transaction_error = "gold"
+		elif (
+			transaction_error.is_empty()
+			and (units.size() >= MAX_UNITS or _next_id <= 0 or _by_id.has(_next_id))
+		):
+			transaction_error = "capacity"
+	if not transaction_error.is_empty():
+		return false
+	var position := player_hero_spawn_position(roster.size())
+	var hero := spawn_hero(kit, BLUE, position)
+	if hero == null:
+		transaction_error = "capacity"
+		return false
+	player_hero_ids.append(hero.id)
+	economy.spend(BLUE, kit.cost)
+	_record({"kind": "hero_buy", "team": BLUE, "target_id": hero.id, "hero_type": hero_type})
+	AudioManager.play("hero_spawn")
 	return true
 
 
@@ -1799,9 +1926,9 @@ func blue_hero() -> HeroState:
 	return null
 
 
-func blue_q_ready() -> bool:
-	var hero := blue_hero()
-	return hero != null and can_cast_hero_q(hero.id, structures)
+func blue_q_ready(hero_id: int = -1) -> bool:
+	var hero := blue_hero() if hero_id < 0 else get_unit(hero_id) as HeroState
+	return hero != null and hero.team == BLUE and can_cast_hero_q(hero.id, structures)
 
 
 func cast_blue_q(hero_id: int) -> bool:

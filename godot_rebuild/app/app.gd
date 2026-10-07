@@ -7,6 +7,7 @@ const SIEGE = preload("res://scenes/siege/SiegeArena.tscn")
 const COMBAT = preload("res://scenes/combat/MinionArena.tscn")
 const MATCH = preload("res://scenes/match/Match.tscn")
 const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
+const ProgressStore = preload("res://scripts/match/level_progress_store.gd")
 
 var current_screen: Node
 var transition_pending := false
@@ -60,9 +61,12 @@ func _install_screen(scene: PackedScene) -> void:
 		current_screen.queue_free()
 	current_screen = scene.instantiate()
 	if scene == PROTOTYPE:
-		# Configure before the session's _ready creates the arena.
-		if not current_screen.get_node("Simulation").configure_level(
-			prototype_level, prototype_difficulty
+		# Configure encounter and permanent hero unlocks before the session's
+		# _ready creates the arena and its authoritative player roster.
+		var session := current_screen.get_node("Simulation")
+		if (
+			not session.configure_level(prototype_level, prototype_difficulty)
+			or not session.configure_player_profile(ProgressStore.load_state())
 		):
 			current_screen.free()
 			current_screen = MENU.instantiate()

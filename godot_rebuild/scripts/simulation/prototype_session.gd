@@ -24,6 +24,10 @@ func configure_level(number: int, target_difficulty: String = "normal") -> bool:
 	return true
 
 
+func configure_player_profile(state: Dictionary) -> bool:
+	return (world as Prototype).configure_player_profile(state)
+
+
 func _ready() -> void:
 	super._ready()
 	var match_world := world as Prototype
@@ -57,6 +61,14 @@ func _physics_process(_delta: float) -> void:
 			)
 		elif command.kind == "nexus":
 			accepted = match_world.upgrade_nexus(command.id, command.level)
+		elif command.kind == "hero_buy":
+			accepted = match_world.buy_player_hero(command.hero_type)
+			if accepted:
+				var roster := match_world.player_roster()
+				var recruited := roster.back() as HeroState
+				selected_id = recruited.id
+				selected_slot_id = -1
+				match_world.forge.set_selected(recruited.id)
 		elif command.kind == "skill_q":
 			accepted = match_world.cast_blue_q(command.id)
 		elif command.kind == "skill_w":
@@ -79,24 +91,42 @@ func _physics_process(_delta: float) -> void:
 				selected_id = -1
 		if accepted:
 			var delta_gold: int = match_world.economy.gold[0] - balance_before
-			if command.kind == "skill_q":
-				last_action = "Kaizen memakai Steel Wind (Q)."
+			var hero_name := _hero_name(command.get("id", -1))
+			if command.kind == "hero_buy":
+				var recruited: HeroState = match_world.player_roster().back() as HeroState
+				last_action = (
+					"%s direkrut: %+d G." % [recruited.settings().display_name, delta_gold]
+				)
+			elif command.kind == "skill_q":
+				last_action = (
+					"%s memakai %s (Q)."
+					% [hero_name, "Steel Wind" if hero_name == "Kaizen" else "skill"]
+				)
 			elif command.kind == "skill_w":
-				last_action = "Kaizen memakai Wind Wall (W)."
+				last_action = (
+					"%s memakai %s (W)."
+					% [hero_name, "Wind Wall" if hero_name == "Kaizen" else "skill"]
+				)
 			elif command.kind == "skill_e":
-				last_action = "Kaizen memakai Sweep (E)."
+				last_action = (
+					"%s memakai %s (E)."
+					% [hero_name, "Sweep" if hero_name == "Kaizen" else "skill"]
+				)
 			elif command.kind == "skill_r":
-				last_action = "Kaizen memakai Tornado (R)."
+				last_action = (
+					"%s memakai %s (R)."
+					% [hero_name, "Tornado" if hero_name == "Kaizen" else "skill"]
+				)
 			elif command.kind == "hero_upgrade":
-				last_action = "Kaizen naik level: %+d G." % delta_gold
+				last_action = "%s naik level: %+d G." % [hero_name, delta_gold]
 			elif command.kind == "autocast":
 				last_action = (
 					"Auto-cast diaktifkan." if not autocast_was_on else "Auto-cast sudah aktif."
 				)
 			elif command.kind == "move":
-				last_action = "Kaizen menuju titik yang dipilih."
+				last_action = "%s menuju titik yang dipilih." % hero_name
 			elif command.kind == "follow":
-				last_action = "Kaizen mengikuti musuh."
+				last_action = "%s mengikuti musuh." % hero_name
 			else:
 				var upgrade_label := "Archer ditingkatkan"
 				if command.get("path") == "cannon":
@@ -127,7 +157,11 @@ func _physics_process(_delta: float) -> void:
 					"owner": "Pilih slot atau tower biru yang masih hidup.",
 					"occupied": "Slot sudah terisi.",
 					"gold": "Gold tidak cukup untuk transaksi ini.",
-					"capacity": "Batas bangunan tercapai.",
+					"locked": "Hero belum terbuka di roster permanen.",
+					"owned": "Hero itu sudah aktif, termasuk saat menunggu respawn.",
+					"kit": "Kit hero tidak tersedia.",
+					"registry": "Roster hero berubah; transaksi dibatalkan.",
+					"capacity": "Batas unit atau lima hero sudah tercapai.",
 					"stale": stale_text,
 					"path": "Pilih jalur upgrade yang valid.",
 					"max_level": max_text,
@@ -166,6 +200,13 @@ func request_nexus_upgrade(entity_id: int) -> bool:
 	return true
 
 
+func request_hero_buy(hero_type: String) -> bool:
+	if hero_type.is_empty() or not _queue("hero_buy", 0):
+		return false
+	command.hero_type = hero_type
+	return true
+
+
 func request_skill_q(entity_id: int) -> bool:
 	return _queue("skill_q", entity_id)
 
@@ -189,8 +230,8 @@ func request_autocast(entity_id: int) -> bool:
 
 func request_hero_upgrade(entity_id: int) -> bool:
 	var match_world := world as Prototype
-	var hero: HeroState = match_world.blue_hero()
-	if hero == null or hero.id != entity_id or not _queue("hero_upgrade", entity_id):
+	var hero := match_world.get_unit(entity_id) as HeroState
+	if hero == null or hero.team != 0 or not _queue("hero_upgrade", entity_id):
 		return false
 	command.level = hero.level
 	return true
@@ -226,6 +267,11 @@ func select_at(point: Vector2) -> void:
 func cancel_pending_input() -> void:
 	super.cancel_pending_input()
 	command.clear()
+
+
+func _hero_name(entity_id: int) -> String:
+	var hero := world.get_unit(entity_id) as HeroState
+	return hero.settings().display_name if hero != null else "Hero"
 
 
 func _queue(kind: String, id: int) -> bool:

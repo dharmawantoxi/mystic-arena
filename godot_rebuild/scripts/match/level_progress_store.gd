@@ -4,6 +4,7 @@ extends RefCounted
 
 const PATH := "user://level_progress_v1.json"
 const VERSION := 1
+const HERO_ROSTER = preload("res://scripts/data/hero_roster.gd").DEFINITIONS
 
 
 static func load_state(path: String = PATH) -> Dictionary:
@@ -130,4 +131,17 @@ static func _valid(state: Dictionary) -> bool:
 		var number := int(key)
 		if number < 1 or number > 54 or not (counts[key] is int) or counts[key] < 0:
 			return false
+	for field in ["purchased_heroes", "unlocked_bosses"]:
+		if not state.has(field):
+			continue  # Backward-compatible with saves created before Hero Shop.
+		var values: Variant = state[field]
+		if not (values is Array):
+			return false
+		var hero_seen := {}
+		for value in values:
+			if not (value is String) or not HERO_ROSTER.has(value) or hero_seen.has(value):
+				return false
+			if field == "unlocked_bosses" and not HERO_ROSTER[value].is_boss_hero:
+				return false
+			hero_seen[value] = true
 	return true

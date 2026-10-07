@@ -6,11 +6,14 @@ const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd"
 const Structure = preload("res://scripts/combat/structure_state.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const ItemForgePanel = preload("res://scripts/ui/item_forge_panel.gd")
+const HeroShopPanel = preload("res://scripts/ui/hero_shop_panel.gd")
 const ProgressStore = preload("res://scripts/match/level_progress_store.gd")
 
 var progress_path := ProgressStore.PATH
 var result_shown := false
 var forge_panel: ItemForgePanel
+var hero_shop_panel: HeroShopPanel
+var hero_shop_toggle: Button
 var ai_toggle: Button
 var migration_status: Label
 @onready var match_session: PrototypeSession = $Simulation
@@ -71,6 +74,7 @@ func _ready() -> void:
 		func() -> void: match_session.request_autocast(match_session.selected_id)
 	)
 	_build_forge_ui()
+	_build_hero_shop_ui()
 	_build_ai_toggle()
 	_build_migration_status()
 	%PauseButton.pressed.connect(pause_match)
@@ -81,7 +85,9 @@ func _ready() -> void:
 	%SaveRetryButton.pressed.connect(_save_result)
 	%SaveRetryButton.hide()
 	if ai_toggle != null:
-		ai_toggle.text = "AI lawan  [A] : ON" if match_session.world.ai_enabled else "AI lawan  [A] : OFF"
+		ai_toggle.text = (
+			"AI lawan  [A] : ON" if match_session.world.ai_enabled else "AI lawan  [A] : OFF"
+		)
 	%PauseButton.grab_focus()
 
 
@@ -89,6 +95,9 @@ func _process(_delta: float) -> void:
 	var world := simulation.world as Prototype
 	if forge_panel != null and forge_panel.visible:
 		forge_panel.refresh()
+	if hero_shop_panel != null and hero_shop_panel.visible:
+		hero_shop_panel.command_pending = not match_session.command.is_empty()
+		hero_shop_panel.refresh()
 	%GoldLabel.text = "GOLD  %d G   ·   Lawan %d G" % [world.economy.gold[0], world.economy.gold[1]]
 	var next_wave := "menunggu lane bersih"
 	if world.scheduler.remaining_ticks > 0:
@@ -100,13 +109,19 @@ func _process(_delta: float) -> void:
 		var active_boss: Object = world.active_boss
 		var boss_text := "Boss: belum muncul"
 		if active_boss != null and active_boss.alive:
-			boss_text = "Boss: %s  HP %.0f/%.0f" % [active_boss.display_name, active_boss.hp, active_boss.max_hp]
-		var ai_text := "AI %s · H%d · build %d · upgrade %d" % [
-			"ON" if world.ai_enabled else "OFF",
-			world._ai_roster().size(),
-			world.ai_build.total_built,
-			world.ai_upgrades.total_upgraded
-		]
+			boss_text = (
+				"Boss: %s  HP %.0f/%.0f"
+				% [active_boss.display_name, active_boss.hp, active_boss.max_hp]
+			)
+		var ai_text := (
+			"AI %s · H%d · build %d · upgrade %d"
+			% [
+				"ON" if world.ai_enabled else "OFF",
+				world._ai_roster().size(),
+				world.ai_build.total_built,
+				world.ai_upgrades.total_upgraded
+			]
+		)
 		migration_status.text = "%s   |   %s" % [boss_text, ai_text]
 	var blue := world.nexuses[0]
 	var red := world.nexuses[1]
@@ -164,7 +179,7 @@ func _process(_delta: float) -> void:
 	%NexusButton.visible = not path_choice
 	var nexus_price := world.nexus_upgrade_price(simulation.selected_id)
 	%NexusButton.disabled = locked or nexus_price <= 0 or world.economy.gold[0] < nexus_price
-	var hero_ready := hero != null and hero.team == 0 and world.blue_q_ready()
+	var hero_ready := hero != null and hero.team == 0 and world.blue_q_ready(hero.id)
 	%SkillQButton.visible = hero != null and hero.team == 0
 	%SkillQButton.disabled = locked or not hero_ready
 	%SkillQButton.text = (
@@ -341,7 +356,40 @@ func _build_forge_ui() -> void:
 	%PauseButton.get_parent().move_child(toggle, %PauseButton.get_index())
 
 
+func _build_hero_shop_ui() -> void:
+	hero_shop_toggle = Button.new()
+	hero_shop_toggle.name = "HeroShopButton"
+	hero_shop_toggle.text = "Hero Shop  [H]"
+	hero_shop_toggle.position = Vector2(1066, 112)
+	hero_shop_toggle.size = Vector2(190, 44)
+	hero_shop_toggle.pressed.connect(_toggle_hero_shop)
+	$HUD.add_child(hero_shop_toggle)
+	hero_shop_panel = HeroShopPanel.new()
+	hero_shop_panel.name = "HeroShop"
+	hero_shop_panel.bind(match_session.world)
+	hero_shop_panel.hero_requested.connect(_request_hero)
+	$HUD.add_child(hero_shop_panel)
+
+
+func _request_hero(hero_type: String) -> void:
+	if match_session.request_hero_buy(hero_type):
+		hero_shop_panel.command_pending = true
+		hero_shop_panel.refresh()
+
+
+func _toggle_hero_shop() -> void:
+	if get_tree().paused or not match_session.world.is_running():
+		return
+	if forge_panel != null and forge_panel.visible:
+		forge_panel.set_open(false)
+	hero_shop_panel.toggle_open()
+
+
 func _toggle_forge() -> void:
+	if get_tree().paused or not match_session.world.is_running():
+		return
+	if hero_shop_panel != null and hero_shop_panel.is_open:
+		hero_shop_panel.set_open(false)
 	forge_panel.toggle_open()
 	forge_panel.refresh()
 
@@ -385,59 +433,37 @@ func _toggle_ai() -> void:
 		ai_toggle.text = "AI lawan  [A] : ON" if world.ai_enabled else "AI lawan  [A] : OFF"
 
 
+func _handle_keyboard_input(event: InputEvent) -> bool:
+	if not (event is InputEventKey) or not event.pressed or event.echo:
+		return false
+	var handled := true
+	match event.physical_keycode:
+		KEY_ESCAPE:
+			if hero_shop_panel != null and hero_shop_panel.is_open:
+				hero_shop_panel.set_open(false)
+			else:
+				handled = false
+		KEY_H:
+			_toggle_hero_shop()
+		KEY_A:
+			_toggle_ai()
+		KEY_I:
+			_toggle_forge()
+		KEY_Q:
+			match_session.request_skill_q(match_session.selected_id)
+		KEY_W:
+			match_session.request_skill_w(match_session.selected_id)
+		KEY_E:
+			match_session.request_skill_e(match_session.selected_id)
+		KEY_R:
+			match_session.request_skill_r(match_session.selected_id)
+		_:
+			handled = false
+	return handled
+
+
 func _unhandled_input(event: InputEvent) -> void:
-	if (
-		event is InputEventKey
-		and event.pressed
-		and not event.echo
-		and event.physical_keycode == KEY_A
-	):
-		_toggle_ai()
-		get_viewport().set_input_as_handled()
-		return
-	if (
-		event is InputEventKey
-		and event.pressed
-		and not event.echo
-		and event.physical_keycode == KEY_I
-	):
-		_toggle_forge()
-		get_viewport().set_input_as_handled()
-		return
-	if (
-		event is InputEventKey
-		and event.pressed
-		and not event.echo
-		and event.physical_keycode == KEY_Q
-	):
-		match_session.request_skill_q(match_session.selected_id)
-		get_viewport().set_input_as_handled()
-		return
-	if (
-		event is InputEventKey
-		and event.pressed
-		and not event.echo
-		and event.physical_keycode == KEY_W
-	):
-		match_session.request_skill_w(match_session.selected_id)
-		get_viewport().set_input_as_handled()
-		return
-	if (
-		event is InputEventKey
-		and event.pressed
-		and not event.echo
-		and event.physical_keycode == KEY_E
-	):
-		match_session.request_skill_e(match_session.selected_id)
-		get_viewport().set_input_as_handled()
-		return
-	if (
-		event is InputEventKey
-		and event.pressed
-		and not event.echo
-		and event.physical_keycode == KEY_R
-	):
-		match_session.request_skill_r(match_session.selected_id)
+	if _handle_keyboard_input(event):
 		get_viewport().set_input_as_handled()
 		return
 	if (
@@ -473,6 +499,10 @@ func _select(point: Vector2) -> void:
 
 
 func pause_match() -> void:
+	if hero_shop_panel != null:
+		hero_shop_panel.set_open(false)
+	if forge_panel != null:
+		forge_panel.set_open(false)
 	super.pause_match()
 	var world := simulation.world as Prototype
 	if not world.is_running():

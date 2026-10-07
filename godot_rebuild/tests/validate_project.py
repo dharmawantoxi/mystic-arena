@@ -38,7 +38,10 @@ for path in source_files:
     for relative in re.findall(r'res://([^"\s]+)', text):
         target = (ROOT / relative).resolve()
         check(target.is_relative_to(ROOT), f"Reference escapes project: {path}: {relative}")
-        check(target.is_file(), f"Missing reference: {path}: {relative}")
+        # Runtime loaders may keep a res:// directory prefix and append a
+        # catalog filename (AudioManager does this for WAV streams).
+        exists = target.is_dir() if relative.endswith("/") else target.is_file()
+        check(exists, f"Missing reference: {path}: {relative}")
         # Linux CI is case sensitive, unlike many Windows filesystems.
         check(
             target.parent.is_dir() and target.name in [p.name for p in target.parent.iterdir()],
@@ -279,6 +282,26 @@ if (ROOT / "tests/fixtures/ai_recruit_source.json").is_file() and (ROOT / "data/
     check(stats == json.loads((ROOT / "data/ai/hero_combat_stats.json").read_text(encoding="utf-8")),
           "222 source Hero stat baselines drift")
     check(set(stats) == set(recruitment["catalog"]), "Every recruitment ID must have source Hero numbers")
+
+from player_recruit_source_oracle import source_fixture as player_recruit_source_fixture
+check("PlayerRecruitChecks.new().run(_check)" in ai_tests,
+      "Player Hero Shop domain suite must run")
+check("await PlayerRecruitSceneChecks.new().run(self, app, _check)" in ai_tests,
+      "Player Hero Shop scene suite must run")
+check((ROOT / "tests/fixtures/player_recruit_source.json").is_file(),
+      "Player Hero Shop requires a source fixture")
+if (ROOT / "tests/fixtures/player_recruit_source.json").is_file():
+    check(player_recruit_source_fixture() == json.loads(
+        (ROOT / "tests/fixtures/player_recruit_source.json").read_text(encoding="utf-8")),
+        "Player Hero Shop source transaction drift")
+check("python godot_rebuild/tests/player_recruit_source_oracle.py" in workflow,
+      "CI must execute the player Hero Shop source oracle")
+player_shop = (ROOT / "scripts/ui/hero_shop_panel.gd").read_text(encoding="utf-8")
+check("hero_requested.emit(hero_type)" in player_shop,
+      "Hero Shop panel must route IDs through the fixed-tick session")
+check("buy_player_hero(command.hero_type)" in
+      (ROOT / "scripts/simulation/prototype_session.gd").read_text(encoding="utf-8"),
+      "Player recruit command must execute through the match domain")
 
 check("AIShieldChecks.new().run(_check)" in ai_tests, "AI shield domain suite must remain in runner")
 check("await AIShieldSceneChecks.new().run(self, app, _check)" in ai_tests, "Paid shield refund/reset UI suite must run")

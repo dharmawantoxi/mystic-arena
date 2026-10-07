@@ -33,6 +33,23 @@ func run(check: Callable) -> void:
 		"Duplicate completion rejected"
 	)
 	check.call(Store.load_state(TEST_PATH) == replay.state, "Rejected write preserves save")
+	var with_roster := replay.state.duplicate(true)
+	with_roster["purchased_heroes"] = ["kaizen", "gornak"]
+	with_roster["unlocked_bosses"] = ["gornak"]
+	check.call(Store.save_state(with_roster, TEST_PATH), "Write persistent player hero roster")
+	check.call(Store.load_state(TEST_PATH) == with_roster, "Player hero roster survives reload")
+	var invalid_roster := with_roster.duplicate(true)
+	invalid_roster["purchased_heroes"] = ["kaizen", "kaizen"]
+	check.call(not Store.save_state(invalid_roster, TEST_PATH), "Duplicate purchased hero rejected")
+	invalid_roster = with_roster.duplicate(true)
+	invalid_roster["unlocked_bosses"] = ["kaizen"]
+	check.call(
+		not Store.save_state(invalid_roster, TEST_PATH), "Starter cannot occupy boss unlock list"
+	)
+	# Restore the replay state used by the interrupted-write checks below.
+	check.call(
+		Store.save_state(replay.state, TEST_PATH), "Roster save can return to progression state"
+	)
 	# Simulate an interrupted replacement: primary missing, backup intact.
 	check.call(
 		DirAccess.rename_absolute(TEST_PATH, TEST_PATH + ".bak") == OK,
