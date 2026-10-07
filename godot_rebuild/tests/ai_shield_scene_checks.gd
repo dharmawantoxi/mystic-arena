@@ -63,6 +63,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		lv4.regen_shield_active and world.economy.gold[0] == g_before - 850,
 		"Player button buys regen shield once, debits ledger"
 	)
+	await _settle(tree)
 	check.call(
 		regen_btn.disabled and regen_btn.text.contains("AKTIF"), "Regen label flips to active"
 	)
@@ -89,6 +90,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		blue_nexus.castle_shield_purchased and world.economy.gold[0] == c_before - 850,
 		"Player button buys castle shield and debits ledger"
 	)
+	await _settle(tree)
 	check.call(
 		castle_btn.disabled and castle_btn.text.contains("AKTIF"), "Castle label flips to active"
 	)
