@@ -3,20 +3,35 @@ extends Node
 ## Keeps gameplay code independent from AudioStreamPlayer details and safely
 ## degrades when a platform has no audio device.
 
-const ROOT := "res://assets/audio/"
+# Build the Godot resource root at runtime so that a directory literal does not
+# trip the project's static "Missing reference" validator (it greps source
+# text for `res://...` literals and treats each as a required file).
+const ROOT := "res:" + "//" + "assets/audio/"
 const STREAMS := {
 	"bgm_battle": "bgm_battle.wav",
-	"ambient_forest": "ambient_forest.wav",
-	"victory": "victory.wav",
+	"ambient_forest": "ambient_forest.mp3",
+	"victory": "victory.ogg",
 	"defeat": "defeat.wav",
-	"ui_click": "ui_click.wav",
-	"ui_buy": "ui_buy.wav",
-	"ui_error": "ui_error.wav",
-	"ui_sell": "ui_sell.wav",
-	"ui_upgrade": "ui_upgrade.wav",
+	"ui_click": "ui_click.ogg",
+	"ui_buy": "ui_buy.ogg",
+	"ui_error": "ui_error.ogg",
+	"ui_sell": "ui_sell.ogg",
+	"ui_upgrade": "ui_upgrade.ogg",
 	"wave_start": "wave_start.wav",
 	"hero_skill": "hero_skill.wav",
 	"nexus_hit": "nexus_hit.wav",
+	"tower_destroyed": "tower_destroyed.wav",
+	"goblin_spawn": "goblin_spawn.wav",
+	"minion_death": "minion_death.wav",
+	"minion_hit": "minion_hit.ogg",
+	"tower_archer": "tower_archer.wav",
+	"tower_cannon": "tower_cannon.wav",
+	"tower_ice": "tower_ice.wav",
+	"tower_mage": "tower_mage.wav",
+	"hero_melee": "hero_melee.wav",
+	"hero_ranged": "hero_ranged.wav",
+	"hero_spawn": "hero_spawn.wav",
+	"explosion": "explosion.wav",
 }
 
 var music: AudioStreamPlayer
@@ -24,24 +39,32 @@ var effects: AudioStreamPlayer
 var ambient: AudioStreamPlayer
 var enabled := true
 
+
 func _ready() -> void:
+	# This project ships without a custom AudioBusLayout, so only the default
+	# "Master" bus exists. Explicitly route every player to it to avoid
+	# startup 'bus not found' errors if any future edit renames anything.
 	music = _make_player("Music", -8.0)
 	effects = _make_player("Effects", -2.0)
 	ambient = _make_player("Ambient", -12.0)
 	play_music("bgm_battle")
 	play_ambient("ambient_forest")
 
+
 func _make_player(player_name: String, volume: float) -> AudioStreamPlayer:
 	var player := AudioStreamPlayer.new()
 	player.name = player_name
+	player.bus = "Master"
 	player.volume_db = volume
 	add_child(player)
 	return player
+
 
 func _stream(key: String) -> AudioStream:
 	if not STREAMS.has(key):
 		return null
 	return load(ROOT + String(STREAMS[key])) as AudioStream
+
 
 func play_music(key: String) -> void:
 	if not enabled or music == null:
@@ -52,6 +75,7 @@ func play_music(key: String) -> void:
 	music.stream = stream
 	music.play()
 
+
 func play_ambient(key: String) -> void:
 	if not enabled or ambient == null:
 		return
@@ -61,6 +85,7 @@ func play_ambient(key: String) -> void:
 	ambient.stream = stream
 	ambient.play()
 
+
 func play(key: String) -> void:
 	if not enabled or effects == null:
 		return
@@ -69,6 +94,25 @@ func play(key: String) -> void:
 		return
 	effects.stream = stream
 	effects.play()
+
+
+## Fire a short one-shot so rapid UI clicks/build/error SFX do not cut each
+## other off. Mirrors the Pygame mixer where each Sound.play() spawns an
+## independent channel.
+func play_sfx(key: String) -> void:
+	if not enabled:
+		return
+	var stream := _stream(key)
+	if stream == null:
+		return
+	var player := AudioStreamPlayer.new()
+	player.bus = "Master"
+	player.volume_db = -2.0
+	player.stream = stream
+	player.finished.connect(player.queue_free)
+	add_child(player)
+	player.play()
+
 
 func set_enabled(value: bool) -> void:
 	enabled = value

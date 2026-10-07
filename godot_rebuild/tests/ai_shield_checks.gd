@@ -34,6 +34,7 @@ func run(check: Callable) -> void:
 		_castle_upgrade(row, check)
 	_guards(check)
 	_isolation(check)
+	_player_purchase(check)
 
 
 func _world() -> World:
@@ -277,3 +278,57 @@ func _isolation(check: Callable) -> void:
 	check.call(
 		tower.shield == shield and tower.no_damage_ticks == timer, "Dead paid tower does not regen"
 	)
+
+
+func _player_purchase(check: Callable) -> void:
+	# Blue-side player wrappers buy_regen_shield / buy_castle_shield mirror
+	# _try_activate_regen_shield / try_activate_castle_shield in Game Pygame:
+	# no reserve, BLUE team only, same validation/debit/activation path, and
+	# transaction_error surfaces the same reasons.
+	var world := _world()
+	# Level 3 tower is below REGEN_SHIELD_MIN_LEVEL; expect "shield" rejection.
+	var t3 := _tower(world, "archer", 3, 0, 0)
+	var before := world.economy.gold[0]
+	check.call(not world.buy_regen_shield(0, t3.id), "Level-3 tower cannot buy regen shield")
+	check.call(world.transaction_error == "shield", "Level gate reports shield error")
+	check.call(
+		world.economy.gold[0] == before and not t3.regen_shield_active, "No debit on gate fail"
+	)
+	var t4 := _tower(world, "archer", 4, 0, 1)
+	world.economy.gold[0] = 849
+	check.call(not world.buy_regen_shield(0, t4.id), "One gold short for regen shield refused")
+	check.call(world.economy.gold[0] == 849, "Wallet unchanged on gold fail")
+	world.economy.gold[0] = 850
+	check.call(world.buy_regen_shield(0, t4.id), "Player buys regen shield at exact cost")
+	check.call(
+		world.economy.gold[0] == 0 and t4.regen_shield_active, "Player regen debits and activates"
+	)
+	check.call(abs(t4.shield - t4.shield_max) < 0.01, "Player regen fills shield to max")
+	# Double-buy is rejected (already active).
+	check.call(not world.buy_regen_shield(0, t4.id), "Double regen shield purchase refused")
+	# Red team via player wrapper refused.
+	var red_t4 := _tower(world, "archer", 4, 1, 9)
+	check.call(not world.buy_regen_shield(0, red_t4.id), "Cannot buy regen for enemy tower")
+	# Castle shield: free shield wave (1-10) refuses, wave 11 allows purchase.
+	var castle := world.nexuses[0]
+	castle.set_wave(5)
+	world.economy.gold[0] = 850
+	check.call(not world.buy_castle_shield(0, castle.id), "Free-shield wave rejects castle buy")
+	castle.set_wave(11)
+	check.call(world.buy_castle_shield(0, castle.id), "Wave 11+ player buys castle shield")
+	check.call(
+		world.economy.gold[0] == 0 and castle.castle_shield_purchased,
+		"Castle shield debits and activates"
+	)
+	check.call(abs(castle.shield - castle.shield_max) < 0.01, "Castle shield fills to new capacity")
+	check.call(not world.buy_castle_shield(0, castle.id), "Double castle shield refused")
+	# Wrong team castle refused.
+	var red_castle := world.nexuses[1]
+	red_castle.set_wave(11)
+	world.economy.gold[0] = 2000
+	check.call(not world.buy_castle_shield(0, red_castle.id), "Cannot buy enemy castle shield")
+	# Finished match refused.
+	world.winner = 0
+	world.economy.gold[0] = 2000
+	var fresh := _tower(world, "archer", 4, 0, 2)
+	check.call(not world.buy_regen_shield(0, fresh.id), "Finished match refuses regen buy")

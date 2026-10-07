@@ -1902,6 +1902,19 @@ func _upgrade_hero_for(team: int, hero_id: int, expected_level: int, reserve: in
 	return true
 
 
+func buy_regen_shield(team: int, entity_id: int) -> bool:
+	# Public player-facing wrapper: mirrors Game._try_activate_regen_shield on the
+	# selected blue tower.  AI calls `_activate_regen_shield_for` with a reserve
+	# argument; the player path spends exactly the shield cost with no reserve.
+	return _purchase_shield_for(team, entity_id, false, 0)
+
+
+func buy_castle_shield(team: int, entity_id: int) -> bool:
+	# Public player-facing wrapper: mirrors Game.try_activate_castle_shield on the
+	# blue nexus.  Same validation/debit/activation as AI but without reserve.
+	return _purchase_shield_for(team, entity_id, true, 0)
+
+
 func _activate_regen_shield_for(team: int, entity_id: int, reserve: int = 0) -> bool:
 	return _purchase_shield_for(team, entity_id, false, reserve)
 

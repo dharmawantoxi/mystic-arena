@@ -3,6 +3,13 @@ extends "res://scripts/simulation/combat_session.gd"
 const Structure = preload("res://scripts/combat/structure_state.gd")
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
+
+## Pygame routes every transactional SFX through SoundManager; mirror the key
+## per action so the audio facade one-shot does not cut off previous clicks.
+const SFX_BUILD := "ui_buy"
+const SFX_SELL := "ui_sell"
+const SFX_UPGRADE := "ui_upgrade"
+const SFX_ERROR := "ui_error"
 ## One seed for the whole red AI: a restarted prototype match replays.
 const AI_MATCH_SEED := 20260929
 var selected_slot_id := -1
@@ -57,6 +64,10 @@ func _physics_process(_delta: float) -> void:
 			)
 		elif command.kind == "nexus":
 			accepted = match_world.upgrade_nexus(command.id, command.level)
+		elif command.kind == "regen_shield":
+			accepted = match_world.buy_regen_shield(0, command.id)
+		elif command.kind == "castle_shield":
+			accepted = match_world.buy_castle_shield(0, command.id)
 		elif command.kind == "skill_q":
 			accepted = match_world.cast_blue_q(command.id)
 		elif command.kind == "skill_w":
@@ -81,24 +92,31 @@ func _physics_process(_delta: float) -> void:
 			var delta_gold: int = match_world.economy.gold[0] - balance_before
 			if command.kind == "skill_q":
 				last_action = "Kaizen memakai Steel Wind (Q)."
+				AudioManager.play_sfx("hero_skill")
 			elif command.kind == "skill_w":
 				last_action = "Kaizen memakai Wind Wall (W)."
+				AudioManager.play_sfx("hero_skill")
 			elif command.kind == "skill_e":
 				last_action = "Kaizen memakai Sweep (E)."
+				AudioManager.play_sfx("hero_skill")
 			elif command.kind == "skill_r":
 				last_action = "Kaizen memakai Tornado (R)."
+				AudioManager.play_sfx("hero_skill")
 			elif command.kind == "hero_upgrade":
 				last_action = "Kaizen naik level: %+d G." % delta_gold
+				AudioManager.play_sfx(SFX_UPGRADE)
 			elif command.kind == "autocast":
 				last_action = (
 					"Auto-cast diaktifkan." if not autocast_was_on else "Auto-cast sudah aktif."
 				)
+				AudioManager.play_sfx("ui_click")
 			elif command.kind == "move":
 				last_action = "Kaizen menuju titik yang dipilih."
 			elif command.kind == "follow":
 				last_action = "Kaizen mengikuti musuh."
 			else:
 				var upgrade_label := "Archer ditingkatkan"
+				var sfx_key := SFX_BUILD
 				if command.get("path") == "cannon":
 					upgrade_label = "Cannon ditingkatkan"
 				elif command.get("path") == "ice":
@@ -109,9 +127,19 @@ func _physics_process(_delta: float) -> void:
 					"build": "Archer dibangun",
 					"sell": "Tower dijual",
 					"upgrade": upgrade_label,
-					"nexus": "Nexus ditingkatkan"
+					"nexus": "Nexus ditingkatkan",
+					"regen_shield": "Regen Shield diaktifkan",
+					"castle_shield": "Castle Shield diaktifkan"
 				}[command.kind]
 				last_action = "%s: %+d G." % [action, delta_gold]
+				match command.kind:
+					"build":
+						sfx_key = SFX_BUILD
+					"sell":
+						sfx_key = SFX_SELL
+					"upgrade", "nexus", "regen_shield", "castle_shield":
+						sfx_key = SFX_UPGRADE
+				AudioManager.play_sfx(sfx_key)
 		else:
 			var max_text := "Tower sudah level maksimum (6)."
 			var stale_text := "Level tower sudah berubah; pilih upgrade kembali."
@@ -131,10 +159,13 @@ func _physics_process(_delta: float) -> void:
 					"stale": stale_text,
 					"path": "Pilih jalur upgrade yang valid.",
 					"max_level": max_text,
-					"skill": "Q tidak siap atau tidak ada target."
+					"skill": "Q tidak siap atau tidak ada target.",
+					"shield": "Shield tidak tersedia untuk struktur ini."
 				}
 				. get(match_world.transaction_error, "Transaksi ditolak.")
 			)
+			# Pygame plays ui_error on every rejected transaction path.
+			AudioManager.play_sfx(SFX_ERROR)
 		command.clear()
 	world.step_tick()
 	if world.get_unit(selected_id) == null:
@@ -164,6 +195,14 @@ func request_nexus_upgrade(entity_id: int) -> bool:
 		return false
 	command.level = nexus.settings().level
 	return true
+
+
+func request_regen_shield(entity_id: int) -> bool:
+	return _queue("regen_shield", entity_id)
+
+
+func request_castle_shield(entity_id: int) -> bool:
+	return _queue("castle_shield", entity_id)
 
 
 func request_skill_q(entity_id: int) -> bool:

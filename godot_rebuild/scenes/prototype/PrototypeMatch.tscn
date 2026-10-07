@@ -201,6 +201,28 @@ custom_minimum_size = Vector2(225, 42)
 disabled = true
 text = "Mage Lv.2"
 
+[node name="Shields" type="HBoxContainer" parent="HUD/BottomBar/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+theme_override_constants/separation = 14
+
+[node name="RegenShieldButton" type="Button" parent="HUD/BottomBar/Column/Shields"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(280, 42)
+disabled = true
+visible = false
+text = "Regen Shield · 850 G"
+
+[node name="CastleShieldButton" type="Button" parent="HUD/BottomBar/Column/Shields"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(280, 42)
+disabled = true
+visible = false
+text = "Castle Shield · 850 G"
+
 [node name="StatusLabel" type="Label" parent="HUD/BottomBar/Column"]
 unique_name_in_owner = true
 layout_mode = 2

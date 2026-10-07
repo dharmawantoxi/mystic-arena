@@ -55,6 +55,14 @@ func activate_regen_shield() -> bool:
 	return true
 
 
+func regen_shield_cost() -> int:
+	return REGEN_SHIELD_COST
+
+
+func castle_shield_cost() -> int:
+	return CASTLE_SHIELD_COST
+
+
 func can_activate_castle_shield() -> bool:
 	# Extra native alive/kind guard; Python assumes Game only supplies its live castle.
 	return (

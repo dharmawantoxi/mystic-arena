@@ -52,6 +52,12 @@ func _ready() -> void:
 	%NexusButton.pressed.connect(
 		func() -> void: match_session.request_nexus_upgrade(match_session.selected_id)
 	)
+	%RegenShieldButton.pressed.connect(
+		func() -> void: match_session.request_regen_shield(match_session.selected_id)
+	)
+	%CastleShieldButton.pressed.connect(
+		func() -> void: match_session.request_castle_shield(match_session.selected_id)
+	)
 	%SkillQButton.pressed.connect(
 		func() -> void: match_session.request_skill_q(match_session.selected_id)
 	)
@@ -81,7 +87,9 @@ func _ready() -> void:
 	%SaveRetryButton.pressed.connect(_save_result)
 	%SaveRetryButton.hide()
 	if ai_toggle != null:
-		ai_toggle.text = "AI lawan  [A] : ON" if match_session.world.ai_enabled else "AI lawan  [A] : OFF"
+		ai_toggle.text = (
+			"AI lawan  [A] : ON" if match_session.world.ai_enabled else "AI lawan  [A] : OFF"
+		)
 	%PauseButton.grab_focus()
 
 
@@ -100,13 +108,19 @@ func _process(_delta: float) -> void:
 		var active_boss: Object = world.active_boss
 		var boss_text := "Boss: belum muncul"
 		if active_boss != null and active_boss.alive:
-			boss_text = "Boss: %s  HP %.0f/%.0f" % [active_boss.display_name, active_boss.hp, active_boss.max_hp]
-		var ai_text := "AI %s · H%d · build %d · upgrade %d" % [
-			"ON" if world.ai_enabled else "OFF",
-			world._ai_roster().size(),
-			world.ai_build.total_built,
-			world.ai_upgrades.total_upgraded
-		]
+			boss_text = (
+				"Boss: %s  HP %.0f/%.0f"
+				% [active_boss.display_name, active_boss.hp, active_boss.max_hp]
+			)
+		var ai_text := (
+			"AI %s · H%d · build %d · upgrade %d"
+			% [
+				"ON" if world.ai_enabled else "OFF",
+				world._ai_roster().size(),
+				world.ai_build.total_built,
+				world.ai_upgrades.total_upgraded
+			]
+		)
 		migration_status.text = "%s   |   %s" % [boss_text, ai_text]
 	var blue := world.nexuses[0]
 	var red := world.nexuses[1]
@@ -164,6 +178,51 @@ func _process(_delta: float) -> void:
 	%NexusButton.visible = not path_choice
 	var nexus_price := world.nexus_upgrade_price(simulation.selected_id)
 	%NexusButton.disabled = locked or nexus_price <= 0 or world.economy.gold[0] < nexus_price
+	# Paid shield buttons follow the same rules as Pygame: regen_shield on player
+	# towers at level 4+ that haven't bought it yet; castle_shield on the blue nexus
+	# once the free shield wave period ends and the shield hasn't been purchased.
+	var show_shield_row := false
+	var regen_cost := Structure.REGEN_SHIELD_COST
+	var castle_cost := Structure.CASTLE_SHIELD_COST
+	var can_regen := false
+	var can_castle := false
+	var regen_active := false
+	var castle_active := false
+	var castle_free := false
+	if tower != null and tower.alive and tower.team == 0:
+		if tower.settings().structure_kind == "tower":
+			regen_active = tower.regen_shield_active
+			can_regen = tower.can_activate_regen_shield()
+			show_shield_row = tower.settings().level >= Structure.REGEN_SHIELD_MIN_LEVEL
+		elif tower.settings().structure_kind == "nexus":
+			castle_active = tower.castle_shield_purchased
+			castle_free = tower.free_shield_active
+			can_castle = tower.can_activate_castle_shield()
+			# Pygame always draws the section once the nexus popup is for a
+			# player-owned castle, regardless of state (free/active/buy).
+			show_shield_row = true
+	%Shields.visible = show_shield_row
+	%RegenShieldButton.visible = (
+		show_shield_row and tower != null and tower.settings().structure_kind == "tower"
+	)
+	%CastleShieldButton.visible = (
+		show_shield_row and tower != null and tower.settings().structure_kind == "nexus"
+	)
+	%RegenShieldButton.disabled = locked or not can_regen or world.economy.gold[0] < regen_cost
+	%CastleShieldButton.disabled = locked or not can_castle or world.economy.gold[0] < castle_cost
+	if regen_active:
+		%RegenShieldButton.text = "Regen Shield: AKTIF"
+		%RegenShieldButton.disabled = true
+	elif tower != null and tower.settings().structure_kind == "tower":
+		%RegenShieldButton.text = "Regen Shield · %d G" % regen_cost
+	if castle_free:
+		%CastleShieldButton.text = "Castle Shield: GRATIS (W1-10)"
+		%CastleShieldButton.disabled = true
+	elif castle_active:
+		%CastleShieldButton.text = "Castle Shield: AKTIF"
+		%CastleShieldButton.disabled = true
+	elif tower != null and tower.settings().structure_kind == "nexus":
+		%CastleShieldButton.text = "Activate Shield · %d G" % castle_cost
 	var hero_ready := hero != null and hero.team == 0 and world.blue_q_ready()
 	%SkillQButton.visible = hero != null and hero.team == 0
 	%SkillQButton.disabled = locked or not hero_ready
@@ -386,69 +445,56 @@ func _toggle_ai() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if (
-		event is InputEventKey
-		and event.pressed
-		and not event.echo
-		and event.physical_keycode == KEY_A
-	):
-		_toggle_ai()
-		get_viewport().set_input_as_handled()
+	# Hotkey dispatch: one match statement produces a single String action name,
+	# then at most one return for handled vs not. This keeps gdlint happy.
+	var action := _prototype_hotkey(event)
+	if action == "right_click":
+		_command_move(event.position)
 		return
-	if (
-		event is InputEventKey
-		and event.pressed
-		and not event.echo
-		and event.physical_keycode == KEY_I
-	):
-		_toggle_forge()
-		get_viewport().set_input_as_handled()
+	if action != "":
+		_dispatch_prototype_action(action)
 		return
-	if (
-		event is InputEventKey
-		and event.pressed
-		and not event.echo
-		and event.physical_keycode == KEY_Q
-	):
-		match_session.request_skill_q(match_session.selected_id)
-		get_viewport().set_input_as_handled()
-		return
-	if (
-		event is InputEventKey
-		and event.pressed
-		and not event.echo
-		and event.physical_keycode == KEY_W
-	):
-		match_session.request_skill_w(match_session.selected_id)
-		get_viewport().set_input_as_handled()
-		return
-	if (
-		event is InputEventKey
-		and event.pressed
-		and not event.echo
-		and event.physical_keycode == KEY_E
-	):
-		match_session.request_skill_e(match_session.selected_id)
-		get_viewport().set_input_as_handled()
-		return
-	if (
-		event is InputEventKey
-		and event.pressed
-		and not event.echo
-		and event.physical_keycode == KEY_R
-	):
-		match_session.request_skill_r(match_session.selected_id)
-		get_viewport().set_input_as_handled()
-		return
+	super._unhandled_input(event)
+
+
+func _prototype_hotkey(event: InputEvent) -> String:
+	# Single dictionary lookup so there are exactly two return paths.
+	var key_map := {
+		KEY_A: "toggle_ai",
+		KEY_I: "toggle_forge",
+		KEY_Q: "skill_q",
+		KEY_W: "skill_w",
+		KEY_E: "skill_e",
+		KEY_R: "skill_r",
+	}
+	if event is InputEventKey and event.pressed and not event.echo:
+		if key_map.has(event.physical_keycode):
+			return key_map[event.physical_keycode]
 	if (
 		event is InputEventMouseButton
 		and event.pressed
 		and event.button_index == MOUSE_BUTTON_RIGHT
 		and event.device != InputEvent.DEVICE_ID_EMULATION
 	):
-		_command_move(event.position)
-		return
-	super._unhandled_input(event)
+		return "right_click"
+	return ""
+
+
+func _dispatch_prototype_action(action: String) -> void:
+	match action:
+		"toggle_ai":
+			_toggle_ai()
+		"toggle_forge":
+			_toggle_forge()
+		"skill_q":
+			match_session.request_skill_q(match_session.selected_id)
+		"skill_w":
+			match_session.request_skill_w(match_session.selected_id)
+		"skill_e":
+			match_session.request_skill_e(match_session.selected_id)
+		"skill_r":
+			match_session.request_skill_r(match_session.selected_id)
+	get_viewport().set_input_as_handled()
 
 
 func _command_move(point: Vector2) -> void:

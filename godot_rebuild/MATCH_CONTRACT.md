@@ -30,7 +30,7 @@ Semua waktu adalah **physics tick 60 Hz**, bukan frame render.
 | 10–12 | Goblin ×3, Troll, Dark Rider, Undead |
 | 13+ | Goblin ×3, Troll ×2, Dark Rider ×2, Undead |
 
-Wave memanggil aturan shield nexus sumber: gratis sampai wave 10. Paid shield belum dibeli via UI. Tidak ada tombol skip/manual wave. Pertarungan tertentu dapat menahan wave karena unit yang masih hidup; jangan menghapus gate ini hanya agar countdown selalu maju.
+Wave memanggil aturan shield nexus sumber: gratis sampai wave 10. Tombol **Regen Shield** (tower Lv4+) dan **Activate Shield** (nexus setelah wave 10, status GRATIS/AKTIF) tersedia di HUD untuk pemain biru dan memakai transaksi atomik `buy_regen_shield`/`buy_castle_shield` yang sama dengan adapter AI (850 G, refund separuh saat dijual, debit satu kali). Tidak ada tombol skip/manual wave. Pertarungan tertentu dapat menahan wave karena unit yang masih hidup; jangan menghapus gate ini hanya agar countdown selalu maju.
 
 ## Ekonomi lokal pertandingan
 
