@@ -52,6 +52,7 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 15
 theme_override_colors/font_color = Color(0.59, 0.67, 0.66, 1)
 text = "Lv.1 · normal · lawan AI · progres pengembangan terpisah"
+clip_text = true
 
 [node name="Counters" type="VBoxContainer" parent="HUD/TopBar/Row"]
 layout_mode = 2

@@ -1178,9 +1178,9 @@ func _flush_red_tower_deaths() -> void:
 
 func _auto_unlock_defeated_boss_heroes() -> Array[String]:
 	# Source _auto_unlock_defeated_boss_heroes: victory makes every boss
-	# defeated during this match a free permanent hero unlock. This rebuild has
-	# no save backend yet, so the match-local purchased list is the persistence
-	# boundary exposed to the next layer.
+	# defeated during this match a free permanent hero unlock. The match-local
+	# purchased list is merged into the profile only at the level-result save
+	# boundary.
 	for boss_type in bosses_defeated_this_match:
 		if not unlocked_bosses.has(boss_type):
 			unlocked_bosses.append(boss_type)
