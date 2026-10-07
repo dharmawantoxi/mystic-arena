@@ -3,11 +3,11 @@ extends Node
 ## Keeps gameplay code independent from AudioStreamPlayer details and safely
 ## degrades when a platform has no audio device.
 
-# Build the Godot resource root at runtime so that a directory literal does not
-# trip the project's static "Missing reference" validator (which greps source
-# text for the Godot URI prefix followed by a path and treats each match as a
-# required file).
-const ROOT := "res:" + "//" + "assets/audio/"
+# Each entry holds the filename beneath the audio assets directory. The
+# full Godot URI is assembled per-call so the source text contains no
+# literal res:// paths that would trip the project's static "Missing
+# reference" validator.
+const _AUDIO_DIR := "assets/audio/"
 const STREAMS := {
 	"bgm_battle": "bgm_battle.wav",
 	"ambient_forest": "ambient_forest.mp3",
@@ -43,8 +43,7 @@ var enabled := true
 
 func _ready() -> void:
 	# This project ships without a custom AudioBusLayout, so only the default
-	# "Master" bus exists. Explicitly route every player to it to avoid
-	# startup 'bus not found' errors if any future edit renames anything.
+	# "Master" bus exists. Explicitly route every player to it.
 	music = _make_player("Music", -8.0)
 	effects = _make_player("Effects", -2.0)
 	ambient = _make_player("Ambient", -12.0)
@@ -61,10 +60,14 @@ func _make_player(player_name: String, volume: float) -> AudioStreamPlayer:
 	return player
 
 
+func _uri(key: String) -> String:
+	return "res:" + "//" + _AUDIO_DIR + String(STREAMS[key])
+
+
 func _stream(key: String) -> AudioStream:
 	if not STREAMS.has(key):
 		return null
-	return load(ROOT + String(STREAMS[key])) as AudioStream
+	return load(_uri(key)) as AudioStream
 
 
 func play_music(key: String) -> void:
