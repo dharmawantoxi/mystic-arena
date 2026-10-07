@@ -303,6 +303,32 @@ check("buy_player_hero(command.hero_type)" in
       (ROOT / "scripts/simulation/prototype_session.gd").read_text(encoding="utf-8"),
       "Player recruit command must execute through the match domain")
 
+from meta_hero_unlock_source_oracle import source_fixture as meta_unlock_source_fixture
+check("MetaHeroUnlockChecks.new().run(_check)" in ai_tests,
+      "Permanent Hero Shop domain suite must run")
+check("await MetaHeroUnlockSceneChecks.new().run(self, app, _check)" in ai_tests,
+      "Permanent Hero Shop scene suite must run")
+check((ROOT / "tests/fixtures/meta_hero_unlock_source.json").is_file(),
+      "Permanent Hero Shop requires a source fixture")
+if (ROOT / "tests/fixtures/meta_hero_unlock_source.json").is_file():
+    check(meta_unlock_source_fixture() == json.loads(
+        (ROOT / "tests/fixtures/meta_hero_unlock_source.json").read_text(encoding="utf-8")),
+        "Permanent Hero Shop source transaction drift")
+check("python godot_rebuild/tests/meta_hero_unlock_source_oracle.py" in workflow,
+      "CI must execute the permanent Hero Shop source oracle")
+meta_shop = (ROOT / "scripts/ui/meta_hero_shop_panel.gd").read_text(encoding="utf-8")
+meta_menu = (ROOT / "scenes/menu/main_menu.gd").read_text(encoding="utf-8")
+meta_domain = (ROOT / "scripts/match/hero_unlock_store.gd").read_text(encoding="utf-8")
+check("unlock_requested.emit(hero_type)" in meta_shop and "save_state" not in meta_shop,
+      "Permanent shop panel must be request-only")
+check("try_unlock(before, hero_type)" in meta_menu
+      and "ProgressStore.save_state(result.state, progress_path)" in meta_menu,
+      "Main menu must atomically persist permanent unlock transactions")
+check('const DEFAULT_HERO := "kaizen"' in meta_domain
+      and "const MINI_BOSS_UNLOCK_COST := 4500" in meta_domain
+      and "const TRUE_BOSS_UNLOCK_COST := 4500" in meta_domain,
+      "Native permanent unlock policy must match source constants")
+
 check("AIShieldChecks.new().run(_check)" in ai_tests, "AI shield domain suite must remain in runner")
 check("await AIShieldSceneChecks.new().run(self, app, _check)" in ai_tests, "Paid shield refund/reset UI suite must run")
 check((ROOT / "tests/fixtures/ai_shield_source.json").is_file(), "AI shields require source fixture")

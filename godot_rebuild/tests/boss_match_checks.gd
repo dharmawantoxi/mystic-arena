@@ -147,7 +147,7 @@ func _rewards_and_unlocks(check: Callable, source: Dictionary) -> void:
 	check.call(
 		(
 			newly == ["gornak", "abaddon"]
-			and world.purchased_heroes == world.STARTER_HEROES + ["gornak", "abaddon"]
+			and world.purchased_heroes == ["kaizen", "gornak", "abaddon"]
 		),
 		"victory unlock list is unique and free"
 	)

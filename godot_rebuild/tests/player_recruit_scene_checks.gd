@@ -1,9 +1,25 @@
 extends RefCounted
 ## Playable-scene proof for the player Hero Shop command and multi-hero controls.
 
+const Store = preload("res://scripts/match/level_progress_store.gd")
+const TEST_PATH := "user://player_recruit_scene_test.json"
+
 
 func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	var baseline := tree.get_node_count()
+	_cleanup()
+	var seed := {
+		"meta_gold": 0,
+		"completed_levels": [],
+		"replay_reward_counts": {},
+		"purchased_heroes": ["thorne", "grimjaw", "vex", "sylara", "kaizen", "zephyr"],
+		"unlocked_bosses": [],
+	}
+	check.call(
+		Store.save_state(seed, TEST_PATH),
+		"Playable recruit scene seeds permanent starter ownership"
+	)
+	app.current_screen.progress_path = TEST_PATH
 	app.start_prototype()
 	await _settle(tree)
 	var screen = app.current_screen
@@ -92,7 +108,16 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	screen.get_node("%BackButton").pressed.emit()
 	await _settle(tree)
 	check.call(app.current_screen.name == "MainMenu", "Hero Shop scene exits cleanly")
+	app.progress_path = Store.PATH
+	app.current_screen.progress_path = Store.PATH
+	_cleanup()
 	check.call(tree.get_node_count() == baseline, "Hero Shop scene leaves no orphan controls")
+
+
+func _cleanup() -> void:
+	for suffix in ["", ".tmp", ".bak"]:
+		if FileAccess.file_exists(TEST_PATH + suffix):
+			DirAccess.remove_absolute(TEST_PATH + suffix)
 
 
 func _card(panel: Control, hero_type: String) -> Button:

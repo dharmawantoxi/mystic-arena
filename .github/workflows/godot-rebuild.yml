@@ -62,6 +62,7 @@ jobs:
           python godot_rebuild/tests/ai_source_oracle.py
           python godot_rebuild/tests/ai_draft_source_oracle.py
           python godot_rebuild/tests/player_recruit_source_oracle.py
+          python godot_rebuild/tests/meta_hero_unlock_source_oracle.py
           python godot_rebuild/tests/ai_upgrade_source_oracle.py
           python godot_rebuild/tests/ai_shield_source_oracle.py
           gdparse $(find godot_rebuild -name '*.gd')

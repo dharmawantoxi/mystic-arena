@@ -1,0 +1,174 @@
+{
+  "policy": {
+    "starter_cost": 0,
+    "mini_boss_cost": 4500,
+    "true_boss_cost": 4500,
+    "starter_auto_grant": "kaizen"
+  },
+  "cases": [
+    {
+      "label": "unknown",
+      "input": {
+        "label": "unknown",
+        "gold": 9000,
+        "purchased": [
+          "kaizen"
+        ],
+        "defeated": [],
+        "hero": "missing"
+      },
+      "gold": 9000,
+      "purchased": [
+        "kaizen"
+      ],
+      "defeated": [],
+      "save_count": 0,
+      "sounds": [
+        "ui_error"
+      ]
+    },
+    {
+      "label": "duplicate_starter",
+      "input": {
+        "label": "duplicate_starter",
+        "gold": 0,
+        "purchased": [
+          "kaizen"
+        ],
+        "defeated": [],
+        "hero": "kaizen"
+      },
+      "gold": 0,
+      "purchased": [
+        "kaizen"
+      ],
+      "defeated": [],
+      "save_count": 0,
+      "sounds": [
+        "ui_error"
+      ]
+    },
+    {
+      "label": "free_starter",
+      "input": {
+        "label": "free_starter",
+        "gold": 0,
+        "purchased": [
+          "kaizen"
+        ],
+        "defeated": [],
+        "hero": "thorne"
+      },
+      "gold": 0,
+      "purchased": [
+        "kaizen",
+        "thorne"
+      ],
+      "defeated": [],
+      "save_count": 1,
+      "sounds": [
+        "ui_buy"
+      ]
+    },
+    {
+      "label": "locked_mini_boss",
+      "input": {
+        "label": "locked_mini_boss",
+        "gold": 4500,
+        "purchased": [
+          "kaizen"
+        ],
+        "defeated": [],
+        "hero": "gornak"
+      },
+      "gold": 4500,
+      "purchased": [
+        "kaizen"
+      ],
+      "defeated": [],
+      "save_count": 0,
+      "sounds": [
+        "ui_error"
+      ]
+    },
+    {
+      "label": "mini_boss_one_short",
+      "input": {
+        "label": "mini_boss_one_short",
+        "gold": 4499,
+        "purchased": [
+          "kaizen"
+        ],
+        "defeated": [
+          "gornak"
+        ],
+        "hero": "gornak"
+      },
+      "gold": 4499,
+      "purchased": [
+        "kaizen"
+      ],
+      "defeated": [
+        "gornak"
+      ],
+      "save_count": 0,
+      "sounds": [
+        "ui_error"
+      ]
+    },
+    {
+      "label": "mini_boss_exact",
+      "input": {
+        "label": "mini_boss_exact",
+        "gold": 4500,
+        "purchased": [
+          "kaizen"
+        ],
+        "defeated": [
+          "gornak"
+        ],
+        "hero": "gornak"
+      },
+      "gold": 0,
+      "purchased": [
+        "kaizen",
+        "gornak"
+      ],
+      "defeated": [
+        "gornak"
+      ],
+      "save_count": 1,
+      "sounds": [
+        "ui_buy"
+      ]
+    },
+    {
+      "label": "true_boss_exact",
+      "input": {
+        "label": "true_boss_exact",
+        "gold": 4500,
+        "purchased": [
+          "kaizen",
+          "thorne"
+        ],
+        "defeated": [
+          "abaddon"
+        ],
+        "hero": "abaddon"
+      },
+      "gold": 0,
+      "purchased": [
+        "kaizen",
+        "thorne",
+        "abaddon"
+      ],
+      "defeated": [
+        "abaddon"
+      ],
+      "save_count": 1,
+      "sounds": [
+        "ui_buy"
+      ]
+    }
+  ]
+}

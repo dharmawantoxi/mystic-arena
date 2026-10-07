@@ -63,6 +63,7 @@ const HERO_ROSTER = preload("res://scripts/data/hero_roster.gd").DEFINITIONS
 # Kept as an alias because the red recruitment adapters predate the player shop.
 const PLAYABLE_AI_HEROES = HERO_ROSTER
 const STARTER_HEROES: Array[String] = ["thorne", "grimjaw", "vex", "sylara", "kaizen", "zephyr"]
+const DEFAULT_PURCHASED_HEROES: Array[String] = ["kaizen"]
 const MAX_HEROES_OWNED := 5
 const HERO_SPAWN := Vector2(220, 540)
 # Source MapRenderer.radiant_shop_pos. Game.try_buy_hero adds (80 + n*30 - 30, 10).
@@ -138,9 +139,9 @@ var _mini_boss_schedule: Dictionary = {}
 var bosses_defeated_this_run := 0
 var bosses_defeated_this_match: Array[String] = []
 var unlocked_bosses: Array[String] = []
-# Starter unlocks cost zero in the source meta shop. Until that separate menu
-# is migrated, expose the same six purchased starters to the in-match shop.
-var purchased_heroes: Array[String] = STARTER_HEROES.duplicate()
+# Source auto-grants only Kaizen; the other free starters must first be claimed
+# from the permanent Hero Shop before the in-match shop can summon them.
+var purchased_heroes: Array[String] = DEFAULT_PURCHASED_HEROES.duplicate()
 var heroes_unlocked_this_match: Array[String] = []
 var boss_rewards: Array[Dictionary] = []
 # Layer 8l: source Game.miniboss_kill_count / trueboss_kill_count. Only a real
@@ -192,14 +193,14 @@ func configure_level(number: int) -> bool:
 
 func configure_player_profile(state: Dictionary) -> bool:
 	# Profile data must be installed before setup so no live roster can be
-	# relabelled as purchased. Old development saves simply keep free starters.
+	# relabelled as purchased. Source grants Kaizen to an empty legacy profile.
 	if _arena_initialized or not structures.is_empty() or not units.is_empty():
 		return false
 	var bought: Variant = state.get("purchased_heroes", [])
 	var defeated: Variant = state.get("unlocked_bosses", [])
 	if not (bought is Array) or not (defeated is Array):
 		return false
-	var next_purchased: Array[String] = STARTER_HEROES.duplicate()
+	var next_purchased: Array[String] = DEFAULT_PURCHASED_HEROES.duplicate()
 	var next_unlocked: Array[String] = []
 	for value in bought:
 		var hero_type := String(value)

@@ -10,8 +10,12 @@ const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
 const AudioRuntime = preload("res://scripts/audio/audio_runtime.gd")
 const Catalog = preload("res://scripts/match/level_catalog.gd")
 const ProgressStore = preload("res://scripts/match/level_progress_store.gd")
+const HeroUnlockStore = preload("res://scripts/match/hero_unlock_store.gd")
+const MetaHeroShopPanel = preload("res://scripts/ui/meta_hero_shop_panel.gd")
 
 var progress_path := ProgressStore.PATH
+var unlock_store := HeroUnlockStore.new()
+var hero_shop_panel: MetaHeroShopPanel
 
 
 func _ready() -> void:
@@ -24,6 +28,8 @@ func _ready() -> void:
 	%CombatButton.pressed.connect(func() -> void: _click_and_emit(combat_requested))
 	%SiegeButton.pressed.connect(func() -> void: _click_and_emit(siege_requested))
 	%PrototypeButton.pressed.connect(func() -> void: _click_and_start())
+	%HeroShopButton.pressed.connect(_open_hero_shop)
+	_build_hero_shop()
 	refresh_levels()
 	%PrototypeButton.grab_focus()
 
@@ -36,6 +42,40 @@ func _click_and_emit(signal_value: Signal) -> void:
 func _click_and_start() -> void:
 	AudioRuntime.play("ui_click")
 	_start_selected_level()
+
+
+func _build_hero_shop() -> void:
+	hero_shop_panel = MetaHeroShopPanel.new()
+	hero_shop_panel.name = "MetaHeroShop"
+	hero_shop_panel.unlock_requested.connect(_unlock_hero)
+	add_child(hero_shop_panel)
+
+
+func _open_hero_shop() -> void:
+	AudioRuntime.play("ui_click")
+	var profile := unlock_store.bootstrap_state(ProgressStore.load_state(progress_path))
+	hero_shop_panel.open_with_state(profile)
+
+
+func _unlock_hero(hero_type: String) -> void:
+	var before := unlock_store.bootstrap_state(ProgressStore.load_state(progress_path))
+	var result := unlock_store.try_unlock(before, hero_type)
+	if not String(result.error).is_empty():
+		AudioRuntime.play("ui_error")
+		hero_shop_panel.show_error(String(result.error))
+		return
+	if not ProgressStore.save_state(result.state, progress_path):
+		AudioRuntime.play("ui_error")
+		hero_shop_panel.show_error("save")
+		return
+	AudioRuntime.play("ui_buy")
+	var item := unlock_store.entry(hero_type)
+	var suffix := " gratis"
+	if int(result.cost) > 0:
+		suffix = " seharga %d Hero Gold" % int(result.cost)
+	hero_shop_panel.apply_state(
+		result.state, "%s dibuka%s." % [item.definition.display_name, suffix]
+	)
 
 
 func refresh_levels() -> void:

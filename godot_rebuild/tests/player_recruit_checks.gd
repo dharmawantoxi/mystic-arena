@@ -58,6 +58,12 @@ func _source_case(row: Dictionary, check: Callable) -> void:
 
 func _playable_roster(check: Callable) -> void:
 	var world := World.new()
+	check.call(
+		world.configure_player_profile(
+			{"purchased_heroes": world.STARTER_HEROES, "unlocked_bosses": []}
+		),
+		"Permanent starter unlocks configure before the playable arena"
+	)
 	check.call(world.setup_arena(), "Player recruit playable arena initializes")
 	(
 		check
@@ -115,7 +121,8 @@ func _profile_and_guards(check: Callable) -> void:
 		)
 	)
 	check.call(
-		"gornak" in profile.purchased_heroes, "Profile merges purchased boss with free starters"
+		profile.purchased_heroes == ["kaizen", "gornak"],
+		"Profile merges purchased boss with the source Kaizen auto-grant"
 	)
 	check.call(profile.setup_arena(), "Profile-configured arena starts")
 	profile.economy.credit_kill(profile.BLUE, 2000)
