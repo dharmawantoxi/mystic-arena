@@ -364,6 +364,8 @@ if audio_script.is_file():
     audio_text = audio_script.read_text(encoding="utf-8")
     check("play_music" in audio_text and "play_ambient" in audio_text and "set_enabled" in audio_text,
           "Godot audio manager must provide music, ambient and mute controls")
+    check("func shutdown()" in audio_text and "player.stream = null" in audio_text,
+          "Godot audio manager must release active streams before shutdown")
 check((ROOT / "project.godot").read_text(encoding="utf-8").find('AudioManager="*res://scripts/audio/audio_manager.gd"') >= 0,
       "Godot audio manager must be autoloaded")
 check((ROOT / "assets/audio/bgm_battle.wav").is_file(), "Migrated battle music asset missing")

@@ -313,6 +313,8 @@ func _run() -> void:
 	await IceSceneChecks.new().run(self, app, _check)
 	await MageSceneChecks.new().run(self, app, _check)
 	await KaizenSceneChecks.new().run(self, app, _check)
+	root.get_node("AudioManager").call("shutdown")
+	await _settle()
 	app.queue_free()
 	await _settle()
 	_check(not paused, "app exit does not leave tree paused")

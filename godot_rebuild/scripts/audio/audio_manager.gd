@@ -33,6 +33,19 @@ func _ready() -> void:
 	play_ambient("ambient_forest")
 
 
+func _exit_tree() -> void:
+	shutdown()
+
+
+func shutdown() -> void:
+	enabled = false
+	var players: Array[AudioStreamPlayer] = [music, effects, ambient]
+	for player in players:
+		if is_instance_valid(player):
+			player.stop()
+			player.stream = null
+
+
 func _make_player(player_name: String, volume: float) -> AudioStreamPlayer:
 	var player := AudioStreamPlayer.new()
 	player.name = player_name
