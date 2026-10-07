@@ -18,13 +18,23 @@ func _ready() -> void:
 	UI_THEME.title(%Title, 56)
 	UI_THEME.muted(%Subtitle)
 	UI_THEME.muted(%Scope)
-	%PlayButton.pressed.connect(func() -> void: play_requested.emit())
-	%QuitButton.pressed.connect(func() -> void: quit_requested.emit())
-	%CombatButton.pressed.connect(func() -> void: combat_requested.emit())
-	%SiegeButton.pressed.connect(func() -> void: siege_requested.emit())
-	%PrototypeButton.pressed.connect(_start_selected_level)
+	%PlayButton.pressed.connect(func() -> void: _click_and_emit(play_requested))
+	%QuitButton.pressed.connect(func() -> void: _click_and_emit(quit_requested))
+	%CombatButton.pressed.connect(func() -> void: _click_and_emit(combat_requested))
+	%SiegeButton.pressed.connect(func() -> void: _click_and_emit(siege_requested))
+	%PrototypeButton.pressed.connect(func() -> void: _click_and_start())
 	refresh_levels()
 	%PrototypeButton.grab_focus()
+
+
+func _click_and_emit(signal_value: Signal) -> void:
+	AudioManager.play("ui_click")
+	signal_value.emit()
+
+
+func _click_and_start() -> void:
+	AudioManager.play("ui_click")
+	_start_selected_level()
 
 
 func refresh_levels() -> void:

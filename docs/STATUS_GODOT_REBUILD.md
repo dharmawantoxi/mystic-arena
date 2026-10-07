@@ -124,9 +124,13 @@ Jalur Mage 2–6 **bersama** chain 2–4 tanpa refill, skill-down + anti-heal, m
 
 Temuan yang dikunci: chain melewati identitas-target/mati/luar-range sesuai urutan, cap chain, tanpa refill (solo = 1 bolt); semua bolt satu muzzle target utama; stack rule quirk sama (weaker+longer menimpa); anti-heal di setter HP dengan quirk cap-then-scale (44.8→44.9) dan full-block 1.0 di L6; mati = clear debuff; skill-down tanpa efek pada minion (konsumen `Hero.skill_damage` di luar scope). UI: 7 tombol dua baris, Paths visible ⟺ tower biru L1, Nexus menyingkir (maksimal 6 tampil). Keempat jalur tower selesai; berikutnya hero/skill + AI.
 
+## Checkpoint sesi ini — AIPlayer opt-in pada Pertandingan awal
+
+AIPlayer native kini aktif saat scene pertandingan dimulai dengan seed replay tetap (`20260929`). Scheduler policy mengontrol hero merah setiap tick dan menjalankan prioritas build, rekrutmen, upgrade hero/tower/nexus, item, serta shield melalui ledger transaksi nyata. Tekan **A** atau tombol **AI lawan [A]** untuk mematikan/mengaktifkan AI; toggle me-reset clock/draft saat menyalakan kembali. Mode ini masih QA, bukan klaim balance/parity produksi; visual roster, hasil dan error transaksi harus diuji di Godot Windows.
+
 ## Langkah berikutnya
 
-1. Uji Windows F5 → **Pertandingan awal** (Kaizen QWER, klik-kanan, retreat/push, upgrade, respawn).
+1. Uji Windows F5 → **Pertandingan awal** (Kaizen QWER, klik-kanan, retreat/push, upgrade, respawn); tekan **A** untuk memverifikasi AIPlayer opt-in.
 2. Kaizen-1 prototipe ditutup di `HERO_CONTRACT.md`. Jangan klaim 6 hero / item / AIPlayer.
 3. Berikutnya: hero starter kedua **atau** ganti lawan Archer terjadwal setelah AI sumber diuji. 54 level, Android, audio tetap di luar.
 4. Lengkapi satu pertandingan kecil, lalu level/boss/konten/UI/audio. Android pilot dan profiling harus dibuktikan pada perangkat, bukan dengan headless Linux.

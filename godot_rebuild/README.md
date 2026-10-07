@@ -25,7 +25,7 @@ Tidak memerlukan Python, pip, converter, addon, atau C++ untuk menjalankan clien
 - Wave pertama muncul setelah sekitar 5 detik; unit keluar bertahap setiap 20 tick. Wave berikutnya menunggu timer dan lapangan bersih, bukan selalu muncul ketika countdown mencapai nol.
 - Gold pasif bertambah tiap detik; kill memberi reward. HUD menampilkan saldo, wave dan HP/shield nexus. Slot/range preview ditampilkan ketika dipilih.
 - **Kaizen biru + merah** (kit prototipe): spawn gratis kedua tim, Q/W/E/R hanya biru, klik-kanan jalan/ikuti hanya biru, hunt `< 900`, push ke nexus lawan, retreat `< 20%` HP, regen pasif, upgrade emas biru, respawn 10 dtk di spawn tim. **Biru dan merah auto-cast R→E→W→Q tiap 20 tick** (sumber v27: default aktif); tombol **Auto-cast** pada hero biru adalah penanda status dan hanya bisa memaksa aktif (sumber v29: tidak bisa dimatikan). QWER manual biru tetap tersedia dan berbagi cooldown dengan auto-cast. Bukan item atau AIPlayer.
-- **Lawan sementara, bukan AI asli:** membeli tiga Archer berbayar pada detik 5/10/15. Lawan belum melakukan upgrade; hero merah/boss dan castle auto-scaling belum ada.
+- **Lawan default:** scene pertandingan kini memulai AIPlayer native dengan seed replay tetap. AI menjalankan scheduler policy, draft/rekrutmen hero, upgrade, item, shield, serta kontrol hero merah melalui transaksi domain nyata. Tekan **A** atau tombol **AI lawan [A]** di HUD untuk mematikan/mengaktifkan AI; saat dimatikan, pertandingan kembali ke mode lawan terjadwal lama. Ini masih mode QA (bukan balance final), bukan balance produksi.
 - Nexus hancur membuka hasil otomatis dan menghentikan simulasi. **Mulai ulang** mereset saldo pertandingan, slot, queue dan hasil; **Menu** kembali ke menu utama. Hasil kini menyimpan reward/progres level 1 dalam file development Godot yang terpisah dari save Python; kegagalan ditampilkan dengan tombol coba lagi.
 - Esc/Jeda dan kehilangan fokus menghentikan wave, combat dan income serta membatalkan transaksi tertunda. Lanjutkan secara eksplisit; hasil akhir tidak bisa dilanjutkan.
 
@@ -99,7 +99,7 @@ Keyboard Tab dan Enter juga dapat digunakan untuk navigasi tombol. Klik panel HU
 
 ## Yang belum dimigrasikan
 
-Hero selain Kaizen-1, skill W/E/R, animasi produksi, paid shield sebagai transaksi, wave lengkap dengan boss, AI asli, ekonomi permanen, item, 54 level, progression, UI produksi, audio, save/migrasi save, cloud, pembayaran, Android export dan optimasi perangkat. Jangan menggunakan sandbox ini sebagai build pengganti game yang sudah rilis.
+Art final dan animasi produksi, balance final, ekonomi permanen, UI roster/forge produksi lengkap, audio, migrasi save Python/cloud, pembayaran, Android export, multi-touch/safe-area, profiling perangkat, dan parity penuh semua perilaku 54 level masih belum selesai. Domain native untuk 222 kit hero, item inventory/effects, forge transaksi, paid shield, boss/miniboss, AIPlayer policy/adapters, katalog 54 level, progression development-save, dan terrain source sudah tersedia serta diuji secara statis/native CI. Jangan menggunakan sandbox ini sebagai build pengganti game yang sudah rilis.
 
 ## Struktur
 
@@ -363,14 +363,15 @@ Tes restart menjaga transisi seed → tanpa seed → seed. Perubahan ini belum
 diverifikasi dengan engine Godot di lingkungan ini; jalankan suite native
 pada Godot 4.7.2 sebelum menganggapnya lulus runtime.
 
-## AIPlayer (WIP, belum terhubung ke scene)
+## AIPlayer native (QA terhubung ke scene)
 
 Policy berpikir/prioritas, pool/draft/reserve, adapter upgrade/shield red per
-kandidat, serta pemilihan kandidat kills descending stabil (dengan atribusi
-kills sumber) tersedia untuk pengujian native. Adapter upgrade/shield memakai world/ledger
-nyata tetapi belum dipanggil otomatis di scene. Metadata summon mencakup enam starter dan 216 boss; **ini bukan roster
-playable**. Pertandingan masih memakai lawan sementara. Batas implementasi dan
-checklist integrasi penuh: [AI_CONTRACT.md](AI_CONTRACT.md).
+kandidat, pemilihan kandidat kills descending stabil, atribusi kill sumber,
+item/forge, dan kontrol hero tersedia sebagai domain native. Pertandingan awal
+menyalakan controller dengan seed replay tetap dan tombol **A** untuk toggle.
+Metadata summon mencakup 222 ID dan registry kit native juga mencakup 222 ID,
+namun ini belum berarti UI roster produksi atau balance final. Batas parity yang
+tersisa dicatat di [AI_CONTRACT.md](AI_CONTRACT.md).
 
 ## Langkah pengembangan berikutnya
 
