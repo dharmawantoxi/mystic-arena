@@ -1,21 +1,18 @@
 # gdlint:disable=max-public-methods
 extends RefCounted
-## Port of `tactical_commands.py::TacticalCommandManager`: the player (blue)
-## order layer GATHER / PROTECT TOWER / PROTECT CASTLE / ATTACK BOSS / ATTACK
-## DAMAGE DEALER, including the HOLD mode driven by the desktop keys G/F/T/C/B/D
+## Port of `tactical_commands.py::TacticalCommandManager`: the blue order layer
+## GATHER / PROTECT TOWER / PROTECT CASTLE / ATTACK BOSS / ATTACK DAMAGE DEALER,
+## with the HOLD mode driven by the desktop keys G/F/T/C/B/D
 ## (`_core.py::InputHandler.handle_key`/`handle_key_up`) and the mobile side
 ## panel (`mobile/hud.py::TACTICAL_ACTIONS`, `main.py` press/release tracking).
-## `Game.update` calls `tactical.update()` after the reward pass and right
-## before `self.ai.update(...)`.
-##
-## Nothing here is invented: timers, spreads, clamps, threat scores, feedback
-## strings, sounds and every quirk (stale `command_target` on GATHER,
-## `_try_gather_push` leaving `target`/`destination_auto` alone, the `9999`
-## nearest-target seed, the boss counting double in `_count_enemies_near`) are
-## copied. The world is duck-typed like `ai_hero_control.gd`: `is_running()`,
-## `units`, `structures`, `nexuses`, `active_boss`, `wave_count`, `get_unit()`,
-## `move_to(hero, point, auto)` and optionally `_ai_roster()` (= `game.ai.heroes`).
-## Arithmetic runs in doubles and becomes a `Vector2` (f32) only at the final call.
+## `Game.update` calls `tactical.update()` after the reward pass, right before
+## `self.ai.update(...)`. Timers, spreads, clamps, threat scores, feedback
+## strings, sounds and every quirk (stale `command_target` on GATHER, the push
+## leaving `target`/`destination_auto` alone, the `9999` nearest-target seed, the
+## boss counting double) are copied, not reinvented. The world is duck-typed like
+## `ai_hero_control.gd`: `is_running()`, `units`, `structures`, `nexuses`,
+## `active_boss`, `wave_count`, `get_unit()`, `move_to(hero, point, auto)` and
+## optionally `_ai_roster()` (= `game.ai.heroes`); math runs in doubles.
 
 const StructureState = preload("res://scripts/combat/structure_state.gd")
 const AudioRuntime = preload("res://scripts/audio/audio_runtime.gd")
@@ -37,8 +34,7 @@ const COOLDOWN_MAX := 30
 # `self.cooldown = max(self.cooldown, self.cooldown_max // 2)` on a failed issue.
 const HOLD_RETRY_COOLDOWN := 15
 const COMMAND_TICKS := 600
-# `elif self.command_timer == 300:` - exactly half of the command duration.
-const GATHER_PUSH_TIMER := 300
+const GATHER_PUSH_TIMER := 300  # `elif self.command_timer == 300:` half duration
 const MARKER_TICKS := 150
 const FEEDBACK_TICKS := 180
 const GATHER_ARRIVE_PX := 100.0
@@ -100,13 +96,13 @@ var hold_elapsed := 0
 var hold_has_fired := false
 var gather_push_fired := false
 var auto_check_timer := 0
-# Source `_auto_evaluate_protect` rolls `random.random() < 0.2`. The native
-# stream is seeded (or overridden) so replays and tests stay deterministic;
-# the Godot stream is not claimed identical to CPython's Mersenne Twister.
+# Source `_auto_evaluate_protect` rolls `random.random() < 0.2`; the native
+# stream is seeded (or overridden) so replays stay deterministic. The Godot
+# stream is not claimed identical to CPython's Mersenne Twister.
 var auto_roll_override: Callable
 var auto_rng := RandomNumberGenerator.new()
-# Parity seam for the migrated audio facade (`ui_click` / `hero_skill`, silent
-# refreshes stay quiet). History is bounded so long matches do not grow it.
+# Parity seam for the migrated audio facade (`ui_click` / `hero_skill`; silent
+# refreshes stay quiet). Bounded so long matches do not grow it.
 var sound_history: Array[String] = []
 
 
@@ -795,7 +791,9 @@ func inside_arena(point: Vector2) -> bool:
 
 func world_units() -> Array:
 	var units: Variant = world.get("units")
-	return units if units is Array else []
+	if units is Array:
+		return units
+	return []
 
 
 func blue_castle() -> Object:
@@ -837,7 +835,9 @@ func red_heroes() -> Array:
 	## source where `Game.heroes`/`ai.heroes` are separate lists).
 	var roster: Array = []
 	if world.has_method("_ai_roster"):
-		roster = world.call("_ai_roster")
+		var owned: Variant = world.call("_ai_roster")
+		if owned is Array:
+			roster = owned
 	else:
 		for unit in world_units():
 			if bool(unit.is_hero) and int(unit.team) == RED:

@@ -70,8 +70,8 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 
 	# ── the view draws the marker and the banner without touching state ──
 	var view = screen.get_node("Arena")
-	var marker_before := tactical.gather_point_timer
-	var feedback_before := tactical.feedback_timer
+	var marker_before: int = tactical.gather_point_timer
+	var feedback_before: int = tactical.feedback_timer
 	check.call(tactical.marker_visible() and tactical.feedback_timer > 0, "marker and banner live")
 	view.queue_redraw()
 	await _settle(tree)
@@ -93,7 +93,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	check.call(
 		tactical.status_text().ends_with("[HOLD]"), "get_status_text carries the source HOLD tag"
 	)
-	var sounds_before := tactical.sound_history.size()
+	var sounds_before: int = tactical.sound_history.size()
 	for _tick in range(120):
 		session._physics_process(1.0 / 60.0)
 	check.call(tactical.hold_elapsed == 121, "hold_elapsed counts every held tick")
@@ -116,7 +116,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	hero.position = Vector2(640, 360)
 	hero.has_destination = false
 	var castle = world.nexuses[0]
-	var before_walk := hero.position.distance_to(castle.position)
+	var before_walk: float = hero.position.distance_to(castle.position)
 	_key(screen, KEY_C, true)
 	for _tick in range(30):
 		session._physics_process(1.0 / 60.0)

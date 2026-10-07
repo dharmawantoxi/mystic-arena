@@ -483,7 +483,7 @@ func _refresh_tactical_bar(world: Prototype, locked: bool) -> void:
 		button.visible = ready
 		button.disabled = locked or not ready
 		var held := ready and tactical.held_command == command
-		button.text = "%s  HOLD" % entry.label if held else String(entry.label)
+		button.text = ("%s  HOLD" % String(entry.label)) if held else String(entry.label)
 
 
 func _tactical_panel_press(command: String) -> void:
