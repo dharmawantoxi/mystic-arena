@@ -84,25 +84,6 @@ class ReflectCarapaceWorld:
 			hit_order.append(unit_id)
 		return landed
 
-	func _deliver_hit(
-		source_id: int,
-		source_team: int,
-		target: UnitState,
-		raw_damage: int,
-		school: String,
-		origin: Vector2,
-		damage_type: String = "normal"
-	) -> bool:
-		var landed: bool = super._deliver_hit(
-			source_id, source_team, target, raw_damage, school, origin, damage_type
-		)
-		if landed:
-			var unit_id := int(target.id)
-			var log: Array = types.get(unit_id, [])
-			log.append(damage_type)
-			types[unit_id] = log
-		return landed
-
 
 class LegacyReflectBus:
 	extends ReflectItemEffects
