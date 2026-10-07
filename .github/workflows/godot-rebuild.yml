@@ -99,12 +99,16 @@ jobs:
       - name: Native simulation, input and screen lifecycle tests
         shell: bash
         run: |
-          set -euo pipefail
+          set -uo pipefail
           code=0
-          # stdbuf keeps the log line-buffered so a timeout kill still leaves the
-          # diagnostics behind; 300 s gives the grown native suite head-room.
+          # Written to a file instead of streamed: a runaway error loop must not
+          # blow up the job log (the runner SIGTERMs the step, which used to skip
+          # the diagnostics and log-upload steps entirely). stdbuf keeps the file
+          # line-buffered so a timeout kill still leaves the tail behind.
           timeout 300 stdbuf -oL -eL "$GODOT" --headless --path godot_rebuild \
-            --script res://tests/run_all.gd 2>&1 | tee /tmp/rebuild-tests.log || code=$?
+            --script res://tests/run_all.gd > /tmp/rebuild-tests.log 2>&1 || code=$?
+          echo "native runner exit=$code lines=$(wc -l < /tmp/rebuild-tests.log) bytes=$(wc -c < /tmp/rebuild-tests.log)"
+          tail -n 120 /tmp/rebuild-tests.log
           if [[ "$code" != 0 ]] || grep -qE 'SCRIPT ERROR:|ERROR:|FAIL:' /tmp/rebuild-tests.log; then
             python godot_rebuild/tests/annotate_failure.py /tmp/rebuild-tests.log
             exit 1
