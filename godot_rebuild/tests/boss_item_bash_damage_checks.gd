@@ -16,6 +16,7 @@ const BossState = preload("res://scripts/match/boss_state.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const UnitState = preload("res://scripts/combat/unit_state.gd")
 const Prior = preload("res://tests/boss_item_cleave_chain_checks.gd")
+const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const FIXTURE := "res://tests/fixtures/boss_item_bash_damage_source.json"
 
 const BASIC_DAMAGE := 50
@@ -58,7 +59,7 @@ class BashDamageBus:
 
 
 class BashDamageWorld:
-	extends Prior.CleaveChainWorld
+	extends Prototype
 	var legacy_bash := false
 
 	func _battle_item_effects(source_hero: HeroState) -> BattleItemEffects:

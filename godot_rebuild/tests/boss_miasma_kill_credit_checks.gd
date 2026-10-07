@@ -10,6 +10,7 @@ const BossState = preload("res://scripts/match/boss_state.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const BattleItemEffects = preload("res://scripts/match/battle_item_effects.gd")
 const Prior = preload("res://tests/boss_item_cleave_chain_checks.gd")
+const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const KAIZEN = preload("res://data/heroes/kaizen.tres")
 const FIXTURE := "res://tests/fixtures/boss_miasma_kill_credit_source.json"
 
@@ -75,7 +76,7 @@ class MiasmaKillCreditBus:
 
 
 class MiasmaKillCreditWorld:
-	extends Prior.CleaveChainWorld
+	extends Prototype
 	var legacy_miasma := false
 
 	func _battle_item_effects(source_hero: HeroState) -> BattleItemEffects:

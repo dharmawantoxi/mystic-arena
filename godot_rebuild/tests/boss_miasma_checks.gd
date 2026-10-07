@@ -4,7 +4,35 @@ extends RefCounted
 ## through the prototype's real per-hero item update path.
 
 const Prior = preload("res://tests/boss_item_cleave_chain_checks.gd")
+const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const FIXTURE := "res://tests/fixtures/boss_miasma_source.json"
+
+
+class MiasmaWorld:
+	extends Prototype
+	var deliveries: Dictionary = {}
+	var roles: Dictionary = {}
+	var hit_order: Array = []
+
+	func _deliver_hit(
+		source_id: int,
+		source_team: int,
+		target: Object,
+		raw_damage: int,
+		school: String,
+		origin: Vector2,
+		damage_type: String = "normal"
+	) -> bool:
+		var landed: bool = super._deliver_hit(
+			source_id, source_team, target, raw_damage, school, origin, damage_type
+		)
+		if landed:
+			var unit_id := int(target.id)
+			var log: Array = deliveries.get(unit_id, [])
+			log.append([int(raw_damage), school])
+			deliveries[unit_id] = log
+			hit_order.append(unit_id)
+		return landed
 
 
 func run(check: Callable) -> void:
@@ -15,7 +43,7 @@ func run(check: Callable) -> void:
 	if cases.size() != 864:
 		return
 	var helper := Prior.new()
-	var world := Prior.CleaveChainWorld.new()
+	var world := MiasmaWorld.new()
 	for row: Dictionary in cases:
 		helper._reset_world(world, false)
 		world._miasma_registry.clear()
@@ -122,7 +150,7 @@ func _prepare_attacker(hero: Prior.HeroState, boss: Prior.BossState) -> void:
 	hero.items.hero_range = 70.0
 
 
-func _clear_damage_log(world: Prior.CleaveChainWorld) -> void:
+func _clear_damage_log(world) -> void:
 	world.deliveries = {}
 	world.hit_order = []
 	world.recent_events.clear()

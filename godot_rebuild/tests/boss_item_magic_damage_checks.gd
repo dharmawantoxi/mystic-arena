@@ -18,6 +18,7 @@ const BossState = preload("res://scripts/match/boss_state.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const UnitState = preload("res://scripts/combat/unit_state.gd")
 const Prior = preload("res://tests/boss_item_cleave_chain_checks.gd")
+const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const GOBLIN = preload("res://data/minions/goblin.tres")
 const KAIZEN = preload("res://data/heroes/kaizen.tres")
 const SYLARA = preload("res://data/heroes/sylara.tres")
@@ -75,7 +76,7 @@ class MagicDamageBus:
 
 
 class MagicDamageWorld:
-	extends Prior.CleaveChainWorld
+	extends Prototype
 	var types: Dictionary = {}
 	var legacy_magic := false
 

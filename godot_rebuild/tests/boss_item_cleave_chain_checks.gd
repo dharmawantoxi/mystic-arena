@@ -298,7 +298,7 @@ func _check_fixture_payloads(check: Callable, fixture: Dictionary) -> void:
 	check.call(minion_arm, "the regular-unit arm of cleave/chain is identical in both columns")
 
 
-func _reset_world(world: CleaveChainWorld, pre_fix_mode: bool) -> void:
+func _reset_world(world, pre_fix_mode: bool) -> void:
 	world.pre_fix_mode = pre_fix_mode
 	world.deliveries = {}
 	world.roles = {}
@@ -324,7 +324,7 @@ func _seed_below(threshold: float) -> int:
 	return 0
 
 
-func _spawn_case_units(world: CleaveChainWorld, boss_type: String, layout: Dictionary) -> Array:
+func _spawn_case_units(world, boss_type: String, layout: Dictionary) -> Array:
 	var boss: BossState = world._spawn_boss(boss_type)
 	if boss == null:
 		return []
@@ -368,11 +368,7 @@ func _spawn_case_units(world: CleaveChainWorld, boss_type: String, layout: Dicti
 
 
 func _run_scenario(
-	world: CleaveChainWorld,
-	fixture: Dictionary,
-	boss_type: String,
-	scenario: String,
-	pre_fix_mode: bool
+	world, fixture: Dictionary, boss_type: String, scenario: String, pre_fix_mode: bool
 ) -> Dictionary:
 	_reset_world(world, pre_fix_mode)
 	var layout: Dictionary = _layout(fixture, scenario)

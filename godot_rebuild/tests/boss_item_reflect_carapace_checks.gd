@@ -19,6 +19,7 @@ const BossState = preload("res://scripts/match/boss_state.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const UnitState = preload("res://scripts/combat/unit_state.gd")
 const Prior = preload("res://tests/boss_item_cleave_chain_checks.gd")
+const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const GOBLIN = preload("res://data/minions/goblin.tres")
 const KAIZEN = preload("res://data/heroes/kaizen.tres")
 const FIXTURE := "res://tests/fixtures/boss_item_reflect_carapace_source.json"
@@ -56,7 +57,7 @@ const CASE_COUNT := 864
 
 
 class ReflectCarapaceWorld:
-	extends Prior.CleaveChainWorld
+	extends Prototype
 	var types: Dictionary = {}
 
 	func _deliver_hit(

@@ -2,7 +2,35 @@ extends RefCounted
 ## 9a: exact near-distance ordering, actual inventory -> bus -> hit replay.
 
 const Prior = preload("res://tests/boss_item_cleave_chain_checks.gd")
+const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const FIXTURE := "res://tests/fixtures/boss_polycephaly_source.json"
+
+
+class PolycephalyWorld:
+	extends Prototype
+	var deliveries: Dictionary = {}
+	var roles: Dictionary = {}
+	var hit_order: Array = []
+
+	func _deliver_hit(
+		source_id: int,
+		source_team: int,
+		target: Object,
+		raw_damage: int,
+		school: String,
+		origin: Vector2,
+		damage_type: String = "normal"
+	) -> bool:
+		var landed: bool = super._deliver_hit(
+			source_id, source_team, target, raw_damage, school, origin, damage_type
+		)
+		if landed:
+			var unit_id := int(target.id)
+			var log: Array = deliveries.get(unit_id, [])
+			log.append([int(raw_damage), school])
+			deliveries[unit_id] = log
+			hit_order.append(unit_id)
+		return landed
 
 
 func run(check: Callable) -> void:
@@ -10,7 +38,7 @@ func run(check: Callable) -> void:
 	var cases: Array = fixture.get("cases", [])
 	check.call(cases.size() == 864, "9a four Polycephaly cases for 216 bosses")
 	var helper := Prior.new()
-	var world := Prior.CleaveChainWorld.new()
+	var world := PolycephalyWorld.new()
 	for row: Dictionary in cases:
 		helper._reset_world(world, false)
 		var offsets: Array = row.offsets
