@@ -96,6 +96,19 @@ jobs:
             python godot_rebuild/tests/annotate_failure.py /tmp/rebuild-import.log
             exit 1
           fi
+      - name: Tactical-only native probe
+        shell: bash
+        run: |
+          set -uo pipefail
+          code=0
+          timeout 180 stdbuf -oL -eL "$GODOT" --headless --path godot_rebuild \
+            --script res://tests/run_tactical_only.gd > /tmp/rebuild-tactical.log 2>&1 || code=$?
+          echo "tactical probe exit=$code lines=$(wc -l < /tmp/rebuild-tactical.log) bytes=$(wc -c < /tmp/rebuild-tactical.log)"
+          tail -n 120 /tmp/rebuild-tactical.log
+          if [[ "$code" != 0 ]]; then
+            python godot_rebuild/tests/annotate_failure.py /tmp/rebuild-tactical.log
+            exit 1
+          fi
       - name: Native simulation, input and screen lifecycle tests
         shell: bash
         run: |
