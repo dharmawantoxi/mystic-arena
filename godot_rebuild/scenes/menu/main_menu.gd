@@ -7,6 +7,7 @@ signal play_requested
 signal quit_requested
 
 const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
+const AudioRuntime = preload("res://scripts/audio/audio_runtime.gd")
 const Catalog = preload("res://scripts/match/level_catalog.gd")
 const ProgressStore = preload("res://scripts/match/level_progress_store.gd")
 
@@ -28,12 +29,12 @@ func _ready() -> void:
 
 
 func _click_and_emit(signal_value: Signal) -> void:
-	AudioManager.play("ui_click")
+	AudioRuntime.play("ui_click")
 	signal_value.emit()
 
 
 func _click_and_start() -> void:
-	AudioManager.play("ui_click")
+	AudioRuntime.play("ui_click")
 	_start_selected_level()
 
 

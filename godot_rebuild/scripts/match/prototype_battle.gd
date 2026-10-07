@@ -3,6 +3,7 @@ extends "res://scripts/combat/siege_battle.gd"
 ## Playable normal/level-1 subset. Wave/ledger/build rules are separate from the old manual labs.
 
 const Upgrades = preload("res://scripts/match/archer_upgrades.gd")
+const AudioRuntime = preload("res://scripts/audio/audio_runtime.gd")
 const CannonUpgrades = preload("res://scripts/match/cannon_upgrades.gd")
 const IceUpgrades = preload("res://scripts/match/ice_upgrades.gd")
 const MageUpgrades = preload("res://scripts/match/mage_upgrades.gd")
@@ -293,7 +294,7 @@ func setup_arena() -> bool:
 	player_hero_ids.append(blue_kaizen.id)
 	if spawn_hero(KAIZEN, RED, RED_HERO_SPAWN) == null:
 		return false
-	AudioManager.play("hero_spawn")
+	AudioRuntime.play("hero_spawn")
 	return true
 
 
@@ -448,7 +449,7 @@ func step_tick() -> void:
 	)
 	wave_count = scheduler.wave
 	if batch.started:
-		AudioManager.play("wave_start")
+		AudioRuntime.play("wave_start")
 		for nexus in nexuses:
 			if nexus != null:
 				nexus.set_wave(wave_count)
@@ -462,7 +463,7 @@ func step_tick() -> void:
 		_spawn_match_minion(MINIONS[spawn.kind], spawn.team, spawn.lane)
 	super.step_tick()
 	if winner in [BLUE, RED] and not _audio_result_announced:
-		AudioManager.play("victory" if winner == BLUE else "defeat")
+		AudioRuntime.play("victory" if winner == BLUE else "defeat")
 		_audio_result_announced = true
 	# Source Game.update runs living Hero.update calls before Boss.update. Keep
 	# the boss's target/attack phase after hero hits and movement from this tick.
@@ -608,7 +609,7 @@ func buy_player_hero(hero_type: String) -> bool:
 	player_hero_ids.append(hero.id)
 	economy.spend(BLUE, kit.cost)
 	_record({"kind": "hero_buy", "team": BLUE, "target_id": hero.id, "hero_type": hero_type})
-	AudioManager.play("hero_spawn")
+	AudioRuntime.play("hero_spawn")
 	return true
 
 

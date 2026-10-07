@@ -33,12 +33,12 @@ func run(check: Callable) -> void:
 		"Duplicate completion rejected"
 	)
 	check.call(Store.load_state(TEST_PATH) == replay.state, "Rejected write preserves save")
-	var with_roster := replay.state.duplicate(true)
+	var with_roster: Dictionary = replay.state.duplicate(true)
 	with_roster["purchased_heroes"] = ["kaizen", "gornak"]
 	with_roster["unlocked_bosses"] = ["gornak"]
 	check.call(Store.save_state(with_roster, TEST_PATH), "Write persistent player hero roster")
 	check.call(Store.load_state(TEST_PATH) == with_roster, "Player hero roster survives reload")
-	var invalid_roster := with_roster.duplicate(true)
+	var invalid_roster: Dictionary = with_roster.duplicate(true)
 	invalid_roster["purchased_heroes"] = ["kaizen", "kaizen"]
 	check.call(not Store.save_state(invalid_roster, TEST_PATH), "Duplicate purchased hero rejected")
 	invalid_roster = with_roster.duplicate(true)
