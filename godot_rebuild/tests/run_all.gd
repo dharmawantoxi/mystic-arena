@@ -1,3 +1,4 @@
+# gdlint:disable=max-file-lines
 extends SceneTree
 ## Native, dependency-free headless regression runner. Exit code 1 means failure.
 
@@ -122,6 +123,13 @@ func _check(condition: bool, message: String) -> void:
 		failure_groups[key] = int(failure_groups.get(key, 0)) + 1
 
 
+## Progress marker. The suite only prints on failure or at the very end, so a
+## hang (or a CI timeout kill) leaves no trace of how far it got; these lines are
+## the last-60-lines breadcrumb `tests/annotate_failure.py` surfaces.
+func _stage(label: String) -> void:
+	print("[stage] ", label)
+
+
 func _failure_key(message: String) -> String:
 	var words: PackedStringArray = message.split(" ", false)
 	var head: Array[String] = []
@@ -143,6 +151,7 @@ func _physics_steps(count: int) -> void:
 
 
 func _run() -> void:
+	_stage("domain suites")
 	_check(Engine.physics_ticks_per_second == 60, "physics frequency is 60 Hz")
 	LevelCatalogChecks.new().run(_check)
 	LevelThemeChecks.new().run(_check)
@@ -187,9 +196,12 @@ func _run() -> void:
 	AIPolicyChecks.new().run(_check)
 	AIControlTickChecks.new().run(_check)
 	AIRosterChecks.new().run(_check)
+	_stage("sandbox simulation")
 	_test_simulation()
+	_stage("combat and siege")
 	CombatChecks.new().run(_check)
 	SiegeChecks.new().run(_check)
+	_stage("boss suites")
 	BossCoreChecks.new().run(_check)
 	BossAbilityChecks.new().run(_check)
 	BossMatchChecks.new().run(_check)
@@ -222,14 +234,18 @@ func _run() -> void:
 	BossMiasmaKillCreditChecks.new().run(_check)
 	BossHeroAIChecks.new().run(_check)
 	BossPresentationChecks.new().run(_check)
+	_stage("prototype and structure suites")
 	PrototypeChecks.new().run(_check)
 	UpgradeChecks.new().run(_check)
 	NexusChecks.new().run(_check)
 	CannonChecks.new().run(_check)
 	IceChecks.new().run(_check)
 	MageChecks.new().run(_check)
+	_stage("kaizen domain")
 	KaizenChecks.new().run(_check)
+	_stage("tactical domain")
 	TacticalChecks.new().run(_check)
+	_stage("application scenes")
 	var app = APP.instantiate()
 	root.add_child(app)
 	await _settle()
@@ -300,6 +316,7 @@ func _run() -> void:
 	await _test_siege_scene(app)
 	await _test_prototype_scene(app)
 	await _test_level_selection_scene(app)
+	_stage("scene suites")
 	await ForgeSceneChecks.new().run(self, app, _check)
 	await AIShieldSceneChecks.new().run(self, app, _check)
 	await UpgradeSceneChecks.new().run(self, app, _check)
@@ -308,7 +325,9 @@ func _run() -> void:
 	await IceSceneChecks.new().run(self, app, _check)
 	await MageSceneChecks.new().run(self, app, _check)
 	await KaizenSceneChecks.new().run(self, app, _check)
+	_stage("tactical scene")
 	await TacticalSceneChecks.new().run(self, app, _check)
+	_stage("teardown")
 	app.queue_free()
 	await _settle()
 	_check(not paused, "app exit does not leave tree paused")
