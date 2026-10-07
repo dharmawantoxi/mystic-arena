@@ -73,7 +73,31 @@ class CleaveDamageBus:
 
 class CleaveDamageWorld:
 	extends Prototype
+	var pre_fix_mode := false
+	var deliveries: Dictionary = {}
+	var roles: Dictionary = {}
+	var hit_order: Array = []
 	var legacy_cleave := false
+
+	func _deliver_hit(
+		source_id: int,
+		source_team: int,
+		target: UnitState,
+		raw_damage: int,
+		school: String,
+		origin: Vector2,
+		damage_type: String = "normal"
+	) -> bool:
+		var landed: bool = super._deliver_hit(
+			source_id, source_team, target, raw_damage, school, origin, damage_type
+		)
+		if landed:
+			var unit_id := int(target.id)
+			var log: Array = deliveries.get(unit_id, [])
+			log.append([int(raw_damage), school])
+			deliveries[unit_id] = log
+			hit_order.append(unit_id)
+		return landed
 
 	func _battle_item_effects(source_hero: HeroState) -> BattleItemEffects:
 		var bus := CleaveDamageBus.new()

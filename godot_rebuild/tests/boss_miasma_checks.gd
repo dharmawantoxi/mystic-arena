@@ -5,11 +5,13 @@ extends RefCounted
 
 const Prior = preload("res://tests/boss_item_cleave_chain_checks.gd")
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
+const UnitState = preload("res://scripts/combat/unit_state.gd")
 const FIXTURE := "res://tests/fixtures/boss_miasma_source.json"
 
 
 class MiasmaWorld:
 	extends Prototype
+	var pre_fix_mode := false
 	var deliveries: Dictionary = {}
 	var roles: Dictionary = {}
 	var hit_order: Array = []
@@ -17,7 +19,27 @@ class MiasmaWorld:
 	func _deliver_hit(
 		source_id: int,
 		source_team: int,
-		target: Object,
+		target: UnitState,
+		raw_damage: int,
+		school: String,
+		origin: Vector2,
+		damage_type: String = "normal"
+	) -> bool:
+		var landed: bool = super._deliver_hit(
+			source_id, source_team, target, raw_damage, school, origin, damage_type
+		)
+		if landed:
+			var unit_id := int(target.id)
+			var log: Array = deliveries.get(unit_id, [])
+			log.append([int(raw_damage), school])
+			deliveries[unit_id] = log
+			hit_order.append(unit_id)
+		return landed
+
+	func _deliver_hit(
+		source_id: int,
+		source_team: int,
+		target: UnitState,
 		raw_damage: int,
 		school: String,
 		origin: Vector2,
