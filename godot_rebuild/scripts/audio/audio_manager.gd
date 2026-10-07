@@ -90,6 +90,10 @@ func play(key: String) -> void:
 	effects.play()
 
 
+func _free_player(player: AudioStreamPlayer) -> void:
+	player.queue_free()
+
+
 func play_sfx(key: String) -> void:
 	if not enabled:
 		return
@@ -100,7 +104,7 @@ func play_sfx(key: String) -> void:
 	player.bus = "Master"
 	player.volume_db = -2.0
 	player.stream = stream
-	player.finished.connect(player.queue_free)
+	player.finished.connect(_free_player.bind(player))
 	add_child(player)
 	player.play()
 
