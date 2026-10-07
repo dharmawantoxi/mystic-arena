@@ -51,7 +51,7 @@ func _catalog(store, check: Callable) -> void:
 	for hero_type in starters + mini + true_bosses:
 		check.call(not seen.has(hero_type), "Meta Hero Shop catalog ID is unique: " + hero_type)
 		seen[hero_type] = true
-		var item := store.entry(hero_type)
+		var item: Dictionary = store.entry(hero_type)
 		check.call(not item.is_empty(), "Meta Hero Shop entry resolves: " + hero_type)
 		if hero_type in starters:
 			check.call(
@@ -81,7 +81,7 @@ func _source_case(store, row: Dictionary, check: Callable) -> void:
 		"unlocked_bosses": _strings(spec.defeated),
 	}
 	var before := state.duplicate(true)
-	var result := store.try_unlock(state, String(spec.hero))
+	var result: Dictionary = store.try_unlock(state, String(spec.hero))
 	var accepted := int(row.save_count) == 1
 	check.call(
 		String(result.error).is_empty() == accepted,
@@ -97,14 +97,16 @@ func _source_case(store, row: Dictionary, check: Callable) -> void:
 		row.label + ": boss defeat gate remains unchanged"
 	)
 	check.call(state == before, row.label + ": pure transaction never mutates caller state")
-	var expected_error := (
-		{
-			"unknown": "hero",
-			"duplicate_starter": "owned",
-			"locked_mini_boss": "locked",
-			"mini_boss_one_short": "gold",
-		}
-		. get(String(row.label), "")
+	var expected_error := String(
+		(
+			{
+				"unknown": "hero",
+				"duplicate_starter": "owned",
+				"locked_mini_boss": "locked",
+				"mini_boss_one_short": "gold",
+			}
+			. get(String(row.label), "")
+		)
 	)
 	check.call(result.error == expected_error, row.label + ": explicit refusal reason")
 
