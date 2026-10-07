@@ -5,8 +5,13 @@ const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 ## One seed for the whole red AI: a restarted prototype match replays.
 const AI_MATCH_SEED := 20260929
+## A press and its release can land inside one tick, so tactical input keeps its
+## own ordered queue instead of the single-slot build/upgrade command.
+const TACTICAL_QUEUE_LIMIT := 8
 var selected_slot_id := -1
 var command: Dictionary = {}
+var tactical_queue: Array[Dictionary] = []
+var mouse_position := Vector2.ZERO
 var last_action := "Pilih slot biru, lalu bangun Archer (100 G)."
 
 
@@ -40,6 +45,8 @@ func _physics_process(_delta: float) -> void:
 		cancel_pending_input()
 		return
 	var match_world := world as Prototype
+	match_world.set_tactical_mouse(mouse_position)
+	_drain_tactical(match_world)
 	if not command.is_empty():
 		var accepted := false
 		var balance_before: int = match_world.economy.gold[0]
@@ -210,6 +217,87 @@ func request_hero_follow(entity_id: int, target_id: int) -> bool:
 	return true
 
 
+func request_tactical_hold(
+	command_name: String,
+	point: Vector2 = Vector2.ZERO,
+	has_point: bool = false,
+	follow_mouse: bool = false
+) -> bool:
+	## Port of the KEYDOWN / panel-press path (`_core.py::handle_key`,
+	## `mobile/hud.py::apply_hud_action`): the order is issued through
+	## `hold_start`, so it stays enforced until the key or finger is released.
+	if not _tactical_gate():
+		return false
+	(
+		tactical_queue
+		. append(
+			{
+				"kind": "hold",
+				"command": command_name,
+				"point": point,
+				"has_point": has_point,
+				"tower_id": _selected_blue_tower_id(),
+				"follow_mouse": follow_mouse,
+			}
+		)
+	)
+	return true
+
+
+func request_tactical_release(command_name: String = "") -> bool:
+	## Port of KEYUP / touch release -> `tactical.hold_end(name)`.
+	if not _tactical_gate():
+		return false
+	tactical_queue.append({"kind": "release", "command": command_name})
+	return true
+
+
+func set_mouse_position(point: Vector2) -> void:
+	mouse_position = point
+
+
+func _tactical_gate() -> bool:
+	# Tactical input is match input: it is refused while paused or finished, and
+	# `cancel_pending_input()` releases the holds like `main.py` does on pause.
+	if get_tree().paused or not world.is_running():
+		return false
+	return tactical_queue.size() < TACTICAL_QUEUE_LIMIT
+
+
+func _selected_blue_tower_id() -> int:
+	# `_core.py` passes `g.selected_tower` to PROTECT TOWER only when it is blue.
+	var tower := world.get_unit(selected_id) as Structure
+	if tower == null or not tower.alive or tower.team != 0:
+		return -1
+	if tower.settings().structure_kind != "tower":
+		return -1
+	return tower.id
+
+
+func _drain_tactical(match_world: Prototype) -> void:
+	# Source dispatches tactical input before `Game.update`, so the queue runs
+	# before the tick and before the single-slot build/upgrade command.
+	for entry in tactical_queue:
+		if String(entry.kind) == "hold":
+			match_world.tactical_hold(
+				String(entry.command),
+				entry.point,
+				bool(entry.has_point),
+				int(entry.tower_id),
+				bool(entry.follow_mouse),
+				selected_id
+			)
+			if match_world.tactical.active_command == String(entry.command):
+				last_action = match_world.tactical.status_text()
+			else:
+				# Armed but refused (no boss / no tower / cooldown): the source
+				# reports it through the feedback banner, the HUD echoes it.
+				last_action = "Perintah %s belum bisa diterbitkan." % String(entry.command)
+		else:
+			match_world.tactical_release(String(entry.command))
+	tactical_queue.clear()
+
+
 func request_wave(_type_index: int) -> bool:
 	return false
 
@@ -226,6 +314,10 @@ func select_at(point: Vector2) -> void:
 func cancel_pending_input() -> void:
 	super.cancel_pending_input()
 	command.clear()
+	tactical_queue.clear()
+	# `main.py` releases every held order when it pauses or backgrounds, so a
+	# hold can never survive the pause overlay and re-fire on resume.
+	(world as Prototype).tactical.hold_end()
 
 
 func _queue(kind: String, id: int) -> bool:

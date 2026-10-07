@@ -7,12 +7,55 @@ const Structure = preload("res://scripts/combat/structure_state.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const ItemForgePanel = preload("res://scripts/ui/item_forge_panel.gd")
 const ProgressStore = preload("res://scripts/match/level_progress_store.gd")
+const Tactical = preload("res://scripts/match/tactical_commands.gd")
+## Port of the `mobile/sidepanel.py` "TACTICAL COMMANDS (HOLD)" box: the five
+## source orders with their labels, colors, tooltips and enable rules. The
+## desktop keys G/F/T/C/B/D drive the same manager (`_core.py` KEYDOWN/KEYUP).
+const TACTICAL_ORDER := [
+	{
+		"command": Tactical.GATHER,
+		"node": "TacticalGather",
+		"label": "GATHER [G]",
+		"color": Color8(120, 200, 255),
+		"tip": "Semua hero kumpul & serang bersama"
+	},
+	{
+		"command": Tactical.PROTECT_TOWER,
+		"node": "TacticalProtectTower",
+		"label": "PROTECT TOWER [T]",
+		"color": Color8(120, 235, 140),
+		"tip": "Min 2 hero lindungi tower"
+	},
+	{
+		"command": Tactical.PROTECT_CASTLE,
+		"node": "TacticalProtectCastle",
+		"label": "PROTECT CASTLE [C]",
+		"color": Color8(255, 205, 90),
+		"tip": "Semua hero lindungi castle"
+	},
+	{
+		"command": Tactical.ATTACK_BOSS,
+		"node": "TacticalAttackBoss",
+		"label": "ATTACK BOSS [B]",
+		"color": Color8(255, 110, 110),
+		"tip": "Semua hero serang boss"
+	},
+	{
+		"command": Tactical.ATTACK_DAMAGE_DEALER,
+		"node": "TacticalAttackDamageDealer",
+		"label": "ATTACK DMG DEALER [D]",
+		"color": Color8(190, 165, 255),
+		"tip": "Fokus hero musuh damage terbesar"
+	}
+]
 
 var progress_path := ProgressStore.PATH
 var result_shown := false
 var forge_panel: ItemForgePanel
 var ai_toggle: Button
 var migration_status: Label
+var tactical_bar: VBoxContainer
+var tactical_buttons: Dictionary = {}
 @onready var match_session: PrototypeSession = $Simulation
 
 
@@ -73,6 +116,7 @@ func _ready() -> void:
 	_build_forge_ui()
 	_build_ai_toggle()
 	_build_migration_status()
+	_build_tactical_bar()
 	%PauseButton.pressed.connect(pause_match)
 	%ResumeButton.pressed.connect(resume_match)
 	%RestartButton.pressed.connect(func() -> void: restart_requested.emit())
@@ -81,12 +125,16 @@ func _ready() -> void:
 	%SaveRetryButton.pressed.connect(_save_result)
 	%SaveRetryButton.hide()
 	if ai_toggle != null:
-		ai_toggle.text = "AI lawan  [A] : ON" if match_session.world.ai_enabled else "AI lawan  [A] : OFF"
+		ai_toggle.text = (
+			"AI lawan  [A] : ON" if match_session.world.ai_enabled else "AI lawan  [A] : OFF"
+		)
 	%PauseButton.grab_focus()
 
 
 func _process(_delta: float) -> void:
 	var world := simulation.world as Prototype
+	var cursor := _arena_point(get_viewport().get_mouse_position())
+	match_session.set_mouse_position(cursor)
 	if forge_panel != null and forge_panel.visible:
 		forge_panel.refresh()
 	%GoldLabel.text = "GOLD  %d G   ·   Lawan %d G" % [world.economy.gold[0], world.economy.gold[1]]
@@ -100,14 +148,23 @@ func _process(_delta: float) -> void:
 		var active_boss: Object = world.active_boss
 		var boss_text := "Boss: belum muncul"
 		if active_boss != null and active_boss.alive:
-			boss_text = "Boss: %s  HP %.0f/%.0f" % [active_boss.display_name, active_boss.hp, active_boss.max_hp]
-		var ai_text := "AI %s · H%d · build %d · upgrade %d" % [
-			"ON" if world.ai_enabled else "OFF",
-			world._ai_roster().size(),
-			world.ai_build.total_built,
-			world.ai_upgrades.total_upgraded
-		]
-		migration_status.text = "%s   |   %s" % [boss_text, ai_text]
+			boss_text = (
+				"Boss: %s  HP %.0f/%.0f"
+				% [active_boss.display_name, active_boss.hp, active_boss.max_hp]
+			)
+		var ai_text := (
+			"AI %s · H%d · build %d · upgrade %d"
+			% [
+				"ON" if world.ai_enabled else "OFF",
+				world._ai_roster().size(),
+				world.ai_build.total_built,
+				world.ai_upgrades.total_upgraded
+			]
+		)
+		# `TacticalCommandManager.get_status_text` is the source HUD/debug line.
+		migration_status.text = (
+			"%s   |   %s   |   %s" % [boss_text, ai_text, world.tactical.status_text()]
+		)
 	var blue := world.nexuses[0]
 	var red := world.nexuses[1]
 	%StatusLabel.text = (
@@ -302,6 +359,7 @@ func _process(_delta: float) -> void:
 				["atas", "tengah", "bawah"][slot.lane]
 			]
 		)
+	_refresh_tactical_bar(world, locked)
 	%ActionLabel.text = match_session.last_action
 	if not world.is_running() and not result_shown:
 		result_shown = true
@@ -372,6 +430,103 @@ func _build_migration_status() -> void:
 	$HUD.add_child(migration_status)
 
 
+func _build_tactical_bar() -> void:
+	## Right-side order bar. Source buttons are hidden unless their precondition
+	## holds (`btn.visible = bool(enabled)`), and a press is a HOLD that keeps the
+	## order enforced until release (`main.py` tracks the same press/release).
+	tactical_bar = VBoxContainer.new()
+	tactical_bar.name = "TacticalBar"
+	tactical_bar.position = Vector2(1092, 140)
+	tactical_bar.add_theme_constant_override("separation", 4)
+	var title := Label.new()
+	title.name = "TacticalTitle"
+	title.text = "TACTICAL COMMANDS (HOLD)"
+	title.add_theme_font_size_override("font_size", 12)
+	title.modulate = Color("ffd15a")
+	tactical_bar.add_child(title)
+	for entry in TACTICAL_ORDER:
+		var command := String(entry.command)
+		var button := Button.new()
+		button.name = String(entry.node)
+		button.text = String(entry.label)
+		button.tooltip_text = String(entry.tip)
+		button.custom_minimum_size = Vector2(180, 30)
+		button.add_theme_font_size_override("font_size", 12)
+		button.add_theme_color_override("font_color", entry.color)
+		button.button_down.connect(_tactical_panel_press.bind(command))
+		button.button_up.connect(_tactical_panel_release.bind(command))
+		tactical_bar.add_child(button)
+		tactical_buttons[command] = button
+	$HUD.add_child(tactical_bar)
+
+
+func _refresh_tactical_bar(world: Prototype, locked: bool) -> void:
+	if tactical_bar == null:
+		return
+	var tactical := world.tactical
+	var blue_heroes := tactical.alive_blue_heroes().size()
+	var boss_ready := world.active_boss != null and world.active_boss.alive
+	var dealer_ready := not tactical.red_heroes().is_empty()
+	for entry in TACTICAL_ORDER:
+		var command := String(entry.command)
+		var button: Button = tactical_buttons[command]
+		var ready := false
+		match command:
+			Tactical.PROTECT_TOWER:
+				ready = blue_heroes >= 1
+			Tactical.ATTACK_BOSS:
+				ready = boss_ready
+			Tactical.ATTACK_DAMAGE_DEALER:
+				ready = dealer_ready
+			_:
+				ready = blue_heroes > 0
+		button.visible = ready
+		button.disabled = locked or not ready
+		var held := ready and tactical.held_command == command
+		button.text = "%s  HOLD" % entry.label if held else String(entry.label)
+
+
+func _tactical_panel_press(command: String) -> void:
+	# The side panel issues the order without coordinates (mobile/hud.py), so a
+	# panel GATHER uses the source default point instead of the cursor.
+	match_session.request_tactical_hold(command)
+
+
+func _tactical_panel_release(command: String) -> void:
+	match_session.request_tactical_release(command)
+
+
+func _tactical_key_press(command: String) -> void:
+	# `_core.py`: GATHER at the cursor when it is inside the arena, and the point
+	# keeps following the cursor while the key is held (follow_mouse=True).
+	var local := _arena_point(get_viewport().get_mouse_position())
+	var gather := command == Tactical.GATHER
+	var tactical := (simulation.world as Prototype).tactical
+	match_session.request_tactical_hold(
+		command, local, gather and tactical.inside_arena(local), gather
+	)
+
+
+func _tactical_command_for(keycode: int) -> String:
+	# `_core.py::InputHandler.TACTICAL_KEY_TO_COMMAND`.
+	match keycode:
+		KEY_G, KEY_F:
+			return Tactical.GATHER
+		KEY_T:
+			return Tactical.PROTECT_TOWER
+		KEY_C:
+			return Tactical.PROTECT_CASTLE
+		KEY_B:
+			return Tactical.ATTACK_BOSS
+		KEY_D:
+			return Tactical.ATTACK_DAMAGE_DEALER
+	return ""
+
+
+func _arena_point(point: Vector2) -> Vector2:
+	return arena.get_global_transform_with_canvas().affine_inverse() * point
+
+
 func _toggle_ai() -> void:
 	var world := match_session.world
 	# AI mode is a match transaction: do not change controller ownership while
@@ -386,59 +541,9 @@ func _toggle_ai() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if (
-		event is InputEventKey
-		and event.pressed
-		and not event.echo
-		and event.physical_keycode == KEY_A
-	):
-		_toggle_ai()
-		get_viewport().set_input_as_handled()
+	if _handle_hotkey(event):
 		return
-	if (
-		event is InputEventKey
-		and event.pressed
-		and not event.echo
-		and event.physical_keycode == KEY_I
-	):
-		_toggle_forge()
-		get_viewport().set_input_as_handled()
-		return
-	if (
-		event is InputEventKey
-		and event.pressed
-		and not event.echo
-		and event.physical_keycode == KEY_Q
-	):
-		match_session.request_skill_q(match_session.selected_id)
-		get_viewport().set_input_as_handled()
-		return
-	if (
-		event is InputEventKey
-		and event.pressed
-		and not event.echo
-		and event.physical_keycode == KEY_W
-	):
-		match_session.request_skill_w(match_session.selected_id)
-		get_viewport().set_input_as_handled()
-		return
-	if (
-		event is InputEventKey
-		and event.pressed
-		and not event.echo
-		and event.physical_keycode == KEY_E
-	):
-		match_session.request_skill_e(match_session.selected_id)
-		get_viewport().set_input_as_handled()
-		return
-	if (
-		event is InputEventKey
-		and event.pressed
-		and not event.echo
-		and event.physical_keycode == KEY_R
-	):
-		match_session.request_skill_r(match_session.selected_id)
-		get_viewport().set_input_as_handled()
+	if _handle_tactical_key(event):
 		return
 	if (
 		event is InputEventMouseButton
@@ -449,6 +554,47 @@ func _unhandled_input(event: InputEvent) -> void:
 		_command_move(event.position)
 		return
 	super._unhandled_input(event)
+
+
+func _handle_hotkey(event: InputEvent) -> bool:
+	# Existing single-press hotkeys: AI toggle, item forge and the blue QWER.
+	if not (event is InputEventKey) or not event.pressed or event.echo:
+		return false
+	match event.physical_keycode:
+		KEY_A:
+			_toggle_ai()
+		KEY_I:
+			_toggle_forge()
+		KEY_Q:
+			match_session.request_skill_q(match_session.selected_id)
+		KEY_W:
+			match_session.request_skill_w(match_session.selected_id)
+		KEY_E:
+			match_session.request_skill_e(match_session.selected_id)
+		KEY_R:
+			match_session.request_skill_r(match_session.selected_id)
+		_:
+			return false
+	get_viewport().set_input_as_handled()
+	return true
+
+
+func _handle_tactical_key(event: InputEvent) -> bool:
+	## Port of `_core.py::InputHandler.handle_key` / `handle_key_up` for the
+	## tactical keys. Key repeat (echo) is passed through on purpose: the source
+	## KEYDOWN repeat reaches `hold_start`, which ignores a repeated press of the
+	## command it already holds.
+	if not (event is InputEventKey):
+		return false
+	var command := _tactical_command_for(event.physical_keycode)
+	if command.is_empty():
+		return false
+	if event.pressed:
+		_tactical_key_press(command)
+	else:
+		match_session.request_tactical_release(command)
+	get_viewport().set_input_as_handled()
+	return true
 
 
 func _command_move(point: Vector2) -> void:

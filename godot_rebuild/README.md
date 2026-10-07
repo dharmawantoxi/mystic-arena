@@ -26,6 +26,7 @@ Tidak memerlukan Python, pip, converter, addon, atau C++ untuk menjalankan clien
 - Gold pasif bertambah tiap detik; kill memberi reward. HUD menampilkan saldo, wave dan HP/shield nexus. Slot/range preview ditampilkan ketika dipilih.
 - **Kaizen biru + merah** (kit prototipe): spawn gratis kedua tim, Q/W/E/R hanya biru, klik-kanan jalan/ikuti hanya biru, hunt `< 900`, push ke nexus lawan, retreat `< 20%` HP, regen pasif, upgrade emas biru, respawn 10 dtk di spawn tim. **Biru dan merah auto-cast R→E→W→Q tiap 20 tick** (sumber v27: default aktif); tombol **Auto-cast** pada hero biru adalah penanda status dan hanya bisa memaksa aktif (sumber v29: tidak bisa dimatikan). QWER manual biru tetap tersedia dan berbagi cooldown dengan auto-cast. Bukan item atau AIPlayer.
 - **Lawan default:** scene pertandingan kini memulai AIPlayer native dengan seed replay tetap. AI menjalankan scheduler policy, draft/rekrutmen hero, upgrade, item, shield, serta kontrol hero merah melalui transaksi domain nyata. Tekan **A** atau tombol **AI lawan [A]** di HUD untuk mematikan/mengaktifkan AI; saat dimatikan, pertandingan kembali ke mode lawan terjadwal lama. Ini masih mode QA (bukan balance final), bukan balance produksi.
+- **Perintah taktis pemain (HOLD)**: `G`/`F` GATHER di titik kursor (ikut kursor selama ditahan), `T` PROTECT TOWER (tower biru terpilih bila ada), `C` PROTECT CASTLE, `B` ATTACK BOSS, `D` ATTACK DAMAGE DEALER; panel kanan `TACTICAL COMMANDS (HOLD)` memakai press/release yang sama dan menyembunyikan tombol yang syaratnya belum ada. Menahan = perintah diterbitkan ulang senyap tiap 0.5 detik (durasi 10 detik tidak habis), melepas setelah ≥ 20 tick menyisakan ekor 30 tick, tap cepat tetap 10 detik. GATHER yang ditahan mendorong push bersama setelah 4 detik bila ≥ 60% hero tiba; tanpa perintah aktif, AUTO-PROTECT castle/tower dievaluasi tiap 1.5 detik dan boss difokuskan 20% sejak wave 11. Pause/melepaskan fokus melepas semua hold. Detail: [kontrak perintah taktis](TACTICAL_CONTRACT.md).
 - Nexus hancur membuka hasil otomatis dan menghentikan simulasi. **Mulai ulang** mereset saldo pertandingan, slot, queue dan hasil; **Menu** kembali ke menu utama. Hasil kini menyimpan reward/progres level 1 dalam file development Godot yang terpisah dari save Python; kegagalan ditampilkan dengan tombol coba lagi.
 - Esc/Jeda dan kehilangan fokus menghentikan wave, combat dan income serta membatalkan transaksi tertunda. Lanjutkan secara eksplisit; hasil akhir tidak bisa dilanjutkan.
 
@@ -95,11 +96,12 @@ Keyboard Tab dan Enter juga dapat digunakan untuk navigasi tombol. Klik panel HU
 - Pause/resume, restart, kembali ke menu, cleanup screen, dan pause saat kehilangan fokus.
 - Adapter input mouse/touch; event mouse sintetis tidak menggandakan command touch.
 - Lokasi data development terpisah (`MysticArenaRebuildDev`). Scene pertandingan awal menyimpan progres ke `user://level_progress_v1.json` setelah hasil; slot save Python tidak disentuh.
+- Perintah taktis pemain (`tactical_commands.py`): lima perintah, mode HOLD/TAP, push GATHER, AUTO-PROTECT, penanda titik kumpul + banner umpan balik, dan akumulator `damage_dealt` (`credit_hero_damage`) yang menjadi input ATTACK DAMAGE DEALER.
 - Validator statis, runner tes native Godot, script PowerShell untuk Windows, dan workflow CI baru.
 
 ## Yang belum dimigrasikan
 
-Art final dan animasi produksi, balance final, ekonomi permanen, UI roster/forge produksi lengkap, audio, migrasi save Python/cloud, pembayaran, Android export, multi-touch/safe-area, profiling perangkat, dan parity penuh semua perilaku 54 level masih belum selesai. Domain native untuk 222 kit hero, item inventory/effects, forge transaksi, paid shield, boss/miniboss, AIPlayer policy/adapters, katalog 54 level, progression development-save, dan terrain source sudah tersedia serta diuji secara statis/native CI. Jangan menggunakan sandbox ini sebagai build pengganti game yang sudah rilis.
+Art final dan animasi produksi, balance final, ekonomi permanen, UI roster/forge produksi lengkap, migrasi save Python/cloud, pembayaran, Android export, multi-touch/safe-area, profiling perangkat, dan parity penuh semua perilaku 54 level masih belum selesai. Domain native untuk 222 kit hero, item inventory/effects, forge transaksi, paid shield, boss/miniboss, AIPlayer policy/adapters, perintah taktis pemain, audio, katalog 54 level, progression development-save, dan terrain source sudah tersedia serta diuji secara statis/native CI. Jangan menggunakan sandbox ini sebagai build pengganti game yang sudah rilis.
 
 ## Struktur
 
@@ -227,6 +229,7 @@ Pastikan import tidak menampilkan `ERROR` dan runner mengeluarkan `PASS: ... che
 - Tower/nexus: stat efektif, 60 fixture shield/armor/reduction, muzzle sumber, cooldown 35 tick, batas regen dan shield wave 10/11.
 - Projectile: launch tanpa damage instan, satu impact, target/owner mati, TTL/cap dan kredit satu kali.
 - Siege: endpoint menuju nexus, hasil membekukan world, replay deterministik dan tiga siklus UI/pause/restart/hasil.
+- Perintah taktis: 58 skenario oracle `TacticalCommandManager` asli (142 snapshot) direplay exact di GDScript — timer 600/150/180, cooldown 30/15, HOLD 20/30/240, spread formasi, clamp castle, skor threat tower, prioritas target nearest-enemy, AUTO-PROTECT castle/tower/boss, teks feedback & `get_status_text`, suara per perintah; truncation `credit_hero_damage` lewat jalur damage nyata; lifecycle scene (tuts, tombol panel press/release, pause melepas hold, restart reset, draw marker/banner tanpa mutasi state, tanpa node bocor).
 - Seluruh 277 titik lane dan lima definisi minion dibandingkan fixture sumber Python.
 - Damage, pembulatan Python, cooldown tepat 45 tick, tie target stabil, satu death/kredit dan pembersihan ID.
 - Regen, cap spawn atomik, keluar rute tanpa reward, event terbatas, dua simulasi identik selama 2.400 tick.

@@ -38,7 +38,11 @@ for path in source_files:
     for relative in re.findall(r'res://([^"\s]+)', text):
         target = (ROOT / relative).resolve()
         check(target.is_relative_to(ROOT), f"Reference escapes project: {path}: {relative}")
-        check(target.is_file(), f"Missing reference: {path}: {relative}")
+        if relative.endswith("/"):
+            # Directory prefix constants, e.g. the audio facade's asset root.
+            check(target.is_dir(), f"Missing reference directory: {path}: {relative}")
+        else:
+            check(target.is_file(), f"Missing reference: {path}: {relative}")
         # Linux CI is case sensitive, unlike many Windows filesystems.
         check(
             target.parent.is_dir() and target.name in [p.name for p in target.parent.iterdir()],
@@ -106,6 +110,32 @@ for key, entry in recruitment["levels"].items():
 check((ROOT / "tests/fixtures/ai_draft_source.json").is_file(), "AI draft needs source fixture")
 workflow = (ROOT.parent / ".github/workflows/godot-rebuild.yml").read_text(encoding="utf-8")
 check("python godot_rebuild/tests/ai_draft_source_oracle.py" in workflow, "CI must detect recruitment data drift")
+
+# Tactical command layer (tactical_commands.py -> scripts/match/tactical_commands.gd).
+from tactical_source_oracle import source_fixture as tactical_source_fixture
+check("TacticalChecks.new().run(_check)" in ai_tests,
+      "Tactical command replay must run in the native runner")
+check("TacticalSceneChecks.new().run(self, app, _check)" in ai_tests,
+      "Tactical scene lifecycle must run in the native runner")
+check((ROOT / "tests/fixtures/tactical_source.json").is_file(),
+      "Tactical commands require a source oracle fixture")
+if (ROOT / "tests/fixtures/tactical_source.json").is_file():
+    check(tactical_source_fixture() == json.loads(
+        (ROOT / "tests/fixtures/tactical_source.json").read_text(encoding="utf-8")),
+        "Tactical command source fixture drift")
+tactical_port = (ROOT / "scripts/match/tactical_commands.gd").read_text(encoding="utf-8")
+match_port = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+check("tactical.update()" in match_port, "The match world must tick the tactical manager")
+check("hold_start" in tactical_port and "hold_end" in tactical_port,
+      "Tactical port must keep the source HOLD lifecycle")
+check("damage_dealt" in (ROOT / "scripts/combat/unit_state.gd").read_text(encoding="utf-8")
+      and "_credit_damage_dealt" in (ROOT / "scripts/combat/minion_battle.gd").read_text(encoding="utf-8"),
+      "ATTACK DAMAGE DEALER needs the ported credit_hero_damage accumulator")
+check("python godot_rebuild/tests/tactical_source_oracle.py" in workflow,
+      "CI must detect tactical command source drift")
+check("'tactical_commands.py'" in workflow,
+      "CI must re-run when the tactical source changes")
+
 
 check("AIUpgradeChecks.new().run(_check)" in ai_tests, "AI upgrade suite must remain alongside baseline suites")
 check((ROOT / "tests/fixtures/ai_upgrade_source.json").is_file(), "AI upgrades require source fixture")

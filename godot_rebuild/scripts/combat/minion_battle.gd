@@ -379,6 +379,7 @@ func _deliver_hit(
 	if target is HeroState:
 		damage = maxi(0, damage - int((target as HeroState).items.aura_guard_block))
 	target.hp = maxf(0, target.hp - damage)
+	_credit_damage_dealt(source_id, damage)
 	_notify_item_damage(source_id, source_team, target, int(damage))
 	if target is HeroState and (target as HeroState).bristleback_timer > 0 and damage > 0:
 		var atk := get_unit(source_id)
@@ -403,6 +404,20 @@ func _deliver_hit(
 		if target.is_hero:
 			_on_hero_death(target as HeroState, source_id)
 	return true
+
+
+func _credit_damage_dealt(source_id: int, damage: float) -> void:
+	# Port of `_entity.credit_hero_damage(source, amount)`, called by every
+	# source take_damage right after mitigation: `int()` truncates toward zero,
+	# a non-positive amount or an unknown source credits nothing. Source
+	# reflect/bristleback paths pass `source=None`, which is `source_id == -1`
+	# here, so they never credit either.
+	if source_id < 0 or damage <= 0.0:
+		return
+	var dealer := get_unit(source_id)
+	if dealer == null:
+		return
+	dealer.damage_dealt += int(damage)
 
 
 func _damage_amount(target: UnitState, raw_damage: int, school: String) -> float:

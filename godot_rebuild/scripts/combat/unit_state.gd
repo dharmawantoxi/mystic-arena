@@ -40,6 +40,12 @@ var dmg_amp_timer := 0
 # physical hit misses; read from the ATTACKER in the evasion gate.
 var blind_amount := 0.0
 var blind_timer := 0
+# Source `_entity.credit_hero_damage`: every take_damage path adds the
+# post-mitigation damage to the attacker total. The tactical command
+# ATTACK DAMAGE DEALER picks the red hero with the highest value, so the
+# counter lives on UnitState exactly like the source's dynamic attribute
+# (`getattr(source, "damage_dealt", 0)`).
+var damage_dealt := 0
 
 
 func apply_armor_shred(amount: float, duration: int) -> void:

@@ -6,6 +6,7 @@ on:
     paths:
       - 'godot_rebuild/**'
       - '_core.py'
+      - 'tactical_commands.py'
       - 'levels/level_data.py'
       - '_entity.py'
       - 'bosses/boss_data.py'
@@ -18,6 +19,7 @@ on:
     paths:
       - 'godot_rebuild/**'
       - '_core.py'
+      - 'tactical_commands.py'
       - 'levels/level_data.py'
       - '_entity.py'
       - 'bosses/boss_data.py'
@@ -63,6 +65,7 @@ jobs:
           python godot_rebuild/tests/ai_draft_source_oracle.py
           python godot_rebuild/tests/ai_upgrade_source_oracle.py
           python godot_rebuild/tests/ai_shield_source_oracle.py
+          python godot_rebuild/tests/tactical_source_oracle.py
           gdparse $(find godot_rebuild -name '*.gd')
           gdlint $(find godot_rebuild -name '*.gd')
           gdformat --check $(find godot_rebuild -name '*.gd')

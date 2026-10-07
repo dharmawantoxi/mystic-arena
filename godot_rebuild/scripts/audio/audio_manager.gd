@@ -24,12 +24,14 @@ var effects: AudioStreamPlayer
 var ambient: AudioStreamPlayer
 var enabled := true
 
+
 func _ready() -> void:
 	music = _make_player("Music", -8.0)
 	effects = _make_player("Effects", -2.0)
 	ambient = _make_player("Ambient", -12.0)
 	play_music("bgm_battle")
 	play_ambient("ambient_forest")
+
 
 func _make_player(player_name: String, volume: float) -> AudioStreamPlayer:
 	var player := AudioStreamPlayer.new()
@@ -38,10 +40,12 @@ func _make_player(player_name: String, volume: float) -> AudioStreamPlayer:
 	add_child(player)
 	return player
 
+
 func _stream(key: String) -> AudioStream:
 	if not STREAMS.has(key):
 		return null
 	return load(ROOT + String(STREAMS[key])) as AudioStream
+
 
 func play_music(key: String) -> void:
 	if not enabled or music == null:
@@ -52,6 +56,7 @@ func play_music(key: String) -> void:
 	music.stream = stream
 	music.play()
 
+
 func play_ambient(key: String) -> void:
 	if not enabled or ambient == null:
 		return
@@ -61,6 +66,7 @@ func play_ambient(key: String) -> void:
 	ambient.stream = stream
 	ambient.play()
 
+
 func play(key: String) -> void:
 	if not enabled or effects == null:
 		return
@@ -69,6 +75,7 @@ func play(key: String) -> void:
 		return
 	effects.stream = stream
 	effects.play()
+
 
 func set_enabled(value: bool) -> void:
 	enabled = value

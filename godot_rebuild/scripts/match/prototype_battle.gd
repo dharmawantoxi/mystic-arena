@@ -10,6 +10,7 @@ const NexusUpgrades = preload("res://scripts/match/nexus_upgrades.gd")
 const Economy = preload("res://scripts/match/match_economy.gd")
 const Forge = preload("res://scripts/match/forge.gd")
 const AiHeroControl = preload("res://scripts/match/ai_hero_control.gd")
+const Tactical = preload("res://scripts/match/tactical_commands.gd")
 const AiController = preload("res://scripts/match/ai_controller.gd")
 const AiBuild = preload("res://scripts/match/ai_build.gd")
 const AiRecruitment = preload("res://scripts/match/ai_recruitment.gd")
@@ -82,6 +83,10 @@ var forge := Forge.new()
 var item_shop := ItemShopUI.new()
 # Layer 6a: per-tick control for the explicitly owned AI hero roster.
 var ai_heroes := AiHeroControl.new()
+# Source `Game.tactical` (tactical_commands.py): the blue order layer. It owns
+# no world state of its own; every mutation goes through the hero fields the
+# source Hero.update already reads (destination/follow/target/retreat).
+var tactical := Tactical.new()
 # Layer 6b: scheduling wrapper (source AIPlayer.update). Layer 6e: set_ai_enabled()
 # is the only switch; with it off the red side stays idle.
 var ai_controller := AiController.new()
@@ -148,6 +153,10 @@ var _audio_result_announced := false
 func _init() -> void:
 	slots = SlotLayout.create(paths)
 	spawn_rng.seed = SPAWN_SEED
+	tactical.bind(self)
+	# Source `_auto_evaluate_protect` rolls `random.random()`; the native stream
+	# is seeded so a restarted match replays the same auto-order decisions.
+	tactical.seed_auto_roll(SPAWN_SEED)
 	level_config = LevelCatalog.get_level_config(level_number)
 	var boss_parsed = JSON.parse_string(FileAccess.get_file_as_string(BOSS_DATA))
 	boss_table = boss_parsed if boss_parsed is Dictionary else {}
@@ -417,6 +426,9 @@ func step_tick() -> void:
 		_tick_auras_and_items()
 		_tick_item_debuffs()
 		_step_hero_respawns()
+		# Source Game.update runs `self.tactical.update()` after the entity and
+		# reward passes and immediately before `self.ai.update(...)`.
+		tactical.update()
 		# The active AI controller owns hero control through its per-tick
 		# callback. Keep standalone hero control available when only that flag
 		# is enabled, but never dispatch it twice in one production tick.
@@ -1102,6 +1114,46 @@ func set_hero_destination(hero_id: int, point: Vector2) -> bool:
 	return true
 
 
+func set_tactical_mouse(point: Vector2) -> void:
+	# `game.mouse_x/mouse_y`: the HOLD refresh of a keyboard GATHER follows the
+	# cursor, so the session pushes the latest arena point every tick.
+	tactical.set_mouse(point)
+
+
+func tactical_hold(
+	command: String,
+	point: Vector2,
+	has_point: bool,
+	tower_id: int,
+	follow_mouse: bool,
+	selected_hero_id: int
+) -> bool:
+	# Port of the KEYDOWN (`_core.py::InputHandler.handle_key`) and side-panel
+	# press (`mobile/hud.py::apply_hud_action`) path. An order whose precondition
+	# is not met yet (no boss, no enemy hero) is NOT a transaction failure: the
+	# source keeps the hold armed and reports it through the feedback banner.
+	transaction_error = ""
+	if not is_running():
+		transaction_error = "finished"
+	elif command not in Tactical.COMMANDS:
+		transaction_error = "tactical"
+	if not transaction_error.is_empty():
+		return false
+	tactical.set_selected_hero(selected_hero_id)
+	tactical.set_mouse(point)
+	tactical.hold_start(command, point, has_point, tower_id, follow_mouse)
+	return true
+
+
+func tactical_release(command: String) -> bool:
+	# Port of KEYUP / touch release -> `tactical.hold_end(name)`. The source has
+	# no state gate here: releasing always disarms the hold, and a long hold only
+	# keeps the HOLD_RELEASE_TAIL tail.
+	transaction_error = ""
+	tactical.hold_end(command)
+	return true
+
+
 func _set_hero_autocast(hero_id: int) -> bool:
 	# Port of the source toggle_autocast button (v29): the flag can only
 	# be forced true, there is no off path. Blue only, like other orders.
@@ -1496,6 +1548,8 @@ func _deliver_hit(
 		var dealt := boss.take_damage(attacker, raw_damage, damage_type, school)
 		if dealt < 0:
 			return false
+		# `bosses/base_boss.py` credits the post-cap effective damage.
+		_credit_damage_dealt(source_id, float(dealt))
 		boss.last_hit_source_id = source_id
 		boss.last_hit_is_miasma_tick = false
 		_record(

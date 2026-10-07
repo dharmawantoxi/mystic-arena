@@ -11,6 +11,7 @@ const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
 const WallTiles = preload("res://scripts/ui/wall_tiles.gd")
 const TerrainTiles = preload("res://scripts/ui/terrain_tiles.gd")
+const Tactical = preload("res://scripts/match/tactical_commands.gd")
 var cached_river_theme := ""
 
 
@@ -64,7 +65,99 @@ func _draw() -> void:
 		draw_arc(mark, 8, 0, TAU, 20, color, 1.5, true)
 		draw_line(mark - Vector2(5, 5), mark + Vector2(5, 5), color, 1.5, true)
 		draw_line(mark + Vector2(-5, 5), mark + Vector2(5, -5), color, 1.5, true)
+	_draw_tactical_marker(world)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	_draw_tactical_feedback(world)
+
+
+func _draw_tactical_marker(world: Prototype) -> void:
+	## Port of `TacticalCommandManager.draw_world`: gather-point rings, center dot
+	## and the dashed hero -> point guides. The pulse is presentation only (the
+	## source reads `pygame.time.get_ticks()`), every gate and radius is copied.
+	var tactical := world.tactical
+	if not tactical.marker_visible():
+		return
+	var point := tactical.gather_point()
+	var alpha := tactical.marker_alpha()
+	var pulse := (sin(float(Time.get_ticks_msec()) * 0.008) * 0.3 + 0.7) * alpha
+	var ink := tactical.command_color()
+	for radius in range(50, 20, -8):
+		var ring := float(50 - radius) * 4.0 * pulse
+		if ring > 0.0:
+			draw_arc(
+				point,
+				float(radius),
+				0.0,
+				TAU,
+				40,
+				Color(ink, clampf(ring / 255.0, 0.0, 1.0)),
+				2.0,
+				true
+			)
+	draw_circle(point, 6.0, ink)
+	draw_circle(point, 2.0, Color.WHITE)
+	var guided := [
+		Tactical.GATHER, Tactical.PROTECT_CASTLE, Tactical.ATTACK_BOSS, Tactical.PROTECT_TOWER
+	]
+	if tactical.active_command not in guided:
+		return
+	for entry in tactical.alive_blue_heroes():
+		var hero: Object = entry
+		var delta: Vector2 = point - hero.position
+		if delta.length() <= 80.0:
+			continue
+		for segment in range(3):
+			var start := float(segment) * 0.33
+			draw_line(
+				hero.position + delta * start,
+				hero.position + delta * (start + 0.18),
+				Color(ink, clampf(120.0 * pulse / 255.0, 0.0, 1.0)),
+				2.0,
+				true
+			)
+
+
+func _draw_tactical_feedback(world: Prototype) -> void:
+	## Port of `TacticalCommandManager.draw_ui`: the top banner with its 30-tick
+	## fade-in, hold and fade-out, drawn on the unshaken UI layer.
+	var tactical := world.tactical
+	if tactical.feedback_timer <= 0:
+		return
+	var timer := float(tactical.feedback_timer)
+	var alpha := 1.0
+	var offset := 0.0
+	if timer < 30.0:
+		alpha = timer / 30.0
+	if timer > 150.0:
+		var progress := clampf((180.0 - timer) / 30.0, 0.0, 1.0)
+		alpha = progress
+		offset = (1.0 - progress) * 20.0
+	var text := tactical.feedback_text
+	var ink := Color(tactical.feedback_color, alpha)
+	var size := BossFont.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, 28)
+	var text_rect := Rect2(Vector2(640, 90 + offset) - size * 0.5, size)
+	var baseline := text_rect.position.y + BossFont.get_ascent(28)
+	var box := Rect2(text_rect.position - Vector2(10, 4), text_rect.size + Vector2(20, 8))
+	draw_rect(box, Color(0, 0, 0, 160.0 / 255.0 * alpha))
+	draw_rect(box, ink, false, 2.0)
+	draw_string(
+		BossFont,
+		Vector2(text_rect.position.x + 2, baseline + 2),
+		text,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		size.x,
+		28,
+		Color(0, 0, 0, alpha * 0.5)
+	)
+	draw_string(
+		BossFont,
+		Vector2(text_rect.position.x, baseline),
+		text,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		size.x,
+		28,
+		ink
+	)
 
 
 func _draw_unit(unit: UnitState) -> void:
