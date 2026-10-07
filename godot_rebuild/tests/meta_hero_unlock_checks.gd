@@ -13,20 +13,22 @@ func run(check: Callable) -> void:
 		return
 	var store := Store.new()
 	check.call(store.catalog_valid, "Meta Hero Shop boss catalog loads")
-	(
-		check
-		. call(
-			(
-				fixture.policy
-				== {
-					"starter_cost": store.STARTER_UNLOCK_COST,
-					"mini_boss_cost": store.MINI_BOSS_UNLOCK_COST,
-					"true_boss_cost": store.TRUE_BOSS_UNLOCK_COST,
-					"starter_auto_grant": store.DEFAULT_HERO,
-				}
-			),
-			"Meta Hero Shop price and starter policy matches source"
-		)
+	var policy: Dictionary = fixture.policy
+	check.call(
+		int(policy.starter_cost) == store.STARTER_UNLOCK_COST,
+		"Meta Hero Shop starter price matches source"
+	)
+	check.call(
+		int(policy.mini_boss_cost) == store.MINI_BOSS_UNLOCK_COST,
+		"Meta Hero Shop mini-boss price matches source"
+	)
+	check.call(
+		int(policy.true_boss_cost) == store.TRUE_BOSS_UNLOCK_COST,
+		"Meta Hero Shop true-boss price matches source"
+	)
+	check.call(
+		String(policy.starter_auto_grant) == store.DEFAULT_HERO,
+		"Meta Hero Shop auto-granted starter matches source"
 	)
 	_catalog(store, check)
 	for row in fixture.cases:
