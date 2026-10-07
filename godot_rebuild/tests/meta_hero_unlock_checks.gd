@@ -11,40 +11,39 @@ func run(check: Callable) -> void:
 	check.call(fixture is Dictionary, "Meta Hero Shop source fixture loads")
 	if not (fixture is Dictionary):
 		return
-	var store := Store.new()
-	check.call(store.catalog_valid, "Meta Hero Shop boss catalog loads")
+	check.call(Store.is_catalog_valid(), "Meta Hero Shop boss catalog loads")
 	var policy: Dictionary = fixture.policy
 	check.call(
-		int(policy.starter_cost) == store.STARTER_UNLOCK_COST,
+		int(policy.starter_cost) == Store.STARTER_UNLOCK_COST,
 		"Meta Hero Shop starter price matches source"
 	)
 	check.call(
-		int(policy.mini_boss_cost) == store.MINI_BOSS_UNLOCK_COST,
+		int(policy.mini_boss_cost) == Store.MINI_BOSS_UNLOCK_COST,
 		"Meta Hero Shop mini-boss price matches source"
 	)
 	check.call(
-		int(policy.true_boss_cost) == store.TRUE_BOSS_UNLOCK_COST,
+		int(policy.true_boss_cost) == Store.TRUE_BOSS_UNLOCK_COST,
 		"Meta Hero Shop true-boss price matches source"
 	)
 	check.call(
-		String(policy.starter_auto_grant) == store.DEFAULT_HERO,
+		String(policy.starter_auto_grant) == Store.DEFAULT_HERO,
 		"Meta Hero Shop auto-granted starter matches source"
 	)
-	_catalog(store, check)
+	_catalog(check)
 	for row in fixture.cases:
-		_source_case(store, row, check)
+		_source_case(row, check)
 	var invalid := {"meta_gold": -1, "purchased_heroes": [], "unlocked_bosses": []}
 	var invalid_before := invalid.duplicate(true)
-	var refused := store.try_unlock(invalid, "thorne")
+	var refused := Store.try_unlock(invalid, "thorne")
 	check.call(refused.error == "profile", "Invalid permanent profile is rejected")
 	check.call(invalid == invalid_before, "Rejected permanent profile is never mutated")
 
 
-func _catalog(store, check: Callable) -> void:
-	var starters: Array[String] = store.ids_for_tab("starter")
-	var mini: Array[String] = store.ids_for_tab("mini")
-	var true_bosses: Array[String] = store.ids_for_tab("true")
-	check.call(starters == store.STARTERS, "Meta Hero Shop preserves source starter order")
+func _catalog(check: Callable) -> void:
+	var starters: Array[String] = Store.ids_for_tab("starter")
+	var mini: Array[String] = Store.ids_for_tab("mini")
+	var true_bosses: Array[String] = Store.ids_for_tab("true")
+	check.call(starters == Store.STARTERS, "Meta Hero Shop preserves source starter order")
 	check.call(
 		mini.size() + true_bosses.size() == HERO_ROSTER.size() - starters.size(),
 		"Every native boss kit appears in exactly one meta shop tab"
@@ -53,7 +52,7 @@ func _catalog(store, check: Callable) -> void:
 	for hero_type in starters + mini + true_bosses:
 		check.call(not seen.has(hero_type), "Meta Hero Shop catalog ID is unique: " + hero_type)
 		seen[hero_type] = true
-		var item: Dictionary = store.entry(hero_type)
+		var item: Dictionary = Store.entry(hero_type)
 		check.call(not item.is_empty(), "Meta Hero Shop entry resolves: " + hero_type)
 		if hero_type in starters:
 			check.call(
@@ -70,10 +69,10 @@ func _catalog(store, check: Callable) -> void:
 				"Boss unlock requires its defeat and 4500 Hero Gold: " + hero_type
 			)
 	check.call(seen.size() == HERO_ROSTER.size(), "Meta Hero Shop covers the native roster")
-	check.call(store.entry("missing").is_empty(), "Unknown meta hero has no substitute entry")
+	check.call(Store.entry("missing").is_empty(), "Unknown meta hero has no substitute entry")
 
 
-func _source_case(store, row: Dictionary, check: Callable) -> void:
+func _source_case(row: Dictionary, check: Callable) -> void:
 	var spec: Dictionary = row.input
 	var state := {
 		"meta_gold": int(spec.gold),
@@ -83,7 +82,7 @@ func _source_case(store, row: Dictionary, check: Callable) -> void:
 		"unlocked_bosses": _strings(spec.defeated),
 	}
 	var before := state.duplicate(true)
-	var result: Dictionary = store.try_unlock(state, String(spec.hero))
+	var result: Dictionary = Store.try_unlock(state, String(spec.hero))
 	var accepted := int(row.save_count) == 1
 	check.call(
 		String(result.error).is_empty() == accepted,

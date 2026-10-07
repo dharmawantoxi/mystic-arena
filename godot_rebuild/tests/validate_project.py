@@ -328,6 +328,9 @@ check('const DEFAULT_HERO := "kaizen"' in meta_domain
       and "const MINI_BOSS_UNLOCK_COST := 4500" in meta_domain
       and "const TRUE_BOSS_UNLOCK_COST := 4500" in meta_domain,
       "Native permanent unlock policy must match source constants")
+check("static func try_unlock" in meta_domain
+      and "HeroUnlockStore.new()" not in meta_shop + meta_menu + app,
+      "Permanent unlock authority must remain stateless across menu scenes")
 
 check("AIShieldChecks.new().run(_check)" in ai_tests, "AI shield domain suite must remain in runner")
 check("await AIShieldSceneChecks.new().run(self, app, _check)" in ai_tests, "Paid shield refund/reset UI suite must run")

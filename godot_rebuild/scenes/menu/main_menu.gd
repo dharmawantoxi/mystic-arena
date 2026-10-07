@@ -14,7 +14,6 @@ const HeroUnlockStore = preload("res://scripts/match/hero_unlock_store.gd")
 const MetaHeroShopPanel = preload("res://scripts/ui/meta_hero_shop_panel.gd")
 
 var progress_path := ProgressStore.PATH
-var unlock_store := HeroUnlockStore.new()
 var hero_shop_panel: MetaHeroShopPanel
 
 
@@ -53,13 +52,13 @@ func _build_hero_shop() -> void:
 
 func _open_hero_shop() -> void:
 	AudioRuntime.play("ui_click")
-	var profile := unlock_store.bootstrap_state(ProgressStore.load_state(progress_path))
+	var profile := HeroUnlockStore.bootstrap_state(ProgressStore.load_state(progress_path))
 	hero_shop_panel.open_with_state(profile)
 
 
 func _unlock_hero(hero_type: String) -> void:
-	var before := unlock_store.bootstrap_state(ProgressStore.load_state(progress_path))
-	var result := unlock_store.try_unlock(before, hero_type)
+	var before := HeroUnlockStore.bootstrap_state(ProgressStore.load_state(progress_path))
+	var result := HeroUnlockStore.try_unlock(before, hero_type)
 	if not String(result.error).is_empty():
 		AudioRuntime.play("ui_error")
 		hero_shop_panel.show_error(String(result.error))
@@ -69,7 +68,7 @@ func _unlock_hero(hero_type: String) -> void:
 		hero_shop_panel.show_error("save")
 		return
 	AudioRuntime.play("ui_buy")
-	var item := unlock_store.entry(hero_type)
+	var item := HeroUnlockStore.entry(hero_type)
 	var suffix := " gratis"
 	if int(result.cost) > 0:
 		suffix = " seharga %d Hero Gold" % int(result.cost)

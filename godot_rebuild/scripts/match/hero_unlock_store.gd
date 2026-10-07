@@ -1,7 +1,7 @@
 extends RefCounted
-## Pure main-menu Hero Shop catalog and unlock transaction. Match summoning
-## remains in PrototypeBattle and spends match gold; this store spends only
-## permanent Hero Gold and never writes a save by itself.
+## Stateless main-menu Hero Shop catalog and pure unlock transaction. Match
+## summoning remains in PrototypeBattle and spends match gold; this authority
+## spends only permanent Hero Gold and never writes a save by itself.
 
 const HeroDefinition = preload("res://scripts/data/hero_definition.gd")
 const HERO_ROSTER = preload("res://scripts/data/hero_roster.gd").DEFINITIONS
@@ -12,16 +12,18 @@ const STARTER_UNLOCK_COST := 0
 const MINI_BOSS_UNLOCK_COST := 4500
 const TRUE_BOSS_UNLOCK_COST := 4500
 
-var catalog_valid := false
-var _boss_classes: Dictionary = {}
-var _boss_order: Array[String] = []
+static var _catalog_loaded := false
+static var _catalog_valid := false
+static var _boss_classes: Dictionary = {}
+static var _boss_order: Array[String] = []
 
 
-func _init() -> void:
-	_load_boss_catalog()
+static func is_catalog_valid() -> bool:
+	_ensure_catalog()
+	return _catalog_valid
 
 
-func bootstrap_state(state: Dictionary) -> Dictionary:
+static func bootstrap_state(state: Dictionary) -> Dictionary:
 	# Source Game.reset grants Kaizen only when permanent ownership is empty.
 	# Progress fields are supplied so the first free unlock can be saved through
 	# the same strict LevelProgressStore as earned Hero Gold.
@@ -43,7 +45,8 @@ func bootstrap_state(state: Dictionary) -> Dictionary:
 	return result
 
 
-func entry(hero_type: String) -> Dictionary:
+static func entry(hero_type: String) -> Dictionary:
+	_ensure_catalog()
 	var definition: HeroDefinition = HERO_ROSTER.get(hero_type) as HeroDefinition
 	if definition == null:
 		return {}
@@ -66,7 +69,8 @@ func entry(hero_type: String) -> Dictionary:
 	}
 
 
-func ids_for_tab(tab: String) -> Array[String]:
+static func ids_for_tab(tab: String) -> Array[String]:
+	_ensure_catalog()
 	var result: Array[String] = []
 	if tab == "starter":
 		for hero_type in STARTERS:
@@ -81,7 +85,7 @@ func ids_for_tab(tab: String) -> Array[String]:
 	return result
 
 
-func try_unlock(state: Dictionary, hero_type: String) -> Dictionary:
+static func try_unlock(state: Dictionary, hero_type: String) -> Dictionary:
 	var current := bootstrap_state(state)
 	if not _valid_profile(current):
 		return {"state": state.duplicate(true), "error": "profile", "cost": 0}
@@ -103,7 +107,7 @@ func try_unlock(state: Dictionary, hero_type: String) -> Dictionary:
 	return {"state": current, "error": "", "cost": cost}
 
 
-func _valid_profile(state: Dictionary) -> bool:
+static func _valid_profile(state: Dictionary) -> bool:
 	var gold: Variant = state.get("meta_gold")
 	var purchased: Variant = state.get("purchased_heroes")
 	var defeated: Variant = state.get("unlocked_bosses")
@@ -127,7 +131,10 @@ func _valid_profile(state: Dictionary) -> bool:
 	return true
 
 
-func _load_boss_catalog() -> void:
+static func _ensure_catalog() -> void:
+	if _catalog_loaded:
+		return
+	_catalog_loaded = true
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(BOSS_DATA))
 	if not (parsed is Dictionary):
 		return
@@ -144,4 +151,4 @@ func _load_boss_catalog() -> void:
 			return
 		_boss_classes[hero_type] = boss_class
 		_boss_order.append(hero_type)
-	catalog_valid = not _boss_order.is_empty()
+	_catalog_valid = not _boss_order.is_empty()

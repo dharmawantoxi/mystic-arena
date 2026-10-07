@@ -15,7 +15,6 @@ var transition_pending := false
 var prototype_level := 1
 var prototype_difficulty := "normal"
 var progress_path := ProgressStore.PATH
-var hero_unlock_store := HeroUnlockStore.new()
 
 @onready var screen_root: Control = $ScreenRoot
 
@@ -74,7 +73,7 @@ func _install_screen(scene: PackedScene) -> void:
 		# while PrototypeSession owns these pre-tree configuration methods.
 		current_screen.set("progress_path", progress_path)
 		var session = current_screen.get_node("Simulation")
-		var profile := hero_unlock_store.bootstrap_state(ProgressStore.load_state(progress_path))
+		var profile := HeroUnlockStore.bootstrap_state(ProgressStore.load_state(progress_path))
 		if (
 			not session.configure_level(prototype_level, prototype_difficulty)
 			or not session.configure_player_profile(profile)

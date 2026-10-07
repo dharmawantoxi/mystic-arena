@@ -7,7 +7,6 @@ signal unlock_requested(hero_type: String)
 const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
 const HeroUnlockStore = preload("res://scripts/match/hero_unlock_store.gd")
 
-var store := HeroUnlockStore.new()
 var state: Dictionary = {}
 var is_open := false
 var tab := "starter"
@@ -193,7 +192,7 @@ func _rebuild_cards(purchased: Array, defeated: Array) -> void:
 	_empty.visible = ids.is_empty()
 	_grid.visible = not ids.is_empty()
 	for hero_type in ids:
-		var item := store.entry(hero_type)
+		var item := HeroUnlockStore.entry(hero_type)
 		if item.is_empty():
 			continue
 		var definition = item.definition
@@ -232,7 +231,7 @@ func _rebuild_cards(purchased: Array, defeated: Array) -> void:
 
 
 func _visible_ids() -> Array[String]:
-	return store.ids_for_tab(tab)
+	return HeroUnlockStore.ids_for_tab(tab)
 
 
 func _request(hero_type: String) -> void:
