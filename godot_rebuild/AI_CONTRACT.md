@@ -512,6 +512,63 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      terdekat lintas-lane). Catatan penting: `_try_auto_cast` sumber mengisi
      `hero.target` (port: `hero.target_id` lewat gate skill), sehingga uji
      lane-order wajib menaruh ancaman di luar `skill_range` 100 px.
+   - [x] **6g.** Kontrol hero AI hanya didispatch sekali per production tick.
+     Source `AIPlayer.update` memanggil `_control_heroes` satu kali sebelum
+     pemeriksaan `think_timer`, dan `Game.update` memanggil `self.ai.update`
+     satu kali. Native sebelumnya mengontrol hero langsung dari `step_tick`,
+     lalu mengulanginya lewat `_step_ai()` → `AiController.tick()` →
+     `AiPolicy.advance()`. `PrototypeBattle.step_tick()` kini memilih controller
+     saat `ai_enabled`, atau jalur kontrol mandiri hanya ketika flag kontrol
+     hero aktif; kedua jalur tidak lagi berjalan bersama.
+     Oracle AST read-only `ai_control_tick_source_oracle.py` mengeksekusi
+     `AIPlayer.update` untuk tick menunggu dan tick `think_timer` habis, dengan
+     `expected.control_calls = 1` dan counterfactual `native_old = 2`.
+     `ai_control_tick_checks.gd` mereplay `PrototypeBattle.step_tick()` produksi
+     dengan controller nyata dan spy turunan `AiHeroControl`, serta menjaga
+     jalur kontrol mandiri. CI Godot 4.7.2 hijau: [run 37484094587](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37484094587),
+     **1.490.521 native checks**; `validate_project.py` lokal **11.521 static
+     checks**. Batas: dispatch tepat sekali saja; tidak mengubah kebijakan,
+     transaksi, balance, visual, UI, settings, atau sumber Python.
+   - [x] **6h.** Kepemilikan roster AI dipisahkan dari hero merah scene.
+     Source menginisialisasi `AIPlayer.heroes` kosong, memakai list itu untuk cap
+     dan kontrol, menambahkannya hanya sesudah pembelian, sementara
+     `Game.get_all_heroes()` menyatukan roster pemain dan AI secara terpisah.
+     Native kini mendaftarkan ID hanya dari transaksi AI; roster policy,
+     recruitment/dedupe, kandidat upgrade/item dan kontrol memakai `_ai_roster()`.
+     Kaizen merah gratis tetap hadir sebagai unit fixture, tetapi tidak mengisi
+     slot, memblokir Kaizen berbayar, atau menerima perintah AI. Pada akhir 6h,
+     offset spawn masih menghitung hero merah fisik; perbedaan posisi sumber itu
+     ditutup sebagai slice terpisah pada 6i.
+     Oracle `ai_roster_source_oracle.py` mengunci constructor, cap, loop kontrol,
+     append purchase dan union `Game`; fixture membandingkan roster source 0
+     dengan counterfactual lama 1. Replay production `ai_roster_checks.gd`
+     membuktikan roster awal kosong, pembelian/kap lima, filter upgrade/item,
+     dan hanya hero milik AI yang dikontrol per tick. CI Godot 4.7.2 hijau:
+     [run 37493045167](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37493045167),
+     **1.490.550 native checks**; `validate_project.py` lokal **11.546 static
+     checks**; `gdformat`/`gdlint`/`gdparse` dan `git diff --check` bersih.
+     Batas: hanya ownership roster AI; hero gratis tetap unit scene, dan tidak
+     ada perubahan balance eksplisit, visual, UI, settings, Python atau CI.
+   - [x] **6i.** Offset spawn hero rekrutan mengikuti roster AI, bukan hitungan
+     hero merah fisik. Source `_entity.py::AIPlayer._try_buy_hero` memakai
+     `offset = len(self.heroes) * 40 - 40`, lalu `RED_BASE_Y + 30 + offset`:
+     roster kosong menghasilkan Y90 dan roster berisi satu hero menghasilkan
+     Y130. Pada akhir 6h adapter native meneruskan `_red_hero_count()`, yang
+     menghitung Kaizen scene gratis di Y130; pembelian AI pertama pun salah
+     ditempatkan di Y130 (+40 px). `AiRecruitment` kini hanya mengirim roster
+     authoritative; `AiDraft` menurunkan posisi dari `owned_types.size()`, dan
+     transaksi `_buy_ai_hero` memvalidasi terhadap `_ai_roster().size()`.
+     Replay `ai_roster_checks.gd` memakai production scene yang tetap memuat
+     mirror gratis dan membandingkan summon pertama serta slot berikutnya ke
+     receipt source `ai_draft_source.json`; first summon kini Y90, tanpa
+     mengubah kepemilikan mirror, harga, kit, atau roster cap. Coverage mencakup
+     lima summon dan memastikan mirror tidak mengonsumsi slot AI.
+     CI Godot 4.7.2 hijau: push [run 37540370788](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37540370788)
+     dan PR [run 37540374837](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37540374837),
+     masing-masing **1.490.565 native checks**; `gdparse`/`gdlint`/`gdformat`
+     pada berkas tersentuh dan `git diff --check` bersih. Batas: hanya posisi
+     summon AI; hero mirror tetap unit scene, tidak ada perubahan balance,
+     kit, AI decision order, UI, settings, Python, atau CI.
    - [x] **7a.** Castle AI naik level otomatis mengikuti wave: port
      `Game._auto_scale_ai_castle` (`_core.py:1856`, dipanggil dari
      `update_waves`) — wave ≥4/7/10/13 menaikkan nexus merah ke level 2/3/4/5
@@ -1030,16 +1087,17 @@ Lapisan **9i** (`ddeb0fc`, CI [37471123194](https://github.com/dharmawantoxi/mys
 
 Oracle AST read-only `boss_item_reflect_carapace_source_oracle.py` mengeksekusi `notify_damage_taken` asli (victim Kaizen biru bervest Razor, `thorn_timer` 270 vs 0, damage masuk 200 -> pantulan 170) bersama `Boss.take_damage`, `resolve_damage_school` dan kredit kill `Game`: **864 kasus = 1 lengan x 4 skenario x 216 tipe boss** (`reflect_vs_boss_resist`, kontrol identik `reflect_to_minion_unchanged` dan `reflect_thorn_inactive`, `reflect_lethal_no_credit` yang bentuk panggilannya divergen tetapi kedua kolom sama-sama tanpa kredit); tiap baris membawa `expected` dan `native_old` dengan rekaman `boss_schools`/`boss_damage_types`, dan fixture mengunci arity 3 plus fallback arity 2, kedua gate thorn/razor, guard penyerang hidup + tim musuh, dan entry point `Hero.take_damage`. `boss_item_reflect_carapace_checks.gd` mereplay urutan produksi (`set_hero_runtime` -> `notify_damage_taken` dengan bus produksi/legacy) ke `_deliver_hit` -> `BossState.take_damage` -> `_process_boss_result` untuk kedua kolom. Terukur: seluruh 216 tipe boss mencatat gap MR (Abaddon 118 vs 107), penyerang minion memakan pantulan penuh 170 yang identik di kedua kolom, dan reflect lethal menyimpan `last_hit_source_id = -1` di kedua kolom. CI Godot 4.7.2 hijau pertama tanpa perbaikan harness: **1.490.506 native checks**; `validate_project.py` **11.505 static checks**; gdtoolkit 4.5.0 dan `git diff --check` bersih. Batas slice: hanya lengan reflect; ketujuh situs magic tanpa-source kini tertutup semua (enam `tick_auto` 9h + satu reflect 9i); hero, balance, FX/presentation, UI, project settings, sumber Python, dan CI tidak diubah.
 
-> Pesan siap-salin (setelah 9i): lanjutkan di branch `arena/7fcc727a-mystic-arena`
-> (PR selalu draft; jangan merge tanpa perintah "merge now"). State terakhir:
-> main = de156a4 (merge PR #320, layer 9g), plus commit 9h `6472952` dan 9i
-> `ddeb0fc` di branch ini (enam lengan magic auto/active + reflect Thornmail
-> pada boss memakai bus source-less, CI hijau run 37471123194: 1.490.506
-> native checks, validate 11.505 static). Tugas berikutnya: pilih slice
-> layer-9 berikutnya (ketujuh situs magic tanpa-source sudah tertutup; kandidat
-> perlu diaudit ulang dari `hero_item_inventory.gd`). Ikuti gaya acceptance
-> repo (oracle AST + fixture expected/native_old 216 boss + replay produksi +
-> registrasi run_all/validate, tanpa perubahan balance/visual/UI). Satu
-> sub-layer per commit; pipeline gdformat -> gdlint -> gdparse ->
-> git diff --check -> validate_project.py -> commit -> push -> gh run watch,
-> lalu docs commit terpisah. Sumber Python read-only. Hanya ubah godot_rebuild.
+> Pesan siap-salin (setelah 6i): lanjutkan di branch sesi `arena/3fbd0205-mystic-arena`
+> (PR #322 tetap draft; jangan merge tanpa perintah persis "merge now"). Base sesi:
+> `16cd55d` (merge PR #321, layer 9h/9i). Layer 6g: `6249f5a`, harness
+> `2fa1245`, docs `4c243ff`. Layer 6h: code `0f867f5`, test-fixture fix
+> `629e06e`; layer 6i: code `1fca276`, formatter `9011401`, coverage fix
+> `6f1ef89`. CI push [37540370788](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37540370788)
+> dan PR [37540374837](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37540374837)
+> hijau, masing-masing **1.490.565 native checks**. Tugas berikutnya: audit
+> source/contract production-match untuk SATU gap terbukti; jika tidak konkret/
+> kontrak ambigu, berhenti dan tanya. Satu sub-layer saja, oracle AST read-only,
+> fixture expected/native_old bila relevan, replay production, pipeline gdformat
+> -> gdlint -> gdparse -> diff-check -> validator; commit code -> push -> watch
+> CI -> commit docs terpisah. Hanya ubah `godot_rebuild`; sumber Python read-only.
+> Jangan merge tanpa perintah persis "merge now".

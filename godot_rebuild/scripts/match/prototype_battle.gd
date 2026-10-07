@@ -80,14 +80,15 @@ var economy := Economy.new()
 var forge := Forge.new()
 # Layer 5f-2: ITEM FORGE panel state + click routing (drawing lives in the UI).
 var item_shop := ItemShopUI.new()
-# Layer 6a: per-tick AI hero control. The AI controller is not wired into the
-# playable scene yet, so this stays off unless a caller asks for it.
+# Layer 6a: per-tick control for the explicitly owned AI hero roster.
 var ai_heroes := AiHeroControl.new()
 # Layer 6b: scheduling wrapper (source AIPlayer.update). Layer 6e: set_ai_enabled()
 # is the only switch; with it off the red side stays idle.
 var ai_controller := AiController.new()
 var ai_enabled := false
 var ai_hero_control_enabled := false
+# Ownership is explicit: the free mirrored red Kaizen is not an AIPlayer hero.
+var ai_hero_ids: Array[int] = []
 # Layer 6c: the action adapters and the persistent draft target the red side.
 var ai_draft := AiDraft.new()
 var ai_build := AiBuild.new()
@@ -410,9 +411,13 @@ func step_tick() -> void:
 		_tick_auras_and_items()
 		_tick_item_debuffs()
 		_step_hero_respawns()
-		# Source Game.update runs the AI right after the entity loop.
-		_step_ai_heroes()
-		_step_ai()
+		# The active AI controller owns hero control through its per-tick
+		# callback. Keep standalone hero control available when only that flag
+		# is enabled, but never dispatch it twice in one production tick.
+		if ai_enabled:
+			_step_ai()
+		elif ai_hero_control_enabled:
+			_step_ai_heroes()
 
 
 func get_slot(id: int) -> Slot:
@@ -490,26 +495,31 @@ func _buy_ai_hero(hero_type: String, cost: int, pos: Vector2) -> bool:
 	elif units.size() >= MAX_UNITS or _next_id <= 0 or _by_id.has(_next_id):
 		transaction_error = "capacity"
 	else:
-		var count := 0
-		for unit in units:
-			if unit.is_hero and unit.team == RED:
+		var roster := _ai_roster()
+		if roster.size() != ai_hero_ids.size():
+			transaction_error = "registry"
+		else:
+			for unit in roster:
 				if get_unit(unit.id) != unit or unit.definition == null:
 					transaction_error = "registry"
 					break
-				count += 1
 				if unit.definition.id == hero_type:
 					transaction_error = "owned"
 					break
-		if transaction_error.is_empty() and count >= 5:
-			transaction_error = "capacity"
-		elif transaction_error.is_empty() and pos != RED_HERO_SPAWN + Vector2(0, count * 40 - 40):
-			transaction_error = "position"
+			if transaction_error.is_empty() and roster.size() >= 5:
+				transaction_error = "capacity"
+			elif (
+				transaction_error.is_empty()
+				and pos != RED_HERO_SPAWN + Vector2(0, roster.size() * 40 - 40)
+			):
+				transaction_error = "position"
 	if not transaction_error.is_empty():
 		return false
 	var hero := spawn_hero(kit, RED, pos)
 	if hero == null:
 		transaction_error = "capacity"
 		return false
+	ai_hero_ids.append(hero.id)
 	economy.spend(RED, cost)
 	_record({"kind": "hero_buy", "team": RED, "target_id": hero.id, "hero_type": hero_type})
 	return true
@@ -1352,8 +1362,8 @@ func _ai_perform_step() -> bool:
 
 
 func _ai_state() -> Dictionary:
-	# Source _ai_step locals: empty build slots, purse, full roster (dead heroes
-	# included), own living towers that can still upgrade, and own living towers.
+	# Source _ai_step locals: empty build slots, purse, full AI-owned roster (dead
+	# heroes included), own living towers that can still upgrade, and living towers.
 	return {
 		"empty_slots": _ai_empty_slots(),
 		"gold": economy.gold[RED],
@@ -1372,10 +1382,13 @@ func _ai_empty_slots() -> int:
 
 
 func _ai_roster() -> Array:
+	# Match AIPlayer.heroes, not every red HeroState in the scene. In particular,
+	# setup_arena's free mirrored Kaizen is a combat fixture, not AI-owned.
 	var heroes: Array = []
-	for unit in units:
-		if unit.is_hero and unit.team == RED:
-			heroes.append(unit)
+	for hero_id in ai_hero_ids:
+		var hero := get_unit(hero_id) as HeroState
+		if hero != null and hero.team == RED:
+			heroes.append(hero)
 	return heroes
 
 

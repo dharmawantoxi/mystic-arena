@@ -64,15 +64,6 @@ const STAT_GETTERS := [
 	"is_guarding",
 	"get_rend_crit",
 ]
-# Six affordable non-magic items: parks the free red Kaizen out of the pool.
-const PARK_ITEMS := [
-	"cleave_axe",
-	"dead_edge",
-	"basilisk_breath",
-	"gale_pike",
-	"frostbound_eye",
-	"sundering_cudgel",
-]
 
 
 func run(check: Callable) -> void:
@@ -376,6 +367,7 @@ func _clear_heroes(world: World) -> void:
 			doomed.append(unit)
 	for unit in doomed:
 		world.units.erase(unit)
+	world.ai_hero_ids.clear()
 
 
 func _draft(reserved: int) -> Draft:
@@ -390,13 +382,6 @@ func _nullable(value: Variant) -> String:
 
 
 func _buy_heroes(world: World, specs: Array) -> Array[int]:
-	# The free red Kaizen of setup_arena is not part of the source roster: fill
-	# its six slots so the source candidate filter (used < MAX) drops it.
-	for unit in world.units:
-		if unit.is_hero and unit.team == 1:
-			var parked := unit as World.HeroState
-			for item_id in PARK_ITEMS:
-				assert(parked.items.add(String(item_id)))
 	var ids: Array[int] = []
 	for index in range(specs.size()):
 		var spec: Dictionary = specs[index]
@@ -414,6 +399,7 @@ func _buy_heroes(world: World, specs: Array) -> Array[int]:
 			hero.alive = false
 		for item_id in spec.owned:
 			assert(hero.items.add(String(item_id)), "fixture pre-owned item refused")
+		world.ai_hero_ids.append(hero.id)
 		ids.append(hero.id)
 	return ids
 
@@ -1673,6 +1659,7 @@ func _test_hero_control_wiring(check: Callable) -> void:
 	var world := _world()
 	_clear_heroes(world)
 	var red := world.spawn_hero(World.THORNE, world.RED, Vector2(200, 380))
+	world.ai_hero_ids.append(red.id)
 	var blue := world.spawn_hero(World.THORNE, world.BLUE, Vector2(200, 200))
 	var minion := world.spawn_unit(GOBLIN, world.BLUE, 1)
 	minion.position = Vector2(500, 380)
@@ -1773,6 +1760,7 @@ func _test_ai_controller_wiring(check: Callable) -> void:
 	var world := _world()
 	_clear_heroes(world)
 	var red := world.spawn_hero(World.THORNE, world.RED, Vector2(200, 380))
+	world.ai_hero_ids.append(red.id)
 	var blue := world.spawn_hero(World.THORNE, world.BLUE, Vector2(200, 200))
 	world.spawn_unit(GOBLIN, world.BLUE, 1).position = Vector2(520, 380)
 	world.ai_enabled = true

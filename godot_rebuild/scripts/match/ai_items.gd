@@ -1,11 +1,11 @@
 extends RefCounted
 ## AIPlayer item purchase adapter, port of AIPlayer._try_buy_item.
-## Candidates are ALIVE red heroes with a free slot, ordered by (kills, level)
-## descending with a stable roster tie-break; the suggestion comes from
+## Candidates are ALIVE AI-owned red heroes with a free slot, ordered by
+## (kills, level) descending with a stable roster tie-break; the suggestion comes from
 ## hero_items and the price from the catalog metadata; the debit runs through
 ## the real match ledger with the live draft reserve.
 ## The source increments no counter here, so this adapter keeps none either.
-## No scene calls this yet: scheduling stays with the pending AI controller.
+## Scheduling stays with the AI controller; this adapter only selects and buys.
 
 const World = preload("res://scripts/match/prototype_battle.gd")
 const Draft = preload("res://scripts/match/ai_draft.gd")
@@ -17,9 +17,7 @@ var items := HeroItems.new()
 func candidates(world: World) -> Array[int]:
 	# Source filter: alive, has an inventory, used slots < MAX_ITEM_SLOTS.
 	var rows: Array = []
-	for unit in world.units:
-		if not unit.is_hero or unit.team != world.RED:
-			continue
+	for unit in world._ai_roster():
 		var hero := unit as World.HeroState
 		if not hero.alive or hero.items.used_slots() >= hero.items.max_slots():
 			continue

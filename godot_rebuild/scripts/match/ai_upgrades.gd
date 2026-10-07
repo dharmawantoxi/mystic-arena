@@ -64,9 +64,7 @@ func hero_candidates(world: World) -> Array[int]:
 	# Source _try_upgrade_hero: own heroes below max level, dead ones included,
 	# in roster order, sorted by kills descending (Python sort is stable).
 	var rows: Array = []
-	for unit in world.units:
-		if not unit.is_hero or unit.team != world.RED:
-			continue
+	for unit in world._ai_roster():
 		var hero := unit as World.HeroState
 		if hero.level >= MAX_HERO_LEVEL:
 			continue

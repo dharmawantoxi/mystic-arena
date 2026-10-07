@@ -1,0 +1,37 @@
+{
+  "source": {
+    "ai_player_update_control_calls": 1,
+    "game_update_ai_calls": 1,
+    "native_old_extra_control_calls": 1
+  },
+  "cases": [
+    {
+      "scenario": "think_wait_tick",
+      "think_timer_before": 90,
+      "expected": {
+        "control_calls": 1,
+        "step_calls": 0,
+        "think_timer_after": 89
+      },
+      "native_old": {
+        "control_calls": 2,
+        "step_calls": 0,
+        "think_timer_after": 89
+      }
+    },
+    {
+      "scenario": "think_expiry_tick",
+      "think_timer_before": 1,
+      "expected": {
+        "control_calls": 1,
+        "step_calls": 1,
+        "think_timer_after": 90
+      },
+      "native_old": {
+        "control_calls": 2,
+        "step_calls": 1,
+        "think_timer_after": 90
+      }
+    }
+  ]
+}

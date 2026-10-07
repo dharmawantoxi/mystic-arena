@@ -1,0 +1,14 @@
+{
+  "source": {
+    "initial_ai_hero_count": 0,
+    "hero_cap_uses_ai_roster": true,
+    "control_uses_ai_roster": true,
+    "purchase_registers_ai_hero": true,
+    "game_rosters_are_separate": true
+  },
+  "scenario": {
+    "free_red_scene_heroes": 1,
+    "source_ai_roster_before_purchase": 0,
+    "native_old_ai_roster_before_purchase": 1
+  }
+}
