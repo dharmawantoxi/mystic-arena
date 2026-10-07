@@ -142,6 +142,7 @@ var boss_screen_shake_intensity := 0.0
 var boss_screen_shake_timer := 0
 var score := 0
 var _victory_unlocks_granted := false
+var _audio_result_announced := false
 
 
 func _init() -> void:
@@ -227,6 +228,7 @@ func setup_arena() -> bool:
 	# Free mirrored Kaizen pair. Not a catalog purchase, not AIPlayer.
 	spawn_hero(KAIZEN, BLUE, HERO_SPAWN)
 	spawn_hero(KAIZEN, RED, RED_HERO_SPAWN)
+	AudioManager.play("hero_spawn")
 	return true
 
 
@@ -381,6 +383,7 @@ func step_tick() -> void:
 	)
 	wave_count = scheduler.wave
 	if batch.started:
+		AudioManager.play("wave_start")
 		for nexus in nexuses:
 			if nexus != null:
 				nexus.set_wave(wave_count)
@@ -393,6 +396,9 @@ func step_tick() -> void:
 	for spawn in batch.spawns:
 		_spawn_match_minion(MINIONS[spawn.kind], spawn.team, spawn.lane)
 	super.step_tick()
+	if winner in [BLUE, RED] and not _audio_result_announced:
+		AudioManager.play("victory" if winner == BLUE else "defeat")
+		_audio_result_announced = true
 	# Source Game.update runs living Hero.update calls before Boss.update. Keep
 	# the boss's target/attack phase after hero hits and movement from this tick.
 	if is_running():

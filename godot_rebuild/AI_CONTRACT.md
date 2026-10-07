@@ -15,8 +15,11 @@ registry hero dan `hero_items.py`. Tidak mengimpor runtime Python ke Godot.
 ## Implementasi saat ini
 
 `ai_policy.gd` memisahkan jadwal dan urutan keputusan dari adapter aksi domain.
-Belum dihubungkan ke scene. Callback aksi hanya menandai berhasil/tidak; callback
-kontrol hero harus dipanggil sekali setiap tick, bahkan saat belum waktunya berpikir.
+Prototype pertandingan kini menghubungkannya melalui `ai_controller.gd`: controller
+seeded aktif saat session dibuat, dapat ditoggle dengan tombol **A**, dan memanggil
+callback kontrol hero setiap tick. Callback aksi tetap sinkron/atomik; mode scene
+ini adalah QA integration, bukan balance produksi. Callback kontrol hero harus
+dipanggil sekali setiap tick, bahkan saat belum waktunya berpikir.
 
 - Timer awal 90 tick, tidak langsung memakai interval elite.
 - Brain `min(1, (max(1, level)-1)/19)`.
@@ -111,7 +114,7 @@ Item/Forge player-side sudah dipindahkan bertahap di layer 5f–5f-4; belum
 ada panel Forge terpisah untuk hero AI di sumber. AIPlayer penuh, rebalance dan
 art final tetap belum selesai.
 
-## Build tower lawan: transaksi domain nyata, belum dijadwalkan scene
+## Build tower lawan: transaksi domain nyata dan scheduler scene QA
 
 `ai_build.gd::try_build` mem-port `_try_build_tower` secara eksplisit, dengan
 slot kosong red diambil dari `world.slots` authoritative. Pemilihan slot uniform

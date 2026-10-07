@@ -291,7 +291,30 @@ check("_stable_kills_descending" in ai_shields and "can_activate_regen_shield" i
 shield_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
 check('tower.sale_value()' in shield_screen, "UI sale quote must include purchased shield")
 
+# The native AI adapters are now reachable from the playable prototype, but
+# remain explicitly toggleable for replay/debug comparisons.
+check("_build_ai_toggle" in shield_screen and "KEY_A" in shield_screen,
+      "Prototype scene must expose the AIPlayer QA toggle")
+check("set_ai_enabled" in shield_screen and "world.ai_enabled" in shield_screen,
+      "AI toggle must use the authoritative world controller state")
+check("get_tree().paused" in shield_screen,
+      "AI toggle must not mutate controller ownership while paused")
+check("_build_migration_status" in shield_screen and "active_boss" in shield_screen,
+      "Prototype HUD must expose migrated boss/AI runtime status")
+
 check((ROOT / "SHIELD_CONTRACT.md").is_file(), "Paid shield semantics must be documented")
+
+# The Pygame sound catalog must be available to the Godot client; audio is a
+# migrated runtime service, not a Python-only dependency.
+audio_script = (ROOT / "scripts/audio/audio_manager.gd")
+check(audio_script.is_file(), "Godot audio manager must exist")
+if audio_script.is_file():
+    audio_text = audio_script.read_text(encoding="utf-8")
+    check("play_music" in audio_text and "play_ambient" in audio_text and "set_enabled" in audio_text,
+          "Godot audio manager must provide music, ambient and mute controls")
+check((ROOT / "project.godot").read_text(encoding="utf-8").find('AudioManager="*res://scripts/audio/audio_manager.gd"') >= 0,
+      "Godot audio manager must be autoloaded")
+check((ROOT / "assets/audio/bgm_battle.wav").is_file(), "Migrated battle music asset missing")
 
 
 from starter_finish_source_oracle import source_fixture as starter_finish_fixture

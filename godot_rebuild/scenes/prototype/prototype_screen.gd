@@ -11,6 +11,8 @@ const ProgressStore = preload("res://scripts/match/level_progress_store.gd")
 var progress_path := ProgressStore.PATH
 var result_shown := false
 var forge_panel: ItemForgePanel
+var ai_toggle: Button
+var migration_status: Label
 @onready var match_session: PrototypeSession = $Simulation
 
 
@@ -69,6 +71,8 @@ func _ready() -> void:
 		func() -> void: match_session.request_autocast(match_session.selected_id)
 	)
 	_build_forge_ui()
+	_build_ai_toggle()
+	_build_migration_status()
 	%PauseButton.pressed.connect(pause_match)
 	%ResumeButton.pressed.connect(resume_match)
 	%RestartButton.pressed.connect(func() -> void: restart_requested.emit())
@@ -76,6 +80,8 @@ func _ready() -> void:
 	%BackButton.pressed.connect(func() -> void: menu_requested.emit())
 	%SaveRetryButton.pressed.connect(_save_result)
 	%SaveRetryButton.hide()
+	if ai_toggle != null:
+		ai_toggle.text = "AI lawan  [A] : ON" if match_session.world.ai_enabled else "AI lawan  [A] : OFF"
 	%PauseButton.grab_focus()
 
 
@@ -90,6 +96,18 @@ func _process(_delta: float) -> void:
 	elif world.scheduler.pending_count() > 0:
 		next_wave = "menunggu antrean spawn"
 	%TickLabel.text = "WAVE %02d  ·  Berikut: %s" % [world.wave_count, next_wave]
+	if migration_status != null:
+		var active_boss: Object = world.active_boss
+		var boss_text := "Boss: belum muncul"
+		if active_boss != null and active_boss.alive:
+			boss_text = "Boss: %s  HP %.0f/%.0f" % [active_boss.display_name, active_boss.hp, active_boss.max_hp]
+		var ai_text := "AI %s · H%d · build %d · upgrade %d" % [
+			"ON" if world.ai_enabled else "OFF",
+			world._ai_roster().size(),
+			world.ai_build.total_built,
+			world.ai_upgrades.total_upgraded
+		]
+		migration_status.text = "%s   |   %s" % [boss_text, ai_text]
 	var blue := world.nexuses[0]
 	var red := world.nexuses[1]
 	%StatusLabel.text = (
@@ -328,7 +346,55 @@ func _toggle_forge() -> void:
 	forge_panel.refresh()
 
 
+func _build_ai_toggle() -> void:
+	# AIPlayer is opt-in in the playable prototype: the default replay remains
+	# the historical scheduled-Archer opponent, while this control exposes the
+	# migrated red-side policy/recruitment/item/upgrade adapters for manual QA.
+	ai_toggle = Button.new()
+	ai_toggle.name = "AIToggle"
+	ai_toggle.text = "AI lawan  [A] : OFF"
+	ai_toggle.custom_minimum_size = Vector2(190, 52)
+	ai_toggle.tooltip_text = "Aktifkan AIPlayer native untuk sisi merah"
+	ai_toggle.pressed.connect(_toggle_ai)
+	%PauseButton.get_parent().add_child(ai_toggle)
+	%PauseButton.get_parent().move_child(ai_toggle, %PauseButton.get_index())
+
+
+func _build_migration_status() -> void:
+	# Keep migrated boss/AI state visible without changing the authored scene
+	# layout; this also makes Windows QA failures immediately diagnosable.
+	migration_status = Label.new()
+	migration_status.name = "MigrationStatus"
+	migration_status.position = Vector2(28, 104)
+	migration_status.size = Vector2(760, 28)
+	migration_status.add_theme_font_size_override("font_size", 15)
+	migration_status.modulate = Color("b9c7d9")
+	$HUD.add_child(migration_status)
+
+
+func _toggle_ai() -> void:
+	var world := match_session.world
+	# AI mode is a match transaction: do not change controller ownership while
+	# the session is paused or a result overlay has frozen the world.
+	if world == null or get_tree().paused or not world.is_running():
+		return
+	world.set_ai_enabled(not world.ai_enabled)
+	if world.ai_enabled:
+		world.reset_ai()
+	if ai_toggle != null:
+		ai_toggle.text = "AI lawan  [A] : ON" if world.ai_enabled else "AI lawan  [A] : OFF"
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	if (
+		event is InputEventKey
+		and event.pressed
+		and not event.echo
+		and event.physical_keycode == KEY_A
+	):
+		_toggle_ai()
+		get_viewport().set_input_as_handled()
+		return
 	if (
 		event is InputEventKey
 		and event.pressed
