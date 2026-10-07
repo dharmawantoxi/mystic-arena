@@ -87,7 +87,7 @@ jobs:
           code=0
           timeout 120 "$GODOT" --headless --path godot_rebuild --editor --import 2>&1 | tee /tmp/rebuild-import.log || code=$?
           if [[ "$code" != 0 ]] || grep -qE 'SCRIPT ERROR:|ERROR:' /tmp/rebuild-import.log; then
-            python godot_rebuild/tests/annotate_failure.py /tmp/rebuild-import.log
+            python godot_rebuild/tests/annotate_failure.py /tmp/rebuild-import.log "$code"
             exit 1
           fi
       - name: Native simulation, input and screen lifecycle tests
@@ -97,7 +97,7 @@ jobs:
           code=0
           timeout 120 "$GODOT" --headless --path godot_rebuild --script res://tests/run_all.gd 2>&1 | tee /tmp/rebuild-tests.log || code=$?
           if [[ "$code" != 0 ]] || grep -qE 'SCRIPT ERROR:|ERROR:|FAIL:' /tmp/rebuild-tests.log; then
-            python godot_rebuild/tests/annotate_failure.py /tmp/rebuild-tests.log
+            python godot_rebuild/tests/annotate_failure.py /tmp/rebuild-tests.log "$code"
             exit 1
           fi
           grep -E 'PASS: .* checks; fixed ticks' /tmp/rebuild-tests.log | sed 's/^/::notice title=Native Godot tests::/'

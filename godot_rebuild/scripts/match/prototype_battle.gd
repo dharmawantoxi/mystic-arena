@@ -1,6 +1,7 @@
 # gdlint:disable=max-file-lines,max-line-length,class-definitions-order,unused-argument,max-public-methods
 extends "res://scripts/combat/siege_battle.gd"
 ## Playable normal/level-1 subset. Wave/ledger/build rules are separate from the old manual labs.
+const Audio := preload("res://scripts/audio/audio_manager.gd")
 
 const Upgrades = preload("res://scripts/match/archer_upgrades.gd")
 const CannonUpgrades = preload("res://scripts/match/cannon_upgrades.gd")
@@ -228,7 +229,7 @@ func setup_arena() -> bool:
 	# Free mirrored Kaizen pair. Not a catalog purchase, not AIPlayer.
 	spawn_hero(KAIZEN, BLUE, HERO_SPAWN)
 	spawn_hero(KAIZEN, RED, RED_HERO_SPAWN)
-	AudioManager.play("hero_spawn")
+	Audio.play("hero_spawn")
 	return true
 
 
@@ -383,7 +384,7 @@ func step_tick() -> void:
 	)
 	wave_count = scheduler.wave
 	if batch.started:
-		AudioManager.play("wave_start")
+		Audio.play("wave_start")
 		for nexus in nexuses:
 			if nexus != null:
 				nexus.set_wave(wave_count)
@@ -397,7 +398,7 @@ func step_tick() -> void:
 		_spawn_match_minion(MINIONS[spawn.kind], spawn.team, spawn.lane)
 	super.step_tick()
 	if winner in [BLUE, RED] and not _audio_result_announced:
-		AudioManager.play("victory" if winner == BLUE else "defeat")
+		Audio.play("victory" if winner == BLUE else "defeat")
 		_audio_result_announced = true
 	# Source Game.update runs living Hero.update calls before Boss.update. Keep
 	# the boss's target/attack phase after hero hits and movement from this tick.

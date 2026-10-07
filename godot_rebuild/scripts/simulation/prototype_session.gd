@@ -12,6 +12,8 @@ const SFX_UPGRADE := "ui_upgrade"
 const SFX_ERROR := "ui_error"
 ## One seed for the whole red AI: a restarted prototype match replays.
 const AI_MATCH_SEED := 20260929
+const Audio := preload("res://scripts/audio/audio_manager.gd")
+
 var selected_slot_id := -1
 var command: Dictionary = {}
 var last_action := "Pilih slot biru, lalu bangun Archer (100 G)."
@@ -92,24 +94,24 @@ func _physics_process(_delta: float) -> void:
 			var delta_gold: int = match_world.economy.gold[0] - balance_before
 			if command.kind == "skill_q":
 				last_action = "Kaizen memakai Steel Wind (Q)."
-				AudioManager.play_sfx("hero_skill")
+				Audio.play_sfx("hero_skill")
 			elif command.kind == "skill_w":
 				last_action = "Kaizen memakai Wind Wall (W)."
-				AudioManager.play_sfx("hero_skill")
+				Audio.play_sfx("hero_skill")
 			elif command.kind == "skill_e":
 				last_action = "Kaizen memakai Sweep (E)."
-				AudioManager.play_sfx("hero_skill")
+				Audio.play_sfx("hero_skill")
 			elif command.kind == "skill_r":
 				last_action = "Kaizen memakai Tornado (R)."
-				AudioManager.play_sfx("hero_skill")
+				Audio.play_sfx("hero_skill")
 			elif command.kind == "hero_upgrade":
 				last_action = "Kaizen naik level: %+d G." % delta_gold
-				AudioManager.play_sfx(SFX_UPGRADE)
+				Audio.play_sfx(SFX_UPGRADE)
 			elif command.kind == "autocast":
 				last_action = (
 					"Auto-cast diaktifkan." if not autocast_was_on else "Auto-cast sudah aktif."
 				)
-				AudioManager.play_sfx("ui_click")
+				Audio.play_sfx("ui_click")
 			elif command.kind == "move":
 				last_action = "Kaizen menuju titik yang dipilih."
 			elif command.kind == "follow":
@@ -139,7 +141,7 @@ func _physics_process(_delta: float) -> void:
 						sfx_key = SFX_SELL
 					"upgrade", "nexus", "regen_shield", "castle_shield":
 						sfx_key = SFX_UPGRADE
-				AudioManager.play_sfx(sfx_key)
+				Audio.play_sfx(sfx_key)
 		else:
 			var max_text := "Tower sudah level maksimum (6)."
 			var stale_text := "Level tower sudah berubah; pilih upgrade kembali."
@@ -165,7 +167,7 @@ func _physics_process(_delta: float) -> void:
 				. get(match_world.transaction_error, "Transaksi ditolak.")
 			)
 			# Pygame plays ui_error on every rejected transaction path.
-			AudioManager.play_sfx(SFX_ERROR)
+			Audio.play_sfx(SFX_ERROR)
 		command.clear()
 	world.step_tick()
 	if world.get_unit(selected_id) == null:

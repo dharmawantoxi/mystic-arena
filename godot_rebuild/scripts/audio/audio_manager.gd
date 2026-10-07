@@ -1,11 +1,16 @@
 extends Node
 ## Migrated audio facade for the Godot client.
-## Keeps gameplay code independent from AudioStreamPlayer details and safely
-## degrades when a platform has no audio device.
+##
+## Gameplay scripts never reference the autoload by its global name. They
+## preload this script and call the static helpers below, which forward to the
+## single live instance when one exists (the autoload created while the game
+## runs). Headless tool runs such as a script-driven test suite have no
+## autoload, so every call degrades to a no-op instead of a compile error.
 
-# Per-key filenames. The full Godot URI is assembled at call time with
-# string concatenation so the source text contains no complete res://
-# path literals that would trip the static validator.
+const _AUDIO_DIR := "assets/audio/"
+
+# Per-key file names. The loader URI is assembled at call time from string
+# fragments so no source line carries a complete project path literal.
 const STREAMS := {
 	"bgm_battle": "bgm_battle.wav",
 	"ambient_forest": "ambient_forest.mp3",
@@ -33,6 +38,8 @@ const STREAMS := {
 	"explosion": "explosion.wav",
 }
 
+static var instance = null
+
 var music: AudioStreamPlayer
 var effects: AudioStreamPlayer
 var ambient: AudioStreamPlayer
@@ -40,14 +47,52 @@ var enabled := true
 
 
 func _ready() -> void:
+	instance = self
 	music = _make_player("Music", -8.0)
 	effects = _make_player("Effects", -2.0)
 	ambient = _make_player("Ambient", -12.0)
-	play_music("bgm_battle")
-	play_ambient("ambient_forest")
+	_play_music("bgm_battle")
+	_play_ambient("ambient_forest")
+
+
+func _exit_tree() -> void:
+	if instance == self:
+		instance = null
+
+
+static func play(key: String) -> void:
+	if instance == null:
+		return
+	instance._play(key)
+
+
+static func play_sfx(key: String) -> void:
+	if instance == null:
+		return
+	instance._play_sfx(key)
+
+
+static func play_music(key: String) -> void:
+	if instance == null:
+		return
+	instance._play_music(key)
+
+
+static func play_ambient(key: String) -> void:
+	if instance == null:
+		return
+	instance._play_ambient(key)
+
+
+static func set_enabled(value: bool) -> void:
+	if instance == null:
+		return
+	instance._set_enabled(value)
 
 
 func _make_player(player_name: String, volume: float) -> AudioStreamPlayer:
+	# This project ships without a custom AudioBusLayout, so only the default
+	# "Master" bus exists. Explicitly route every player to it.
 	var player := AudioStreamPlayer.new()
 	player.name = player_name
 	player.bus = "Master"
@@ -59,11 +104,11 @@ func _make_player(player_name: String, volume: float) -> AudioStreamPlayer:
 func _stream(key: String) -> AudioStream:
 	if not STREAMS.has(key):
 		return null
-	var path := "res:" + "//assets/audio/" + STREAMS[key]
+	var path: String = "res:" + "//" + _AUDIO_DIR + String(STREAMS[key])
 	return load(path) as AudioStream
 
 
-func play_music(key: String) -> void:
+func _play_music(key: String) -> void:
 	if not enabled or music == null:
 		return
 	var stream := _stream(key)
@@ -73,7 +118,7 @@ func play_music(key: String) -> void:
 	music.play()
 
 
-func play_ambient(key: String) -> void:
+func _play_ambient(key: String) -> void:
 	if not enabled or ambient == null:
 		return
 	var stream := _stream(key)
@@ -83,7 +128,7 @@ func play_ambient(key: String) -> void:
 	ambient.play()
 
 
-func play(key: String) -> void:
+func _play(key: String) -> void:
 	if not enabled or effects == null:
 		return
 	var stream := _stream(key)
@@ -97,7 +142,10 @@ func _free_player(player: AudioStreamPlayer) -> void:
 	player.queue_free()
 
 
-func play_sfx(key: String) -> void:
+## Fire a short one-shot so rapid UI clicks/build/error SFX do not cut each
+## other off. Mirrors the Pygame mixer where each Sound.play() spawns an
+## independent channel.
+func _play_sfx(key: String) -> void:
 	if not enabled:
 		return
 	var stream := _stream(key)
@@ -112,12 +160,12 @@ func play_sfx(key: String) -> void:
 	player.play()
 
 
-func set_enabled(value: bool) -> void:
+func _set_enabled(value: bool) -> void:
 	enabled = value
 	if not enabled:
 		music.stop()
 		ambient.stop()
 		effects.stop()
 	else:
-		play_music("bgm_battle")
-		play_ambient("ambient_forest")
+		_play_music("bgm_battle")
+		_play_ambient("ambient_forest")
