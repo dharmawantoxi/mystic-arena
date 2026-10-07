@@ -189,7 +189,7 @@ func _rebuild_cards(roster: Array, owned_ids: Array[String]) -> void:
 		button.custom_minimum_size = Vector2(485, 92)
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		var status := "%d G" % int(definition.cost)
-		var disabled := command_pending or not world.is_running()
+		var disabled: bool = command_pending or not bool(world.is_running())
 		if hero_type in owned_ids:
 			status = "ACTIVE"
 			disabled = true

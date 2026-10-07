@@ -63,7 +63,9 @@ func _install_screen(scene: PackedScene) -> void:
 	if scene == PROTOTYPE:
 		# Configure encounter and permanent hero unlocks before the session's
 		# _ready creates the arena and its authoritative player roster.
-		var session := current_screen.get_node("Simulation")
+		# Keep this node dynamic: the PackedScene boundary only exposes Node,
+		# while PrototypeSession owns these pre-tree configuration methods.
+		var session = current_screen.get_node("Simulation")
 		if (
 			not session.configure_level(prototype_level, prototype_difficulty)
 			or not session.configure_player_profile(ProgressStore.load_state())

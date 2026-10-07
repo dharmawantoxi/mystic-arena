@@ -66,7 +66,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	thorne_button = _card(panel, "thorne")
 	check.call(thorne_button != null and thorne_button.disabled, "Purchased card becomes ACTIVE")
 
-	var destination := roster[1].position + Vector2(35, 0)
+	var destination: Vector2 = roster[1].position + Vector2(35, 0)
 	check.call(
 		session.request_hero_move(roster[1].id, destination),
 		"Recruited hero accepts player move command"
