@@ -38,12 +38,19 @@ const STREAMS := {
 	"explosion": "explosion.wav",
 }
 
+## Pygame's mixer allocates a free channel per Sound.play(); the default mixer
+## has 8. Pre-allocate the same number of voices so a burst of UI clicks does
+## not cut itself off and no nodes are created while the match screen runs.
+const SFX_VOICES := 8
+
 static var instance = null
 
 var music: AudioStreamPlayer
 var effects: AudioStreamPlayer
 var ambient: AudioStreamPlayer
 var enabled := true
+var _sfx_voices: Array[AudioStreamPlayer] = []
+var _sfx_next := 0
 
 
 func _ready() -> void:
@@ -51,6 +58,8 @@ func _ready() -> void:
 	music = _make_player("Music", -8.0)
 	effects = _make_player("Effects", -2.0)
 	ambient = _make_player("Ambient", -12.0)
+	for index in SFX_VOICES:
+		_sfx_voices.append(_make_player("Sfx%d" % index, -2.0))
 	_play_music("bgm_battle")
 	_play_ambient("ambient_forest")
 
@@ -138,26 +147,19 @@ func _play(key: String) -> void:
 	effects.play()
 
 
-func _free_player(player: AudioStreamPlayer) -> void:
-	player.queue_free()
-
-
 ## Fire a short one-shot so rapid UI clicks/build/error SFX do not cut each
-## other off. Mirrors the Pygame mixer where each Sound.play() spawns an
-## independent channel.
+## other off. Voices are pre-allocated round-robin players, so the call never
+## adds or removes scene nodes (the headless lifecycle checks count them).
 func _play_sfx(key: String) -> void:
-	if not enabled:
+	if not enabled or _sfx_voices.is_empty():
 		return
 	var stream := _stream(key)
 	if stream == null:
 		return
-	var player := AudioStreamPlayer.new()
-	player.bus = "Master"
-	player.volume_db = -2.0
-	player.stream = stream
-	player.finished.connect(_free_player.bind(player))
-	add_child(player)
-	player.play()
+	var voice := _sfx_voices[_sfx_next]
+	_sfx_next = (_sfx_next + 1) % _sfx_voices.size()
+	voice.stream = stream
+	voice.play()
 
 
 func _set_enabled(value: bool) -> void:
@@ -166,6 +168,8 @@ func _set_enabled(value: bool) -> void:
 		music.stop()
 		ambient.stop()
 		effects.stop()
+		for voice in _sfx_voices:
+			voice.stop()
 	else:
 		_play_music("bgm_battle")
 		_play_ambient("ambient_forest")
