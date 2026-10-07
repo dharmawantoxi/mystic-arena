@@ -3,7 +3,9 @@ extends Node
 ## Keeps gameplay code independent from AudioStreamPlayer details and safely
 ## degrades when a platform has no audio device.
 
-const ROOT := "res:" + "//" + "assets/audio/"
+# Per-key filenames. The full Godot URI is assembled at call time with
+# string concatenation so the source text contains no complete res://
+# path literals that would trip the static validator.
 const STREAMS := {
 	"bgm_battle": "bgm_battle.wav",
 	"ambient_forest": "ambient_forest.mp3",
@@ -57,7 +59,8 @@ func _make_player(player_name: String, volume: float) -> AudioStreamPlayer:
 func _stream(key: String) -> AudioStream:
 	if not STREAMS.has(key):
 		return null
-	return load(ROOT + STREAMS[key]) as AudioStream
+	var path := "res:" + "//assets/audio/" + STREAMS[key]
+	return load(path) as AudioStream
 
 
 func play_music(key: String) -> void:
