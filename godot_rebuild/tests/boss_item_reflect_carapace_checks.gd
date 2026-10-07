@@ -82,6 +82,9 @@ class ReflectCarapaceWorld:
 			log.append([int(raw_damage), school])
 			deliveries[unit_id] = log
 			hit_order.append(unit_id)
+			var type_log: Array = types.get(unit_id, [])
+			type_log.append(damage_type)
+			types[unit_id] = type_log
 		return landed
 
 
