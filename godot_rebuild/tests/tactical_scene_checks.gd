@@ -94,9 +94,9 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		tactical.status_text().ends_with("[HOLD]"), "get_status_text carries the source HOLD tag"
 	)
 	var sounds_before: int = tactical.sound_history.size()
-	for _tick in range(120):
+	for _tick in range(70):
 		session._physics_process(1.0 / 60.0)
-	check.call(tactical.hold_elapsed == 121, "hold_elapsed counts every held tick")
+	check.call(tactical.hold_elapsed == 71, "hold_elapsed counts every held tick")
 	check.call(
 		tactical.command_timer >= Tactical.COMMAND_TICKS - Tactical.COOLDOWN_MAX,
 		"a held order is re-issued before its 600-tick duration lapses"

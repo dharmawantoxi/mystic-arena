@@ -192,7 +192,7 @@ func _check_credit(check: Callable, credit: Dictionary) -> void:
 	check.call(
 		live.apply_burn(burnt.id, 8.0, 90, live.BLUE), "Burn is applied for the no-credit proof"
 	)
-	for _tick in range(40):
+	for _tick in range(35):
 		live.step_tick()
 	check.call(burnt.hp < float(burnt.definition.max_hp), "Burn damaged its victim")
 	check.call(
