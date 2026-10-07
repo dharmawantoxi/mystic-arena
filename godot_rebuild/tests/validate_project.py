@@ -60,6 +60,40 @@ for path in (ROOT / "scenes").rglob("*.tscn"):
         for name in re.findall(r'%([A-Z][A-Za-z0-9_]*)', source):
             check(name in names, f"Missing unique node %{name} used by {script} in {path}")
 
+# Audio containers must match their extension: the source `assets/sounds` ships
+# an MP3 and several Ogg Vorbis files named `.wav`, which SDL_mixer sniffs but
+# the Godot importer does not (it fails the native import step).
+AUDIO_MAGIC = {
+    ".wav": (b"RIFF",),
+    ".ogg": (b"OggS",),
+    ".mp3": (b"ID3", b"\xff\xfb", b"\xff\xf3", b"\xff\xf2", b"\xff\xfa"),
+}
+audio_table = re.findall(
+    r'"([a-z_]+)": "([a-z_]+\.(?:wav|ogg|mp3))"',
+    (ROOT / "scripts/audio/audio_manager.gd").read_text(encoding="utf-8"),
+)
+check(len(audio_table) >= 12, "Audio facade must keep its migrated stream table")
+for key, filename in audio_table:
+    path = ROOT / "assets/audio" / filename
+    check(path.is_file(), f"Missing audio asset for {key}: {filename}")
+    if path.is_file():
+        head = path.read_bytes()[:4]
+        suffix = path.suffix.lower()
+        check(
+            any(head.startswith(magic) for magic in AUDIO_MAGIC[suffix]),
+            f"Audio container does not match its extension: {filename}",
+        )
+for path in sorted((ROOT / "assets/audio").iterdir()):
+    check(
+        path.suffix.lower() in AUDIO_MAGIC,
+        f"Unknown audio extension: {path.name}",
+    )
+    head = path.read_bytes()[:4]
+    check(
+        any(head.startswith(magic) for magic in AUDIO_MAGIC[path.suffix.lower()]),
+        f"Audio container does not match its extension: {path.name}",
+    )
+
 sim = (ROOT / "scripts/simulation/sandbox_simulation.gd").read_text(encoding="utf-8")
 check("func _physics_process(" in sim, "Simulation must own fixed ticks")
 check("func _process(" not in sim, "Simulation must not tick on render frames")

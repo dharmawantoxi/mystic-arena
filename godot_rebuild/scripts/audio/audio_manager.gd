@@ -4,16 +4,22 @@ extends Node
 ## degrades when a platform has no audio device.
 
 const ROOT := "res://assets/audio/"
+# The copied Pygame assets keep misleading `.wav` names: `assets/sounds` really
+# ships one MP3 and seven Ogg Vorbis files under that extension, which SDL_mixer
+# accepts because it sniffs the container. Godot imports by extension, so the
+# rebuild names each stream by its REAL container (verified byte-for-byte by
+# tests/validate_project.py). The sound keys below are unchanged, so gameplay
+# code (menu, waves, tactical orders) keeps calling `play("ui_click")`.
 const STREAMS := {
 	"bgm_battle": "bgm_battle.wav",
-	"ambient_forest": "ambient_forest.wav",
-	"victory": "victory.wav",
+	"ambient_forest": "ambient_forest.mp3",
+	"victory": "victory.ogg",
 	"defeat": "defeat.wav",
-	"ui_click": "ui_click.wav",
-	"ui_buy": "ui_buy.wav",
-	"ui_error": "ui_error.wav",
-	"ui_sell": "ui_sell.wav",
-	"ui_upgrade": "ui_upgrade.wav",
+	"ui_click": "ui_click.ogg",
+	"ui_buy": "ui_buy.ogg",
+	"ui_error": "ui_error.ogg",
+	"ui_sell": "ui_sell.ogg",
+	"ui_upgrade": "ui_upgrade.ogg",
 	"wave_start": "wave_start.wav",
 	"hero_skill": "hero_skill.wav",
 	"nexus_hit": "nexus_hit.wav",
