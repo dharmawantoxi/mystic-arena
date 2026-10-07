@@ -64,8 +64,8 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	session._physics_process(1.0 / 60.0)
 	check.call(tactical.held_command.is_empty(), "the key release disarms the hold")
 	check.call(
-		tactical.command_timer == Tactical.COMMAND_TICKS - 1,
-		"a tap keeps the full 600-tick duration"
+		tactical.command_timer == Tactical.COMMAND_TICKS - 2,
+		"a tap keeps the full 600-tick duration (both ticks only age it by one)"
 	)
 
 	# ── the view draws the marker and the banner without touching state ──
@@ -81,6 +81,9 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	)
 
 	# ── HOLD: re-issued every 30 ticks so the duration never lapses ──
+	# The 30-tick cooldown is a source gate between orders; clear it so each
+	# proof below tests its own branch instead of the pacing.
+	tactical.cooldown = 0
 	_key(screen, KEY_C, true)
 	session._physics_process(1.0 / 60.0)
 	check.call(
@@ -113,6 +116,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	)
 
 	# ── the order really drives the hero inside step_tick ──
+	tactical.cooldown = 0
 	hero.position = Vector2(640, 360)
 	hero.has_destination = false
 	var castle = world.nexuses[0]
@@ -132,6 +136,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	castle_button.button_up.emit()
 	session._physics_process(1.0 / 60.0)
 	check.call(tactical.held_command.is_empty(), "the panel release disarms the hold")
+	tactical.cooldown = 0
 	castle_button.button_down.emit()
 	session._physics_process(1.0 / 60.0)
 	check.call(

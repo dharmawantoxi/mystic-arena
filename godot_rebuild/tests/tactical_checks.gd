@@ -184,9 +184,12 @@ func _check_credit(check: Callable, credit: Dictionary) -> void:
 	check.call(attacker.damage_dealt > first_total, "Credited damage accumulates across hits")
 	# Burn DOT carries no source in either codebase, so it credits nobody. The
 	# heroes are parked outside every hunt range so only the burn lands.
+	var parked := 0
 	for unit in live.units:
 		if unit.is_hero:
-			unit.position = Vector2(-9000, -9000)
+			# Parked apart: two heroes on one point would duel and credit damage.
+			parked += 1
+			unit.position = Vector2(-9000, -9000) + Vector2(4000 * parked, 3000 * parked)
 	var burnt := live.spawn_unit(live.MINIONS["goblin"], live.RED, 2)
 	var totals_before := _team_damage_totals(live)
 	check.call(
@@ -569,11 +572,15 @@ func _check_rows(
 			check.call(got.get("destination") == null, "destination cleared: " + row)
 		else:
 			var got_destination: Array = got.get("destination")
+			# The source forms the ring in doubles and the rebuild stores it in a
+			# Vector2 (f32): the fixture already carries the f32 value, but the
+			# last ulp of libm sin/cos can land on the neighbouring f32, so the
+			# comparison uses the f32 epsilon. Every other scalar stays exact.
 			check.call(
 				(
 					got_destination != null
-					and float(got_destination[0]) == float(want_destination[0])
-					and float(got_destination[1]) == float(want_destination[1])
+					and is_equal_approx(float(got_destination[0]), float(want_destination[0]))
+					and is_equal_approx(float(got_destination[1]), float(want_destination[1]))
 				),
 				"destination: " + row
 			)
