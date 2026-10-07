@@ -39,7 +39,10 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Static guardrails alone need ~7 minutes (validator + 15 source oracles +
+    # gdparse/gdlint/gdformat over every script), and the native suite ~2.5, so
+    # the old 10-minute ceiling SIGTERMed the runner mid-suite (exit 143).
+    timeout-minutes: 20
     env:
       GODOT_VERSION: '4.7.2'
       GODOT_SILENCE_ROOT_WARNING: '1'
