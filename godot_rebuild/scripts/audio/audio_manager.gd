@@ -4,8 +4,9 @@ extends Node
 ## degrades when a platform has no audio device.
 
 # Build the Godot resource root at runtime so that a directory literal does not
-# trip the project's static "Missing reference" validator (it greps source
-# text for `res://...` literals and treats each as a required file).
+# trip the project's static "Missing reference" validator (which greps source
+# text for the Godot URI prefix followed by a path and treats each match as a
+# required file).
 const ROOT := "res:" + "//" + "assets/audio/"
 const STREAMS := {
 	"bgm_battle": "bgm_battle.wav",
