@@ -1,0 +1,246 @@
+{
+  "empty": {
+    "best_score": 0,
+    "best_time_seconds": 0,
+    "max_combo": 0,
+    "total_attempts": 0,
+    "total_kills": 0,
+    "total_playtime_seconds": 0,
+    "wins": 0
+  },
+  "final_level_stats": {
+    "1": {
+      "best_score": 1500,
+      "best_time_seconds": 90,
+      "max_combo": 8,
+      "total_attempts": 5,
+      "total_kills": 15,
+      "total_playtime_seconds": 481,
+      "wins": 3
+    },
+    "2": {
+      "best_score": 77,
+      "best_time_seconds": 65,
+      "max_combo": 1,
+      "total_attempts": 1,
+      "total_kills": 2,
+      "total_playtime_seconds": 65,
+      "wins": 1
+    }
+  },
+  "format": {
+    "hour": "60:05",
+    "sixty_five": "1:05",
+    "zero": "--:--"
+  },
+  "rewards": {
+    "after_expiry": {
+      "ai_gold": 258,
+      "combo_count": 1,
+      "combo_timer": 119,
+      "gold": 282,
+      "last_combo": 3,
+      "max_combo": 2,
+      "red_towers_destroyed": 1,
+      "score": 282,
+      "total_kills": 4
+    },
+    "expired": {
+      "ai_gold": 258,
+      "combo_count": 0,
+      "combo_timer": 0,
+      "gold": 274,
+      "last_combo": 3,
+      "max_combo": 2,
+      "red_towers_destroyed": 1,
+      "score": 274,
+      "total_kills": 3
+    },
+    "trace": [
+      {
+        "ai_gold": 0,
+        "combo_count": 1,
+        "combo_timer": 119,
+        "gold": 8,
+        "last_combo": 0,
+        "max_combo": 0,
+        "red_towers_destroyed": 0,
+        "score": 8,
+        "total_kills": 1
+      },
+      {
+        "ai_gold": 0,
+        "combo_count": 2,
+        "combo_timer": 119,
+        "gold": 16,
+        "last_combo": 0,
+        "max_combo": 1,
+        "red_towers_destroyed": 0,
+        "score": 16,
+        "total_kills": 2
+      },
+      {
+        "ai_gold": 0,
+        "combo_count": 3,
+        "combo_timer": 119,
+        "gold": 24,
+        "last_combo": 0,
+        "max_combo": 2,
+        "red_towers_destroyed": 0,
+        "score": 24,
+        "total_kills": 3
+      },
+      {
+        "ai_gold": 258,
+        "combo_count": 3,
+        "combo_timer": 118,
+        "gold": 274,
+        "last_combo": 0,
+        "max_combo": 2,
+        "red_towers_destroyed": 1,
+        "score": 274,
+        "total_kills": 3
+      }
+    ]
+  },
+  "updates": [
+    {
+      "is_new_best_score": false,
+      "is_new_best_time": false,
+      "level": 1,
+      "match": {
+        "combo": 3,
+        "kills": 4,
+        "playtime_seconds": 90,
+        "score": 999,
+        "time_seconds": 90,
+        "won": false
+      },
+      "name": "loss",
+      "new_stats": {
+        "best_score": 0,
+        "best_time_seconds": 0,
+        "max_combo": 3,
+        "total_attempts": 1,
+        "total_kills": 4,
+        "total_playtime_seconds": 90,
+        "wins": 0
+      }
+    },
+    {
+      "is_new_best_score": true,
+      "is_new_best_time": true,
+      "level": 1,
+      "match": {
+        "combo": 4,
+        "kills": 5,
+        "playtime_seconds": 120,
+        "score": 1000,
+        "time_seconds": 120,
+        "won": true
+      },
+      "name": "first_win",
+      "new_stats": {
+        "best_score": 1000,
+        "best_time_seconds": 120,
+        "max_combo": 4,
+        "total_attempts": 2,
+        "total_kills": 9,
+        "total_playtime_seconds": 210,
+        "wins": 1
+      }
+    },
+    {
+      "is_new_best_score": true,
+      "is_new_best_time": false,
+      "level": 1,
+      "match": {
+        "combo": 2,
+        "kills": 2,
+        "playtime_seconds": 180,
+        "score": 1500,
+        "time_seconds": 180,
+        "won": true
+      },
+      "name": "higher_slower",
+      "new_stats": {
+        "best_score": 1500,
+        "best_time_seconds": 120,
+        "max_combo": 4,
+        "total_attempts": 3,
+        "total_kills": 11,
+        "total_playtime_seconds": 390,
+        "wins": 2
+      }
+    },
+    {
+      "is_new_best_score": false,
+      "is_new_best_time": true,
+      "level": 1,
+      "match": {
+        "combo": 1,
+        "kills": 1,
+        "playtime_seconds": 90,
+        "score": 1200,
+        "time_seconds": 90,
+        "won": true
+      },
+      "name": "lower_faster",
+      "new_stats": {
+        "best_score": 1500,
+        "best_time_seconds": 90,
+        "max_combo": 4,
+        "total_attempts": 4,
+        "total_kills": 12,
+        "total_playtime_seconds": 480,
+        "wins": 3
+      }
+    },
+    {
+      "is_new_best_score": false,
+      "is_new_best_time": false,
+      "level": 1,
+      "match": {
+        "combo": 8,
+        "kills": 3,
+        "playtime_seconds": 1,
+        "score": 9999,
+        "time_seconds": 1,
+        "won": false
+      },
+      "name": "loss_cannot_replace_best",
+      "new_stats": {
+        "best_score": 1500,
+        "best_time_seconds": 90,
+        "max_combo": 8,
+        "total_attempts": 5,
+        "total_kills": 15,
+        "total_playtime_seconds": 481,
+        "wins": 3
+      }
+    },
+    {
+      "is_new_best_score": true,
+      "is_new_best_time": true,
+      "level": 2,
+      "match": {
+        "combo": 1,
+        "kills": 2,
+        "playtime_seconds": 65,
+        "score": 77,
+        "time_seconds": 65,
+        "won": true
+      },
+      "name": "independent_level",
+      "new_stats": {
+        "best_score": 77,
+        "best_time_seconds": 65,
+        "max_combo": 1,
+        "total_attempts": 1,
+        "total_kills": 2,
+        "total_playtime_seconds": 65,
+        "wins": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,232 @@
+[
+  {
+    "label": "locked",
+    "input": {
+      "label": "locked",
+      "gold": 1000,
+      "unlocked": [],
+      "owned": [],
+      "buy": "kaizen"
+    },
+    "gold": 1000,
+    "owned": [],
+    "receipts": [],
+    "error": ""
+  },
+  {
+    "label": "exact_first",
+    "input": {
+      "label": "exact_first",
+      "gold": 400,
+      "unlocked": [
+        "kaizen"
+      ],
+      "owned": [],
+      "buy": "kaizen"
+    },
+    "gold": 0,
+    "owned": [
+      "kaizen"
+    ],
+    "receipts": [
+      {
+        "id": "kaizen",
+        "team": "blue",
+        "position": [
+          390,
+          550
+        ],
+        "alive": true
+      }
+    ],
+    "error": ""
+  },
+  {
+    "label": "one_short",
+    "input": {
+      "label": "one_short",
+      "gold": 399,
+      "unlocked": [
+        "kaizen"
+      ],
+      "owned": [],
+      "buy": "kaizen"
+    },
+    "gold": 399,
+    "owned": [],
+    "receipts": [],
+    "error": ""
+  },
+  {
+    "label": "duplicate_alive",
+    "input": {
+      "label": "duplicate_alive",
+      "gold": 1000,
+      "unlocked": [
+        "kaizen"
+      ],
+      "owned": [
+        {
+          "id": "kaizen"
+        }
+      ],
+      "buy": "kaizen"
+    },
+    "gold": 1000,
+    "owned": [
+      "kaizen"
+    ],
+    "receipts": [],
+    "error": ""
+  },
+  {
+    "label": "duplicate_dead",
+    "input": {
+      "label": "duplicate_dead",
+      "gold": 1000,
+      "unlocked": [
+        "kaizen"
+      ],
+      "owned": [
+        {
+          "id": "kaizen",
+          "alive": false
+        }
+      ],
+      "buy": "kaizen"
+    },
+    "gold": 1000,
+    "owned": [
+      "kaizen"
+    ],
+    "receipts": [],
+    "error": ""
+  },
+  {
+    "label": "cap_five",
+    "input": {
+      "label": "cap_five",
+      "gold": 10000,
+      "unlocked": [
+        "kaizen",
+        "thorne",
+        "grimjaw",
+        "sylara",
+        "vex",
+        "zephyr"
+      ],
+      "owned": [
+        {
+          "id": "kaizen"
+        },
+        {
+          "id": "thorne"
+        },
+        {
+          "id": "grimjaw"
+        },
+        {
+          "id": "sylara"
+        },
+        {
+          "id": "vex"
+        }
+      ],
+      "buy": "zephyr"
+    },
+    "gold": 10000,
+    "owned": [
+      "kaizen",
+      "thorne",
+      "grimjaw",
+      "sylara",
+      "vex"
+    ],
+    "receipts": [],
+    "error": ""
+  },
+  {
+    "label": "second_slot",
+    "input": {
+      "label": "second_slot",
+      "gold": 900,
+      "unlocked": [
+        "kaizen",
+        "thorne"
+      ],
+      "owned": [
+        {
+          "id": "kaizen"
+        }
+      ],
+      "buy": "thorne"
+    },
+    "gold": 400,
+    "owned": [
+      "kaizen",
+      "thorne"
+    ],
+    "receipts": [
+      {
+        "id": "thorne",
+        "team": "blue",
+        "position": [
+          420,
+          550
+        ],
+        "alive": true
+      }
+    ],
+    "error": ""
+  },
+  {
+    "label": "fifth_slot",
+    "input": {
+      "label": "fifth_slot",
+      "gold": 2000,
+      "unlocked": [
+        "kaizen",
+        "thorne",
+        "grimjaw",
+        "sylara",
+        "vex",
+        "zephyr"
+      ],
+      "owned": [
+        {
+          "id": "kaizen"
+        },
+        {
+          "id": "thorne"
+        },
+        {
+          "id": "grimjaw"
+        },
+        {
+          "id": "sylara"
+        }
+      ],
+      "buy": "vex"
+    },
+    "gold": 1580,
+    "owned": [
+      "kaizen",
+      "thorne",
+      "grimjaw",
+      "sylara",
+      "vex"
+    ],
+    "receipts": [
+      {
+        "id": "vex",
+        "team": "blue",
+        "position": [
+          510,
+          550
+        ],
+        "alive": true
+      }
+    ],
+    "error": ""
+  }
+]

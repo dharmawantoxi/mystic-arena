@@ -1,3 +1,4 @@
+# gdlint:disable=max-public-methods
 extends "res://scripts/simulation/combat_session.gd"
 
 const Structure = preload("res://scripts/combat/structure_state.gd")
@@ -5,9 +6,17 @@ const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 ## One seed for the whole red AI: a restarted prototype match replays.
 const AI_MATCH_SEED := 20260929
+const TACTICAL_COMMANDS: Array[String] = [
+	"gather", "protect_tower", "protect_castle", "attack_boss", "attack_damage_dealer"
+]
 var selected_slot_id := -1
 var command: Dictionary = {}
-var last_action := "Pilih slot biru, lalu bangun Archer (100 G)."
+# Press and release must survive inside one render frame, so tactical input uses
+# an ordered queue rather than the single pending shop/build transaction slot.
+var tactical_queue: Array[Dictionary] = []
+var tactical_cursor := Vector2.ZERO
+var tactical_cursor_valid := false
+var last_action := "Pilih slot biru, lalu bangun salah satu dari empat tower (100 G)."
 
 
 func _init() -> void:
@@ -22,6 +31,10 @@ func configure_level(number: int, target_difficulty: String = "normal") -> bool:
 		return false
 	(world as Prototype).set_difficulty(target_difficulty)
 	return true
+
+
+func configure_player_profile(state: Dictionary) -> bool:
+	return (world as Prototype).configure_player_profile(state)
 
 
 func _ready() -> void:
@@ -40,6 +53,8 @@ func _physics_process(_delta: float) -> void:
 		cancel_pending_input()
 		return
 	var match_world := world as Prototype
+	match_world.tactical.set_cursor(tactical_cursor, tactical_cursor_valid)
+	_drain_tactical_queue(match_world)
 	if not command.is_empty():
 		var accepted := false
 		var balance_before: int = match_world.economy.gold[0]
@@ -48,15 +63,27 @@ func _physics_process(_delta: float) -> void:
 			var caster := match_world.get_unit(command.id) as HeroState
 			autocast_was_on = caster != null and caster.auto_cast_enabled
 		if command.kind == "build":
-			accepted = match_world.build_tower(0, command.id)
+			accepted = match_world.build_tower(0, command.id, command.get("path", "archer"))
 			if accepted and selected_slot_id == command.id:
 				selected_id = match_world.get_slot(command.id).structure_id
+		elif command.kind == "regen_shield":
+			accepted = match_world.activate_player_regen_shield(command.id)
+		elif command.kind == "castle_shield":
+			accepted = match_world.activate_player_castle_shield(command.id)
 		elif command.kind == "upgrade":
 			accepted = match_world.upgrade_tower(
 				command.id, command.level, command.get("path", "archer")
 			)
 		elif command.kind == "nexus":
 			accepted = match_world.upgrade_nexus(command.id, command.level)
+		elif command.kind == "hero_buy":
+			accepted = match_world.buy_player_hero(command.hero_type)
+			if accepted:
+				var roster := match_world.player_roster()
+				var recruited := roster.back() as HeroState
+				selected_id = recruited.id
+				selected_slot_id = -1
+				match_world.forge.set_selected(recruited.id)
 		elif command.kind == "skill_q":
 			accepted = match_world.cast_blue_q(command.id)
 		elif command.kind == "skill_w":
@@ -79,24 +106,46 @@ func _physics_process(_delta: float) -> void:
 				selected_id = -1
 		if accepted:
 			var delta_gold: int = match_world.economy.gold[0] - balance_before
-			if command.kind == "skill_q":
-				last_action = "Kaizen memakai Steel Wind (Q)."
+			var hero_name := _hero_name(command.get("id", -1))
+			if command.kind == "hero_buy":
+				var recruited: HeroState = match_world.player_roster().back() as HeroState
+				last_action = (
+					"%s direkrut: %+d G." % [recruited.settings().display_name, delta_gold]
+				)
+			elif command.kind == "skill_q":
+				last_action = (
+					"%s memakai %s (Q)."
+					% [hero_name, "Steel Wind" if hero_name == "Kaizen" else "skill"]
+				)
 			elif command.kind == "skill_w":
-				last_action = "Kaizen memakai Wind Wall (W)."
+				last_action = (
+					"%s memakai %s (W)."
+					% [hero_name, "Wind Wall" if hero_name == "Kaizen" else "skill"]
+				)
 			elif command.kind == "skill_e":
-				last_action = "Kaizen memakai Sweep (E)."
+				last_action = (
+					"%s memakai %s (E)."
+					% [hero_name, "Sweep" if hero_name == "Kaizen" else "skill"]
+				)
 			elif command.kind == "skill_r":
-				last_action = "Kaizen memakai Tornado (R)."
+				last_action = (
+					"%s memakai %s (R)."
+					% [hero_name, "Tornado" if hero_name == "Kaizen" else "skill"]
+				)
 			elif command.kind == "hero_upgrade":
-				last_action = "Kaizen naik level: %+d G." % delta_gold
+				last_action = "%s naik level: %+d G." % [hero_name, delta_gold]
 			elif command.kind == "autocast":
 				last_action = (
 					"Auto-cast diaktifkan." if not autocast_was_on else "Auto-cast sudah aktif."
 				)
 			elif command.kind == "move":
-				last_action = "Kaizen menuju titik yang dipilih."
+				last_action = "%s menuju titik yang dipilih." % hero_name
 			elif command.kind == "follow":
-				last_action = "Kaizen mengikuti musuh."
+				last_action = "%s mengikuti musuh." % hero_name
+			elif command.kind == "regen_shield":
+				last_action = "Regen Shield diaktifkan: %+d G." % delta_gold
+			elif command.kind == "castle_shield":
+				last_action = "Castle Shield diaktifkan: %+d G." % delta_gold
 			else:
 				var upgrade_label := "Archer ditingkatkan"
 				if command.get("path") == "cannon":
@@ -105,8 +154,9 @@ func _physics_process(_delta: float) -> void:
 					upgrade_label = "Ice ditingkatkan"
 				elif command.get("path") == "mage":
 					upgrade_label = "Mage ditingkatkan"
+				var build_label := String(command.get("path", "archer")).capitalize() + " dibangun"
 				var action: String = {
-					"build": "Archer dibangun",
+					"build": build_label,
 					"sell": "Tower dijual",
 					"upgrade": upgrade_label,
 					"nexus": "Nexus ditingkatkan"
@@ -127,9 +177,14 @@ func _physics_process(_delta: float) -> void:
 					"owner": "Pilih slot atau tower biru yang masih hidup.",
 					"occupied": "Slot sudah terisi.",
 					"gold": "Gold tidak cukup untuk transaksi ini.",
-					"capacity": "Batas bangunan tercapai.",
+					"locked": "Hero belum terbuka di roster permanen.",
+					"owned": "Hero itu sudah aktif, termasuk saat menunggu respawn.",
+					"kit": "Kit hero tidak tersedia.",
+					"registry": "Roster hero berubah; transaksi dibatalkan.",
+					"capacity": "Batas unit atau lima hero sudah tercapai.",
 					"stale": stale_text,
-					"path": "Pilih jalur upgrade yang valid.",
+					"path": "Pilih tipe atau jalur tower yang valid.",
+					"shield": "Shield belum dapat dibeli atau sudah aktif.",
 					"max_level": max_text,
 					"skill": "Q tidak siap atau tidak ada target."
 				}
@@ -141,8 +196,19 @@ func _physics_process(_delta: float) -> void:
 		selected_id = -1
 
 
-func request_build(slot_id: int) -> bool:
-	return _queue("build", slot_id)
+func request_build(slot_id: int, tower_path: String = "archer") -> bool:
+	if not _queue("build", slot_id):
+		return false
+	command.path = tower_path
+	return true
+
+
+func request_regen_shield(entity_id: int) -> bool:
+	return _queue("regen_shield", entity_id)
+
+
+func request_castle_shield(entity_id: int) -> bool:
+	return _queue("castle_shield", entity_id)
 
 
 func request_sell(entity_id: int) -> bool:
@@ -163,6 +229,13 @@ func request_nexus_upgrade(entity_id: int) -> bool:
 	if nexus == null or not _queue("nexus", entity_id):
 		return false
 	command.level = nexus.settings().level
+	return true
+
+
+func request_hero_buy(hero_type: String) -> bool:
+	if hero_type.is_empty() or not _queue("hero_buy", 0):
+		return false
+	command.hero_type = hero_type
 	return true
 
 
@@ -189,8 +262,8 @@ func request_autocast(entity_id: int) -> bool:
 
 func request_hero_upgrade(entity_id: int) -> bool:
 	var match_world := world as Prototype
-	var hero: HeroState = match_world.blue_hero()
-	if hero == null or hero.id != entity_id or not _queue("hero_upgrade", entity_id):
+	var hero := match_world.get_unit(entity_id) as HeroState
+	if hero == null or hero.team != 0 or not _queue("hero_upgrade", entity_id):
 		return false
 	command.level = hero.level
 	return true
@@ -210,6 +283,52 @@ func request_hero_follow(entity_id: int, target_id: int) -> bool:
 	return true
 
 
+func request_tactical_start(
+	name: String,
+	point: Vector2 = Vector2.ZERO,
+	has_point: bool = false,
+	target_id: int = -1,
+	selected_hero_id: int = -1,
+	follow_cursor: bool = false
+) -> bool:
+	if name not in TACTICAL_COMMANDS or not world.is_running():
+		return false
+	if get_tree() != null and get_tree().paused:
+		return false
+	(
+		tactical_queue
+		. append(
+			{
+				"kind": "start",
+				"name": name,
+				"point": point,
+				"has_point": has_point,
+				"target_id": target_id,
+				"selected_hero_id": selected_hero_id,
+				"follow_cursor": follow_cursor,
+			}
+		)
+	)
+	return true
+
+
+func request_tactical_end(name: String = "") -> bool:
+	if not name.is_empty() and name not in TACTICAL_COMMANDS:
+		return false
+	if not world.is_running():
+		(world as Prototype).tactical.hold_end(name)
+		return true
+	# Release is accepted while paused so a key/button lifted under the pause
+	# overlay cannot leave a command stuck when fixed ticks resume.
+	tactical_queue.append({"kind": "end", "name": name})
+	return true
+
+
+func set_tactical_cursor(point: Vector2, valid: bool) -> void:
+	tactical_cursor = point
+	tactical_cursor_valid = valid and point.is_finite()
+
+
 func request_wave(_type_index: int) -> bool:
 	return false
 
@@ -226,6 +345,38 @@ func select_at(point: Vector2) -> void:
 func cancel_pending_input() -> void:
 	super.cancel_pending_input()
 	command.clear()
+	tactical_queue.clear()
+	var match_world := world as Prototype
+	if match_world != null:
+		match_world.tactical.hold_end()
+
+
+func _drain_tactical_queue(match_world: Prototype) -> void:
+	var pending := tactical_queue.duplicate()
+	tactical_queue.clear()
+	for transaction in pending:
+		var name: String = transaction.get("name", "")
+		if transaction.kind == "end":
+			match_world.tactical.hold_end(name)
+			continue
+		var accepted := match_world.tactical.hold_start(
+			match_world,
+			name,
+			transaction.point,
+			transaction.has_point,
+			transaction.target_id,
+			transaction.selected_hero_id,
+			transaction.follow_cursor
+		)
+		if accepted:
+			last_action = "Tactical: %s." % name.replace("_", " ").to_upper()
+		elif match_world.tactical.held_command == name:
+			last_action = "Tactical %s menunggu syarat." % name.replace("_", " ").to_upper()
+
+
+func _hero_name(entity_id: int) -> String:
+	var hero := world.get_unit(entity_id) as HeroState
+	return hero.settings().display_name if hero != null else "Hero"
 
 
 func _queue(kind: String, id: int) -> bool:

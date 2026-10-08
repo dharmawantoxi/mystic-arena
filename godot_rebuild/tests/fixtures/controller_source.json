@@ -1,0 +1,1074 @@
+{
+  "policy": {
+    "screen": [
+      1280,
+      720
+    ],
+    "cursor_speed": 12.0,
+    "cursor_max_speed": 25.0,
+    "cursor_acceleration": 1.5,
+    "deadzone": 0.25,
+    "hat_repeat_delay": 22,
+    "hat_repeat_rate": 5,
+    "scroll_step": 1.0,
+    "scroll_speed": 0.55,
+    "scroll_deadzone": 0.18,
+    "trigger_threshold": 0.5,
+    "gameplay_actions": [
+      "back",
+      "cancel",
+      "confirm",
+      "dpad_down",
+      "dpad_left",
+      "dpad_right",
+      "dpad_up",
+      "left_trigger",
+      "right_trigger",
+      "scroll_down",
+      "scroll_up",
+      "skill_e",
+      "skill_q",
+      "skill_r",
+      "skill_w",
+      "start",
+      "stick_left",
+      "stick_right"
+    ],
+    "maps": {
+      "xbox": {
+        "name": "Xbox",
+        "confirm": 0,
+        "cancel": 1,
+        "skill_q": 2,
+        "skill_w": 3,
+        "skill_e": 4,
+        "skill_r": 5,
+        "start": 7,
+        "back": 6,
+        "shop": 9,
+        "stick_left": 8,
+        "stick_right": 9,
+        "left_stick_x": 0,
+        "left_stick_y": 1,
+        "right_stick_x": 2,
+        "right_stick_y": 3,
+        "left_trigger": 4,
+        "right_trigger": 5
+      },
+      "ps": {
+        "name": "PlayStation",
+        "confirm": 0,
+        "cancel": 1,
+        "skill_q": 3,
+        "skill_w": 2,
+        "skill_e": 4,
+        "skill_r": 5,
+        "start": 9,
+        "back": 8,
+        "shop": 11,
+        "stick_left": 10,
+        "stick_right": 11,
+        "left_stick_x": 0,
+        "left_stick_y": 1,
+        "right_stick_x": 2,
+        "right_stick_y": 3,
+        "left_trigger": 4,
+        "right_trigger": 5
+      },
+      "generic": {
+        "name": "Generic",
+        "confirm": 0,
+        "cancel": 1,
+        "skill_q": 2,
+        "skill_w": 3,
+        "skill_e": 4,
+        "skill_r": 5,
+        "start": 7,
+        "back": 6,
+        "shop": 9,
+        "stick_left": 8,
+        "stick_right": 9,
+        "left_stick_x": 0,
+        "left_stick_y": 1,
+        "right_stick_x": 2,
+        "right_stick_y": 3,
+        "left_trigger": 4,
+        "right_trigger": 5
+      }
+    }
+  },
+  "cursor": [
+    {
+      "label": "inside_deadzone",
+      "axes": [
+        0.24,
+        -0.24
+      ],
+      "frames": 1,
+      "position": [
+        640,
+        360
+      ],
+      "integer_position": [
+        640,
+        360
+      ]
+    },
+    {
+      "label": "deadzone_boundary",
+      "axes": [
+        0.25,
+        0.0
+      ],
+      "frames": 1,
+      "position": [
+        643.40625,
+        360.0
+      ],
+      "integer_position": [
+        643,
+        360
+      ]
+    },
+    {
+      "label": "half_horizontal",
+      "axes": [
+        0.5,
+        0.0
+      ],
+      "frames": 1,
+      "position": [
+        648.298097,
+        360.0
+      ],
+      "integer_position": [
+        648,
+        360
+      ]
+    },
+    {
+      "label": "half_diagonal",
+      "axes": [
+        0.5,
+        -0.5
+      ],
+      "frames": 1,
+      "position": [
+        649.864923,
+        350.135077
+      ],
+      "integer_position": [
+        649,
+        350
+      ]
+    },
+    {
+      "label": "full_horizontal",
+      "axes": [
+        1.0,
+        0.0
+      ],
+      "frames": 1,
+      "position": [
+        665.0,
+        360.0
+      ],
+      "integer_position": [
+        665,
+        360
+      ]
+    },
+    {
+      "label": "clamp_bottom_right",
+      "axes": [
+        1.0,
+        1.0
+      ],
+      "frames": 40,
+      "position": [
+        1280,
+        720
+      ],
+      "integer_position": [
+        1280,
+        720
+      ]
+    }
+  ],
+  "buttons": [
+    {
+      "mapping": "xbox",
+      "action": "confirm",
+      "button": 0,
+      "sequence": [
+        [
+          "confirm"
+        ],
+        [],
+        [],
+        [
+          "confirm"
+        ]
+      ]
+    },
+    {
+      "mapping": "xbox",
+      "action": "cancel",
+      "button": 1,
+      "sequence": [
+        [
+          "cancel"
+        ],
+        [],
+        [],
+        [
+          "cancel"
+        ]
+      ]
+    },
+    {
+      "mapping": "xbox",
+      "action": "skill_q",
+      "button": 2,
+      "sequence": [
+        [
+          "skill_q"
+        ],
+        [],
+        [],
+        [
+          "skill_q"
+        ]
+      ]
+    },
+    {
+      "mapping": "xbox",
+      "action": "skill_w",
+      "button": 3,
+      "sequence": [
+        [
+          "skill_w"
+        ],
+        [],
+        [],
+        [
+          "skill_w"
+        ]
+      ]
+    },
+    {
+      "mapping": "xbox",
+      "action": "skill_e",
+      "button": 4,
+      "sequence": [
+        [
+          "skill_e"
+        ],
+        [],
+        [],
+        [
+          "skill_e"
+        ]
+      ]
+    },
+    {
+      "mapping": "xbox",
+      "action": "skill_r",
+      "button": 5,
+      "sequence": [
+        [
+          "skill_r"
+        ],
+        [],
+        [],
+        [
+          "skill_r"
+        ]
+      ]
+    },
+    {
+      "mapping": "xbox",
+      "action": "start",
+      "button": 7,
+      "sequence": [
+        [
+          "start"
+        ],
+        [],
+        [],
+        [
+          "start"
+        ]
+      ]
+    },
+    {
+      "mapping": "xbox",
+      "action": "back",
+      "button": 6,
+      "sequence": [
+        [
+          "back"
+        ],
+        [],
+        [],
+        [
+          "back"
+        ]
+      ]
+    },
+    {
+      "mapping": "xbox",
+      "action": "stick_left",
+      "button": 8,
+      "sequence": [
+        [
+          "stick_left"
+        ],
+        [],
+        [],
+        [
+          "stick_left"
+        ]
+      ]
+    },
+    {
+      "mapping": "xbox",
+      "action": "stick_right",
+      "button": 9,
+      "sequence": [
+        [
+          "stick_right"
+        ],
+        [],
+        [],
+        [
+          "stick_right"
+        ]
+      ]
+    },
+    {
+      "mapping": "ps",
+      "action": "confirm",
+      "button": 0,
+      "sequence": [
+        [
+          "confirm"
+        ],
+        [],
+        [],
+        [
+          "confirm"
+        ]
+      ]
+    },
+    {
+      "mapping": "ps",
+      "action": "cancel",
+      "button": 1,
+      "sequence": [
+        [
+          "cancel"
+        ],
+        [],
+        [],
+        [
+          "cancel"
+        ]
+      ]
+    },
+    {
+      "mapping": "ps",
+      "action": "skill_q",
+      "button": 3,
+      "sequence": [
+        [
+          "skill_q"
+        ],
+        [],
+        [],
+        [
+          "skill_q"
+        ]
+      ]
+    },
+    {
+      "mapping": "ps",
+      "action": "skill_w",
+      "button": 2,
+      "sequence": [
+        [
+          "skill_w"
+        ],
+        [],
+        [],
+        [
+          "skill_w"
+        ]
+      ]
+    },
+    {
+      "mapping": "ps",
+      "action": "skill_e",
+      "button": 4,
+      "sequence": [
+        [
+          "skill_e"
+        ],
+        [],
+        [],
+        [
+          "skill_e"
+        ]
+      ]
+    },
+    {
+      "mapping": "ps",
+      "action": "skill_r",
+      "button": 5,
+      "sequence": [
+        [
+          "skill_r"
+        ],
+        [],
+        [],
+        [
+          "skill_r"
+        ]
+      ]
+    },
+    {
+      "mapping": "ps",
+      "action": "start",
+      "button": 9,
+      "sequence": [
+        [
+          "start"
+        ],
+        [],
+        [],
+        [
+          "start"
+        ]
+      ]
+    },
+    {
+      "mapping": "ps",
+      "action": "back",
+      "button": 8,
+      "sequence": [
+        [
+          "back"
+        ],
+        [],
+        [],
+        [
+          "back"
+        ]
+      ]
+    },
+    {
+      "mapping": "ps",
+      "action": "stick_left",
+      "button": 10,
+      "sequence": [
+        [
+          "stick_left"
+        ],
+        [],
+        [],
+        [
+          "stick_left"
+        ]
+      ]
+    },
+    {
+      "mapping": "ps",
+      "action": "stick_right",
+      "button": 11,
+      "sequence": [
+        [
+          "stick_right"
+        ],
+        [],
+        [],
+        [
+          "stick_right"
+        ]
+      ]
+    },
+    {
+      "mapping": "generic",
+      "action": "confirm",
+      "button": 0,
+      "sequence": [
+        [
+          "confirm"
+        ],
+        [],
+        [],
+        [
+          "confirm"
+        ]
+      ]
+    },
+    {
+      "mapping": "generic",
+      "action": "cancel",
+      "button": 1,
+      "sequence": [
+        [
+          "cancel"
+        ],
+        [],
+        [],
+        [
+          "cancel"
+        ]
+      ]
+    },
+    {
+      "mapping": "generic",
+      "action": "skill_q",
+      "button": 2,
+      "sequence": [
+        [
+          "skill_q"
+        ],
+        [],
+        [],
+        [
+          "skill_q"
+        ]
+      ]
+    },
+    {
+      "mapping": "generic",
+      "action": "skill_w",
+      "button": 3,
+      "sequence": [
+        [
+          "skill_w"
+        ],
+        [],
+        [],
+        [
+          "skill_w"
+        ]
+      ]
+    },
+    {
+      "mapping": "generic",
+      "action": "skill_e",
+      "button": 4,
+      "sequence": [
+        [
+          "skill_e"
+        ],
+        [],
+        [],
+        [
+          "skill_e"
+        ]
+      ]
+    },
+    {
+      "mapping": "generic",
+      "action": "skill_r",
+      "button": 5,
+      "sequence": [
+        [
+          "skill_r"
+        ],
+        [],
+        [],
+        [
+          "skill_r"
+        ]
+      ]
+    },
+    {
+      "mapping": "generic",
+      "action": "start",
+      "button": 7,
+      "sequence": [
+        [
+          "start"
+        ],
+        [],
+        [],
+        [
+          "start"
+        ]
+      ]
+    },
+    {
+      "mapping": "generic",
+      "action": "back",
+      "button": 6,
+      "sequence": [
+        [
+          "back"
+        ],
+        [],
+        [],
+        [
+          "back"
+        ]
+      ]
+    },
+    {
+      "mapping": "generic",
+      "action": "stick_left",
+      "button": 8,
+      "sequence": [
+        [
+          "stick_left"
+        ],
+        [],
+        [],
+        [
+          "stick_left"
+        ]
+      ]
+    },
+    {
+      "mapping": "generic",
+      "action": "stick_right",
+      "button": 9,
+      "sequence": [
+        [
+          "stick_right"
+        ],
+        [],
+        [],
+        [
+          "stick_right"
+        ]
+      ]
+    }
+  ],
+  "dpad": [
+    {
+      "label": "up",
+      "hat": [
+        0,
+        1
+      ],
+      "events": [
+        {
+          "frame": 0,
+          "actions": [
+            "dpad_up"
+          ]
+        },
+        {
+          "frame": 22,
+          "actions": [
+            "dpad_up"
+          ]
+        },
+        {
+          "frame": 27,
+          "actions": [
+            "dpad_up"
+          ]
+        },
+        {
+          "frame": "repress",
+          "actions": [
+            "dpad_up"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "down",
+      "hat": [
+        0,
+        -1
+      ],
+      "events": [
+        {
+          "frame": 0,
+          "actions": [
+            "dpad_down"
+          ]
+        },
+        {
+          "frame": 22,
+          "actions": [
+            "dpad_down"
+          ]
+        },
+        {
+          "frame": 27,
+          "actions": [
+            "dpad_down"
+          ]
+        },
+        {
+          "frame": "repress",
+          "actions": [
+            "dpad_down"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "left",
+      "hat": [
+        -1,
+        0
+      ],
+      "events": [
+        {
+          "frame": 0,
+          "actions": [
+            "dpad_left"
+          ]
+        },
+        {
+          "frame": 22,
+          "actions": [
+            "dpad_left"
+          ]
+        },
+        {
+          "frame": 27,
+          "actions": [
+            "dpad_left"
+          ]
+        },
+        {
+          "frame": "repress",
+          "actions": [
+            "dpad_left"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "right",
+      "hat": [
+        1,
+        0
+      ],
+      "events": [
+        {
+          "frame": 0,
+          "actions": [
+            "dpad_right"
+          ]
+        },
+        {
+          "frame": 22,
+          "actions": [
+            "dpad_right"
+          ]
+        },
+        {
+          "frame": 27,
+          "actions": [
+            "dpad_right"
+          ]
+        },
+        {
+          "frame": "repress",
+          "actions": [
+            "dpad_right"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "up_right",
+      "hat": [
+        1,
+        1
+      ],
+      "events": [
+        {
+          "frame": 0,
+          "actions": [
+            "dpad_up",
+            "dpad_right"
+          ]
+        },
+        {
+          "frame": 22,
+          "actions": [
+            "dpad_up",
+            "dpad_right"
+          ]
+        },
+        {
+          "frame": 27,
+          "actions": [
+            "dpad_up",
+            "dpad_right"
+          ]
+        },
+        {
+          "frame": "repress",
+          "actions": [
+            "dpad_up",
+            "dpad_right"
+          ]
+        }
+      ]
+    }
+  ],
+  "triggers": [
+    {
+      "axes": [
+        0.5,
+        0.5
+      ],
+      "actions": []
+    },
+    {
+      "axes": [
+        0.51,
+        0.5
+      ],
+      "actions": [
+        "left_trigger"
+      ]
+    },
+    {
+      "axes": [
+        0.8,
+        0.75
+      ],
+      "actions": [
+        "right_trigger"
+      ]
+    },
+    {
+      "axes": [
+        0.0,
+        0.75
+      ],
+      "actions": []
+    },
+    {
+      "axes": [
+        0.51,
+        0.0
+      ],
+      "actions": [
+        "left_trigger"
+      ]
+    },
+    {
+      "axes": [
+        0.51,
+        0.51
+      ],
+      "actions": [
+        "right_trigger"
+      ]
+    }
+  ],
+  "scroll": [
+    {
+      "label": "deadzone",
+      "mapped": 0.18,
+      "alternate": 0.0,
+      "events": [],
+      "resolved_axis": null,
+      "accumulator": 0.0
+    },
+    {
+      "label": "positive_half",
+      "mapped": 0.5,
+      "alternate": 0.0,
+      "events": [
+        {
+          "frame": 3,
+          "actions": [
+            "scroll_down"
+          ]
+        },
+        {
+          "frame": 7,
+          "actions": [
+            "scroll_down"
+          ]
+        },
+        {
+          "frame": 10,
+          "actions": [
+            "scroll_down"
+          ]
+        }
+      ],
+      "resolved_axis": 3,
+      "accumulator": 0.3
+    },
+    {
+      "label": "negative_full",
+      "mapped": -0.9,
+      "alternate": 0.0,
+      "events": [
+        {
+          "frame": 2,
+          "actions": [
+            "scroll_up"
+          ]
+        },
+        {
+          "frame": 4,
+          "actions": [
+            "scroll_up"
+          ]
+        },
+        {
+          "frame": 6,
+          "actions": [
+            "scroll_up"
+          ]
+        }
+      ],
+      "resolved_axis": 3,
+      "accumulator": -0.96
+    },
+    {
+      "label": "alternate_axis",
+      "mapped": -1.0,
+      "alternate": 0.6,
+      "events": [
+        {
+          "frame": 3,
+          "actions": [
+            "scroll_down"
+          ]
+        },
+        {
+          "frame": 6,
+          "actions": [
+            "scroll_down"
+          ]
+        }
+      ],
+      "resolved_axis": 2,
+      "accumulator": 0.64
+    }
+  ],
+  "snap": [
+    {
+      "start": [
+        0,
+        0
+      ],
+      "position": [
+        100,
+        100
+      ]
+    },
+    {
+      "start": [
+        600,
+        300
+      ],
+      "position": [
+        640,
+        360
+      ]
+    },
+    {
+      "start": [
+        1280,
+        720
+      ],
+      "position": [
+        1180,
+        620
+      ]
+    }
+  ],
+  "hints": {
+    "game": [
+      [
+        "X",
+        "Q"
+      ],
+      [
+        "Y",
+        "W"
+      ],
+      [
+        "LB",
+        "E"
+      ],
+      [
+        "RB",
+        "R"
+      ],
+      [
+        "LT",
+        "Shop"
+      ],
+      [
+        "RT",
+        "Move Hero"
+      ],
+      [
+        "MENU",
+        "Pause"
+      ]
+    ],
+    "shop": [
+      [
+        "A",
+        "Buy"
+      ],
+      [
+        "B",
+        "Close"
+      ],
+      [
+        "R-STICK/D-PAD",
+        "Scroll"
+      ],
+      [
+        "R3",
+        "Snap"
+      ]
+    ],
+    "pause": [
+      [
+        "A",
+        "Select"
+      ],
+      [
+        "MENU",
+        "Resume"
+      ]
+    ],
+    "victory": [
+      [
+        "RB",
+        "Next Level"
+      ],
+      [
+        "X",
+        "Replay"
+      ],
+      [
+        "VIEW",
+        "Menu"
+      ]
+    ],
+    "defeat": [
+      [
+        "X",
+        "Replay"
+      ],
+      [
+        "VIEW",
+        "Menu"
+      ]
+    ]
+  }
+}

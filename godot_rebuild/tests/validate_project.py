@@ -26,6 +26,7 @@ for setting in (
     'window/size/viewport_width=1280',
     'window/size/viewport_height=720',
     'common/physics_ticks_per_second=60',
+    'pointing/emulate_mouse_from_touch=false',
     'config/custom_user_dir_name="MysticArenaRebuildDev"',
 ):
     check(setting in project, f"Missing project contract: {setting}")
@@ -38,7 +39,10 @@ for path in source_files:
     for relative in re.findall(r'res://([^"\s]+)', text):
         target = (ROOT / relative).resolve()
         check(target.is_relative_to(ROOT), f"Reference escapes project: {path}: {relative}")
-        check(target.is_file(), f"Missing reference: {path}: {relative}")
+        # Runtime loaders may keep a res:// directory prefix and append a
+        # catalog filename (AudioManager does this for WAV streams).
+        exists = target.is_dir() if relative.endswith("/") else target.is_file()
+        check(exists, f"Missing reference: {path}: {relative}")
         # Linux CI is case sensitive, unlike many Windows filesystems.
         check(
             target.parent.is_dir() and target.name in [p.name for p in target.parent.iterdir()],
@@ -280,6 +284,118 @@ if (ROOT / "tests/fixtures/ai_recruit_source.json").is_file() and (ROOT / "data/
           "222 source Hero stat baselines drift")
     check(set(stats) == set(recruitment["catalog"]), "Every recruitment ID must have source Hero numbers")
 
+from player_recruit_source_oracle import source_fixture as player_recruit_source_fixture
+check("PlayerRecruitChecks.new().run(_check)" in ai_tests,
+      "Player Hero Shop domain suite must run")
+check("await PlayerRecruitSceneChecks.new().run(self, app, _check)" in ai_tests,
+      "Player Hero Shop scene suite must run")
+check((ROOT / "tests/fixtures/player_recruit_source.json").is_file(),
+      "Player Hero Shop requires a source fixture")
+if (ROOT / "tests/fixtures/player_recruit_source.json").is_file():
+    check(player_recruit_source_fixture() == json.loads(
+        (ROOT / "tests/fixtures/player_recruit_source.json").read_text(encoding="utf-8")),
+        "Player Hero Shop source transaction drift")
+check("python godot_rebuild/tests/player_recruit_source_oracle.py" in workflow,
+      "CI must execute the player Hero Shop source oracle")
+player_shop = (ROOT / "scripts/ui/hero_shop_panel.gd").read_text(encoding="utf-8")
+check("hero_requested.emit(hero_type)" in player_shop,
+      "Hero Shop panel must route IDs through the fixed-tick session")
+check("buy_player_hero(command.hero_type)" in
+      (ROOT / "scripts/simulation/prototype_session.gd").read_text(encoding="utf-8"),
+      "Player recruit command must execute through the match domain")
+
+from meta_hero_unlock_source_oracle import source_fixture as meta_unlock_source_fixture
+check("MetaHeroUnlockChecks.new().run(_check)" in ai_tests,
+      "Permanent Hero Shop domain suite must run")
+check("await MetaHeroUnlockSceneChecks.new().run(self, app, _check)" in ai_tests,
+      "Permanent Hero Shop scene suite must run")
+check((ROOT / "tests/fixtures/meta_hero_unlock_source.json").is_file(),
+      "Permanent Hero Shop requires a source fixture")
+if (ROOT / "tests/fixtures/meta_hero_unlock_source.json").is_file():
+    check(meta_unlock_source_fixture() == json.loads(
+        (ROOT / "tests/fixtures/meta_hero_unlock_source.json").read_text(encoding="utf-8")),
+        "Permanent Hero Shop source transaction drift")
+check("python godot_rebuild/tests/meta_hero_unlock_source_oracle.py" in workflow,
+      "CI must execute the permanent Hero Shop source oracle")
+meta_shop = (ROOT / "scripts/ui/meta_hero_shop_panel.gd").read_text(encoding="utf-8")
+meta_menu = (ROOT / "scenes/menu/main_menu.gd").read_text(encoding="utf-8")
+meta_domain = (ROOT / "scripts/match/hero_unlock_store.gd").read_text(encoding="utf-8")
+check("unlock_requested.emit(hero_type)" in meta_shop and "save_state" not in meta_shop,
+      "Permanent shop panel must be request-only")
+check("try_unlock(before, hero_type)" in meta_menu
+      and "SaveSlotStore.save_path(result.state, progress_path" in meta_menu,
+      "Main menu must atomically persist permanent unlock transactions")
+check('const DEFAULT_HERO := "kaizen"' in meta_domain
+      and "const MINI_BOSS_UNLOCK_COST := 4500" in meta_domain
+      and "const TRUE_BOSS_UNLOCK_COST := 4500" in meta_domain,
+      "Native permanent unlock policy must match source constants")
+check("static func try_unlock" in meta_domain
+      and "HeroUnlockStore.new()" not in meta_shop + meta_menu + app,
+      "Permanent unlock authority must remain stateless across menu scenes")
+
+from save_slot_source_oracle import source_fixture as save_slot_source_fixture
+save_slot_fixture_path = ROOT / "tests/fixtures/save_slot_source.json"
+check(save_slot_fixture_path.is_file(), "Save-slot runtime requires a source fixture")
+if save_slot_fixture_path.is_file():
+    check(save_slot_source_fixture()
+          == json.loads(save_slot_fixture_path.read_text(encoding="utf-8")),
+          "SaveManager source fixture drift")
+check("python godot_rebuild/tests/save_slot_source_oracle.py" in workflow,
+      "CI must execute the SaveManager source oracle")
+check("- '_system.py'" in workflow, "Save-slot CI must track its real source authority")
+check("SaveSlotChecks.new().run(_check)" in ai_tests,
+      "Save-slot domain suite must run")
+check("await SaveSlotSceneChecks.new().run(self, app, _check)" in ai_tests,
+      "Save-slot playable lifecycle suite must run")
+save_slot_store = (ROOT / "scripts/match/save_slot_store.gd").read_text(encoding="utf-8")
+save_slot_panel = (ROOT / "scripts/ui/save_slot_panel.gd").read_text(encoding="utf-8")
+check("const SLOT_COUNT := 3" in save_slot_store
+      and "ProgressStore.save_state" in save_slot_store
+      and "static func migrate_legacy" in save_slot_store,
+      "Native save slots must preserve source count and atomic native storage")
+check("slot_requested.emit(slot)" in save_slot_panel
+      and "delete_requested.emit(slot)" in save_slot_panel
+      and "SaveSlotStore.delete_slot" not in save_slot_panel,
+      "Save-slot panel must remain request-only")
+check("progress_slot_changed.emit(slot, progress_path)" in meta_menu
+      and "current_screen.connect(\"progress_slot_changed\", _select_progress_slot)" in app,
+      "Selected slot ownership must cross the menu/App scene boundary")
+check("SaveSlotStore.save_path(result.state, path" in
+      (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8"),
+      "Match result must commit through the active native save slot")
+
+from level_stats_source_oracle import source_fixture as level_stats_source_fixture
+level_stats_fixture_path = ROOT / "tests/fixtures/level_stats_source.json"
+check(level_stats_fixture_path.is_file(), "Level-stat runtime requires a source fixture")
+if level_stats_fixture_path.is_file():
+    check(level_stats_source_fixture()
+          == json.loads(level_stats_fixture_path.read_text(encoding="utf-8")),
+          "Source match rewards or per-level statistics drift")
+check("python godot_rebuild/tests/level_stats_source_oracle.py" in workflow,
+      "CI must execute the level-stat source oracle")
+check("- '_render.py'" in workflow,
+      "Level-stat CI must track the real ComboCounter authority")
+check("LevelStatsChecks.new().run(_check)" in ai_tests,
+      "Level-stat source replay suite must run")
+check("await LevelStatsSceneChecks.new().run(self, app, _check)" in ai_tests,
+      "Level-stat playable save/retry/menu suite must run")
+level_stats_domain = (ROOT / "scripts/match/level_stats.gd").read_text(encoding="utf-8")
+progress_store = (ROOT / "scripts/match/level_progress_store.gd").read_text(encoding="utf-8")
+prototype_world = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+check("static func update_level_stats" in level_stats_domain
+      and "static func get_level_stats" in level_stats_domain
+      and "static func valid_map" in level_stats_domain,
+      "Native level statistics must preserve source transaction and validation policy")
+check("LevelStats.valid_map" in progress_store,
+      "Atomic progress loading must deeply validate per-level statistics")
+check("func match_stats_snapshot" in prototype_world
+      and "total_kills += 1" in prototype_world
+      and "combo_count > max_combo" in prototype_world
+      and "LevelStats.update_level_stats" in prototype_world,
+      "Playable reward runtime must feed score, kills, combo and time into persistence")
+check("LevelStats.get_level_stats" in meta_menu and "%LevelStatsLabel" in meta_menu,
+      "Selected-level source statistics must reload in the main menu")
+
 check("AIShieldChecks.new().run(_check)" in ai_tests, "AI shield domain suite must remain in runner")
 check("await AIShieldSceneChecks.new().run(self, app, _check)" in ai_tests, "Paid shield refund/reset UI suite must run")
 check((ROOT / "tests/fixtures/ai_shield_source.json").is_file(), "AI shields require source fixture")
@@ -290,6 +406,81 @@ check("_stable_kills_descending" in ai_shields and "can_activate_regen_shield" i
       "Regen shield candidates must use the source kills-descending stable order")
 shield_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
 check('tower.sale_value()' in shield_screen, "UI sale quote must include purchased shield")
+
+from player_structure_command_source_oracle import source_fixture as player_structure_fixture
+player_structure_path = ROOT / "tests/fixtures/player_structure_command_source.json"
+check(player_structure_path.is_file(), "Player structure commands require a source fixture")
+if player_structure_path.is_file():
+    check(player_structure_fixture() == json.loads(player_structure_path.read_text(encoding="utf-8")),
+          "Player structure command source fixture drift")
+check("python godot_rebuild/tests/player_structure_command_source_oracle.py" in workflow,
+      "CI must check player structure command oracle")
+check("PlayerStructureCommandChecks.new().run(_check)" in ai_tests,
+      "Player structure domain parity suite must run")
+check("await PlayerStructureCommandSceneChecks.new().run(self, app, _check)" in ai_tests,
+      "Player structure playable-scene suite must run")
+structure_scene = (ROOT / "scenes/prototype/PrototypeMatch.tscn").read_text(encoding="utf-8")
+check(all(name in structure_scene for name in ("RegenShieldButton", "CastleShieldButton")),
+      "Playable scene must author both player shield controls")
+check(all(path in shield_screen for path in ('"cannon"', '"ice"', '"mage"'))
+      and "request_regen_shield" in shield_screen and "request_castle_shield" in shield_screen,
+      "Playable scene must route all source build and shield choices")
+structure_session = (ROOT / "scripts/simulation/prototype_session.gd").read_text(encoding="utf-8")
+check("command.get(\"path\", \"archer\")" in structure_session
+      and "activate_player_regen_shield" in structure_session
+      and "activate_player_castle_shield" in structure_session,
+      "Player structure mutations must cross the fixed-tick session")
+
+from controller_source_oracle import source_fixture as controller_source_fixture
+controller_fixture_path = ROOT / "tests/fixtures/controller_source.json"
+check(controller_fixture_path.is_file(), "Controller runtime requires a source fixture")
+if controller_fixture_path.is_file():
+    check(controller_source_fixture()
+          == json.loads(controller_fixture_path.read_text(encoding="utf-8")),
+          "Controller runtime source fixture drift")
+check("python godot_rebuild/tests/controller_source_oracle.py" in workflow,
+      "CI must execute the controller source oracle")
+check("ControllerRuntimeChecks.new().run(_check)" in ai_tests,
+      "Controller source replay suite must run")
+check("await ControllerSceneChecks.new().run(self, app, _check)" in ai_tests,
+      "Controller playable-scene suite must run")
+controller_runtime = (ROOT / "scripts/input/controller_runtime.gd").read_text(encoding="utf-8")
+check(all(token in controller_runtime for token in
+          ("CURSOR_ACCELERATION", "HAT_REPEAT_DELAY", "SCROLL_SPEED", "rumble")),
+      "Native controller must retain cursor, repeat, scroll and rumble policy")
+check("ControllerCursor" in structure_scene and "NextLevelButton" in structure_scene,
+      "Playable scene must author controller cursor and next-level controls")
+check(all(token in shield_screen for token in
+          ("_route_controller_action", "_controller_snap", "_controller_scroll")),
+      "Playable scene must route controller actions, snapping and scrolling")
+check("prototype_is_replay" in app and "_start_next_prototype" in app,
+      "App must own replay and next-level controller transitions")
+
+from touch_gesture_source_oracle import source_fixture as touch_gesture_source_fixture
+touch_fixture_path = ROOT / "tests/fixtures/touch_gesture_source.json"
+check(touch_fixture_path.is_file(), "Touch gesture runtime requires a source fixture")
+if touch_fixture_path.is_file():
+    check(touch_gesture_source_fixture()
+          == json.loads(touch_fixture_path.read_text(encoding="utf-8")),
+          "Touch gesture source fixture drift")
+check("python godot_rebuild/tests/touch_gesture_source_oracle.py" in workflow,
+      "CI must execute the touch gesture source oracle")
+check("- 'main.py'" in workflow and "- 'mobile/hud.py'" in workflow,
+      "Touch CI must track the source routing and HUD claim authorities")
+check("TouchGestureChecks.new().run(_check)" in ai_tests,
+      "Touch gesture replay suite must run")
+check("await TouchGestureSceneChecks.new().run(self, app, _check)" in ai_tests,
+      "Touch gesture playable-scene suite must run")
+touch_runtime = (ROOT / "scripts/input/touch_gesture_runtime.gd").read_text(encoding="utf-8")
+check(all(token in touch_runtime for token in
+          ("LONG_PRESS_MS", "DOUBLE_TAP_MS", "SCROLL_STEP", "FLING_FRICTION")),
+      "Native touch runtime must retain hold, double-tap, scroll and fling policy")
+check(all(token in shield_screen for token in
+          ("_handle_touch_event", "_route_touch_actions", "_cancel_touch_input",
+           "TOUCH_TARGET_MIN", "TOUCH_PADDING")),
+      "Playable scene must own touch routing, cancellation and source hit areas")
+check("request_hero_move" in shield_screen and "request_hero_follow" in shield_screen,
+      "Touch world commands must cross the fixed-tick session")
 
 # The native AI adapters are now reachable from the playable prototype, but
 # remain explicitly toggleable for replay/debug comparisons.
@@ -312,6 +503,8 @@ if audio_script.is_file():
     audio_text = audio_script.read_text(encoding="utf-8")
     check("play_music" in audio_text and "play_ambient" in audio_text and "set_enabled" in audio_text,
           "Godot audio manager must provide music, ambient and mute controls")
+    check("func shutdown()" in audio_text and "player.stream = null" in audio_text,
+          "Godot audio manager must release active streams before shutdown")
 check((ROOT / "project.godot").read_text(encoding="utf-8").find('AudioManager="*res://scripts/audio/audio_manager.gd"') >= 0,
       "Godot audio manager must be autoloaded")
 check((ROOT / "assets/audio/bgm_battle.wav").is_file(), "Migrated battle music asset missing")

@@ -145,7 +145,10 @@ func _rewards_and_unlocks(check: Callable, source: Dictionary) -> void:
 	world.bosses_defeated_this_match = ["gornak", "abaddon", "gornak"]
 	var newly: Array[String] = world._auto_unlock_defeated_boss_heroes()
 	check.call(
-		newly == ["gornak", "abaddon"] and world.purchased_heroes == ["gornak", "abaddon"],
+		(
+			newly == ["gornak", "abaddon"]
+			and world.purchased_heroes == ["kaizen", "gornak", "abaddon"]
+		),
 		"victory unlock list is unique and free"
 	)
 	check.call(

@@ -4,6 +4,8 @@ extends RefCounted
 
 const PATH := "user://level_progress_v1.json"
 const VERSION := 1
+const HERO_ROSTER = preload("res://scripts/data/hero_roster.gd").DEFINITIONS
+const LevelStats = preload("res://scripts/match/level_stats.gd")
 
 
 static func load_state(path: String = PATH) -> Dictionary:
@@ -102,6 +104,16 @@ static func _normalize_disk_state(state: Dictionary) -> Dictionary:
 			counts[key] = _disk_integer(counts[key])
 	if copy.has("last_played_level"):
 		copy["last_played_level"] = _disk_integer(copy["last_played_level"])
+	if copy.has("slot_playtime_seconds"):
+		copy["slot_playtime_seconds"] = _disk_integer(copy["slot_playtime_seconds"])
+	var level_stats: Variant = copy.get("level_stats", {})
+	if level_stats is Dictionary:
+		for level_key in level_stats:
+			var entry: Variant = level_stats[level_key]
+			if entry is Dictionary:
+				for field in LevelStats.INTEGER_FIELDS:
+					if entry.has(field):
+						entry[field] = _disk_integer(entry[field])
 	return copy
 
 
@@ -115,6 +127,19 @@ static func _valid(state: Dictionary) -> bool:
 		var last: Variant = state["last_played_level"]
 		if not (last is int) or last < 1 or last > 54:
 			return false
+	for timestamp_field in ["slot_created", "slot_last_played"]:
+		if state.has(timestamp_field):
+			var timestamp: Variant = state[timestamp_field]
+			if not (timestamp is int or timestamp is float):
+				return false
+			if is_nan(float(timestamp)) or is_inf(float(timestamp)) or float(timestamp) < 0.0:
+				return false
+	if state.has("slot_playtime_seconds"):
+		var playtime: Variant = state["slot_playtime_seconds"]
+		if not (playtime is int) or playtime < 0:
+			return false
+	if state.has("level_stats") and not LevelStats.valid_map(state["level_stats"]):
+		return false
 	var completed: Variant = state.get("completed_levels", [])
 	var counts: Variant = state.get("replay_reward_counts", {})
 	if not (completed is Array) or not (counts is Dictionary):
@@ -130,4 +155,17 @@ static func _valid(state: Dictionary) -> bool:
 		var number := int(key)
 		if number < 1 or number > 54 or not (counts[key] is int) or counts[key] < 0:
 			return false
+	for field in ["purchased_heroes", "unlocked_bosses"]:
+		if not state.has(field):
+			continue  # Backward-compatible with saves created before Hero Shop.
+		var values: Variant = state[field]
+		if not (values is Array):
+			return false
+		var hero_seen := {}
+		for value in values:
+			if not (value is String) or not HERO_ROSTER.has(value) or hero_seen.has(value):
+				return false
+			if field == "unlocked_bosses" and not HERO_ROSTER[value].is_boss_hero:
+				return false
+			hero_seen[value] = true
 	return true

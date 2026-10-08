@@ -1,5 +1,5 @@
 extends RefCounted
-## Actual scene refund/command/reset checks. Shield purchase is domain-only, no new UI button.
+## Existing paid-shield refund and restart checks; player controls have their own scene suite.
 
 
 func run(tree: SceneTree, app: Node, check: Callable) -> void:

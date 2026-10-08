@@ -378,6 +378,9 @@ func _deliver_hit(
 	var damage := _damage_amount(target, raw_damage, school)
 	if target is HeroState:
 		damage = maxi(0, damage - int((target as HeroState).items.aura_guard_block))
+	var damage_source := get_unit(source_id) as HeroState
+	if damage_source != null and damage > 0:
+		damage_source.damage_dealt += int(damage)
 	target.hp = maxf(0, target.hp - damage)
 	_notify_item_damage(source_id, source_team, target, int(damage))
 	if target is HeroState and (target as HeroState).bristleback_timer > 0 and damage > 0:

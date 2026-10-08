@@ -3,6 +3,7 @@ extends "res://scripts/combat/siege_battle.gd"
 ## Playable normal/level-1 subset. Wave/ledger/build rules are separate from the old manual labs.
 
 const Upgrades = preload("res://scripts/match/archer_upgrades.gd")
+const AudioRuntime = preload("res://scripts/audio/audio_runtime.gd")
 const CannonUpgrades = preload("res://scripts/match/cannon_upgrades.gd")
 const IceUpgrades = preload("res://scripts/match/ice_upgrades.gd")
 const MageUpgrades = preload("res://scripts/match/mage_upgrades.gd")
@@ -18,13 +19,16 @@ const AiItems = preload("res://scripts/match/ai_items.gd")
 const AiShields = preload("res://scripts/match/ai_shields.gd")
 const AiDraft = preload("res://scripts/match/ai_draft.gd")
 const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
+const TacticalCommands = preload("res://scripts/match/tactical_commands.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
 const BossState = preload("res://scripts/match/boss_state.gd")
 const BossAI = preload("res://scripts/match/boss_ai.gd")
 # Layer 7c: level-1 config generated from levels/level_data.py by the oracle.
 const LevelCatalog = preload("res://scripts/match/level_catalog.gd")
 const LevelProgress = preload("res://scripts/match/level_progress.gd")
+const LevelStats = preload("res://scripts/match/level_stats.gd")
 const LevelProgressStore = preload("res://scripts/match/level_progress_store.gd")
+const SaveSlotStore = preload("res://scripts/match/save_slot_store.gd")
 const BOSS_DATA := "res://data/bosses/boss_stats.json"
 const RANGED_BOSS_KITERS := [
 	"ancient_apparition",
@@ -58,8 +62,15 @@ const GRIMJAW = preload("res://data/heroes/grimjaw.tres")
 const SYLARA = preload("res://data/heroes/sylara.tres")
 const VEX = preload("res://data/heroes/vex.tres")
 const ZEPHYR = preload("res://data/heroes/zephyr.tres")
-const PLAYABLE_AI_HEROES = preload("res://scripts/data/hero_roster.gd").DEFINITIONS
+const HERO_ROSTER = preload("res://scripts/data/hero_roster.gd").DEFINITIONS
+# Kept as an alias because the red recruitment adapters predate the player shop.
+const PLAYABLE_AI_HEROES = HERO_ROSTER
+const STARTER_HEROES: Array[String] = ["thorne", "grimjaw", "vex", "sylara", "kaizen", "zephyr"]
+const DEFAULT_PURCHASED_HEROES: Array[String] = ["kaizen"]
+const MAX_HEROES_OWNED := 5
 const HERO_SPAWN := Vector2(220, 540)
+# Source MapRenderer.radiant_shop_pos. Game.try_buy_hero adds (80 + n*30 - 30, 10).
+const PLAYER_HERO_SHOP := Vector2(340, 540)
 # Source AIPlayer: RED_BASE_X - 60, RED_BASE_Y + 30. Not a shop purchase.
 const RED_HERO_SPAWN := Vector2(1120, 130)
 const HERO_HUNT_RANGE := 900.0
@@ -74,12 +85,16 @@ const HERO_BASE_NEAR := 100.0
 # the Python stream itself is not reproduced.
 const SPAWN_JITTER := 8.0
 const SPAWN_SEED := 20260929
+const COMBO_RESET_TICKS := 120
+const HERO_DEATH_REWARD := 150
 
 var economy := Economy.new()
 # Layer 5f: Forge shop transactions (buy for a dead hero queues the order).
 var forge := Forge.new()
 # Layer 5f-2: ITEM FORGE panel state + click routing (drawing lives in the UI).
 var item_shop := ItemShopUI.new()
+# Source TacticalCommandManager: fixed-tick player squad orders and hold state.
+var tactical := TacticalCommands.new()
 # Layer 6a: per-tick control for the explicitly owned AI hero roster.
 var ai_heroes := AiHeroControl.new()
 # Layer 6b: scheduling wrapper (source AIPlayer.update). Layer 6e: set_ai_enabled()
@@ -89,6 +104,9 @@ var ai_enabled := false
 var ai_hero_control_enabled := false
 # Ownership is explicit: the free mirrored red Kaizen is not an AIPlayer hero.
 var ai_hero_ids: Array[int] = []
+# The blue mirror is the prototype's already-active Kaizen. It occupies the
+# source five-hero roster so player purchases cannot duplicate or exceed cap.
+var player_hero_ids: Array[int] = []
 # Layer 6c: the action adapters and the persistent draft target the red side.
 var ai_draft := AiDraft.new()
 var ai_build := AiBuild.new()
@@ -128,7 +146,9 @@ var _mini_boss_schedule: Dictionary = {}
 var bosses_defeated_this_run := 0
 var bosses_defeated_this_match: Array[String] = []
 var unlocked_bosses: Array[String] = []
-var purchased_heroes: Array[String] = []
+# Source auto-grants only Kaizen; the other free starters must first be claimed
+# from the permanent Hero Shop before the in-match shop can summon them.
+var purchased_heroes: Array[String] = DEFAULT_PURCHASED_HEROES.duplicate()
 var heroes_unlocked_this_match: Array[String] = []
 var boss_rewards: Array[Dictionary] = []
 # Layer 8l: source Game.miniboss_kill_count / trueboss_kill_count. Only a real
@@ -141,6 +161,14 @@ var boss_death_presentations: Array[Dictionary] = []
 var boss_screen_shake_intensity := 0.0
 var boss_screen_shake_timer := 0
 var score := 0
+var total_kills := 0
+var max_combo := 0
+var combo_count := 0
+var combo_timer := 0
+var last_combo := 0
+var match_started_msec := Time.get_ticks_msec()
+var match_finished_msec := -1
+var match_time_override_seconds := -1
 var _victory_unlocks_granted := false
 var _audio_result_announced := false
 
@@ -178,25 +206,106 @@ func configure_level(number: int) -> bool:
 	return true
 
 
-## Explicit result boundary for a future save adapter. It is not called from
-## step_tick: only the owner of persistent state may commit the returned copy.
-func claim_level_result(state: Dictionary, is_replay: bool = false) -> Dictionary:
-	if _level_result_claimed or winner not in [BLUE, RED]:
-		return {}
+func configure_player_profile(state: Dictionary) -> bool:
+	# Profile data must be installed before setup so no live roster can be
+	# relabelled as purchased. Source grants Kaizen to an empty legacy profile.
+	if _arena_initialized or not structures.is_empty() or not units.is_empty():
+		return false
+	var bought: Variant = state.get("purchased_heroes", [])
+	var defeated: Variant = state.get("unlocked_bosses", [])
+	if not (bought is Array) or not (defeated is Array):
+		return false
+	var next_purchased: Array[String] = DEFAULT_PURCHASED_HEROES.duplicate()
+	var next_unlocked: Array[String] = []
+	for value in bought:
+		var hero_type := String(value)
+		if not HERO_ROSTER.has(hero_type):
+			return false
+		if not next_purchased.has(hero_type):
+			next_purchased.append(hero_type)
+	for value in defeated:
+		var hero_type := String(value)
+		var definition: HeroDefinition = HERO_ROSTER.get(hero_type) as HeroDefinition
+		if definition == null or not definition.is_boss_hero:
+			return false
+		if not next_unlocked.has(hero_type):
+			next_unlocked.append(hero_type)
+	purchased_heroes = next_purchased
+	unlocked_bosses = next_unlocked
+	return true
+
+
+func player_profile_state(state: Dictionary) -> Dictionary:
+	var merged := state.duplicate(true)
+	var bought: Array = merged.get("purchased_heroes", [])
+	var defeated: Array = merged.get("unlocked_bosses", [])
+	for hero_type in purchased_heroes:
+		if not bought.has(hero_type):
+			bought.append(hero_type)
+	for hero_type in unlocked_bosses:
+		if not defeated.has(hero_type):
+			defeated.append(hero_type)
+	merged["purchased_heroes"] = bought
+	merged["unlocked_bosses"] = defeated
+	return merged
+
+
+func match_stats_snapshot() -> Dictionary:
+	var finished := match_finished_msec
+	if finished < 0:
+		finished = Time.get_ticks_msec()
+	var elapsed_seconds := maxi(0, int((finished - match_started_msec) / 1000))
+	if match_time_override_seconds >= 0:
+		elapsed_seconds = match_time_override_seconds
+	return {
+		"won": winner == BLUE,
+		"score": score,
+		"time_seconds": elapsed_seconds,
+		"kills": total_kills,
+		"combo": max_combo,
+		"playtime_seconds": elapsed_seconds,
+	}
+
+
+func _result_transaction(state: Dictionary, is_replay: bool) -> Dictionary:
 	var result := LevelProgress.apply_result(
 		state, level_number, winner == BLUE, is_replay, difficulty
 	)
+	if result.is_empty():
+		return {}
+	if match_finished_msec < 0:
+		match_finished_msec = Time.get_ticks_msec()
+	var match_stats := match_stats_snapshot()
+	var profile := player_profile_state(result.state)
+	var stats := LevelStats.update_level_stats(profile, level_number, match_stats)
+	if stats.is_empty():
+		return {}
+	result["state"] = stats.state
+	result["match_stats"] = match_stats
+	result["is_new_best_score"] = stats.is_new_best_score
+	result["is_new_best_time"] = stats.is_new_best_time
+	result["level_stats"] = stats.new_stats
+	return result
+
+
+## Explicit in-memory result boundary. It is not called from step_tick: only
+## the owning scene/store may commit the returned copy.
+func claim_level_result(state: Dictionary, is_replay: bool = false) -> Dictionary:
+	if _level_result_claimed or winner not in [BLUE, RED]:
+		return {}
+	var result := _result_transaction(state, is_replay)
 	if result.is_empty():
 		return {}
 	_level_result_claimed = true
 	return result
 
 
-## Optional development-save transaction. Unlike claim_level_result, this
-## only consumes the claim AFTER a verified write; on failure it can retry.
-## The scene does not call this until native save tests pass on target devices.
+## Atomic save transaction. Unlike claim_level_result, this consumes the claim
+## only AFTER a verified write, so the playable result screen can retry safely.
 func commit_level_result(
-	path: String = LevelProgressStore.PATH, is_replay: bool = false
+	path: String = LevelProgressStore.PATH,
+	is_replay: bool = false,
+	slot_path_template: String = SaveSlotStore.PATH_TEMPLATE
 ) -> Dictionary:
 	if _level_result_claimed or winner not in [BLUE, RED]:
 		return {}
@@ -205,10 +314,10 @@ func commit_level_result(
 	var state := LevelProgressStore.load_state(path)
 	if FileAccess.file_exists(path) and state.is_empty():
 		return {}  # Invalid/version-mismatched save is not a fresh account.
-	var result := LevelProgress.apply_result(
-		state, level_number, winner == BLUE, is_replay, difficulty
-	)
-	if result.is_empty() or not LevelProgressStore.save_state(result.state, path):
+	var result := _result_transaction(state, is_replay)
+	if result.is_empty():
+		return {}
+	if not SaveSlotStore.save_path(result.state, path, -1.0, slot_path_template):
 		return {}
 	_level_result_claimed = true
 	return result
@@ -225,10 +334,16 @@ func setup_arena() -> bool:
 	spawn_structure(NEXUS, BLUE, LaneLayout.BLUE_BASE)
 	spawn_structure(NEXUS, RED, LaneLayout.RED_BASE)
 	_apply_castle_start_levels()
-	# Free mirrored Kaizen pair. Not a catalog purchase, not AIPlayer.
-	spawn_hero(KAIZEN, BLUE, HERO_SPAWN)
-	spawn_hero(KAIZEN, RED, RED_HERO_SPAWN)
-	AudioManager.play("hero_spawn")
+	# Keep the existing free mirror for prototype compatibility, but register
+	# blue Kaizen as the first player-roster slot. The red mirror remains outside
+	# AIPlayer ownership.
+	var blue_kaizen := spawn_hero(KAIZEN, BLUE, HERO_SPAWN)
+	if blue_kaizen == null:
+		return false
+	player_hero_ids.append(blue_kaizen.id)
+	if spawn_hero(KAIZEN, RED, RED_HERO_SPAWN) == null:
+		return false
+	AudioRuntime.play("hero_spawn")
 	return true
 
 
@@ -383,7 +498,7 @@ func step_tick() -> void:
 	)
 	wave_count = scheduler.wave
 	if batch.started:
-		AudioManager.play("wave_start")
+		AudioRuntime.play("wave_start")
 		for nexus in nexuses:
 			if nexus != null:
 				nexus.set_wave(wave_count)
@@ -396,8 +511,9 @@ func step_tick() -> void:
 	for spawn in batch.spawns:
 		_spawn_match_minion(MINIONS[spawn.kind], spawn.team, spawn.lane)
 	super.step_tick()
+	_step_combo_clock()
 	if winner in [BLUE, RED] and not _audio_result_announced:
-		AudioManager.play("victory" if winner == BLUE else "defeat")
+		AudioRuntime.play("victory" if winner == BLUE else "defeat")
 		_audio_result_announced = true
 	# Source Game.update runs living Hero.update calls before Boss.update. Keep
 	# the boss's target/attack phase after hero hits and movement from this tick.
@@ -424,6 +540,8 @@ func step_tick() -> void:
 			_step_ai()
 		elif ai_hero_control_enabled:
 			_step_ai_heroes()
+		# Source updates the tactical timers after the frame's unit actions.
+		tactical.step_tick(self)
 
 
 func get_slot(id: int) -> Slot:
@@ -441,9 +559,10 @@ func slot_at(point: Vector2) -> int:
 	return closest
 
 
-func build_tower(team: int, slot_id: int) -> bool:
-	# Existing player command remains plain Archer, no draft reserve.
-	return _build_tower_for(team, slot_id, "archer")
+func build_tower(team: int, slot_id: int, tower_path: String = "archer") -> bool:
+	# Player and tests use this public transaction boundary; AI adds its reserve
+	# through _build_tower_for. The source build popup offers all four Lv1 paths.
+	return _build_tower_for(team, slot_id, tower_path)
 
 
 func _build_tower_for(team: int, slot_id: int, path: String, reserve: int = 0) -> bool:
@@ -482,6 +601,68 @@ func _build_tower_for(team: int, slot_id: int, path: String, reserve: int = 0) -
 	economy.spend(team, Economy.BUILD_COST)
 	slot.structure_id = tower.id
 	_record({"kind": "build", "team": team, "slot_id": slot.id, "target_id": tower.id})
+	return true
+
+
+func player_roster() -> Array:
+	# Source game.heroes contains paid player heroes in summon order and keeps
+	# dead/respawning entries. Explicit IDs prevent enemy/free entities from
+	# leaking into duplicate checks or the five-hero cap.
+	var result: Array = []
+	for hero_id in player_hero_ids:
+		var hero := get_unit(hero_id) as HeroState
+		if hero != null and hero.team == BLUE:
+			result.append(hero)
+	return result
+
+
+func player_hero_spawn_position(owned_count: int) -> Vector2:
+	# Game.try_buy_hero: radiant shop + (80 + len(heroes)*30 - 30, 10).
+	return PLAYER_HERO_SHOP + Vector2(50 + owned_count * 30, 10)
+
+
+func buy_player_hero(hero_type: String) -> bool:
+	# Atomic port of Game.try_buy_hero. Permanent unlock currency is separate;
+	# this transaction spends only match gold and summons one real native kit.
+	transaction_error = ""
+	var kit: HeroDefinition = HERO_ROSTER.get(hero_type) as HeroDefinition
+	var roster := player_roster()
+	if not is_running():
+		transaction_error = "finished"
+	elif hero_type not in purchased_heroes:
+		transaction_error = "locked"
+	elif kit == null or kit.id != hero_type or kit.cost <= 0:
+		transaction_error = "kit"
+	elif roster.size() != player_hero_ids.size():
+		transaction_error = "registry"
+	else:
+		for hero in roster:
+			if get_unit(hero.id) != hero or hero.definition == null:
+				transaction_error = "registry"
+				break
+			if hero.definition.id == hero_type:
+				transaction_error = "owned"
+				break
+		if transaction_error.is_empty() and roster.size() >= MAX_HEROES_OWNED:
+			transaction_error = "capacity"
+		elif transaction_error.is_empty() and economy.gold[BLUE] < kit.cost:
+			transaction_error = "gold"
+		elif (
+			transaction_error.is_empty()
+			and (units.size() >= MAX_UNITS or _next_id <= 0 or _by_id.has(_next_id))
+		):
+			transaction_error = "capacity"
+	if not transaction_error.is_empty():
+		return false
+	var position := player_hero_spawn_position(roster.size())
+	var hero := spawn_hero(kit, BLUE, position)
+	if hero == null:
+		transaction_error = "capacity"
+		return false
+	player_hero_ids.append(hero.id)
+	economy.spend(BLUE, kit.cost)
+	_record({"kind": "hero_buy", "team": BLUE, "target_id": hero.id, "hero_type": hero_type})
+	AudioRuntime.play("hero_spawn")
 	return true
 
 
@@ -564,7 +745,27 @@ func sell_tower(team: int, entity_id: int) -> bool:
 func _on_death(source_team: int, target: UnitState) -> void:
 	var before := credited_gold[source_team]
 	super._on_death(source_team, target)
-	economy.credit_kill(source_team, credited_gold[source_team] - before)
+	# Source Game's reward pass gives every enemy hero death a fixed 150 G;
+	# HeroDefinition.gold_reward intentionally remains zero for base combat.
+	if target is HeroState:
+		credited_gold[source_team] += HERO_DEATH_REWARD
+	var reward := credited_gold[source_team] - before
+	economy.credit_kill(source_team, reward)
+	if target.team == RED:
+		if target is HeroState:
+			score += HERO_DEATH_REWARD
+		elif target is StructureState:
+			var scored_structure := target as StructureState
+			if scored_structure.settings().structure_kind == "tower":
+				score += target.definition.gold_reward
+		else:
+			# The source counts only defeated red minions for this statistic.
+			score += target.definition.gold_reward
+			total_kills += 1
+			if combo_count > max_combo:
+				max_combo = combo_count
+			combo_count += 1
+			combo_timer = COMBO_RESET_TICKS
 	# The source increments red_towers_destroyed in its later reward loop,
 	# not inside Tower.take_damage. Defer the counter until after the true-boss
 	# check in this tick.
@@ -574,6 +775,15 @@ func _on_death(source_team: int, target: UnitState) -> void:
 			_pending_red_tower_deaths += 1
 	if not is_running():
 		scheduler.cancel()
+
+
+func _step_combo_clock() -> void:
+	if combo_timer <= 0:
+		return
+	combo_timer -= 1
+	if combo_timer <= 0:
+		last_combo = combo_count
+		combo_count = 0
 
 
 func _mini_boss_entries() -> Array[Dictionary]:
@@ -1050,9 +1260,9 @@ func _flush_red_tower_deaths() -> void:
 
 func _auto_unlock_defeated_boss_heroes() -> Array[String]:
 	# Source _auto_unlock_defeated_boss_heroes: victory makes every boss
-	# defeated during this match a free permanent hero unlock. This rebuild has
-	# no save backend yet, so the match-local purchased list is the persistence
-	# boundary exposed to the next layer.
+	# defeated during this match a free permanent hero unlock. The match-local
+	# purchased list is merged into the profile only at the level-result save
+	# boundary.
 	for boss_type in bosses_defeated_this_match:
 		if not unlocked_bosses.has(boss_type):
 			unlocked_bosses.append(boss_type)
@@ -1496,6 +1706,8 @@ func _deliver_hit(
 		var dealt := boss.take_damage(attacker, raw_damage, damage_type, school)
 		if dealt < 0:
 			return false
+		if attacker is HeroState and dealt > 0:
+			(attacker as HeroState).damage_dealt += dealt
 		boss.last_hit_source_id = source_id
 		boss.last_hit_is_miasma_tick = false
 		_record(
@@ -1799,9 +2011,9 @@ func blue_hero() -> HeroState:
 	return null
 
 
-func blue_q_ready() -> bool:
-	var hero := blue_hero()
-	return hero != null and can_cast_hero_q(hero.id, structures)
+func blue_q_ready(hero_id: int = -1) -> bool:
+	var hero := blue_hero() if hero_id < 0 else get_unit(hero_id) as HeroState
+	return hero != null and hero.team == BLUE and can_cast_hero_q(hero.id, structures)
 
 
 func cast_blue_q(hero_id: int) -> bool:
@@ -1900,6 +2112,14 @@ func _upgrade_hero_for(team: int, hero_id: int, expected_level: int, reserve: in
 	upgrade_hero(hero.id)
 	_record({"kind": "hero_upgrade", "target_id": hero.id, "level": hero.level})
 	return true
+
+
+func activate_player_regen_shield(entity_id: int) -> bool:
+	return _activate_regen_shield_for(BLUE, entity_id)
+
+
+func activate_player_castle_shield(entity_id: int) -> bool:
+	return _activate_castle_shield_for(BLUE, entity_id)
 
 
 func _activate_regen_shield_for(team: int, entity_id: int, reserve: int = 0) -> bool:

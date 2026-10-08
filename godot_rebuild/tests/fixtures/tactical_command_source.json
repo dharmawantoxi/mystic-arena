@@ -1,0 +1,533 @@
+{
+  "policy": {
+    "duration": 600,
+    "cooldown": 30,
+    "hold_tap_max": 20,
+    "hold_release_tail": 30,
+    "gather_push_delay": 240,
+    "commands": [
+      "gather",
+      "protect_tower",
+      "protect_castle",
+      "attack_boss",
+      "attack_damage_dealer"
+    ]
+  },
+  "cases": [
+    {
+      "label": "gather_explicit",
+      "accepted": true,
+      "state": {
+        "active": "gather",
+        "timer": 600,
+        "cooldown": 30,
+        "target": null,
+        "point": [
+          640.0,
+          360.0
+        ],
+        "point_timer": 150,
+        "held": null,
+        "hold_elapsed": 0,
+        "hold_fired": false,
+        "gather_push": false,
+        "feedback": "",
+        "heroes": [
+          {
+            "id": "blue_0",
+            "destination": [
+              675.0,
+              360.0
+            ],
+            "follow": null,
+            "target": null,
+            "retreating": false
+          },
+          {
+            "id": "blue_1",
+            "destination": [
+              640.0,
+              410.0
+            ],
+            "follow": null,
+            "target": null,
+            "retreating": false
+          },
+          {
+            "id": "blue_2",
+            "destination": [
+              575.0,
+              360.0
+            ],
+            "follow": null,
+            "target": null,
+            "retreating": false
+          },
+          {
+            "id": "blue_3",
+            "destination": [
+              640.0,
+              325.0
+            ],
+            "follow": null,
+            "target": null,
+            "retreating": false
+          }
+        ]
+      }
+    },
+    {
+      "label": "protect_most_threatened",
+      "accepted": true,
+      "state": {
+        "active": "protect_tower",
+        "timer": 600,
+        "cooldown": 30,
+        "target": "outer_tower",
+        "point": [
+          300.0,
+          300.0
+        ],
+        "point_timer": 150,
+        "held": null,
+        "hold_elapsed": 0,
+        "hold_fired": false,
+        "gather_push": false,
+        "feedback": "",
+        "heroes": [
+          {
+            "id": "blue_0",
+            "destination": [
+              280.0,
+              334.641016
+            ],
+            "follow": null,
+            "target": null,
+            "retreating": false
+          },
+          {
+            "id": "blue_1",
+            "destination": [
+              330.0,
+              300.0
+            ],
+            "follow": null,
+            "target": null,
+            "retreating": false
+          },
+          {
+            "id": "blue_2",
+            "destination": [
+              275.0,
+              256.69873
+            ],
+            "follow": null,
+            "target": null,
+            "retreating": false
+          },
+          {
+            "id": "blue_3",
+            "destination": null,
+            "follow": null,
+            "target": null,
+            "retreating": true
+          },
+          {
+            "id": "blue_4",
+            "destination": null,
+            "follow": null,
+            "target": null,
+            "retreating": true
+          }
+        ]
+      }
+    },
+    {
+      "label": "protect_castle",
+      "accepted": true,
+      "state": {
+        "active": "protect_castle",
+        "timer": 600,
+        "cooldown": 30,
+        "target": "blue_castle",
+        "point": [
+          100.0,
+          620.0
+        ],
+        "point_timer": 150,
+        "held": null,
+        "hold_elapsed": 0,
+        "hold_fired": false,
+        "gather_push": false,
+        "feedback": "",
+        "heroes": [
+          {
+            "id": "blue_0",
+            "destination": [
+              180.0,
+              620.0
+            ],
+            "follow": null,
+            "target": null,
+            "retreating": false
+          },
+          {
+            "id": "blue_1",
+            "destination": [
+              100.0,
+              670.0
+            ],
+            "follow": null,
+            "target": null,
+            "retreating": false
+          },
+          {
+            "id": "blue_2",
+            "destination": [
+              50.0,
+              620.0
+            ],
+            "follow": null,
+            "target": null,
+            "retreating": false
+          },
+          {
+            "id": "blue_3",
+            "destination": [
+              100.0,
+              510.0
+            ],
+            "follow": null,
+            "target": null,
+            "retreating": false
+          }
+        ]
+      }
+    },
+    {
+      "label": "attack_boss",
+      "accepted": true,
+      "state": {
+        "active": "attack_boss",
+        "timer": 600,
+        "cooldown": 30,
+        "target": "boss",
+        "point": [
+          700.0,
+          300.0
+        ],
+        "point_timer": 150,
+        "held": null,
+        "hold_elapsed": 0,
+        "hold_fired": false,
+        "gather_push": false,
+        "feedback": "",
+        "heroes": [
+          {
+            "id": "blue_0",
+            "destination": [
+              750.0,
+              300.0
+            ],
+            "follow": "boss",
+            "target": "boss",
+            "retreating": false
+          },
+          {
+            "id": "blue_1",
+            "destination": [
+              671.0,
+              350.229473
+            ],
+            "follow": "boss",
+            "target": "boss",
+            "retreating": false
+          },
+          {
+            "id": "blue_2",
+            "destination": [
+              667.0,
+              242.842323
+            ],
+            "follow": "boss",
+            "target": "boss",
+            "retreating": false
+          }
+        ]
+      }
+    },
+    {
+      "label": "attack_damage_dealer",
+      "accepted": true,
+      "state": {
+        "active": "attack_damage_dealer",
+        "timer": 600,
+        "cooldown": 30,
+        "target": "dealer_high",
+        "point": [
+          800.0,
+          300.0
+        ],
+        "point_timer": 150,
+        "held": null,
+        "hold_elapsed": 0,
+        "hold_fired": false,
+        "gather_push": false,
+        "feedback": "",
+        "heroes": [
+          {
+            "id": "blue_0",
+            "destination": [
+              850.0,
+              300.0
+            ],
+            "follow": "dealer_high",
+            "target": "dealer_high",
+            "retreating": false
+          },
+          {
+            "id": "blue_1",
+            "destination": [
+              771.0,
+              350.229473
+            ],
+            "follow": "dealer_high",
+            "target": "dealer_high",
+            "retreating": false
+          },
+          {
+            "id": "blue_2",
+            "destination": [
+              767.0,
+              242.842323
+            ],
+            "follow": "dealer_high",
+            "target": "dealer_high",
+            "retreating": false
+          }
+        ]
+      }
+    },
+    {
+      "label": "quick_tap_keeps_duration",
+      "accepted": true,
+      "state": {
+        "active": "gather",
+        "timer": 595,
+        "cooldown": 25,
+        "target": null,
+        "point": [
+          600.0,
+          350.0
+        ],
+        "point_timer": 145,
+        "held": null,
+        "hold_elapsed": 0,
+        "hold_fired": false,
+        "gather_push": false,
+        "feedback": "GATHER! 2 heroes regrouping!",
+        "heroes": [
+          {
+            "id": "blue_0",
+            "destination": [
+              635.0,
+              350.0
+            ],
+            "follow": null,
+            "target": null,
+            "retreating": false
+          },
+          {
+            "id": "blue_1",
+            "destination": [
+              550.0,
+              350.0
+            ],
+            "follow": null,
+            "target": null,
+            "retreating": false
+          }
+        ]
+      }
+    },
+    {
+      "label": "long_hold_release_tail",
+      "accepted": true,
+      "state": {
+        "active": "protect_castle",
+        "timer": 30,
+        "cooldown": 25,
+        "target": "blue_castle",
+        "point": [
+          100.0,
+          620.0
+        ],
+        "point_timer": 145,
+        "held": null,
+        "hold_elapsed": 0,
+        "hold_fired": false,
+        "gather_push": false,
+        "feedback": "PROTECT CASTLE! 2 heroes defending base!",
+        "heroes": [
+          {
+            "id": "blue_0",
+            "destination": [
+              180.0,
+              620.0
+            ],
+            "follow": null,
+            "target": null,
+            "retreating": false
+          },
+          {
+            "id": "blue_1",
+            "destination": [
+              50.0,
+              620.0
+            ],
+            "follow": null,
+            "target": null,
+            "retreating": false
+          }
+        ]
+      }
+    },
+    {
+      "label": "armed_hold_waits_for_boss",
+      "accepted": false,
+      "state": {
+        "active": "attack_boss",
+        "timer": 600,
+        "cooldown": 30,
+        "target": "late_boss",
+        "point": [
+          700.0,
+          300.0
+        ],
+        "point_timer": 150,
+        "held": "attack_boss",
+        "hold_elapsed": 15,
+        "hold_fired": true,
+        "gather_push": false,
+        "feedback": "ATTACK BOSS! All heroes attack late_boss!",
+        "heroes": [
+          {
+            "id": "blue_0",
+            "destination": [
+              750.0,
+              300.0
+            ],
+            "follow": "late_boss",
+            "target": "late_boss",
+            "retreating": false
+          },
+          {
+            "id": "blue_1",
+            "destination": [
+              642.0,
+              300.0
+            ],
+            "follow": "late_boss",
+            "target": "late_boss",
+            "retreating": false
+          }
+        ]
+      }
+    },
+    {
+      "label": "held_gather_push",
+      "accepted": true,
+      "state": {
+        "active": "gather",
+        "timer": 600,
+        "cooldown": 30,
+        "target": null,
+        "point": [
+          640.0,
+          360.0
+        ],
+        "point_timer": 150,
+        "held": "gather",
+        "hold_elapsed": 240,
+        "hold_fired": true,
+        "gather_push": true,
+        "feedback": "GATHER ATTACK! 3 heroes push together!",
+        "heroes": [
+          {
+            "id": "blue_0",
+            "destination": null,
+            "follow": "near_tower",
+            "target": null,
+            "retreating": false
+          },
+          {
+            "id": "blue_1",
+            "destination": null,
+            "follow": "near_tower",
+            "target": null,
+            "retreating": false
+          },
+          {
+            "id": "blue_2",
+            "destination": null,
+            "follow": "near_tower",
+            "target": null,
+            "retreating": false
+          }
+        ]
+      }
+    },
+    {
+      "label": "auto_protect_castle",
+      "accepted": true,
+      "state": {
+        "active": "protect_castle",
+        "timer": 600,
+        "cooldown": 30,
+        "target": "blue_castle",
+        "point": [
+          100.0,
+          620.0
+        ],
+        "point_timer": 150,
+        "held": null,
+        "hold_elapsed": 0,
+        "hold_fired": false,
+        "gather_push": false,
+        "feedback": "PROTECT CASTLE! 3 heroes defending base!",
+        "heroes": [
+          {
+            "id": "blue_0",
+            "destination": [
+              180.0,
+              620.0
+            ],
+            "follow": null,
+            "target": null,
+            "retreating": false
+          },
+          {
+            "id": "blue_1",
+            "destination": [
+              50.0,
+              670.0
+            ],
+            "follow": null,
+            "target": null,
+            "retreating": false
+          },
+          {
+            "id": "blue_2",
+            "destination": [
+              60.0,
+              550.717968
+            ],
+            "follow": null,
+            "target": null,
+            "retreating": false
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scenes/prototype/prototype_screen.gd" id="1"]
 [ext_resource type="Script" path="res://scenes/prototype/prototype_view.gd" id="2"]
 [ext_resource type="Script" path="res://scripts/simulation/prototype_session.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/input/controller_runtime.gd" id="4"]
 
 [node name="PrototypeMatch" type="Control"]
 process_mode = 3
@@ -52,6 +53,7 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 15
 theme_override_colors/font_color = Color(0.59, 0.67, 0.66, 1)
 text = "Lv.1 · normal · lawan AI · progres pengembangan terpisah"
+clip_text = true
 
 [node name="Counters" type="VBoxContainer" parent="HUD/TopBar/Row"]
 layout_mode = 2
@@ -79,6 +81,73 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 52)
 layout_mode = 2
 text = "Menu"
+
+[node name="TacticalFeedback" type="Label" parent="HUD"]
+unique_name_in_owner = true
+visible = false
+offset_left = 300.0
+offset_top = 112.0
+offset_right = 980.0
+offset_bottom = 148.0
+theme_override_font_sizes/font_size = 22
+text = "TACTICAL COMMAND"
+horizontal_alignment = 1
+
+[node name="TacticalPanel" type="PanelContainer" parent="HUD"]
+unique_name_in_owner = true
+offset_left = 1068.0
+offset_top = 162.0
+offset_right = 1256.0
+offset_bottom = 528.0
+
+[node name="Column" type="VBoxContainer" parent="HUD/TacticalPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="HUD/TacticalPanel/Column"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "TACTICAL · HOLD"
+horizontal_alignment = 1
+
+[node name="GatherButton" type="Button" parent="HUD/TacticalPanel/Column"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "Gather  [G/F]"
+
+[node name="ProtectTowerButton" type="Button" parent="HUD/TacticalPanel/Column"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "Protect Tower  [T]"
+
+[node name="ProtectCastleButton" type="Button" parent="HUD/TacticalPanel/Column"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "Protect Castle  [C]"
+
+[node name="AttackBossButton" type="Button" parent="HUD/TacticalPanel/Column"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "Attack Boss  [B]"
+
+[node name="AttackDealerButton" type="Button" parent="HUD/TacticalPanel/Column"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "Attack Dealer  [D]"
+
+[node name="TacticalStatus" type="Label" parent="HUD/TacticalPanel/Column"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "No tactical command"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="BottomBar" type="PanelContainer" parent="HUD"]
 offset_left = 24.0
@@ -177,6 +246,7 @@ text = "Upgrade hero"
 
 [node name="Paths" type="HBoxContainer" parent="HUD/BottomBar/Column"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 theme_override_constants/separation = 14
 
@@ -201,6 +271,22 @@ custom_minimum_size = Vector2(225, 42)
 disabled = true
 text = "Mage Lv.2"
 
+[node name="RegenShieldButton" type="Button" parent="HUD/BottomBar/Column/Paths"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+custom_minimum_size = Vector2(300, 42)
+disabled = true
+text = "Regen Shield · 850 G"
+
+[node name="CastleShieldButton" type="Button" parent="HUD/BottomBar/Column/Paths"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+custom_minimum_size = Vector2(330, 42)
+disabled = true
+text = "Castle Shield · FREE"
+
 [node name="StatusLabel" type="Label" parent="HUD/BottomBar/Column"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -218,7 +304,7 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 15
 theme_override_colors/font_color = Color(0.59, 0.67, 0.66, 1)
-text = "Pilih slot biru, lalu bangun Archer (100 G)."
+text = "Pilih slot biru, lalu bangun salah satu dari empat tower (100 G)."
 
 [node name="PauseOverlay" type="ColorRect" parent="HUD"]
 unique_name_in_owner = true
@@ -267,6 +353,13 @@ layout_mode = 2
 custom_minimum_size = Vector2(0, 54)
 text = "Coba simpan lagi"
 
+[node name="NextLevelButton" type="Button" parent="HUD/PauseOverlay/Center/Card/Column"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+custom_minimum_size = Vector2(0, 54)
+text = "Level berikutnya  [N / RB]"
+
 [node name="ResumeButton" type="Button" parent="HUD/PauseOverlay/Center/Card/Column"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -284,3 +377,15 @@ unique_name_in_owner = true
 layout_mode = 2
 custom_minimum_size = Vector2(0, 54)
 text = "Kembali ke menu"
+
+[node name="ControllerCursor" type="Control" parent="HUD"]
+unique_name_in_owner = true
+process_mode = 3
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("4")

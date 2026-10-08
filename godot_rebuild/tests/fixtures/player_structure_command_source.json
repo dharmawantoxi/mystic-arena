@@ -1,0 +1,497 @@
+{
+  "constants": {
+    "build_cost": 100,
+    "regen_cost": 850,
+    "regen_min_level": 4,
+    "castle_cost": 850,
+    "castle_free_waves": 10
+  },
+  "routes": [
+    {
+      "button": "build_archer",
+      "handled": true,
+      "calls": [
+        [
+          "build",
+          "archer"
+        ]
+      ]
+    },
+    {
+      "button": "build_cannon",
+      "handled": true,
+      "calls": [
+        [
+          "build",
+          "cannon"
+        ]
+      ]
+    },
+    {
+      "button": "build_ice",
+      "handled": true,
+      "calls": [
+        [
+          "build",
+          "ice"
+        ]
+      ]
+    },
+    {
+      "button": "build_mage",
+      "handled": true,
+      "calls": [
+        [
+          "build",
+          "mage"
+        ]
+      ]
+    },
+    {
+      "button": "popup_regen_shield",
+      "handled": true,
+      "calls": [
+        [
+          "regen_shield"
+        ]
+      ]
+    },
+    {
+      "button": "popup_castle_shield",
+      "handled": true,
+      "calls": [
+        [
+          "castle_shield"
+        ]
+      ]
+    }
+  ],
+  "builds": [
+    {
+      "label": "build_archer_99",
+      "input": {
+        "path": "archer",
+        "gold": 99
+      },
+      "gold": 99,
+      "taken": false,
+      "popup_open": true,
+      "receipt": null
+    },
+    {
+      "label": "build_archer_100",
+      "input": {
+        "path": "archer",
+        "gold": 100
+      },
+      "gold": 0,
+      "taken": true,
+      "popup_open": false,
+      "receipt": {
+        "path": "archer",
+        "name": "Archer",
+        "level": 1,
+        "team": "blue",
+        "lane": "top",
+        "position": [
+          250,
+          170
+        ],
+        "max_hp": 2000,
+        "hp": 2000,
+        "shield_max": 800,
+        "shield": 800,
+        "damage": 20,
+        "range": 180,
+        "cooldown": 35,
+        "armor": 3,
+        "splash": 0,
+        "slow": 0,
+        "chain": 1
+      }
+    },
+    {
+      "label": "build_cannon_99",
+      "input": {
+        "path": "cannon",
+        "gold": 99
+      },
+      "gold": 99,
+      "taken": false,
+      "popup_open": true,
+      "receipt": null
+    },
+    {
+      "label": "build_cannon_100",
+      "input": {
+        "path": "cannon",
+        "gold": 100
+      },
+      "gold": 0,
+      "taken": true,
+      "popup_open": false,
+      "receipt": {
+        "path": "cannon",
+        "name": "Cannon",
+        "level": 1,
+        "team": "blue",
+        "lane": "top",
+        "position": [
+          250,
+          170
+        ],
+        "max_hp": 2000,
+        "hp": 2000,
+        "shield_max": 800,
+        "shield": 800,
+        "damage": 20,
+        "range": 180,
+        "cooldown": 35,
+        "armor": 3,
+        "splash": 0,
+        "slow": 0,
+        "chain": 1
+      }
+    },
+    {
+      "label": "build_ice_99",
+      "input": {
+        "path": "ice",
+        "gold": 99
+      },
+      "gold": 99,
+      "taken": false,
+      "popup_open": true,
+      "receipt": null
+    },
+    {
+      "label": "build_ice_100",
+      "input": {
+        "path": "ice",
+        "gold": 100
+      },
+      "gold": 0,
+      "taken": true,
+      "popup_open": false,
+      "receipt": {
+        "path": "ice",
+        "name": "Ice",
+        "level": 1,
+        "team": "blue",
+        "lane": "top",
+        "position": [
+          250,
+          170
+        ],
+        "max_hp": 2000,
+        "hp": 2000,
+        "shield_max": 800,
+        "shield": 800,
+        "damage": 20,
+        "range": 180,
+        "cooldown": 35,
+        "armor": 3,
+        "splash": 0,
+        "slow": 0,
+        "chain": 1
+      }
+    },
+    {
+      "label": "build_mage_99",
+      "input": {
+        "path": "mage",
+        "gold": 99
+      },
+      "gold": 99,
+      "taken": false,
+      "popup_open": true,
+      "receipt": null
+    },
+    {
+      "label": "build_mage_100",
+      "input": {
+        "path": "mage",
+        "gold": 100
+      },
+      "gold": 0,
+      "taken": true,
+      "popup_open": false,
+      "receipt": {
+        "path": "mage",
+        "name": "Mage",
+        "level": 1,
+        "team": "blue",
+        "lane": "top",
+        "position": [
+          250,
+          170
+        ],
+        "max_hp": 2000,
+        "hp": 2000,
+        "shield_max": 800,
+        "shield": 800,
+        "damage": 20,
+        "range": 180,
+        "cooldown": 35,
+        "armor": 3,
+        "splash": 0,
+        "slow": 0,
+        "chain": 1
+      }
+    }
+  ],
+  "regen": [
+    {
+      "label": "below_level",
+      "input": {
+        "level": 3,
+        "gold": 850,
+        "team": "blue",
+        "alive": true
+      },
+      "states": [
+        {
+          "gold": 850,
+          "active": false,
+          "shield": 1,
+          "shield_max": 1350,
+          "refund": 250
+        },
+        {
+          "gold": 850,
+          "active": false,
+          "shield": 1,
+          "shield_max": 1350,
+          "refund": 250
+        }
+      ]
+    },
+    {
+      "label": "poor",
+      "input": {
+        "level": 4,
+        "gold": 849,
+        "team": "blue",
+        "alive": true
+      },
+      "states": [
+        {
+          "gold": 849,
+          "active": false,
+          "shield": 1,
+          "shield_max": 1750,
+          "refund": 525
+        },
+        {
+          "gold": 849,
+          "active": false,
+          "shield": 1,
+          "shield_max": 1750,
+          "refund": 525
+        }
+      ]
+    },
+    {
+      "label": "exact",
+      "input": {
+        "level": 4,
+        "gold": 850,
+        "team": "blue",
+        "alive": true
+      },
+      "states": [
+        {
+          "gold": 0,
+          "active": true,
+          "shield": 1750,
+          "shield_max": 1750,
+          "refund": 950
+        },
+        {
+          "gold": 0,
+          "active": true,
+          "shield": 1750,
+          "shield_max": 1750,
+          "refund": 950
+        }
+      ]
+    },
+    {
+      "label": "repeat",
+      "input": {
+        "level": 4,
+        "gold": 1700,
+        "team": "blue",
+        "alive": true
+      },
+      "states": [
+        {
+          "gold": 850,
+          "active": true,
+          "shield": 1750,
+          "shield_max": 1750,
+          "refund": 950
+        },
+        {
+          "gold": 850,
+          "active": true,
+          "shield": 1750,
+          "shield_max": 1750,
+          "refund": 950
+        }
+      ]
+    },
+    {
+      "label": "enemy",
+      "input": {
+        "level": 4,
+        "gold": 1700,
+        "team": "red",
+        "alive": true
+      },
+      "states": [
+        {
+          "gold": 1700,
+          "active": false,
+          "shield": 1,
+          "shield_max": 1750,
+          "refund": 0
+        },
+        {
+          "gold": 1700,
+          "active": false,
+          "shield": 1,
+          "shield_max": 1750,
+          "refund": 0
+        }
+      ]
+    },
+    {
+      "label": "dead",
+      "input": {
+        "level": 4,
+        "gold": 1700,
+        "team": "blue",
+        "alive": false
+      },
+      "states": [
+        {
+          "gold": 1700,
+          "active": false,
+          "shield": 1,
+          "shield_max": 1750,
+          "refund": 525
+        },
+        {
+          "gold": 1700,
+          "active": false,
+          "shield": 1,
+          "shield_max": 1750,
+          "refund": 525
+        }
+      ]
+    }
+  ],
+  "castle": [
+    {
+      "label": "free",
+      "input": {
+        "wave": 10,
+        "gold": 850
+      },
+      "states": [
+        {
+          "gold": 850,
+          "purchased": false,
+          "free": true,
+          "active": true,
+          "shield": 1,
+          "shield_max": 4000
+        },
+        {
+          "gold": 850,
+          "purchased": false,
+          "free": true,
+          "active": true,
+          "shield": 1,
+          "shield_max": 4000
+        }
+      ]
+    },
+    {
+      "label": "poor",
+      "input": {
+        "wave": 11,
+        "gold": 849
+      },
+      "states": [
+        {
+          "gold": 849,
+          "purchased": false,
+          "free": false,
+          "active": false,
+          "shield": 1,
+          "shield_max": 4000
+        },
+        {
+          "gold": 849,
+          "purchased": false,
+          "free": false,
+          "active": false,
+          "shield": 1,
+          "shield_max": 4000
+        }
+      ]
+    },
+    {
+      "label": "exact",
+      "input": {
+        "wave": 11,
+        "gold": 850
+      },
+      "states": [
+        {
+          "gold": 0,
+          "purchased": true,
+          "free": false,
+          "active": true,
+          "shield": 4000,
+          "shield_max": 4000
+        },
+        {
+          "gold": 0,
+          "purchased": true,
+          "free": false,
+          "active": true,
+          "shield": 4000,
+          "shield_max": 4000
+        }
+      ]
+    },
+    {
+      "label": "repeat",
+      "input": {
+        "wave": 11,
+        "gold": 1700
+      },
+      "states": [
+        {
+          "gold": 850,
+          "purchased": true,
+          "free": false,
+          "active": true,
+          "shield": 4000,
+          "shield_max": 4000
+        },
+        {
+          "gold": 850,
+          "purchased": true,
+          "free": false,
+          "active": true,
+          "shield": 4000,
+          "shield_max": 4000
+        }
+      ]
+    }
+  ]
+}

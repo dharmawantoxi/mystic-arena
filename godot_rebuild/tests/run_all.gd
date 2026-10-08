@@ -1,3 +1,4 @@
+# gdlint:disable=max-file-lines
 extends SceneTree
 ## Native, dependency-free headless regression runner. Exit code 1 means failure.
 
@@ -27,9 +28,21 @@ const BossLevelTwentyChecks = preload("res://tests/boss_level_twenty_checks.gd")
 const StarterFinishChecks = preload("res://tests/starter_finish_checks.gd")
 const SylaraChecks = preload("res://tests/sylara_checks.gd")
 const AIRecruitChecks = preload("res://tests/ai_recruit_checks.gd")
+const PlayerRecruitChecks = preload("res://tests/player_recruit_checks.gd")
+const PlayerRecruitSceneChecks = preload("res://tests/player_recruit_scene_checks.gd")
+const MetaHeroUnlockChecks = preload("res://tests/meta_hero_unlock_checks.gd")
+const MetaHeroUnlockSceneChecks = preload("res://tests/meta_hero_unlock_scene_checks.gd")
 const AIBuildChecks = preload("res://tests/ai_build_checks.gd")
 const AIShieldChecks = preload("res://tests/ai_shield_checks.gd")
 const AIShieldSceneChecks = preload("res://tests/ai_shield_scene_checks.gd")
+const PlayerStructureCommandChecks = preload("res://tests/player_structure_command_checks.gd")
+const PlayerStructureCommandSceneChecks = preload(
+	"res://tests/player_structure_command_scene_checks.gd"
+)
+const ControllerRuntimeChecks = preload("res://tests/controller_runtime_checks.gd")
+const ControllerSceneChecks = preload("res://tests/controller_scene_checks.gd")
+const TouchGestureChecks = preload("res://tests/touch_gesture_checks.gd")
+const TouchGestureSceneChecks = preload("res://tests/touch_gesture_scene_checks.gd")
 const AIUpgradeChecks = preload("res://tests/ai_upgrade_checks.gd")
 const AIPriorityChecks = preload("res://tests/ai_priority_checks.gd")
 const AIItemChecks = preload("res://tests/ai_item_checks.gd")
@@ -51,6 +64,8 @@ const KaizenChecks = preload("res://tests/kaizen_checks.gd")
 const UpgradeSceneChecks = preload("res://tests/upgrade_scene_checks.gd")
 const UpgradeChecks = preload("res://tests/upgrade_checks.gd")
 const PrototypeChecks = preload("res://tests/prototype_checks.gd")
+const TacticalCommandChecks = preload("res://tests/tactical_command_checks.gd")
+const TacticalCommandSceneChecks = preload("res://tests/tactical_command_scene_checks.gd")
 const BossCoreChecks = preload("res://tests/boss_core_checks.gd")
 const BossAbilityChecks = preload("res://tests/boss_ability_checks.gd")
 const BossMatchChecks = preload("res://tests/boss_match_checks.gd")
@@ -95,6 +110,10 @@ const WallTilesChecks = preload("res://tests/wall_tiles_checks.gd")
 const TerrainTilesChecks = preload("res://tests/terrain_tiles_checks.gd")
 const LevelProgressChecks = preload("res://tests/level_progress_checks.gd")
 const LevelProgressStoreChecks = preload("res://tests/level_progress_store_checks.gd")
+const LevelStatsChecks = preload("res://tests/level_stats_checks.gd")
+const LevelStatsSceneChecks = preload("res://tests/level_stats_scene_checks.gd")
+const SaveSlotChecks = preload("res://tests/save_slot_checks.gd")
+const SaveSlotSceneChecks = preload("res://tests/save_slot_scene_checks.gd")
 const LevelProgressStore = preload("res://scripts/match/level_progress_store.gd")
 const SCENE_PROGRESS_PATH := "user://level_progress_scene_test.json"
 const APP = preload("res://app/App.tscn")
@@ -102,8 +121,6 @@ const SIMULATION = preload("res://scripts/simulation/sandbox_simulation.gd")
 
 var failures: Array[String] = []
 var checks := 0
-# Per-prefix failure histogram printed after the final summary so the CI
-# annotation (which keeps the last 60 log lines) names every failing area.
 var failure_groups: Dictionary = {}
 
 
@@ -150,6 +167,10 @@ func _run() -> void:
 	TerrainTilesChecks.new().run(_check)
 	LevelProgressChecks.new().run(_check)
 	LevelProgressStoreChecks.new().run(_check)
+	LevelStatsChecks.new().run(_check)
+	SaveSlotChecks.new().run(_check)
+	ControllerRuntimeChecks.new().run(_check)
+	TouchGestureChecks.new().run(_check)
 	ThorneChecks.new().run(_check)
 	GrimjawChecks.new().run(_check)
 	SylaraChecks.new().run(_check)
@@ -176,8 +197,11 @@ func _run() -> void:
 	SourceSharedBossChecks.new().run(_check)
 	AlchemistChecks.new().run(_check)
 	AIRecruitChecks.new().run(_check)
+	PlayerRecruitChecks.new().run(_check)
+	MetaHeroUnlockChecks.new().run(_check)
 	AIBuildChecks.new().run(_check)
 	AIShieldChecks.new().run(_check)
+	PlayerStructureCommandChecks.new().run(_check)
 	AIUpgradeChecks.new().run(_check)
 	AIPriorityChecks.new().run(_check)
 	AIItemChecks.new().run(_check)
@@ -221,6 +245,7 @@ func _run() -> void:
 	BossHeroAIChecks.new().run(_check)
 	BossPresentationChecks.new().run(_check)
 	PrototypeChecks.new().run(_check)
+	TacticalCommandChecks.new().run(_check)
 	UpgradeChecks.new().run(_check)
 	NexusChecks.new().run(_check)
 	CannonChecks.new().run(_check)
@@ -235,7 +260,6 @@ func _run() -> void:
 	var menu_tree_count: int = root.get_tree().get_node_count()
 	for cycle in range(10):
 		app.current_screen.get_node("%PlayButton").pressed.emit()
-		# Double activation in the same frame must not install two screens.
 		app.current_screen.get_node("%PlayButton").pressed.emit()
 		await _settle()
 		_check(app.screen_root.get_child_count() == 1, "single match screen, cycle %d" % cycle)
@@ -263,7 +287,6 @@ func _run() -> void:
 		)
 		await _physics_steps(4)
 		_check(sim.tick_count > before, "physics resumes")
-		# Background notification must have the same cleanup policy as manual pause.
 		app.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 		_check(paused, "focus loss pauses match")
 		var old_id: int = match_screen.get_instance_id()
@@ -297,24 +320,29 @@ func _run() -> void:
 	await _test_siege_scene(app)
 	await _test_prototype_scene(app)
 	await _test_level_selection_scene(app)
+	await SaveSlotSceneChecks.new().run(self, app, _check)
+	await LevelStatsSceneChecks.new().run(self, app, _check)
+	await MetaHeroUnlockSceneChecks.new().run(self, app, _check)
+	await PlayerRecruitSceneChecks.new().run(self, app, _check)
 	await ForgeSceneChecks.new().run(self, app, _check)
 	await AIShieldSceneChecks.new().run(self, app, _check)
+	await PlayerStructureCommandSceneChecks.new().run(self, app, _check)
 	await UpgradeSceneChecks.new().run(self, app, _check)
 	await NexusSceneChecks.new().run(self, app, _check)
 	await CannonSceneChecks.new().run(self, app, _check)
 	await IceSceneChecks.new().run(self, app, _check)
 	await MageSceneChecks.new().run(self, app, _check)
 	await KaizenSceneChecks.new().run(self, app, _check)
+	await TacticalCommandSceneChecks.new().run(self, app, _check)
+	await ControllerSceneChecks.new().run(self, app, _check)
+	await TouchGestureSceneChecks.new().run(self, app, _check)
+	root.get_node("AudioManager").call("shutdown")
+	await _settle()
 	app.queue_free()
 	await _settle()
 	_check(not paused, "app exit does not leave tree paused")
 	if failures.is_empty():
-		print(
-			(
-				"PASS: %d checks; fixed ticks, source parity, combat/siege/prototype, input and lifecycle."
-				% checks
-			)
-		)
+		print("PASS: %d checks; fixed ticks and source parity." % checks)
 		quit(0)
 	else:
 		printerr("FAILED: %d of %d checks" % [failures.size(), checks])
@@ -836,13 +864,20 @@ func _test_prototype_scene(app: Node) -> void:
 		_check(paused and session.command.is_empty(), "focus loss cancels match transaction")
 		screen.resume_match()
 		var tap := InputEventScreenTouch.new()
+		tap.index = 0
 		tap.pressed = true
 		tap.position = screen.arena.get_global_transform_with_canvas() * world.slots[9].position
-		screen._unhandled_input(tap)
+		screen._handle_touch_event(tap, 10_000.0)
+		_check(session.selected_slot_id == 2, "touch selection waits for release")
+		tap = InputEventScreenTouch.new()
+		tap.index = 0
+		tap.pressed = false
+		tap.position = screen.arena.get_global_transform_with_canvas() * world.slots[9].position
+		screen._handle_touch_event(tap, 10_100.0)
 		await _settle()
 		_check(
 			session.selected_slot_id == 9 and screen.get_node("%BuildButton").disabled,
-			"touch adapter can inspect enemy slot but cannot build there"
+			"released touch can inspect enemy slot but cannot build there"
 		)
 		session.request_build(9)
 		session._physics_process(1.0 / 60.0)
