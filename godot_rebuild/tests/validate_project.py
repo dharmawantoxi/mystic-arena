@@ -364,6 +364,38 @@ check("SaveSlotStore.save_path(result.state, path" in
       (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8"),
       "Match result must commit through the active native save slot")
 
+from level_stats_source_oracle import source_fixture as level_stats_source_fixture
+level_stats_fixture_path = ROOT / "tests/fixtures/level_stats_source.json"
+check(level_stats_fixture_path.is_file(), "Level-stat runtime requires a source fixture")
+if level_stats_fixture_path.is_file():
+    check(level_stats_source_fixture()
+          == json.loads(level_stats_fixture_path.read_text(encoding="utf-8")),
+          "Source match rewards or per-level statistics drift")
+check("python godot_rebuild/tests/level_stats_source_oracle.py" in workflow,
+      "CI must execute the level-stat source oracle")
+check("- '_render.py'" in workflow,
+      "Level-stat CI must track the real ComboCounter authority")
+check("LevelStatsChecks.new().run(_check)" in ai_tests,
+      "Level-stat source replay suite must run")
+check("await LevelStatsSceneChecks.new().run(self, app, _check)" in ai_tests,
+      "Level-stat playable save/retry/menu suite must run")
+level_stats_domain = (ROOT / "scripts/match/level_stats.gd").read_text(encoding="utf-8")
+progress_store = (ROOT / "scripts/match/level_progress_store.gd").read_text(encoding="utf-8")
+prototype_world = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+check("static func update_level_stats" in level_stats_domain
+      and "static func get_level_stats" in level_stats_domain
+      and "static func valid_map" in level_stats_domain,
+      "Native level statistics must preserve source transaction and validation policy")
+check("LevelStats.valid_map" in progress_store,
+      "Atomic progress loading must deeply validate per-level statistics")
+check("func match_stats_snapshot" in prototype_world
+      and "total_kills += 1" in prototype_world
+      and "combo_count > max_combo" in prototype_world
+      and "LevelStats.update_level_stats" in prototype_world,
+      "Playable reward runtime must feed score, kills, combo and time into persistence")
+check("LevelStats.get_level_stats" in meta_menu and "%LevelStatsLabel" in meta_menu,
+      "Selected-level source statistics must reload in the main menu")
+
 check("AIShieldChecks.new().run(_check)" in ai_tests, "AI shield domain suite must remain in runner")
 check("await AIShieldSceneChecks.new().run(self, app, _check)" in ai_tests, "Paid shield refund/reset UI suite must run")
 check((ROOT / "tests/fixtures/ai_shield_source.json").is_file(), "AI shields require source fixture")

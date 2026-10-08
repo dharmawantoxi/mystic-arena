@@ -445,7 +445,10 @@ func _save_result() -> void:
 		%Hint.text = ("Progres BELUM tersimpan. Periksa file progres, lalu coba lagi.")
 		%SaveRetryButton.show()
 		return
-	%Hint.text = ("+%d Meta Gold tersimpan (save pengembangan Godot)." % int(committed.reward))
+	%Hint.text = (
+		"Score: %d  ·  +%d Meta Gold tersimpan."
+		% [int(committed.match_stats.score), int(committed.reward)]
+	)
 	%SaveRetryButton.hide()
 
 

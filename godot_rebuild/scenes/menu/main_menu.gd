@@ -11,6 +11,7 @@ const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
 const AudioRuntime = preload("res://scripts/audio/audio_runtime.gd")
 const Catalog = preload("res://scripts/match/level_catalog.gd")
 const ProgressStore = preload("res://scripts/match/level_progress_store.gd")
+const LevelStats = preload("res://scripts/match/level_stats.gd")
 const HeroUnlockStore = preload("res://scripts/match/hero_unlock_store.gd")
 const SaveSlotStore = preload("res://scripts/match/save_slot_store.gd")
 const MetaHeroShopPanel = preload("res://scripts/ui/meta_hero_shop_panel.gd")
@@ -35,6 +36,7 @@ func _ready() -> void:
 	%PrototypeButton.pressed.connect(func() -> void: _click_and_start())
 	%HeroShopButton.pressed.connect(_open_hero_shop)
 	%SaveGamesButton.pressed.connect(_open_save_slots)
+	%LevelChoice.item_selected.connect(_update_level_stats_label)
 	var selected_from_path := SaveSlotStore.slot_for_path(progress_path, slot_path_template)
 	if selected_from_path > 0:
 		active_slot = selected_from_path
@@ -173,6 +175,28 @@ func refresh_levels() -> void:
 	%DifficultyChoice.select(0)
 	if locked == "":
 		%DifficultyChoice.select(1)  # Normal default.
+	_update_level_stats_label()
+
+
+func _update_level_stats_label(_index: int = -1) -> void:
+	var level_number: int = %LevelChoice.get_selected_id()
+	var stats := LevelStats.get_level_stats(ProgressStore.load_state(progress_path), level_number)
+	var attempts := int(stats.total_attempts)
+	if attempts <= 0:
+		%LevelStatsLabel.text = "NO STATS YET"
+		return
+	var wins := int(stats.wins)
+	var win_rate := int((float(wins) / float(attempts)) * 100.0)
+	%LevelStatsLabel.text = (
+		"BEST %d  ·  TIME %s  ·  %dW/%d  ·  %d%%"
+		% [
+			int(stats.best_score),
+			LevelStats.format_time(int(stats.best_time_seconds)),
+			wins,
+			attempts,
+			win_rate,
+		]
+	)
 
 
 func _start_selected_level() -> void:

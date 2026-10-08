@@ -26,6 +26,7 @@ const BossAI = preload("res://scripts/match/boss_ai.gd")
 # Layer 7c: level-1 config generated from levels/level_data.py by the oracle.
 const LevelCatalog = preload("res://scripts/match/level_catalog.gd")
 const LevelProgress = preload("res://scripts/match/level_progress.gd")
+const LevelStats = preload("res://scripts/match/level_stats.gd")
 const LevelProgressStore = preload("res://scripts/match/level_progress_store.gd")
 const SaveSlotStore = preload("res://scripts/match/save_slot_store.gd")
 const BOSS_DATA := "res://data/bosses/boss_stats.json"
@@ -84,6 +85,8 @@ const HERO_BASE_NEAR := 100.0
 # the Python stream itself is not reproduced.
 const SPAWN_JITTER := 8.0
 const SPAWN_SEED := 20260929
+const COMBO_RESET_TICKS := 120
+const HERO_DEATH_REWARD := 150
 
 var economy := Economy.new()
 # Layer 5f: Forge shop transactions (buy for a dead hero queues the order).
@@ -158,6 +161,14 @@ var boss_death_presentations: Array[Dictionary] = []
 var boss_screen_shake_intensity := 0.0
 var boss_screen_shake_timer := 0
 var score := 0
+var total_kills := 0
+var max_combo := 0
+var combo_count := 0
+var combo_timer := 0
+var last_combo := 0
+var match_started_msec := Time.get_ticks_msec()
+var match_finished_msec := -1
+var match_time_override_seconds := -1
 var _victory_unlocks_granted := false
 var _audio_result_announced := false
 
@@ -239,24 +250,58 @@ func player_profile_state(state: Dictionary) -> Dictionary:
 	return merged
 
 
-## Explicit result boundary for a future save adapter. It is not called from
-## step_tick: only the owner of persistent state may commit the returned copy.
-func claim_level_result(state: Dictionary, is_replay: bool = false) -> Dictionary:
-	if _level_result_claimed or winner not in [BLUE, RED]:
-		return {}
+func match_stats_snapshot() -> Dictionary:
+	var finished := match_finished_msec
+	if finished < 0:
+		finished = Time.get_ticks_msec()
+	var elapsed_seconds := maxi(0, int((finished - match_started_msec) / 1000))
+	if match_time_override_seconds >= 0:
+		elapsed_seconds = match_time_override_seconds
+	return {
+		"won": winner == BLUE,
+		"score": score,
+		"time_seconds": elapsed_seconds,
+		"kills": total_kills,
+		"combo": max_combo,
+		"playtime_seconds": elapsed_seconds,
+	}
+
+
+func _result_transaction(state: Dictionary, is_replay: bool) -> Dictionary:
 	var result := LevelProgress.apply_result(
 		state, level_number, winner == BLUE, is_replay, difficulty
 	)
 	if result.is_empty():
 		return {}
-	result["state"] = player_profile_state(result.state)
+	if match_finished_msec < 0:
+		match_finished_msec = Time.get_ticks_msec()
+	var match_stats := match_stats_snapshot()
+	var profile := player_profile_state(result.state)
+	var stats := LevelStats.update_level_stats(profile, level_number, match_stats)
+	if stats.is_empty():
+		return {}
+	result["state"] = stats.state
+	result["match_stats"] = match_stats
+	result["is_new_best_score"] = stats.is_new_best_score
+	result["is_new_best_time"] = stats.is_new_best_time
+	result["level_stats"] = stats.new_stats
+	return result
+
+
+## Explicit in-memory result boundary. It is not called from step_tick: only
+## the owning scene/store may commit the returned copy.
+func claim_level_result(state: Dictionary, is_replay: bool = false) -> Dictionary:
+	if _level_result_claimed or winner not in [BLUE, RED]:
+		return {}
+	var result := _result_transaction(state, is_replay)
+	if result.is_empty():
+		return {}
 	_level_result_claimed = true
 	return result
 
 
-## Optional development-save transaction. Unlike claim_level_result, this
-## only consumes the claim AFTER a verified write; on failure it can retry.
-## The scene does not call this until native save tests pass on target devices.
+## Atomic save transaction. Unlike claim_level_result, this consumes the claim
+## only AFTER a verified write, so the playable result screen can retry safely.
 func commit_level_result(
 	path: String = LevelProgressStore.PATH,
 	is_replay: bool = false,
@@ -269,12 +314,9 @@ func commit_level_result(
 	var state := LevelProgressStore.load_state(path)
 	if FileAccess.file_exists(path) and state.is_empty():
 		return {}  # Invalid/version-mismatched save is not a fresh account.
-	var result := LevelProgress.apply_result(
-		state, level_number, winner == BLUE, is_replay, difficulty
-	)
+	var result := _result_transaction(state, is_replay)
 	if result.is_empty():
 		return {}
-	result["state"] = player_profile_state(result.state)
 	if not SaveSlotStore.save_path(result.state, path, -1.0, slot_path_template):
 		return {}
 	_level_result_claimed = true
@@ -469,6 +511,7 @@ func step_tick() -> void:
 	for spawn in batch.spawns:
 		_spawn_match_minion(MINIONS[spawn.kind], spawn.team, spawn.lane)
 	super.step_tick()
+	_step_combo_clock()
 	if winner in [BLUE, RED] and not _audio_result_announced:
 		AudioRuntime.play("victory" if winner == BLUE else "defeat")
 		_audio_result_announced = true
@@ -702,7 +745,27 @@ func sell_tower(team: int, entity_id: int) -> bool:
 func _on_death(source_team: int, target: UnitState) -> void:
 	var before := credited_gold[source_team]
 	super._on_death(source_team, target)
-	economy.credit_kill(source_team, credited_gold[source_team] - before)
+	# Source Game's reward pass gives every enemy hero death a fixed 150 G;
+	# HeroDefinition.gold_reward intentionally remains zero for base combat.
+	if target is HeroState:
+		credited_gold[source_team] += HERO_DEATH_REWARD
+	var reward := credited_gold[source_team] - before
+	economy.credit_kill(source_team, reward)
+	if target.team == RED:
+		if target is HeroState:
+			score += HERO_DEATH_REWARD
+		elif target is StructureState:
+			var scored_structure := target as StructureState
+			if scored_structure.settings().structure_kind == "tower":
+				score += target.definition.gold_reward
+		else:
+			# The source counts only defeated red minions for this statistic.
+			score += target.definition.gold_reward
+			total_kills += 1
+			if combo_count > max_combo:
+				max_combo = combo_count
+			combo_count += 1
+			combo_timer = COMBO_RESET_TICKS
 	# The source increments red_towers_destroyed in its later reward loop,
 	# not inside Tower.take_damage. Defer the counter until after the true-boss
 	# check in this tick.
@@ -712,6 +775,15 @@ func _on_death(source_team: int, target: UnitState) -> void:
 			_pending_red_tower_deaths += 1
 	if not is_running():
 		scheduler.cancel()
+
+
+func _step_combo_clock() -> void:
+	if combo_timer <= 0:
+		return
+	combo_timer -= 1
+	if combo_timer <= 0:
+		last_combo = combo_count
+		combo_count = 0
 
 
 func _mini_boss_entries() -> Array[Dictionary]:

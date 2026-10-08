@@ -5,6 +5,7 @@ extends RefCounted
 const PATH := "user://level_progress_v1.json"
 const VERSION := 1
 const HERO_ROSTER = preload("res://scripts/data/hero_roster.gd").DEFINITIONS
+const LevelStats = preload("res://scripts/match/level_stats.gd")
 
 
 static func load_state(path: String = PATH) -> Dictionary:
@@ -105,6 +106,14 @@ static func _normalize_disk_state(state: Dictionary) -> Dictionary:
 		copy["last_played_level"] = _disk_integer(copy["last_played_level"])
 	if copy.has("slot_playtime_seconds"):
 		copy["slot_playtime_seconds"] = _disk_integer(copy["slot_playtime_seconds"])
+	var level_stats: Variant = copy.get("level_stats", {})
+	if level_stats is Dictionary:
+		for level_key in level_stats:
+			var entry: Variant = level_stats[level_key]
+			if entry is Dictionary:
+				for field in LevelStats.INTEGER_FIELDS:
+					if entry.has(field):
+						entry[field] = _disk_integer(entry[field])
 	return copy
 
 
@@ -129,7 +138,7 @@ static func _valid(state: Dictionary) -> bool:
 		var playtime: Variant = state["slot_playtime_seconds"]
 		if not (playtime is int) or playtime < 0:
 			return false
-	if state.has("level_stats") and not (state["level_stats"] is Dictionary):
+	if state.has("level_stats") and not LevelStats.valid_map(state["level_stats"]):
 		return false
 	var completed: Variant = state.get("completed_levels", [])
 	var counts: Variant = state.get("replay_reward_counts", {})

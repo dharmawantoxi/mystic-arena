@@ -46,6 +46,32 @@ func run(check: Callable) -> void:
 	check.call(
 		not Store.save_state(invalid_roster, TEST_PATH), "Starter cannot occupy boss unlock list"
 	)
+	var with_stats := with_roster.duplicate(true)
+	with_stats["level_stats"] = {
+		"1":
+		{
+			"best_score": 24,
+			"best_time_seconds": 125,
+			"total_attempts": 2,
+			"wins": 1,
+			"total_kills": 4,
+			"max_combo": 2,
+			"total_playtime_seconds": 185,
+		}
+	}
+	check.call(Store.save_state(with_stats, TEST_PATH), "Write validated per-level statistics")
+	check.call(
+		Store.load_state(TEST_PATH) == with_stats, "Per-level statistics survive JSON reload"
+	)
+	var invalid_stats := with_stats.duplicate(true)
+	invalid_stats.level_stats["1"]["best_time_seconds"] = -1
+	check.call(not Store.save_state(invalid_stats, TEST_PATH), "Negative best time is rejected")
+	invalid_stats = with_stats.duplicate(true)
+	invalid_stats.level_stats["1"].erase("total_kills")
+	check.call(
+		not Store.save_state(invalid_stats, TEST_PATH), "Incomplete level stats are rejected"
+	)
+	check.call(Store.load_state(TEST_PATH) == with_stats, "Rejected stats preserve the valid save")
 	# Restore the replay state used by the interrupted-write checks below.
 	check.call(
 		Store.save_state(replay.state, TEST_PATH), "Roster save can return to progression state"
