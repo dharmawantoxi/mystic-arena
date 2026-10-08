@@ -37,7 +37,10 @@ dependencies {
 val copyGodotPluginAars by tasks.registering(Copy::class) {
     dependsOn("assembleDebug", "assembleRelease")
     from(layout.buildDirectory.dir("outputs/aar"))
-    include("plugin-debug.aar", "plugin-release.aar")
-    rename { filename -> filename.replace("plugin-", "$pluginName-") }
+    include("*.aar")
+    rename { filename ->
+        val variant = filename.substringAfterLast("-").removeSuffix(".aar")
+        "$pluginName-$variant.aar"
+    }
     into(layout.projectDirectory.dir("../../../addons/mystic_cloud/bin"))
 }

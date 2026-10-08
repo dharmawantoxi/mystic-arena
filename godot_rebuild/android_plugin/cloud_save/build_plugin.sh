@@ -21,5 +21,12 @@ else
   gradle --no-daemon --console=plain :plugin:copyGodotPluginAars
 fi
 
-test -s "$ROOT/godot_rebuild/addons/mystic_cloud/bin/debug/MysticCloudSave-debug.aar"
-test -s "$ROOT/godot_rebuild/addons/mystic_cloud/bin/release/MysticCloudSave-release.aar"
+for variant in debug release; do
+  aar="$ROOT/godot_rebuild/addons/mystic_cloud/bin/$variant/MysticCloudSave-$variant.aar"
+  if [[ ! -s "$aar" ]]; then
+    echo "Missing Android plugin artifact: $aar" >&2
+    find "$PLUGIN_DIR/plugin/build/outputs/aar" "$ROOT/godot_rebuild/addons/mystic_cloud/bin" \
+      -maxdepth 4 -type f -name '*.aar' -print 2>/dev/null >&2 || true
+    exit 1
+  fi
+done
