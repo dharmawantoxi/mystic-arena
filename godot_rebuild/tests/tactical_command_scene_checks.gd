@@ -69,6 +69,8 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 
 	# Panel Protect Tower captures the selected blue tower ID, matching the
 	# source side panel instead of resolving a mutable selection next tick.
+	for tick in range(30):
+		session._physics_process(1.0 / 60.0)
 	check.call(world.build_tower(world.BLUE, 0), "Tactical scene creates selected blue tower")
 	var tower_id: int = world.slots[0].structure_id
 	session.selected_id = tower_id
@@ -167,8 +169,8 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		not world.tactical.hold_active(), "Mixed hotkey releases cannot leave tactical hold stuck"
 	)
 
-	# Pause adds a release transaction even though physics is suspended; resume
-	# drains it before the next simulation step.
+	# Shared pause cancellation consumes the queued release immediately and also
+	# clears the domain hold before the suspended simulation can resume.
 	for tick in range(30):
 		session._physics_process(1.0 / 60.0)
 	attack_dealer.button_down.emit()
@@ -176,11 +178,12 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	check.call(world.tactical.hold_active(), "Attack Dealer panel button enters hold state")
 	screen.pause_match()
 	check.call(
-		tree.paused and not session.tactical_queue.is_empty(), "Pause queues tactical release"
+		tree.paused and session.tactical_queue.is_empty() and not world.tactical.hold_active(),
+		"Pause cancellation ends tactical hold and clears pending release"
 	)
 	screen.resume_match()
 	session._physics_process(1.0 / 60.0)
-	check.call(not world.tactical.hold_active(), "Resume drains pause-time tactical release")
+	check.call(not world.tactical.hold_active(), "Tactical hold stays released after resume")
 
 	screen.get_node("%BackButton").pressed.emit()
 	await _settle(tree)

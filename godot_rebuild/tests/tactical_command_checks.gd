@@ -160,6 +160,7 @@ func _armed_boss_hold(check: Callable, fixture: Dictionary) -> void:
 	var boss = world._spawn_boss("gornak")
 	boss.position = Vector2(700, 300)
 	boss.entrance_timer = 0
+	boss.display_name = "late_boss"
 	labels[boss.id] = "late_boss"
 	for tick in range(5):
 		world.tactical.step_tick(world)
