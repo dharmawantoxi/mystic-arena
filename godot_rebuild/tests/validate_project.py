@@ -717,6 +717,9 @@ check('const BossItemCleaveChainChecks = preload(' in ai_tests
 check("BossItemCleaveChainChecks.new().run(_check)" in ai_tests,
       "Boss item cleave/chain suite must run")
 check("BossPresentationChecks.new().run(_check)" in ai_tests, "Boss presentation suite must run")
+check("BossDeathPauseChecks.new().run(_check)" in ai_tests, "Boss death-pause unit suite must run")
+check("BossDeathPauseSceneChecks.new().run(root.get_tree(), _check)" in ai_tests,
+      "Boss death-pause playable-scene suite must run")
 check("BossMotionChecks.new().run(_check)" in ai_tests, "Boss motion and kiting suite must run")
 check((ROOT / "tests/fixtures/boss_motion_source.json").is_file(), "Boss motion requires source fixture")
 if (ROOT / "tests/fixtures/boss_motion_source.json").is_file():
@@ -1731,8 +1734,20 @@ check("get_unit(boss.last_hit_source_id) as HeroState" in boss_kill_credit
       and "killer.kills += 1" in boss_kill_credit
       and "if killer.team != BLUE:" in boss_kill_credit,
       "Boss kill attribution must credit only a real enemy hero, then blue-side counters")
-check("_process_boss_kill(boss)\n\teconomy.credit_kill(BLUE, boss.gold_reward)" in prototype_battle,
-      "Boss kill attribution must run before the source reward pass")
+check("_process_boss_kill(boss)" in prototype_battle
+      and "boss_death_pause_ticks = maxi(" in prototype_battle
+      and "economy.credit_kill(BLUE, boss.gold_reward)" in prototype_battle
+      and prototype_battle.index("_process_boss_kill(boss)")
+      < prototype_battle.index("boss_death_pause_ticks = maxi(")
+      < prototype_battle.index("economy.credit_kill(BLUE, boss.gold_reward)"),
+      "Boss kill attribution and pause must precede the source reward pass")
+_boss_step = prototype_battle.split("func step_tick()", 1)[1].split("\nfunc ", 1)[0]
+check("hit_stop_state.consume_frame()" in _boss_step
+      and "if boss_death_pause_ticks > 0:" in _boss_step
+      and _boss_step.index("hit_stop_state.consume_frame()")
+      < _boss_step.index("if boss_death_pause_ticks > 0:")
+      < _boss_step.index("economy.step_tick(wave_count)"),
+      "Boss death pause must yield to hit-stop and gate the fixed match tick")
 check("var miniboss_kill_count := 0" in prototype_battle
       and "var trueboss_kill_count := 0" in prototype_battle,
       "Native match must keep the source mini/true boss kill counters")

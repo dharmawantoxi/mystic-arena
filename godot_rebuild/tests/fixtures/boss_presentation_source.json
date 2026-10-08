@@ -206,5 +206,15 @@
         }
       ]
     }
-  ]
+  ],
+  "death_pause": {
+    "mini_ticks": 60,
+    "true_ticks": 90,
+    "timer_decrements": true,
+    "ends_when_timer_reaches_zero": true,
+    "death_active_reads_active": true,
+    "updates_animation_before_return": true,
+    "returns_before_regular_gameplay": true,
+    "hit_stop_gate_precedes_death_gate": true
+  }
 }

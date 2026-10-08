@@ -75,6 +75,8 @@ const SOURCE_CAST_HIT_STOP_SECONDS := {
 # Source KaizenFXDirector.on_dash fires on the Q2 dash-state edge. Its
 # on_impact hook is not a live gameplay request in the current Python attack path.
 const SOURCE_DASH_HIT_STOP_SECONDS := {"kaizen": {"q": 0.027}}
+# Python BossDeathAnimation pauses gameplay for its active 60/90-frame phase.
+const BOSS_DEATH_PAUSE_TICKS := {"mini": 60, "true": 90}
 # Kept as an alias because the red recruitment adapters predate the player shop.
 const PLAYABLE_AI_HEROES = HERO_ROSTER
 const STARTER_HEROES: Array[String] = ["thorne", "grimjaw", "vex", "sylara", "kaizen", "zephyr"]
@@ -170,6 +172,8 @@ var miniboss_kill_count := 0
 var trueboss_kill_count := 0
 # Layer 8f: death FX survives registry retirement, like source EffectManager.
 var boss_death_presentations: Array[Dictionary] = []
+var boss_death_pause_ticks := 0
+var boss_death_froze_last_step := false
 var hit_stop_state = HitStopRuntime.new()
 var hit_stop_froze_last_step := false
 var boss_screen_shake_intensity := 0.0
@@ -501,12 +505,17 @@ func nexus_level(team: int) -> int:
 
 func step_tick() -> void:
 	hit_stop_froze_last_step = false
+	boss_death_froze_last_step = false
 	if not is_running():
 		return
 	_tick_boss_death_presentations()
 	if hit_stop_state.consume_frame():
 		hit_stop_froze_last_step = true
 		_tick_hit_stop_hero_clocks()
+		return
+	if boss_death_pause_ticks > 0:
+		boss_death_pause_ticks -= 1
+		boss_death_froze_last_step = true
 		return
 	# Input transactions are handled by the session before this method.
 	economy.step_tick(wave_count)
@@ -1284,8 +1293,12 @@ func _process_boss_result() -> void:
 		return
 	var boss := active_boss
 	var boss_type := boss.boss_type
-	# Source runs the kill-attribution pass before it pays out the reward.
+	# Source runs the kill-attribution pass before it starts the boss-death
+	# gameplay pause and pays out the reward.
 	_process_boss_kill(boss)
+	boss_death_pause_ticks = maxi(
+		boss_death_pause_ticks, int(BOSS_DEATH_PAUSE_TICKS.get(boss.boss_class, 0))
+	)
 	economy.credit_kill(BLUE, boss.gold_reward)
 	score += boss.gold_reward
 	boss_rewards.append({"boss_type": boss_type, "gold": boss.gold_reward})
