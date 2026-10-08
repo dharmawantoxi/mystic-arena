@@ -39,16 +39,9 @@ static func canonical_json(value: Variant) -> String:
 
 
 static func _python_float(value: float) -> String:
-	# Python's JSON encoder uses the shortest decimal that round-trips to the
-	# same binary64 value; Godot's default scientific precision is only 6.
-	var shortest := ""
-	for decimals in range(17):
-		var candidate := String.num_scientific(value, decimals)
-		if float(candidate) == value:
-			shortest = candidate
-			break
-	if shortest.is_empty():
-		shortest = String.num_scientific(value, 16)
+	# Both Python repr() and Godot's Grisu2 formatter use shortest round-trip
+	# binary64 decimals; normalize the exponent and fixed/scientific threshold.
+	var shortest := String.num_scientific(value)
 	var negative := shortest.begins_with("-")
 	if negative:
 		shortest = shortest.substr(1)
@@ -109,7 +102,7 @@ static func parse_payload(text: String) -> Dictionary:
 	if payload.get("magic") != PAYLOAD_MAGIC:
 		return {"payload": null, "error": "Not a Mystic Arena save file"}
 	var version_value: Variant = payload.get("version", 0)
-	var version := _source_int(version_value)
+	var version: Variant = _source_int(version_value)
 	if version == null:
 		return {"payload": null, "error": "File corrupt (bad version)"}
 	if int(version) < 1 or int(version) > PAYLOAD_VERSION:
@@ -152,10 +145,10 @@ static func get_payload_summary(payload: Dictionary) -> Dictionary:
 			var completed: Variant = data.get("completed_levels", [])
 			if completed is Array:
 				for level in completed:
-					var parsed_level := _source_int(level)
+					var parsed_level: Variant = _source_int(level)
 					if parsed_level != null:
 						highest_level = maxi(highest_level, int(parsed_level))
-			var gold := _source_int(data.get("meta_gold", 0))
+			var gold: Variant = _source_int(data.get("meta_gold", 0))
 			if gold != null:
 				best_gold = maxi(best_gold, int(gold))
 			var last_played: Variant = data.get("slot_last_played", 0.0)
@@ -214,7 +207,7 @@ static func validate_envelope(value: Variant) -> Dictionary:
 	var envelope: Dictionary = value
 	if envelope.get("magic") != CLOUD_MAGIC:
 		return {"payload": null, "error": "Bukan file cloud Mystic Arena"}
-	var version := _source_int(envelope.get("version", 0))
+	var version: Variant = _source_int(envelope.get("version", 0))
 	if version == null or int(version) < 1:
 		return {"payload": null, "error": "Payload cloud rusak"}
 	if int(version) > CLOUD_VERSION:
