@@ -31,7 +31,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	var hero = world.player_roster()[0]
 	session.selected_id = hero.id
 	session.selected_slot_id = -1
-	var destination := hero.position + Vector2(90, -65)
+	var destination: Vector2 = hero.position + Vector2(90, -65)
 	cursor.cursor_position = screen.arena.get_global_transform_with_canvas() * destination
 	_axis(cursor, JOY_AXIS_TRIGGER_RIGHT, 0.75)
 	check.call(
@@ -167,7 +167,7 @@ func _axis(cursor, axis: JoyAxis, value: float) -> Array[String]:
 
 func _cleanup() -> void:
 	for suffix in ["", ".tmp", ".bak"]:
-		var path := TEST_PATH + suffix
+		var path: String = TEST_PATH + String(suffix)
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 

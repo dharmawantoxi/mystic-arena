@@ -48,7 +48,10 @@ func _runtime(controller_type: String = "xbox"):
 
 
 func _check_policy(policy: Dictionary, check: Callable) -> void:
-	check.call(policy.screen == [1280, 720], "Controller source logical viewport is 1280x720")
+	check.call(
+		int(policy.screen[0]) == 1280 and int(policy.screen[1]) == 720,
+		"Controller source logical viewport is 1280x720"
+	)
 	check.call(
 		is_equal_approx(float(policy.cursor_speed), Runtime.CURSOR_SPEED),
 		"Controller base cursor speed matches source"
@@ -156,7 +159,10 @@ func _check_dpad(rows: Array, check: Callable) -> void:
 		for button in buttons:
 			repressed.append_array(runtime.feed_button(button, true))
 		events.append({"frame": "repress", "actions": repressed})
-		check.call(events == row.events, "Controller D-pad repeat replay: " + String(row.label))
+		check.call(
+			_events_match(events, row.events),
+			"Controller D-pad repeat replay: " + String(row.label)
+		)
 		runtime.free()
 
 
@@ -182,12 +188,32 @@ func _check_scroll(rows: Array, check: Callable) -> void:
 			var actions: Array[String] = runtime.advance_frame()
 			if not actions.is_empty():
 				events.append({"frame": frame, "actions": actions})
-		check.call(events == row.events, "Controller right-stick replay: " + String(row.label))
+		check.call(
+			_events_match(events, row.events), "Controller right-stick replay: " + String(row.label)
+		)
 		check.call(
 			is_equal_approx(runtime._scroll_accumulator, float(row.accumulator)),
 			"Controller scroll accumulator replay: " + String(row.label)
 		)
 		runtime.free()
+
+
+func _events_match(actual: Array, expected: Array) -> bool:
+	if actual.size() != expected.size():
+		return false
+	for index in range(actual.size()):
+		var actual_row: Dictionary = actual[index]
+		var expected_row: Dictionary = expected[index]
+		var actual_frame: Variant = actual_row.frame
+		var expected_frame: Variant = expected_row.frame
+		if actual_frame is String or expected_frame is String:
+			if String(actual_frame) != String(expected_frame):
+				return false
+		elif int(actual_frame) != int(expected_frame):
+			return false
+		if actual_row.actions != expected_row.actions:
+			return false
+	return true
 
 
 func _scroll_frame_count(label: String) -> int:
