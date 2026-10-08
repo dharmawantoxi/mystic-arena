@@ -1,5 +1,8 @@
+# gdlint:disable=max-returns
 extends "res://scenes/combat/combat_screen.gd"
 ## Separate playable subset; shared input/pause plumbing, no manual laboratory wave controls.
+
+signal next_level_requested(level_number: int)
 
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd")
@@ -8,6 +11,7 @@ const HeroState = preload("res://scripts/combat/hero_state.gd")
 const ItemForgePanel = preload("res://scripts/ui/item_forge_panel.gd")
 const HeroShopPanel = preload("res://scripts/ui/hero_shop_panel.gd")
 const ProgressStore = preload("res://scripts/match/level_progress_store.gd")
+const LevelCatalog = preload("res://scripts/match/level_catalog.gd")
 const TACTICAL_KEYS := {
 	KEY_G: "gather",
 	KEY_F: "gather",
@@ -18,6 +22,7 @@ const TACTICAL_KEYS := {
 }
 
 var progress_path := ProgressStore.PATH
+var is_replay := false
 var result_shown := false
 var forge_panel: ItemForgePanel
 var hero_shop_panel: HeroShopPanel
@@ -25,6 +30,7 @@ var hero_shop_toggle: Button
 var ai_toggle: Button
 var migration_status: Label
 @onready var match_session: PrototypeSession = $Simulation
+@onready var controller_cursor = %ControllerCursor
 
 
 func _ready() -> void:
@@ -93,10 +99,13 @@ func _ready() -> void:
 	%PauseButton.pressed.connect(pause_match)
 	%ResumeButton.pressed.connect(resume_match)
 	%RestartButton.pressed.connect(func() -> void: restart_requested.emit())
+	%NextLevelButton.pressed.connect(_request_next_level)
 	%MenuButton.pressed.connect(func() -> void: menu_requested.emit())
 	%BackButton.pressed.connect(func() -> void: menu_requested.emit())
 	%SaveRetryButton.pressed.connect(_save_result)
+	controller_cursor.action_requested.connect(_route_controller_action)
 	%SaveRetryButton.hide()
+	%NextLevelButton.hide()
 	if ai_toggle != null:
 		ai_toggle.text = (
 			"AI lawan  [A] : ON" if match_session.world.ai_enabled else "AI lawan  [A] : OFF"
@@ -106,13 +115,14 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	var world := simulation.world as Prototype
-	var cursor_local := (
-		arena.get_global_transform_with_canvas().affine_inverse()
-		* get_viewport().get_mouse_position()
-	)
+	var pointer := get_viewport().get_mouse_position()
+	if controller_cursor.active:
+		pointer = controller_cursor.cursor_position
+	var cursor_local := arena.get_global_transform_with_canvas().affine_inverse() * pointer
 	match_session.set_tactical_cursor(
 		cursor_local, Rect2(Vector2.ZERO, Vector2(1280, 720)).has_point(cursor_local)
 	)
+	_update_controller_hover()
 	_update_tactical_hud(world)
 	if forge_panel != null and forge_panel.visible:
 		forge_panel.refresh()
@@ -409,11 +419,20 @@ func _request_tower_path(tower_path: String) -> void:
 		match_session.request_upgrade(match_session.selected_id, tower_path)
 
 
+func _request_next_level() -> void:
+	var world := simulation.world as Prototype
+	if world.is_running() or world.winner != world.BLUE:
+		return
+	var next_level := LevelCatalog.get_next_level(world.level_number)
+	if next_level >= 0:
+		next_level_requested.emit(next_level)
+
+
 func _save_result() -> void:
 	var world := simulation.world as Prototype
 	if world.is_running():
 		return
-	var committed := world.commit_level_result(progress_path)
+	var committed := world.commit_level_result(progress_path, is_replay)
 	if committed.is_empty():
 		%Hint.text = ("Progres BELUM tersimpan. Periksa file progres, lalu coba lagi.")
 		%SaveRetryButton.show()
@@ -593,6 +612,20 @@ func _handle_keyboard_input(event: InputEvent) -> bool:
 	if not (event is InputEventKey):
 		return false
 	var key_event := event as InputEventKey
+	var world := match_session.world as Prototype
+	if not world.is_running():
+		if not key_event.pressed or key_event.echo:
+			return false
+		match key_event.physical_keycode:
+			KEY_R:
+				restart_requested.emit()
+			KEY_N:
+				_request_next_level()
+			KEY_ESCAPE:
+				menu_requested.emit()
+			_:
+				return false
+		return true
 	var tactical_name: String = TACTICAL_KEYS.get(key_event.physical_keycode, "")
 	if not tactical_name.is_empty():
 		if key_event.echo:
@@ -628,6 +661,185 @@ func _handle_keyboard_input(event: InputEvent) -> bool:
 		_:
 			handled = false
 	return handled
+
+
+func _route_controller_action(action: String) -> void:
+	var world := match_session.world as Prototype
+	if not world.is_running():
+		_route_controller_result(action, world)
+		return
+	if get_tree().paused:
+		_route_controller_pause(action)
+		return
+	match action:
+		"confirm":
+			if not _controller_activate_hover() and not _controller_modal_open():
+				_select(controller_cursor.cursor_position)
+		"cancel":
+			if hero_shop_panel != null and hero_shop_panel.is_open:
+				hero_shop_panel.set_open(false)
+			elif forge_panel != null and forge_panel.visible:
+				forge_panel.set_open(false)
+			elif match_session.selected_id >= 0 or match_session.selected_slot_id >= 0:
+				match_session.selected_id = -1
+				match_session.selected_slot_id = -1
+			else:
+				pause_match()
+		"skill_q":
+			match_session.request_skill_q(match_session.selected_id)
+			controller_cursor.rumble(0.4, 10)
+		"skill_w":
+			match_session.request_skill_w(match_session.selected_id)
+			controller_cursor.rumble(0.4, 10)
+		"skill_e":
+			match_session.request_skill_e(match_session.selected_id)
+			controller_cursor.rumble(0.4, 10)
+		"skill_r":
+			match_session.request_skill_r(match_session.selected_id)
+			controller_cursor.rumble(0.8, 20)
+		"start", "back":
+			pause_match()
+		"left_trigger":
+			_toggle_hero_shop()
+		"right_trigger":
+			_command_move(controller_cursor.cursor_position)
+		"stick_right":
+			_controller_snap()
+		"scroll_up":
+			_controller_scroll(-50)
+		"scroll_down":
+			_controller_scroll(50)
+		"dpad_up":
+			if _controller_modal_open():
+				_controller_scroll(-50)
+			else:
+				controller_cursor.nudge_cursor(Vector2(0, -80))
+		"dpad_down":
+			if _controller_modal_open():
+				_controller_scroll(50)
+			else:
+				controller_cursor.nudge_cursor(Vector2(0, 80))
+		"dpad_left":
+			controller_cursor.nudge_cursor(Vector2(-100, 0))
+		"dpad_right":
+			controller_cursor.nudge_cursor(Vector2(100, 0))
+
+
+func _route_controller_result(action: String, world: Prototype) -> void:
+	match action:
+		"confirm":
+			if world.winner == world.BLUE and LevelCatalog.get_next_level(world.level_number) >= 0:
+				controller_cursor.rumble(0.4, 10)
+				_request_next_level()
+			else:
+				_controller_activate_hover()
+		"skill_q":
+			controller_cursor.rumble(0.4, 10)
+			restart_requested.emit()
+		"skill_r":
+			controller_cursor.rumble(0.8, 20)
+			if world.winner == world.BLUE and LevelCatalog.get_next_level(world.level_number) >= 0:
+				_request_next_level()
+			else:
+				restart_requested.emit()
+		"back":
+			menu_requested.emit()
+		"stick_right":
+			_controller_snap()
+		"scroll_up":
+			_controller_scroll(-50)
+		"scroll_down":
+			_controller_scroll(50)
+
+
+func _route_controller_pause(action: String) -> void:
+	match action:
+		"confirm":
+			_controller_activate_hover()
+		"cancel", "start", "back":
+			resume_match()
+		"stick_right":
+			_controller_snap()
+
+
+func _controller_modal_open() -> bool:
+	return (
+		(hero_shop_panel != null and hero_shop_panel.is_open)
+		or (forge_panel != null and forge_panel.visible)
+	)
+
+
+func _controller_button_roots() -> Array[Node]:
+	var roots: Array[Node] = []
+	var world := match_session.world as Prototype
+	if get_tree().paused or not world.is_running():
+		roots.append(%PauseOverlay)
+	elif hero_shop_panel != null and hero_shop_panel.is_open:
+		roots.append(hero_shop_panel)
+	elif forge_panel != null and forge_panel.visible:
+		roots.append(forge_panel)
+	else:
+		roots.append(self)
+	return roots
+
+
+func _controller_buttons() -> Array[Button]:
+	var buttons: Array[Button] = []
+	for root_node in _controller_button_roots():
+		for node in root_node.find_children("*", "Button", true, false):
+			var button := node as Button
+			if button != null and button.is_visible_in_tree() and not button.disabled:
+				buttons.append(button)
+	return buttons
+
+
+func _controller_hover_button() -> Button:
+	for button in _controller_buttons():
+		if button.get_global_rect().has_point(controller_cursor.cursor_position):
+			return button
+	return null
+
+
+func _controller_activate_hover() -> bool:
+	var button := _controller_hover_button()
+	if button == null:
+		return false
+	button.pressed.emit()
+	return true
+
+
+func _controller_snap() -> void:
+	var rects: Array[Rect2] = []
+	for button in _controller_buttons():
+		rects.append(button.get_global_rect())
+	controller_cursor.snap_to_nearest(rects)
+	_update_controller_hover()
+
+
+func _controller_scroll(amount: int) -> void:
+	var fallback: ScrollContainer
+	for root_node in _controller_button_roots():
+		for node in root_node.find_children("*", "ScrollContainer", true, false):
+			var scroll := node as ScrollContainer
+			if scroll == null or not scroll.is_visible_in_tree():
+				continue
+			if fallback == null:
+				fallback = scroll
+			if scroll.get_global_rect().has_point(controller_cursor.cursor_position):
+				scroll.scroll_vertical += amount
+				return
+	if fallback != null:
+		fallback.scroll_vertical += amount
+
+
+func _update_controller_hover() -> void:
+	if not controller_cursor.active:
+		controller_cursor.set_hover_rect(Rect2(), false)
+		return
+	var button := _controller_hover_button()
+	controller_cursor.set_hover_rect(
+		Rect2() if button == null else button.get_global_rect(), button != null
+	)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -674,9 +886,20 @@ func pause_match() -> void:
 		forge_panel.set_open(false)
 	super.pause_match()
 	var world := simulation.world as Prototype
-	if not world.is_running():
-		%PauseTitle.text = "BIRU MENANG" if world.winner == 0 else "MERAH MENANG"
-		%ResumeButton.hide()
+	if world.is_running():
+		%PauseTitle.text = "Permainan Dijeda"
+		%ResumeButton.show()
+		%NextLevelButton.hide()
+		return
+	%PauseTitle.text = "BIRU MENANG" if world.winner == world.BLUE else "MERAH MENANG"
+	%ResumeButton.hide()
+	var has_next := (
+		world.winner == world.BLUE and LevelCatalog.get_next_level(world.level_number) >= 0
+	)
+	%NextLevelButton.visible = has_next
+	if has_next:
+		%NextLevelButton.grab_focus()
+	else:
 		%RestartButton.grab_focus()
 
 

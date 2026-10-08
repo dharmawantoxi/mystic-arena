@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scenes/prototype/prototype_screen.gd" id="1"]
 [ext_resource type="Script" path="res://scenes/prototype/prototype_view.gd" id="2"]
 [ext_resource type="Script" path="res://scripts/simulation/prototype_session.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/input/controller_runtime.gd" id="4"]
 
 [node name="PrototypeMatch" type="Control"]
 process_mode = 3
@@ -352,6 +353,13 @@ layout_mode = 2
 custom_minimum_size = Vector2(0, 54)
 text = "Coba simpan lagi"
 
+[node name="NextLevelButton" type="Button" parent="HUD/PauseOverlay/Center/Card/Column"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+custom_minimum_size = Vector2(0, 54)
+text = "Level berikutnya  [N / RB]"
+
 [node name="ResumeButton" type="Button" parent="HUD/PauseOverlay/Center/Card/Column"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -369,3 +377,15 @@ unique_name_in_owner = true
 layout_mode = 2
 custom_minimum_size = Vector2(0, 54)
 text = "Kembali ke menu"
+
+[node name="ControllerCursor" type="Control" parent="HUD"]
+unique_name_in_owner = true
+process_mode = 3
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("4")

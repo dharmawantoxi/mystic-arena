@@ -9,11 +9,13 @@ const MATCH = preload("res://scenes/match/Match.tscn")
 const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
 const ProgressStore = preload("res://scripts/match/level_progress_store.gd")
 const HeroUnlockStore = preload("res://scripts/match/hero_unlock_store.gd")
+const Catalog = preload("res://scripts/match/level_catalog.gd")
 
 var current_screen: Node
 var transition_pending := false
 var prototype_level := 1
 var prototype_difficulty := "normal"
+var prototype_is_replay := false
 var progress_path := ProgressStore.PATH
 
 @onready var screen_root: Control = $ScreenRoot
@@ -38,6 +40,20 @@ func start_prototype(level_number: int = 1, difficulty: String = "normal") -> vo
 		progress_path = String(current_screen.get("progress_path"))
 	prototype_level = level_number
 	prototype_difficulty = difficulty
+	prototype_is_replay = false
+	_request_screen(PROTOTYPE)
+
+
+func _restart_prototype() -> void:
+	prototype_is_replay = true
+	_request_screen(PROTOTYPE)
+
+
+func _start_next_prototype(level_number: int) -> void:
+	if level_number != Catalog.get_next_level(prototype_level):
+		return
+	prototype_level = level_number
+	prototype_is_replay = false
 	_request_screen(PROTOTYPE)
 
 
@@ -72,6 +88,7 @@ func _install_screen(scene: PackedScene) -> void:
 		# Keep this node dynamic: the PackedScene boundary only exposes Node,
 		# while PrototypeSession owns these pre-tree configuration methods.
 		current_screen.set("progress_path", progress_path)
+		current_screen.set("is_replay", prototype_is_replay)
 		var session = current_screen.get_node("Simulation")
 		var profile := HeroUnlockStore.bootstrap_state(ProgressStore.load_state(progress_path))
 		if (
@@ -92,7 +109,11 @@ func _install_screen(scene: PackedScene) -> void:
 		current_screen.connect("quit_requested", _quit)
 	else:
 		current_screen.connect("menu_requested", show_menu)
-		current_screen.connect("restart_requested", _request_screen.bind(scene))
+		if scene == PROTOTYPE:
+			current_screen.connect("restart_requested", _restart_prototype)
+			current_screen.connect("next_level_requested", _start_next_prototype)
+		else:
+			current_screen.connect("restart_requested", _request_screen.bind(scene))
 	transition_pending = false
 
 

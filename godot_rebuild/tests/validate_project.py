@@ -367,6 +367,31 @@ check("command.get(\"path\", \"archer\")" in structure_session
       and "activate_player_castle_shield" in structure_session,
       "Player structure mutations must cross the fixed-tick session")
 
+from controller_source_oracle import source_fixture as controller_source_fixture
+controller_fixture_path = ROOT / "tests/fixtures/controller_source.json"
+check(controller_fixture_path.is_file(), "Controller runtime requires a source fixture")
+if controller_fixture_path.is_file():
+    check(controller_source_fixture()
+          == json.loads(controller_fixture_path.read_text(encoding="utf-8")),
+          "Controller runtime source fixture drift")
+check("python godot_rebuild/tests/controller_source_oracle.py" in workflow,
+      "CI must execute the controller source oracle")
+check("ControllerRuntimeChecks.new().run(_check)" in ai_tests,
+      "Controller source replay suite must run")
+check("await ControllerSceneChecks.new().run(self, app, _check)" in ai_tests,
+      "Controller playable-scene suite must run")
+controller_runtime = (ROOT / "scripts/input/controller_runtime.gd").read_text(encoding="utf-8")
+check(all(token in controller_runtime for token in
+          ("CURSOR_ACCELERATION", "HAT_REPEAT_DELAY", "SCROLL_SPEED", "rumble")),
+      "Native controller must retain cursor, repeat, scroll and rumble policy")
+check("ControllerCursor" in structure_scene and "NextLevelButton" in structure_scene,
+      "Playable scene must author controller cursor and next-level controls")
+check(all(token in shield_screen for token in
+          ("_route_controller_action", "_controller_snap", "_controller_scroll")),
+      "Playable scene must route controller actions, snapping and scrolling")
+check("prototype_is_replay" in app and "_start_next_prototype" in app,
+      "App must own replay and next-level controller transitions")
+
 # The native AI adapters are now reachable from the playable prototype, but
 # remain explicitly toggleable for replay/debug comparisons.
 check("_build_ai_toggle" in shield_screen and "KEY_A" in shield_screen,

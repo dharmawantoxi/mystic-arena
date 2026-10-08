@@ -1,3 +1,4 @@
+# gdlint:disable=max-file-lines
 extends SceneTree
 ## Native, dependency-free headless regression runner. Exit code 1 means failure.
 
@@ -38,6 +39,8 @@ const PlayerStructureCommandChecks = preload("res://tests/player_structure_comma
 const PlayerStructureCommandSceneChecks = preload(
 	"res://tests/player_structure_command_scene_checks.gd"
 )
+const ControllerRuntimeChecks = preload("res://tests/controller_runtime_checks.gd")
+const ControllerSceneChecks = preload("res://tests/controller_scene_checks.gd")
 const AIUpgradeChecks = preload("res://tests/ai_upgrade_checks.gd")
 const AIPriorityChecks = preload("res://tests/ai_priority_checks.gd")
 const AIItemChecks = preload("res://tests/ai_item_checks.gd")
@@ -158,6 +161,7 @@ func _run() -> void:
 	TerrainTilesChecks.new().run(_check)
 	LevelProgressChecks.new().run(_check)
 	LevelProgressStoreChecks.new().run(_check)
+	ControllerRuntimeChecks.new().run(_check)
 	ThorneChecks.new().run(_check)
 	GrimjawChecks.new().run(_check)
 	SylaraChecks.new().run(_check)
@@ -319,6 +323,7 @@ func _run() -> void:
 	await MageSceneChecks.new().run(self, app, _check)
 	await KaizenSceneChecks.new().run(self, app, _check)
 	await TacticalCommandSceneChecks.new().run(self, app, _check)
+	await ControllerSceneChecks.new().run(self, app, _check)
 	root.get_node("AudioManager").call("shutdown")
 	await _settle()
 	app.queue_free()
