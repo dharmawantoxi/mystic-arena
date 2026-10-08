@@ -53,13 +53,17 @@ func run(check: Callable) -> void:
 	var corrupt := FileAccess.open(path, FileAccess.WRITE)
 	corrupt.store_string("{truncated")
 	corrupt.close()
-	var corrupted_text := FileAccess.open(path, FileAccess.READ).get_as_text()
+	var corrupt_reader := FileAccess.open(path, FileAccess.READ)
+	var corrupted_text := corrupt_reader.get_as_text()
+	corrupt_reader.close()
 	check.call(
 		Store.load_speed(path) == Store.DEFAULT_SPEED,
 		"corrupt setting falls back without parsing data"
 	)
 	check.call(not Store.save_speed(0.5, path), "corrupt preference cannot be overwritten")
-	var still_corrupt := FileAccess.open(path, FileAccess.READ).get_as_text()
+	var current_reader := FileAccess.open(path, FileAccess.READ)
+	var still_corrupt := current_reader.get_as_text()
+	current_reader.close()
 	check.call(still_corrupt == corrupted_text, "corruption guard preserves original bytes")
 	var backup := FileAccess.open(path + ".bak", FileAccess.WRITE)
 	backup.store_string("recovery required")
@@ -71,6 +75,7 @@ func run(check: Callable) -> void:
 	_remove(runtime_path)
 	_remove(runtime_path + ".tmp")
 	_remove(runtime_path + ".bak")
+	runtime.free()
 
 
 func _remove(path: String) -> void:
