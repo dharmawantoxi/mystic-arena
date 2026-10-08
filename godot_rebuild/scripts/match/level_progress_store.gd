@@ -103,6 +103,8 @@ static func _normalize_disk_state(state: Dictionary) -> Dictionary:
 			counts[key] = _disk_integer(counts[key])
 	if copy.has("last_played_level"):
 		copy["last_played_level"] = _disk_integer(copy["last_played_level"])
+	if copy.has("slot_playtime_seconds"):
+		copy["slot_playtime_seconds"] = _disk_integer(copy["slot_playtime_seconds"])
 	return copy
 
 
@@ -116,6 +118,19 @@ static func _valid(state: Dictionary) -> bool:
 		var last: Variant = state["last_played_level"]
 		if not (last is int) or last < 1 or last > 54:
 			return false
+	for timestamp_field in ["slot_created", "slot_last_played"]:
+		if state.has(timestamp_field):
+			var timestamp: Variant = state[timestamp_field]
+			if not (timestamp is int or timestamp is float):
+				return false
+			if is_nan(float(timestamp)) or is_inf(float(timestamp)) or float(timestamp) < 0.0:
+				return false
+	if state.has("slot_playtime_seconds"):
+		var playtime: Variant = state["slot_playtime_seconds"]
+		if not (playtime is int) or playtime < 0:
+			return false
+	if state.has("level_stats") and not (state["level_stats"] is Dictionary):
+		return false
 	var completed: Variant = state.get("completed_levels", [])
 	var counts: Variant = state.get("replay_reward_counts", {})
 	if not (completed is Array) or not (counts is Dictionary):

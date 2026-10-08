@@ -121,6 +121,22 @@ custom_minimum_size = Vector2(100, 60)
 layout_mode = 2
 text = "Keluar"
 
+[node name="SaveRow" type="HBoxContainer" parent="Content/Column"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="SaveGamesButton" type="Button" parent="Content/Column/SaveRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(190, 48)
+layout_mode = 2
+text = "Save Games"
+
+[node name="ActiveSlotLabel" type="Label" parent="Content/Column/SaveRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "SAVE GAME 1"
+vertical_alignment = 1
+
 [node name="Scope" type="Label" parent="Content/Column"]
 unique_name_in_owner = true
 layout_mode = 2

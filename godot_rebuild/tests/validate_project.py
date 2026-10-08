@@ -323,7 +323,7 @@ meta_domain = (ROOT / "scripts/match/hero_unlock_store.gd").read_text(encoding="
 check("unlock_requested.emit(hero_type)" in meta_shop and "save_state" not in meta_shop,
       "Permanent shop panel must be request-only")
 check("try_unlock(before, hero_type)" in meta_menu
-      and "ProgressStore.save_state(result.state, progress_path)" in meta_menu,
+      and "SaveSlotStore.save_path(result.state, progress_path" in meta_menu,
       "Main menu must atomically persist permanent unlock transactions")
 check('const DEFAULT_HERO := "kaizen"' in meta_domain
       and "const MINI_BOSS_UNLOCK_COST := 4500" in meta_domain
@@ -332,6 +332,37 @@ check('const DEFAULT_HERO := "kaizen"' in meta_domain
 check("static func try_unlock" in meta_domain
       and "HeroUnlockStore.new()" not in meta_shop + meta_menu + app,
       "Permanent unlock authority must remain stateless across menu scenes")
+
+from save_slot_source_oracle import source_fixture as save_slot_source_fixture
+save_slot_fixture_path = ROOT / "tests/fixtures/save_slot_source.json"
+check(save_slot_fixture_path.is_file(), "Save-slot runtime requires a source fixture")
+if save_slot_fixture_path.is_file():
+    check(save_slot_source_fixture()
+          == json.loads(save_slot_fixture_path.read_text(encoding="utf-8")),
+          "SaveManager source fixture drift")
+check("python godot_rebuild/tests/save_slot_source_oracle.py" in workflow,
+      "CI must execute the SaveManager source oracle")
+check("- '_system.py'" in workflow, "Save-slot CI must track its real source authority")
+check("SaveSlotChecks.new().run(_check)" in ai_tests,
+      "Save-slot domain suite must run")
+check("await SaveSlotSceneChecks.new().run(self, app, _check)" in ai_tests,
+      "Save-slot playable lifecycle suite must run")
+save_slot_store = (ROOT / "scripts/match/save_slot_store.gd").read_text(encoding="utf-8")
+save_slot_panel = (ROOT / "scripts/ui/save_slot_panel.gd").read_text(encoding="utf-8")
+check("const SLOT_COUNT := 3" in save_slot_store
+      and "ProgressStore.save_state" in save_slot_store
+      and "static func migrate_legacy" in save_slot_store,
+      "Native save slots must preserve source count and atomic native storage")
+check("slot_requested.emit(slot)" in save_slot_panel
+      and "delete_requested.emit(slot)" in save_slot_panel
+      and "SaveSlotStore.delete_slot" not in save_slot_panel,
+      "Save-slot panel must remain request-only")
+check("progress_slot_changed.emit(slot, progress_path)" in meta_menu
+      and "current_screen.connect(\"progress_slot_changed\", _select_progress_slot)" in app,
+      "Selected slot ownership must cross the menu/App scene boundary")
+check("SaveSlotStore.save_path(result.state, path" in
+      (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8"),
+      "Match result must commit through the active native save slot")
 
 check("AIShieldChecks.new().run(_check)" in ai_tests, "AI shield domain suite must remain in runner")
 check("await AIShieldSceneChecks.new().run(self, app, _check)" in ai_tests, "Paid shield refund/reset UI suite must run")

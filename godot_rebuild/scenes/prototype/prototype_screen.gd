@@ -11,6 +11,7 @@ const HeroState = preload("res://scripts/combat/hero_state.gd")
 const ItemForgePanel = preload("res://scripts/ui/item_forge_panel.gd")
 const HeroShopPanel = preload("res://scripts/ui/hero_shop_panel.gd")
 const ProgressStore = preload("res://scripts/match/level_progress_store.gd")
+const SaveSlotStore = preload("res://scripts/match/save_slot_store.gd")
 const LevelCatalog = preload("res://scripts/match/level_catalog.gd")
 const TouchGestureRuntime = preload("res://scripts/input/touch_gesture_runtime.gd")
 const TOUCH_TARGET_MIN := 48.0
@@ -25,6 +26,7 @@ const TACTICAL_KEYS := {
 }
 
 var progress_path := ProgressStore.PATH
+var slot_path_template := SaveSlotStore.PATH_TEMPLATE
 var is_replay := false
 var result_shown := false
 var forge_panel: ItemForgePanel
@@ -438,7 +440,7 @@ func _save_result() -> void:
 	var world := simulation.world as Prototype
 	if world.is_running():
 		return
-	var committed := world.commit_level_result(progress_path, is_replay)
+	var committed := world.commit_level_result(progress_path, is_replay, slot_path_template)
 	if committed.is_empty():
 		%Hint.text = ("Progres BELUM tersimpan. Periksa file progres, lalu coba lagi.")
 		%SaveRetryButton.show()

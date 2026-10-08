@@ -1,0 +1,129 @@
+{
+  "delete": {
+    "first": true,
+    "remaining_info": null,
+    "second": false
+  },
+  "empty": {
+    "completed_levels": [],
+    "last_played_level": 1,
+    "level_stats": {},
+    "meta_gold": 0,
+    "purchased_heroes": [],
+    "run_difficulty": null,
+    "slot_created": 1700000000.0,
+    "slot_last_played": 1700000000.0,
+    "slot_playtime_seconds": 0,
+    "unlocked_bosses": []
+  },
+  "format": {
+    "last_125": "2m ago",
+    "last_zero": "Never",
+    "playtime_3665": "1h 1m",
+    "playtime_59": "0m",
+    "time_0": "--:--",
+    "time_125": "2:05"
+  },
+  "migration": {
+    "backup_exists": true,
+    "first": true,
+    "legacy_exists": false,
+    "second": false,
+    "state": {
+      "completed_levels": [
+        1
+      ],
+      "last_played_level": 1,
+      "level_stats": {},
+      "meta_gold": 99,
+      "purchased_heroes": [
+        "kaizen"
+      ],
+      "run_difficulty": null,
+      "slot_created": 1700000125.0,
+      "slot_last_played": 1700000125.0,
+      "slot_playtime_seconds": 0,
+      "unlocked_bosses": []
+    }
+  },
+  "policy": {
+    "initial_slot": 1,
+    "selected_after_invalid": 2,
+    "slot_count": 3,
+    "slot_names": [
+      "slot_1.json",
+      "slot_2.json",
+      "slot_3.json"
+    ]
+  },
+  "save": {
+    "all_info": [
+      null,
+      {
+        "completed_levels": [
+          1,
+          2,
+          4
+        ],
+        "highest_level": 4,
+        "last_played_level": 4,
+        "meta_gold": 7250,
+        "playtime_seconds": 3665,
+        "purchased_heroes": [
+          "kaizen",
+          "thorne"
+        ],
+        "slot_created": 1700000000.0,
+        "slot_last_played": 1700000000.0,
+        "slot_num": 2,
+        "unlocked_bosses": [
+          "gornak"
+        ]
+      },
+      null
+    ],
+    "cloud_uploads": 2,
+    "first_info": {
+      "completed_levels": [
+        1,
+        2,
+        4
+      ],
+      "highest_level": 4,
+      "last_played_level": 4,
+      "meta_gold": 7250,
+      "playtime_seconds": 3665,
+      "purchased_heroes": [
+        "kaizen",
+        "thorne"
+      ],
+      "slot_created": 1700000000.0,
+      "slot_last_played": 1700000000.0,
+      "slot_num": 2,
+      "unlocked_bosses": [
+        "gornak"
+      ]
+    },
+    "second_info": {
+      "completed_levels": [
+        1,
+        2,
+        4
+      ],
+      "highest_level": 4,
+      "last_played_level": 4,
+      "meta_gold": 8000,
+      "playtime_seconds": 3665,
+      "purchased_heroes": [
+        "kaizen",
+        "thorne"
+      ],
+      "slot_created": 1700000000.0,
+      "slot_last_played": 1700000125.0,
+      "slot_num": 2,
+      "unlocked_bosses": [
+        "gornak"
+      ]
+    }
+  }
+}

@@ -27,6 +27,7 @@ const BossAI = preload("res://scripts/match/boss_ai.gd")
 const LevelCatalog = preload("res://scripts/match/level_catalog.gd")
 const LevelProgress = preload("res://scripts/match/level_progress.gd")
 const LevelProgressStore = preload("res://scripts/match/level_progress_store.gd")
+const SaveSlotStore = preload("res://scripts/match/save_slot_store.gd")
 const BOSS_DATA := "res://data/bosses/boss_stats.json"
 const RANGED_BOSS_KITERS := [
 	"ancient_apparition",
@@ -257,7 +258,9 @@ func claim_level_result(state: Dictionary, is_replay: bool = false) -> Dictionar
 ## only consumes the claim AFTER a verified write; on failure it can retry.
 ## The scene does not call this until native save tests pass on target devices.
 func commit_level_result(
-	path: String = LevelProgressStore.PATH, is_replay: bool = false
+	path: String = LevelProgressStore.PATH,
+	is_replay: bool = false,
+	slot_path_template: String = SaveSlotStore.PATH_TEMPLATE
 ) -> Dictionary:
 	if _level_result_claimed or winner not in [BLUE, RED]:
 		return {}
@@ -272,7 +275,7 @@ func commit_level_result(
 	if result.is_empty():
 		return {}
 	result["state"] = player_profile_state(result.state)
-	if not LevelProgressStore.save_state(result.state, path):
+	if not SaveSlotStore.save_path(result.state, path, -1.0, slot_path_template):
 		return {}
 	_level_result_claimed = true
 	return result

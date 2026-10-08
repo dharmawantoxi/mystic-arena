@@ -5,16 +5,22 @@ signal siege_requested
 signal combat_requested
 signal play_requested
 signal quit_requested
+signal progress_slot_changed(slot: int, path: String)
 
 const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
 const AudioRuntime = preload("res://scripts/audio/audio_runtime.gd")
 const Catalog = preload("res://scripts/match/level_catalog.gd")
 const ProgressStore = preload("res://scripts/match/level_progress_store.gd")
 const HeroUnlockStore = preload("res://scripts/match/hero_unlock_store.gd")
+const SaveSlotStore = preload("res://scripts/match/save_slot_store.gd")
 const MetaHeroShopPanel = preload("res://scripts/ui/meta_hero_shop_panel.gd")
+const SaveSlotPanel = preload("res://scripts/ui/save_slot_panel.gd")
 
-var progress_path := ProgressStore.PATH
+var slot_path_template := SaveSlotStore.PATH_TEMPLATE
+var progress_path := SaveSlotStore.current_path(slot_path_template)
+var active_slot := SaveSlotStore.get_current_slot()
 var hero_shop_panel: MetaHeroShopPanel
+var save_slot_panel: SaveSlotPanel
 
 
 func _ready() -> void:
@@ -28,7 +34,14 @@ func _ready() -> void:
 	%SiegeButton.pressed.connect(func() -> void: _click_and_emit(siege_requested))
 	%PrototypeButton.pressed.connect(func() -> void: _click_and_start())
 	%HeroShopButton.pressed.connect(_open_hero_shop)
+	%SaveGamesButton.pressed.connect(_open_save_slots)
+	var selected_from_path := SaveSlotStore.slot_for_path(progress_path, slot_path_template)
+	if selected_from_path > 0:
+		active_slot = selected_from_path
+		SaveSlotStore.set_current_slot(active_slot)
 	_build_hero_shop()
+	_build_save_slots()
+	_update_active_slot_label()
 	refresh_levels()
 	%PrototypeButton.grab_focus()
 
@@ -56,6 +69,65 @@ func _open_hero_shop() -> void:
 	hero_shop_panel.open_with_state(profile)
 
 
+func _build_save_slots() -> void:
+	save_slot_panel = SaveSlotPanel.new()
+	save_slot_panel.name = "SaveSlotPanel"
+	save_slot_panel.slot_requested.connect(_select_save_slot)
+	save_slot_panel.delete_requested.connect(_delete_save_slot)
+	add_child(save_slot_panel)
+
+
+func _open_save_slots() -> void:
+	AudioRuntime.play("ui_click")
+	if hero_shop_panel != null:
+		hero_shop_panel.set_open(false)
+	save_slot_panel.open_with_slots(SaveSlotStore.all_slot_info(slot_path_template), active_slot)
+
+
+func _select_save_slot(slot: int) -> void:
+	if not SaveSlotStore.set_current_slot(slot):
+		AudioRuntime.play("ui_error")
+		return
+	active_slot = slot
+	progress_path = SaveSlotStore.slot_path(slot, slot_path_template)
+	_update_active_slot_label()
+	refresh_levels()
+	save_slot_panel.set_open(false)
+	progress_slot_changed.emit(slot, progress_path)
+	AudioRuntime.play("ui_click")
+
+
+func _delete_save_slot(slot: int) -> void:
+	if not SaveSlotStore.delete_slot(slot, slot_path_template):
+		AudioRuntime.play("ui_error")
+	else:
+		AudioRuntime.play("ui_click")
+	if slot == active_slot:
+		refresh_levels()
+	save_slot_panel.refresh_slots(SaveSlotStore.all_slot_info(slot_path_template), active_slot)
+
+
+func _update_active_slot_label() -> void:
+	%ActiveSlotLabel.text = "SAVE GAME %d" % active_slot
+
+
+func configure_slot_paths(path_template: String, slot: int = 1) -> bool:
+	if not path_template.contains("%d") or not SaveSlotStore.set_current_slot(slot):
+		return false
+	slot_path_template = path_template
+	active_slot = slot
+	progress_path = SaveSlotStore.slot_path(slot, path_template)
+	if is_node_ready():
+		_update_active_slot_label()
+		refresh_levels()
+		if save_slot_panel != null and save_slot_panel.visible:
+			save_slot_panel.refresh_slots(
+				SaveSlotStore.all_slot_info(slot_path_template), active_slot
+			)
+	progress_slot_changed.emit(slot, progress_path)
+	return true
+
+
 func _unlock_hero(hero_type: String) -> void:
 	var before := HeroUnlockStore.bootstrap_state(ProgressStore.load_state(progress_path))
 	var result := HeroUnlockStore.try_unlock(before, hero_type)
@@ -63,7 +135,7 @@ func _unlock_hero(hero_type: String) -> void:
 		AudioRuntime.play("ui_error")
 		hero_shop_panel.show_error(String(result.error))
 		return
-	if not ProgressStore.save_state(result.state, progress_path):
+	if not SaveSlotStore.save_path(result.state, progress_path, -1.0, slot_path_template):
 		AudioRuntime.play("ui_error")
 		hero_shop_panel.show_error("save")
 		return
@@ -116,4 +188,10 @@ func _start_selected_level() -> void:
 	var locked := "" if lock_value == null else String(lock_value)
 	if difficulty not in ["easy", "normal", "hard"] or (locked != "" and locked != difficulty):
 		return
+	if locked == "":
+		progress = HeroUnlockStore.bootstrap_state(progress)
+		progress["run_difficulty"] = difficulty
+		if not SaveSlotStore.save_path(progress, progress_path, -1.0, slot_path_template):
+			AudioRuntime.play("ui_error")
+			return
 	prototype_requested.emit(number, difficulty)

@@ -76,6 +76,7 @@ godot/gdext/godot-cpp
 # ═══ Save game & log (jangan ikut ke repo) ═══
 savegame*.json
 save_slot*.json
+!godot_rebuild/tests/fixtures/save_slot_source.json
 crash_log.txt
 *.log
 
