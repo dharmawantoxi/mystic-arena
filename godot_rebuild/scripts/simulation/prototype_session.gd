@@ -38,6 +38,7 @@ func configure_player_profile(state: Dictionary) -> bool:
 
 
 func _ready() -> void:
+	GameSpeed.reset_match_clock()
 	super._ready()
 	var match_world := world as Prototype
 	match_world.setup_arena()
@@ -191,7 +192,11 @@ func _physics_process(_delta: float) -> void:
 				. get(match_world.transaction_error, "Transaksi ditolak.")
 			)
 		command.clear()
-	world.step_tick()
+	var tick_budget := GameSpeed.ticks_for_physics_frame()
+	for _tick in range(tick_budget):
+		if not match_world.is_running():
+			break
+		match_world.step_tick()
 	if world.get_unit(selected_id) == null:
 		selected_id = -1
 

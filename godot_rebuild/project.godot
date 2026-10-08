@@ -13,6 +13,7 @@ config/custom_user_dir_name="MysticArenaRebuildDev"
 [autoload]
 
 AudioManager="*res://scripts/audio/audio_manager.gd"
+GameSpeed="*res://scripts/simulation/game_speed_runtime.gd"
 
 [display]
 window/size/viewport_width=1280

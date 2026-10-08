@@ -103,6 +103,7 @@ func _ready() -> void:
 	_build_hero_shop_ui()
 	_build_ai_toggle()
 	_build_migration_status()
+	_setup_game_speed_control()
 	%PauseButton.pressed.connect(pause_match)
 	%ResumeButton.pressed.connect(resume_match)
 	%RestartButton.pressed.connect(func() -> void: restart_requested.emit())
@@ -118,6 +119,23 @@ func _ready() -> void:
 			"AI lawan  [A] : ON" if match_session.world.ai_enabled else "AI lawan  [A] : OFF"
 		)
 	%PauseButton.grab_focus()
+
+
+func _setup_game_speed_control() -> void:
+	var selector: OptionButton = %GameSpeedSelector
+	for speed in GameSpeed.SPEEDS:
+		selector.add_item("%.1fx" % speed)
+	selector.select(GameSpeed.speed_index())
+	selector.item_selected.connect(_on_game_speed_selected)
+	GameSpeed.speed_changed.connect(_sync_game_speed_selector)
+
+
+func _on_game_speed_selected(index: int) -> void:
+	GameSpeed.set_speed_index(index)
+
+
+func _sync_game_speed_selector(_speed: float) -> void:
+	%GameSpeedSelector.select(GameSpeed.speed_index())
 
 
 func _process(_delta: float) -> void:
