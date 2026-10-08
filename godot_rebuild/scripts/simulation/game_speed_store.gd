@@ -16,7 +16,10 @@ static func is_valid_speed(value: float) -> bool:
 
 
 static func decode_speed(text: String) -> float:
-	var parsed: Variant = JSON.parse_string(text)
+	var parser := JSON.new()
+	if parser.parse(text) != OK:
+		return INVALID_SPEED
+	var parsed: Variant = parser.data
 	if typeof(parsed) != TYPE_DICTIONARY or int(parsed.get("version", -1)) != VERSION:
 		return INVALID_SPEED
 	var raw_speed: Variant = parsed.get("speed", null)

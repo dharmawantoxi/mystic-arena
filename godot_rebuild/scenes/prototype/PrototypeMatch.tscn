@@ -72,7 +72,7 @@ text = "WAVE 00 · Persiapan 5.0 s"
 
 [node name="GameSpeedSelector" type="OptionButton" parent="HUD/TopBar/Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(100, 52)
+custom_minimum_size = Vector2(68, 52)
 layout_mode = 2
 
 [node name="PauseButton" type="Button" parent="HUD/TopBar/Row"]
