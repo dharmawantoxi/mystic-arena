@@ -343,6 +343,30 @@ check("_stable_kills_descending" in ai_shields and "can_activate_regen_shield" i
 shield_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
 check('tower.sale_value()' in shield_screen, "UI sale quote must include purchased shield")
 
+from player_structure_command_source_oracle import source_fixture as player_structure_fixture
+player_structure_path = ROOT / "tests/fixtures/player_structure_command_source.json"
+check(player_structure_path.is_file(), "Player structure commands require a source fixture")
+if player_structure_path.is_file():
+    check(player_structure_fixture() == json.loads(player_structure_path.read_text(encoding="utf-8")),
+          "Player structure command source fixture drift")
+check("python godot_rebuild/tests/player_structure_command_source_oracle.py" in workflow,
+      "CI must check player structure command oracle")
+check("PlayerStructureCommandChecks.new().run(_check)" in ai_tests,
+      "Player structure domain parity suite must run")
+check("await PlayerStructureCommandSceneChecks.new().run(self, app, _check)" in ai_tests,
+      "Player structure playable-scene suite must run")
+structure_scene = (ROOT / "scenes/prototype/PrototypeMatch.tscn").read_text(encoding="utf-8")
+check(all(name in structure_scene for name in ("RegenShieldButton", "CastleShieldButton")),
+      "Playable scene must author both player shield controls")
+check(all(path in shield_screen for path in ('"cannon"', '"ice"', '"mage"'))
+      and "request_regen_shield" in shield_screen and "request_castle_shield" in shield_screen,
+      "Playable scene must route all source build and shield choices")
+structure_session = (ROOT / "scripts/simulation/prototype_session.gd").read_text(encoding="utf-8")
+check("command.get(\"path\", \"archer\")" in structure_session
+      and "activate_player_regen_shield" in structure_session
+      and "activate_player_castle_shield" in structure_session,
+      "Player structure mutations must cross the fixed-tick session")
+
 # The native AI adapters are now reachable from the playable prototype, but
 # remain explicitly toggleable for replay/debug comparisons.
 check("_build_ai_toggle" in shield_screen and "KEY_A" in shield_screen,

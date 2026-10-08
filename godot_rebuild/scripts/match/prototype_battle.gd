@@ -513,9 +513,10 @@ func slot_at(point: Vector2) -> int:
 	return closest
 
 
-func build_tower(team: int, slot_id: int) -> bool:
-	# Existing player command remains plain Archer, no draft reserve.
-	return _build_tower_for(team, slot_id, "archer")
+func build_tower(team: int, slot_id: int, tower_path: String = "archer") -> bool:
+	# Player and tests use this public transaction boundary; AI adds its reserve
+	# through _build_tower_for. The source build popup offers all four Lv1 paths.
+	return _build_tower_for(team, slot_id, tower_path)
 
 
 func _build_tower_for(team: int, slot_id: int, path: String, reserve: int = 0) -> bool:
@@ -2036,6 +2037,14 @@ func _upgrade_hero_for(team: int, hero_id: int, expected_level: int, reserve: in
 	upgrade_hero(hero.id)
 	_record({"kind": "hero_upgrade", "target_id": hero.id, "level": hero.level})
 	return true
+
+
+func activate_player_regen_shield(entity_id: int) -> bool:
+	return _activate_regen_shield_for(BLUE, entity_id)
+
+
+func activate_player_castle_shield(entity_id: int) -> bool:
+	return _activate_castle_shield_for(BLUE, entity_id)
 
 
 func _activate_regen_shield_for(team: int, entity_id: int, reserve: int = 0) -> bool:

@@ -34,6 +34,10 @@ const MetaHeroUnlockSceneChecks = preload("res://tests/meta_hero_unlock_scene_ch
 const AIBuildChecks = preload("res://tests/ai_build_checks.gd")
 const AIShieldChecks = preload("res://tests/ai_shield_checks.gd")
 const AIShieldSceneChecks = preload("res://tests/ai_shield_scene_checks.gd")
+const PlayerStructureCommandChecks = preload("res://tests/player_structure_command_checks.gd")
+const PlayerStructureCommandSceneChecks = preload(
+	"res://tests/player_structure_command_scene_checks.gd"
+)
 const AIUpgradeChecks = preload("res://tests/ai_upgrade_checks.gd")
 const AIPriorityChecks = preload("res://tests/ai_priority_checks.gd")
 const AIItemChecks = preload("res://tests/ai_item_checks.gd")
@@ -184,6 +188,7 @@ func _run() -> void:
 	MetaHeroUnlockChecks.new().run(_check)
 	AIBuildChecks.new().run(_check)
 	AIShieldChecks.new().run(_check)
+	PlayerStructureCommandChecks.new().run(_check)
 	AIUpgradeChecks.new().run(_check)
 	AIPriorityChecks.new().run(_check)
 	AIItemChecks.new().run(_check)
@@ -306,6 +311,7 @@ func _run() -> void:
 	await PlayerRecruitSceneChecks.new().run(self, app, _check)
 	await ForgeSceneChecks.new().run(self, app, _check)
 	await AIShieldSceneChecks.new().run(self, app, _check)
+	await PlayerStructureCommandSceneChecks.new().run(self, app, _check)
 	await UpgradeSceneChecks.new().run(self, app, _check)
 	await NexusSceneChecks.new().run(self, app, _check)
 	await CannonSceneChecks.new().run(self, app, _check)
@@ -319,12 +325,7 @@ func _run() -> void:
 	await _settle()
 	_check(not paused, "app exit does not leave tree paused")
 	if failures.is_empty():
-		print(
-			(
-				"PASS: %d checks; fixed ticks, source parity, combat/siege/prototype, input and lifecycle."
-				% checks
-			)
-		)
+		print("PASS: %d checks; fixed ticks and source parity." % checks)
 		quit(0)
 	else:
 		printerr("FAILED: %d of %d checks" % [failures.size(), checks])

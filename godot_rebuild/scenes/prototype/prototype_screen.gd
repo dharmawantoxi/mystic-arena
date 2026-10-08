@@ -51,14 +51,14 @@ func _ready() -> void:
 	%UpgradeButton.pressed.connect(
 		func() -> void: match_session.request_upgrade(match_session.selected_id, "archer")
 	)
-	%CannonButton.pressed.connect(
-		func() -> void: match_session.request_upgrade(match_session.selected_id, "cannon")
+	%CannonButton.pressed.connect(_request_tower_path.bind("cannon"))
+	%IceButton.pressed.connect(_request_tower_path.bind("ice"))
+	%MageButton.pressed.connect(_request_tower_path.bind("mage"))
+	%RegenShieldButton.pressed.connect(
+		func() -> void: match_session.request_regen_shield(match_session.selected_id)
 	)
-	%IceButton.pressed.connect(
-		func() -> void: match_session.request_upgrade(match_session.selected_id, "ice")
-	)
-	%MageButton.pressed.connect(
-		func() -> void: match_session.request_upgrade(match_session.selected_id, "mage")
+	%CastleShieldButton.pressed.connect(
+		func() -> void: match_session.request_castle_shield(match_session.selected_id)
 	)
 	%NexusButton.pressed.connect(
 		func() -> void: match_session.request_nexus_upgrade(match_session.selected_id)
@@ -156,12 +156,9 @@ func _process(_delta: float) -> void:
 	var locked := (
 		get_tree().paused or not world.is_running() or not match_session.command.is_empty()
 	)
+	var build_choice := slot != null and slot.team == 0 and slot.structure_id == -1
 	%BuildButton.disabled = (
-		locked
-		or slot == null
-		or slot.team != 0
-		or slot.structure_id != -1
-		or world.economy.gold[0] < world.Economy.BUILD_COST
+		locked or not build_choice or world.economy.gold[0] < world.Economy.BUILD_COST
 	)
 	%SellButton.disabled = (
 		locked
@@ -172,31 +169,81 @@ func _process(_delta: float) -> void:
 	)
 	var price := world.upgrade_price(simulation.selected_id)
 	%UpgradeButton.disabled = locked or price <= 0 or world.economy.gold[0] < price
-	var cannon_price := world.upgrade_price(simulation.selected_id, "cannon")
-	var ice_price := world.upgrade_price(simulation.selected_id, "ice")
 	var path_choice := (
 		tower != null
+		and tower.alive
 		and tower.settings().structure_kind == "tower"
 		and tower.team == 0
 		and tower.settings().level == 1
 	)
+	var tower_option := build_choice or path_choice
+	var cannon_price := (
+		world.Economy.BUILD_COST
+		if build_choice
+		else world.upgrade_price(simulation.selected_id, "cannon")
+	)
+	var ice_price := (
+		world.Economy.BUILD_COST
+		if build_choice
+		else world.upgrade_price(simulation.selected_id, "ice")
+	)
+	var mage_price := (
+		world.Economy.BUILD_COST
+		if build_choice
+		else world.upgrade_price(simulation.selected_id, "mage")
+	)
 	%CannonButton.disabled = (
-		locked or not path_choice or cannon_price <= 0 or world.economy.gold[0] < cannon_price
+		locked or not tower_option or cannon_price <= 0 or world.economy.gold[0] < cannon_price
 	)
 	%IceButton.disabled = (
-		locked or not path_choice or ice_price <= 0 or world.economy.gold[0] < ice_price
+		locked or not tower_option or ice_price <= 0 or world.economy.gold[0] < ice_price
 	)
-	var mage_price := world.upgrade_price(simulation.selected_id, "mage")
 	%MageButton.disabled = (
-		locked or not path_choice or mage_price <= 0 or world.economy.gold[0] < mage_price
+		locked or not tower_option or mage_price <= 0 or world.economy.gold[0] < mage_price
 	)
-	# Contextual paths: Cannon/Ice/Mage appear only for a blue level-1
-	# tower, and Nexus steps aside while they do. Paths get their own
-	# row so seven buttons never share one.
-	%CannonButton.visible = path_choice
-	%IceButton.visible = path_choice
-	%MageButton.visible = path_choice
-	%Paths.visible = path_choice
+	%CannonButton.visible = tower_option
+	%IceButton.visible = tower_option
+	%MageButton.visible = tower_option
+
+	var regen_context := (
+		tower != null
+		and tower.alive
+		and tower.team == 0
+		and tower.settings().structure_kind == "tower"
+		and tower.settings().level >= Structure.REGEN_SHIELD_MIN_LEVEL
+	)
+	%RegenShieldButton.visible = regen_context
+	%RegenShieldButton.disabled = (
+		locked
+		or not regen_context
+		or not tower.can_activate_regen_shield()
+		or world.economy.gold[0] < Structure.REGEN_SHIELD_COST
+	)
+	%RegenShieldButton.text = (
+		"Regen Shield · ON"
+		if regen_context and tower.regen_shield_active
+		else "Regen Shield · %d G" % Structure.REGEN_SHIELD_COST
+	)
+	var castle_context := (
+		tower != null
+		and tower.alive
+		and tower.team == 0
+		and tower.settings().structure_kind == "nexus"
+	)
+	%CastleShieldButton.visible = castle_context
+	%CastleShieldButton.disabled = (
+		locked
+		or not castle_context
+		or not tower.can_activate_castle_shield()
+		or world.economy.gold[0] < Structure.CASTLE_SHIELD_COST
+	)
+	if castle_context and tower.free_shield_active:
+		%CastleShieldButton.text = "Castle Shield · FREE (wave 1-10)"
+	elif castle_context and tower.castle_shield_purchased:
+		%CastleShieldButton.text = "Castle Shield · ON"
+	else:
+		%CastleShieldButton.text = "Aktifkan Castle Shield · %d G" % Structure.CASTLE_SHIELD_COST
+	%Paths.visible = tower_option or regen_context or castle_context
 	%NexusButton.visible = not path_choice
 	var nexus_price := world.nexus_upgrade_price(simulation.selected_id)
 	%NexusButton.disabled = locked or nexus_price <= 0 or world.economy.gold[0] < nexus_price
@@ -254,10 +301,16 @@ func _process(_delta: float) -> void:
 		if hero != null and hero_cost > 0
 		else "Hero maksimum"
 	)
+	%BuildButton.text = "Bangun Archer · %d G" % world.Economy.BUILD_COST
 	%UpgradeButton.text = "Upgrade Archer"
-	%CannonButton.text = "Cannon Lv.2"
-	%IceButton.text = "Ice Lv.2"
-	%MageButton.text = "Mage Lv.2"
+	if build_choice:
+		%CannonButton.text = "Bangun Cannon · %d G" % cannon_price
+		%IceButton.text = "Bangun Ice · %d G" % ice_price
+		%MageButton.text = "Bangun Mage · %d G" % mage_price
+	else:
+		%CannonButton.text = "Cannon Lv.2"
+		%IceButton.text = "Ice Lv.2"
+		%MageButton.text = "Mage Lv.2"
 	%NexusButton.text = "Upgrade Nexus"
 	%SellButton.text = "Jual tower"
 	if tower != null and tower.settings().structure_kind == "tower":
@@ -288,7 +341,7 @@ func _process(_delta: float) -> void:
 			)
 		else:
 			%NexusButton.text = "Nexus lawan"
-	%SelectionLabel.text = "Slot biru: bangun Archer. Tower biru: jual kembali."
+	%SelectionLabel.text = "Slot biru: pilih Archer, Cannon, Ice, atau Mage (100 G)."
 	if selected != null:
 		var max_hp := selected.definition.max_hp
 		if hero != null:
@@ -345,6 +398,15 @@ func _process(_delta: float) -> void:
 		%PauseButton.text = "Hasil [Esc]"
 		pause_match()
 		_save_result()
+
+
+func _request_tower_path(tower_path: String) -> void:
+	var world := match_session.world as Prototype
+	var slot := world.get_slot(match_session.selected_slot_id)
+	if slot != null and slot.team == world.BLUE and slot.structure_id == -1:
+		match_session.request_build(slot.id, tower_path)
+	else:
+		match_session.request_upgrade(match_session.selected_id, tower_path)
 
 
 func _save_result() -> void:

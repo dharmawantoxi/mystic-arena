@@ -16,7 +16,7 @@ var command: Dictionary = {}
 var tactical_queue: Array[Dictionary] = []
 var tactical_cursor := Vector2.ZERO
 var tactical_cursor_valid := false
-var last_action := "Pilih slot biru, lalu bangun Archer (100 G)."
+var last_action := "Pilih slot biru, lalu bangun salah satu dari empat tower (100 G)."
 
 
 func _init() -> void:
@@ -63,9 +63,13 @@ func _physics_process(_delta: float) -> void:
 			var caster := match_world.get_unit(command.id) as HeroState
 			autocast_was_on = caster != null and caster.auto_cast_enabled
 		if command.kind == "build":
-			accepted = match_world.build_tower(0, command.id)
+			accepted = match_world.build_tower(0, command.id, command.get("path", "archer"))
 			if accepted and selected_slot_id == command.id:
 				selected_id = match_world.get_slot(command.id).structure_id
+		elif command.kind == "regen_shield":
+			accepted = match_world.activate_player_regen_shield(command.id)
+		elif command.kind == "castle_shield":
+			accepted = match_world.activate_player_castle_shield(command.id)
 		elif command.kind == "upgrade":
 			accepted = match_world.upgrade_tower(
 				command.id, command.level, command.get("path", "archer")
@@ -138,6 +142,10 @@ func _physics_process(_delta: float) -> void:
 				last_action = "%s menuju titik yang dipilih." % hero_name
 			elif command.kind == "follow":
 				last_action = "%s mengikuti musuh." % hero_name
+			elif command.kind == "regen_shield":
+				last_action = "Regen Shield diaktifkan: %+d G." % delta_gold
+			elif command.kind == "castle_shield":
+				last_action = "Castle Shield diaktifkan: %+d G." % delta_gold
 			else:
 				var upgrade_label := "Archer ditingkatkan"
 				if command.get("path") == "cannon":
@@ -146,8 +154,9 @@ func _physics_process(_delta: float) -> void:
 					upgrade_label = "Ice ditingkatkan"
 				elif command.get("path") == "mage":
 					upgrade_label = "Mage ditingkatkan"
+				var build_label := String(command.get("path", "archer")).capitalize() + " dibangun"
 				var action: String = {
-					"build": "Archer dibangun",
+					"build": build_label,
 					"sell": "Tower dijual",
 					"upgrade": upgrade_label,
 					"nexus": "Nexus ditingkatkan"
@@ -174,7 +183,8 @@ func _physics_process(_delta: float) -> void:
 					"registry": "Roster hero berubah; transaksi dibatalkan.",
 					"capacity": "Batas unit atau lima hero sudah tercapai.",
 					"stale": stale_text,
-					"path": "Pilih jalur upgrade yang valid.",
+					"path": "Pilih tipe atau jalur tower yang valid.",
+					"shield": "Shield belum dapat dibeli atau sudah aktif.",
 					"max_level": max_text,
 					"skill": "Q tidak siap atau tidak ada target."
 				}
@@ -186,8 +196,19 @@ func _physics_process(_delta: float) -> void:
 		selected_id = -1
 
 
-func request_build(slot_id: int) -> bool:
-	return _queue("build", slot_id)
+func request_build(slot_id: int, tower_path: String = "archer") -> bool:
+	if not _queue("build", slot_id):
+		return false
+	command.path = tower_path
+	return true
+
+
+func request_regen_shield(entity_id: int) -> bool:
+	return _queue("regen_shield", entity_id)
+
+
+func request_castle_shield(entity_id: int) -> bool:
+	return _queue("castle_shield", entity_id)
 
 
 func request_sell(entity_id: int) -> bool:
