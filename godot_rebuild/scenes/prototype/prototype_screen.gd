@@ -137,9 +137,7 @@ func _on_game_speed_selected(index: int) -> void:
 
 
 func _sync_game_speed_selector(_speed: float) -> void:
-	%GameSpeedSelector.select(
-		int(get_tree().root.get_node("GameSpeed").call("speed_index"))
-	)
+	%GameSpeedSelector.select(int(get_tree().root.get_node("GameSpeed").call("speed_index")))
 
 
 func _process(_delta: float) -> void:
