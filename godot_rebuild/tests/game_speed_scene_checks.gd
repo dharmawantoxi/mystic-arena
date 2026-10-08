@@ -7,6 +7,7 @@ const Store = preload("res://scripts/simulation/game_speed_store.gd")
 
 
 func run(tree: SceneTree, check: Callable) -> void:
+	var baseline_nodes := tree.get_node_count()
 	var speed_runtime: Runtime = tree.root.get_node("GameSpeed")
 	var old_speed: float = speed_runtime.speed
 	var old_path: String = speed_runtime.settings_path
@@ -56,6 +57,9 @@ func run(tree: SceneTree, check: Callable) -> void:
 
 	screen.queue_free()
 	await tree.process_frame
+	await tree.process_frame
+	await tree.process_frame
+	check.call(tree.get_node_count() == baseline_nodes, "speed scene frees all match nodes")
 	speed_runtime.speed = old_speed
 	speed_runtime.settings_path = old_path
 	speed_runtime.reset_match_clock()
