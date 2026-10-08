@@ -118,8 +118,28 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
-          godot_rebuild/android_plugin/cloud_save/build_plugin.sh
+          {
+            sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
+            godot_rebuild/android_plugin/cloud_save/build_plugin.sh
+          } 2>&1 | tee /tmp/cloud-save-plugin-build.log
+      - name: Report Android plugin build output
+        if: failure()
+        shell: bash
+        run: |
+          if [[ -s /tmp/cloud-save-plugin-build.log ]]; then
+            python - <<'PY'
+          from pathlib import Path
+          text = "\n".join(Path("/tmp/cloud-save-plugin-build.log").read_text(errors="replace").splitlines()[-80:])
+          escaped = text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+          print(f"::error title=Android plugin build output::{escaped}")
+          PY
+            {
+              echo "### Android plugin build output"
+              echo '```text'
+              tail -n 80 /tmp/cloud-save-plugin-build.log
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Install the pinned official engine
         shell: bash
         run: |
