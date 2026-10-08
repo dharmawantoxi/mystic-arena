@@ -397,13 +397,9 @@ func _read_download(path: String) -> Dictionary:
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		return {"ok": false, "error": "File cloud tidak dapat dibaca."}
-	var parser := JSON.new()
-	var error := parser.parse(file.get_as_text())
+	var source_text := file.get_as_text()
 	file.close()
-	if error != OK:
-		return {"ok": false, "error": "File cloud rusak (JSON tidak valid)."}
-	var envelope: Variant = parser.data
-	var validation := Codec.validate_envelope(envelope)
+	var validation := Codec.validate_envelope_text(source_text)
 	if validation.payload == null:
 		return {"ok": false, "error": String(validation.error)}
 	return {"ok": true, "payload": validation.payload}

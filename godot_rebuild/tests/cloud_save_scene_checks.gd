@@ -130,8 +130,9 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	check.call(
 		not bool(runtime.call("is_busy")), "Upload completion releases the single-operation lock"
 	)
-	var uploaded_envelope: Variant = JSON.parse_string(bridge.cloud_snapshot.get_string_from_utf8())
-	var uploaded_validation := Codec.validate_envelope(uploaded_envelope)
+	var uploaded_validation := Codec.validate_envelope_text(
+		bridge.cloud_snapshot.get_string_from_utf8()
+	)
 	check.call(
 		uploaded_validation.payload is Dictionary,
 		"Uploaded snapshot keeps the validated source envelope"

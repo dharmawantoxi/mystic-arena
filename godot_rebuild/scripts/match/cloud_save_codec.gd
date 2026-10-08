@@ -39,6 +39,10 @@ static func canonical_json(value: Variant) -> String:
 
 
 static func _python_float(value: float) -> String:
+	if is_nan(value):
+		return "NaN"
+	if is_inf(value):
+		return "-Infinity" if value < 0.0 else "Infinity"
 	# Both Python repr() and Godot's Grisu2 formatter use shortest round-trip
 	# binary64 decimals; normalize the exponent and fixed/scientific threshold.
 	var shortest := String.num_scientific(value)
@@ -81,6 +85,207 @@ static func _python_float(value: float) -> String:
 	return "-" + rendered if negative else rendered
 
 
+## Preserve Python's integer/float distinction; Godot JSON parses all numbers as floats.
+static func _parse_source_json(text: String) -> Dictionary:
+	var source_parser := JSON.new()
+	if source_parser.parse(text) != OK:
+		return {"ok": false, "error": "File corrupt (not valid JSON)"}
+	var original: Variant = source_parser.data
+	var marker_prefix := "__MYSTIC_ARENA_SOURCE_INT_%d__" % Time.get_ticks_usec()
+	while _source_contains_marker(original, marker_prefix):
+		marker_prefix += "_"
+	var tagged := _tag_source_integers(text, marker_prefix)
+	if not bool(tagged.ok):
+		return tagged
+	var typed_parser := JSON.new()
+	if typed_parser.parse(String(tagged.text)) != OK:
+		return {"ok": false, "error": "File corrupt (not valid JSON)"}
+	var integer_values: Dictionary = tagged.get("integers", {})
+	return {
+		"ok": true,
+		"data": _restore_source_integers(typed_parser.data, integer_values),
+	}
+
+
+static func _tag_source_integers(text: String, marker_prefix: String) -> Dictionary:
+	var output := ""
+	var integer_values: Dictionary = {}
+	var in_string := false
+	var escaped := false
+	var unicode_digits_remaining := 0
+	var comma_pending := false
+	var index := 0
+	while index < text.length():
+		var character := text[index]
+		var codepoint := text.unicode_at(index)
+		if in_string:
+			if unicode_digits_remaining > 0:
+				if not _is_hex_digit(codepoint):
+					return {"ok": false, "error": "File corrupt (not valid JSON)"}
+				unicode_digits_remaining -= 1
+			elif escaped:
+				if character == "u":
+					unicode_digits_remaining = 4
+				elif not (character in ['"', "\\", "/", "b", "f", "n", "r", "t"]):
+					return {"ok": false, "error": "File corrupt (not valid JSON)"}
+				escaped = false
+			elif character == "\\":
+				escaped = true
+			elif character == '"':
+				in_string = false
+			elif codepoint < 32:
+				return {"ok": false, "error": "File corrupt (not valid JSON)"}
+			output += character
+			index += 1
+			continue
+		if character == '"':
+			comma_pending = false
+			in_string = true
+			output += character
+			index += 1
+		elif _is_json_whitespace(character):
+			output += character
+			index += 1
+		elif character == ",":
+			if comma_pending:
+				return {"ok": false, "error": "File corrupt (not valid JSON)"}
+			comma_pending = true
+			output += character
+			index += 1
+		elif character == "]" or character == "}":
+			if comma_pending:
+				return {"ok": false, "error": "File corrupt (not valid JSON)"}
+			comma_pending = false
+			output += character
+			index += 1
+		elif codepoint < 32:
+			return {"ok": false, "error": "File corrupt (not valid JSON)"}
+		elif character == "-" or _is_ascii_digit(codepoint):
+			comma_pending = false
+			var number := _scan_source_number(text, index)
+			if not bool(number.ok):
+				return {"ok": false, "error": "File corrupt (not valid JSON)"}
+			var end := int(number.end)
+			if end < text.length():
+				var next_character := text[end]
+				if (
+					not _is_json_whitespace(next_character)
+					and next_character != ","
+					and next_character != "]"
+					and next_character != "}"
+				):
+					return {"ok": false, "error": "File corrupt (not valid JSON)"}
+			var token := text.substr(index, end - index)
+			if bool(number.integer):
+				var parsed_integer := _source_integer_token(token)
+				if not bool(parsed_integer.ok):
+					return parsed_integer
+				var marker := marker_prefix + str(integer_values.size())
+				integer_values[marker] = parsed_integer.value
+				output += JSON.stringify(marker)
+			else:
+				output += token
+			index = end
+		else:
+			comma_pending = false
+			output += character
+			index += 1
+	return {"ok": true, "text": output, "integers": integer_values}
+
+
+static func _scan_source_number(text: String, start: int) -> Dictionary:
+	var index := start
+	if text[index] == "-":
+		index += 1
+	if index >= text.length():
+		return {"ok": false}
+	var codepoint := text.unicode_at(index)
+	if codepoint == 48:
+		index += 1
+		if index < text.length() and _is_ascii_digit(text.unicode_at(index)):
+			return {"ok": false}
+	elif codepoint >= 49 and codepoint <= 57:
+		index += 1
+		while index < text.length() and _is_ascii_digit(text.unicode_at(index)):
+			index += 1
+	else:
+		return {"ok": false}
+	var integer := true
+	if index < text.length() and text[index] == ".":
+		integer = false
+		index += 1
+		if index >= text.length() or not _is_ascii_digit(text.unicode_at(index)):
+			return {"ok": false}
+		while index < text.length() and _is_ascii_digit(text.unicode_at(index)):
+			index += 1
+	if index < text.length() and (text[index] == "e" or text[index] == "E"):
+		integer = false
+		index += 1
+		if index < text.length() and (text[index] == "+" or text[index] == "-"):
+			index += 1
+		if index >= text.length() or not _is_ascii_digit(text.unicode_at(index)):
+			return {"ok": false}
+		while index < text.length() and _is_ascii_digit(text.unicode_at(index)):
+			index += 1
+	return {"ok": true, "end": index, "integer": integer}
+
+
+static func _source_integer_token(token: String) -> Dictionary:
+	var negative := token.begins_with("-")
+	var digits := token.substr(1) if negative else token
+	var limit := "9223372036854775808" if negative else "9223372036854775807"
+	if digits.length() > limit.length() or (digits.length() == limit.length() and digits > limit):
+		return {"ok": false, "error": "File corrupt (integer out of range)"}
+	return {"ok": true, "value": int(token)}
+
+
+static func _restore_source_integers(value: Variant, integer_values: Dictionary) -> Variant:
+	if value is String and integer_values.has(value):
+		return integer_values[value]
+	if value is Array:
+		var restored: Array = []
+		for entry in value:
+			restored.append(_restore_source_integers(entry, integer_values))
+		return restored
+	if value is Dictionary:
+		var restored: Dictionary = {}
+		for key in value:
+			restored[key] = _restore_source_integers(value[key], integer_values)
+		return restored
+	return value
+
+
+static func _source_contains_marker(value: Variant, marker: String) -> bool:
+	if value is String:
+		return String(value).contains(marker)
+	if value is Array:
+		for entry in value:
+			if _source_contains_marker(entry, marker):
+				return true
+	if value is Dictionary:
+		for key in value:
+			if String(key).contains(marker) or _source_contains_marker(value[key], marker):
+				return true
+	return false
+
+
+static func _is_hex_digit(codepoint: int) -> bool:
+	return (
+		_is_ascii_digit(codepoint)
+		or (codepoint >= 65 and codepoint <= 70)
+		or (codepoint >= 97 and codepoint <= 102)
+	)
+
+
+static func _is_ascii_digit(codepoint: int) -> bool:
+	return codepoint >= 48 and codepoint <= 57
+
+
+static func _is_json_whitespace(character: String) -> bool:
+	var codepoint := character.unicode_at(0)
+	return codepoint == 32 or codepoint == 9 or codepoint == 10 or codepoint == 13
+
+
 static func compute_checksum(payload: Dictionary) -> String:
 	var body := payload.duplicate(true)
 	body.erase("checksum")
@@ -92,17 +297,21 @@ static func compute_checksum(payload: Dictionary) -> String:
 
 
 static func parse_payload(text: String) -> Dictionary:
-	var parser := JSON.new()
-	if parser.parse(text) != OK:
-		return {"payload": null, "error": "File corrupt (not valid JSON)"}
-	var parsed: Variant = parser.data
-	if not parsed is Dictionary:
+	var parsed := _parse_source_json(text)
+	if not bool(parsed.ok):
+		return {
+			"payload": null, "error": String(parsed.get("error", "File corrupt (not valid JSON)"))
+		}
+	return _validate_payload(parsed.data)
+
+
+static func _validate_payload(value: Variant) -> Dictionary:
+	if not value is Dictionary:
 		return {"payload": null, "error": "File corrupt (unexpected structure)"}
-	var payload: Dictionary = parsed
+	var payload: Dictionary = value
 	if payload.get("magic") != PAYLOAD_MAGIC:
 		return {"payload": null, "error": "Not a Mystic Arena save file"}
-	var version_value: Variant = payload.get("version", 0)
-	var version: Variant = _source_int(version_value)
+	var version: Variant = _source_int(payload.get("version", 0))
 	if version == null:
 		return {"payload": null, "error": "File corrupt (bad version)"}
 	if int(version) < 1 or int(version) > PAYLOAD_VERSION:
@@ -201,6 +410,13 @@ static func build_payload(
 	return payload
 
 
+static func validate_envelope_text(text: String) -> Dictionary:
+	var parsed := _parse_source_json(text)
+	if not bool(parsed.ok):
+		return {"payload": null, "error": "File cloud rusak (JSON tidak valid)."}
+	return validate_envelope(parsed.data)
+
+
 static func validate_envelope(value: Variant) -> Dictionary:
 	if not value is Dictionary:
 		return {"payload": null, "error": "Bukan file cloud Mystic Arena"}
@@ -215,10 +431,11 @@ static func validate_envelope(value: Variant) -> Dictionary:
 	var raw_payload: Variant = envelope.get("payload")
 	if not raw_payload is Dictionary:
 		return {"payload": null, "error": "Payload cloud rusak"}
-	var parsed := parse_payload(JSON.stringify(raw_payload, "", true, true))
-	if parsed.payload == null:
+	var validation := _validate_payload(raw_payload)
+	if validation.payload == null:
 		return {
 			"payload": null,
-			"error": parsed.error if not String(parsed.error).is_empty() else "Validasi cloud gagal"
+			"error":
+			validation.error if not String(validation.error).is_empty() else "Validasi cloud gagal",
 		}
-	return {"payload": parsed.payload, "error": ""}
+	return {"payload": validation.payload, "error": ""}

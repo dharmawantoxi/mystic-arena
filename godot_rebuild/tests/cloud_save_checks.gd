@@ -54,6 +54,11 @@ func run(check: Callable) -> void:
 			String(invalid_result.error) == String(invalid_case.expected_error),
 			"cloud parser rejects source invalid case %s" % invalid_case.label
 		)
+	var trailing_comma := Codec.parse_payload('{"magic":"MYSTIC_ARENA_BACKUP",}')
+	check.call(
+		trailing_comma.error == "File corrupt (not valid JSON)",
+		"cloud parser rejects trailing commas accepted by the permissive engine parser"
+	)
 
 	var valid_result := Codec.parse_payload(String(fixture.cases[0].payload_json))
 	var valid_payload: Dictionary = valid_result.payload
@@ -137,7 +142,7 @@ func run(check: Callable) -> void:
 		"cloud payload maps persisted Godot game speed"
 	)
 	check.call(
-		Codec.parse_payload(JSON.stringify(native_payload)).payload is Dictionary,
+		Codec.parse_payload(JSON.stringify(native_payload, "", true, true)).payload is Dictionary,
 		"cloud payload produced from native saves passes checksum validation"
 	)
 	check.call(
