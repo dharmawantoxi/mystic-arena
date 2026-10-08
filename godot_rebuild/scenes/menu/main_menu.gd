@@ -16,12 +16,14 @@ const HeroUnlockStore = preload("res://scripts/match/hero_unlock_store.gd")
 const SaveSlotStore = preload("res://scripts/match/save_slot_store.gd")
 const MetaHeroShopPanel = preload("res://scripts/ui/meta_hero_shop_panel.gd")
 const SaveSlotPanel = preload("res://scripts/ui/save_slot_panel.gd")
+const AudioSettingsPanel = preload("res://scripts/ui/audio_settings_panel.gd")
 
 var slot_path_template := SaveSlotStore.PATH_TEMPLATE
 var progress_path := SaveSlotStore.current_path(slot_path_template)
 var active_slot := SaveSlotStore.get_current_slot()
 var hero_shop_panel: MetaHeroShopPanel
 var save_slot_panel: SaveSlotPanel
+var audio_settings_panel: AudioSettingsPanel
 
 
 func _ready() -> void:
@@ -36,6 +38,7 @@ func _ready() -> void:
 	%PrototypeButton.pressed.connect(func() -> void: _click_and_start())
 	%HeroShopButton.pressed.connect(_open_hero_shop)
 	%SaveGamesButton.pressed.connect(_open_save_slots)
+	%SettingsButton.pressed.connect(_open_audio_settings)
 	%LevelChoice.item_selected.connect(_update_level_stats_label)
 	var selected_from_path := SaveSlotStore.slot_for_path(progress_path, slot_path_template)
 	if selected_from_path > 0:
@@ -43,6 +46,7 @@ func _ready() -> void:
 		SaveSlotStore.set_current_slot(active_slot)
 	_build_hero_shop()
 	_build_save_slots()
+	_build_audio_settings()
 	_update_active_slot_label()
 	refresh_levels()
 	%PrototypeButton.grab_focus()
@@ -126,7 +130,24 @@ func _open_save_slots() -> void:
 	AudioRuntime.play("ui_click")
 	if hero_shop_panel != null:
 		hero_shop_panel.set_open(false)
+	if audio_settings_panel != null:
+		audio_settings_panel.set_open(false)
 	save_slot_panel.open_with_slots(SaveSlotStore.all_slot_info(slot_path_template), active_slot)
+
+
+func _build_audio_settings() -> void:
+	audio_settings_panel = AudioSettingsPanel.new()
+	audio_settings_panel.name = "AudioSettingsPanel"
+	add_child(audio_settings_panel)
+
+
+func _open_audio_settings() -> void:
+	AudioRuntime.play("ui_click")
+	if hero_shop_panel != null:
+		hero_shop_panel.set_open(false)
+	if save_slot_panel != null:
+		save_slot_panel.set_open(false)
+	audio_settings_panel.open()
 
 
 func _select_save_slot(slot: int) -> void:

@@ -509,6 +509,23 @@ if audio_script.is_file():
 check((ROOT / "project.godot").read_text(encoding="utf-8").find('AudioManager="*res://scripts/audio/audio_manager.gd"') >= 0,
       "Godot audio manager must be autoloaded")
 check((ROOT / "assets/audio/bgm_battle.wav").is_file(), "Migrated battle music asset missing")
+audio_panel = ROOT / "scripts/ui/audio_settings_panel.gd"
+menu_scene = (ROOT / "scenes/menu/MainMenu.tscn").read_text(encoding="utf-8")
+check(audio_panel.is_file() and "SettingsButton" in menu_scene,
+      "Live audio controls must be reachable from the playable MainMenu")
+check("func set_mix_volume(" in audio_script.read_text(encoding="utf-8")
+      and "func adjust_volume(" in audio_script.read_text(encoding="utf-8"),
+      "Native audio manager must expose bounded live mix controls")
+check("AudioSettingsChecks.new().run(_check)" in ai_tests
+      and "await AudioSettingsSceneChecks.new().run(root.get_tree(), app, _check)" in ai_tests,
+      "Audio mixer native and playable-scene checks must be registered")
+from audio_settings_source_oracle import source_fixture as audio_settings_source_fixture
+check((ROOT / "tests/fixtures/audio_settings_source.json").is_file(),
+      "Audio settings source oracle fixture must be present")
+if (ROOT / "tests/fixtures/audio_settings_source.json").is_file():
+    check(audio_settings_source_fixture() == json.loads(
+        (ROOT / "tests/fixtures/audio_settings_source.json").read_text(encoding="utf-8")),
+        "Audio settings source fixture drift")
 
 cloud_runtime = (ROOT / "scripts/match/cloud_save_runtime.gd")
 cloud_codec = (ROOT / "scripts/match/cloud_save_codec.gd")
