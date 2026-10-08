@@ -38,7 +38,7 @@ func configure_player_profile(state: Dictionary) -> bool:
 
 
 func _ready() -> void:
-	GameSpeed.reset_match_clock()
+	get_node("/root/GameSpeed").call("reset_match_clock")
 	super._ready()
 	var match_world := world as Prototype
 	match_world.setup_arena()
@@ -192,7 +192,7 @@ func _physics_process(_delta: float) -> void:
 				. get(match_world.transaction_error, "Transaksi ditolak.")
 			)
 		command.clear()
-	var tick_budget := GameSpeed.ticks_for_physics_frame()
+	var tick_budget := int(get_node("/root/GameSpeed").call("ticks_for_physics_frame"))
 	for _tick in range(tick_budget):
 		if not match_world.is_running():
 			break

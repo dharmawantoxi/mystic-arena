@@ -34,7 +34,7 @@ func run(check: Callable) -> void:
 	runtime.speed = 0.5
 	runtime.reset_match_clock()
 	runtime.ticks_for_physics_frame()
-	var slow_counter := runtime.slow_skip_counter
+	var slow_counter: int = runtime.slow_skip_counter
 	check.call(
 		runtime.ticks_for_physics_frame(true) == 1 and runtime.slow_skip_counter == slow_counter,
 		"normal-speed cinematic tick does not consume half-speed phase"

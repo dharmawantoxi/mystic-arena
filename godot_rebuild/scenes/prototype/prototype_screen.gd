@@ -13,6 +13,7 @@ const HeroShopPanel = preload("res://scripts/ui/hero_shop_panel.gd")
 const ProgressStore = preload("res://scripts/match/level_progress_store.gd")
 const SaveSlotStore = preload("res://scripts/match/save_slot_store.gd")
 const LevelCatalog = preload("res://scripts/match/level_catalog.gd")
+const GameSpeedStore = preload("res://scripts/simulation/game_speed_store.gd")
 const TouchGestureRuntime = preload("res://scripts/input/touch_gesture_runtime.gd")
 const TOUCH_TARGET_MIN := 48.0
 const TOUCH_PADDING := 6.0
@@ -123,19 +124,22 @@ func _ready() -> void:
 
 func _setup_game_speed_control() -> void:
 	var selector: OptionButton = %GameSpeedSelector
-	for speed in GameSpeed.SPEEDS:
+	var speed_runtime: Node = get_tree().root.get_node("GameSpeed")
+	for speed in GameSpeedStore.PRESETS:
 		selector.add_item("%.1fx" % speed)
-	selector.select(GameSpeed.speed_index())
+	selector.select(int(speed_runtime.call("speed_index")))
 	selector.item_selected.connect(_on_game_speed_selected)
-	GameSpeed.speed_changed.connect(_sync_game_speed_selector)
+	speed_runtime.connect("speed_changed", _sync_game_speed_selector)
 
 
 func _on_game_speed_selected(index: int) -> void:
-	GameSpeed.set_speed_index(index)
+	get_tree().root.get_node("GameSpeed").call("set_speed_index", index)
 
 
 func _sync_game_speed_selector(_speed: float) -> void:
-	%GameSpeedSelector.select(GameSpeed.speed_index())
+	%GameSpeedSelector.select(
+		int(get_tree().root.get_node("GameSpeed").call("speed_index"))
+	)
 
 
 func _process(_delta: float) -> void:
