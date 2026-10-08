@@ -73,7 +73,7 @@ func run(check: Callable) -> void:
 		),
 		"master changes are applied to current BGM, SFX, and ambient output"
 	)
-	var music_before_sfx := manager.music.volume_db
+	var music_before_sfx: float = float(manager.music.volume_db)
 	check.call(manager.set_mix_volume("sfx", 0.2), "SFX category accepts a valid value")
 	check.call(
 		(
