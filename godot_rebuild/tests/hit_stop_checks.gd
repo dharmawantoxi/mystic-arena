@@ -131,7 +131,7 @@ func _source_dash_case(check: Callable, world, hero: HeroState) -> void:
 	hero.skill_timer = 0
 	hero.target_id = -1
 	hero.target_struct = null
-	var cast := world.cast_hero_q(hero.id)
+	var cast: bool = world.cast_hero_q(hero.id)
 	check.call(
 		cast and hero.is_dashing and probe.requests == [0.021, 0.027],
 		"Kaizen Q2 queues source cast and dash-edge hit-stop requests"
