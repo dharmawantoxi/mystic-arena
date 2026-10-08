@@ -164,10 +164,12 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	check.call(
 		(
 			screen.get_node("%MageButton").disabled
-			and not screen.get_node("%Paths").visible
+			and not screen.get_node("%MageButton").visible
+			and screen.get_node("%Paths").visible
+			and screen.get_node("%CastleShieldButton").visible
 			and screen.get_node("%NexusButton").visible
 		),
-		"nexus selection hides mage"
+		"nexus hides mage path and exposes Castle Shield"
 	)
 	check.call(world.economy.is_balanced(), "mage UI ledger reconciles")
 	world.winner = 1
