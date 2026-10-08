@@ -91,8 +91,8 @@ func _draw_tactical(world: Prototype) -> void:
 		if delta.length() <= 80.0:
 			continue
 		for segment in range(3):
-			var from := hero.position + delta * (float(segment) * 0.33)
-			var to := hero.position + delta * (float(segment) * 0.33 + 0.18)
+			var from: Vector2 = hero.position + delta * (float(segment) * 0.33)
+			var to: Vector2 = hero.position + delta * (float(segment) * 0.33 + 0.18)
 			draw_line(from, to, Color(color, 120.0 * pulse / 255.0), 2, true)
 
 

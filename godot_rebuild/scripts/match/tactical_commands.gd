@@ -459,9 +459,10 @@ func _auto_evaluate_protect(world: Object) -> void:
 			_command_protect_castle(world, false)
 			return
 	var threatened: Array = []
-	for tower in _blue_towers(world):
-		var ratio := tower.hp / maxf(1.0, tower.definition.max_hp)
-		var enemies := _count_enemies_near(world, tower.position, 250.0)
+	for value in _blue_towers(world):
+		var tower := value as StructureState
+		var ratio: float = tower.hp / maxf(1.0, tower.definition.max_hp)
+		var enemies: int = _count_enemies_near(world, tower.position, 250.0)
 		if (ratio < 0.6 and enemies >= 2) or enemies >= 4:
 			threatened.append({"enemies": enemies, "ratio": ratio, "tower": tower})
 	if not threatened.is_empty():
@@ -488,19 +489,21 @@ func _find_most_threatened_tower(world: Object) -> StructureState:
 	var towers := _blue_towers(world)
 	if towers.is_empty():
 		return null
-	var best: StructureState = towers[0]
-	var best_score := -INF
-	for tower in towers:
-		var enemies := _count_enemies_near(world, tower.position, 220.0)
-		var ratio := tower.hp / maxf(1.0, tower.definition.max_hp)
-		var score := enemies * 10.0 + (1.0 - ratio) * 15.0
+	var best := towers[0] as StructureState
+	var best_score: float = -INF
+	for value in towers:
+		var tower := value as StructureState
+		var enemies: int = _count_enemies_near(world, tower.position, 220.0)
+		var ratio: float = tower.hp / maxf(1.0, tower.definition.max_hp)
+		var score: float = enemies * 10.0 + (1.0 - ratio) * 15.0
 		if tower.position.x < 400.0:
 			score += 2.0
 		if score > best_score:
 			best_score = score
 			best = tower
 	if best_score == 0.0:
-		for tower in towers:
+		for value in towers:
+			var tower := value as StructureState
 			if (
 				tower.hp / maxf(1.0, tower.definition.max_hp)
 				< best.hp / maxf(1.0, best.definition.max_hp)
@@ -532,26 +535,28 @@ func _find_nearest_enemy_target(world: Object, point: Vector2) -> Object:
 	if boss != null and boss.alive:
 		best = boss
 		best_distance = boss.position.distance_to(point)
-	for structure in world.structures:
+	for value in world.structures:
+		var structure := value as StructureState
 		if (
 			structure.alive
 			and structure.team == RED
 			and structure.settings().structure_kind == "tower"
 		):
-			var distance := structure.position.distance_to(point)
+			var distance: float = structure.position.distance_to(point)
 			if distance < best_distance:
 				best_distance = distance
 				best = structure
-	for hero in world._ai_roster():
+	for value in world._ai_roster():
+		var hero := value as HeroState
 		if hero.alive:
-			var distance := hero.position.distance_to(point)
+			var distance: float = hero.position.distance_to(point)
 			if distance < best_distance:
 				best_distance = distance
 				best = hero
 	if best == null:
 		for unit in world.units:
 			if unit.alive and unit.team == RED and not unit.is_hero:
-				var distance := unit.position.distance_to(point)
+				var distance: float = unit.position.distance_to(point)
 				if distance < best_distance:
 					best_distance = distance
 					best = unit
