@@ -1,0 +1,44 @@
+{
+  "api": {
+    "consumer_delegates_to_singleton": true,
+    "has_shared_singleton": true,
+    "trigger_delegates_to_singleton": true
+  },
+  "bus": {
+    "consume_sequence": [true, true, true, true, true],
+    "empty_consume": false,
+    "enabled": true,
+    "fixed_dt": 0.016666666666666666,
+    "half_tie_to_even_frames": 4,
+    "invalid_request_ignored": true,
+    "low_clamp_frames": 2,
+    "max_frames": 5,
+    "max_seconds": 0.08,
+    "min_seconds": 0.03,
+    "stronger_request_frames": 5,
+    "total_after_empty_consume": 0,
+    "total_after_last_freeze": 5
+  },
+  "cast_wrappers": {
+    "grimjaw": true,
+    "kaizen": true,
+    "sylara": true,
+    "vex": true
+  },
+  "cast_triggers": {
+    "grimjaw": {"e": 0.024, "q": 0.027, "r": 0.04},
+    "kaizen": {"e": 0.024, "q": 0.021, "r": 0.04},
+    "sylara": {"q": 0.02},
+    "vex": {"q": 0.021, "r": 0.04, "w": 0.025}
+  },
+  "freeze_contract": {
+    "advances_active_skill_timer": true,
+    "advances_skill_cooldowns": true,
+    "checks_before_game_speed": true,
+    "reset_clears_shared_state": true,
+    "returns_before_regular_simulation": true,
+    "ticks_tower_debuffs": true,
+    "updates_effects": true,
+    "uses_global_consumer": true
+  }
+}

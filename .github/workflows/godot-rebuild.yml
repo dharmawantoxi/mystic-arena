@@ -8,6 +8,11 @@ on:
       - '_core.py'
       - '_system.py'
       - '_render.py'
+      - 'heroes/combat_feel.py'
+      - 'heroes/kaizen_fx.py'
+      - 'heroes/grimjaw_fx.py'
+      - 'heroes/sylara_fx.py'
+      - 'heroes/vex_fx.py'
       - 'main.py'
       - 'main_desktop_legacy.py'
       - 'mobile/touch.py'
@@ -26,6 +31,11 @@ on:
       - '_core.py'
       - '_system.py'
       - '_render.py'
+      - 'heroes/combat_feel.py'
+      - 'heroes/kaizen_fx.py'
+      - 'heroes/grimjaw_fx.py'
+      - 'heroes/sylara_fx.py'
+      - 'heroes/vex_fx.py'
       - 'main.py'
       - 'main_desktop_legacy.py'
       - 'mobile/touch.py'
@@ -66,6 +76,7 @@ jobs:
           python godot_rebuild/tests/structure_source_oracle.py
           python godot_rebuild/tests/match_source_oracle.py
           python godot_rebuild/tests/game_speed_source_oracle.py
+          python godot_rebuild/tests/hit_stop_source_oracle.py
           python godot_rebuild/tests/upgrade_source_oracle.py
           python godot_rebuild/tests/nexus_source_oracle.py
           python godot_rebuild/tests/cannon_source_oracle.py

@@ -20,6 +20,7 @@ const AiShields = preload("res://scripts/match/ai_shields.gd")
 const AiDraft = preload("res://scripts/match/ai_draft.gd")
 const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
 const TacticalCommands = preload("res://scripts/match/tactical_commands.gd")
+const HitStopRuntime = preload("res://scripts/match/hit_stop_runtime.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
 const BossState = preload("res://scripts/match/boss_state.gd")
 const BossAI = preload("res://scripts/match/boss_ai.gd")
@@ -63,6 +64,14 @@ const SYLARA = preload("res://data/heroes/sylara.tres")
 const VEX = preload("res://data/heroes/vex.tres")
 const ZEPHYR = preload("res://data/heroes/zephyr.tres")
 const HERO_ROSTER = preload("res://scripts/data/hero_roster.gd").DEFINITIONS
+# Exact source Kaizen/Grimjaw/Sylara/Vex FX-director on_cast requests. Other
+# visual-only FX callbacks stay out of the gameplay hit-stop port.
+const SOURCE_CAST_HIT_STOP_SECONDS := {
+	"kaizen": {"q": 0.021, "e": 0.024, "r": 0.04},
+	"grimjaw": {"q": 0.027, "e": 0.024, "r": 0.04},
+	"sylara": {"q": 0.02},
+	"vex": {"q": 0.021, "w": 0.025, "r": 0.04}
+}
 # Kept as an alias because the red recruitment adapters predate the player shop.
 const PLAYABLE_AI_HEROES = HERO_ROSTER
 const STARTER_HEROES: Array[String] = ["thorne", "grimjaw", "vex", "sylara", "kaizen", "zephyr"]
@@ -158,6 +167,8 @@ var miniboss_kill_count := 0
 var trueboss_kill_count := 0
 # Layer 8f: death FX survives registry retirement, like source EffectManager.
 var boss_death_presentations: Array[Dictionary] = []
+var hit_stop_state = HitStopRuntime.new()
+var hit_stop_froze_last_step := false
 var boss_screen_shake_intensity := 0.0
 var boss_screen_shake_timer := 0
 var score := 0
@@ -486,9 +497,14 @@ func nexus_level(team: int) -> int:
 
 
 func step_tick() -> void:
+	hit_stop_froze_last_step = false
 	if not is_running():
 		return
 	_tick_boss_death_presentations()
+	if hit_stop_state.consume_frame():
+		hit_stop_froze_last_step = true
+		_tick_hit_stop_hero_clocks()
+		return
 	# Input transactions are handled by the session before this method.
 	economy.step_tick(wave_count)
 	# Source wave gate ignores heroes; only living minions hold the field.
@@ -542,6 +558,35 @@ func step_tick() -> void:
 			_step_ai_heroes()
 		# Source updates the tactical timers after the frame's unit actions.
 		tactical.step_tick(self)
+
+
+func activate_pending_hit_stop() -> void:
+	hit_stop_state.activate_pending()
+
+
+func _tick_hit_stop_hero_clocks() -> void:
+	# Source _core.Game.update exception: keep hero skill clocks and debuffs
+	# moving while the ordinary match simulation stays frozen.
+	for unit in units:
+		if not unit.is_hero:
+			continue
+		var hero := unit as HeroState
+		if hero.active_skill_timer > 0:
+			hero.active_skill_timer -= 1
+			if hero.active_skill_timer <= 0:
+				hero.active_skill = ""
+		if hero.skill_timer > 0:
+			hero.skill_timer -= 1
+		if hero.w_cooldown > 0:
+			hero.w_cooldown -= 1
+		if hero.e_cooldown > 0:
+			hero.e_cooldown -= 1
+		if hero.r_cooldown > 0:
+			hero.r_cooldown -= 1
+		if hero.stun_timer > 0:
+			hero.stun_timer -= 1
+		_tick_debuffs(hero)
+		hero.tick_item_debuffs()
 
 
 func get_slot(id: int) -> Slot:
@@ -2009,6 +2054,43 @@ func blue_hero() -> HeroState:
 		if unit.is_hero and unit.team == BLUE:
 			return unit as HeroState
 	return null
+
+
+func cast_hero_q(hero_id: int, structures: Array = []) -> bool:
+	var cast := super.cast_hero_q(hero_id, structures)
+	if cast:
+		_trigger_source_cast_hit_stop(hero_id, "q")
+	return cast
+
+
+func cast_hero_w(hero_id: int) -> bool:
+	var cast := super.cast_hero_w(hero_id)
+	if cast:
+		_trigger_source_cast_hit_stop(hero_id, "w")
+	return cast
+
+
+func cast_hero_e(hero_id: int, structures: Array = []) -> bool:
+	var cast := super.cast_hero_e(hero_id, structures)
+	if cast:
+		_trigger_source_cast_hit_stop(hero_id, "e")
+	return cast
+
+
+func _cast_hero_r(hero_id: int, structures: Array = []) -> bool:
+	var cast := super._cast_hero_r(hero_id, structures)
+	if cast:
+		_trigger_source_cast_hit_stop(hero_id, "r")
+	return cast
+
+
+func _trigger_source_cast_hit_stop(hero_id: int, skill: String) -> void:
+	var hero := get_unit(hero_id) as HeroState
+	if hero == null:
+		return
+	var requests: Dictionary = SOURCE_CAST_HIT_STOP_SECONDS.get(hero.settings().id, {})
+	if requests.has(skill):
+		hit_stop_state.trigger(float(requests[skill]))
 
 
 func blue_q_ready(hero_id: int = -1) -> bool:
