@@ -72,6 +72,9 @@ const SOURCE_CAST_HIT_STOP_SECONDS := {
 	"sylara": {"q": 0.02},
 	"vex": {"q": 0.021, "w": 0.025, "r": 0.04}
 }
+# Source KaizenFXDirector.on_dash fires on the Q2 dash-state edge. Its
+# on_impact hook is not a live gameplay request in the current Python attack path.
+const SOURCE_DASH_HIT_STOP_SECONDS := {"kaizen": {"q": 0.027}}
 # Kept as an alias because the red recruitment adapters predate the player shop.
 const PLAYABLE_AI_HEROES = HERO_ROSTER
 const STARTER_HEROES: Array[String] = ["thorne", "grimjaw", "vex", "sylara", "kaizen", "zephyr"]
@@ -2057,9 +2060,13 @@ func blue_hero() -> HeroState:
 
 
 func cast_hero_q(hero_id: int, structures: Array = []) -> bool:
+	var hero := get_unit(hero_id) as HeroState
+	var source_q2 := hero != null and hero.settings().id == "kaizen" and hero.q_stack == 1
 	var cast := super.cast_hero_q(hero_id, structures)
 	if cast:
 		_trigger_source_cast_hit_stop(hero_id, "q")
+		if source_q2 and hero != null and hero.is_dashing:
+			_trigger_source_dash_hit_stop(hero_id, "q")
 	return cast
 
 
@@ -2089,6 +2096,15 @@ func _trigger_source_cast_hit_stop(hero_id: int, skill: String) -> void:
 	if hero == null:
 		return
 	var requests: Dictionary = SOURCE_CAST_HIT_STOP_SECONDS.get(hero.settings().id, {})
+	if requests.has(skill):
+		hit_stop_state.trigger(float(requests[skill]))
+
+
+func _trigger_source_dash_hit_stop(hero_id: int, skill: String) -> void:
+	var hero := get_unit(hero_id) as HeroState
+	if hero == null or not hero.is_dashing:
+		return
+	var requests: Dictionary = SOURCE_DASH_HIT_STOP_SECONDS.get(hero.settings().id, {})
 	if requests.has(skill):
 		hit_stop_state.trigger(float(requests[skill]))
 

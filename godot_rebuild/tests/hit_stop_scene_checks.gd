@@ -65,6 +65,17 @@ func run(tree: SceneTree, check: Callable) -> void:
 			world.tick_count == tick_after_cast + 1,
 			"playable match resumes on the first non-frozen physics callback"
 		)
+		hero.q_stack = 1
+		hero.skill_timer = 0
+		hero.target_id = -1
+		hero.target_struct = null
+		foe.position = hero.position + Vector2(48, 0)
+		check.call(session.request_skill_q(hero.id), "playable UI command queues Kaizen Q2")
+		session._physics_process(1.0 / 60.0)
+		check.call(
+			world.hit_stop_state.is_active() and hero.is_dashing,
+			"playable Kaizen Q2 dash arms shared hit-stop"
+		)
 
 	screen.queue_free()
 	await tree.process_frame

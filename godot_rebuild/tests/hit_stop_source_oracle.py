@@ -214,6 +214,70 @@ def _direct_shared_bus_call(method):
     )
 
 
+def _source_dash_triggers():
+    relative_path = CAST_MODULES["kaizen"]
+    tree = ast.parse((ROOT / relative_path).read_text(encoding="utf-8"))
+    directors = []
+    for candidate in (node for node in tree.body if isinstance(node, ast.ClassDef)):
+        methods = {
+            node.name: node for node in candidate.body if isinstance(node, ast.FunctionDef)
+        }
+        if "on_dash" in methods and "update" in methods:
+            directors.append(methods)
+    if len(directors) != 1:
+        raise AssertionError("Re-audit the source Kaizen dash director")
+    on_dash = directors[0]["on_dash"]
+    requests = [
+        node
+        for node in ast.walk(on_dash)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "hit_stop"
+    ]
+    if len(requests) != 1 or len(requests[0].args) != 1:
+        raise AssertionError("Re-audit the source Kaizen on_dash hit-stop request")
+    update = directors[0]["update"]
+    dispatched_on_dash_edge = any(
+        isinstance(branch, ast.If)
+        and any(
+            isinstance(node, ast.Name) and node.id == "dashing"
+            for node in ast.walk(branch.test)
+        )
+        and any(
+            isinstance(node, ast.UnaryOp)
+            and isinstance(node.op, ast.Not)
+            and isinstance(node.operand, ast.Attribute)
+            and node.operand.attr == "_dash_seen"
+            for node in ast.walk(branch.test)
+        )
+        and any(
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "self"
+            and node.func.attr == "on_dash"
+            for statement in branch.body
+            for node in ast.walk(statement)
+        )
+        for branch in ast.walk(update)
+    )
+    if not dispatched_on_dash_edge:
+        raise AssertionError("Source Kaizen on_dash is no longer tied to the dash-state edge")
+    return {"kaizen": {"q": _number(requests[0].args[0])}}
+
+
+def _source_live_melee_impact_hook():
+    tree = ast.parse((ROOT / "_entity.py").read_text(encoding="utf-8"))
+    return any(
+        isinstance(node, ast.Call)
+        and (
+            (isinstance(node.func, ast.Name) and node.func.id == "notify_melee_impact")
+            or (isinstance(node.func, ast.Attribute) and node.func.attr == "notify_melee_impact")
+        )
+        for node in ast.walk(tree)
+    )
+
+
 def _source_cast_triggers():
     result = {}
     wrappers = {}
@@ -309,6 +373,7 @@ def _source_api_contract(tree):
 def source_contract():
     source_class, globals_for_class, tree = _source_hit_stop()
     cast_triggers, cast_wrappers = _source_cast_triggers()
+    dash_triggers = _source_dash_triggers()
     return {
         "bus": {
             "enabled": globals_for_class["HIT_STOP_ENABLED"],
@@ -322,6 +387,8 @@ def source_contract():
         "freeze_contract": _source_freeze_contract(),
         "cast_triggers": cast_triggers,
         "cast_wrappers": cast_wrappers,
+        "dash_triggers": dash_triggers,
+        "live_melee_impact_hook": _source_live_melee_impact_hook(),
     }
 
 
@@ -333,8 +400,9 @@ def main():
             "Python hit-stop source contract changed; review and refresh the fixture:\n"
             + json.dumps(actual, indent=2, sort_keys=True)
         )
-    total = sum(len(value) for value in actual.values())
+    total = sum(len(value) if isinstance(value, dict) else 1 for value in actual.values())
     total += sum(len(hero_map) for hero_map in actual["cast_triggers"].values())
+    total += sum(len(hero_map) for hero_map in actual["dash_triggers"].values())
     print(f"PASS: {total} hit-stop source checks")
 
 

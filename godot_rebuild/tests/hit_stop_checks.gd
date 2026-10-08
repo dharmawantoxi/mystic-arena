@@ -7,6 +7,14 @@ const HeroState = preload("res://scripts/combat/hero_state.gd")
 const FIXTURE := "res://tests/fixtures/hit_stop_source.json"
 
 
+class HitStopProbe:
+	extends RefCounted
+	var requests: Array[float] = []
+
+	func trigger(seconds: float) -> void:
+		requests.append(seconds)
+
+
 func run(check: Callable) -> void:
 	var fixture = JSON.parse_string(FileAccess.get_file_as_string(FIXTURE))
 	check.call(fixture is Dictionary, "hit-stop source fixture parses")
@@ -25,6 +33,10 @@ func run(check: Callable) -> void:
 	check.call(
 		Prototype.SOURCE_CAST_HIT_STOP_SECONDS == fixture.get("cast_triggers", {}),
 		"native gameplay cast triggers match source FX-director events"
+	)
+	check.call(
+		Prototype.SOURCE_DASH_HIT_STOP_SECONDS == fixture.get("dash_triggers", {}),
+		"native dash triggers match source Kaizen on_dash edge"
 	)
 	var freeze: Dictionary = fixture.get("freeze_contract", {})
 	check.call(
@@ -98,6 +110,47 @@ func _runtime_cases(check: Callable, source: Dictionary) -> void:
 	)
 
 
+func _source_dash_case(check: Callable, world, hero: HeroState) -> void:
+	var foe: HeroState = null
+	for unit in world.units:
+		if unit is HeroState and unit.team == world.RED:
+			foe = unit as HeroState
+			break
+	check.call(foe != null, "Kaizen Q2 source trigger has an opposing hero target")
+	if foe == null:
+		return
+	var old_hit_stop = world.hit_stop_state
+	var probe := HitStopProbe.new()
+	var old_hero_position: Vector2 = hero.position
+	var old_foe_position: Vector2 = foe.position
+	var old_foe_hp: float = foe.hp
+	world.hit_stop_state = probe
+	hero.position = Vector2(220, 540)
+	foe.position = hero.position + Vector2(48, 0)
+	hero.q_stack = 1
+	hero.skill_timer = 0
+	hero.target_id = -1
+	hero.target_struct = null
+	var cast := world.cast_hero_q(hero.id)
+	check.call(
+		cast and hero.is_dashing and probe.requests == [0.021, 0.027],
+		"Kaizen Q2 queues source cast and dash-edge hit-stop requests"
+	)
+	world.hit_stop_state = old_hit_stop
+	hero.position = old_hero_position
+	foe.position = old_foe_position
+	foe.hp = old_foe_hp
+	hero.q_stack = 0
+	hero.q_reset_timer = 0
+	hero.skill_timer = 0
+	hero.active_skill = ""
+	hero.active_skill_timer = 0
+	hero.is_dashing = false
+	hero.dash_timer = 0
+	hero.target_id = -1
+	hero.target_struct = null
+
+
 func _match_freeze_case(check: Callable) -> void:
 	var world := Prototype.new()
 	check.call(world.setup_arena(), "match initializes shared hit-stop state")
@@ -112,6 +165,7 @@ func _match_freeze_case(check: Callable) -> void:
 		source_no_stop_cast and world.hit_stop_state.pending_frames == 0,
 		"source Kaizen W cast does not request hit-stop"
 	)
+	_source_dash_case(check, world, hero)
 	world.hit_stop_state.trigger(0.04)
 	world.step_tick()
 	world.activate_pending_hit_stop()

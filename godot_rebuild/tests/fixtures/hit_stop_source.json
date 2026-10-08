@@ -31,6 +31,10 @@
     "sylara": {"q": 0.02},
     "vex": {"q": 0.021, "r": 0.04, "w": 0.025}
   },
+  "dash_triggers": {
+    "kaizen": {"q": 0.027}
+  },
+  "live_melee_impact_hook": false,
   "freeze_contract": {
     "advances_active_skill_timer": true,
     "advances_skill_cooldowns": true,
