@@ -28,6 +28,7 @@ for setting in (
     'common/physics_ticks_per_second=60',
     'pointing/emulate_mouse_from_touch=false',
     'config/custom_user_dir_name="MysticArenaRebuildDev"',
+    'config/cloud_save_enabled=true',
 ):
     check(setting in project, f"Missing project contract: {setting}")
 
@@ -508,6 +509,26 @@ if audio_script.is_file():
 check((ROOT / "project.godot").read_text(encoding="utf-8").find('AudioManager="*res://scripts/audio/audio_manager.gd"') >= 0,
       "Godot audio manager must be autoloaded")
 check((ROOT / "assets/audio/bgm_battle.wav").is_file(), "Migrated battle music asset missing")
+
+cloud_runtime = (ROOT / "scripts/match/cloud_save_runtime.gd")
+cloud_codec = (ROOT / "scripts/match/cloud_save_codec.gd")
+check(cloud_runtime.is_file() and cloud_codec.is_file(), "Native cloud codec/runtime must exist")
+check('CloudSave="*res://scripts/match/cloud_save_runtime.gd"' in project,
+      "Native cloud runtime must be autoloaded")
+check((ROOT / "addons/mystic_cloud/export_plugin.gd").is_file()
+      and (ROOT / "android_plugin/cloud_save/plugin/src/main/java/io/github/dharmawantoxi/mysticarena/godot/GodotCloudSavePlugin.java").is_file(),
+      "Cloud integration must include the Godot Android plugin-v2 export path")
+if cloud_runtime.is_file():
+    cloud_text = cloud_runtime.read_text(encoding="utf-8")
+    check("OS.get_user_data_dir()" in cloud_text and "storage_paths" not in cloud_text
+          and "mobile/cloud_save" not in cloud_text,
+          "Godot cloud runtime must use only Godot-native storage")
+check("CloudSaveChecks.new().run(_check)" in ai_tests
+      and "await CloudSaveSceneChecks.new().run(root.get_tree(), app, _check)" in ai_tests,
+      "Cloud payload and playable-menu tests must be registered")
+check((ROOT / "tests/cloud_save_source_oracle.py").is_file()
+      and (ROOT / "tests/fixtures/cloud_save_source.json").is_file(),
+      "Cloud source oracle and fixture must be present")
 
 
 from starter_finish_source_oracle import source_fixture as starter_finish_fixture

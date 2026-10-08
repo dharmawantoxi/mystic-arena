@@ -77,6 +77,49 @@ func _build_save_slots() -> void:
 	save_slot_panel.slot_requested.connect(_select_save_slot)
 	save_slot_panel.delete_requested.connect(_delete_save_slot)
 	add_child(save_slot_panel)
+	var cloud := get_tree().root.get_node_or_null("CloudSave")
+	if cloud != null:
+		cloud.call("configure_native_paths", slot_path_template)
+		if (
+			cloud.has_signal("restore_available")
+			and not cloud.is_connected("restore_available", _on_cloud_restore_available)
+		):
+			cloud.connect("restore_available", _on_cloud_restore_available)
+		if (
+			cloud.has_signal("restored")
+			and not cloud.is_connected("restored", refresh_after_cloud_restore)
+		):
+			cloud.connect("restored", refresh_after_cloud_restore)
+		var pending: Dictionary = cloud.call("get_pending_restore")
+		if pending.has("payload"):
+			var local_slots_empty := true
+			for slot in range(1, SaveSlotStore.SLOT_COUNT + 1):
+				var path := SaveSlotStore.slot_path(slot, slot_path_template)
+				if (
+					SaveSlotStore.slot_exists(slot, slot_path_template)
+					or FileAccess.file_exists(path + ".tmp")
+				):
+					local_slots_empty = false
+					break
+			if local_slots_empty:
+				_on_cloud_restore_available(pending.payload, pending.summary)
+			else:
+				cloud.call("dismiss_restore_prompt")
+
+
+func _on_cloud_restore_available(payload: Dictionary, summary: Dictionary) -> void:
+	if hero_shop_panel != null:
+		hero_shop_panel.set_open(false)
+	save_slot_panel.refresh_slots(SaveSlotStore.all_slot_info(slot_path_template), active_slot)
+	save_slot_panel.show_cloud_restore_prompt(payload, summary)
+
+
+func refresh_after_cloud_restore() -> void:
+	progress_path = SaveSlotStore.slot_path(active_slot, slot_path_template)
+	_update_active_slot_label()
+	refresh_levels()
+	if save_slot_panel != null:
+		save_slot_panel.refresh_slots(SaveSlotStore.all_slot_info(slot_path_template), active_slot)
 
 
 func _open_save_slots() -> void:
@@ -119,6 +162,9 @@ func configure_slot_paths(path_template: String, slot: int = 1) -> bool:
 	slot_path_template = path_template
 	active_slot = slot
 	progress_path = SaveSlotStore.slot_path(slot, path_template)
+	var cloud := get_tree().root.get_node_or_null("CloudSave")
+	if cloud != null:
+		cloud.call("configure_native_paths", slot_path_template)
 	if is_node_ready():
 		_update_active_slot_label()
 		refresh_levels()

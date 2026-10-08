@@ -9,11 +9,17 @@ config/description="Migrasi baru — wave, gold, build/sell dan upgrade Archer; 
 config/icon="res://assets/icon.svg"
 config/use_custom_user_dir=true
 config/custom_user_dir_name="MysticArenaRebuildDev"
+config/cloud_save_enabled=true
 
 [autoload]
 
 AudioManager="*res://scripts/audio/audio_manager.gd"
 GameSpeed="*res://scripts/simulation/game_speed_runtime.gd"
+CloudSave="*res://scripts/match/cloud_save_runtime.gd"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/mystic_cloud/plugin.cfg")
 
 [display]
 window/size/viewport_width=1280

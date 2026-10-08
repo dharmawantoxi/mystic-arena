@@ -16,6 +16,17 @@ var _confirm: PanelContainer
 var _confirm_label: Label
 var _confirm_yes: Button
 var _confirm_no: Button
+var _cloud_status: Label
+var _cloud_sign_in: Button
+var _cloud_upload: Button
+var _cloud_download: Button
+var _cloud_confirm: PanelContainer
+var _cloud_confirm_label: Label
+var _cloud_confirm_yes: Button
+var _cloud_confirm_no: Button
+var _cloud_pending_action := ""
+var _cloud_pending_payload: Dictionary = {}
+var _cloud_runtime: Node
 
 
 func _ready() -> void:
@@ -23,6 +34,11 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
 	_build()
+	_cloud_runtime = get_tree().root.get_node_or_null("CloudSave")
+	if _cloud_runtime != null and _cloud_runtime.has_signal("status_changed"):
+		if not _cloud_runtime.is_connected("status_changed", _on_cloud_status_changed):
+			_cloud_runtime.connect("status_changed", _on_cloud_status_changed)
+	_update_cloud_controls()
 
 
 func open_with_slots(infos: Array[Dictionary], selected_slot: int) -> void:
@@ -39,8 +55,30 @@ func set_open(is_open: bool) -> void:
 	visible = is_open
 	if not is_open:
 		pending_delete = -1
+		if _cloud_pending_action == "restore" and _cloud_runtime != null:
+			_cloud_runtime.call("dismiss_restore_prompt")
+		_cloud_pending_action = ""
+		_cloud_pending_payload.clear()
 		if _confirm != null:
 			_confirm.visible = false
+		if _cloud_confirm != null:
+			_cloud_confirm.visible = false
+
+
+func show_cloud_restore_prompt(payload: Dictionary, summary: Dictionary) -> void:
+	_cloud_pending_action = "restore"
+	_cloud_pending_payload = payload.duplicate(true)
+	_cloud_confirm_label.text = (
+		"Restore cloud progress? Level %d · Hero Gold %d · %d slot(s). Local slots are empty."
+		% [
+			int(summary.get("highest_level", 0)),
+			int(summary.get("meta_gold", 0)),
+			int(summary.get("slot_count", 0)),
+		]
+	)
+	_cloud_confirm.visible = true
+	visible = true
+	_cloud_confirm_yes.grab_focus()
 
 
 func valid_slot_button(slot: int) -> bool:
@@ -70,8 +108,8 @@ func _build() -> void:
 
 	var card := PanelContainer.new()
 	card.set_anchors_preset(Control.PRESET_CENTER)
-	card.position = Vector2(-570, -285)
-	card.size = Vector2(1140, 570)
+	card.position = Vector2(-570, -340)
+	card.size = Vector2(1140, 680)
 	add_child(card)
 	var margin := MarginContainer.new()
 	for side in ["margin_left", "margin_top", "margin_right", "margin_bottom"]:
@@ -97,6 +135,8 @@ func _build() -> void:
 	column.add_child(row)
 	for index in range(Slots.SLOT_COUNT):
 		_build_slot_card(row, index + 1)
+
+	_build_cloud_section(column)
 
 	_confirm = PanelContainer.new()
 	_confirm.visible = false
@@ -126,9 +166,63 @@ func _build() -> void:
 	column.add_child(close)
 
 
+func _build_cloud_section(column: VBoxContainer) -> void:
+	var section := VBoxContainer.new()
+	section.add_theme_constant_override("separation", 8)
+	column.add_child(section)
+	var heading := Label.new()
+	heading.text = "GOOGLE PLAY GAMES CLOUD SAVE"
+	heading.add_theme_font_size_override("font_size", 18)
+	section.add_child(heading)
+	var actions := HBoxContainer.new()
+	actions.add_theme_constant_override("separation", 10)
+	section.add_child(actions)
+	_cloud_status = Label.new()
+	_cloud_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_cloud_status.text = "Cloud status is loading."
+	actions.add_child(_cloud_status)
+	_cloud_sign_in = Button.new()
+	_cloud_sign_in.text = "SIGN IN"
+	_cloud_sign_in.custom_minimum_size = Vector2(145, 44)
+	_cloud_sign_in.pressed.connect(_request_cloud_sign_in)
+	actions.add_child(_cloud_sign_in)
+	_cloud_upload = Button.new()
+	_cloud_upload.text = "UPLOAD"
+	_cloud_upload.custom_minimum_size = Vector2(145, 44)
+	_cloud_upload.pressed.connect(_ask_cloud_upload)
+	actions.add_child(_cloud_upload)
+	_cloud_download = Button.new()
+	_cloud_download.text = "DOWNLOAD"
+	_cloud_download.custom_minimum_size = Vector2(145, 44)
+	_cloud_download.pressed.connect(_ask_cloud_download)
+	actions.add_child(_cloud_download)
+
+	_cloud_confirm = PanelContainer.new()
+	_cloud_confirm.visible = false
+	section.add_child(_cloud_confirm)
+	var confirm_row := HBoxContainer.new()
+	confirm_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	confirm_row.add_theme_constant_override("separation", 12)
+	_cloud_confirm.add_child(confirm_row)
+	_cloud_confirm_label = Label.new()
+	_cloud_confirm_label.custom_minimum_size = Vector2(560, 0)
+	_cloud_confirm_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	confirm_row.add_child(_cloud_confirm_label)
+	_cloud_confirm_yes = Button.new()
+	_cloud_confirm_yes.text = "CONFIRM"
+	_cloud_confirm_yes.custom_minimum_size = Vector2(130, 44)
+	_cloud_confirm_yes.pressed.connect(_confirm_cloud_action)
+	confirm_row.add_child(_cloud_confirm_yes)
+	_cloud_confirm_no = Button.new()
+	_cloud_confirm_no.text = "CANCEL"
+	_cloud_confirm_no.custom_minimum_size = Vector2(120, 44)
+	_cloud_confirm_no.pressed.connect(_cancel_cloud_action)
+	confirm_row.add_child(_cloud_confirm_no)
+
+
 func _build_slot_card(row: HBoxContainer, slot: int) -> void:
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(350, 340)
+	card.custom_minimum_size = Vector2(350, 310)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(card)
 	var margin := MarginContainer.new()
@@ -195,6 +289,100 @@ func _refresh() -> void:
 			_slot_buttons[index].disabled = false
 			_delete_buttons[index].disabled = false
 	_confirm.visible = pending_delete >= 0
+	_update_cloud_controls()
+
+
+func _update_cloud_controls() -> void:
+	if _cloud_status == null:
+		return
+	if _cloud_runtime == null or not is_instance_valid(_cloud_runtime):
+		_cloud_status.text = "Cloud save tersedia di Android dengan Google Play Games."
+		_cloud_sign_in.disabled = true
+		_cloud_upload.disabled = true
+		_cloud_download.disabled = true
+		return
+	var status: Dictionary = _cloud_runtime.call("get_status")
+	_cloud_status.text = String(status.get("message", "Cloud status unavailable."))
+	var usable := bool(status.get("available", false))
+	var authenticated := bool(status.get("signed_in", false))
+	var pending := bool(status.get("busy", false))
+	_cloud_sign_in.text = "SIGNED IN" if authenticated else "SIGN IN"
+	_cloud_sign_in.disabled = not usable or authenticated or pending
+	_cloud_upload.disabled = not usable or not authenticated or pending
+	_cloud_download.disabled = not usable or not authenticated or pending
+
+
+func _on_cloud_status_changed(
+	_ok: bool, message: String, _available: bool, _signed_in: bool, _busy: bool
+) -> void:
+	if _cloud_status != null:
+		_cloud_status.text = message
+	_update_cloud_controls()
+
+
+func _request_cloud_sign_in() -> void:
+	if _cloud_runtime == null:
+		return
+	_cloud_runtime.call("sign_in")
+
+
+func _ask_cloud_upload() -> void:
+	if _cloud_runtime == null:
+		return
+	_cloud_pending_action = "upload"
+	_cloud_pending_payload.clear()
+	_cloud_confirm_label.text = (
+		"Replace the Google Play cloud copy with all saves " + "and settings on this device?"
+	)
+	_cloud_confirm.visible = true
+	_cloud_confirm_yes.grab_focus()
+
+
+func _ask_cloud_download() -> void:
+	if _cloud_runtime == null:
+		return
+	var has_local_save := false
+	for info in _infos:
+		if not info.is_empty():
+			has_local_save = true
+			break
+	if not has_local_save:
+		_cloud_runtime.call("download_payload", true)
+		return
+	_cloud_pending_action = "download"
+	_cloud_pending_payload.clear()
+	_cloud_confirm_label.text = (
+		"Replace all local save slots and the game-speed setting " + "with the cloud copy?"
+	)
+	_cloud_confirm.visible = true
+	_cloud_confirm_yes.grab_focus()
+
+
+func _confirm_cloud_action() -> void:
+	var action := _cloud_pending_action
+	var payload := _cloud_pending_payload.duplicate(true)
+	_cloud_pending_action = ""
+	_cloud_pending_payload.clear()
+	_cloud_confirm.visible = false
+	if _cloud_runtime == null:
+		return
+	if action == "upload":
+		_cloud_runtime.call("upload_payload")
+	elif action == "download":
+		_cloud_runtime.call("download_payload", true)
+	elif action == "restore":
+		var result: Dictionary = _cloud_runtime.call("apply_payload", payload)
+		if not bool(result.get("ok", false)):
+			_cloud_status.text = String(result.get("error", "Cloud restore failed."))
+		_refresh()
+
+
+func _cancel_cloud_action() -> void:
+	if _cloud_pending_action == "restore" and _cloud_runtime != null:
+		_cloud_runtime.call("dismiss_restore_prompt")
+	_cloud_pending_action = ""
+	_cloud_pending_payload.clear()
+	_cloud_confirm.visible = false
 
 
 func _request_slot(slot: int) -> void:

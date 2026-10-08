@@ -61,7 +61,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     env:
       GODOT_VERSION: '4.7.2'
       GODOT_SILENCE_ROOT_WARNING: '1'
@@ -94,12 +94,30 @@ jobs:
           python godot_rebuild/tests/controller_source_oracle.py
           python godot_rebuild/tests/touch_gesture_source_oracle.py
           python godot_rebuild/tests/save_slot_source_oracle.py
+          python godot_rebuild/tests/cloud_save_source_oracle.py
           python godot_rebuild/tests/level_stats_source_oracle.py
           python godot_rebuild/tests/ai_upgrade_source_oracle.py
           python godot_rebuild/tests/ai_shield_source_oracle.py
           gdparse $(find godot_rebuild -name '*.gd')
           gdlint $(find godot_rebuild -name '*.gd')
           gdformat --check $(find godot_rebuild -name '*.gd')
+      - name: Java 17 for Android plugin compilation
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Android SDK 36
+        uses: android-actions/setup-android@v3
+      - name: Gradle 8.14.3
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Build the Godot Android plugin-v2 AAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
+          godot_rebuild/android_plugin/cloud_save/build_plugin.sh
       - name: Install the pinned official engine
         shell: bash
         run: |

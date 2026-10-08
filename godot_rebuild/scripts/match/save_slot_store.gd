@@ -105,7 +105,19 @@ static func save_path(
 		stamped["last_played_level"] = 1
 	if not stamped.has("run_difficulty"):
 		stamped["run_difficulty"] = null
-	return ProgressStore.save_state(stamped, path)
+	var saved := ProgressStore.save_state(stamped, path)
+	if saved:
+		_notify_cloud_save()
+	return saved
+
+
+static func _notify_cloud_save() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null or tree.root == null:
+		return
+	var cloud := tree.root.get_node_or_null("CloudSave")
+	if cloud != null and cloud.has_method("auto_upload"):
+		cloud.call_deferred("auto_upload")
 
 
 static func slot_info(slot: int, path_template: String = PATH_TEMPLATE) -> Dictionary:

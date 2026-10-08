@@ -36,7 +36,7 @@ static func load_speed(path: String = PATH) -> float:
 	return speed if is_valid_speed(speed) else DEFAULT_SPEED
 
 
-static func save_speed(speed: float, path: String = PATH) -> bool:
+static func save_speed(speed: float, path: String = PATH, notify_cloud: bool = true) -> bool:
 	if not is_valid_speed(speed):
 		return false
 	var backup_path := path + ".bak"
@@ -72,7 +72,18 @@ static func save_speed(speed: float, path: String = PATH) -> bool:
 		return false
 	if had_current:
 		_remove(backup_path)
+	if notify_cloud:
+		_notify_cloud_save()
 	return true
+
+
+static func _notify_cloud_save() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null or tree.root == null:
+		return
+	var cloud := tree.root.get_node_or_null("CloudSave")
+	if cloud != null and cloud.has_method("_notify_local_setting_saved"):
+		cloud.call_deferred("_notify_local_setting_saved")
 
 
 static func _read_speed(path: String) -> float:
