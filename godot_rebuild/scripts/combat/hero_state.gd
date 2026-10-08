@@ -32,6 +32,9 @@ var killed_by := -1
 # Source Hero.kills: only incremented by Game._process_hero_kill/_process_boss_kill
 # when an enemy HERO lands the killing blow. AI upgrade priority reads it.
 var kills := 0
+# Source credit_hero_damage: post-mitigation damage dealt by a known hero.
+# Tactical ATTACK DAMAGE DEALER ranks living enemy heroes by this total.
+var damage_dealt := 0
 var stun_timer := 0
 var w_cooldown := 0
 var w_cooldown_max := 0

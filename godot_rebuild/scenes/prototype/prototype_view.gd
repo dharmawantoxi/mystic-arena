@@ -57,6 +57,7 @@ func _draw() -> void:
 		draw_arc(slot.position, 19, 0, TAU, 36, Color(color, 0.95 if selected else 0.5), 2, true)
 		draw_line(slot.position - Vector2(6, 0), slot.position + Vector2(6, 0), color, 2, true)
 		draw_line(slot.position - Vector2(0, 6), slot.position + Vector2(0, 6), color, 2, true)
+	_draw_tactical(world)
 	var hero := world.get_unit(match_session.selected_id) as HeroState
 	if hero != null and hero.team == world.BLUE and hero.has_destination:
 		var mark := hero.destination
@@ -65,6 +66,34 @@ func _draw() -> void:
 		draw_line(mark - Vector2(5, 5), mark + Vector2(5, 5), color, 1.5, true)
 		draw_line(mark + Vector2(-5, 5), mark + Vector2(5, -5), color, 1.5, true)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+func _draw_tactical(world: Prototype) -> void:
+	var tactical = world.tactical
+	if not tactical.gather_point_active or tactical.gather_point_timer <= 0:
+		return
+	var point: Vector2 = tactical.gather_point
+	var fade := clampf(float(tactical.gather_point_timer) / 150.0, 0.0, 1.0)
+	var pulse := (sin(float(world.tick_count) * 0.133) * 0.3 + 0.7) * fade
+	var color: Color = tactical.command_color()
+	for radius in range(50, 20, -8):
+		var alpha := float(50 - radius) * 4.0 * pulse / 255.0
+		if alpha > 0.0:
+			draw_arc(point, radius, 0, TAU, 40, Color(color, alpha), 2, true)
+	draw_circle(point, 6, color)
+	draw_circle(point, 2, Color.WHITE)
+	if tactical.active_command not in ["gather", "protect_castle", "attack_boss", "protect_tower"]:
+		return
+	for hero in world.player_roster():
+		if not hero.alive:
+			continue
+		var delta: Vector2 = point - hero.position
+		if delta.length() <= 80.0:
+			continue
+		for segment in range(3):
+			var from := hero.position + delta * (float(segment) * 0.33)
+			var to := hero.position + delta * (float(segment) * 0.33 + 0.18)
+			draw_line(from, to, Color(color, 120.0 * pulse / 255.0), 2, true)
 
 
 func _draw_unit(unit: UnitState) -> void:

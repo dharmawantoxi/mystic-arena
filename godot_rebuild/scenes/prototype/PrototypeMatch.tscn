@@ -81,6 +81,73 @@ custom_minimum_size = Vector2(100, 52)
 layout_mode = 2
 text = "Menu"
 
+[node name="TacticalFeedback" type="Label" parent="HUD"]
+unique_name_in_owner = true
+visible = false
+offset_left = 300.0
+offset_top = 112.0
+offset_right = 980.0
+offset_bottom = 148.0
+theme_override_font_sizes/font_size = 22
+text = "TACTICAL COMMAND"
+horizontal_alignment = 1
+
+[node name="TacticalPanel" type="PanelContainer" parent="HUD"]
+unique_name_in_owner = true
+offset_left = 1068.0
+offset_top = 162.0
+offset_right = 1256.0
+offset_bottom = 528.0
+
+[node name="Column" type="VBoxContainer" parent="HUD/TacticalPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="HUD/TacticalPanel/Column"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "TACTICAL · HOLD"
+horizontal_alignment = 1
+
+[node name="GatherButton" type="Button" parent="HUD/TacticalPanel/Column"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "Gather  [G/F]"
+
+[node name="ProtectTowerButton" type="Button" parent="HUD/TacticalPanel/Column"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "Protect Tower  [T]"
+
+[node name="ProtectCastleButton" type="Button" parent="HUD/TacticalPanel/Column"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "Protect Castle  [C]"
+
+[node name="AttackBossButton" type="Button" parent="HUD/TacticalPanel/Column"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "Attack Boss  [B]"
+
+[node name="AttackDealerButton" type="Button" parent="HUD/TacticalPanel/Column"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "Attack Dealer  [D]"
+
+[node name="TacticalStatus" type="Label" parent="HUD/TacticalPanel/Column"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "No tactical command"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="BottomBar" type="PanelContainer" parent="HUD"]
 offset_left = 24.0
 offset_top = 534.0

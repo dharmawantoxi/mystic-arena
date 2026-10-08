@@ -8,6 +8,14 @@ const HeroState = preload("res://scripts/combat/hero_state.gd")
 const ItemForgePanel = preload("res://scripts/ui/item_forge_panel.gd")
 const HeroShopPanel = preload("res://scripts/ui/hero_shop_panel.gd")
 const ProgressStore = preload("res://scripts/match/level_progress_store.gd")
+const TACTICAL_KEYS := {
+	KEY_G: "gather",
+	KEY_F: "gather",
+	KEY_T: "protect_tower",
+	KEY_C: "protect_castle",
+	KEY_B: "attack_boss",
+	KEY_D: "attack_damage_dealer",
+}
 
 var progress_path := ProgressStore.PATH
 var result_shown := false
@@ -73,6 +81,11 @@ func _ready() -> void:
 	%AutoCastButton.pressed.connect(
 		func() -> void: match_session.request_autocast(match_session.selected_id)
 	)
+	_bind_tactical_button(%GatherButton, "gather")
+	_bind_tactical_button(%ProtectTowerButton, "protect_tower")
+	_bind_tactical_button(%ProtectCastleButton, "protect_castle")
+	_bind_tactical_button(%AttackBossButton, "attack_boss")
+	_bind_tactical_button(%AttackDealerButton, "attack_damage_dealer")
 	_build_forge_ui()
 	_build_hero_shop_ui()
 	_build_ai_toggle()
@@ -93,6 +106,14 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	var world := simulation.world as Prototype
+	var cursor_local := (
+		arena.get_global_transform_with_canvas().affine_inverse()
+		* get_viewport().get_mouse_position()
+	)
+	match_session.set_tactical_cursor(
+		cursor_local, Rect2(Vector2.ZERO, Vector2(1280, 720)).has_point(cursor_local)
+	)
+	_update_tactical_hud(world)
 	if forge_panel != null and forge_panel.visible:
 		forge_panel.refresh()
 	if hero_shop_panel != null and hero_shop_panel.visible:
@@ -339,6 +360,79 @@ func _save_result() -> void:
 	%SaveRetryButton.hide()
 
 
+func _bind_tactical_button(button: Button, command_name: String) -> void:
+	button.button_down.connect(_start_panel_tactical.bind(command_name))
+	button.button_up.connect(_finish_tactical.bind(command_name))
+
+
+func _start_panel_tactical(command_name: String) -> void:
+	_start_tactical(command_name, false)
+
+
+func _start_tactical(command_name: String, follow_cursor: bool) -> void:
+	var world := match_session.world as Prototype
+	if get_tree().paused or not world.is_running():
+		return
+	var selected := world.get_unit(match_session.selected_id)
+	var target_id := -1
+	var tower := selected as Structure
+	if (
+		command_name == "protect_tower"
+		and tower != null
+		and tower.alive
+		and tower.team == world.BLUE
+		and tower.settings().structure_kind == "tower"
+	):
+		target_id = tower.id
+	var selected_hero_id := -1
+	var hero := selected as HeroState
+	if hero != null and hero.alive and hero.team == world.BLUE:
+		selected_hero_id = hero.id
+	var has_point := (
+		follow_cursor and command_name == "gather" and match_session.tactical_cursor_valid
+	)
+	match_session.request_tactical_start(
+		command_name,
+		match_session.tactical_cursor,
+		has_point,
+		target_id,
+		selected_hero_id,
+		follow_cursor and command_name == "gather"
+	)
+
+
+func _finish_tactical(command_name: String) -> void:
+	match_session.request_tactical_end(command_name)
+
+
+func _update_tactical_hud(world: Prototype) -> void:
+	var locked := get_tree().paused or not world.is_running()
+	for button in [
+		%GatherButton,
+		%ProtectTowerButton,
+		%ProtectCastleButton,
+		%AttackBossButton,
+		%AttackDealerButton,
+	]:
+		button.disabled = locked
+	%TacticalStatus.text = world.tactical.status_text(world)
+	var visible_feedback: bool = world.tactical.feedback_timer > 0
+	%TacticalFeedback.visible = visible_feedback
+	if not visible_feedback:
+		return
+	%TacticalFeedback.text = world.tactical.feedback_text
+	var alpha := 1.0
+	var y_offset := 0.0
+	if world.tactical.feedback_timer < 30:
+		alpha = float(world.tactical.feedback_timer) / 30.0
+	elif world.tactical.feedback_timer > 150:
+		var progress := float(180 - world.tactical.feedback_timer) / 30.0
+		alpha = clampf(progress, 0.0, 1.0)
+		y_offset = (1.0 - alpha) * 20.0
+	%TacticalFeedback.position.y = 112.0 + y_offset
+	%TacticalFeedback.modulate = Color(world.tactical.feedback_color, alpha)
+
+
 func _build_forge_ui() -> void:
 	# Layer 5f-3: the ITEM FORGE panel draws the item_shop_ui view data and
 	# routes every press back through the source click vocabulary.
@@ -434,10 +528,22 @@ func _toggle_ai() -> void:
 
 
 func _handle_keyboard_input(event: InputEvent) -> bool:
-	if not (event is InputEventKey) or not event.pressed or event.echo:
+	if not (event is InputEventKey):
+		return false
+	var key_event := event as InputEventKey
+	var tactical_name: String = TACTICAL_KEYS.get(key_event.physical_keycode, "")
+	if not tactical_name.is_empty():
+		if key_event.echo:
+			return true
+		if key_event.pressed:
+			_start_tactical(tactical_name, tactical_name == "gather")
+		else:
+			_finish_tactical(tactical_name)
+		return true
+	if not key_event.pressed or key_event.echo:
 		return false
 	var handled := true
-	match event.physical_keycode:
+	match key_event.physical_keycode:
 		KEY_ESCAPE:
 			if hero_shop_panel != null and hero_shop_panel.is_open:
 				hero_shop_panel.set_open(false)
@@ -499,6 +605,7 @@ func _select(point: Vector2) -> void:
 
 
 func pause_match() -> void:
+	match_session.request_tactical_end()
 	if hero_shop_panel != null:
 		hero_shop_panel.set_open(false)
 	if forge_panel != null:

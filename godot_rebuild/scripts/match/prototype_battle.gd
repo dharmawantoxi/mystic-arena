@@ -19,6 +19,7 @@ const AiItems = preload("res://scripts/match/ai_items.gd")
 const AiShields = preload("res://scripts/match/ai_shields.gd")
 const AiDraft = preload("res://scripts/match/ai_draft.gd")
 const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
+const TacticalCommands = preload("res://scripts/match/tactical_commands.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
 const BossState = preload("res://scripts/match/boss_state.gd")
 const BossAI = preload("res://scripts/match/boss_ai.gd")
@@ -88,6 +89,8 @@ var economy := Economy.new()
 var forge := Forge.new()
 # Layer 5f-2: ITEM FORGE panel state + click routing (drawing lives in the UI).
 var item_shop := ItemShopUI.new()
+# Source TacticalCommandManager: fixed-tick player squad orders and hold state.
+var tactical := TacticalCommands.new()
 # Layer 6a: per-tick control for the explicitly owned AI hero roster.
 var ai_heroes := AiHeroControl.new()
 # Layer 6b: scheduling wrapper (source AIPlayer.update). Layer 6e: set_ai_enabled()
@@ -491,6 +494,8 @@ func step_tick() -> void:
 			_step_ai()
 		elif ai_hero_control_enabled:
 			_step_ai_heroes()
+		# Source updates the tactical timers after the frame's unit actions.
+		tactical.step_tick(self)
 
 
 func get_slot(id: int) -> Slot:
@@ -1625,6 +1630,8 @@ func _deliver_hit(
 		var dealt := boss.take_damage(attacker, raw_damage, damage_type, school)
 		if dealt < 0:
 			return false
+		if attacker is HeroState and dealt > 0:
+			(attacker as HeroState).damage_dealt += dealt
 		boss.last_hit_source_id = source_id
 		boss.last_hit_is_miasma_tick = false
 		_record(

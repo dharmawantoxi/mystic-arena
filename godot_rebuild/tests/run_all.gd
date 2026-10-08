@@ -55,6 +55,8 @@ const KaizenChecks = preload("res://tests/kaizen_checks.gd")
 const UpgradeSceneChecks = preload("res://tests/upgrade_scene_checks.gd")
 const UpgradeChecks = preload("res://tests/upgrade_checks.gd")
 const PrototypeChecks = preload("res://tests/prototype_checks.gd")
+const TacticalCommandChecks = preload("res://tests/tactical_command_checks.gd")
+const TacticalCommandSceneChecks = preload("res://tests/tactical_command_scene_checks.gd")
 const BossCoreChecks = preload("res://tests/boss_core_checks.gd")
 const BossAbilityChecks = preload("res://tests/boss_ability_checks.gd")
 const BossMatchChecks = preload("res://tests/boss_match_checks.gd")
@@ -106,8 +108,6 @@ const SIMULATION = preload("res://scripts/simulation/sandbox_simulation.gd")
 
 var failures: Array[String] = []
 var checks := 0
-# Per-prefix failure histogram printed after the final summary so the CI
-# annotation (which keeps the last 60 log lines) names every failing area.
 var failure_groups: Dictionary = {}
 
 
@@ -227,6 +227,7 @@ func _run() -> void:
 	BossHeroAIChecks.new().run(_check)
 	BossPresentationChecks.new().run(_check)
 	PrototypeChecks.new().run(_check)
+	TacticalCommandChecks.new().run(_check)
 	UpgradeChecks.new().run(_check)
 	NexusChecks.new().run(_check)
 	CannonChecks.new().run(_check)
@@ -241,7 +242,6 @@ func _run() -> void:
 	var menu_tree_count: int = root.get_tree().get_node_count()
 	for cycle in range(10):
 		app.current_screen.get_node("%PlayButton").pressed.emit()
-		# Double activation in the same frame must not install two screens.
 		app.current_screen.get_node("%PlayButton").pressed.emit()
 		await _settle()
 		_check(app.screen_root.get_child_count() == 1, "single match screen, cycle %d" % cycle)
@@ -269,7 +269,6 @@ func _run() -> void:
 		)
 		await _physics_steps(4)
 		_check(sim.tick_count > before, "physics resumes")
-		# Background notification must have the same cleanup policy as manual pause.
 		app.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 		_check(paused, "focus loss pauses match")
 		var old_id: int = match_screen.get_instance_id()
@@ -313,6 +312,7 @@ func _run() -> void:
 	await IceSceneChecks.new().run(self, app, _check)
 	await MageSceneChecks.new().run(self, app, _check)
 	await KaizenSceneChecks.new().run(self, app, _check)
+	await TacticalCommandSceneChecks.new().run(self, app, _check)
 	root.get_node("AudioManager").call("shutdown")
 	await _settle()
 	app.queue_free()

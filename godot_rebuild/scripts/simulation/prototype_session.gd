@@ -1,3 +1,4 @@
+# gdlint:disable=max-public-methods
 extends "res://scripts/simulation/combat_session.gd"
 
 const Structure = preload("res://scripts/combat/structure_state.gd")
@@ -5,8 +6,16 @@ const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 ## One seed for the whole red AI: a restarted prototype match replays.
 const AI_MATCH_SEED := 20260929
+const TACTICAL_COMMANDS: Array[String] = [
+	"gather", "protect_tower", "protect_castle", "attack_boss", "attack_damage_dealer"
+]
 var selected_slot_id := -1
 var command: Dictionary = {}
+# Press and release must survive inside one render frame, so tactical input uses
+# an ordered queue rather than the single pending shop/build transaction slot.
+var tactical_queue: Array[Dictionary] = []
+var tactical_cursor := Vector2.ZERO
+var tactical_cursor_valid := false
 var last_action := "Pilih slot biru, lalu bangun Archer (100 G)."
 
 
@@ -44,6 +53,8 @@ func _physics_process(_delta: float) -> void:
 		cancel_pending_input()
 		return
 	var match_world := world as Prototype
+	match_world.tactical.set_cursor(tactical_cursor, tactical_cursor_valid)
+	_drain_tactical_queue(match_world)
 	if not command.is_empty():
 		var accepted := false
 		var balance_before: int = match_world.economy.gold[0]
@@ -251,6 +262,52 @@ func request_hero_follow(entity_id: int, target_id: int) -> bool:
 	return true
 
 
+func request_tactical_start(
+	name: String,
+	point: Vector2 = Vector2.ZERO,
+	has_point: bool = false,
+	target_id: int = -1,
+	selected_hero_id: int = -1,
+	follow_cursor: bool = false
+) -> bool:
+	if name not in TACTICAL_COMMANDS or not world.is_running():
+		return false
+	if get_tree() != null and get_tree().paused:
+		return false
+	(
+		tactical_queue
+		. append(
+			{
+				"kind": "start",
+				"name": name,
+				"point": point,
+				"has_point": has_point,
+				"target_id": target_id,
+				"selected_hero_id": selected_hero_id,
+				"follow_cursor": follow_cursor,
+			}
+		)
+	)
+	return true
+
+
+func request_tactical_end(name: String = "") -> bool:
+	if not name.is_empty() and name not in TACTICAL_COMMANDS:
+		return false
+	if not world.is_running():
+		(world as Prototype).tactical.hold_end(name)
+		return true
+	# Release is accepted while paused so a key/button lifted under the pause
+	# overlay cannot leave a command stuck when fixed ticks resume.
+	tactical_queue.append({"kind": "end", "name": name})
+	return true
+
+
+func set_tactical_cursor(point: Vector2, valid: bool) -> void:
+	tactical_cursor = point
+	tactical_cursor_valid = valid and point.is_finite()
+
+
 func request_wave(_type_index: int) -> bool:
 	return false
 
@@ -267,6 +324,33 @@ func select_at(point: Vector2) -> void:
 func cancel_pending_input() -> void:
 	super.cancel_pending_input()
 	command.clear()
+	tactical_queue.clear()
+	var match_world := world as Prototype
+	if match_world != null:
+		match_world.tactical.hold_end()
+
+
+func _drain_tactical_queue(match_world: Prototype) -> void:
+	var pending := tactical_queue.duplicate()
+	tactical_queue.clear()
+	for transaction in pending:
+		var name: String = transaction.get("name", "")
+		if transaction.kind == "end":
+			match_world.tactical.hold_end(name)
+			continue
+		var accepted := match_world.tactical.hold_start(
+			match_world,
+			name,
+			transaction.point,
+			transaction.has_point,
+			transaction.target_id,
+			transaction.selected_hero_id,
+			transaction.follow_cursor
+		)
+		if accepted:
+			last_action = "Tactical: %s." % name.replace("_", " ").to_upper()
+		elif match_world.tactical.held_command == name:
+			last_action = "Tactical %s menunggu syarat." % name.replace("_", " ").to_upper()
 
 
 func _hero_name(entity_id: int) -> String:
