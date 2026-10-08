@@ -26,6 +26,7 @@ for setting in (
     'window/size/viewport_width=1280',
     'window/size/viewport_height=720',
     'common/physics_ticks_per_second=60',
+    'pointing/emulate_mouse_from_touch=false',
     'config/custom_user_dir_name="MysticArenaRebuildDev"',
 ):
     check(setting in project, f"Missing project contract: {setting}")
@@ -391,6 +392,32 @@ check(all(token in shield_screen for token in
       "Playable scene must route controller actions, snapping and scrolling")
 check("prototype_is_replay" in app and "_start_next_prototype" in app,
       "App must own replay and next-level controller transitions")
+
+from touch_gesture_source_oracle import source_fixture as touch_gesture_source_fixture
+touch_fixture_path = ROOT / "tests/fixtures/touch_gesture_source.json"
+check(touch_fixture_path.is_file(), "Touch gesture runtime requires a source fixture")
+if touch_fixture_path.is_file():
+    check(touch_gesture_source_fixture()
+          == json.loads(touch_fixture_path.read_text(encoding="utf-8")),
+          "Touch gesture source fixture drift")
+check("python godot_rebuild/tests/touch_gesture_source_oracle.py" in workflow,
+      "CI must execute the touch gesture source oracle")
+check("- 'main.py'" in workflow and "- 'mobile/hud.py'" in workflow,
+      "Touch CI must track the source routing and HUD claim authorities")
+check("TouchGestureChecks.new().run(_check)" in ai_tests,
+      "Touch gesture replay suite must run")
+check("await TouchGestureSceneChecks.new().run(self, app, _check)" in ai_tests,
+      "Touch gesture playable-scene suite must run")
+touch_runtime = (ROOT / "scripts/input/touch_gesture_runtime.gd").read_text(encoding="utf-8")
+check(all(token in touch_runtime for token in
+          ("LONG_PRESS_MS", "DOUBLE_TAP_MS", "SCROLL_STEP", "FLING_FRICTION")),
+      "Native touch runtime must retain hold, double-tap, scroll and fling policy")
+check(all(token in shield_screen for token in
+          ("_handle_touch_event", "_route_touch_actions", "_cancel_touch_input",
+           "TOUCH_TARGET_MIN", "TOUCH_PADDING")),
+      "Playable scene must own touch routing, cancellation and source hit areas")
+check("request_hero_move" in shield_screen and "request_hero_follow" in shield_screen,
+      "Touch world commands must cross the fixed-tick session")
 
 # The native AI adapters are now reachable from the playable prototype, but
 # remain explicitly toggleable for replay/debug comparisons.

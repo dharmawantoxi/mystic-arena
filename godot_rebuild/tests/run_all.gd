@@ -41,6 +41,8 @@ const PlayerStructureCommandSceneChecks = preload(
 )
 const ControllerRuntimeChecks = preload("res://tests/controller_runtime_checks.gd")
 const ControllerSceneChecks = preload("res://tests/controller_scene_checks.gd")
+const TouchGestureChecks = preload("res://tests/touch_gesture_checks.gd")
+const TouchGestureSceneChecks = preload("res://tests/touch_gesture_scene_checks.gd")
 const AIUpgradeChecks = preload("res://tests/ai_upgrade_checks.gd")
 const AIPriorityChecks = preload("res://tests/ai_priority_checks.gd")
 const AIItemChecks = preload("res://tests/ai_item_checks.gd")
@@ -162,6 +164,7 @@ func _run() -> void:
 	LevelProgressChecks.new().run(_check)
 	LevelProgressStoreChecks.new().run(_check)
 	ControllerRuntimeChecks.new().run(_check)
+	TouchGestureChecks.new().run(_check)
 	ThorneChecks.new().run(_check)
 	GrimjawChecks.new().run(_check)
 	SylaraChecks.new().run(_check)
@@ -324,6 +327,7 @@ func _run() -> void:
 	await KaizenSceneChecks.new().run(self, app, _check)
 	await TacticalCommandSceneChecks.new().run(self, app, _check)
 	await ControllerSceneChecks.new().run(self, app, _check)
+	await TouchGestureSceneChecks.new().run(self, app, _check)
 	root.get_node("AudioManager").call("shutdown")
 	await _settle()
 	app.queue_free()
@@ -852,13 +856,20 @@ func _test_prototype_scene(app: Node) -> void:
 		_check(paused and session.command.is_empty(), "focus loss cancels match transaction")
 		screen.resume_match()
 		var tap := InputEventScreenTouch.new()
+		tap.index = 0
 		tap.pressed = true
 		tap.position = screen.arena.get_global_transform_with_canvas() * world.slots[9].position
-		screen._unhandled_input(tap)
+		screen._handle_touch_event(tap, 10_000.0)
+		_check(session.selected_slot_id == 2, "touch selection waits for release")
+		tap = InputEventScreenTouch.new()
+		tap.index = 0
+		tap.pressed = false
+		tap.position = screen.arena.get_global_transform_with_canvas() * world.slots[9].position
+		screen._handle_touch_event(tap, 10_100.0)
 		await _settle()
 		_check(
 			session.selected_slot_id == 9 and screen.get_node("%BuildButton").disabled,
-			"touch adapter can inspect enemy slot but cannot build there"
+			"released touch can inspect enemy slot but cannot build there"
 		)
 		session.request_build(9)
 		session._physics_process(1.0 / 60.0)

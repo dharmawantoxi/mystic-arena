@@ -1,4 +1,4 @@
-# gdlint:disable=max-returns
+# gdlint:disable=max-returns,max-file-lines
 extends "res://scenes/combat/combat_screen.gd"
 ## Separate playable subset; shared input/pause plumbing, no manual laboratory wave controls.
 
@@ -12,6 +12,9 @@ const ItemForgePanel = preload("res://scripts/ui/item_forge_panel.gd")
 const HeroShopPanel = preload("res://scripts/ui/hero_shop_panel.gd")
 const ProgressStore = preload("res://scripts/match/level_progress_store.gd")
 const LevelCatalog = preload("res://scripts/match/level_catalog.gd")
+const TouchGestureRuntime = preload("res://scripts/input/touch_gesture_runtime.gd")
+const TOUCH_TARGET_MIN := 48.0
+const TOUCH_PADDING := 6.0
 const TACTICAL_KEYS := {
 	KEY_G: "gather",
 	KEY_F: "gather",
@@ -29,6 +32,8 @@ var hero_shop_panel: HeroShopPanel
 var hero_shop_toggle: Button
 var ai_toggle: Button
 var migration_status: Label
+var touch_gestures = TouchGestureRuntime.new()
+var _touch_tactical_claims: Dictionary = {}
 @onready var match_session: PrototypeSession = $Simulation
 @onready var controller_cursor = %ControllerCursor
 
@@ -115,6 +120,7 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	var world := simulation.world as Prototype
+	_route_touch_actions(touch_gestures.advance(float(Time.get_ticks_msec())))
 	var pointer := get_viewport().get_mouse_position()
 	if controller_cursor.active:
 		pointer = controller_cursor.cursor_position
@@ -663,6 +669,193 @@ func _handle_keyboard_input(event: InputEvent) -> bool:
 	return handled
 
 
+func _input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch or event is InputEventScreenDrag:
+		_handle_touch_event(event)
+
+
+func _handle_touch_event(event: InputEvent, now_ms: float = -1.0) -> bool:
+	if now_ms < 0.0:
+		now_ms = float(Time.get_ticks_msec())
+	if event is InputEventScreenTouch:
+		var touch := event as InputEventScreenTouch
+		var touch_id := int(touch.index)
+		if touch.pressed:
+			var tactical_button := _touch_tactical_button_at(touch.position)
+			if tactical_button != null and not tactical_button.disabled:
+				_touch_tactical_claims[touch_id] = tactical_button
+				tactical_button.button_down.emit()
+			else:
+				_route_touch_actions(touch_gestures.touch_down(touch_id, touch.position, now_ms))
+		else:
+			var claimed := _touch_tactical_claims.get(touch_id) as Button
+			if claimed != null:
+				_touch_tactical_claims.erase(touch_id)
+				claimed.button_up.emit()
+			elif touch.canceled:
+				touch_gestures.cancel_touch(touch_id)
+			else:
+				_route_touch_actions(touch_gestures.touch_up(touch_id, touch.position, now_ms))
+		get_viewport().set_input_as_handled()
+		return true
+	if event is InputEventScreenDrag:
+		var drag := event as InputEventScreenDrag
+		var touch_id := int(drag.index)
+		if not _touch_tactical_claims.has(touch_id):
+			_route_touch_actions(touch_gestures.touch_motion(touch_id, drag.position))
+		get_viewport().set_input_as_handled()
+		return true
+	return false
+
+
+func _route_touch_actions(actions: Array[Dictionary]) -> void:
+	for action in actions:
+		match String(action.kind):
+			"tap":
+				_touch_tap(Vector2(action.pos))
+			"long_press":
+				_touch_long_press(Vector2(action.pos))
+			"scroll":
+				var amount := -50 if float(action.value) < 0.0 else 50
+				_scroll_ui(amount, Vector2(action.pos))
+
+
+func _touch_tap(point: Vector2) -> void:
+	var button := _touch_button_at(point)
+	if button != null:
+		if not button.disabled:
+			if button.toggle_mode:
+				button.button_pressed = not button.button_pressed
+			button.pressed.emit()
+		return
+	if forge_panel != null and forge_panel.visible:
+		_touch_forge_background(point, MOUSE_BUTTON_LEFT)
+		return
+	if get_tree().paused or _controller_modal_open():
+		return
+	_primary_action(point)
+
+
+func _touch_long_press(point: Vector2) -> void:
+	var button := _touch_button_at(point)
+	if button != null:
+		if not button.disabled:
+			var mouse := InputEventMouseButton.new()
+			mouse.button_index = MOUSE_BUTTON_RIGHT
+			mouse.pressed = true
+			mouse.position = point
+			button.gui_input.emit(mouse)
+		return
+	if forge_panel != null and forge_panel.visible:
+		_touch_forge_background(point, MOUSE_BUTTON_RIGHT)
+		return
+	if get_tree().paused or _controller_modal_open():
+		return
+	_command_move(point)
+
+
+func _touch_forge_background(point: Vector2, button_index: int) -> void:
+	var mouse := InputEventMouseButton.new()
+	mouse.button_index = (
+		MOUSE_BUTTON_RIGHT if button_index == MOUSE_BUTTON_RIGHT else MOUSE_BUTTON_LEFT
+	)
+	mouse.pressed = true
+	mouse.position = point
+	forge_panel._input(mouse)
+
+
+func _touch_button_rect(button: Button) -> Rect2:
+	var rect := button.get_global_rect().grow(TOUCH_PADDING)
+	if rect.size.x < TOUCH_TARGET_MIN:
+		rect = (
+			rect
+			. grow_individual(
+				(TOUCH_TARGET_MIN - rect.size.x) * 0.5,
+				0.0,
+				(TOUCH_TARGET_MIN - rect.size.x) * 0.5,
+				0.0,
+			)
+		)
+	if rect.size.y < TOUCH_TARGET_MIN:
+		rect = (
+			rect
+			. grow_individual(
+				0.0,
+				(TOUCH_TARGET_MIN - rect.size.y) * 0.5,
+				0.0,
+				(TOUCH_TARGET_MIN - rect.size.y) * 0.5,
+			)
+		)
+	return rect
+
+
+func _touch_button_at(point: Vector2) -> Button:
+	for button in _controller_buttons(true):
+		if _touch_button_rect(button).has_point(point):
+			return button
+	return null
+
+
+func _touch_tactical_button_at(point: Vector2) -> Button:
+	if get_tree().paused or not simulation.world.is_running() or _controller_modal_open():
+		return null
+	for button in [
+		%GatherButton,
+		%ProtectTowerButton,
+		%ProtectCastleButton,
+		%AttackBossButton,
+		%AttackDealerButton,
+	]:
+		if button.is_visible_in_tree() and _touch_button_rect(button).has_point(point):
+			return button
+	return null
+
+
+func _cancel_touch_input() -> void:
+	for value in _touch_tactical_claims.values():
+		var button := value as Button
+		if button != null:
+			button.button_up.emit()
+	_touch_tactical_claims.clear()
+	touch_gestures.cancel()
+
+
+func _point_in_arena(point: Vector2) -> bool:
+	var local := arena.get_global_transform_with_canvas().affine_inverse() * point
+	return Rect2(Vector2.ZERO, Vector2(1280, 720)).has_point(local)
+
+
+func _primary_action(point: Vector2) -> void:
+	var world := simulation.world as Prototype
+	if not world.is_running() or not _point_in_arena(point):
+		return
+	var local := arena.get_global_transform_with_canvas().affine_inverse() * point
+	var slot_id := world.slot_at(local)
+	if slot_id >= 0:
+		match_session.select_at(local)
+		return
+	var marked := world.select_at(local)
+	var target := world.get_unit(marked)
+	var selected := world.get_unit(match_session.selected_id) as HeroState
+	var target_hero := target as HeroState
+	var target_structure := target as Structure
+	var structure_is_selectable := false
+	if target_structure != null:
+		structure_is_selectable = (
+			target_structure.team == world.BLUE
+			or target_structure.settings().structure_kind == "nexus"
+		)
+	if (target_hero != null and target_hero.team == world.BLUE) or structure_is_selectable:
+		match_session.select_at(local)
+	elif selected != null and selected.alive and selected.team == world.BLUE:
+		if target != null and target.alive and target.team != world.BLUE:
+			match_session.request_hero_follow(selected.id, target.id)
+		else:
+			match_session.request_hero_move(selected.id, local)
+	else:
+		match_session.select_at(local)
+
+
 func _route_controller_action(action: String) -> void:
 	var world := match_session.world as Prototype
 	if not world.is_running():
@@ -783,12 +976,16 @@ func _controller_button_roots() -> Array[Node]:
 	return roots
 
 
-func _controller_buttons() -> Array[Button]:
+func _controller_buttons(include_disabled: bool = false) -> Array[Button]:
 	var buttons: Array[Button] = []
 	for root_node in _controller_button_roots():
 		for node in root_node.find_children("*", "Button", true, false):
 			var button := node as Button
-			if button != null and button.is_visible_in_tree() and not button.disabled:
+			if (
+				button != null
+				and button.is_visible_in_tree()
+				and (include_disabled or not button.disabled)
+			):
 				buttons.append(button)
 	return buttons
 
@@ -817,6 +1014,10 @@ func _controller_snap() -> void:
 
 
 func _controller_scroll(amount: int) -> void:
+	_scroll_ui(amount, controller_cursor.cursor_position)
+
+
+func _scroll_ui(amount: int, point: Vector2) -> void:
 	var fallback: ScrollContainer
 	for root_node in _controller_button_roots():
 		for node in root_node.find_children("*", "ScrollContainer", true, false):
@@ -825,7 +1026,7 @@ func _controller_scroll(amount: int) -> void:
 				continue
 			if fallback == null:
 				fallback = scroll
-			if scroll.get_global_rect().has_point(controller_cursor.cursor_position):
+			if scroll.get_global_rect().has_point(point):
 				scroll.scroll_vertical += amount
 				return
 	if fallback != null:
@@ -843,6 +1044,10 @@ func _update_controller_hover() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch or event is InputEventScreenDrag:
+		# Screen gestures are consumed in _input before GUI/unhandled routing.
+		get_viewport().set_input_as_handled()
+		return
 	if _handle_keyboard_input(event):
 		get_viewport().set_input_as_handled()
 		return
@@ -858,27 +1063,24 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _command_move(point: Vector2) -> void:
-	if not simulation.world.is_running():
+	var world := simulation.world as Prototype
+	if not world.is_running() or not _point_in_arena(point):
+		return
+	var selected := world.get_unit(match_session.selected_id) as HeroState
+	if selected == null or not selected.alive or selected.team != world.BLUE:
 		return
 	var local := arena.get_global_transform_with_canvas().affine_inverse() * point
-	var world := simulation.world as Prototype
-	var marked := world.select_at(local)
-	var target := world.get_unit(marked)
-	if target != null and target.alive and target.team != 0:
-		match_session.request_hero_follow(match_session.selected_id, marked)
-	else:
-		match_session.request_hero_move(match_session.selected_id, local)
+	match_session.request_hero_move(selected.id, local)
 	get_viewport().set_input_as_handled()
 
 
 func _select(point: Vector2) -> void:
-	if not simulation.world.is_running():
-		return
-	match_session.select_at(arena.get_global_transform_with_canvas().affine_inverse() * point)
+	_primary_action(point)
 	get_viewport().set_input_as_handled()
 
 
 func pause_match() -> void:
+	_cancel_touch_input()
 	match_session.request_tactical_end()
 	if hero_shop_panel != null:
 		hero_shop_panel.set_open(false)

@@ -6,7 +6,10 @@ on:
     paths:
       - 'godot_rebuild/**'
       - '_core.py'
+      - 'main.py'
       - 'main_desktop_legacy.py'
+      - 'mobile/touch.py'
+      - 'mobile/hud.py'
       - 'levels/level_data.py'
       - '_entity.py'
       - 'bosses/boss_data.py'
@@ -19,7 +22,10 @@ on:
     paths:
       - 'godot_rebuild/**'
       - '_core.py'
+      - 'main.py'
       - 'main_desktop_legacy.py'
+      - 'mobile/touch.py'
+      - 'mobile/hud.py'
       - 'levels/level_data.py'
       - '_entity.py'
       - 'bosses/boss_data.py'
@@ -68,6 +74,7 @@ jobs:
           python godot_rebuild/tests/tactical_command_source_oracle.py
           python godot_rebuild/tests/player_structure_command_source_oracle.py
           python godot_rebuild/tests/controller_source_oracle.py
+          python godot_rebuild/tests/touch_gesture_source_oracle.py
           python godot_rebuild/tests/ai_upgrade_source_oracle.py
           python godot_rebuild/tests/ai_shield_source_oracle.py
           gdparse $(find godot_rebuild -name '*.gd')
