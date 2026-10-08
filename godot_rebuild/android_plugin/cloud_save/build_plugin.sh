@@ -15,18 +15,30 @@ fi
 
 cd "$PLUGIN_DIR"
 if [[ -n "$PROJECT_ID" ]]; then
-  gradle --no-daemon --console=plain :plugin:copyGodotPluginAars -PmysticGamesProjectId="$PROJECT_ID"
+  gradle --no-daemon --console=plain :plugin:assembleDebug :plugin:assembleRelease \
+    -PmysticGamesProjectId="$PROJECT_ID"
 else
   echo "No Godot Google Play Games project ID configured; building an inert plugin."
-  gradle --no-daemon --console=plain :plugin:copyGodotPluginAars
+  gradle --no-daemon --console=plain :plugin:assembleDebug :plugin:assembleRelease
 fi
 
+OUTPUT_DIR="$PLUGIN_DIR/plugin/build/outputs/aar"
+DEST_DIR="$ROOT/godot_rebuild/addons/mystic_cloud/bin"
 for variant in debug release; do
-  aar="$ROOT/godot_rebuild/addons/mystic_cloud/bin/$variant/MysticCloudSave-$variant.aar"
+  candidates=()
+  while IFS= read -r -d '' candidate; do
+    candidates+=("$candidate")
+  done < <(find "$OUTPUT_DIR" -maxdepth 1 -type f -name "*-$variant.aar" -print0)
+  if [[ "${#candidates[@]}" != 1 ]]; then
+    echo "Expected one $variant AAR in $OUTPUT_DIR; found ${#candidates[@]}." >&2
+    find "$OUTPUT_DIR" -maxdepth 1 -type f -name '*.aar' -print >&2 || true
+    exit 1
+  fi
+  mkdir -p "$DEST_DIR/$variant"
+  aar="$DEST_DIR/$variant/MysticCloudSave-$variant.aar"
+  cp "${candidates[0]}" "$aar"
   if [[ ! -s "$aar" ]]; then
-    echo "Missing Android plugin artifact: $aar" >&2
-    find "$PLUGIN_DIR/plugin/build/outputs/aar" "$ROOT/godot_rebuild/addons/mystic_cloud/bin" \
-      -maxdepth 4 -type f -name '*.aar' -print 2>/dev/null >&2 || true
+    echo "Android plugin artifact is empty: $aar" >&2
     exit 1
   fi
 done

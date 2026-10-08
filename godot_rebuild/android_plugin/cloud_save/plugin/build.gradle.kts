@@ -2,7 +2,6 @@ plugins {
     id("com.android.library")
 }
 
-val pluginName = "MysticCloudSave"
 val pluginPackage = "io.github.dharmawantoxi.mysticarena.godot"
 val idFile = rootProject.file("../../android_games_app_id.txt")
 val configuredProjectId = providers.gradleProperty("mysticGamesProjectId").orNull
@@ -32,15 +31,4 @@ android {
 dependencies {
     implementation("org.godotengine:godot:4.7.2.stable")
     implementation("com.google.android.gms:play-services-games-v2:22.0.0")
-}
-
-val copyGodotPluginAars by tasks.registering(Copy::class) {
-    dependsOn("assembleDebug", "assembleRelease")
-    from(layout.buildDirectory.dir("outputs/aar"))
-    include("*.aar")
-    rename { filename ->
-        val variant = filename.substringAfterLast("-").removeSuffix(".aar")
-        "$pluginName-$variant.aar"
-    }
-    into(layout.projectDirectory.dir("../../../addons/mystic_cloud/bin"))
 }
