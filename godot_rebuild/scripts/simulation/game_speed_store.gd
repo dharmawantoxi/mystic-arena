@@ -30,7 +30,10 @@ static func decode_speed(text: String) -> float:
 
 
 static func load_speed(path: String = PATH) -> float:
-	return _read_speed(path) if FileAccess.file_exists(path) else DEFAULT_SPEED
+	if not FileAccess.file_exists(path):
+		return DEFAULT_SPEED
+	var speed := _read_speed(path)
+	return speed if is_valid_speed(speed) else DEFAULT_SPEED
 
 
 static func save_speed(speed: float, path: String = PATH) -> bool:
