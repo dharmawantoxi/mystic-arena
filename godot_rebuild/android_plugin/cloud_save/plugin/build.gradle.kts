@@ -17,7 +17,6 @@ android {
     defaultConfig {
         minSdk = 24
         resValue("string", "game_services_project_id", gamesProjectId)
-        setProperty("archivesBaseName", pluginName)
     }
 
     compileOptions {
@@ -38,6 +37,7 @@ dependencies {
 val copyGodotPluginAars by tasks.registering(Copy::class) {
     dependsOn("assembleDebug", "assembleRelease")
     from(layout.buildDirectory.dir("outputs/aar"))
-    include("$pluginName-debug.aar", "$pluginName-release.aar")
+    include("plugin-debug.aar", "plugin-release.aar")
+    rename { filename -> filename.replace("plugin-", "$pluginName-") }
     into(layout.projectDirectory.dir("../../../addons/mystic_cloud/bin"))
 }
