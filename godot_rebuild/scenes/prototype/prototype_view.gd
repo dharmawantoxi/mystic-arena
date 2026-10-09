@@ -113,7 +113,7 @@ func _draw_unit(unit: UnitState) -> void:
 	# Team outline, stable ID polygon, and facing eye are intentionally basic.
 	draw_circle(point + Vector2(0, 4), radius + 5, Color("071518"))
 	draw_circle(point, radius + 5, team_color)
-	draw_colored_polygon(HeroMarker.body(point, radius, hero.definition.id), fill)
+	draw_colored_polygon(HeroMarker.silhouette(point, radius, hero.definition.id), fill)
 	draw_circle(point + Vector2(hero.facing * 5, -2), 3, Color("e1fff4"))
 	draw_line(point, point + Vector2(hero.facing * (radius + 10), 0), team_color, 2, true)
 	var health := float(hero.hp) / maxf(1.0, hero.max_hp)

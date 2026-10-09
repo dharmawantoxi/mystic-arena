@@ -110,8 +110,47 @@ di sana. Bukan bug, hanya kontras rendah.
   menunjukkan komposisi yang kurang pas.
 - Merge PR #326.
 
+## Peta sisa migrasi — temuan saat hendak lanjut
+
+Dibaca hanya untuk memilih slice berikutnya, bukan audit menyeluruh:
+
+| Area | Status |
+|---|---|
+| Kit hero | **222/222 selesai**, 0 pending (PR #292, merge `8119e31`) |
+| item/forge | **Sudah terport** (`scripts/match/forge.gd`, `item_forge_panel.gd`, `forge_scene_checks.gd`) |
+| Katalog level, audio, player command/shop, match pacing | Selesai (PR #318/#323/#324/#325) |
+| `lighting.py` (239 baris) | **Belum terport** — tidak ada padanan di `godot_rebuild/` |
+| `hero_marker.gd` | Masih placeholder: "Temporary... Visual polish belongs after migration" |
+
+Catatan: `ui_components/hero_portraits.py` yang di-impor `_core.py:3056`
+**tidak ada di repo**, jadi sumber Python untuk portrait arte-faktual sudah
+hilang. Portrait karena itu dibangun prosedural, bukan disalin.
+
+`HERO_MIGRATION_PROGRESS.md` menyebut sisa di luar kit: *AIPlayer penuh,
+item/forge, art final — hanya atas permintaan pengguna*. Karena forge sudah
+ada, efektif tinggal AIPlayer penuh dan art final.
+
+## Slice berikutnya: siluet hero arena (art)
+
+`hero_marker.gd` menggambar semua 222 hero sebagai poligon 4–6 sisi dengan warna
+turunan hash, jadi Kaizen dan Thorne tidak bisa dibedakan di arena.
+
+Perubahan (aditif, tidak mengubah kontrak lama):
+
+- `body()` tetap poligon 4–6 sisi karena `grimjaw_checks._markers`
+  mengunci `points.size() >= 4 and <= 6` untuk seluruh roster.
+- `silhouette(point, radius, hero_type)` baru: Kaizen ramping (8 titik),
+  Thorne tambun (12 titik), hero lain wobble deterministik 7–10 titik.
+  Semua titik di dalam `radius * MAX_REACH` (1.2) agar tetap terbingkai
+  lingkaran tim.
+- `fill()` kini memakai warna khas Kaizen/Thorne, hash untuk sisanya.
+  Tetap opaque dan stabil, jadi `grimjaw_checks` tetap lolos.
+- `prototype_view.gd` menggambar `silhouette()`, bukan `body()`.
+- Suite baru `tests/hero_marker_checks.gd`, terdaftar di `run_all.gd`.
+
 ## Batas scope
 
 - Tidak ada portrait hero lain yang dimulai (hanya Kaizen + Thorne + fallback generik).
+- `lighting.py` tidak diport — slice ini hanya menyempurnakan hero marker.
 - Tidak ada sistem lain yang diaudit atau diubah.
 - Top-up flow Python dan voucher allowlist tidak disentuh.
