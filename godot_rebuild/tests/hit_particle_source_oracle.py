@@ -2,10 +2,11 @@
 
 `import _render` fails today with a pre-existing circular import, and the
 Python sources are read-only, so this oracle extracts the real
-`class HitParticle` block from `_render.py` and executes it verbatim with
-`pygame`, `math` and `random` in scope. The class pre-renders a sprite in
-`__init__` via pygame, which works headless, so the whole source body runs
-untouched.
+`class HitParticle` block from `_render.py` and executes it with `math` and
+`random` in scope and pygame stubbed. Only the pixel-sprite pre-render in
+`__init__` is stubbed; `update()` - the motion and lifetime math that is
+actually being ported - runs the real source body unchanged. Nothing here
+requires pygame to be installed, so CI stays dependency-free.
 
 Every number in the fixture therefore comes from the actual source
 algorithm. Cases with an explicit velocity are fully deterministic; the
@@ -20,7 +21,34 @@ import random
 import sys
 from pathlib import Path
 
-import pygame
+
+class _SurfaceShim:
+    """Stand-in for pygame.Surface.
+
+    HitParticle.__init__ pre-renders a pixel sprite. That sprite is pixel
+    art we do not port (godot_rebuild draws vectors), and CI has no pygame,
+    so it is stubbed. update() - the motion and lifetime math that is
+    actually being ported - still runs the real source body.
+    """
+
+    def __init__(self, size, _flags=0):
+        self._size = tuple(size)
+
+    def get_size(self):
+        return self._size
+
+
+class _DrawShim:
+    @staticmethod
+    def circle(_surface, _color, _center, _radius):
+        return None
+
+
+class _PygameShim:
+    SRCALPHA = 1
+    Surface = _SurfaceShim
+    draw = _DrawShim()
+
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "_render.py"
@@ -53,7 +81,7 @@ def _load_class():
     start = next(i for i, line in enumerate(lines) if line.startswith("class HitParticle:"))
     end = next(i for i, line in enumerate(lines) if i > start and line.startswith("class "))
     block = "\n".join(lines[start:end])
-    namespace = {"random": random, "math": math, "pygame": pygame}
+    namespace = {"random": random, "math": math, "pygame": _PygameShim()}
     exec(compile(block, "_render.py:HitParticle", "exec"), namespace)
     return namespace["HitParticle"]
 
