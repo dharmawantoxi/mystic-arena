@@ -24,10 +24,14 @@ var active_slot := SaveSlotStore.get_current_slot()
 var hero_shop_panel: MetaHeroShopPanel
 var save_slot_panel: SaveSlotPanel
 var audio_settings_panel: AudioSettingsPanel
+var _localization_runtime: Node
 
 
 func _ready() -> void:
 	theme = UI_THEME.create_theme()
+	_localization_runtime = get_tree().root.get_node_or_null("Localization")
+	if is_instance_valid(_localization_runtime):
+		_localization_runtime.connect("language_changed", _refresh_localized_labels)
 	UI_THEME.title(%Title, 56)
 	UI_THEME.muted(%Subtitle)
 	UI_THEME.muted(%Scope)
@@ -47,9 +51,19 @@ func _ready() -> void:
 	_build_hero_shop()
 	_build_save_slots()
 	_build_audio_settings()
+	_refresh_localized_labels()
 	_update_active_slot_label()
 	refresh_levels()
 	%PrototypeButton.grab_focus()
+
+
+func _refresh_localized_labels(_language: String = "") -> void:
+	if not is_instance_valid(_localization_runtime):
+		return
+	%PlayButton.text = String(_localization_runtime.call("translate", "menu_play"))
+	%QuitButton.text = String(_localization_runtime.call("translate", "menu_quit"))
+	%SaveGamesButton.text = String(_localization_runtime.call("translate", "slot_title"))
+	%SettingsButton.text = String(_localization_runtime.call("translate", "menu_settings"))
 
 
 func _click_and_emit(signal_value: Signal) -> void:

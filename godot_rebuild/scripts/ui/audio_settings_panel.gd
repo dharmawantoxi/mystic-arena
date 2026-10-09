@@ -1,20 +1,25 @@
 extends Control
-## Shared native settings panel for live audio mix and render-frame controls.
+## Shared native settings panel for audio, render-frame, and language controls.
 
 const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
 const AudioManagerScript = preload("res://scripts/audio/audio_manager.gd")
 const AudioRuntime = preload("res://scripts/audio/audio_runtime.gd")
 const CHANNELS := [
-	{"id": "master", "label": "Master Volume"},
-	{"id": "sfx", "label": "SFX Volume"},
-	{"id": "bgm", "label": "Music Volume"},
+	{"id": "master", "label_key": "set_volume_master"},
+	{"id": "sfx", "label_key": "set_volume_sfx"},
+	{"id": "bgm", "label_key": "set_volume_bgm"},
 ]
 
 var _value_labels: Dictionary = {}
 var _meters: Dictionary = {}
+var _channel_labels: Dictionary = {}
 var _close_button: Button
+var _settings_title: Label
 var _frame_limit_value: Label
+var _language_label: Label
+var _language_value: Label
 var _frame_rate_runtime: Node
+var _localization_runtime: Node
 
 
 func _ready() -> void:
@@ -22,6 +27,10 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_build()
 	_frame_rate_runtime = get_tree().root.get_node_or_null("FrameRateLimit")
+	_localization_runtime = get_tree().root.get_node_or_null("Localization")
+	if is_instance_valid(_localization_runtime):
+		_localization_runtime.connect("language_changed", _refresh_localized_labels)
+	_refresh_localized_labels()
 	hide()
 
 
@@ -46,6 +55,7 @@ func refresh() -> void:
 		var meter: ProgressBar = _meters[channel]
 		label.text = "%d%%" % percent
 		meter.value = percent
+	_refresh_localized_labels()
 	_refresh_frame_limit()
 
 
@@ -62,7 +72,7 @@ func _build() -> void:
 	add_child(center)
 
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(640, 520)
+	card.custom_minimum_size = Vector2(640, 580)
 	center.add_child(card)
 
 	var margin := MarginContainer.new()
@@ -78,7 +88,9 @@ func _build() -> void:
 	header.add_theme_constant_override("separation", 16)
 	column.add_child(header)
 	var title := Label.new()
+	title.name = "SettingsTitle"
 	title.text = "SETTINGS"
+	_settings_title = title
 	UI_THEME.title(title, 30)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
@@ -94,7 +106,7 @@ func _build() -> void:
 	rows.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(rows)
 	for entry in CHANNELS:
-		_build_volume_row(rows, String(entry.id), String(entry.label))
+		_build_volume_row(rows, String(entry.id), String(entry.label_key))
 
 	var graphics_title := Label.new()
 	graphics_title.text = "GRAPHICS"
@@ -124,9 +136,37 @@ func _build() -> void:
 	next.custom_minimum_size = Vector2(52, 42)
 	next.pressed.connect(_cycle_frame_limit.bind(1))
 	frame_rate_row.add_child(next)
+	_build_language_row(column)
 
 
-func _build_volume_row(parent: VBoxContainer, channel: String, label_text: String) -> void:
+func _build_language_row(parent: VBoxContainer) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	parent.add_child(row)
+	_language_label = Label.new()
+	_language_label.name = "LanguageLabel"
+	_language_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(_language_label)
+	var previous := Button.new()
+	previous.name = "LanguagePrevious"
+	previous.text = "‹"
+	previous.custom_minimum_size = Vector2(52, 42)
+	previous.pressed.connect(_cycle_language.bind(-1))
+	row.add_child(previous)
+	_language_value = Label.new()
+	_language_value.name = "LanguageValue"
+	_language_value.custom_minimum_size = Vector2(160, 0)
+	_language_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	row.add_child(_language_value)
+	var next := Button.new()
+	next.name = "LanguageNext"
+	next.text = "›"
+	next.custom_minimum_size = Vector2(52, 42)
+	next.pressed.connect(_cycle_language.bind(1))
+	row.add_child(next)
+
+
+func _build_volume_row(parent: VBoxContainer, channel: String, label_key: String) -> void:
 	var row := VBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
 	parent.add_child(row)
@@ -135,9 +175,11 @@ func _build_volume_row(parent: VBoxContainer, channel: String, label_text: Strin
 	heading.add_theme_constant_override("separation", 12)
 	row.add_child(heading)
 	var label := Label.new()
-	label.text = label_text
+	label.name = _node_name(channel, "Label")
+	label.text = label_key
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading.add_child(label)
+	_channel_labels[channel] = label
 	var value := Label.new()
 	value.name = _node_name(channel, "Value")
 	value.custom_minimum_size = Vector2(64, 0)
@@ -180,6 +222,35 @@ func _node_name(channel: String, suffix: String) -> String:
 func _adjust(channel: String, delta: float) -> void:
 	if AudioRuntime.adjust_volume(channel, delta):
 		refresh()
+
+
+func _translate(key: String) -> String:
+	if is_instance_valid(_localization_runtime):
+		return String(_localization_runtime.call("translate", key))
+	return key
+
+
+func _refresh_localized_labels(_language: String = "") -> void:
+	if _settings_title == null:
+		return
+	_settings_title.text = _translate("set_title")
+	_close_button.text = _translate("menu_back")
+	for entry in CHANNELS:
+		var channel := String(entry.id)
+		var label: Label = _channel_labels[channel]
+		label.text = _translate(String(entry.label_key))
+	if _language_label != null:
+		_language_label.text = _translate("language")
+	if _language_value != null:
+		if is_instance_valid(_localization_runtime):
+			_language_value.text = String(_localization_runtime.call("get_language_label"))
+		else:
+			_language_value.text = "Bahasa Indonesia"
+
+
+func _cycle_language(direction: int) -> void:
+	if is_instance_valid(_localization_runtime):
+		_localization_runtime.call("cycle_language", direction)
 
 
 func _refresh_frame_limit() -> void:

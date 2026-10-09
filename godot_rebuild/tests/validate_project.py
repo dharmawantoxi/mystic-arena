@@ -576,6 +576,37 @@ check("AdaptiveQualityChecks.new().run(_check)" in ai_tests
       and "await AdaptiveQualitySceneChecks.new().run(root.get_tree(), app, _check)" in ai_tests,
       "Adaptive-quality native and playable-scene tests must be registered")
 
+from localization_source_oracle import source_fixture as localization_source_fixture
+localization_catalog_path = ROOT / "data/localization_catalog.json"
+localization_contract_path = ROOT / "tests/fixtures/localization_source_contract.json"
+check(localization_catalog_path.is_file() and localization_contract_path.is_file(),
+      "Localization catalog and source contract fixture must be present")
+if localization_catalog_path.is_file() and localization_contract_path.is_file():
+    source_localization = localization_source_fixture()
+    check(source_localization == json.loads(
+        localization_catalog_path.read_text(encoding="utf-8")),
+        "Native localization catalog drifted from active Python data")
+    source_contract = {key: value for key, value in source_localization.items() if key != "texts"}
+    check(source_contract == json.loads(
+        localization_contract_path.read_text(encoding="utf-8")),
+        "Language default, labels or persistence contract drift")
+language_runtime = ROOT / "scripts/settings/localization_runtime.gd"
+language_store = ROOT / "scripts/settings/language_store.gd"
+check(language_runtime.is_file() and language_store.is_file(),
+      "Native language runtime and atomic preference store must exist")
+if language_runtime.is_file():
+    language_text = language_runtime.read_text(encoding="utf-8")
+    check("func translate(" in language_text and "language_changed.emit" in language_text,
+          "Language selection must update live translation lookups")
+check('Localization="*res://scripts/settings/localization_runtime.gd"' in project,
+      "Native localization runtime must be autoloaded")
+check("LocalizationChecks.new().run(_check)" in ai_tests
+      and "await LocalizationSceneChecks.new().run(root.get_tree(), app, _check)" in ai_tests,
+      "Localization native and playable-scene tests must be registered")
+check("LanguageNext" in (ROOT / "scripts/ui/audio_settings_panel.gd").read_text(encoding="utf-8")
+      and "language_changed" in (ROOT / "scenes/menu/main_menu.gd").read_text(encoding="utf-8"),
+      "Settings language selector must relabel the active MainMenu and panel")
+
 cloud_runtime = (ROOT / "scripts/match/cloud_save_runtime.gd")
 cloud_codec = (ROOT / "scripts/match/cloud_save_codec.gd")
 check(cloud_runtime.is_file() and cloud_codec.is_file(), "Native cloud codec/runtime must exist")
