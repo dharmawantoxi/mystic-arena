@@ -8,9 +8,12 @@ const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
 const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
 
 const CARD_WIDTH := 485.0
-const CARD_HEIGHT := 92.0
-const PORTRAIT_SIZE := 72.0
-const PORTRAIT_INSET := 12.0
+# Tall enough for the three wrapped text lines the longest rows need once the
+# portrait has taken its share of the width (see PETA_SISA_MIGRASI.md).
+const CARD_HEIGHT := 112.0
+const PORTRAIT_SIZE := 64.0
+const PORTRAIT_INSET := 10.0
+const TEXT_MARGIN_RIGHT := 16.0
 
 var _portrait: Control
 
@@ -19,6 +22,8 @@ func _init() -> void:
 	custom_minimum_size = Vector2(CARD_WIDTH, CARD_HEIGHT)
 	alignment = HORIZONTAL_ALIGNMENT_LEFT
 	clip_text = true
+	# The portrait eats horizontal room, so rows wrap instead of clipping.
+	autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_apply_styleboxes()
 
 
@@ -70,6 +75,6 @@ func _card_box(fill: Color, edge: Color, width: int) -> StyleBoxFlat:
 	var box := UI_THEME.panel(fill, edge)
 	# Leave room for the portrait: Button text draws inside the content margin.
 	box.content_margin_left = PORTRAIT_SIZE + PORTRAIT_INSET * 2.0
-	box.content_margin_right = 18.0
+	box.content_margin_right = TEXT_MARGIN_RIGHT
 	box.set_border_width_all(width)
 	return box

@@ -76,6 +76,18 @@ func _card(check: Callable) -> void:
 		flat != null and flat.content_margin_left >= HeroShopCard.PORTRAIT_SIZE,
 		"Card text clears the portrait area"
 	)
+	check.call(
+		card.autowrap_mode == TextServer.AUTOWRAP_WORD_SMART,
+		"Card wraps long rows instead of clipping them"
+	)
+	check.call(
+		flat.content_margin_left + flat.content_margin_right < HeroShopCard.CARD_WIDTH * 0.35,
+		"Portrait leaves most of the card width for text"
+	)
+	check.call(
+		HeroShopCard.CARD_HEIGHT >= HeroShopCard.PORTRAIT_SIZE + 24.0,
+		"Card is tall enough to frame the portrait"
+	)
 
 	card.setup(
 		"thorne",

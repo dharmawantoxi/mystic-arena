@@ -47,6 +47,28 @@ python3 godot_rebuild/tests/validate_project.py     -> PASS: 12333 static checks
 
 `gdtoolkit 4.5.0` dipasang di sandbox untuk menjalankan batch di atas.
 
+## Regresi teks terpotong — ditemukan lalu diperbaiki
+
+Menaruh portrait di kiri card memakan lebar teks. Diukur dengan font asli
+proyek (Barlow-SemiBold 20) terhadap seluruh 222 hero di roster:
+
+| Panel | Sebelum portrait ada | Portrait 72 (pertama) | Setelah perbaikan |
+|---|---:|---:|---:|
+| Match (lebar 485) | 3/18 terpotong | 17/18 | **0/18** |
+| Meta (lebar 525) | 314/666 terpotong | 600/666 | **5/666** |
+
+Perbaikan yang dipakai:
+
+- `PORTRAIT_SIZE` 72 → 64, `PORTRAIT_INSET` 12 → 10, margin kanan 18 → 16
+  (ruang yang direserve turun 96px → 84px).
+- `autowrap_mode = TextServer.AUTOWRAP_WORD_SMART`: baris panjang wrap, bukan
+  dipotong.
+- `CARD_HEIGHT` 92 → 112, cukup untuk 3 baris ter-wrap.
+
+Hasil akhir lebih baik dari kondisi sebelum slice ini dimulai, dan regresi
+yang sempat masuk sudah hilang. Pengukuran di atas bisa diulang dengan mirror
+Python yang sama (skrip scratch, tidak ikut commit).
+
 ## Validasi runtime — SUDAH dijalankan lewat CI
 
 Sandbox authoring tidak punya engine Godot (unduhan engine resmi mengarah ke
