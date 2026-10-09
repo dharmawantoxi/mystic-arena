@@ -148,6 +148,35 @@ Perubahan (aditif, tidak mengubah kontrak lama):
 - `prototype_view.gd` menggambar `silhouette()`, bukan `body()`.
 - Suite baru `tests/hero_marker_checks.gd`, terdaftar di `run_all.gd`.
 
+## PopupAnimation + ScreenShake
+
+**`PopupAnimation`** — tanpa pygame dan tanpa RNG, jadi oracle-nya nol
+dependensi. Yang diport: `progress += (target - progress) * 0.15` dengan jepretan
+`|diff| < 0.01`, lalu turunan `_ease_out_back(progress)` untuk scale dan
+`int((1 - progress) * 30)` untuk offset-Y. Oracle mengeksekusi blok sumber
+**termasuk fungsi easing tingkat modul** yang dipanggil kelasnya, jadi kurva
+`c1 = 1.70158`-nya benar-benar kurva sumber.
+
+**`ScreenShake`** — `add_shake` menyimpan nilai terbesar, `update` memakai
+decay 0.85 lalu memotong ke 0 di bawah 0.5, `get_offset` menarik dua bilangan
+bulat acak dalam ±`int(intensity)`. Karena `get_offset` memakai RNG, suite
+native **tidak** membandingkan nilai eksak; yang dikunci adalah invarian
+sebenarnya: kedua komponen bilangan bulat di dalam batas intensitas. Invarian
+yang sama juga diuji terhadap sampel sumber.
+
+### Divergensi yang sengaja dipertahankan
+
+`prototype_battle.gd` masih punya shake inline sendiri
+(`boss_screen_shake_intensity` + `boss_screen_shake_timer`). Ia menambah gerbang
+8 tick dan memakai offset `cos/sin`, bukan acak — keduanya **tidak ada di
+sumber Python**.
+
+Saya **tidak** menggantinya, karena
+`boss_presentation_checks.gd` mengunci `boss_screen_shake_timer == 8` lalu
+`== 7`. Menggantinya akan merusak perilaku PR #325 yang sudah merge. Jadi
+`ScreenShake` baru adalah kelas yang bisa dipakai ulang, dan menyatukan kedua
+jalur itu keputusan terpisah yang perlu Anda setujui.
+
 ## Slice berikutnya: efek `_render.py` — FloatingText lalu HitParticle
 
 Dua kelas efek murni-state yang paling mudah dikunci, dikerjakan berurutan
@@ -197,10 +226,10 @@ berasal dari algoritma sumber yang sebenarnya.
 - `lighting.py` tidak diport: ia post-process per-piksel di atas pygame
   Surface, sementara `godot_rebuild` menggambar vektor. Memaksanya masuk
   berarti reinterpretasi, bukan port.
-- `EffectManager` keseluruhan tidak diport; baru `FloatingText` dan
-  `HitParticle`. Masih belum ada (0 kemunculan di `scripts/` + `scenes/`):
-  `ComboCounter`, `KillFeed`, `WaveAnnouncer`, `PathPreview`,
-  `AchievementPopup`, `LevelIntroScreen`, `PopupAnimation`,
+- `EffectManager` keseluruhan tidak diport; baru `FloatingText`,
+  `HitParticle`, `PopupAnimation`, dan `ScreenShake`. Masih belum ada
+  (0 kemunculan di `scripts/` + `scenes/`): `ComboCounter`, `KillFeed`,
+  `WaveAnnouncer`, `PathPreview`, `AchievementPopup`, `LevelIntroScreen`,
   `BossIntroCinematic`, `SpriteCache`, `RenderCache`. `DeathExplosion` dan
   `BossDeathAnimation` baru kontrak **waktunya** yang diport (via
   `boss_presentation_source_oracle.py` + `boss_death_pause_checks.gd`),
