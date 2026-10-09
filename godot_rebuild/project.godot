@@ -15,6 +15,7 @@ config/cloud_save_enabled=true
 
 AudioManager="*res://scripts/audio/audio_manager.gd"
 GameSpeed="*res://scripts/simulation/game_speed_runtime.gd"
+FrameRateLimit="*res://scripts/settings/frame_rate_limit_runtime.gd"
 CloudSave="*res://scripts/match/cloud_save_runtime.gd"
 
 [editor_plugins]

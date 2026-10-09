@@ -1,0 +1,28 @@
+{
+  "source": "_core.py:GameSettings + main.py:main + mobile/perf.py:Quality",
+  "default": 60,
+  "presets": [
+    30,
+    60,
+    120,
+    0
+  ],
+  "preset_controls": 2,
+  "saved_by_setter": true,
+  "setter_validates_presets": true,
+  "labels": {
+    "unlimited": "Unlimited",
+    "unit": "FPS"
+  },
+  "quality_targets": {
+    "android_low": 30,
+    "desktop_high": 60,
+    "android_starts_low": true,
+    "desktop_starts_high": true
+  },
+  "runtime_cap": {
+    "clock_tick_uses_limit": true,
+    "zero_falls_back_to_quality_target": true,
+    "touch_mode_caps_explicit_selection": true
+  }
+}

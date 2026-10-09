@@ -1,5 +1,5 @@
 extends Control
-## Live mix controls for the playback channels present in the native client.
+## Shared native settings panel for live audio mix and render-frame controls.
 
 const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
 const AudioManagerScript = preload("res://scripts/audio/audio_manager.gd")
@@ -13,12 +13,15 @@ const CHANNELS := [
 var _value_labels: Dictionary = {}
 var _meters: Dictionary = {}
 var _close_button: Button
+var _frame_limit_value: Label
+var _frame_rate_runtime: Node
 
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_build()
+	_frame_rate_runtime = get_tree().root.get_node_or_null("FrameRateLimit")
 	hide()
 
 
@@ -43,6 +46,7 @@ func refresh() -> void:
 		var meter: ProgressBar = _meters[channel]
 		label.text = "%d%%" % percent
 		meter.value = percent
+	_refresh_frame_limit()
 
 
 func _build() -> void:
@@ -58,7 +62,7 @@ func _build() -> void:
 	add_child(center)
 
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(640, 440)
+	card.custom_minimum_size = Vector2(640, 520)
 	center.add_child(card)
 
 	var margin := MarginContainer.new()
@@ -74,7 +78,7 @@ func _build() -> void:
 	header.add_theme_constant_override("separation", 16)
 	column.add_child(header)
 	var title := Label.new()
-	title.text = "AUDIO SETTINGS"
+	title.text = "SETTINGS"
 	UI_THEME.title(title, 30)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
@@ -91,6 +95,35 @@ func _build() -> void:
 	column.add_child(rows)
 	for entry in CHANNELS:
 		_build_volume_row(rows, String(entry.id), String(entry.label))
+
+	var graphics_title := Label.new()
+	graphics_title.text = "GRAPHICS"
+	UI_THEME.muted(graphics_title)
+	column.add_child(graphics_title)
+	var frame_rate_row := HBoxContainer.new()
+	frame_rate_row.add_theme_constant_override("separation", 12)
+	column.add_child(frame_rate_row)
+	var frame_rate_label := Label.new()
+	frame_rate_label.text = "FPS Limit"
+	frame_rate_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	frame_rate_row.add_child(frame_rate_label)
+	var previous := Button.new()
+	previous.name = "FrameRatePrevious"
+	previous.text = "‹"
+	previous.custom_minimum_size = Vector2(52, 42)
+	previous.pressed.connect(_cycle_frame_limit.bind(-1))
+	frame_rate_row.add_child(previous)
+	_frame_limit_value = Label.new()
+	_frame_limit_value.name = "FrameRateValue"
+	_frame_limit_value.custom_minimum_size = Vector2(120, 0)
+	_frame_limit_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	frame_rate_row.add_child(_frame_limit_value)
+	var next := Button.new()
+	next.name = "FrameRateNext"
+	next.text = "›"
+	next.custom_minimum_size = Vector2(52, 42)
+	next.pressed.connect(_cycle_frame_limit.bind(1))
+	frame_rate_row.add_child(next)
 
 
 func _build_volume_row(parent: VBoxContainer, channel: String, label_text: String) -> void:
@@ -147,6 +180,17 @@ func _node_name(channel: String, suffix: String) -> String:
 func _adjust(channel: String, delta: float) -> void:
 	if AudioRuntime.adjust_volume(channel, delta):
 		refresh()
+
+
+func _refresh_frame_limit() -> void:
+	if is_instance_valid(_frame_rate_runtime) and _frame_limit_value != null:
+		_frame_limit_value.text = String(_frame_rate_runtime.call("limit_label"))
+
+
+func _cycle_frame_limit(direction: int) -> void:
+	if is_instance_valid(_frame_rate_runtime):
+		_frame_rate_runtime.call("cycle_limit", direction)
+		_refresh_frame_limit()
 
 
 func _unhandled_key_input(event: InputEvent) -> void:

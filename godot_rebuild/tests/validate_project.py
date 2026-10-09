@@ -527,6 +527,31 @@ if (ROOT / "tests/fixtures/audio_settings_source.json").is_file():
         (ROOT / "tests/fixtures/audio_settings_source.json").read_text(encoding="utf-8")),
         "Audio settings source fixture drift")
 
+from frame_rate_limit_source_oracle import source_fixture as frame_rate_limit_source_fixture
+frame_rate_fixture_path = ROOT / "tests/fixtures/frame_rate_limit_source.json"
+check(frame_rate_fixture_path.is_file(), "Frame-rate setting source fixture must be present")
+if frame_rate_fixture_path.is_file():
+    check(frame_rate_limit_source_fixture() == json.loads(
+        frame_rate_fixture_path.read_text(encoding="utf-8")),
+        "Frame-rate setting source fixture drift")
+frame_rate_runtime = ROOT / "scripts/settings/frame_rate_limit_runtime.gd"
+frame_rate_store = ROOT / "scripts/settings/frame_rate_limit_store.gd"
+check(frame_rate_runtime.is_file() and frame_rate_store.is_file(),
+      "Native frame-rate runtime and atomic settings store must exist")
+if frame_rate_runtime.is_file():
+    frame_rate_text = frame_rate_runtime.read_text(encoding="utf-8")
+    check("Engine.max_fps" in frame_rate_text and "func resolve_limit(" in frame_rate_text,
+          "Frame-rate runtime must apply the user render cap")
+    check("physics_ticks_per_second" not in frame_rate_text and "GameSpeed" not in frame_rate_text,
+          "Frame-rate runtime must not control fixed simulation speed")
+check('FrameRateLimit="*res://scripts/settings/frame_rate_limit_runtime.gd"' in project,
+      "Native frame-rate runtime must be autoloaded before gameplay")
+check("FrameRateLimitChecks.new().run(_check)" in ai_tests
+      and "await FrameRateLimitSceneChecks.new().run(root.get_tree(), app, _check)" in ai_tests,
+      "Frame-rate native and playable-scene checks must be registered")
+check("FrameRateNext" in (ROOT / "scripts/ui/audio_settings_panel.gd").read_text(encoding="utf-8"),
+      "MainMenu settings must expose the source FPS-limit control")
+
 cloud_runtime = (ROOT / "scripts/match/cloud_save_runtime.gd")
 cloud_codec = (ROOT / "scripts/match/cloud_save_codec.gd")
 check(cloud_runtime.is_file() and cloud_codec.is_file(), "Native cloud codec/runtime must exist")
