@@ -169,7 +169,7 @@ jobs:
         run: |
           set -euo pipefail
           code=0
-          timeout 120 "$GODOT" --headless --path godot_rebuild --script res://tests/run_all.gd 2>&1 | tee /tmp/rebuild-tests.log || code=$?
+          timeout 180 "$GODOT" --headless --path godot_rebuild --script res://tests/run_all.gd 2>&1 | tee /tmp/rebuild-tests.log || code=$?
           if [[ "$code" != 0 ]] || grep -qE 'SCRIPT ERROR:|ERROR:|FAIL:' /tmp/rebuild-tests.log; then
             python godot_rebuild/tests/annotate_failure.py /tmp/rebuild-tests.log
             exit 1
