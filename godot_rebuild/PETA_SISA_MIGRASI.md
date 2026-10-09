@@ -177,6 +177,34 @@ Saya **tidak** menggantinya, karena
 `ScreenShake` baru adalah kelas yang bisa dipakai ulang, dan menyatukan kedua
 jalur itu keputusan terpisah yang perlu Anda setujui.
 
+## KillFeed + ComboCounter
+
+Dua mesin state deterministik dari `_render.py`, diport dengan pola yang sama
+(oracle sumber → fixture JSON → suite Godot yang memutar ulang fixture).
+
+- `scripts/ui/kill_feed.gd` — `add_kill(killer, victim, team)` menyusun
+  `"Kaizen >> Grimjaw"` (biru) atau `"<<"` (merah), mendorong `target_y` tiap
+  entri lama +20, menambah entri baru, lalu `pop(0)` saat lewat 5 entri.
+  `update()` menurunkan `lifetime` 180 dan meng-ease `y_offset` 20% menuju
+  `target_y`, lalu membuang entri yang habis.
+- `scripts/ui/combo_counter.gd` — tiap kill menyegarkan jendela 120 tick,
+  mem-pop `target_scale` ke 1.3 dan menyalakan `color_flash` 20 tick. Saat
+  jendela habis, `last_combo` mencatat combo lalu `count` nol dan panel
+  memudar (`*0.85`, dipotong ke 0 di bawah 0.05).
+- Oracle: `tests/kill_feed_source_oracle.py` (6 kill di tick 0/3/6/9/12/15,
+  200 tick — tick 15 membuktikan cap 5 entri: entri terlama terbuang dan
+  `target_y` tersisa `[80, 60, 40, 20, 0]`) dan
+  `tests/combo_counter_source_oracle.py` (kill di tick 0/1/2/40/41, 220 tick —
+  tick 120 membuktikan jendela 120 tick masih menyisakan `timer == 40`).
+
+### Divergensi yang sengaja dipertahankan
+
+`ComboCounter.add_kill()` di sumber juga mengirim banner tier ke panel samping
+khusus Python (`from mobile import sidepanel`) di dalam `try/except Exception:
+pass`. Efek samping itu **tidak diport**; ambangnya diekspos lewat
+`ComboCounter.tier_for()`. Perhatikan sumber memakai `==`, bukan `>=`: combo 7
+tidak mengumumkan apa-apa, dan suite Godot mengunci perilaku itu.
+
 ## Slice berikutnya: efek `_render.py` — FloatingText lalu HitParticle
 
 Dua kelas efek murni-state yang paling mudah dikunci, dikerjakan berurutan
@@ -227,8 +255,9 @@ berasal dari algoritma sumber yang sebenarnya.
   Surface, sementara `godot_rebuild` menggambar vektor. Memaksanya masuk
   berarti reinterpretasi, bukan port.
 - `EffectManager` keseluruhan tidak diport; baru `FloatingText`,
-  `HitParticle`, `PopupAnimation`, dan `ScreenShake`. Masih belum ada
-  (0 kemunculan di `scripts/` + `scenes/`): `ComboCounter`, `KillFeed`,
+  `HitParticle`, `PopupAnimation`, `ScreenShake`, `KillFeed`, dan
+  `ComboCounter`. Masih belum ada
+  (0 kemunculan di `scripts/` + `scenes/`):
   `WaveAnnouncer`, `PathPreview`, `AchievementPopup`, `LevelIntroScreen`,
   `BossIntroCinematic`, `SpriteCache`, `RenderCache`. `DeathExplosion` dan
   `BossDeathAnimation` baru kontrak **waktunya** yang diport (via
