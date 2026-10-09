@@ -1,0 +1,70 @@
+{
+  "payload_magic": "MYSTIC_ARENA_BACKUP",
+  "payload_version": 1,
+  "cloud_magic": "MYSTIC_ARENA_CLOUD",
+  "cloud_version": 1,
+  "slot_count": 3,
+  "cases": [
+    {
+      "payload_json": "{\"magic\":\"MYSTIC_ARENA_BACKUP\",\"version\":1,\"exported_at\":1700000000.125,\"slots\":{\"1\":{\"completed_levels\":[1,2,3.0,4],\"meta_gold\":24500,\"profile\":\"Naga \\\"Áruna\\\"\\\\東\\nline\",\"flags\":[true,false,null]},\"3\":{\"completed_levels\":[],\"meta_gold\":0,\"slot_last_played\":1699999999.5}},\"settings\":{\"game_speed\":1.5,\"fps_limit\":120.0,\"language\":\"id\"},\"checksum\":\"1fe5e68b50bc523825c048df1c2b593e08c501e7e18900a691783dbee81092c4\"}",
+      "expected_checksum": "1fe5e68b50bc523825c048df1c2b593e08c501e7e18900a691783dbee81092c4",
+      "expected_error": null,
+      "summary": {
+        "highest_level": 4,
+        "meta_gold": 24500,
+        "slot_count": 2,
+        "exported_at": 1700000000.125,
+        "newest_played": 1699999999.5
+      }
+    },
+    {
+      "payload_json": "{\"magic\":\"MYSTIC_ARENA_BACKUP\",\"version\":1,\"exported_at\":0,\"slots\":{\"2\":{\"completed_levels\":[1],\"meta_gold\":1}},\"settings\":{},\"checksum\":\"d9b592bd956821c72178d6c2fe933a8731e95e21a1f8f217d2f2d7a3da6a7a73\"}",
+      "expected_checksum": "d9b592bd956821c72178d6c2fe933a8731e95e21a1f8f217d2f2d7a3da6a7a73",
+      "expected_error": null,
+      "summary": {
+        "highest_level": 1,
+        "meta_gold": 1,
+        "slot_count": 1,
+        "exported_at": 0.0,
+        "newest_played": 0.0
+      }
+    },
+    {
+      "payload_json": "{\"magic\":\"MYSTIC_ARENA_BACKUP\",\"version\":1,\"exported_at\":-0.0,\"slots\":{\"1\":{\"completed_levels\":[1],\"meta_gold\":0,\"float_1e-5\":1e-05,\"float_1e-4\":0.0001,\"float_1e-7\":1e-07,\"float_1e15\":1000000000000000.0,\"float_1e16\":1e+16,\"float_scientific\":1.23456789e+20,\"negative_zero\":-0.0}},\"settings\":{\"game_speed\":1.0},\"checksum\":\"6235afaa4adb4624899efda06cb5bed4dcf5131cfed719958676518580bd8883\"}",
+      "expected_checksum": "6235afaa4adb4624899efda06cb5bed4dcf5131cfed719958676518580bd8883",
+      "expected_error": null,
+      "summary": {
+        "highest_level": 1,
+        "meta_gold": 0,
+        "slot_count": 1,
+        "exported_at": 0.0,
+        "newest_played": 0.0
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "label": "invalid_json",
+      "payload_json": "{",
+      "expected_error": "File corrupt (not valid JSON)"
+    },
+    {
+      "label": "non_object",
+      "payload_json": "[]",
+      "expected_error": "File corrupt (unexpected structure)"
+    }
+  ],
+  "expected_errors": {
+    "wrong_magic": "Not a Mystic Arena save file",
+    "wrong_version": "Save version 2 not supported",
+    "empty_slots": "Save contains no data",
+    "bad_checksum": "File corrupt (checksum mismatch)"
+  },
+  "contract": {
+    "build_includes_settings": true,
+    "restore_uses_temp_and_replace": true,
+    "restore_clears_missing_slots": true,
+    "manager_async_poll": true,
+    "save_auto_upload": true
+  }
+}

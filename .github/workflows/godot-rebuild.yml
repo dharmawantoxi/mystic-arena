@@ -8,6 +8,12 @@ on:
       - '_core.py'
       - '_system.py'
       - '_render.py'
+      - 'heroes/combat_feel.py'
+      - 'heroes/kaizen_fx.py'
+      - 'heroes/grimjaw_fx.py'
+      - 'heroes/sylara_fx.py'
+      - 'heroes/vex_fx.py'
+      - 'hero_skills/_bundle.py'
       - 'main.py'
       - 'main_desktop_legacy.py'
       - 'mobile/touch.py'
@@ -26,6 +32,12 @@ on:
       - '_core.py'
       - '_system.py'
       - '_render.py'
+      - 'heroes/combat_feel.py'
+      - 'heroes/kaizen_fx.py'
+      - 'heroes/grimjaw_fx.py'
+      - 'heroes/sylara_fx.py'
+      - 'heroes/vex_fx.py'
+      - 'hero_skills/_bundle.py'
       - 'main.py'
       - 'main_desktop_legacy.py'
       - 'mobile/touch.py'
@@ -49,7 +61,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     env:
       GODOT_VERSION: '4.7.2'
       GODOT_SILENCE_ROOT_WARNING: '1'
@@ -65,6 +77,8 @@ jobs:
           python godot_rebuild/tests/check_source_contract.py
           python godot_rebuild/tests/structure_source_oracle.py
           python godot_rebuild/tests/match_source_oracle.py
+          python godot_rebuild/tests/game_speed_source_oracle.py
+          python godot_rebuild/tests/hit_stop_source_oracle.py
           python godot_rebuild/tests/upgrade_source_oracle.py
           python godot_rebuild/tests/nexus_source_oracle.py
           python godot_rebuild/tests/cannon_source_oracle.py
@@ -80,12 +94,52 @@ jobs:
           python godot_rebuild/tests/controller_source_oracle.py
           python godot_rebuild/tests/touch_gesture_source_oracle.py
           python godot_rebuild/tests/save_slot_source_oracle.py
+          python godot_rebuild/tests/cloud_save_source_oracle.py
           python godot_rebuild/tests/level_stats_source_oracle.py
           python godot_rebuild/tests/ai_upgrade_source_oracle.py
           python godot_rebuild/tests/ai_shield_source_oracle.py
           gdparse $(find godot_rebuild -name '*.gd')
           gdlint $(find godot_rebuild -name '*.gd')
           gdformat --check $(find godot_rebuild -name '*.gd')
+      - name: Java 17 for Android plugin compilation
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Android SDK 36
+        uses: android-actions/setup-android@v3
+        with:
+          packages: ''
+      - name: Gradle 8.14.3
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Build the Godot Android plugin-v2 AAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
+            godot_rebuild/android_plugin/cloud_save/build_plugin.sh
+          } 2>&1 | tee /tmp/cloud-save-plugin-build.log
+      - name: Report Android plugin build output
+        if: failure()
+        shell: bash
+        run: |
+          if [[ -s /tmp/cloud-save-plugin-build.log ]]; then
+            python - <<'PY'
+          from pathlib import Path
+          text = "\n".join(Path("/tmp/cloud-save-plugin-build.log").read_text(errors="replace").splitlines()[-80:])
+          escaped = text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+          print(f"::error title=Android plugin build output::{escaped}")
+          PY
+            {
+              echo "### Android plugin build output"
+              echo '```text'
+              tail -n 80 /tmp/cloud-save-plugin-build.log
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Install the pinned official engine
         shell: bash
         run: |
@@ -115,7 +169,7 @@ jobs:
         run: |
           set -euo pipefail
           code=0
-          timeout 120 "$GODOT" --headless --path godot_rebuild --script res://tests/run_all.gd 2>&1 | tee /tmp/rebuild-tests.log || code=$?
+          timeout 180 "$GODOT" --headless --path godot_rebuild --script res://tests/run_all.gd 2>&1 | tee /tmp/rebuild-tests.log || code=$?
           if [[ "$code" != 0 ]] || grep -qE 'SCRIPT ERROR:|ERROR:|FAIL:' /tmp/rebuild-tests.log; then
             python godot_rebuild/tests/annotate_failure.py /tmp/rebuild-tests.log
             exit 1

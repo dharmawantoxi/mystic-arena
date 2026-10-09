@@ -1,0 +1,1 @@
+{"source":"_core.py:Game.update + GameSettings","default":1.0,"presets":[0.5,1.0,1.5,2.0],"clamp":[0.5,2.0],"ticks_per_physics_call":{"0.5":[1,0,1,0],"1.0":[1,1,1,1],"1.5":[1,1,1,1],"2.0":[2,2,2,2]},"cinematic_ticks_per_call":1,"skip_oddity":"int(1.5)-1 is 0; 1.5x currently runs one update"}

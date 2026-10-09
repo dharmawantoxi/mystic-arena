@@ -38,6 +38,7 @@ func configure_player_profile(state: Dictionary) -> bool:
 
 
 func _ready() -> void:
+	get_node("/root/GameSpeed").call("reset_match_clock")
 	super._ready()
 	var match_world := world as Prototype
 	match_world.setup_arena()
@@ -191,7 +192,17 @@ func _physics_process(_delta: float) -> void:
 				. get(match_world.transaction_error, "Transaksi ditolak.")
 			)
 		command.clear()
-	world.step_tick()
+	if match_world.hit_stop_state.is_active():
+		# Source checks hit-stop before game-speed skipping; drain one freeze
+		# frame on every fixed callback, even when the match runs at 0.5x.
+		match_world.step_tick()
+	else:
+		var tick_budget := int(get_node("/root/GameSpeed").call("ticks_for_physics_frame"))
+		for _tick in range(tick_budget):
+			if not match_world.is_running():
+				break
+			match_world.step_tick()
+	match_world.activate_pending_hit_stop()
 	if world.get_unit(selected_id) == null:
 		selected_id = -1
 

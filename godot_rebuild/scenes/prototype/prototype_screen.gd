@@ -13,6 +13,7 @@ const HeroShopPanel = preload("res://scripts/ui/hero_shop_panel.gd")
 const ProgressStore = preload("res://scripts/match/level_progress_store.gd")
 const SaveSlotStore = preload("res://scripts/match/save_slot_store.gd")
 const LevelCatalog = preload("res://scripts/match/level_catalog.gd")
+const GameSpeedStore = preload("res://scripts/simulation/game_speed_store.gd")
 const TouchGestureRuntime = preload("res://scripts/input/touch_gesture_runtime.gd")
 const TOUCH_TARGET_MIN := 48.0
 const TOUCH_PADDING := 6.0
@@ -103,6 +104,7 @@ func _ready() -> void:
 	_build_hero_shop_ui()
 	_build_ai_toggle()
 	_build_migration_status()
+	_setup_game_speed_control()
 	%PauseButton.pressed.connect(pause_match)
 	%ResumeButton.pressed.connect(resume_match)
 	%RestartButton.pressed.connect(func() -> void: restart_requested.emit())
@@ -118,6 +120,24 @@ func _ready() -> void:
 			"AI lawan  [A] : ON" if match_session.world.ai_enabled else "AI lawan  [A] : OFF"
 		)
 	%PauseButton.grab_focus()
+
+
+func _setup_game_speed_control() -> void:
+	var selector: OptionButton = %GameSpeedSelector
+	var speed_runtime: Node = get_tree().root.get_node("GameSpeed")
+	for speed in GameSpeedStore.PRESETS:
+		selector.add_item("%.1fx" % speed)
+	selector.select(int(speed_runtime.call("speed_index")))
+	selector.item_selected.connect(_on_game_speed_selected)
+	speed_runtime.connect("speed_changed", _sync_game_speed_selector)
+
+
+func _on_game_speed_selected(index: int) -> void:
+	get_tree().root.get_node("GameSpeed").call("set_speed_index", index)
+
+
+func _sync_game_speed_selector(_speed: float) -> void:
+	%GameSpeedSelector.select(int(get_tree().root.get_node("GameSpeed").call("speed_index")))
 
 
 func _process(_delta: float) -> void:

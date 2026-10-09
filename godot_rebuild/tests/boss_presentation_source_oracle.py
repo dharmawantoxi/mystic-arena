@@ -1,10 +1,9 @@
-"""AST oracle for Boss entrance rendering and death-effect presentation.
+"""AST oracle for boss presentation commands and death-pause source timing.
 
-Only the source presentation boundaries are exercised here: the original
-`_draw_entrance` method records its draw/text commands against a tiny fake
-pygame surface, and the original `take_damage` method records the effect calls
-made by the death branch. The Godot view uses the same scalar contract while
-remaining renderer-native.
+The original `_draw_entrance` method records draw/text commands against a tiny
+fake pygame surface, while `take_damage` records the death effect calls. A
+separate AST contract captures BossDeathAnimation's pause duration and the
+Game.update early-return ordering without executing Python runtime code.
 """
 import ast
 import json
@@ -125,6 +124,138 @@ def source_methods():
     return env["SourceBossPresentation"]
 
 
+def _attribute_path(node):
+    parts = []
+    while isinstance(node, ast.Attribute):
+        parts.insert(0, node.attr)
+        node = node.value
+    if isinstance(node, ast.Name):
+        parts.insert(0, node.id)
+        return parts
+    return []
+
+
+def _assigned_int(statements, attribute):
+    values = [
+        node.value
+        for statement in statements
+        for node in ast.walk(statement)
+        if isinstance(node, ast.Assign)
+        and any(_attribute_path(target) == ["self", attribute] for target in node.targets)
+    ]
+    if len(values) != 1 or not isinstance(values[0], ast.Constant) or not isinstance(values[0].value, int):
+        raise AssertionError(f"Re-audit source BossDeathAnimation.{attribute}")
+    return values[0].value
+
+
+def death_pause_contract():
+    render_tree = ast.parse((ROOT / "_render.py").read_text(encoding="utf-8"))
+    animation = next(
+        node for node in render_tree.body
+        if isinstance(node, ast.ClassDef) and node.name == "BossDeathAnimation"
+    )
+    methods = {
+        node.name: node for node in animation.body if isinstance(node, ast.FunctionDef)
+    }
+    if not {"__init__", "update", "is_death_active"} <= set(methods):
+        raise AssertionError("Re-audit the source boss death pause methods")
+    tier = next(
+        node
+        for node in ast.walk(methods["__init__"])
+        if isinstance(node, ast.If)
+        and isinstance(node.test, ast.Compare)
+        and _attribute_path(node.test.left) == ["self", "boss_class"]
+        and len(node.test.comparators) == 1
+        and isinstance(node.test.comparators[0], ast.Constant)
+        and node.test.comparators[0].value == "true"
+    )
+    mini_ticks = _assigned_int(tier.orelse, "duration")
+    true_ticks = _assigned_int(tier.body, "duration")
+    countdowns = [
+        node for node in ast.walk(methods["update"])
+        if isinstance(node, ast.AugAssign)
+        and _attribute_path(node.target) == ["self", "timer"]
+        and isinstance(node.op, ast.Sub)
+    ]
+    ended_at_zero = any(
+        isinstance(node, ast.If)
+        and isinstance(node.test, ast.Compare)
+        and _attribute_path(node.test.left) == ["self", "timer"]
+        and len(node.test.ops) == 1
+        and isinstance(node.test.ops[0], ast.LtE)
+        and len(node.test.comparators) == 1
+        and isinstance(node.test.comparators[0], ast.Constant)
+        and node.test.comparators[0].value == 0
+        and any(
+            isinstance(child, ast.Assign)
+            and any(_attribute_path(target) == ["self", "active"] for target in child.targets)
+            and isinstance(child.value, ast.Constant)
+            and child.value.value is False
+            for statement in node.body
+            for child in ast.walk(statement)
+        )
+        for node in ast.walk(methods["update"])
+    )
+    death_active_reads_flag = any(
+        isinstance(node, ast.Return)
+        and _attribute_path(node.value) == ["self", "active"]
+        for node in ast.walk(methods["is_death_active"])
+    )
+    core_tree = ast.parse((ROOT / "_core.py").read_text(encoding="utf-8"))
+    game = next(node for node in core_tree.body if isinstance(node, ast.ClassDef) and node.name == "Game")
+    update = next(
+        node for node in game.body if isinstance(node, ast.FunctionDef) and node.name == "update"
+    )
+    death_gate = next(
+        (
+            node for node in ast.walk(update)
+            if isinstance(node, ast.If)
+            and any(
+                isinstance(call, ast.Call)
+                and _attribute_path(call.func) == ["self", "boss_death", "is_death_active"]
+                for call in ast.walk(node.test)
+            )
+        ),
+        None,
+    )
+    if death_gate is None:
+        raise AssertionError("Source Game.update no longer guards active boss-death frames")
+    death_gate_nodes = [child for statement in death_gate.body for child in ast.walk(statement)]
+    freeze_gate = next(
+        (
+            node for node in ast.walk(update)
+            if isinstance(node, ast.If)
+            and any(
+                isinstance(call, ast.Call)
+                and _attribute_path(call.func) == ["_feel", "should_freeze_frame"]
+                for call in ast.walk(node.test)
+            )
+        ),
+        None,
+    )
+    wave_calls = [
+        node.lineno for node in ast.walk(update)
+        if isinstance(node, ast.Call)
+        and _attribute_path(node.func) == ["self", "update_waves"]
+    ]
+    return {
+        "mini_ticks": mini_ticks,
+        "true_ticks": true_ticks,
+        "timer_decrements": bool(countdowns),
+        "ends_when_timer_reaches_zero": ended_at_zero,
+        "death_active_reads_active": death_active_reads_flag,
+        "updates_animation_before_return": any(
+            isinstance(node, ast.Call)
+            and _attribute_path(node.func) == ["self", "boss_death", "update"]
+            for node in death_gate_nodes
+        ),
+        "returns_before_regular_gameplay": any(
+            isinstance(node, ast.Return) for node in death_gate_nodes
+        ) and bool(wave_calls) and death_gate.lineno < min(wave_calls),
+        "hit_stop_gate_precedes_death_gate": freeze_gate is not None and freeze_gate.lineno < death_gate.lineno,
+    }
+
+
 def entrance_case(cls, label, boss_class, timer, maximum, text):
     global ACTIVE_RECORD
     record = []
@@ -215,6 +346,7 @@ def source_fixture():
             death_case(cls, "mini_death", "mini", 1200, 1200),
             death_case(cls, "true_death", "true", 800, 800),
         ],
+        "death_pause": death_pause_contract(),
     }
 
 
@@ -222,11 +354,11 @@ def main():
     actual = source_fixture()
     if "--write" in sys.argv:
         FIXTURE.write_text(json.dumps(actual, indent=2) + "\n", encoding="utf-8")
-        print("WROTE: boss entrance/death presentation source fixture")
+        print("WROTE: boss presentation and death-pause source fixture")
     else:
         expected = json.loads(FIXTURE.read_text(encoding="utf-8"))
-        assert actual == expected, "Boss presentation source drift"
-        print("PASS: Boss presentation — entrance draw gate and death effects")
+        assert actual == expected, "Boss presentation/death-pause source drift"
+        print("PASS: Boss presentation and death-pause source contract")
 
 
 if __name__ == "__main__":

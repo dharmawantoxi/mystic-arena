@@ -28,6 +28,7 @@ for setting in (
     'common/physics_ticks_per_second=60',
     'pointing/emulate_mouse_from_touch=false',
     'config/custom_user_dir_name="MysticArenaRebuildDev"',
+    'config/cloud_save_enabled=true',
 ):
     check(setting in project, f"Missing project contract: {setting}")
 
@@ -508,6 +509,123 @@ if audio_script.is_file():
 check((ROOT / "project.godot").read_text(encoding="utf-8").find('AudioManager="*res://scripts/audio/audio_manager.gd"') >= 0,
       "Godot audio manager must be autoloaded")
 check((ROOT / "assets/audio/bgm_battle.wav").is_file(), "Migrated battle music asset missing")
+audio_panel = ROOT / "scripts/ui/audio_settings_panel.gd"
+menu_scene = (ROOT / "scenes/menu/MainMenu.tscn").read_text(encoding="utf-8")
+check(audio_panel.is_file() and "SettingsButton" in menu_scene,
+      "Live audio controls must be reachable from the playable MainMenu")
+check("func set_mix_volume(" in audio_script.read_text(encoding="utf-8")
+      and "func adjust_volume(" in audio_script.read_text(encoding="utf-8"),
+      "Native audio manager must expose bounded live mix controls")
+check("AudioSettingsChecks.new().run(_check)" in ai_tests
+      and "await AudioSettingsSceneChecks.new().run(root.get_tree(), app, _check)" in ai_tests,
+      "Audio mixer native and playable-scene checks must be registered")
+from audio_settings_source_oracle import source_fixture as audio_settings_source_fixture
+check((ROOT / "tests/fixtures/audio_settings_source.json").is_file(),
+      "Audio settings source oracle fixture must be present")
+if (ROOT / "tests/fixtures/audio_settings_source.json").is_file():
+    check(audio_settings_source_fixture() == json.loads(
+        (ROOT / "tests/fixtures/audio_settings_source.json").read_text(encoding="utf-8")),
+        "Audio settings source fixture drift")
+
+from frame_rate_limit_source_oracle import source_fixture as frame_rate_limit_source_fixture
+frame_rate_fixture_path = ROOT / "tests/fixtures/frame_rate_limit_source.json"
+check(frame_rate_fixture_path.is_file(), "Frame-rate setting source fixture must be present")
+if frame_rate_fixture_path.is_file():
+    check(frame_rate_limit_source_fixture() == json.loads(
+        frame_rate_fixture_path.read_text(encoding="utf-8")),
+        "Frame-rate setting source fixture drift")
+frame_rate_runtime = ROOT / "scripts/settings/frame_rate_limit_runtime.gd"
+frame_rate_store = ROOT / "scripts/settings/frame_rate_limit_store.gd"
+check(frame_rate_runtime.is_file() and frame_rate_store.is_file(),
+      "Native frame-rate runtime and atomic settings store must exist")
+if frame_rate_runtime.is_file():
+    frame_rate_text = frame_rate_runtime.read_text(encoding="utf-8")
+    check("Engine.max_fps" in frame_rate_text and "func resolve_limit(" in frame_rate_text,
+          "Frame-rate runtime must apply the user render cap")
+    check("physics_ticks_per_second" not in frame_rate_text and "GameSpeed" not in frame_rate_text,
+          "Frame-rate runtime must not control fixed simulation speed")
+check('FrameRateLimit="*res://scripts/settings/frame_rate_limit_runtime.gd"' in project,
+      "Native frame-rate runtime must be autoloaded before gameplay")
+check("FrameRateLimitChecks.new().run(_check)" in ai_tests
+      and "await FrameRateLimitSceneChecks.new().run(root.get_tree(), app, _check)" in ai_tests,
+      "Frame-rate native and playable-scene checks must be registered")
+check("FrameRateNext" in (ROOT / "scripts/ui/audio_settings_panel.gd").read_text(encoding="utf-8"),
+      "MainMenu settings must expose the source FPS-limit control")
+
+from adaptive_quality_source_oracle import source_fixture as adaptive_quality_source_fixture
+adaptive_fixture_path = ROOT / "tests/fixtures/adaptive_quality_source.json"
+check(adaptive_fixture_path.is_file(), "Adaptive-quality source fixture must be present")
+if adaptive_fixture_path.is_file():
+    check(adaptive_quality_source_fixture() == json.loads(
+        adaptive_fixture_path.read_text(encoding="utf-8")),
+        "Adaptive-quality source fixture drift")
+adaptive_controller = ROOT / "scripts/settings/adaptive_quality_controller.gd"
+adaptive_runtime = ROOT / "scripts/settings/adaptive_quality_runtime.gd"
+check(adaptive_controller.is_file() and adaptive_runtime.is_file(),
+      "Adaptive-quality controller and runtime must exist")
+if adaptive_runtime.is_file():
+    adaptive_text = adaptive_runtime.read_text(encoding="utf-8")
+    check("Engine.get_frames_per_second()" in adaptive_text
+          and 'set_quality_target_fps' in adaptive_text,
+          "Adaptive quality must consume live render FPS and update the existing limiter")
+    check("physics_ticks_per_second" not in adaptive_text and "GameSpeed" not in adaptive_text,
+          "Adaptive quality must remain separate from simulation speed and fixed ticks")
+check('AdaptiveQuality="*res://scripts/settings/adaptive_quality_runtime.gd"' in project,
+      "Adaptive-quality runtime must be autoloaded")
+check("AdaptiveQualityChecks.new().run(_check)" in ai_tests
+      and "await AdaptiveQualitySceneChecks.new().run(root.get_tree(), app, _check)" in ai_tests,
+      "Adaptive-quality native and playable-scene tests must be registered")
+
+from localization_source_oracle import source_fixture as localization_source_fixture
+localization_catalog_path = ROOT / "data/localization_catalog.json"
+localization_contract_path = ROOT / "tests/fixtures/localization_source_contract.json"
+check(localization_catalog_path.is_file() and localization_contract_path.is_file(),
+      "Localization catalog and source contract fixture must be present")
+if localization_catalog_path.is_file() and localization_contract_path.is_file():
+    source_localization = localization_source_fixture()
+    check(source_localization == json.loads(
+        localization_catalog_path.read_text(encoding="utf-8")),
+        "Native localization catalog drifted from active Python data")
+    source_contract = {key: value for key, value in source_localization.items() if key != "texts"}
+    check(source_contract == json.loads(
+        localization_contract_path.read_text(encoding="utf-8")),
+        "Language default, labels or persistence contract drift")
+language_runtime = ROOT / "scripts/settings/localization_runtime.gd"
+language_store = ROOT / "scripts/settings/language_store.gd"
+check(language_runtime.is_file() and language_store.is_file(),
+      "Native language runtime and atomic preference store must exist")
+if language_runtime.is_file():
+    language_text = language_runtime.read_text(encoding="utf-8")
+    check("func translate(" in language_text and "language_changed.emit" in language_text,
+          "Language selection must update live translation lookups")
+check('Localization="*res://scripts/settings/localization_runtime.gd"' in project,
+      "Native localization runtime must be autoloaded")
+check("LocalizationChecks.new().run(_check)" in ai_tests
+      and "await LocalizationSceneChecks.new().run(root.get_tree(), app, _check)" in ai_tests,
+      "Localization native and playable-scene tests must be registered")
+check("LanguageNext" in (ROOT / "scripts/ui/audio_settings_panel.gd").read_text(encoding="utf-8")
+      and "language_changed" in (ROOT / "scenes/menu/main_menu.gd").read_text(encoding="utf-8"),
+      "Settings language selector must relabel the active MainMenu and panel")
+
+cloud_runtime = (ROOT / "scripts/match/cloud_save_runtime.gd")
+cloud_codec = (ROOT / "scripts/match/cloud_save_codec.gd")
+check(cloud_runtime.is_file() and cloud_codec.is_file(), "Native cloud codec/runtime must exist")
+check('CloudSave="*res://scripts/match/cloud_save_runtime.gd"' in project,
+      "Native cloud runtime must be autoloaded")
+check((ROOT / "addons/mystic_cloud/export_plugin.gd").is_file()
+      and (ROOT / "android_plugin/cloud_save/plugin/src/main/java/io/github/dharmawantoxi/mysticarena/godot/GodotCloudSavePlugin.java").is_file(),
+      "Cloud integration must include the Godot Android plugin-v2 export path")
+if cloud_runtime.is_file():
+    cloud_text = cloud_runtime.read_text(encoding="utf-8")
+    check("OS.get_user_data_dir()" in cloud_text and "storage_paths" not in cloud_text
+          and "mobile/cloud_save" not in cloud_text,
+          "Godot cloud runtime must use only Godot-native storage")
+check("CloudSaveChecks.new().run(_check)" in ai_tests
+      and "await CloudSaveSceneChecks.new().run(root.get_tree(), app, _check)" in ai_tests,
+      "Cloud payload and playable-menu tests must be registered")
+check((ROOT / "tests/cloud_save_source_oracle.py").is_file()
+      and (ROOT / "tests/fixtures/cloud_save_source.json").is_file(),
+      "Cloud source oracle and fixture must be present")
 
 
 from starter_finish_source_oracle import source_fixture as starter_finish_fixture
@@ -717,6 +835,9 @@ check('const BossItemCleaveChainChecks = preload(' in ai_tests
 check("BossItemCleaveChainChecks.new().run(_check)" in ai_tests,
       "Boss item cleave/chain suite must run")
 check("BossPresentationChecks.new().run(_check)" in ai_tests, "Boss presentation suite must run")
+check("BossDeathPauseChecks.new().run(_check)" in ai_tests, "Boss death-pause unit suite must run")
+check("BossDeathPauseSceneChecks.new().run(root.get_tree(), _check)" in ai_tests,
+      "Boss death-pause playable-scene suite must run")
 check("BossMotionChecks.new().run(_check)" in ai_tests, "Boss motion and kiting suite must run")
 check((ROOT / "tests/fixtures/boss_motion_source.json").is_file(), "Boss motion requires source fixture")
 if (ROOT / "tests/fixtures/boss_motion_source.json").is_file():
@@ -1731,8 +1852,20 @@ check("get_unit(boss.last_hit_source_id) as HeroState" in boss_kill_credit
       and "killer.kills += 1" in boss_kill_credit
       and "if killer.team != BLUE:" in boss_kill_credit,
       "Boss kill attribution must credit only a real enemy hero, then blue-side counters")
-check("_process_boss_kill(boss)\n\teconomy.credit_kill(BLUE, boss.gold_reward)" in prototype_battle,
-      "Boss kill attribution must run before the source reward pass")
+check("_process_boss_kill(boss)" in prototype_battle
+      and "boss_death_pause_ticks = maxi(" in prototype_battle
+      and "economy.credit_kill(BLUE, boss.gold_reward)" in prototype_battle
+      and prototype_battle.index("_process_boss_kill(boss)")
+      < prototype_battle.index("boss_death_pause_ticks = maxi(")
+      < prototype_battle.index("economy.credit_kill(BLUE, boss.gold_reward)"),
+      "Boss kill attribution and pause must precede the source reward pass")
+_boss_step = prototype_battle.split("func step_tick()", 1)[1].split("\nfunc ", 1)[0]
+check("hit_stop_state.consume_frame()" in _boss_step
+      and "if boss_death_pause_ticks > 0:" in _boss_step
+      and _boss_step.index("hit_stop_state.consume_frame()")
+      < _boss_step.index("if boss_death_pause_ticks > 0:")
+      < _boss_step.index("economy.step_tick(wave_count)"),
+      "Boss death pause must yield to hit-stop and gate the fixed match tick")
 check("var miniboss_kill_count := 0" in prototype_battle
       and "var trueboss_kill_count := 0" in prototype_battle,
       "Native match must keep the source mini/true boss kill counters")

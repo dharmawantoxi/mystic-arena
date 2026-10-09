@@ -1,0 +1,19 @@
+{
+  "source": "localization.py:_TEXT + _core.py:GameSettings",
+  "default_language": "id",
+  "languages": [
+    "id",
+    "en"
+  ],
+  "language_labels": {
+    "id": "Bahasa Indonesia",
+    "en": "English"
+  },
+  "contract": {
+    "settings_setter_saves_valid_choice": true,
+    "settings_load_validates_and_applies": true,
+    "global_invalid_language_falls_back_to_id": true,
+    "unknown_translation_falls_back_to_key": true,
+    "formats_named_placeholders": true
+  }
+}

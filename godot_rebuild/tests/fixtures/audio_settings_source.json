@@ -1,0 +1,47 @@
+{
+  "source": "_system.py:SoundManager + _core.py:settings audio controls",
+  "defaults": {
+    "master": 0.7,
+    "sfx": 0.6,
+    "bgm": 0.35,
+    "voice": 0.5,
+    "ambient": 0.25
+  },
+  "settings_controls": [
+    {
+      "label": "Master Volume",
+      "id": "master"
+    },
+    {
+      "label": "SFX Volume",
+      "id": "sfx"
+    },
+    {
+      "label": "Music Volume",
+      "id": "bgm"
+    },
+    {
+      "label": "Voice Volume",
+      "id": "voice"
+    }
+  ],
+  "adjustment_steps": [
+    -0.1,
+    0.1
+  ],
+  "clamp": [
+    0.0,
+    1.0
+  ],
+  "runtime_mix": {
+    "sfx_multiplies_master": true,
+    "bgm_multiplies_master_and_category": true,
+    "ambient_multiplies_master_and_category": true,
+    "master_refreshes_bgm": true,
+    "bgm_refresh_multiplies_master_and_category": true,
+    "voice_sound_keys": [
+      "goblin_spawn"
+    ]
+  },
+  "audio_adjustment_saves_settings": false
+}
