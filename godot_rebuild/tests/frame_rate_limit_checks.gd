@@ -12,7 +12,7 @@ func run(check: Callable) -> void:
 	check.call(fixture is Dictionary, "frame-rate source fixture parses")
 	if not fixture is Dictionary:
 		return
-	var presets_match := Store.PRESETS.size() == fixture.presets.size()
+	var presets_match: bool = Store.PRESETS.size() == fixture.presets.size()
 	if presets_match:
 		for index in Store.PRESETS.size():
 			presets_match = presets_match and Store.PRESETS[index] == int(fixture.presets[index])
