@@ -148,6 +148,27 @@ Perubahan (aditif, tidak mengubah kontrak lama):
 - `prototype_view.gd` menggambar `silhouette()`, bukan `body()`.
 - Suite baru `tests/hero_marker_checks.gd`, terdaftar di `run_all.gd`.
 
+## Slice berikutnya: efek `_render.py` — FloatingText lalu HitParticle
+
+Dua kelas efek murni-state yang paling mudah dikunci, dikerjakan berurutan
+dengan pola oracle yang sama.
+
+### HitParticle (spark saat kena hit)
+
+Diport dari `_render.py::HitParticle`: `x += vx`, `y += vy`, `vy += gravity`
+(0.15), `vx *= 0.95`, countdown lifetime, lalu turunan `alpha_ratio =
+lifetime / max_lifetime` untuk alpha dan ukuran.
+
+Oracle mengeksekusi kelas aslinya **termasuk pre-render sprite pygame**
+(`pygame.Surface` + `pygame.draw.circle`) — berjalan headless, jadi seluruh
+badan sumber ikut dieksekusi apa adanya. Kasus tanpa velocity memakai
+`random.uniform`, jadi diseed dan nilai awalnya direkam agar suite native
+bisa me-replay lintasan yang sama.
+
+- `tests/hit_particle_source_oracle.py` → `tests/fixtures/hit_particle_source.json`
+- `scripts/ui/hit_particle.gd` + `tests/hit_particle_checks.gd`
+- Terdaftar di `run_all.gd` dan di `godot-rebuild.yml`.
+
 ## Slice berikutnya: FloatingText / damage number
 
 `godot_rebuild` belum punya runtime floating text — `floating_text` hanya
@@ -176,7 +197,19 @@ berasal dari algoritma sumber yang sebenarnya.
 - `lighting.py` tidak diport: ia post-process per-piksel di atas pygame
   Surface, sementara `godot_rebuild` menggambar vektor. Memaksanya masuk
   berarti reinterpretasi, bukan port.
-- `EffectManager` keseluruhan tidak diport; hanya `FloatingText`.
+- `EffectManager` keseluruhan tidak diport; baru `FloatingText` dan
+  `HitParticle`. Masih belum ada (0 kemunculan di `scripts/` + `scenes/`):
+  `ComboCounter`, `KillFeed`, `WaveAnnouncer`, `PathPreview`,
+  `AchievementPopup`, `LevelIntroScreen`, `PopupAnimation`,
+  `BossIntroCinematic`, `SpriteCache`, `RenderCache`. `DeathExplosion` dan
+  `BossDeathAnimation` baru kontrak **waktunya** yang diport (via
+  `boss_presentation_source_oracle.py` + `boss_death_pause_checks.gd`),
+  kelas visualnya belum. `MapRenderer` juga belum — yang ada baru
+  `terrain/lane/river/wall_tiles.gd`.
+- Klaim "AIPlayer penuh belum ada" di `HERO_MIGRATION_PROGRESS.md` **sudah
+  usang**: AI terport lintas 9 modul (`ai_build/controller/draft/
+  hero_control/items/policy/recruitment/shields/upgrades`, 52 fungsi) dengan
+  `ai_controller.tick()` sebagai entry.
 - Top-up flow Python dan voucher allowlist tidak disentuh.
 - Tidak ada sistem lain yang diaudit atau diubah.
 - Top-up flow Python dan voucher allowlist tidak disentuh.
