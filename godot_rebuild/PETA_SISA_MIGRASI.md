@@ -148,9 +148,35 @@ Perubahan (aditif, tidak mengubah kontrak lama):
 - `prototype_view.gd` menggambar `silhouette()`, bukan `body()`.
 - Suite baru `tests/hero_marker_checks.gd`, terdaftar di `run_all.gd`.
 
+## Slice berikutnya: FloatingText / damage number
+
+`godot_rebuild` belum punya runtime floating text — `floating_text` hanya
+muncul di `boss_kill_credit_source.json`, tidak ada kelasnya.
+
+Diport dari `_render.py::FloatingText`: gerak + drift, decay `velocity_y`
+0.95, animasi scale (lerp 0.3 lalu susut 0.99), countdown lifetime, dan
+kurva alpha `min(1, lifetime / (max_lifetime * 0.5))`.
+
+**Oracle sumber tidak memakai `import _render`** — modul itu saat ini gagal
+diimpor karena circular import yang sudah ada (`cannot import name
+'MapRenderer' from partially initialized module '_render'`). Karena Python
+asal read-only, oracle mengeksekusi blok `class FloatingText` **langsung dari
+berkas sumber** dengan `get_font` distub, jadi angka di fixture tetap
+berasal dari algoritma sumber yang sebenarnya.
+
+- `tests/floating_text_source_oracle.py` → `tests/fixtures/floating_text_source.json`
+- `scripts/ui/floating_text.gd` + `tests/floating_text_checks.gd` (replay fixture)
+- Terdaftar di `run_all.gd`, dan oracle-nya dijalankan CI lewat
+  `godot-rebuild.yml` (sebelum tes Godot, jadi drift sumber maupun drift port
+  sama-sama menggagalkan CI).
+
 ## Batas scope
 
 - Tidak ada portrait hero lain yang dimulai (hanya Kaizen + Thorne + fallback generik).
-- `lighting.py` tidak diport — slice ini hanya menyempurnakan hero marker.
+- `lighting.py` tidak diport: ia post-process per-piksel di atas pygame
+  Surface, sementara `godot_rebuild` menggambar vektor. Memaksanya masuk
+  berarti reinterpretasi, bukan port.
+- `EffectManager` keseluruhan tidak diport; hanya `FloatingText`.
+- Top-up flow Python dan voucher allowlist tidak disentuh.
 - Tidak ada sistem lain yang diaudit atau diubah.
 - Top-up flow Python dan voucher allowlist tidak disentuh.
