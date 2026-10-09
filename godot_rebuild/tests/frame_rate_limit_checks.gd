@@ -12,8 +12,12 @@ func run(check: Callable) -> void:
 	check.call(fixture is Dictionary, "frame-rate source fixture parses")
 	if not fixture is Dictionary:
 		return
+	var presets_match := Store.PRESETS.size() == fixture.presets.size()
+	if presets_match:
+		for index in Store.PRESETS.size():
+			presets_match = presets_match and Store.PRESETS[index] == int(fixture.presets[index])
 	check.call(
-		Store.DEFAULT_LIMIT == int(fixture.default) and Store.PRESETS == fixture.presets,
+		Store.DEFAULT_LIMIT == int(fixture.default) and presets_match,
 		"native default and cycle presets match active Python settings"
 	)
 	check.call(
@@ -26,6 +30,7 @@ func run(check: Callable) -> void:
 	check.call(
 		(
 			Store.decode_limit('{"version":1,"fps_limit":120}') == 120
+			and Store.decode_limit('{"version":1,"fps_limit":120.0}') == 120
 			and Store.decode_limit('{"version":1,"fps_limit":0}') == 0
 		),
 		"native decoder accepts only supported source values"
@@ -33,7 +38,7 @@ func run(check: Callable) -> void:
 	check.call(
 		(
 			Store.decode_limit('{"version":1,"fps_limit":90}') == Store.INVALID_LIMIT
-			and Store.decode_limit('{"version":1,"fps_limit":120.0}') == Store.INVALID_LIMIT
+			and Store.decode_limit('{"version":1,"fps_limit":120.5}') == Store.INVALID_LIMIT
 			and Store.decode_limit('{"version":"1","fps_limit":120}') == Store.INVALID_LIMIT
 			and Store.decode_limit("broken") == Store.INVALID_LIMIT
 		),

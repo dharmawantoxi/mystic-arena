@@ -20,12 +20,15 @@ static func decode_limit(text: String) -> int:
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return INVALID_LIMIT
 	var raw_version: Variant = parsed.get("version", null)
-	if typeof(raw_version) != TYPE_INT or int(raw_version) != VERSION:
+	if typeof(raw_version) not in [TYPE_INT, TYPE_FLOAT] or float(raw_version) != float(VERSION):
 		return INVALID_LIMIT
 	var raw_limit: Variant = parsed.get("fps_limit", null)
-	if typeof(raw_limit) != TYPE_INT:
+	if typeof(raw_limit) not in [TYPE_INT, TYPE_FLOAT]:
 		return INVALID_LIMIT
-	var limit := int(raw_limit)
+	var numeric_limit := float(raw_limit)
+	if numeric_limit not in [0.0, 30.0, 60.0, 120.0]:
+		return INVALID_LIMIT
+	var limit := int(numeric_limit)
 	return limit if is_valid_limit(limit) else INVALID_LIMIT
 
 
