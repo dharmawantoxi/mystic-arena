@@ -1,0 +1,33 @@
+{
+  "source": "mobile/perf.py:Quality + AdaptiveQuality; main.py:main",
+  "levels": {
+    "low": "low",
+    "medium": "medium",
+    "high": "high"
+  },
+  "initial_quality": {
+    "desktop": "high",
+    "touch": "low"
+  },
+  "adaptive": {
+    "enabled_by_default": true,
+    "low_fps": 26,
+    "high_fps": 52,
+    "sample_window": 90,
+    "cooldown_steps": [
+      180,
+      300
+    ],
+    "transition_steps": [
+      "LOW if Quality.level == MEDIUM else MEDIUM",
+      "HIGH if Quality.level == MEDIUM else MEDIUM"
+    ],
+    "cooldown_returns_before_sampling": true,
+    "clears_each_full_window": true,
+    "fps_source_applied_each_frame": true
+  },
+  "target_fps": {
+    "low": 30,
+    "medium_and_high": 60
+  }
+}

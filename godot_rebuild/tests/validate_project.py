@@ -552,6 +552,30 @@ check("FrameRateLimitChecks.new().run(_check)" in ai_tests
 check("FrameRateNext" in (ROOT / "scripts/ui/audio_settings_panel.gd").read_text(encoding="utf-8"),
       "MainMenu settings must expose the source FPS-limit control")
 
+from adaptive_quality_source_oracle import source_fixture as adaptive_quality_source_fixture
+adaptive_fixture_path = ROOT / "tests/fixtures/adaptive_quality_source.json"
+check(adaptive_fixture_path.is_file(), "Adaptive-quality source fixture must be present")
+if adaptive_fixture_path.is_file():
+    check(adaptive_quality_source_fixture() == json.loads(
+        adaptive_fixture_path.read_text(encoding="utf-8")),
+        "Adaptive-quality source fixture drift")
+adaptive_controller = ROOT / "scripts/settings/adaptive_quality_controller.gd"
+adaptive_runtime = ROOT / "scripts/settings/adaptive_quality_runtime.gd"
+check(adaptive_controller.is_file() and adaptive_runtime.is_file(),
+      "Adaptive-quality controller and runtime must exist")
+if adaptive_runtime.is_file():
+    adaptive_text = adaptive_runtime.read_text(encoding="utf-8")
+    check("Engine.get_frames_per_second()" in adaptive_text
+          and 'set_quality_target_fps' in adaptive_text,
+          "Adaptive quality must consume live render FPS and update the existing limiter")
+    check("physics_ticks_per_second" not in adaptive_text and "GameSpeed" not in adaptive_text,
+          "Adaptive quality must remain separate from simulation speed and fixed ticks")
+check('AdaptiveQuality="*res://scripts/settings/adaptive_quality_runtime.gd"' in project,
+      "Adaptive-quality runtime must be autoloaded")
+check("AdaptiveQualityChecks.new().run(_check)" in ai_tests
+      and "await AdaptiveQualitySceneChecks.new().run(root.get_tree(), app, _check)" in ai_tests,
+      "Adaptive-quality native and playable-scene tests must be registered")
+
 cloud_runtime = (ROOT / "scripts/match/cloud_save_runtime.gd")
 cloud_codec = (ROOT / "scripts/match/cloud_save_codec.gd")
 check(cloud_runtime.is_file() and cloud_codec.is_file(), "Native cloud codec/runtime must exist")
