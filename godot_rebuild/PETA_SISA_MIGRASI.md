@@ -47,25 +47,46 @@ python3 godot_rebuild/tests/validate_project.py     -> PASS: 12333 static checks
 
 `gdtoolkit 4.5.0` dipasang di sandbox untuk menjalankan batch di atas.
 
-## Validasi yang BELUM dijalankan
+## Validasi runtime — SUDAH dijalankan lewat CI
 
-**Runtime test Godot belum dijalankan.** Engine tidak tersedia di sandbox ini
-(tidak ada binary `godot`, dan CI mengunduh engine terpisah). Yang belum
-terverifikasi sampai CI jalan:
+Sandbox authoring tidak punya engine Godot (unduhan engine resmi mengarah ke
+`objects.githubusercontent.com`, tidak terjangkau dari sana). Runtime test
+karena itu dijalankan lewat **PR #326** (workflow `godot-rebuild.yml`).
 
-- `--headless --path godot_rebuild --script res://tests/run_all.gd`
-- `--headless --path godot_rebuild --editor --import`
+Hasil: job `validate` **pass** (9m25s), run `37931273704`, semua langkah
+penting sukses:
 
-Risiko runtime yang perlu dilihat pertama kalinya gagal:
+| Langkah | Hasil |
+|---|---|
+| Static guardrails and GDScript lint | success |
+| Install the pinned official engine | success |
+| Native import (not the old converter) | success |
+| Native simulation, input and screen lifecycle tests | success |
 
-1. `add_child()` dipanggil sebelum card masuk tree (lewat `setup()` /
-   `_ready()`). Ini pola umum, tapi belum terbukti di engine.
-2. Hasil gambar portrait belum dilihat mata — baru benar secara prosedural.
+Langkah terakhir itu menjalankan `--headless --script res://tests/run_all.gd`,
+yang sudah termasuk `HeroShopPortraitChecks`. Artinya:
+
+- Risiko `add_child()` sebelum card masuk tree **terbukti aman** di engine.
+- Suite portrait tidak menghasilkan `SCRIPT ERROR:` maupun `FAIL:`.
+
+## Catatan verifikasi visual
+
+Portrait belum pernah dirender engine (tidak ada screenshot dari CI).
+Komposisi hanya diverifikasi secara numerik dengan mirror Python dari
+draw call yang sama (skrip scratch, tidak ikut commit):
+
+- bbox konten Kaizen / Thorne / generik semuanya di dalam kanvas 96×96
+  (tepi 1.0–95.2 adalah frame 2px).
+- coverage 28–36%, jadi figure tidak kosong dan tidak memenuhi frame.
+
+Catatan kecil: backdrop Thorne gelap, jadi frame 2px hampir tidak terlihat
+di sana. Bukan bug, hanya kontras rendah.
 
 ## Sisa pekerjaan slice ini
 
-- Verifikasi runtime di CI (`godot-rebuild.yml`).
-- Koreksi visual portrait Kaizen/Thorne setelah ada render nyata.
+- Koreksi visual portrait Kaizen/Thorne kalau render nyata di review
+  menunjukkan komposisi yang kurang pas.
+- Merge PR #326.
 
 ## Batas scope
 
