@@ -249,8 +249,8 @@ func _check_runtime_wiring(check: Callable) -> void:
 	var red_hero := wave_world.spawn_hero(KAIZEN, wave_world.RED, Vector2(400.0, 300.0))
 	wave_world._on_hero_death(red_hero, wave_world.blue_hero().id)
 	check.call(
-		not wave_world.effects.kill_feed.entries.is_empty(),
-		"Hero death registers kill in EffectManager kill_feed"
+		wave_world.effects.kill_feed.entries.is_empty(),
+		"Hero death routes through EffectManager.register_kill source no-op"
 	)
 	var boss := wave_world._spawn_boss("gornak")
 	boss.team = wave_world.RED
