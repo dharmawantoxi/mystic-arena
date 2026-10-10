@@ -104,6 +104,8 @@ jobs:
           python godot_rebuild/tests/screen_shake_source_oracle.py
           python godot_rebuild/tests/kill_feed_source_oracle.py
           python godot_rebuild/tests/combo_counter_source_oracle.py
+          python godot_rebuild/tests/wave_announcer_source_oracle.py
+          python godot_rebuild/tests/path_preview_source_oracle.py
           gdparse $(find godot_rebuild -name '*.gd')
           gdlint $(find godot_rebuild -name '*.gd')
           gdformat --check $(find godot_rebuild -name '*.gd')

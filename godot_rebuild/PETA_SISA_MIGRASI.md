@@ -205,6 +205,38 @@ pass`. Efek samping itu **tidak diport**; ambangnya diekspos lewat
 `ComboCounter.tier_for()`. Perhatikan sumber memakai `==`, bukan `>=`: combo 7
 tidak mengumumkan apa-apa, dan suite Godot mengunci perilaku itu.
 
+## WaveAnnouncer + PathPreview
+
+Dua pengumum/penanda wave dari `_render.py`. Berbeda dengan slice
+sebelumnya, **kurva animasinya hidup di dalam `draw()`**, bukan di `update()`.
+Karena menulis ulang rumus fase di oracle akan membuat fixture sekadar salinan
+tebakan saya, oracle mengeksekusi `draw()` asli dengan shim pygame/font
+minimal lalu memakai `sys.settrace` untuk membaca lokal `x_offset` / `alpha`
+langsung dari frame di baris `cx = screen_w // 2 + x_offset`. Shim-nya
+berarti oracle tetap jalan tanpa pygame (CI tidak punya pygame).
+
+- `scripts/ui/wave_announcer.gd` — `announce()`/`update()` mengurus umur 120
+  tick; `get_offset_x(screen_w)` dan `get_alpha()` memaparkan tiga fase:
+  slide-in (progress < 0.2, `_ease_out_back`), hold (0.2–0.7, offset 0,
+  alpha 255), slide-out (≥ 0.7, `_ease_in_back`).
+- `scripts/ui/path_preview.gd` — `show()`/`update()` mengurus umur 120 tick
+  dan mengosongkan `paths` saat habis; `get_alpha()` memaparkan fade-in 20
+  tick / hold / fade-out 40 tick dari alpha 200; `dash_offset()`,
+  `pulse_index()`, `arrow_size()`, `arrow_alpha()` memaparkan fase dash
+  berjalan dan pulsa per-arah-panah (pulse 0 → ukuran 8 & alpha penuh,
+  selainnya ukuran 5 & alpha setengah).
+
+### Yang sengaja tidak diport
+
+- **Geometri segitiga panah** `PathPreview`. Titik-titiknya adalah offset di
+  sekitar pusat surface blit 20×20 milik pygame; renderer Godot harus
+  memusatkannya ulang. Yang diport hanya keputusan waktu/warna/ukuran yang
+  dibutuhkan renderer.
+- Isi visual `WaveAnnouncer`: gradasi latar, border emas, garis diagonal,
+  `corner_ticks`, dan blit teks — semuanya menggambar pygame, bukan state.
+- `_ease_out_back` sengaja diduplikasi dari `popup_animation.gd` agar tiap
+  port berdiri sendiri; keduanya dikunci oleh oracle-nya masing-masing.
+
 ## Slice berikutnya: efek `_render.py` — FloatingText lalu HitParticle
 
 Dua kelas efek murni-state yang paling mudah dikunci, dikerjakan berurutan
@@ -255,10 +287,10 @@ berasal dari algoritma sumber yang sebenarnya.
   Surface, sementara `godot_rebuild` menggambar vektor. Memaksanya masuk
   berarti reinterpretasi, bukan port.
 - `EffectManager` keseluruhan tidak diport; baru `FloatingText`,
-  `HitParticle`, `PopupAnimation`, `ScreenShake`, `KillFeed`, dan
-  `ComboCounter`. Masih belum ada
+  `HitParticle`, `PopupAnimation`, `ScreenShake`, `KillFeed`, `ComboCounter`,
+  `WaveAnnouncer`, dan `PathPreview`. Masih belum ada
   (0 kemunculan di `scripts/` + `scenes/`):
-  `WaveAnnouncer`, `PathPreview`, `AchievementPopup`, `LevelIntroScreen`,
+  `AchievementPopup`, `LevelIntroScreen`,
   `BossIntroCinematic`, `SpriteCache`, `RenderCache`. `DeathExplosion` dan
   `BossDeathAnimation` baru kontrak **waktunya** yang diport (via
   `boss_presentation_source_oracle.py` + `boss_death_pause_checks.gd`),
