@@ -93,7 +93,7 @@ func get_particle_snapshot(index: int) -> Dictionary:
 		"max_lifetime": particle.max_lifetime,
 		"size": particle.size,
 		"alive": particle.alive,
-		"color": tint.duplicate(),
+		"color": [int(tint[0]), int(tint[1]), int(tint[2])],
 	}
 
 

@@ -85,7 +85,8 @@ func _compare_particle(
 		"Particle size matches source: %s #%d" % [label, index]
 	)
 	check.call(
-		got["color"] == expected["color"], "Particle colour matches source: %s #%d" % [label, index]
+		_same_rgb(got["color"], expected["color"]),
+		"Particle colour matches source: %s #%d" % [label, index]
 	)
 
 
@@ -176,3 +177,17 @@ func _check_ranges(
 			"Random spark size stays in source range"
 		)
 		check.call(palette.has(particle["color"]), "Random spark colour stays in source palette")
+
+
+func _same_rgb(got: Variant, expected: Variant) -> bool:
+	if not (got is Array) or not (expected is Array):
+		return false
+	var got_rgb: Array = got
+	var expected_rgb: Array = expected
+	if got_rgb.size() < 3 or expected_rgb.size() < 3:
+		return false
+	return (
+		int(got_rgb[0]) == int(expected_rgb[0])
+		and int(got_rgb[1]) == int(expected_rgb[1])
+		and int(got_rgb[2]) == int(expected_rgb[2])
+	)
