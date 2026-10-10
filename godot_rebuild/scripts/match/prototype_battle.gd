@@ -23,6 +23,8 @@ const TacticalCommands = preload("res://scripts/match/tactical_commands.gd")
 const HitStopRuntime = preload("res://scripts/match/hit_stop_runtime.gd")
 const EffectManager = preload("res://scripts/ui/effect_manager.gd")
 const MapRenderer = preload("res://scripts/ui/map_renderer.gd")
+const SpriteCache = preload("res://scripts/ui/sprite_cache.gd")
+const RenderCache = preload("res://scripts/ui/render_cache.gd")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
 const BossState = preload("res://scripts/match/boss_state.gd")
@@ -107,6 +109,8 @@ const HERO_DEATH_REWARD := 150
 var economy := Economy.new()
 var effects := EffectManager.new()
 var map_renderer := MapRenderer.new()
+var sprite_cache: SpriteCache = SpriteCache.get_shared()
+var render_cache: RenderCache = RenderCache.get_shared()
 # Layer 5f: Forge shop transactions (buy for a dead hero queues the order).
 var forge := Forge.new()
 # Layer 5f-2: ITEM FORGE panel state + click routing (drawing lives in the UI).
@@ -245,6 +249,10 @@ func configure_level(number: int) -> bool:
 
 
 func _configure_map_renderer() -> void:
+	sprite_cache = SpriteCache.get_shared()
+	render_cache = RenderCache.get_shared()
+	effects.sprite_cache = sprite_cache
+	effects.render_cache = render_cache
 	var requested_theme := String(level_config.get("map_theme", "forest"))
 	var theme_data := TerrainPalette.for_theme(requested_theme)
 	theme_data["name"] = requested_theme
@@ -263,6 +271,55 @@ func _configure_map_renderer() -> void:
 			{},
 			theme_data
 		)
+	)
+	map_renderer.cache_theme_assets(sprite_cache, render_cache)
+
+
+func cache_stats() -> Dictionary:
+	return {
+		"sprite_cache": sprite_cache.get_state(),
+		"render_cache": render_cache.get_state(),
+	}
+
+
+func _cache_hero_assets(hero: HeroState) -> void:
+	if hero == null or hero.definition == null:
+		return
+	var hero_id := String(hero.definition.id)
+	var team_name := "blue" if hero.team == BLUE else "red"
+	var radius := int(round(hero.settings().radius_px))
+	var extent := maxi(32, radius * 2 + 12)
+	sprite_cache.get_or_render(
+		["hero", hero_id, team_name],
+		extent,
+		extent,
+		func(surface: Variant) -> void:
+			if surface is Dictionary:
+				var dict: Dictionary = surface
+				dict["marker"] = "hero:%s:%s" % [hero_id, team_name]
+				dict["bounds"] = [0, 0, extent, extent]
+	)
+	var ring_rgb: Array = [115, 203, 187] if hero.team == BLUE else [215, 133, 121]
+	render_cache.get_circle_surface(radius, ring_rgb, 2)
+
+
+func _cache_boss_assets(boss: BossState) -> void:
+	if boss == null:
+		return
+	var radius := int(round(boss.radius))
+	var extent := maxi(48, radius * 2 + 16)
+	sprite_cache.get_or_render(
+		["boss", boss.boss_type, boss.boss_class],
+		extent,
+		extent,
+		func(surface: Variant) -> void:
+			if surface is Dictionary:
+				var dict: Dictionary = surface
+				dict["marker"] = "boss:%s:%s" % [boss.boss_type, boss.boss_class]
+				dict["bounds"] = [0, 0, extent, extent]
+	)
+	render_cache.get_glow_surface(
+		radius, [int(boss.color.r8), int(boss.color.g8), int(boss.color.b8)], 5
 	)
 
 
@@ -437,8 +494,11 @@ func setup_arena() -> bool:
 	if blue_kaizen == null:
 		return false
 	player_hero_ids.append(blue_kaizen.id)
-	if spawn_hero(KAIZEN, RED, RED_HERO_SPAWN) == null:
+	_cache_hero_assets(blue_kaizen)
+	var red_kaizen := spawn_hero(KAIZEN, RED, RED_HERO_SPAWN)
+	if red_kaizen == null:
 		return false
+	_cache_hero_assets(red_kaizen)
 	AudioRuntime.play("hero_spawn")
 	return true
 
@@ -813,6 +873,7 @@ func buy_player_hero(hero_type: String) -> bool:
 		transaction_error = "capacity"
 		return false
 	player_hero_ids.append(hero.id)
+	_cache_hero_assets(hero)
 	economy.spend(BLUE, kit.cost)
 	_record({"kind": "hero_buy", "team": BLUE, "target_id": hero.id, "hero_type": hero_type})
 	AudioRuntime.play("hero_spawn")
@@ -1003,6 +1064,7 @@ func _spawn_boss(boss_type: String) -> BossState:
 	if enemy_scaling_enabled:
 		boss.apply_scaling(enemy_hp_mult, enemy_damage_mult, enemy_speed_mult)
 	active_boss = boss
+	_cache_boss_assets(boss)
 	return boss
 
 

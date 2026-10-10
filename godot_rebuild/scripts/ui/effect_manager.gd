@@ -15,6 +15,8 @@ const WaveAnnouncer = preload("res://scripts/ui/wave_announcer.gd")
 const KillFeed = preload("res://scripts/ui/kill_feed.gd")
 const PathPreview = preload("res://scripts/ui/path_preview.gd")
 const AchievementPopup = preload("res://scripts/ui/achievement_popup.gd")
+const SpriteCache = preload("res://scripts/ui/sprite_cache.gd")
+const RenderCache = preload("res://scripts/ui/render_cache.gd")
 
 const MAX_FLOATING := 300
 const MAX_PARTICLES := 500
@@ -29,6 +31,8 @@ var wave_announcer: RefCounted
 var kill_feed: RefCounted
 var path_preview: RefCounted
 var achievement: RefCounted
+var sprite_cache: SpriteCache = SpriteCache.get_shared()
+var render_cache: RenderCache = RenderCache.get_shared()
 
 var damage_numbers_enabled := true
 var particles_enabled := true
@@ -52,6 +56,8 @@ func _reset_effects() -> void:
 	kill_feed = KillFeed.new()
 	path_preview = PathPreview.new()
 	achievement = AchievementPopup.new()
+	sprite_cache = SpriteCache.get_shared()
+	render_cache = RenderCache.get_shared()
 
 
 func configure() -> void:
@@ -206,6 +212,20 @@ func add_death_explosion(
 	explosions.append(explosion)
 	while explosions.size() > MAX_EXPLOSIONS:
 		explosions.remove_at(0)
+	var glow_radius := 60 if size == "large" else 36
+	var glow_rgb: Array = [100, 180, 255] if team == "blue" else [255, 100, 80]
+	render_cache.get_glow_surface(glow_radius, glow_rgb, 5)
+	var extent := glow_radius * 2 + 8
+	sprite_cache.get_or_render(
+		["explosion", team, size],
+		extent,
+		extent,
+		func(surface: Variant) -> void:
+			if surface is Dictionary:
+				var dict: Dictionary = surface
+				dict["marker"] = "explosion:%s:%s" % [team, size]
+				dict["bounds"] = [0, 0, extent, extent]
+	)
 
 
 func shake_screen(intensity: float = 5.0) -> void:
@@ -255,6 +275,8 @@ func show_path_preview(lane_paths: Array) -> void:
 
 func unlock_achievement(title: String, description: String, icon: String = "star") -> void:
 	achievement.unlock(title, description, icon)
+	render_cache.get_font(18, "title", true)
+	render_cache.get_font(14, "body", false)
 
 
 func register_kill(
@@ -265,6 +287,14 @@ func register_kill(
 
 func announce_wave(wave_num: int) -> void:
 	wave_announcer.announce(wave_num)
+	render_cache.get_font(36, "title", true)
+
+
+func get_cache_state() -> Dictionary:
+	return {
+		"sprite_cache": sprite_cache.get_state(),
+		"render_cache": render_cache.get_state(),
+	}
 
 
 func get_shake_offset() -> Vector2i:

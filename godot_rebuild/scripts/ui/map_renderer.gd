@@ -10,6 +10,8 @@ extends RefCounted
 const MAP_WIDTH := 1280
 const MAP_HEIGHT := 720
 const SHOP_SIZE := 60
+const SpriteCache = preload("res://scripts/ui/sprite_cache.gd")
+const RenderCache = preload("res://scripts/ui/render_cache.gd")
 const STATIC_LAYERS := [
 	"terrain",
 	"terrain_details",
@@ -126,6 +128,60 @@ func get_state() -> Dictionary:
 
 func get_decoration_state() -> Dictionary:
 	return decoration_data.duplicate(true)
+
+
+func cache_theme_assets(
+	sprite_cache: SpriteCache = null, render_cache: RenderCache = null
+) -> Dictionary:
+	var sc: SpriteCache = sprite_cache if sprite_cache != null else SpriteCache.get_shared()
+	var rc: RenderCache = render_cache if render_cache != null else RenderCache.get_shared()
+	var static_surface: Variant = sc.get_or_render(
+		["map_static", theme_name], map_width, map_height, Callable(self, "_render_static_map")
+	)
+	var item_shop_badge: Variant = sc.get_or_render(
+		["shop_badge", "item", theme_name],
+		shop_size * 2,
+		shop_size * 2,
+		Callable(self, "_render_item_shop_badge")
+	)
+	var hero_shop_badge: Variant = sc.get_or_render(
+		["shop_badge", "hero", theme_name],
+		shop_size * 2,
+		shop_size * 2,
+		Callable(self, "_render_hero_shop_badge")
+	)
+	var radiant_glow: Variant = rc.get_glow_surface(shop_size, [115, 203, 187], 5)
+	var dire_glow: Variant = rc.get_glow_surface(shop_size, [215, 133, 121], 5)
+	var shop_font: Variant = rc.get_font(16, "title", true)
+	return {
+		"static_map": sc.get_surface_snapshot(static_surface),
+		"item_shop_badge": sc.get_surface_snapshot(item_shop_badge),
+		"hero_shop_badge": sc.get_surface_snapshot(hero_shop_badge),
+		"radiant_glow": rc.get_surface_snapshot(radiant_glow),
+		"dire_glow": rc.get_surface_snapshot(dire_glow),
+		"shop_font": rc.get_font_snapshot(shop_font),
+	}
+
+
+func _render_static_map(surface: Variant) -> void:
+	if surface is Dictionary:
+		var dict: Dictionary = surface
+		dict["marker"] = "map_static:%s" % theme_name
+		dict["bounds"] = [0, 0, map_width, map_height]
+
+
+func _render_item_shop_badge(surface: Variant) -> void:
+	if surface is Dictionary:
+		var dict: Dictionary = surface
+		dict["marker"] = "shop_badge:item:%s" % theme_name
+		dict["bounds"] = [0, 0, shop_size * 2, shop_size * 2]
+
+
+func _render_hero_shop_badge(surface: Variant) -> void:
+	if surface is Dictionary:
+		var dict: Dictionary = surface
+		dict["marker"] = "shop_badge:hero:%s" % theme_name
+		dict["bounds"] = [0, 0, shop_size * 2, shop_size * 2]
 
 
 func _distance_to(position: Array, mx: float, my: float) -> float:

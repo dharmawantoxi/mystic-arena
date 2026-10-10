@@ -6,6 +6,7 @@ extends RefCounted
 
 const FONT_SIZES := {"small": 14, "medium": 18, "large": 24, "huge": 32}
 const DEFAULT_FONT_SIZE := 18
+const RenderCache = preload("res://scripts/ui/render_cache.gd")
 
 const SCALE_START := 0.3
 const CRITICAL_TARGET := 1.2
@@ -27,6 +28,7 @@ var max_lifetime := 0
 var alive := false
 var critical := false
 var font_size := DEFAULT_FONT_SIZE
+var cached_font: Dictionary = {}
 var x_drift := 0.0
 var scale := SCALE_START
 var target_scale := NORMAL_TARGET
@@ -60,6 +62,8 @@ func configure(
 	alive = true
 	critical = is_critical
 	font_size = font_size_for(size)
+	var font_value: Variant = RenderCache.get_cached_font(font_size, "body", true)
+	cached_font = font_value if font_value is Dictionary else {}
 	x_drift = drift if not is_nan(drift) else randf_range(-DRIFT_RANGE, DRIFT_RANGE)
 	scale = SCALE_START
 	target_scale = CRITICAL_TARGET if is_critical else NORMAL_TARGET

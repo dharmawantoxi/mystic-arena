@@ -4,6 +4,7 @@ extends RefCounted
 ## created or drawn by this suite.
 
 const RenderCache = preload("res://scripts/ui/render_cache.gd")
+const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const FIXTURE := "res://tests/fixtures/render_cache_source.json"
 
 
@@ -28,6 +29,7 @@ func run(check: Callable) -> void:
 	for case_value in data["cases"]:
 		_replay_case(case_value as Dictionary, check)
 	_check_shortcuts(check)
+	_check_runtime_wiring(check)
 
 
 func _replay_case(case_data: Dictionary, check: Callable) -> void:
@@ -147,6 +149,48 @@ func _check_shortcuts(check: Callable) -> void:
 	check.call(
 		int(stats["fonts"]) == 1 and int(stats["circles"]) == 0 and int(stats["surfaces"]) == 0,
 		"Shared render cache clear retains fonts"
+	)
+
+
+func _check_runtime_wiring(check: Callable) -> void:
+	RenderCache.reset_shared()
+	var world := Prototype.new()
+	var shared: RenderCache = RenderCache.get_shared()
+	var init_state: Dictionary = world.render_cache.get_state()
+	check.call(
+		(
+			world.render_cache == shared
+			and world.effects.render_cache == shared
+			and int(init_state["fonts"]) == 1
+			and int(init_state["surfaces"]) == 2
+		),
+		"Prototype wires shared RenderCache and caches shop font and glows on init"
+	)
+	check.call(world.setup_arena(), "Arena setup succeeds for RenderCache hero ring wiring")
+	var after_arena: Dictionary = world.render_cache.get_state()
+	check.call(
+		int(after_arena["circles"]) == 2,
+		"Arena setup caches blue and red hero ring circles in RenderCache"
+	)
+	world.effects.add_damage_number(100.0, 100.0, 42, false, "physical")
+	world.effects.add_damage_number(120.0, 100.0, 55, false, "physical")
+	var first_text = world.effects.floating_texts[0]
+	var after_damage: Dictionary = world.render_cache.get_state()
+	check.call(
+		(
+			int(first_text.cached_font.get("size", 0)) == 18
+			and bool(first_text.cached_font.get("bold", false))
+			and int(after_damage["font_creations"]) == 2
+		),
+		"FloatingText damage numbers reuse cached bold body font from RenderCache"
+	)
+	world.effects.announce_wave(1)
+	world.effects.unlock_achievement("FIRST", "Desc", "star")
+	var boss = world._spawn_boss("gornak")
+	var final_state: Dictionary = world.cache_stats()["render_cache"]
+	check.call(
+		boss != null and int(final_state["fonts"]) >= 4 and int(final_state["surfaces"]) >= 3,
+		"Wave banner, achievement popup and boss spawn populate RenderCache fonts and glows"
 	)
 
 
