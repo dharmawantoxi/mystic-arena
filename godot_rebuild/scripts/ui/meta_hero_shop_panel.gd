@@ -5,6 +5,7 @@ extends Control
 signal unlock_requested(hero_type: String)
 
 const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
+const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
 const HeroUnlockStore = preload("res://scripts/match/hero_unlock_store.gd")
 
 var state: Dictionary = {}
@@ -209,11 +210,7 @@ func _rebuild_cards(purchased: Array, defeated: Array) -> void:
 			disabled = true
 		elif int(state.get("meta_gold", 0)) < cost:
 			disabled = true
-		var button := Button.new()
-		button.custom_minimum_size = Vector2(525, 92)
-		button.clip_text = true
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.text = (
+		var summary := (
 			"%s — %s\n%s  ·  HP %d  ·  DMG %d  ·  %s"
 			% [
 				definition.display_name,
@@ -224,8 +221,8 @@ func _rebuild_cards(purchased: Array, defeated: Array) -> void:
 				status,
 			]
 		)
-		button.tooltip_text = hero_type
-		button.disabled = disabled
+		var button := HeroShopCard.new()
+		button.setup(hero_type, summary, disabled, 525.0, definition)
 		button.pressed.connect(_request.bind(hero_type))
 		_grid.add_child(button)
 

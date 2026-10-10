@@ -98,6 +98,15 @@ jobs:
           python godot_rebuild/tests/level_stats_source_oracle.py
           python godot_rebuild/tests/ai_upgrade_source_oracle.py
           python godot_rebuild/tests/ai_shield_source_oracle.py
+          python godot_rebuild/tests/floating_text_source_oracle.py
+          python godot_rebuild/tests/hit_particle_source_oracle.py
+          python godot_rebuild/tests/popup_animation_source_oracle.py
+          python godot_rebuild/tests/screen_shake_source_oracle.py
+          python godot_rebuild/tests/kill_feed_source_oracle.py
+          python godot_rebuild/tests/combo_counter_source_oracle.py
+          python godot_rebuild/tests/wave_announcer_source_oracle.py
+          python godot_rebuild/tests/path_preview_source_oracle.py
+          python godot_rebuild/tests/achievement_popup_source_oracle.py
           gdparse $(find godot_rebuild -name '*.gd')
           gdlint $(find godot_rebuild -name '*.gd')
           gdformat --check $(find godot_rebuild -name '*.gd')

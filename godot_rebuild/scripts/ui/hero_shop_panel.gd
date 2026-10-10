@@ -6,6 +6,7 @@ extends Control
 signal hero_requested(hero_type: String)
 
 const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
+const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
 const HERO_ROSTER = preload("res://scripts/data/hero_roster.gd").DEFINITIONS
 const STARTERS: Array[String] = ["thorne", "grimjaw", "vex", "sylara", "kaizen", "zephyr"]
 
@@ -185,9 +186,6 @@ func _rebuild_cards(roster: Array, owned_ids: Array[String]) -> void:
 	_grid.visible = not ids.is_empty()
 	for hero_type in ids:
 		var definition = HERO_ROSTER[hero_type]
-		var button := Button.new()
-		button.custom_minimum_size = Vector2(485, 92)
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		var status := "%d G" % int(definition.cost)
 		var disabled: bool = command_pending or not bool(world.is_running())
 		if hero_type in owned_ids:
@@ -198,7 +196,7 @@ func _rebuild_cards(roster: Array, owned_ids: Array[String]) -> void:
 			disabled = true
 		elif world.economy.gold[world.BLUE] < int(definition.cost):
 			disabled = true
-		button.text = (
+		var summary := (
 			"%s — %s\n%s  ·  HP %d  ·  DMG %d  ·  RNG %d  ·  %s"
 			% [
 				definition.display_name,
@@ -210,8 +208,8 @@ func _rebuild_cards(roster: Array, owned_ids: Array[String]) -> void:
 				status,
 			]
 		)
-		button.tooltip_text = hero_type
-		button.disabled = disabled
+		var button := HeroShopCard.new()
+		button.setup(hero_type, summary, disabled, 485.0, definition)
 		button.pressed.connect(_request.bind(hero_type))
 		_grid.add_child(button)
 
