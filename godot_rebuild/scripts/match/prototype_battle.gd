@@ -22,6 +22,8 @@ const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
 const TacticalCommands = preload("res://scripts/match/tactical_commands.gd")
 const HitStopRuntime = preload("res://scripts/match/hit_stop_runtime.gd")
 const EffectManager = preload("res://scripts/ui/effect_manager.gd")
+const MapRenderer = preload("res://scripts/ui/map_renderer.gd")
+const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
 const BossState = preload("res://scripts/match/boss_state.gd")
 const BossAI = preload("res://scripts/match/boss_ai.gd")
@@ -104,6 +106,7 @@ const HERO_DEATH_REWARD := 150
 
 var economy := Economy.new()
 var effects := EffectManager.new()
+var map_renderer := MapRenderer.new()
 # Layer 5f: Forge shop transactions (buy for a dead hero queues the order).
 var forge := Forge.new()
 # Layer 5f-2: ITEM FORGE panel state + click routing (drawing lives in the UI).
@@ -206,9 +209,10 @@ var _audio_result_announced := false
 
 
 func _init() -> void:
-	slots = SlotLayout.create(paths)
 	spawn_rng.seed = SPAWN_SEED
 	level_config = LevelCatalog.get_level_config(level_number)
+	_configure_map_renderer()
+	slots = SlotLayout.create(_lane_paths_from_renderer())
 	var boss_parsed = JSON.parse_string(FileAccess.get_file_as_string(BOSS_DATA))
 	boss_table = boss_parsed if boss_parsed is Dictionary else {}
 	boss_rng.randomize()
@@ -230,12 +234,72 @@ func configure_level(number: int) -> bool:
 		return false
 	level_number = number
 	level_config = config
+	_configure_map_renderer()
+	slots = SlotLayout.create(_lane_paths_from_renderer())
 	ai_controller.policy.level_number = number
 	ai_draft.level_number = number
 	_apply_difficulty()
 	_apply_opening_economy()
 	_mini_boss_schedule = _roll_mini_boss_schedule()
 	return true
+
+
+func _configure_map_renderer() -> void:
+	var requested_theme := String(level_config.get("map_theme", "forest"))
+	var theme_data := TerrainPalette.for_theme(requested_theme)
+	theme_data["name"] = requested_theme
+	if not theme_data.has("ambient_tint"):
+		theme_data["ambient_tint"] = null
+	(
+		map_renderer
+		. configure(
+			requested_theme,
+			{
+				"top": _packed_to_pairs(paths[0]),
+				"mid": _packed_to_pairs(paths[1]),
+				"bot": _packed_to_pairs(paths[2]),
+			},
+			_packed_to_pairs(TerrainPalette.river_path()),
+			{},
+			theme_data
+		)
+	)
+
+
+func _packed_to_pairs(points: PackedVector2Array) -> Array:
+	var pairs: Array = []
+	for point in points:
+		pairs.append([int(point.x), int(point.y)])
+	return pairs
+
+
+func _pairs_to_packed(pairs: Array, fallback: PackedVector2Array) -> PackedVector2Array:
+	if pairs.is_empty():
+		return fallback
+	var packed := PackedVector2Array()
+	for entry in pairs:
+		if entry is Array and (entry as Array).size() >= 2:
+			var pair: Array = entry
+			packed.append(Vector2(float(pair[0]), float(pair[1])))
+		elif entry is Vector2:
+			packed.append(entry as Vector2)
+	return packed if not packed.is_empty() else fallback
+
+
+func _lane_paths_from_renderer() -> Array[PackedVector2Array]:
+	return [
+		_pairs_to_packed(map_renderer.get_lane_path("top"), paths[0]),
+		_pairs_to_packed(map_renderer.get_lane_path("mid"), paths[1]),
+		_pairs_to_packed(map_renderer.get_lane_path("bot"), paths[2]),
+	]
+
+
+func is_click_on_shop(point: Vector2) -> bool:
+	return map_renderer.is_click_on_shop(point.x, point.y)
+
+
+func clicked_shop_at(point: Vector2) -> Variant:
+	return map_renderer.get_clicked_shop(point.x, point.y)
 
 
 func configure_player_profile(state: Dictionary) -> bool:
@@ -543,7 +607,16 @@ func step_tick() -> void:
 		AudioRuntime.play("wave_start")
 		effects.announce_wave(wave_count)
 		if wave_count == 1:
-			effects.show_path_preview(paths)
+			(
+				effects
+				. show_path_preview(
+					[
+						map_renderer.get_lane_path("top"),
+						map_renderer.get_lane_path("mid"),
+						map_renderer.get_lane_path("bot"),
+					]
+				)
+			)
 		for nexus in nexuses:
 			if nexus != null:
 				nexus.set_wave(wave_count)
@@ -692,7 +765,13 @@ func player_roster() -> Array:
 
 func player_hero_spawn_position(owned_count: int) -> Vector2:
 	# Game.try_buy_hero: radiant shop + (80 + len(heroes)*30 - 30, 10).
-	return PLAYER_HERO_SHOP + Vector2(50 + owned_count * 30, 10)
+	var shop_pos: Array = map_renderer.radiant_shop_pos
+	var shop := (
+		Vector2(float(shop_pos[0]), float(shop_pos[1]))
+		if shop_pos.size() >= 2
+		else PLAYER_HERO_SHOP
+	)
+	return shop + Vector2(50 + owned_count * 30, 10)
 
 
 func buy_player_hero(hero_type: String) -> bool:
@@ -915,7 +994,8 @@ func _spawn_boss(boss_type: String) -> BossState:
 	if active_boss != null or boss_type.is_empty():
 		return null
 	var boss := BossState.new()
-	if not boss.setup(boss_type, paths[1], boss_table):
+	var mid_lane := _pairs_to_packed(map_renderer.get_lane_path("mid"), paths[1])
+	if not boss.setup(boss_type, mid_lane, boss_table):
 		return null
 	boss.id = _next_id
 	_next_id += 1

@@ -95,14 +95,13 @@ func add_damage_number(
 		floating_texts.remove_at(0)
 
 	var color := Color8(255, 255, 255)
-	var formatted := _format_value(damage)
-	var text := formatted
+	var text := str(damage)
 	if damage_type == "heal":
 		color = Color8(100, 255, 100)
-		text = "+%s" % formatted
+		text = "+%s" % damage
 	elif is_critical:
 		color = Color8(255, 220, 50)
-		text = "%s!" % formatted
+		text = "%s!" % damage
 	elif damage_type == "fire":
 		color = Color8(255, 150, 50)
 	elif damage_type == "ice":
@@ -145,7 +144,7 @@ func add_gold_popup(x: float, y: float, amount: Variant, drift: float = NAN) -> 
 	text_value.configure(
 		x,
 		y - 10.0,
-		"+%sG" % _format_value(amount),
+		"+%sG" % amount,
 		Color8(255, 220, 50),
 		"medium",
 		Vector2(0.0, -1.5),
@@ -395,32 +394,17 @@ func _rgb(value: Array) -> Array:
 	return [int(value[0]), int(value[1]), int(value[2])]
 
 
-func _format_value(value: Variant) -> String:
-	if value is float and is_equal_approx(value, roundf(value)):
-		return str(int(roundf(value)))
-	return str(value)
-
-
 func _normalize(value: Variant) -> Variant:
-	var result: Variant = value
 	if value is Color:
-		result = _color_rgb(value)
-	elif value is Vector2:
-		var vec: Vector2 = value
-		result = [vec.x, vec.y]
-	elif value is PackedVector2Array:
-		var points: Array = []
-		for point in value:
-			points.append([point.x, point.y])
-		result = points
-	elif value is Dictionary:
+		return _color_rgb(value)
+	if value is Dictionary:
 		var dictionary: Dictionary = {}
 		for key in value:
 			dictionary[key] = _normalize(value[key])
-		result = dictionary
-	elif value is Array:
+		return dictionary
+	if value is Array:
 		var array: Array = []
 		for item in value:
 			array.append(_normalize(item))
-		result = array
-	return result
+		return array
+	return value

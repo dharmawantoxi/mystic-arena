@@ -66,6 +66,33 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	await _settle(tree)
 	check.call(panel.visible, "Empty click inside Forge card stays in the overlay")
 
+	panel.set_open(false)
+	await _settle(tree)
+	click = InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	click.position = screen.arena.get_global_transform_with_canvas() * Vector2(340, 540)
+	tree.root.push_input(click, true)
+	await _settle(tree)
+	check.call(
+		panel.visible and panel.shop().is_open,
+		"Radiant arena shop click opens Item Forge through MapRenderer hit-test"
+	)
+	panel.set_open(false)
+	await _settle(tree)
+	click = InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	click.position = screen.arena.get_global_transform_with_canvas() * Vector2(940, 180)
+	tree.root.push_input(click, true)
+	await _settle(tree)
+	check.call(
+		screen.hero_shop_panel.visible and screen.hero_shop_panel.is_open,
+		"Dire arena shop click opens Hero Shop through MapRenderer hit-test"
+	)
+	screen.hero_shop_panel.set_open(false)
+	await _settle(tree)
+
 	app.show_menu()
 	await _settle(tree)
 	check.call(tree.get_node_count() == baseline, "Forge scene cycle leaves no orphan nodes")

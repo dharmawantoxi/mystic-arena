@@ -3,6 +3,8 @@ extends RefCounted
 ## Static/dynamic pygame drawing is intentionally outside this suite.
 
 const MapRenderer = preload("res://scripts/ui/map_renderer.gd")
+const Prototype = preload("res://scripts/match/prototype_battle.gd")
+const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const FIXTURE := "res://tests/fixtures/map_renderer_source.json"
 
 
@@ -25,6 +27,7 @@ func run(check: Callable) -> void:
 	for case_value in data["cases"]:
 		_replay_case(case_value as Dictionary, check)
 	_check_default_state(check)
+	_check_runtime_wiring(check)
 
 
 func _replay_case(case_data: Dictionary, check: Callable) -> void:
@@ -98,6 +101,89 @@ func _check_default_state(check: Callable) -> void:
 			and renderer.get_clicked_shop(0.0, 0.0) == null
 		),
 		"Unknown lane and distant shop return empty state"
+	)
+
+
+func _check_runtime_wiring(check: Callable) -> void:
+	var world := Prototype.new()
+	var state: Dictionary = world.map_renderer.get_state()
+	check.call(
+		(
+			bool(state["static_map_ready"])
+			and bool(state["dynamic_ready"])
+			and String(state["theme_name"]) == String(world.level_config.get("map_theme", "forest"))
+			and (
+				String(world.map_renderer.theme.get("name", ""))
+				== String(world.level_config.get("map_theme", "forest"))
+			)
+		),
+		"Prototype configures MapRenderer for level 1 theme"
+	)
+	check.call(
+		(
+			world.map_renderer.get_lane_path("top").size() == world.paths[0].size()
+			and world.map_renderer.get_lane_path("mid").size() == world.paths[1].size()
+			and world.map_renderer.get_lane_path("bot").size() == world.paths[2].size()
+			and world.map_renderer.river_points.size() == TerrainPalette.river_path().size()
+		),
+		"Prototype populates MapRenderer lane and river geometry"
+	)
+	check.call(
+		(
+			world.is_click_on_shop(Vector2(340, 540))
+			and String(world.clicked_shop_at(Vector2(340, 540))) == "item"
+			and world.is_click_on_shop(Vector2(940, 180))
+			and String(world.clicked_shop_at(Vector2(940, 180))) == "hero"
+			and not world.is_click_on_shop(Vector2(640, 360))
+			and world.clicked_shop_at(Vector2(640, 360)) == null
+		),
+		"Prototype delegates shop hit-testing to MapRenderer"
+	)
+	check.call(
+		world.player_hero_spawn_position(0) == Vector2(390, 550),
+		"Prototype hero spawn reads MapRenderer radiant_shop_pos"
+	)
+	world.map_renderer.radiant_shop_pos = [360, 520]
+	check.call(
+		world.player_hero_spawn_position(0) == Vector2(410, 530),
+		"Custom MapRenderer radiant_shop_pos updates hero spawn offset"
+	)
+	check.call(
+		(
+			world.configure_level(2)
+			and (
+				world.map_renderer.theme_name
+				== String(world.level_config.get("map_theme", "forest"))
+			)
+			and (
+				String(world.map_renderer.theme.get("name", ""))
+				== String(world.level_config.get("map_theme", "forest"))
+			)
+		),
+		"Prototype.configure_level updates MapRenderer theme"
+	)
+	var boss = world._spawn_boss("gornak")
+	check.call(
+		boss != null and boss.lane_path.size() == world.map_renderer.get_lane_path("mid").size(),
+		"Prototype boss spawn uses MapRenderer mid lane path"
+	)
+	var wave_world := Prototype.new()
+	wave_world.setup_arena()
+	wave_world.scheduler.remaining_ticks = 1
+	wave_world.step_tick()
+	(
+		check
+		. call(
+			_deep_equal(
+				wave_world.effects.path_preview.paths,
+				[
+					wave_world.map_renderer.get_lane_path("top"),
+					wave_world.map_renderer.get_lane_path("mid"),
+					wave_world.map_renderer.get_lane_path("bot"),
+				]
+			),
+			"Wave 1 path preview reads lane paths from MapRenderer"
+		)
 	)
 
 

@@ -861,6 +861,8 @@ func _primary_action(point: Vector2) -> void:
 		return
 	var marked := world.select_at(local)
 	var target := world.get_unit(marked)
+	if target == null and _handle_shop_click(world, local):
+		return
 	var selected := world.get_unit(match_session.selected_id) as HeroState
 	var target_hero := target as HeroState
 	var target_structure := target as Structure
@@ -879,6 +881,20 @@ func _primary_action(point: Vector2) -> void:
 			match_session.request_hero_move(selected.id, local)
 	else:
 		match_session.select_at(local)
+
+
+func _handle_shop_click(world: Prototype, local: Vector2) -> bool:
+	var clicked_shop: Variant = world.clicked_shop_at(local)
+	if clicked_shop == null:
+		return false
+	var label := String(clicked_shop)
+	if label == "item":
+		_toggle_forge()
+		return true
+	if label == "hero":
+		_toggle_hero_shop()
+		return true
+	return false
 
 
 func _route_controller_action(action: String) -> void:
