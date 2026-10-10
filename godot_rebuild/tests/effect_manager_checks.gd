@@ -237,7 +237,7 @@ func _check_runtime_wiring(check: Callable) -> void:
 		"Castle shield activates for EffectManager wiring check"
 	)
 	var bus := wave_world._battle_item_effects(wave_world.blue_hero())
-	bus.notify(Vector2(200.0, 200.0), "PROC!", "magic")
+	bus.notify(wave_world.blue_hero().id, "PROC!")
 	check.call(
 		wave_world.effects.floating_texts.size() == before_texts + 2,
 		"Castle shield and BattleItemEffects.notify route floating texts to EffectManager"

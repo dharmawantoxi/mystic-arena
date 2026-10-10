@@ -285,6 +285,9 @@ func nudge_position(hid: int, delta: Vector2) -> void:
 		t.position += delta
 
 
-func notify(pos: Vector2, text: String, damage_type: String = "normal") -> void:
-	if world != null and world.get("effects") != null:
-		world.effects.add_damage_number(pos.x, pos.y, text, false, damage_type)
+func notify(unit_id: int, text: String) -> void:
+	if world == null or world.get("effects") == null:
+		return
+	var target: Object = world.get_unit(unit_id)
+	var pos := target.position if target != null else dealer_pos
+	world.effects.add_damage_number(pos.x, pos.y - 25.0, text, false, "magic")
