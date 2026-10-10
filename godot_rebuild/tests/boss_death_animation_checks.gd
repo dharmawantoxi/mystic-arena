@@ -440,3 +440,17 @@ func _check_random_ranges(animation, is_true: bool, check: Callable) -> void:
 		animation.get_fragment_count() == (25 if is_true else 15),
 		"Random fragment tier count matches source"
 	)
+
+
+func _same_rgb(got: Variant, expected: Variant) -> bool:
+	if not (got is Array) or not (expected is Array):
+		return false
+	var got_rgb: Array = got
+	var expected_rgb: Array = expected
+	if got_rgb.size() < 3 or expected_rgb.size() < 3:
+		return false
+	return (
+		int(got_rgb[0]) == int(expected_rgb[0])
+		and int(got_rgb[1]) == int(expected_rgb[1])
+		and int(got_rgb[2]) == int(expected_rgb[2])
+	)

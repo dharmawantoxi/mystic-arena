@@ -229,6 +229,7 @@ def _trace_draw(animation):
     """Run the original draw and capture its local animation values."""
     result = {"death": {}, "celebration": {}}
     wave_values = []
+    seen_ring_surfaces = []
 
     def tracer(frame, event, _arg):
         if event != "line" or frame.f_code.co_filename != TAG:
@@ -240,15 +241,18 @@ def _trace_draw(animation):
                 if key in local:
                     death[key] = _round(local[key]) if isinstance(local[key], float) else int(local[key])
             if "ring_surf" in local and all(key in local for key in ("wave_elapsed", "wave_progress", "radius", "alpha", "color")):
-                value = {
-                    "wave_elapsed": int(local["wave_elapsed"]),
-                    "wave_progress": _round(local["wave_progress"]),
-                    "radius": int(local["radius"]),
-                    "alpha": int(local["alpha"]),
-                    "color": list(local["color"]),
-                }
-                if value not in wave_values:
-                    wave_values.append(value)
+                ring_surface = local["ring_surf"]
+                if not any(ring_surface is seen for seen in seen_ring_surfaces):
+                    seen_ring_surfaces.append(ring_surface)
+                    wave_values.append(
+                        {
+                            "wave_elapsed": int(local["wave_elapsed"]),
+                            "wave_progress": _round(local["wave_progress"]),
+                            "radius": int(local["radius"]),
+                            "alpha": int(local["alpha"]),
+                            "color": list(local["color"]),
+                        }
+                    )
         elif frame.f_code.co_name == "_draw_celebration":
             celebration = result["celebration"]
             for key in (
