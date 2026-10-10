@@ -237,6 +237,37 @@ berarti oracle tetap jalan tanpa pygame (CI tidak punya pygame).
 - `_ease_out_back` sengaja diduplikasi dari `popup_animation.gd` agar tiap
   port berdiri sendiri; keduanya dikunci oleh oracle-nya masing-masing.
 
+## AchievementPopup
+
+Notifikasi achievement, diport dengan pola oracle yang sama. Seperti
+`WaveAnnouncer`, kurvanya hidup di dalam `draw()`, jadi oracle menjalankan
+`draw()` asli dengan shim pygame/font lalu memakai `sys.settrace` untuk
+membaca `x_offset` / `alpha` / `glow_alpha` langsung dari frame.
+
+- `scripts/ui/achievement_popup.gd` — `unlock()` mengantre notifikasi dan
+  `update()` mengurasnya **FIFO ketat**, masing-masing dapat slot 180 tick.
+  `get_offset_x()` / `get_alpha()` memaparkan tiga fase: slide-in dari kanan
+  (progress < 0.15, `_ease_out_back` — yang sedikit **overshoot** melewati 0,
+  jadi offset bisa negatif), hold sampai 0.85, lalu slide-out.
+  `get_glow_alpha()` mengikuti 30% awal slot dan mengembalikan `-1` (`NO_GLOW`)
+  saat sumbernya tidak menggambar glow sama sekali.
+- Oracle menjalankan 760 tick dengan 4 unlock (tick 0/10/20/190): tick 10 dan
+  20 mengantre di belakang popup yang sedang tayang (antrean memuncak di 2),
+  lalu popup berganti tepat di tick 180/360/540 dan antrean habis di tick 720.
+
+### Catatan presisi
+
+Di tick 0 sumbernya memberi `x_offset == 299`, bukan 300: `_ease_out_back(0)`
+menghasilkan sisa floating-point ~`4e-16`, bukan nol eksak. Nilai ini
+terekam apa adanya di fixture dan harus direproduksi bit-dem-bit oleh port —
+alasan utama mengapa kurva tidak ditulis ulang dengan tangan.
+
+### Yang sengaja tidak diport
+
+Isi visual panel: gradasi, border emas, `corner_ticks`, geometri ikon per
+`icon_type` (star/sword/skull/shield/gold), serta teks dan elipsis
+(`ui_theme.fit_ellipsis` bergantung metrik font).
+
 ## Slice berikutnya: efek `_render.py` — FloatingText lalu HitParticle
 
 Dua kelas efek murni-state yang paling mudah dikunci, dikerjakan berurutan
@@ -288,9 +319,9 @@ berasal dari algoritma sumber yang sebenarnya.
   berarti reinterpretasi, bukan port.
 - `EffectManager` keseluruhan tidak diport; baru `FloatingText`,
   `HitParticle`, `PopupAnimation`, `ScreenShake`, `KillFeed`, `ComboCounter`,
-  `WaveAnnouncer`, dan `PathPreview`. Masih belum ada
+  `WaveAnnouncer`, `PathPreview`, dan `AchievementPopup`. Masih belum ada
   (0 kemunculan di `scripts/` + `scenes/`):
-  `AchievementPopup`, `LevelIntroScreen`,
+  `LevelIntroScreen`,
   `BossIntroCinematic`, `SpriteCache`, `RenderCache`. `DeathExplosion` dan
   `BossDeathAnimation` baru kontrak **waktunya** yang diport (via
   `boss_presentation_source_oracle.py` + `boss_death_pause_checks.gd`),
