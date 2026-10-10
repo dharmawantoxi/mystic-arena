@@ -194,9 +194,24 @@ func _copy_surface_region(surface: Dictionary, bounds: Dictionary) -> Dictionary
 func _find_entry(entries: Array, cache_key: Variant) -> int:
 	for index in range(entries.size()):
 		var entry: Dictionary = entries[index]
-		if entry["key"] == cache_key:
+		if _keys_equal(entry["key"], cache_key):
 			return index
 	return -1
+
+
+func _keys_equal(left: Variant, right: Variant) -> bool:
+	if typeof(left) != typeof(right):
+		return false
+	if left is Array:
+		var left_array: Array = left
+		var right_array: Array = right
+		if left_array.size() != right_array.size():
+			return false
+		for index in range(left_array.size()):
+			if not _keys_equal(left_array[index], right_array[index]):
+				return false
+		return true
+	return left == right
 
 
 func _remove_key(entries: Array, cache_key: Variant) -> void:

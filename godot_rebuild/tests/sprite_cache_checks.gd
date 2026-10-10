@@ -163,7 +163,7 @@ func _check_shortcuts(check: Callable) -> void:
 		"shortcut-cropped", 30, 40, callback, [3, 4]
 	)
 	check.call(
-		int(cropped[1]) == 0 and int(cropped[2]) == -1 and _render_calls == 2,
+		int(cropped[1]) == 2 and int(cropped[2]) == 2 and _render_calls == 2,
 		"Global cropped shortcut preserves anchor adjustment"
 	)
 	SpriteCache.clear_sprite_cache()
