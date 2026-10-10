@@ -1,9 +1,13 @@
+# gdlint:disable=max-file-lines
 extends RefCounted
 ## Replays the source EffectManager coordinator through state/getter ports.
 ## No pygame drawing is part of this slice; only lifecycle, gates, caps and
 ## delegated state are compared.
 
 const EffectManager = preload("res://scripts/ui/effect_manager.gd")
+const Prototype = preload("res://scripts/match/prototype_battle.gd")
+const GOBLIN = preload("res://data/minions/goblin.tres")
+const KAIZEN = preload("res://data/heroes/kaizen.tres")
 const FIXTURE := "res://tests/fixtures/effect_manager_source.json"
 
 
@@ -28,6 +32,7 @@ func run(check: Callable) -> void:
 	for case_value in data["cases"]:
 		_replay_case(case_value as Dictionary, check)
 	_check_caps(check)
+	_check_runtime_wiring(check)
 
 
 func _replay_case(case_data: Dictionary, check: Callable) -> void:
@@ -166,6 +171,108 @@ func _check_caps(check: Callable) -> void:
 	check.call(
 		manager.explosions.size() == EffectManager.MAX_EXPLOSIONS,
 		"Effect manager hard explosion cap evicts oldest"
+	)
+
+
+func _check_runtime_wiring(check: Callable) -> void:
+	var world := Prototype.new()
+	world.setup_arena()
+	check.call(
+		world.effects != null and world.effects is EffectManager,
+		"Prototype owns a single EffectManager coordinator"
+	)
+	world.effects.set_quality_settings(true, true, 1.0, EffectManager.MAX_FLOATING, true)
+
+	# Combo state delegates directly to effects.combo_counter without duplication.
+	var goblin := world.spawn_unit(GOBLIN, world.RED, 1)
+	var hero := world.blue_hero()
+	check.call(goblin != null and hero != null, "Runtime wiring spawns test actors")
+	if goblin == null or hero == null:
+		return
+	world._deliver_hit(hero.id, world.BLUE, goblin, 10, "physical", hero.position)
+	check.call(
+		not world.effects.floating_texts.is_empty() and not world.effects.particles.is_empty(),
+		"Unit hit populates EffectManager floating texts and hit particles"
+	)
+	world._deliver_hit(hero.id, world.BLUE, goblin, 500, "physical", hero.position)
+	check.call(
+		(
+			world.combo_count == 1
+			and world.effects.combo_counter.count == 1
+			and world.combo_timer == world.effects.combo_counter.timer
+			and not world.effects.explosions.is_empty()
+		),
+		"Red minion death updates combo_counter, gold popup and death explosion via EffectManager"
+	)
+	world._step_combo_clock()
+	check.call(
+		world.combo_timer == 119 and world.effects.combo_counter.timer == 119,
+		"_step_combo_clock advances EffectManager update without duplicate combo state"
+	)
+
+	# Wave 1 start announces wave and shows lane path preview, then ticks once in step_tick.
+	var wave_world := Prototype.new()
+	wave_world.setup_arena()
+	wave_world.scheduler.timer = 1
+	wave_world.step_tick()
+	var wave_state: Dictionary = wave_world.effects.get_state()
+	check.call(
+		(
+			bool(wave_state["wave_announcer_active"])
+			and int(wave_state["wave_announcer_wave"]) == 1
+			and int(wave_state["wave_announcer_timer"]) == 119
+			and bool(wave_state["path_preview_active"])
+			and int(wave_state["path_preview_timer"]) == 119
+		),
+		"Wave 1 start wires announce_wave, show_path_preview and per-tick update"
+	)
+
+	# Shield activation and item notify route through EffectManager floating texts.
+	wave_world.economy.gold[wave_world.BLUE] = 5000
+	var nexus := wave_world.nexuses[wave_world.BLUE]
+	nexus.set_wave(11)
+	var before_texts: int = wave_world.effects.floating_texts.size()
+	check.call(
+		wave_world.activate_player_castle_shield(nexus.id),
+		"Castle shield activates for EffectManager wiring check"
+	)
+	var bus := wave_world._battle_item_effects(wave_world.blue_hero())
+	bus.notify(Vector2(200.0, 200.0), "PROC!", "magic")
+	check.call(
+		wave_world.effects.floating_texts.size() == before_texts + 2,
+		"Castle shield and BattleItemEffects.notify route floating texts to EffectManager"
+	)
+
+	# Hero death and boss defeat route kill feed, screen shake and achievements to EffectManager.
+	var red_hero := wave_world.spawn_hero(KAIZEN, wave_world.RED, Vector2(400.0, 300.0))
+	wave_world._on_hero_death(red_hero, wave_world.blue_hero().id)
+	check.call(
+		not wave_world.effects.kill_feed.entries.is_empty(),
+		"Hero death registers kill in EffectManager kill_feed"
+	)
+	var boss := wave_world._spawn_boss("gornak")
+	boss.team = wave_world.RED
+	boss.position = Vector2(700.0, 300.0)
+	boss.entrance_timer = 0
+	boss.hp = 10.0
+	wave_world._deliver_hit(
+		wave_world.blue_hero().id, wave_world.BLUE, boss, 200, "physical", boss.position
+	)
+	check.call(
+		is_equal_approx(wave_world.effects.screen_shake.intensity, 20.0),
+		"Mini-boss death triggers EffectManager screen shake"
+	)
+	wave_world._process_boss_result()
+	wave_world._auto_unlock_defeated_boss_heroes()
+	wave_world.effects.update()
+	var boss_state: Dictionary = wave_world.effects.get_state()
+	check.call(
+		(
+			bool(boss_state["achievement_showing"])
+			and String(boss_state["achievement_title"]) == "MINI BOSS SLAYER!"
+			and int(boss_state["achievement_queue"]) >= 2
+		),
+		"Boss kill and unlock wire achievements into EffectManager popup queue"
 	)
 
 

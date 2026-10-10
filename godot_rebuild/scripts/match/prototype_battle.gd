@@ -21,6 +21,7 @@ const AiDraft = preload("res://scripts/match/ai_draft.gd")
 const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
 const TacticalCommands = preload("res://scripts/match/tactical_commands.gd")
 const HitStopRuntime = preload("res://scripts/match/hit_stop_runtime.gd")
+const EffectManager = preload("res://scripts/ui/effect_manager.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
 const BossState = preload("res://scripts/match/boss_state.gd")
 const BossAI = preload("res://scripts/match/boss_ai.gd")
@@ -99,10 +100,10 @@ const HERO_BASE_NEAR := 100.0
 # the Python stream itself is not reproduced.
 const SPAWN_JITTER := 8.0
 const SPAWN_SEED := 20260929
-const COMBO_RESET_TICKS := 120
 const HERO_DEATH_REWARD := 150
 
 var economy := Economy.new()
+var effects := EffectManager.new()
 # Layer 5f: Forge shop transactions (buy for a dead hero queues the order).
 var forge := Forge.new()
 # Layer 5f-2: ITEM FORGE panel state + click routing (drawing lives in the UI).
@@ -170,6 +171,7 @@ var boss_rewards: Array[Dictionary] = []
 # in the source is presentation and stays outside this port.
 var miniboss_kill_count := 0
 var trueboss_kill_count := 0
+var achievements_unlocked: Dictionary = {}
 # Layer 8f: death FX survives registry retirement, like source EffectManager.
 var boss_death_presentations: Array[Dictionary] = []
 var boss_death_pause_ticks := 0
@@ -181,9 +183,21 @@ var boss_screen_shake_timer := 0
 var score := 0
 var total_kills := 0
 var max_combo := 0
-var combo_count := 0
-var combo_timer := 0
-var last_combo := 0
+var combo_count: int:
+	get:
+		return effects.combo_counter.count
+	set(value):
+		effects.combo_counter.count = value
+var combo_timer: int:
+	get:
+		return effects.combo_counter.timer
+	set(value):
+		effects.combo_counter.timer = value
+var last_combo: int:
+	get:
+		return effects.combo_counter.last_combo
+	set(value):
+		effects.combo_counter.last_combo = value
 var match_started_msec := Time.get_ticks_msec()
 var match_finished_msec := -1
 var match_time_override_seconds := -1
@@ -527,6 +541,9 @@ func step_tick() -> void:
 	wave_count = scheduler.wave
 	if batch.started:
 		AudioRuntime.play("wave_start")
+		effects.announce_wave(wave_count)
+		if wave_count == 1:
+			effects.show_path_preview(paths)
 		for nexus in nexuses:
 			if nexus != null:
 				nexus.set_wave(wave_count)
@@ -539,7 +556,6 @@ func step_tick() -> void:
 	for spawn in batch.spawns:
 		_spawn_match_minion(MINIONS[spawn.kind], spawn.team, spawn.lane)
 	super.step_tick()
-	_step_combo_clock()
 	if winner in [BLUE, RED] and not _audio_result_announced:
 		AudioRuntime.play("victory" if winner == BLUE else "defeat")
 		_audio_result_announced = true
@@ -557,6 +573,7 @@ func step_tick() -> void:
 	if winner == BLUE and not _victory_unlocks_granted:
 		_auto_unlock_defeated_boss_heroes()
 		_victory_unlocks_granted = true
+	_step_combo_clock()
 	if is_running():
 		_tick_auras_and_items()
 		_tick_item_debuffs()
@@ -802,6 +819,11 @@ func sell_tower(team: int, entity_id: int) -> bool:
 func _on_death(source_team: int, target: UnitState) -> void:
 	var before := credited_gold[source_team]
 	super._on_death(source_team, target)
+	var team_name := "blue" if target.team == BLUE else "red"
+	var explosion_size := (
+		"large" if target is StructureState else ("medium" if target is HeroState else "small")
+	)
+	effects.add_death_explosion(target.position.x, target.position.y, team_name, explosion_size)
 	# Source Game's reward pass gives every enemy hero death a fixed 150 G;
 	# HeroDefinition.gold_reward intentionally remains zero for base combat.
 	if target is HeroState:
@@ -810,19 +832,25 @@ func _on_death(source_team: int, target: UnitState) -> void:
 	economy.credit_kill(source_team, reward)
 	if target.team == RED:
 		if target is HeroState:
+			effects.add_gold_popup(target.position.x, target.position.y, HERO_DEATH_REWARD)
 			score += HERO_DEATH_REWARD
 		elif target is StructureState:
 			var scored_structure := target as StructureState
 			if scored_structure.settings().structure_kind == "tower":
+				effects.add_gold_popup(
+					target.position.x, target.position.y, target.definition.gold_reward
+				)
 				score += target.definition.gold_reward
 		else:
 			# The source counts only defeated red minions for this statistic.
+			effects.add_gold_popup(
+				target.position.x, target.position.y, target.definition.gold_reward
+			)
 			score += target.definition.gold_reward
 			total_kills += 1
 			if combo_count > max_combo:
 				max_combo = combo_count
-			combo_count += 1
-			combo_timer = COMBO_RESET_TICKS
+			effects.combo_counter.add_kill()
 	# The source increments red_towers_destroyed in its later reward loop,
 	# not inside Tower.take_damage. Defer the counter until after the true-boss
 	# check in this tick.
@@ -835,12 +863,7 @@ func _on_death(source_team: int, target: UnitState) -> void:
 
 
 func _step_combo_clock() -> void:
-	if combo_timer <= 0:
-		return
-	combo_timer -= 1
-	if combo_timer <= 0:
-		last_combo = combo_count
-		combo_count = 0
+	effects.update()
 
 
 func _mini_boss_entries() -> Array[Dictionary]:
@@ -1150,7 +1173,13 @@ func _step_active_boss() -> void:
 	var burn_from_team := boss.burn_source_team()
 	var burn_damage := boss.tick_tower_debuffs()
 	if burn_damage > 0:
-		boss.take_damage(null, burn_damage, "fire", "neutral", burn_from_team)
+		var dealt := boss.take_damage(null, burn_damage, "fire", "neutral", burn_from_team)
+		if dealt > 0:
+			var boss_team := "blue" if boss.team == BLUE else "red"
+			effects.add_damage_number(
+				boss.position.x, boss.position.y - boss.radius, dealt, dealt > 100, "fire"
+			)
+			effects.add_hit_particles(boss.position.x, boss.position.y, boss_team, 6)
 		boss.last_hit_source_id = -1
 		if not boss.alive:
 			_queue_boss_death_presentation(boss)
@@ -1228,10 +1257,16 @@ func _queue_boss_death_presentation(boss: BossState) -> void:
 	var snapshot := boss.death_presentation()
 	if not snapshot.is_empty():
 		boss_death_presentations.append(snapshot)
-		boss_screen_shake_intensity = maxf(
-			boss_screen_shake_intensity, float(snapshot.get("shake_intensity", 0))
-		)
+		var shake := float(snapshot.get("shake_intensity", 0))
+		boss_screen_shake_intensity = maxf(boss_screen_shake_intensity, shake)
 		boss_screen_shake_timer = maxi(boss_screen_shake_timer, 8)
+		effects.add_death_explosion(
+			boss.position.x,
+			boss.position.y,
+			String(snapshot.get("explosion_team", "red")),
+			String(snapshot.get("explosion_size", "large"))
+		)
+		effects.shake_screen(shake)
 
 
 func boss_presentation_offset() -> Vector2:
@@ -1259,6 +1294,23 @@ func _tick_boss_death_presentations() -> void:
 	boss_death_presentations = standing
 
 
+func _unlock_achievement(
+	achievement_id: String,
+	title: String,
+	description: String,
+	icon_type: String = "star",
+	x: Variant = null,
+	y: Variant = null
+) -> bool:
+	if achievements_unlocked.has(achievement_id):
+		return false
+	achievements_unlocked[achievement_id] = true
+	effects.unlock_achievement(title, description, icon_type)
+	if x != null and y != null:
+		effects.add_damage_number(float(x), float(y) - 35.0, "🏆 %s" % title, false, "gold")
+	return true
+
+
 func _process_boss_kill(boss: BossState) -> void:
 	# Port of Game._process_boss_kill: the boss kill is credited only when the
 	# last hit came from a real hero of the other team (not None, not the
@@ -1282,8 +1334,24 @@ func _process_boss_kill(boss: BossState) -> void:
 		return
 	if boss.boss_class == "true":
 		trueboss_kill_count += 1
+		_unlock_achievement(
+			"trueboss_kill_%d" % trueboss_kill_count,
+			"TRUE BOSS SLAYER!",
+			"%s slew TRUE BOSS %s" % [killer.settings().display_name, boss.display_name],
+			"skull",
+			boss.position.x,
+			boss.position.y
+		)
 	else:
 		miniboss_kill_count += 1
+		_unlock_achievement(
+			"miniboss_kill_%d" % miniboss_kill_count,
+			"MINI BOSS SLAYER!",
+			"%s slew %s" % [killer.settings().display_name, boss.display_name],
+			"skull",
+			boss.position.x,
+			boss.position.y
+		)
 
 
 func _process_boss_result() -> void:
@@ -1301,12 +1369,17 @@ func _process_boss_result() -> void:
 	)
 	economy.credit_kill(BLUE, boss.gold_reward)
 	score += boss.gold_reward
+	effects.add_gold_popup(boss.position.x, boss.position.y, boss.gold_reward)
+	effects.register_kill("Allies", boss.display_name, "blue")
 	boss_rewards.append({"boss_type": boss_type, "gold": boss.gold_reward})
 	bosses_defeated_this_run += 1
 	if not bosses_defeated_this_match.has(boss_type):
 		bosses_defeated_this_match.append(boss_type)
 	if not unlocked_bosses.has(boss_type):
 		unlocked_bosses.append(boss_type)
+		effects.unlock_achievement(
+			"%s Defeated!" % boss.display_name, "Boss unlocked for Hero Shop!", "star"
+		)
 	_by_id.erase(boss.id)
 	active_boss = null
 	_try_spawn_pending_mini_boss()
@@ -1331,6 +1404,11 @@ func _auto_unlock_defeated_boss_heroes() -> Array[String]:
 			continue
 		purchased_heroes.append(boss_type)
 		heroes_unlocked_this_match.append(boss_type)
+		var hero_def: HeroDefinition = HERO_ROSTER.get(boss_type) as HeroDefinition
+		var hero_name := hero_def.display_name if hero_def != null else boss_type.capitalize()
+		effects.unlock_achievement(
+			"BOSS HERO UNLOCKED!", "%s is now yours to command!" % hero_name, "crown"
+		)
 	return heroes_unlocked_this_match
 
 
@@ -1343,6 +1421,9 @@ func _on_hero_death(hero: HeroState, source_id: int) -> void:
 	# Source Game._process_hero_kill: credit only when the last hit came from a
 	# real enemy hero (not the victim, not a tower/minion/castle). No popup.
 	var killer := get_unit(source_id) as HeroState
+	var killer_name := killer.settings().display_name if killer != null else "Tower"
+	var killer_team := "blue" if hero.team == RED else "red"
+	effects.register_kill(killer_name, hero.settings().display_name, killer_team)
 	if killer == null or killer == hero or killer.team == hero.team:
 		return
 	killer.kills += 1
@@ -1767,6 +1848,12 @@ func _deliver_hit(
 		var dealt := boss.take_damage(attacker, raw_damage, damage_type, school)
 		if dealt < 0:
 			return false
+		if dealt > 0:
+			var boss_team := "blue" if boss.team == BLUE else "red"
+			effects.add_damage_number(
+				boss.position.x, boss.position.y - boss.radius, dealt, dealt > 100, damage_type
+			)
+			effects.add_hit_particles(boss.position.x, boss.position.y, boss_team, 6)
 		if attacker is HeroState and dealt > 0:
 			(attacker as HeroState).damage_dealt += dealt
 		boss.last_hit_source_id = source_id
@@ -1785,9 +1872,22 @@ func _deliver_hit(
 			_queue_boss_death_presentation(boss)
 			_record({"kind": "death", "source_id": source_id, "target_id": boss.id})
 		return true
-	return super._deliver_hit(
+	var before_hp := target.hp
+	var before_shield := (target as StructureState).shield if target is StructureState else 0.0
+	var landed := super._deliver_hit(
 		source_id, source_team, target, raw_damage, school, origin, damage_type
 	)
+	if landed:
+		var after_shield := (target as StructureState).shield if target is StructureState else 0.0
+		var dealt := int(maxf(0.0, (before_hp - target.hp) + (before_shield - after_shield)))
+		if dealt > 0:
+			var unit_team := "blue" if target.team == BLUE else "red"
+			var radius := target.definition.radius_px if target.definition != null else 0.0
+			effects.add_damage_number(
+				target.position.x, target.position.y - radius, dealt, dealt > 50, damage_type
+			)
+			effects.add_hit_particles(target.position.x, target.position.y, unit_team, 5)
+	return landed
 
 
 func _evaded(
@@ -2262,8 +2362,16 @@ func _purchase_shield_for(team: int, entity_id: int, castle: bool, reserve: int)
 	# No await/callback between eligibility, activation and the ledger debit.
 	if castle:
 		target.activate_castle_shield()
+		if team == BLUE:
+			effects.add_damage_number(
+				target.position.x, target.position.y - 40.0, "CASTLE SHIELD!", false, "heal"
+			)
 	else:
 		target.activate_regen_shield()
+		if team == BLUE:
+			effects.add_damage_number(
+				target.position.x, target.position.y - 25.0, "SHIELD!", false, "heal"
+			)
 	economy.spend(team, cost)
 	_record({"kind": "castle_shield" if castle else "regen_shield", "target_id": entity_id})
 	return true
