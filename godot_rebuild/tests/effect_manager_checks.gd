@@ -6,6 +6,8 @@ extends RefCounted
 
 const EffectManager = preload("res://scripts/ui/effect_manager.gd")
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
+const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd")
+const PrototypeView = preload("res://scenes/prototype/prototype_view.gd")
 const GOBLIN = preload("res://data/minions/goblin.tres")
 const KAIZEN = preload("res://data/heroes/kaizen.tres")
 const FIXTURE := "res://tests/fixtures/effect_manager_source.json"
@@ -278,6 +280,25 @@ func _check_runtime_wiring(check: Callable) -> void:
 		),
 		"Boss kill and unlock wire achievements into EffectManager popup queue"
 	)
+
+	var session := PrototypeSession.new()
+	session.world = wave_world
+	var view := PrototypeView.new()
+	view.session = session
+	var summary: Dictionary = view.overlay_draw_summary()
+	check.call(
+		(
+			int(summary.get("floating_texts", 0)) > 0
+			and bool(summary.get("path_preview_active", false))
+			and bool(summary.get("wave_announcer_active", false))
+			and bool(summary.get("achievement_showing", false))
+			and bool(summary.get("level_intro_active", false))
+			and bool(summary.get("boss_intro_active", false))
+		),
+		"PrototypeView.overlay_draw_summary reflects active EffectManager and cinematic overlays"
+	)
+	view.free()
+	session.free()
 
 
 func _deep_equal(left: Variant, right: Variant) -> bool:

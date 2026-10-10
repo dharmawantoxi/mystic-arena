@@ -1,3 +1,4 @@
+# gdlint:disable=max-file-lines
 extends "res://scenes/siege/siege_view.gd"
 
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
@@ -58,6 +59,8 @@ func _draw() -> void:
 		draw_line(slot.position - Vector2(6, 0), slot.position + Vector2(6, 0), color, 2, true)
 		draw_line(slot.position - Vector2(0, 6), slot.position + Vector2(0, 6), color, 2, true)
 	_draw_tactical(world)
+	_draw_path_preview(world)
+	_draw_world_effects(world)
 	var hero := world.get_unit(match_session.selected_id) as HeroState
 	if hero != null and hero.team == world.BLUE and hero.has_destination:
 		var mark := hero.destination
@@ -66,6 +69,266 @@ func _draw() -> void:
 		draw_line(mark - Vector2(5, 5), mark + Vector2(5, 5), color, 1.5, true)
 		draw_line(mark + Vector2(-5, 5), mark + Vector2(5, -5), color, 1.5, true)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	_draw_wave_announcer(world)
+	_draw_combo_counter(world)
+	_draw_achievement_popup(world)
+	_draw_boss_intro(world)
+	_draw_boss_celebration(world)
+	_draw_level_intro(world)
+
+
+func overlay_draw_summary() -> Dictionary:
+	if session == null:
+		return {}
+	var world := session.world as Prototype
+	var intro := world.level_intro_state()
+	var b_intro := world.boss_intro_state()
+	var b_death := world.boss_death_state()
+	return {
+		"floating_texts": world.effects.floating_texts.size(),
+		"particles": world.effects.particles.size(),
+		"path_preview_active": world.effects.path_preview.active,
+		"wave_announcer_active": world.effects.wave_announcer.active,
+		"combo_visible": world.effects.combo_counter.display_scale > 0.0,
+		"achievement_showing": world.effects.achievement.is_showing(),
+		"level_intro_active": bool(intro.get("active", false)),
+		"boss_intro_active": bool(b_intro.get("active", false)),
+		"boss_celebration_active": bool(b_death.get("celebration_active", false)),
+	}
+
+
+func _draw_path_preview(world: Prototype) -> void:
+	var preview = world.effects.path_preview
+	if preview == null or not preview.active:
+		return
+	var base_alpha: int = preview.get_alpha()
+	if base_alpha <= 0:
+		return
+	for lane_value in preview.paths:
+		var lane: Array = lane_value
+		for index in range(lane.size()):
+			var raw: Variant = lane[index]
+			var pt := (
+				Vector2(float((raw as Array)[0]), float((raw as Array)[1]))
+				if raw is Array
+				else (raw as Vector2)
+			)
+			var pulse: int = preview.pulse_index(index, float(world.tick_count))
+			var radius := float(preview.arrow_size(pulse))
+			var alpha := clampf(float(preview.arrow_alpha(base_alpha, pulse)) / 255.0, 0.0, 1.0)
+			if radius > 0.0 and alpha > 0.0:
+				draw_circle(pt, radius, Color(1.0, 0.86, 0.39, alpha))
+
+
+func _draw_world_effects(world: Prototype) -> void:
+	for particle in world.effects.particles:
+		if not particle.alive:
+			continue
+		var p_alpha := clampf(float(particle.alpha()) / 255.0, 0.0, 1.0)
+		var p_size := float(particle.current_size())
+		if p_size > 0.0 and p_alpha > 0.0:
+			draw_circle(Vector2(particle.x, particle.y), p_size, Color(particle.color, p_alpha))
+	for item in world.effects.floating_texts:
+		if not item.alive or String(item.text).is_empty():
+			continue
+		var t_alpha := clampf(float(item.alpha()) / 255.0, 0.0, 1.0)
+		var f_size := maxi(8, int(round(float(item.font_size) * float(item.scale))))
+		if t_alpha > 0.0:
+			draw_string(
+				BossFont,
+				Vector2(float(item.x) - 80.0, float(item.y)),
+				String(item.text),
+				HORIZONTAL_ALIGNMENT_CENTER,
+				160.0,
+				f_size,
+				Color(item.color, t_alpha)
+			)
+
+
+func _draw_wave_announcer(world: Prototype) -> void:
+	var announcer = world.effects.wave_announcer
+	if announcer == null or not announcer.active:
+		return
+	var alpha := clampf(float(announcer.get_alpha()) / 255.0, 0.0, 1.0)
+	if alpha <= 0.0:
+		return
+	var offset_x := float(announcer.get_offset_x(1280))
+	var rect := Rect2(Vector2(440.0 + offset_x, 150.0), Vector2(400.0, 64.0))
+	draw_rect(rect, Color(0.05, 0.08, 0.12, 0.82 * alpha))
+	draw_rect(rect, Color(0.96, 0.83, 0.57, alpha), false, 2.0)
+	draw_string(
+		BossFont,
+		Vector2(rect.position.x, rect.position.y + 42.0),
+		announcer.title(),
+		HORIZONTAL_ALIGNMENT_CENTER,
+		rect.size.x,
+		30,
+		Color(0.96, 0.83, 0.57, alpha)
+	)
+
+
+func _draw_combo_counter(world: Prototype) -> void:
+	var combo = world.effects.combo_counter
+	if combo == null or combo.display_scale <= 0.0:
+		return
+	var shown_count: int = combo.count if combo.count > 0 else combo.last_combo
+	if shown_count < 2:
+		return
+	var alpha := clampf(float(combo.display_scale), 0.0, 1.0)
+	var ink := Color.WHITE if combo.color_flash > 0 else Color(1.0, 0.82, 0.31)
+	var font_size := maxi(12, int(round(22.0 * clampf(float(combo.display_scale), 0.5, 1.5))))
+	draw_string(
+		BossFont,
+		Vector2(1020.0, 160.0),
+		"%d HIT COMBO" % shown_count,
+		HORIZONTAL_ALIGNMENT_RIGHT,
+		220.0,
+		font_size,
+		Color(ink, alpha)
+	)
+
+
+func _draw_achievement_popup(world: Prototype) -> void:
+	var popup = world.effects.achievement
+	if popup == null or not popup.is_showing():
+		return
+	var alpha := clampf(float(popup.get_alpha()) / 255.0, 0.0, 1.0)
+	if alpha <= 0.0:
+		return
+	var rect := Rect2(
+		Vector2(float(popup.panel_x(1280)), float(popup.panel_y())),
+		Vector2(float(popup.PANEL_W), float(popup.PANEL_H))
+	)
+	draw_rect(rect, Color(0.06, 0.09, 0.14, 0.90 * alpha))
+	draw_rect(rect, Color(0.96, 0.83, 0.57, alpha), false, 2.0)
+	var title := String(popup.current.get("title", ""))
+	var desc := String(popup.current.get("description", ""))
+	if not title.is_empty():
+		draw_string(
+			BossFont,
+			rect.position + Vector2(14.0, 26.0),
+			title,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			rect.size.x - 28.0,
+			16,
+			Color(1.0, 0.88, 0.45, alpha)
+		)
+	if not desc.is_empty():
+		draw_string(
+			BossFont,
+			rect.position + Vector2(14.0, 46.0),
+			desc,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			rect.size.x - 28.0,
+			13,
+			Color(0.85, 0.90, 0.95, alpha)
+		)
+
+
+func _draw_boss_intro(world: Prototype) -> void:
+	var intro := world.boss_intro_state()
+	if not bool(intro.get("active", false)):
+		return
+	var alpha := clampf(float(intro.get("alpha", 0)) / 255.0, 0.0, 1.0)
+	var bg_alpha := clampf(float(intro.get("background_alpha", 0)) / 255.0, 0.0, 1.0)
+	if alpha <= 0.0:
+		return
+	var rect := Rect2(
+		Vector2(float(intro.get("banner_x", 340)), float(intro.get("banner_y", 12))),
+		Vector2(float(intro.get("banner_width", 600)), 92.0)
+	)
+	var border_rgb: Array = intro.get("entrance_color", [150, 100, 200])
+	var border_col := Color8(int(border_rgb[0]), int(border_rgb[1]), int(border_rgb[2]))
+	draw_rect(rect, Color(0.04, 0.05, 0.08, bg_alpha))
+	draw_rect(rect, Color(border_col, alpha), false, 2.0)
+	var tag: Dictionary = intro.get("tag", {})
+	var header := "%s · %s" % [String(tag.get("text", "BOSS")), String(intro.get("boss_name", ""))]
+	draw_string(
+		BossFont,
+		rect.position + Vector2(18.0, 34.0),
+		header,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		rect.size.x - 200.0,
+		20,
+		Color(border_col, alpha)
+	)
+	var bar: Array = intro.get("hp_bar_rect", [0, 0, 150, 12])
+	var bar_rect := Rect2(
+		Vector2(float(bar[0]), float(bar[1])), Vector2(float(bar[2]), float(bar[3]))
+	)
+	draw_rect(bar_rect, Color(0.15, 0.05, 0.05, alpha))
+	var fill_w := float(intro.get("hp_fill_width", 0))
+	if fill_w > 0.0:
+		draw_rect(
+			Rect2(bar_rect.position, Vector2(fill_w, bar_rect.size.y)),
+			Color(0.90, 0.25, 0.25, alpha)
+		)
+
+
+func _draw_boss_celebration(world: Prototype) -> void:
+	var death := world.boss_death_state()
+	if not bool(death.get("celebration_active", false)):
+		return
+	var visual: Dictionary = death.get("celebration_visual", {})
+	if not bool(visual.get("visible", false)):
+		return
+	var text_alpha := clampf(float(visual.get("text_alpha", 0)) / 255.0, 0.0, 1.0)
+	if text_alpha <= 0.0:
+		return
+	var offset_y := float(visual.get("text_offset_y", 0))
+	draw_string(
+		BossFont,
+		Vector2(240.0, 260.0 + offset_y),
+		"%s DEFEATED!" % String(death.get("boss_name", "BOSS")).to_upper(),
+		HORIZONTAL_ALIGNMENT_CENTER,
+		800.0,
+		32,
+		Color(1.0, 0.86, 0.38, text_alpha)
+	)
+
+
+func _draw_level_intro(world: Prototype) -> void:
+	var intro := world.level_intro_state()
+	if not bool(intro.get("active", false)):
+		return
+	var alpha := clampf(float(intro.get("fade_alpha", 0)) / 255.0, 0.0, 1.0)
+	if alpha <= 0.0:
+		return
+	var card := Rect2(Vector2(320.0, 160.0), Vector2(640.0, 360.0))
+	draw_rect(card, Color(0.03, 0.05, 0.08, 0.86 * alpha))
+	draw_rect(card, Color(0.95, 0.82, 0.52, alpha), false, 2.0)
+	draw_string(
+		BossFont,
+		card.position + Vector2(24.0, 52.0),
+		"LEVEL %d · %s" % [int(intro.get("level_num", 1)), String(intro.get("level_name", ""))],
+		HORIZONTAL_ALIGNMENT_CENTER,
+		card.size.x - 48.0,
+		26,
+		Color(0.95, 0.82, 0.52, alpha)
+	)
+	var warning := String(intro.get("warning_text", ""))
+	if not warning.is_empty():
+		draw_string(
+			BossFont,
+			card.position + Vector2(24.0, 100.0),
+			warning,
+			HORIZONTAL_ALIGNMENT_CENTER,
+			card.size.x - 48.0,
+			18,
+			Color(1.0, 0.45, 0.40, alpha)
+		)
+	if bool(intro.get("show_prompt", false)):
+		var prompt := String(intro.get("prompt_text", ""))
+		if not prompt.is_empty():
+			draw_string(
+				BossFont,
+				card.position + Vector2(24.0, 320.0),
+				prompt,
+				HORIZONTAL_ALIGNMENT_CENTER,
+				card.size.x - 48.0,
+				18,
+				Color(0.85, 0.92, 0.98, alpha)
+			)
 
 
 func _draw_tactical(world: Prototype) -> void:
