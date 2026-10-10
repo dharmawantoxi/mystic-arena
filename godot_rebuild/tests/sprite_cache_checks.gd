@@ -103,6 +103,7 @@ func _replay_case(case_data: Dictionary, check: Callable) -> void:
 
 
 func _render_surface(surface: Variant) -> void:
+	_render_calls += 1
 	var value: Dictionary = surface
 	value["marker"] = _render_marker
 	value["bounds"] = _render_bounds.duplicate()
