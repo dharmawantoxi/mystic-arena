@@ -7,6 +7,7 @@ signal hero_requested(hero_type: String)
 
 const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
+const PopupAnimation = preload("res://scripts/ui/popup_animation.gd")
 const HERO_ROSTER = preload("res://scripts/data/hero_roster.gd").DEFINITIONS
 const STARTERS: Array[String] = ["thorne", "grimjaw", "vex", "sylara", "kaizen", "zephyr"]
 
@@ -14,6 +15,7 @@ var world: Object
 var is_open := false
 var tab := "starter"
 var command_pending := false
+var popup_animation := PopupAnimation.new()
 var _signature := ""
 var _title: Label
 var _gold: Label
@@ -22,6 +24,11 @@ var _starter_tab: Button
 var _boss_tab: Button
 var _grid: GridContainer
 var _empty: Label
+
+
+func _init() -> void:
+	popup_animation.hide()
+	popup_animation.progress = 0.0
 
 
 func bind(battle: Object) -> void:
@@ -36,12 +43,32 @@ func _ready() -> void:
 	hide()
 
 
+func _process(_delta: float) -> void:
+	if is_open or not is_equal_approx(popup_animation.progress, popup_animation.target):
+		popup_animation.update()
+
+
 func set_open(value: bool) -> void:
+	var was_open := is_open
 	is_open = value and world != null
 	visible = is_open
+	if is_open and not was_open:
+		popup_animation.show()
+	elif not is_open and was_open:
+		popup_animation.hide()
 	_signature = ""
 	if is_open:
 		refresh()
+
+
+func popup_animation_state() -> Dictionary:
+	return {
+		"is_open": is_open,
+		"progress": popup_animation.progress,
+		"target": popup_animation.target,
+		"scale": popup_animation.get_scale(),
+		"offset_y": popup_animation.get_offset_y(),
+	}
 
 
 func toggle_open() -> void:

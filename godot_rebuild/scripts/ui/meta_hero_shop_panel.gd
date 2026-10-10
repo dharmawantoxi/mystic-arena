@@ -6,12 +6,14 @@ signal unlock_requested(hero_type: String)
 
 const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
+const PopupAnimation = preload("res://scripts/ui/popup_animation.gd")
 const HeroUnlockStore = preload("res://scripts/match/hero_unlock_store.gd")
 
 var state: Dictionary = {}
 var is_open := false
 var tab := "starter"
 var notice := ""
+var popup_animation := PopupAnimation.new()
 var _signature := ""
 var _gold: Label
 var _bosses: Label
@@ -24,6 +26,11 @@ var _notice: Label
 var _close: Button
 
 
+func _init() -> void:
+	popup_animation.hide()
+	popup_animation.progress = 0.0
+
+
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -31,22 +38,46 @@ func _ready() -> void:
 	hide()
 
 
+func _process(_delta: float) -> void:
+	if is_open or not is_equal_approx(popup_animation.progress, popup_animation.target):
+		popup_animation.update()
+
+
 func open_with_state(profile: Dictionary) -> void:
+	var was_open := is_open
 	state = profile.duplicate(true)
 	is_open = true
 	visible = true
+	if not was_open:
+		popup_animation.show()
 	notice = ""
 	_signature = ""
 	refresh()
-	_close.grab_focus()
+	if is_inside_tree():
+		_close.grab_focus()
 
 
 func set_open(value: bool) -> void:
+	var was_open := is_open
 	is_open = value
 	visible = value
+	if is_open and not was_open:
+		popup_animation.show()
+	elif not is_open and was_open:
+		popup_animation.hide()
 	_signature = ""
 	if value:
 		refresh()
+
+
+func popup_animation_state() -> Dictionary:
+	return {
+		"is_open": is_open,
+		"progress": popup_animation.progress,
+		"target": popup_animation.target,
+		"scale": popup_animation.get_scale(),
+		"offset_y": popup_animation.get_offset_y(),
+	}
 
 
 func apply_state(profile: Dictionary, message: String) -> void:
