@@ -289,5 +289,5 @@ func notify(unit_id: int, text: String) -> void:
 	if world == null or world.get("effects") == null:
 		return
 	var target: Object = world.get_unit(unit_id)
-	var pos := target.position if target != null else dealer_pos
+	var pos: Vector2 = target.position if target != null else dealer_pos
 	world.effects.add_damage_number(pos.x, pos.y - 25.0, text, false, "magic")
