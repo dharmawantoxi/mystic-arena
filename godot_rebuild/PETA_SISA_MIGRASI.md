@@ -426,8 +426,22 @@ layer, statistik, clear yang mempertahankan font, serta shared shortcut.
 Objek Font/Surface pygame dan pixel drawing sengaja tidak diport.
 
 Suite dan oracle terdaftar di `tests/run_all.gd` dan
+`.github/workflows/godot-rebuild.yml`.
+
+## MapRenderer (state + getter, bukan drawing pygame)
+
+`MapRenderer` dari `_render.py` kini punya port state-only di
+`scripts/ui/map_renderer.gd`, suite replay di `tests/map_renderer_checks.gd`,
+dan oracle tanpa pygame di `tests/map_renderer_source_oracle.py` dengan fixture
+`tests/fixtures/map_renderer_source.json`. Port mempertahankan dimensi map,
+theme, data lane/river/dekorasi, readiness layer statis/dinamis, posisi toko,
+getter lane/shop, serta hit-testing toko. Delegasi StaticRenderer,
+DecorationRenderer, ShopRenderer, DynamicRenderer, dan seluruh pixel drawing
+pygame sengaja tidak diport.
+
+Suite dan oracle terdaftar di `tests/run_all.gd` dan
 `.github/workflows/godot-rebuild.yml`. Slice berikutnya sesuai urutan kerja
-adalah `MapRenderer`.
+adalah `EffectManager`.
 
 ## Batas scope
 
@@ -441,10 +455,11 @@ adalah `MapRenderer`.
   (yang terakhir hanya state + getter, lihat bagian di atas), serta `BossIntroCinematic`
   (juga state + getter). Masih belum ada
   (0 kemunculan di `scripts/` + `scenes/`):
-  `MapRenderer`. `RenderCache` dan `SpriteCache` kini punya port state + getter
-  (`scripts/ui/render_cache.gd`, `scripts/ui/sprite_cache.gd`, serta fixture
-  oracle masing-masing), tetapi objek surface/font pygame dan pixel drawing
-  sengaja **tidak diport**. `DeathExplosion` kini punya port state + getter
+  `EffectManager`. `MapRenderer`, `RenderCache`, dan `SpriteCache` kini punya
+  port state + getter (`scripts/ui/map_renderer.gd`,
+  `scripts/ui/render_cache.gd`, `scripts/ui/sprite_cache.gd`, serta fixture
+  oracle masing-masing), tetapi delegasi renderer, surface/font pygame dan
+  pixel drawing sengaja **tidak diport**. `DeathExplosion` kini punya port state + getter
   (`scripts/ui/death_explosion.gd` dan fixture oracle-nya), tetapi `draw()`
   pygame, flash sprite, dan spark drawing sengaja **tidak diport**.
   `BossDeathAnimation` kini punya port state + getter (`scripts/ui/

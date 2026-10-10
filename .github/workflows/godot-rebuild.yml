@@ -104,6 +104,7 @@ jobs:
           python godot_rebuild/tests/boss_death_animation_source_oracle.py
           python godot_rebuild/tests/sprite_cache_source_oracle.py
           python godot_rebuild/tests/render_cache_source_oracle.py
+          python godot_rebuild/tests/map_renderer_source_oracle.py
           python godot_rebuild/tests/popup_animation_source_oracle.py
           python godot_rebuild/tests/screen_shake_source_oracle.py
           python godot_rebuild/tests/kill_feed_source_oracle.py
