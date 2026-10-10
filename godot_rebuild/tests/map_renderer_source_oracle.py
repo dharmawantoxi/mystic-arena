@@ -212,6 +212,7 @@ def _snapshot(renderer):
             if key in ("trees", "rocks", "ruins", "cacti", "dunes")
         },
         "static_layers": list(renderer.static_map.layers),
+        "static_map_ready": isinstance(renderer.static_map, _SurfaceShim),
         "dynamic_ready": renderer.dynamic.renderer is renderer,
     }
 

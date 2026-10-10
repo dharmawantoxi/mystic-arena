@@ -288,6 +288,7 @@
      "shops",
      "border_wall"
     ],
+    "static_map_ready": true,
     "dynamic_ready": true
    },
    "lane_queries": {
@@ -619,6 +620,7 @@
      "shops",
      "border_wall"
     ],
+    "static_map_ready": true,
     "dynamic_ready": true
    },
    "lane_queries": {
