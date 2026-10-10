@@ -1,0 +1,6104 @@
+{
+  "source": "_render.py::LevelIntroScreen",
+  "fade_in_duration": 30,
+  "gold_per_second": 3,
+  "begin_prompt": "PRESS SPACE TO BEGIN",
+  "boss_snapshot": {
+    "name": "Abaddon",
+    "title": "Lord of Avernus",
+    "boss_class": "true",
+    "color": [
+      100,
+      220,
+      240
+    ],
+    "color_dark": [
+      30,
+      60,
+      100
+    ],
+    "entrance_color": [
+      100,
+      220,
+      240
+    ]
+  },
+  "level": {
+    "level_number": 1,
+    "name": "The Fallen Realm",
+    "description": "Face Abaddon, the Lord of Avernus",
+    "enemy_hp_mult": 1.0,
+    "enemy_damage_mult": 1.0,
+    "meta_gold_reward_win": 3000,
+    "map_theme": "forest",
+    "true_boss": "abaddon",
+    "starting_gold": 1000
+  },
+  "sound_on_first_update": [
+    true
+  ],
+  "timeline": [
+    [
+      1,
+      true,
+      8,
+      0,
+      false,
+      null
+    ],
+    [
+      2,
+      true,
+      17,
+      2,
+      false,
+      null
+    ],
+    [
+      3,
+      true,
+      25,
+      2,
+      false,
+      null
+    ],
+    [
+      4,
+      true,
+      34,
+      4,
+      false,
+      null
+    ],
+    [
+      5,
+      true,
+      42,
+      4,
+      false,
+      null
+    ],
+    [
+      6,
+      true,
+      51,
+      6,
+      false,
+      null
+    ],
+    [
+      7,
+      true,
+      59,
+      6,
+      false,
+      null
+    ],
+    [
+      8,
+      true,
+      68,
+      8,
+      false,
+      null
+    ],
+    [
+      9,
+      true,
+      76,
+      8,
+      false,
+      null
+    ],
+    [
+      10,
+      true,
+      85,
+      10,
+      false,
+      null
+    ],
+    [
+      11,
+      true,
+      93,
+      10,
+      false,
+      null
+    ],
+    [
+      12,
+      true,
+      102,
+      12,
+      false,
+      null
+    ],
+    [
+      13,
+      true,
+      110,
+      12,
+      false,
+      null
+    ],
+    [
+      14,
+      true,
+      119,
+      14,
+      false,
+      null
+    ],
+    [
+      15,
+      true,
+      127,
+      14,
+      false,
+      null
+    ],
+    [
+      16,
+      true,
+      136,
+      16,
+      false,
+      null
+    ],
+    [
+      17,
+      true,
+      144,
+      16,
+      false,
+      null
+    ],
+    [
+      18,
+      true,
+      153,
+      18,
+      false,
+      null
+    ],
+    [
+      19,
+      true,
+      161,
+      18,
+      false,
+      null
+    ],
+    [
+      20,
+      true,
+      170,
+      20,
+      false,
+      null
+    ],
+    [
+      21,
+      true,
+      178,
+      20,
+      false,
+      null
+    ],
+    [
+      22,
+      true,
+      187,
+      22,
+      false,
+      null
+    ],
+    [
+      23,
+      true,
+      195,
+      22,
+      false,
+      null
+    ],
+    [
+      24,
+      true,
+      204,
+      24,
+      false,
+      null
+    ],
+    [
+      25,
+      true,
+      212,
+      24,
+      false,
+      null
+    ],
+    [
+      26,
+      true,
+      221,
+      26,
+      false,
+      null
+    ],
+    [
+      27,
+      true,
+      229,
+      26,
+      false,
+      null
+    ],
+    [
+      28,
+      true,
+      238,
+      28,
+      false,
+      null
+    ],
+    [
+      29,
+      true,
+      246,
+      28,
+      false,
+      null
+    ],
+    [
+      30,
+      true,
+      255,
+      30,
+      false,
+      null
+    ],
+    [
+      31,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      32,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      33,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      34,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      35,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      36,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      37,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      38,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      39,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      40,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      41,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      42,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      43,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      44,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      45,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      46,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      47,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      48,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      49,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      50,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      51,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      52,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      53,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      54,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      55,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      56,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      57,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      58,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      59,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      60,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      61,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      62,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      63,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      64,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      65,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      66,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      67,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      68,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      69,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ],
+    [
+      70,
+      true,
+      255,
+      30,
+      true,
+      "PRESS SPACE TO BEGIN"
+    ]
+  ],
+  "timeline_end": [
+    71,
+    false,
+    true
+  ],
+  "skip_inputs": [
+    [
+      "space",
+      {
+        "key": "K_SPACE"
+      }
+    ],
+    [
+      "return",
+      {
+        "key": "K_RETURN"
+      }
+    ],
+    [
+      "letter_a",
+      {
+        "key": "K_a"
+      }
+    ],
+    [
+      "click",
+      {
+        "click": true
+      }
+    ]
+  ],
+  "skips": [
+    [
+      "space",
+      true,
+      false
+    ],
+    [
+      "return",
+      true,
+      false
+    ],
+    [
+      "letter_a",
+      false,
+      true
+    ],
+    [
+      "click",
+      true,
+      false
+    ],
+    [
+      "inactive",
+      false,
+      false
+    ]
+  ],
+  "difficulty_rows": [
+    {
+      "level": {
+        "level_number": 1,
+        "name": "The Fallen Realm",
+        "description": "Face Abaddon, the Lord of Avernus",
+        "enemy_hp_mult": 1.0,
+        "enemy_damage_mult": 1.0,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "forest",
+        "true_boss": "abaddon",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Abaddon",
+        "title": "Lord of Avernus",
+        "boss_class": "true",
+        "color": [
+          100,
+          220,
+          240
+        ],
+        "color_dark": [
+          30,
+          60,
+          100
+        ],
+        "entrance_color": [
+          100,
+          220,
+          240
+        ]
+      },
+      "difficulty_setting": "easy",
+      "hp_mult": 1.0,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: EASY",
+        "level": 1,
+        "color": [
+          100,
+          210,
+          255
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 1,
+        "name": "The Fallen Realm",
+        "description": "Face Abaddon, the Lord of Avernus",
+        "enemy_hp_mult": 1.0,
+        "enemy_damage_mult": 1.0,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "forest",
+        "true_boss": "abaddon",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Abaddon",
+        "title": "Lord of Avernus",
+        "boss_class": "true",
+        "color": [
+          100,
+          220,
+          240
+        ],
+        "color_dark": [
+          30,
+          60,
+          100
+        ],
+        "entrance_color": [
+          100,
+          220,
+          240
+        ]
+      },
+      "difficulty_setting": "normal",
+      "hp_mult": 1.0,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: NORMAL",
+        "level": 1,
+        "color": [
+          100,
+          220,
+          150
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 1,
+        "name": "The Fallen Realm",
+        "description": "Face Abaddon, the Lord of Avernus",
+        "enemy_hp_mult": 1.0,
+        "enemy_damage_mult": 1.0,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "forest",
+        "true_boss": "abaddon",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Abaddon",
+        "title": "Lord of Avernus",
+        "boss_class": "true",
+        "color": [
+          100,
+          220,
+          240
+        ],
+        "color_dark": [
+          30,
+          60,
+          100
+        ],
+        "entrance_color": [
+          100,
+          220,
+          240
+        ]
+      },
+      "difficulty_setting": "hard",
+      "hp_mult": 1.0,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: HARD",
+        "level": 2,
+        "color": [
+          255,
+          120,
+          100
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          255,
+          200,
+          80
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 2,
+        "name": "Wraith Wastes",
+        "description": "Confront the Phantom King",
+        "enemy_hp_mult": 1.02,
+        "enemy_damage_mult": 1.02,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "desert",
+        "true_boss": "alchemist",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Alchemist",
+        "title": "The Greed is Good",
+        "boss_class": "true",
+        "color": [
+          215,
+          155,
+          45
+        ],
+        "color_dark": [
+          140,
+          90,
+          20
+        ],
+        "entrance_color": [
+          100,
+          220,
+          40
+        ]
+      },
+      "difficulty_setting": "easy",
+      "hp_mult": 1.02,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: EASY",
+        "level": 1,
+        "color": [
+          100,
+          210,
+          255
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 2,
+        "name": "Wraith Wastes",
+        "description": "Confront the Phantom King",
+        "enemy_hp_mult": 1.02,
+        "enemy_damage_mult": 1.02,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "desert",
+        "true_boss": "alchemist",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Alchemist",
+        "title": "The Greed is Good",
+        "boss_class": "true",
+        "color": [
+          215,
+          155,
+          45
+        ],
+        "color_dark": [
+          140,
+          90,
+          20
+        ],
+        "entrance_color": [
+          100,
+          220,
+          40
+        ]
+      },
+      "difficulty_setting": "normal",
+      "hp_mult": 1.02,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: NORMAL",
+        "level": 1,
+        "color": [
+          100,
+          220,
+          150
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 2,
+        "name": "Wraith Wastes",
+        "description": "Confront the Phantom King",
+        "enemy_hp_mult": 1.02,
+        "enemy_damage_mult": 1.02,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "desert",
+        "true_boss": "alchemist",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Alchemist",
+        "title": "The Greed is Good",
+        "boss_class": "true",
+        "color": [
+          215,
+          155,
+          45
+        ],
+        "color_dark": [
+          140,
+          90,
+          20
+        ],
+        "entrance_color": [
+          100,
+          220,
+          40
+        ]
+      },
+      "difficulty_setting": "hard",
+      "hp_mult": 1.02,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: HARD",
+        "level": 2,
+        "color": [
+          255,
+          120,
+          100
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          255,
+          200,
+          80
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 3,
+        "name": "Infernal Depths",
+        "description": "Face the Flame Emperor",
+        "enemy_hp_mult": 1.03,
+        "enemy_damage_mult": 1.03,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "ice",
+        "true_boss": "ancient_apparition",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Ancient Apparition",
+        "title": "The Inscrutable",
+        "boss_class": "true",
+        "color": [
+          140,
+          200,
+          255
+        ],
+        "color_dark": [
+          40,
+          80,
+          160
+        ],
+        "entrance_color": [
+          140,
+          200,
+          255
+        ]
+      },
+      "difficulty_setting": "easy",
+      "hp_mult": 1.03,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: EASY",
+        "level": 1,
+        "color": [
+          100,
+          210,
+          255
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 3,
+        "name": "Infernal Depths",
+        "description": "Face the Flame Emperor",
+        "enemy_hp_mult": 1.03,
+        "enemy_damage_mult": 1.03,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "ice",
+        "true_boss": "ancient_apparition",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Ancient Apparition",
+        "title": "The Inscrutable",
+        "boss_class": "true",
+        "color": [
+          140,
+          200,
+          255
+        ],
+        "color_dark": [
+          40,
+          80,
+          160
+        ],
+        "entrance_color": [
+          140,
+          200,
+          255
+        ]
+      },
+      "difficulty_setting": "normal",
+      "hp_mult": 1.03,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: NORMAL",
+        "level": 1,
+        "color": [
+          100,
+          220,
+          150
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 3,
+        "name": "Infernal Depths",
+        "description": "Face the Flame Emperor",
+        "enemy_hp_mult": 1.03,
+        "enemy_damage_mult": 1.03,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "ice",
+        "true_boss": "ancient_apparition",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Ancient Apparition",
+        "title": "The Inscrutable",
+        "boss_class": "true",
+        "color": [
+          140,
+          200,
+          255
+        ],
+        "color_dark": [
+          40,
+          80,
+          160
+        ],
+        "entrance_color": [
+          140,
+          200,
+          255
+        ]
+      },
+      "difficulty_setting": "hard",
+      "hp_mult": 1.03,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: HARD",
+        "level": 2,
+        "color": [
+          255,
+          120,
+          100
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          255,
+          200,
+          80
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 4,
+        "name": "Molten Sanctum",
+        "description": "Face Ignis Drachorn, the Molten Sovereign",
+        "enemy_hp_mult": 1.04,
+        "enemy_damage_mult": 1.04,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "volcanic",
+        "true_boss": "ignis_drachorn",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Ignis Drachorn",
+        "title": "The Molten Sovereign",
+        "boss_class": "true",
+        "color": [
+          255,
+          130,
+          30
+        ],
+        "color_dark": [
+          110,
+          30,
+          10
+        ],
+        "entrance_color": [
+          255,
+          150,
+          50
+        ]
+      },
+      "difficulty_setting": "easy",
+      "hp_mult": 1.04,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: EASY",
+        "level": 1,
+        "color": [
+          100,
+          210,
+          255
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 4,
+        "name": "Molten Sanctum",
+        "description": "Face Ignis Drachorn, the Molten Sovereign",
+        "enemy_hp_mult": 1.04,
+        "enemy_damage_mult": 1.04,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "volcanic",
+        "true_boss": "ignis_drachorn",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Ignis Drachorn",
+        "title": "The Molten Sovereign",
+        "boss_class": "true",
+        "color": [
+          255,
+          130,
+          30
+        ],
+        "color_dark": [
+          110,
+          30,
+          10
+        ],
+        "entrance_color": [
+          255,
+          150,
+          50
+        ]
+      },
+      "difficulty_setting": "normal",
+      "hp_mult": 1.04,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: NORMAL",
+        "level": 1,
+        "color": [
+          100,
+          220,
+          150
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 4,
+        "name": "Molten Sanctum",
+        "description": "Face Ignis Drachorn, the Molten Sovereign",
+        "enemy_hp_mult": 1.04,
+        "enemy_damage_mult": 1.04,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "volcanic",
+        "true_boss": "ignis_drachorn",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Ignis Drachorn",
+        "title": "The Molten Sovereign",
+        "boss_class": "true",
+        "color": [
+          255,
+          130,
+          30
+        ],
+        "color_dark": [
+          110,
+          30,
+          10
+        ],
+        "entrance_color": [
+          255,
+          150,
+          50
+        ]
+      },
+      "difficulty_setting": "hard",
+      "hp_mult": 1.04,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: HARD",
+        "level": 2,
+        "color": [
+          255,
+          120,
+          100
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          255,
+          200,
+          80
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 5,
+        "name": "The Haunted Veil",
+        "description": "Face Krobellus, the Death Prophet",
+        "enemy_hp_mult": 1.05,
+        "enemy_damage_mult": 1.05,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "haunted",
+        "true_boss": "krobellus",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Krobellus",
+        "title": "The Death Prophet",
+        "boss_class": "true",
+        "color": [
+          55,
+          180,
+          150
+        ],
+        "color_dark": [
+          38,
+          16,
+          75
+        ],
+        "entrance_color": [
+          100,
+          255,
+          200
+        ]
+      },
+      "difficulty_setting": "easy",
+      "hp_mult": 1.05,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: EASY",
+        "level": 1,
+        "color": [
+          100,
+          210,
+          255
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 5,
+        "name": "The Haunted Veil",
+        "description": "Face Krobellus, the Death Prophet",
+        "enemy_hp_mult": 1.05,
+        "enemy_damage_mult": 1.05,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "haunted",
+        "true_boss": "krobellus",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Krobellus",
+        "title": "The Death Prophet",
+        "boss_class": "true",
+        "color": [
+          55,
+          180,
+          150
+        ],
+        "color_dark": [
+          38,
+          16,
+          75
+        ],
+        "entrance_color": [
+          100,
+          255,
+          200
+        ]
+      },
+      "difficulty_setting": "normal",
+      "hp_mult": 1.05,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: NORMAL",
+        "level": 1,
+        "color": [
+          100,
+          220,
+          150
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 5,
+        "name": "The Haunted Veil",
+        "description": "Face Krobellus, the Death Prophet",
+        "enemy_hp_mult": 1.05,
+        "enemy_damage_mult": 1.05,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "haunted",
+        "true_boss": "krobellus",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Krobellus",
+        "title": "The Death Prophet",
+        "boss_class": "true",
+        "color": [
+          55,
+          180,
+          150
+        ],
+        "color_dark": [
+          38,
+          16,
+          75
+        ],
+        "entrance_color": [
+          100,
+          255,
+          200
+        ]
+      },
+      "difficulty_setting": "hard",
+      "hp_mult": 1.05,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: HARD",
+        "level": 2,
+        "color": [
+          255,
+          120,
+          100
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          255,
+          200,
+          80
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 6,
+        "name": "Admiral's Cove",
+        "description": "Face Kunkka, the Admiral of the Fleet",
+        "enemy_hp_mult": 1.06,
+        "enemy_damage_mult": 1.06,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "ocean",
+        "true_boss": "kunkka",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Kunkka",
+        "title": "The Admiral of the Fleet",
+        "boss_class": "true",
+        "color": [
+          40,
+          130,
+          200
+        ],
+        "color_dark": [
+          8,
+          30,
+          62
+        ],
+        "entrance_color": [
+          110,
+          200,
+          245
+        ]
+      },
+      "difficulty_setting": "easy",
+      "hp_mult": 1.06,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: EASY",
+        "level": 1,
+        "color": [
+          100,
+          210,
+          255
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 6,
+        "name": "Admiral's Cove",
+        "description": "Face Kunkka, the Admiral of the Fleet",
+        "enemy_hp_mult": 1.06,
+        "enemy_damage_mult": 1.06,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "ocean",
+        "true_boss": "kunkka",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Kunkka",
+        "title": "The Admiral of the Fleet",
+        "boss_class": "true",
+        "color": [
+          40,
+          130,
+          200
+        ],
+        "color_dark": [
+          8,
+          30,
+          62
+        ],
+        "entrance_color": [
+          110,
+          200,
+          245
+        ]
+      },
+      "difficulty_setting": "normal",
+      "hp_mult": 1.06,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: NORMAL",
+        "level": 1,
+        "color": [
+          100,
+          220,
+          150
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 6,
+        "name": "Admiral's Cove",
+        "description": "Face Kunkka, the Admiral of the Fleet",
+        "enemy_hp_mult": 1.06,
+        "enemy_damage_mult": 1.06,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "ocean",
+        "true_boss": "kunkka",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Kunkka",
+        "title": "The Admiral of the Fleet",
+        "boss_class": "true",
+        "color": [
+          40,
+          130,
+          200
+        ],
+        "color_dark": [
+          8,
+          30,
+          62
+        ],
+        "entrance_color": [
+          110,
+          200,
+          245
+        ]
+      },
+      "difficulty_setting": "hard",
+      "hp_mult": 1.06,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: HARD",
+        "level": 2,
+        "color": [
+          255,
+          120,
+          100
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          255,
+          200,
+          80
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 7,
+        "name": "Shadow Abyss",
+        "description": "Face Nyxarath, the Soul Eater",
+        "enemy_hp_mult": 1.07,
+        "enemy_damage_mult": 1.07,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "abyss",
+        "true_boss": "nyxarath",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Nyxarath",
+        "title": "The Soul Eater",
+        "boss_class": "true",
+        "color": [
+          180,
+          35,
+          25
+        ],
+        "color_dark": [
+          8,
+          5,
+          6
+        ],
+        "entrance_color": [
+          255,
+          145,
+          80
+        ]
+      },
+      "difficulty_setting": "easy",
+      "hp_mult": 1.07,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: EASY",
+        "level": 1,
+        "color": [
+          100,
+          210,
+          255
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 7,
+        "name": "Shadow Abyss",
+        "description": "Face Nyxarath, the Soul Eater",
+        "enemy_hp_mult": 1.07,
+        "enemy_damage_mult": 1.07,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "abyss",
+        "true_boss": "nyxarath",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Nyxarath",
+        "title": "The Soul Eater",
+        "boss_class": "true",
+        "color": [
+          180,
+          35,
+          25
+        ],
+        "color_dark": [
+          8,
+          5,
+          6
+        ],
+        "entrance_color": [
+          255,
+          145,
+          80
+        ]
+      },
+      "difficulty_setting": "normal",
+      "hp_mult": 1.07,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: NORMAL",
+        "level": 1,
+        "color": [
+          100,
+          220,
+          150
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 7,
+        "name": "Shadow Abyss",
+        "description": "Face Nyxarath, the Soul Eater",
+        "enemy_hp_mult": 1.07,
+        "enemy_damage_mult": 1.07,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "abyss",
+        "true_boss": "nyxarath",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Nyxarath",
+        "title": "The Soul Eater",
+        "boss_class": "true",
+        "color": [
+          180,
+          35,
+          25
+        ],
+        "color_dark": [
+          8,
+          5,
+          6
+        ],
+        "entrance_color": [
+          255,
+          145,
+          80
+        ]
+      },
+      "difficulty_setting": "hard",
+      "hp_mult": 1.07,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: HARD",
+        "level": 2,
+        "color": [
+          255,
+          120,
+          100
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          255,
+          200,
+          80
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 8,
+        "name": "Nethervenom Expanse",
+        "description": "Face Vhoreth'zir, the Nethervenom Wyrm",
+        "enemy_hp_mult": 1.08,
+        "enemy_damage_mult": 1.08,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "nethervenom",
+        "true_boss": "vhorethzir",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Vhoreth'zir",
+        "title": "The Nethervenom Wyrm",
+        "boss_class": "true",
+        "color": [
+          140,
+          190,
+          35
+        ],
+        "color_dark": [
+          5,
+          20,
+          10
+        ],
+        "entrance_color": [
+          200,
+          245,
+          80
+        ]
+      },
+      "difficulty_setting": "easy",
+      "hp_mult": 1.08,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: EASY",
+        "level": 1,
+        "color": [
+          100,
+          210,
+          255
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 8,
+        "name": "Nethervenom Expanse",
+        "description": "Face Vhoreth'zir, the Nethervenom Wyrm",
+        "enemy_hp_mult": 1.08,
+        "enemy_damage_mult": 1.08,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "nethervenom",
+        "true_boss": "vhorethzir",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Vhoreth'zir",
+        "title": "The Nethervenom Wyrm",
+        "boss_class": "true",
+        "color": [
+          140,
+          190,
+          35
+        ],
+        "color_dark": [
+          5,
+          20,
+          10
+        ],
+        "entrance_color": [
+          200,
+          245,
+          80
+        ]
+      },
+      "difficulty_setting": "normal",
+      "hp_mult": 1.08,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: NORMAL",
+        "level": 1,
+        "color": [
+          100,
+          220,
+          150
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 8,
+        "name": "Nethervenom Expanse",
+        "description": "Face Vhoreth'zir, the Nethervenom Wyrm",
+        "enemy_hp_mult": 1.08,
+        "enemy_damage_mult": 1.08,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "nethervenom",
+        "true_boss": "vhorethzir",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Vhoreth'zir",
+        "title": "The Nethervenom Wyrm",
+        "boss_class": "true",
+        "color": [
+          140,
+          190,
+          35
+        ],
+        "color_dark": [
+          5,
+          20,
+          10
+        ],
+        "entrance_color": [
+          200,
+          245,
+          80
+        ]
+      },
+      "difficulty_setting": "hard",
+      "hp_mult": 1.08,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: HARD",
+        "level": 2,
+        "color": [
+          255,
+          120,
+          100
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          255,
+          200,
+          80
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 9,
+        "name": "Soulforged Expanse",
+        "description": "Face Naraka, the Lost Soul",
+        "enemy_hp_mult": 1.09,
+        "enemy_damage_mult": 1.09,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "soulforged",
+        "true_boss": "naraka",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Naraka",
+        "title": "The Lost Soul",
+        "boss_class": "true",
+        "color": [
+          110,
+          220,
+          235
+        ],
+        "color_dark": [
+          15,
+          40,
+          60
+        ],
+        "entrance_color": [
+          110,
+          220,
+          235
+        ]
+      },
+      "difficulty_setting": "easy",
+      "hp_mult": 1.09,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: EASY",
+        "level": 1,
+        "color": [
+          100,
+          210,
+          255
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 9,
+        "name": "Soulforged Expanse",
+        "description": "Face Naraka, the Lost Soul",
+        "enemy_hp_mult": 1.09,
+        "enemy_damage_mult": 1.09,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "soulforged",
+        "true_boss": "naraka",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Naraka",
+        "title": "The Lost Soul",
+        "boss_class": "true",
+        "color": [
+          110,
+          220,
+          235
+        ],
+        "color_dark": [
+          15,
+          40,
+          60
+        ],
+        "entrance_color": [
+          110,
+          220,
+          235
+        ]
+      },
+      "difficulty_setting": "normal",
+      "hp_mult": 1.09,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: NORMAL",
+        "level": 1,
+        "color": [
+          100,
+          220,
+          150
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 9,
+        "name": "Soulforged Expanse",
+        "description": "Face Naraka, the Lost Soul",
+        "enemy_hp_mult": 1.09,
+        "enemy_damage_mult": 1.09,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "soulforged",
+        "true_boss": "naraka",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Naraka",
+        "title": "The Lost Soul",
+        "boss_class": "true",
+        "color": [
+          110,
+          220,
+          235
+        ],
+        "color_dark": [
+          15,
+          40,
+          60
+        ],
+        "entrance_color": [
+          110,
+          220,
+          235
+        ]
+      },
+      "difficulty_setting": "hard",
+      "hp_mult": 1.09,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: HARD",
+        "level": 2,
+        "color": [
+          255,
+          120,
+          100
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          255,
+          200,
+          80
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 10,
+        "name": "Radiant Expanse",
+        "description": "Face Aureth'zar, the Radiant Dawn",
+        "enemy_hp_mult": 1.1,
+        "enemy_damage_mult": 1.1,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "radiant",
+        "true_boss": "aurethzar",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Aureth'zar",
+        "title": "The Radiant Dawn",
+        "boss_class": "true",
+        "color": [
+          240,
+          195,
+          80
+        ],
+        "color_dark": [
+          95,
+          65,
+          15
+        ],
+        "entrance_color": [
+          255,
+          225,
+          140
+        ]
+      },
+      "difficulty_setting": "easy",
+      "hp_mult": 1.1,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: EASY",
+        "level": 1,
+        "color": [
+          100,
+          210,
+          255
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 10,
+        "name": "Radiant Expanse",
+        "description": "Face Aureth'zar, the Radiant Dawn",
+        "enemy_hp_mult": 1.1,
+        "enemy_damage_mult": 1.1,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "radiant",
+        "true_boss": "aurethzar",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Aureth'zar",
+        "title": "The Radiant Dawn",
+        "boss_class": "true",
+        "color": [
+          240,
+          195,
+          80
+        ],
+        "color_dark": [
+          95,
+          65,
+          15
+        ],
+        "entrance_color": [
+          255,
+          225,
+          140
+        ]
+      },
+      "difficulty_setting": "normal",
+      "hp_mult": 1.1,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: NORMAL",
+        "level": 1,
+        "color": [
+          100,
+          220,
+          150
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 10,
+        "name": "Radiant Expanse",
+        "description": "Face Aureth'zar, the Radiant Dawn",
+        "enemy_hp_mult": 1.1,
+        "enemy_damage_mult": 1.1,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "radiant",
+        "true_boss": "aurethzar",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Aureth'zar",
+        "title": "The Radiant Dawn",
+        "boss_class": "true",
+        "color": [
+          240,
+          195,
+          80
+        ],
+        "color_dark": [
+          95,
+          65,
+          15
+        ],
+        "entrance_color": [
+          255,
+          225,
+          140
+        ]
+      },
+      "difficulty_setting": "hard",
+      "hp_mult": 1.1,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: HARD",
+        "level": 2,
+        "color": [
+          255,
+          120,
+          100
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          255,
+          200,
+          80
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 11,
+        "name": "Abyssal Depths",
+        "description": "Face Thalakryon, the Abyssal Sovereign",
+        "enemy_hp_mult": 1.11,
+        "enemy_damage_mult": 1.11,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "abyssal",
+        "true_boss": "thalakryon",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Thalakryon",
+        "title": "The Abyssal Sovereign",
+        "boss_class": "true",
+        "color": [
+          50,
+          130,
+          190
+        ],
+        "color_dark": [
+          5,
+          20,
+          45
+        ],
+        "entrance_color": [
+          140,
+          210,
+          240
+        ]
+      },
+      "difficulty_setting": "easy",
+      "hp_mult": 1.11,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: EASY",
+        "level": 1,
+        "color": [
+          100,
+          210,
+          255
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 11,
+        "name": "Abyssal Depths",
+        "description": "Face Thalakryon, the Abyssal Sovereign",
+        "enemy_hp_mult": 1.11,
+        "enemy_damage_mult": 1.11,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "abyssal",
+        "true_boss": "thalakryon",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Thalakryon",
+        "title": "The Abyssal Sovereign",
+        "boss_class": "true",
+        "color": [
+          50,
+          130,
+          190
+        ],
+        "color_dark": [
+          5,
+          20,
+          45
+        ],
+        "entrance_color": [
+          140,
+          210,
+          240
+        ]
+      },
+      "difficulty_setting": "normal",
+      "hp_mult": 1.11,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: NORMAL",
+        "level": 1,
+        "color": [
+          100,
+          220,
+          150
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 11,
+        "name": "Abyssal Depths",
+        "description": "Face Thalakryon, the Abyssal Sovereign",
+        "enemy_hp_mult": 1.11,
+        "enemy_damage_mult": 1.11,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "abyssal",
+        "true_boss": "thalakryon",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Thalakryon",
+        "title": "The Abyssal Sovereign",
+        "boss_class": "true",
+        "color": [
+          50,
+          130,
+          190
+        ],
+        "color_dark": [
+          5,
+          20,
+          45
+        ],
+        "entrance_color": [
+          140,
+          210,
+          240
+        ]
+      },
+      "difficulty_setting": "hard",
+      "hp_mult": 1.11,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: HARD",
+        "level": 2,
+        "color": [
+          255,
+          120,
+          100
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          255,
+          200,
+          80
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 12,
+        "name": "Eldritch Depths",
+        "description": "Face Nazulmor, the Deepborn Herald",
+        "enemy_hp_mult": 1.12,
+        "enemy_damage_mult": 1.12,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "eldritch",
+        "true_boss": "nazulmor",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Nazulmor",
+        "title": "The Deepborn Herald",
+        "boss_class": "true",
+        "color": [
+          45,
+          110,
+          105
+        ],
+        "color_dark": [
+          5,
+          20,
+          25
+        ],
+        "entrance_color": [
+          120,
+          220,
+          240
+        ]
+      },
+      "difficulty_setting": "easy",
+      "hp_mult": 1.12,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: EASY",
+        "level": 1,
+        "color": [
+          100,
+          210,
+          255
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 12,
+        "name": "Eldritch Depths",
+        "description": "Face Nazulmor, the Deepborn Herald",
+        "enemy_hp_mult": 1.12,
+        "enemy_damage_mult": 1.12,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "eldritch",
+        "true_boss": "nazulmor",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Nazulmor",
+        "title": "The Deepborn Herald",
+        "boss_class": "true",
+        "color": [
+          45,
+          110,
+          105
+        ],
+        "color_dark": [
+          5,
+          20,
+          25
+        ],
+        "entrance_color": [
+          120,
+          220,
+          240
+        ]
+      },
+      "difficulty_setting": "normal",
+      "hp_mult": 1.12,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: NORMAL",
+        "level": 1,
+        "color": [
+          100,
+          220,
+          150
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 12,
+        "name": "Eldritch Depths",
+        "description": "Face Nazulmor, the Deepborn Herald",
+        "enemy_hp_mult": 1.12,
+        "enemy_damage_mult": 1.12,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "eldritch",
+        "true_boss": "nazulmor",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Nazulmor",
+        "title": "The Deepborn Herald",
+        "boss_class": "true",
+        "color": [
+          45,
+          110,
+          105
+        ],
+        "color_dark": [
+          5,
+          20,
+          25
+        ],
+        "entrance_color": [
+          120,
+          220,
+          240
+        ]
+      },
+      "difficulty_setting": "hard",
+      "hp_mult": 1.12,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: HARD",
+        "level": 2,
+        "color": [
+          255,
+          120,
+          100
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          255,
+          200,
+          80
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 13,
+        "name": "Silver Sanctum",
+        "description": "Face Solvarin, the Holy Paladin Warden",
+        "enemy_hp_mult": 1.13,
+        "enemy_damage_mult": 1.13,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "sanctum",
+        "true_boss": "solvarin",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Solvarin",
+        "title": "The Holy Paladin Warden",
+        "boss_class": "true",
+        "color": [
+          215,
+          220,
+          230
+        ],
+        "color_dark": [
+          35,
+          40,
+          50
+        ],
+        "entrance_color": [
+          250,
+          252,
+          255
+        ]
+      },
+      "difficulty_setting": "easy",
+      "hp_mult": 1.13,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: EASY",
+        "level": 1,
+        "color": [
+          100,
+          210,
+          255
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 13,
+        "name": "Silver Sanctum",
+        "description": "Face Solvarin, the Holy Paladin Warden",
+        "enemy_hp_mult": 1.13,
+        "enemy_damage_mult": 1.13,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "sanctum",
+        "true_boss": "solvarin",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Solvarin",
+        "title": "The Holy Paladin Warden",
+        "boss_class": "true",
+        "color": [
+          215,
+          220,
+          230
+        ],
+        "color_dark": [
+          35,
+          40,
+          50
+        ],
+        "entrance_color": [
+          250,
+          252,
+          255
+        ]
+      },
+      "difficulty_setting": "normal",
+      "hp_mult": 1.13,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: NORMAL",
+        "level": 1,
+        "color": [
+          100,
+          220,
+          150
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 13,
+        "name": "Silver Sanctum",
+        "description": "Face Solvarin, the Holy Paladin Warden",
+        "enemy_hp_mult": 1.13,
+        "enemy_damage_mult": 1.13,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "sanctum",
+        "true_boss": "solvarin",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Solvarin",
+        "title": "The Holy Paladin Warden",
+        "boss_class": "true",
+        "color": [
+          215,
+          220,
+          230
+        ],
+        "color_dark": [
+          35,
+          40,
+          50
+        ],
+        "entrance_color": [
+          250,
+          252,
+          255
+        ]
+      },
+      "difficulty_setting": "hard",
+      "hp_mult": 1.13,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: HARD",
+        "level": 2,
+        "color": [
+          255,
+          120,
+          100
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          255,
+          200,
+          80
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 14,
+        "name": "Eternal Flame",
+        "description": "Face Pyraethis, the Eternal Firebird",
+        "enemy_hp_mult": 1.14,
+        "enemy_damage_mult": 1.14,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "eternalflame",
+        "true_boss": "pyraethis",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Pyraethis",
+        "title": "The Eternal Firebird",
+        "boss_class": "true",
+        "color": [
+          255,
+          140,
+          30
+        ],
+        "color_dark": [
+          110,
+          30,
+          10
+        ],
+        "entrance_color": [
+          255,
+          200,
+          70
+        ]
+      },
+      "difficulty_setting": "easy",
+      "hp_mult": 1.14,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: EASY",
+        "level": 1,
+        "color": [
+          100,
+          210,
+          255
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 14,
+        "name": "Eternal Flame",
+        "description": "Face Pyraethis, the Eternal Firebird",
+        "enemy_hp_mult": 1.14,
+        "enemy_damage_mult": 1.14,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "eternalflame",
+        "true_boss": "pyraethis",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Pyraethis",
+        "title": "The Eternal Firebird",
+        "boss_class": "true",
+        "color": [
+          255,
+          140,
+          30
+        ],
+        "color_dark": [
+          110,
+          30,
+          10
+        ],
+        "entrance_color": [
+          255,
+          200,
+          70
+        ]
+      },
+      "difficulty_setting": "normal",
+      "hp_mult": 1.14,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: NORMAL",
+        "level": 1,
+        "color": [
+          100,
+          220,
+          150
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 14,
+        "name": "Eternal Flame",
+        "description": "Face Pyraethis, the Eternal Firebird",
+        "enemy_hp_mult": 1.14,
+        "enemy_damage_mult": 1.14,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "eternalflame",
+        "true_boss": "pyraethis",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Pyraethis",
+        "title": "The Eternal Firebird",
+        "boss_class": "true",
+        "color": [
+          255,
+          140,
+          30
+        ],
+        "color_dark": [
+          110,
+          30,
+          10
+        ],
+        "entrance_color": [
+          255,
+          200,
+          70
+        ]
+      },
+      "difficulty_setting": "hard",
+      "hp_mult": 1.14,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: HARD",
+        "level": 2,
+        "color": [
+          255,
+          120,
+          100
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          255,
+          200,
+          80
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 15,
+        "name": "Primordial Grove",
+        "description": "Face Yamako, the Primordial Woodshaper",
+        "enemy_hp_mult": 1.15,
+        "enemy_damage_mult": 1.15,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "primordial",
+        "true_boss": "yamako",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Yamako",
+        "title": "The Primordial Woodshaper",
+        "boss_class": "true",
+        "color": [
+          85,
+          140,
+          90
+        ],
+        "color_dark": [
+          18,
+          45,
+          22
+        ],
+        "entrance_color": [
+          140,
+          190,
+          140
+        ]
+      },
+      "difficulty_setting": "easy",
+      "hp_mult": 1.15,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: EASY",
+        "level": 1,
+        "color": [
+          100,
+          210,
+          255
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 15,
+        "name": "Primordial Grove",
+        "description": "Face Yamako, the Primordial Woodshaper",
+        "enemy_hp_mult": 1.15,
+        "enemy_damage_mult": 1.15,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "primordial",
+        "true_boss": "yamako",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Yamako",
+        "title": "The Primordial Woodshaper",
+        "boss_class": "true",
+        "color": [
+          85,
+          140,
+          90
+        ],
+        "color_dark": [
+          18,
+          45,
+          22
+        ],
+        "entrance_color": [
+          140,
+          190,
+          140
+        ]
+      },
+      "difficulty_setting": "normal",
+      "hp_mult": 1.15,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: NORMAL",
+        "level": 1,
+        "color": [
+          100,
+          220,
+          150
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 15,
+        "name": "Primordial Grove",
+        "description": "Face Yamako, the Primordial Woodshaper",
+        "enemy_hp_mult": 1.15,
+        "enemy_damage_mult": 1.15,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "primordial",
+        "true_boss": "yamako",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Yamako",
+        "title": "The Primordial Woodshaper",
+        "boss_class": "true",
+        "color": [
+          85,
+          140,
+          90
+        ],
+        "color_dark": [
+          18,
+          45,
+          22
+        ],
+        "entrance_color": [
+          140,
+          190,
+          140
+        ]
+      },
+      "difficulty_setting": "hard",
+      "hp_mult": 1.15,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: HARD",
+        "level": 2,
+        "color": [
+          255,
+          120,
+          100
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          255,
+          200,
+          80
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 16,
+        "name": "Celestial Peaks",
+        "description": "Face Seiryukong, the Celestial Simian",
+        "enemy_hp_mult": 1.16,
+        "enemy_damage_mult": 1.16,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "celestialpeaks",
+        "true_boss": "seiryukong",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Seiryukong",
+        "title": "The Celestial Simian",
+        "boss_class": "true",
+        "color": [
+          240,
+          195,
+          80
+        ],
+        "color_dark": [
+          95,
+          65,
+          20
+        ],
+        "entrance_color": [
+          255,
+          225,
+          130
+        ]
+      },
+      "difficulty_setting": "easy",
+      "hp_mult": 1.16,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: EASY",
+        "level": 1,
+        "color": [
+          100,
+          210,
+          255
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 16,
+        "name": "Celestial Peaks",
+        "description": "Face Seiryukong, the Celestial Simian",
+        "enemy_hp_mult": 1.16,
+        "enemy_damage_mult": 1.16,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "celestialpeaks",
+        "true_boss": "seiryukong",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Seiryukong",
+        "title": "The Celestial Simian",
+        "boss_class": "true",
+        "color": [
+          240,
+          195,
+          80
+        ],
+        "color_dark": [
+          95,
+          65,
+          20
+        ],
+        "entrance_color": [
+          255,
+          225,
+          130
+        ]
+      },
+      "difficulty_setting": "normal",
+      "hp_mult": 1.16,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: NORMAL",
+        "level": 1,
+        "color": [
+          100,
+          220,
+          150
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 16,
+        "name": "Celestial Peaks",
+        "description": "Face Seiryukong, the Celestial Simian",
+        "enemy_hp_mult": 1.16,
+        "enemy_damage_mult": 1.16,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "celestialpeaks",
+        "true_boss": "seiryukong",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Seiryukong",
+        "title": "The Celestial Simian",
+        "boss_class": "true",
+        "color": [
+          240,
+          195,
+          80
+        ],
+        "color_dark": [
+          95,
+          65,
+          20
+        ],
+        "entrance_color": [
+          255,
+          225,
+          130
+        ]
+      },
+      "difficulty_setting": "hard",
+      "hp_mult": 1.16,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: HARD",
+        "level": 2,
+        "color": [
+          255,
+          120,
+          100
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          255,
+          200,
+          80
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 17,
+        "name": "Cosmic Expanse",
+        "description": "Face Nyxareth, the Cosmic Sovereign",
+        "enemy_hp_mult": 1.17,
+        "enemy_damage_mult": 1.17,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "cosmic",
+        "true_boss": "nyxareth",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Nyxareth",
+        "title": "The Cosmic Sovereign",
+        "boss_class": "true",
+        "color": [
+          135,
+          55,
+          220
+        ],
+        "color_dark": [
+          10,
+          5,
+          25
+        ],
+        "entrance_color": [
+          200,
+          130,
+          255
+        ]
+      },
+      "difficulty_setting": "easy",
+      "hp_mult": 1.17,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: EASY",
+        "level": 1,
+        "color": [
+          100,
+          210,
+          255
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 17,
+        "name": "Cosmic Expanse",
+        "description": "Face Nyxareth, the Cosmic Sovereign",
+        "enemy_hp_mult": 1.17,
+        "enemy_damage_mult": 1.17,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "cosmic",
+        "true_boss": "nyxareth",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Nyxareth",
+        "title": "The Cosmic Sovereign",
+        "boss_class": "true",
+        "color": [
+          135,
+          55,
+          220
+        ],
+        "color_dark": [
+          10,
+          5,
+          25
+        ],
+        "entrance_color": [
+          200,
+          130,
+          255
+        ]
+      },
+      "difficulty_setting": "normal",
+      "hp_mult": 1.17,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: NORMAL",
+        "level": 1,
+        "color": [
+          100,
+          220,
+          150
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 17,
+        "name": "Cosmic Expanse",
+        "description": "Face Nyxareth, the Cosmic Sovereign",
+        "enemy_hp_mult": 1.17,
+        "enemy_damage_mult": 1.17,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "cosmic",
+        "true_boss": "nyxareth",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Nyxareth",
+        "title": "The Cosmic Sovereign",
+        "boss_class": "true",
+        "color": [
+          135,
+          55,
+          220
+        ],
+        "color_dark": [
+          10,
+          5,
+          25
+        ],
+        "entrance_color": [
+          200,
+          130,
+          255
+        ]
+      },
+      "difficulty_setting": "hard",
+      "hp_mult": 1.17,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: HARD",
+        "level": 2,
+        "color": [
+          255,
+          120,
+          100
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          255,
+          200,
+          80
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 18,
+        "name": "Royal Citadel",
+        "description": "Face Aurelion, the Golden Sovereign",
+        "enemy_hp_mult": 1.18,
+        "enemy_damage_mult": 1.18,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "royal",
+        "true_boss": "aurelion",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Aurelion",
+        "title": "The Golden Sovereign",
+        "boss_class": "true",
+        "color": [
+          245,
+          215,
+          95
+        ],
+        "color_dark": [
+          55,
+          40,
+          5
+        ],
+        "entrance_color": [
+          255,
+          245,
+          180
+        ]
+      },
+      "difficulty_setting": "easy",
+      "hp_mult": 1.18,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: EASY",
+        "level": 1,
+        "color": [
+          100,
+          210,
+          255
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 18,
+        "name": "Royal Citadel",
+        "description": "Face Aurelion, the Golden Sovereign",
+        "enemy_hp_mult": 1.18,
+        "enemy_damage_mult": 1.18,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "royal",
+        "true_boss": "aurelion",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Aurelion",
+        "title": "The Golden Sovereign",
+        "boss_class": "true",
+        "color": [
+          245,
+          215,
+          95
+        ],
+        "color_dark": [
+          55,
+          40,
+          5
+        ],
+        "entrance_color": [
+          255,
+          245,
+          180
+        ]
+      },
+      "difficulty_setting": "normal",
+      "hp_mult": 1.18,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: NORMAL",
+        "level": 1,
+        "color": [
+          100,
+          220,
+          150
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 18,
+        "name": "Royal Citadel",
+        "description": "Face Aurelion, the Golden Sovereign",
+        "enemy_hp_mult": 1.18,
+        "enemy_damage_mult": 1.18,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "royal",
+        "true_boss": "aurelion",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Aurelion",
+        "title": "The Golden Sovereign",
+        "boss_class": "true",
+        "color": [
+          245,
+          215,
+          95
+        ],
+        "color_dark": [
+          55,
+          40,
+          5
+        ],
+        "entrance_color": [
+          255,
+          245,
+          180
+        ]
+      },
+      "difficulty_setting": "hard",
+      "hp_mult": 1.18,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: HARD",
+        "level": 2,
+        "color": [
+          255,
+          120,
+          100
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          255,
+          200,
+          80
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 19,
+        "name": "Violet Court",
+        "description": "Face Vaelindra, the Violet Sovereign",
+        "enemy_hp_mult": 1.19,
+        "enemy_damage_mult": 1.19,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "violet",
+        "true_boss": "vaelindra",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Vaelindra",
+        "title": "The Violet Sovereign",
+        "boss_class": "true",
+        "color": [
+          155,
+          100,
+          220
+        ],
+        "color_dark": [
+          40,
+          15,
+          80
+        ],
+        "entrance_color": [
+          200,
+          160,
+          245
+        ]
+      },
+      "difficulty_setting": "easy",
+      "hp_mult": 1.19,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: EASY",
+        "level": 1,
+        "color": [
+          100,
+          210,
+          255
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 19,
+        "name": "Violet Court",
+        "description": "Face Vaelindra, the Violet Sovereign",
+        "enemy_hp_mult": 1.19,
+        "enemy_damage_mult": 1.19,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "violet",
+        "true_boss": "vaelindra",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Vaelindra",
+        "title": "The Violet Sovereign",
+        "boss_class": "true",
+        "color": [
+          155,
+          100,
+          220
+        ],
+        "color_dark": [
+          40,
+          15,
+          80
+        ],
+        "entrance_color": [
+          200,
+          160,
+          245
+        ]
+      },
+      "difficulty_setting": "normal",
+      "hp_mult": 1.19,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: NORMAL",
+        "level": 1,
+        "color": [
+          100,
+          220,
+          150
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 19,
+        "name": "Violet Court",
+        "description": "Face Vaelindra, the Violet Sovereign",
+        "enemy_hp_mult": 1.19,
+        "enemy_damage_mult": 1.19,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "violet",
+        "true_boss": "vaelindra",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Vaelindra",
+        "title": "The Violet Sovereign",
+        "boss_class": "true",
+        "color": [
+          155,
+          100,
+          220
+        ],
+        "color_dark": [
+          40,
+          15,
+          80
+        ],
+        "entrance_color": [
+          200,
+          160,
+          245
+        ]
+      },
+      "difficulty_setting": "hard",
+      "hp_mult": 1.19,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: HARD",
+        "level": 2,
+        "color": [
+          255,
+          120,
+          100
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          255,
+          200,
+          80
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 20,
+        "name": "Crimson Dominion",
+        "description": "Face Morthraxis, the Crimson Sovereign",
+        "enemy_hp_mult": 1.2,
+        "enemy_damage_mult": 1.2,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "crimson",
+        "true_boss": "morthraxis",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Morthraxis",
+        "title": "The Crimson Sovereign",
+        "boss_class": "true",
+        "color": [
+          220,
+          50,
+          90
+        ],
+        "color_dark": [
+          80,
+          10,
+          25
+        ],
+        "entrance_color": [
+          255,
+          90,
+          130
+        ]
+      },
+      "difficulty_setting": "easy",
+      "hp_mult": 1.2,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: EASY",
+        "level": 1,
+        "color": [
+          100,
+          210,
+          255
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 20,
+        "name": "Crimson Dominion",
+        "description": "Face Morthraxis, the Crimson Sovereign",
+        "enemy_hp_mult": 1.2,
+        "enemy_damage_mult": 1.2,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "crimson",
+        "true_boss": "morthraxis",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Morthraxis",
+        "title": "The Crimson Sovereign",
+        "boss_class": "true",
+        "color": [
+          220,
+          50,
+          90
+        ],
+        "color_dark": [
+          80,
+          10,
+          25
+        ],
+        "entrance_color": [
+          255,
+          90,
+          130
+        ]
+      },
+      "difficulty_setting": "normal",
+      "hp_mult": 1.2,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: NORMAL",
+        "level": 1,
+        "color": [
+          100,
+          220,
+          150
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    },
+    {
+      "level": {
+        "level_number": 20,
+        "name": "Crimson Dominion",
+        "description": "Face Morthraxis, the Crimson Sovereign",
+        "enemy_hp_mult": 1.2,
+        "enemy_damage_mult": 1.2,
+        "meta_gold_reward_win": 3000,
+        "map_theme": "crimson",
+        "true_boss": "morthraxis",
+        "starting_gold": 1000
+      },
+      "boss": {
+        "name": "Morthraxis",
+        "title": "The Crimson Sovereign",
+        "boss_class": "true",
+        "color": [
+          220,
+          50,
+          90
+        ],
+        "color_dark": [
+          80,
+          10,
+          25
+        ],
+        "entrance_color": [
+          255,
+          90,
+          130
+        ]
+      },
+      "difficulty_setting": "hard",
+      "hp_mult": 1.2,
+      "fade_alpha": 255,
+      "tint_alpha": 30,
+      "difficulty": {
+        "title": "DIFFICULTY: HARD",
+        "level": 3,
+        "color": [
+          255,
+          120,
+          100
+        ]
+      },
+      "bars": [
+        [
+          100,
+          220,
+          100
+        ],
+        [
+          255,
+          200,
+          80
+        ],
+        [
+          255,
+          200,
+          80
+        ],
+        [
+          60,
+          60,
+          70
+        ],
+        [
+          60,
+          60,
+          70
+        ]
+      ],
+      "reward": 3000,
+      "starting_gold": 1000,
+      "passive_text": "PASSIVE +3/s",
+      "boss_tag": {
+        "text": "TRUE BOSS",
+        "color": [
+          255,
+          80,
+          80
+        ]
+      },
+      "prompt_text": "PRESS SPACE TO BEGIN"
+    }
+  ],
+  "themes": [
+    [
+      "abyss",
+      [
+        40,
+        10,
+        10,
+        30
+      ],
+      30
+    ],
+    [
+      "abysstide",
+      [
+        10,
+        50,
+        50,
+        30
+      ],
+      30
+    ],
+    [
+      "astral",
+      [
+        15,
+        25,
+        60,
+        30
+      ],
+      30
+    ],
+    [
+      "crimsondevourer",
+      [
+        60,
+        10,
+        15,
+        30
+      ],
+      30
+    ],
+    [
+      "crimsonmatriarch",
+      [
+        60,
+        10,
+        15,
+        30
+      ],
+      30
+    ],
+    [
+      "croweye",
+      [
+        55,
+        12,
+        18,
+        30
+      ],
+      30
+    ],
+    [
+      "crystalstorm",
+      [
+        30,
+        45,
+        85,
+        30
+      ],
+      30
+    ],
+    [
+      "desert",
+      [
+        100,
+        60,
+        20,
+        30
+      ],
+      30
+    ],
+    [
+      "earthborn",
+      [
+        45,
+        55,
+        25,
+        30
+      ],
+      30
+    ],
+    [
+      "elementweave",
+      [
+        55,
+        30,
+        75,
+        30
+      ],
+      30
+    ],
+    [
+      "emberweaver",
+      [
+        95,
+        28,
+        22,
+        30
+      ],
+      30
+    ],
+    [
+      "empyrean",
+      [
+        70,
+        55,
+        15,
+        30
+      ],
+      30
+    ],
+    [
+      "eternalwarlord",
+      [
+        70,
+        15,
+        20,
+        30
+      ],
+      30
+    ],
+    [
+      "explosiveart",
+      [
+        70,
+        18,
+        18,
+        30
+      ],
+      30
+    ],
+    [
+      "frostveil",
+      [
+        25,
+        45,
+        85,
+        30
+      ],
+      30
+    ],
+    [
+      "heartbane",
+      [
+        60,
+        18,
+        55,
+        30
+      ],
+      30
+    ],
+    [
+      "hexbound",
+      [
+        55,
+        25,
+        75,
+        30
+      ],
+      30
+    ],
+    [
+      "ice",
+      [
+        40,
+        80,
+        130,
+        30
+      ],
+      30
+    ],
+    [
+      "nethervenom",
+      [
+        25,
+        55,
+        15,
+        30
+      ],
+      30
+    ],
+    [
+      "ocean",
+      [
+        30,
+        70,
+        120,
+        30
+      ],
+      30
+    ],
+    [
+      "outlaw",
+      [
+        80,
+        45,
+        35,
+        30
+      ],
+      30
+    ],
+    [
+      "sandshadow",
+      [
+        85,
+        35,
+        22,
+        30
+      ],
+      30
+    ],
+    [
+      "sawmill",
+      [
+        70,
+        45,
+        18,
+        30
+      ],
+      30
+    ],
+    [
+      "shadowchain",
+      [
+        45,
+        12,
+        60,
+        30
+      ],
+      30
+    ],
+    [
+      "skyfury",
+      [
+        70,
+        45,
+        20,
+        30
+      ],
+      30
+    ],
+    [
+      "solaris",
+      [
+        85,
+        50,
+        10,
+        30
+      ],
+      30
+    ],
+    [
+      "spectral",
+      [
+        15,
+        50,
+        55,
+        30
+      ],
+      30
+    ],
+    [
+      "sundered",
+      [
+        70,
+        30,
+        8,
+        30
+      ],
+      30
+    ],
+    [
+      "sunfist",
+      [
+        80,
+        55,
+        12,
+        30
+      ],
+      30
+    ],
+    [
+      "tempest",
+      [
+        20,
+        40,
+        90,
+        30
+      ],
+      30
+    ],
+    [
+      "voidbound",
+      [
+        45,
+        18,
+        70,
+        30
+      ],
+      30
+    ],
+    [
+      "voidwing",
+      [
+        45,
+        15,
+        65,
+        30
+      ],
+      30
+    ],
+    [
+      "warshade",
+      [
+        10,
+        40,
+        48,
+        30
+      ],
+      30
+    ],
+    [
+      "unknown_theme",
+      [
+        20,
+        40,
+        20,
+        30
+      ],
+      30
+    ]
+  ]
+}

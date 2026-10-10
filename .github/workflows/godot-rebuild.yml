@@ -107,6 +107,8 @@ jobs:
           python godot_rebuild/tests/wave_announcer_source_oracle.py
           python godot_rebuild/tests/path_preview_source_oracle.py
           python godot_rebuild/tests/achievement_popup_source_oracle.py
+          python godot_rebuild/tests/level_intro_screen_source_oracle.py
+          python godot_rebuild/tests/boss_intro_cinematic_source_oracle.py
           gdparse $(find godot_rebuild -name '*.gd')
           gdlint $(find godot_rebuild -name '*.gd')
           gdformat --check $(find godot_rebuild -name '*.gd')
