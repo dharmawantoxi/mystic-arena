@@ -22,6 +22,7 @@ const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
 const TacticalCommands = preload("res://scripts/match/tactical_commands.gd")
 const HitStopRuntime = preload("res://scripts/match/hit_stop_runtime.gd")
 const EffectManager = preload("res://scripts/ui/effect_manager.gd")
+const LevelIntroScreen = preload("res://scripts/ui/level_intro_screen.gd")
 const MapRenderer = preload("res://scripts/ui/map_renderer.gd")
 const SpriteCache = preload("res://scripts/ui/sprite_cache.gd")
 const RenderCache = preload("res://scripts/ui/render_cache.gd")
@@ -108,6 +109,7 @@ const HERO_DEATH_REWARD := 150
 
 var economy := Economy.new()
 var effects := EffectManager.new()
+var level_intro := LevelIntroScreen.new()
 var map_renderer := MapRenderer.new()
 var sprite_cache: SpriteCache = SpriteCache.get_shared()
 var render_cache: RenderCache = RenderCache.get_shared()
@@ -219,6 +221,7 @@ func _init() -> void:
 	slots = SlotLayout.create(_lane_paths_from_renderer())
 	var boss_parsed = JSON.parse_string(FileAccess.get_file_as_string(BOSS_DATA))
 	boss_table = boss_parsed if boss_parsed is Dictionary else {}
+	_configure_level_intro()
 	boss_rng.randomize()
 	_mini_boss_schedule = _roll_mini_boss_schedule()
 	_apply_difficulty()
@@ -239,6 +242,7 @@ func configure_level(number: int) -> bool:
 	level_number = number
 	level_config = config
 	_configure_map_renderer()
+	_configure_level_intro()
 	slots = SlotLayout.create(_lane_paths_from_renderer())
 	ai_controller.policy.level_number = number
 	ai_draft.level_number = number
@@ -246,6 +250,55 @@ func configure_level(number: int) -> bool:
 	_apply_opening_economy()
 	_mini_boss_schedule = _roll_mini_boss_schedule()
 	return true
+
+
+func _configure_level_intro() -> void:
+	level_intro = LevelIntroScreen.new()
+	var bosses: Dictionary = boss_table.get("bosses", {}) as Dictionary
+	var true_boss_id := String(level_config.get("true_boss", "abaddon"))
+	var boss_entry: Dictionary = bosses.get(true_boss_id, {}) as Dictionary
+	level_intro.setup(level_config, boss_entry, MapRenderer.MAP_WIDTH, MapRenderer.MAP_HEIGHT)
+
+
+func step_level_intro() -> bool:
+	if level_intro == null or not level_intro.is_active():
+		return false
+	var play_sound := level_intro.update()
+	if play_sound:
+		AudioRuntime.play("wave_start")
+	return play_sound
+
+
+func skip_level_intro(keycode: int = -1, click: bool = false) -> bool:
+	if level_intro == null:
+		return false
+	return level_intro.handle_skip(keycode, click)
+
+
+func level_intro_state(touch_mode: bool = false) -> Dictionary:
+	if level_intro == null:
+		return {}
+	return {
+		"active": level_intro.is_active(),
+		"timer": level_intro.timer,
+		"level_num": level_intro.level_num,
+		"level_name": level_intro.level_name,
+		"level_desc": level_intro.level_desc,
+		"map_theme": level_intro.map_theme,
+		"boss_type": level_intro.boss_type,
+		"boss_name": level_intro.boss_name,
+		"boss_title": level_intro.boss_title,
+		"boss_tag": level_intro.get_boss_tag(),
+		"fade_alpha": level_intro.get_fade_alpha(),
+		"theme_tint_rgba": level_intro.get_theme_tint_rgba(),
+		"difficulty": level_intro.get_difficulty_info(difficulty),
+		"starting_gold_text": level_intro.get_starting_gold_text(),
+		"passive_text": level_intro.get_passive_text(),
+		"reward_text": level_intro.get_reward_text(),
+		"show_prompt": level_intro.get_show_prompt(),
+		"prompt_text": level_intro.get_begin_prompt(touch_mode),
+		"warning_text": level_intro.get_warning_text(),
+	}
 
 
 func _configure_map_renderer() -> void:
@@ -657,6 +710,7 @@ func step_tick() -> void:
 		return
 	# Input transactions are handled by the session before this method.
 	economy.step_tick(wave_count)
+	step_level_intro()
 	# Source wave gate ignores heroes; only living minions hold the field.
 	var field_clear := living_minion_count() == 0
 	var batch := scheduler.step_tick(

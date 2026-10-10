@@ -689,6 +689,8 @@ func _handle_keyboard_input(event: InputEvent) -> bool:
 			match_session.request_skill_e(match_session.selected_id)
 		KEY_R:
 			match_session.request_skill_r(match_session.selected_id)
+		KEY_SPACE, KEY_ENTER:
+			handled = world.skip_level_intro(key_event.physical_keycode)
 		_:
 			handled = false
 	return handled
@@ -854,6 +856,7 @@ func _primary_action(point: Vector2) -> void:
 	var world := simulation.world as Prototype
 	if not world.is_running() or not _point_in_arena(point):
 		return
+	world.skip_level_intro(-1, true)
 	var local := arena.get_global_transform_with_canvas().affine_inverse() * point
 	var slot_id := world.slot_at(local)
 	if slot_id >= 0:
@@ -895,6 +898,11 @@ func _handle_shop_click(world: Prototype, local: Vector2) -> bool:
 		_toggle_hero_shop()
 		return true
 	return false
+
+
+func level_intro_state() -> Dictionary:
+	var world := match_session.world as Prototype
+	return world.level_intro_state(OS.has_feature("android"))
 
 
 func _route_controller_action(action: String) -> void:
