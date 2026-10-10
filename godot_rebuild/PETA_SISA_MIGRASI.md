@@ -330,6 +330,37 @@ berasal dari algoritma sumber yang sebenarnya.
   `godot-rebuild.yml` (sebelum tes Godot, jadi drift sumber maupun drift port
   sama-sama menggagalkan CI).
 
+## LevelIntroScreen
+
+`_render.py::LevelIntroScreen` diport sebagai state + getter
+(`scripts/ui/level_intro_screen.gd`); semua pygame blit (darken, tint,
+vignette, silhouette boss, teks) sengaja tidak diport. Oracle-nya
+(`tests/level_intro_screen_source_oracle.py`) mengeksekusi blok `class
+LevelIntroScreen` asli tanpa pygame — `pygame`, `mobile.perf`, dan `_core`
+adalah modul palsu lewat `sys.modules` — lalu membaca lokal `draw()` (ramp
+`fade_alpha`, alpha tint tema, cabang difficulty, warna per-bar, fallback
+gold/income) via `sys.settrace`. Fixture: 40 tick live + 2 idle, 35 tint tema
+(34 tema + fallback forest), 3 difficulty, 7 probe skip, layout divider/diamond/
+tag/spike.
+
+Catatan port:
+
+- `boss_data` disuntikkan ke konstruktor (pemanggil memberi entri dari
+  `bosses.boss_data`); kelasnya hanya meng-cache `name`/`title`/warna/`boss_class`
+  dengan default sumber bila kosong.
+- `difficulty` adalah properti yang disuntikkan (sumber membaca
+  `GameSettings().difficulty` dari `_core` di dalam `_draw_level_info`).
+- Divergensi yang sengaja dipertahankan: fallback `compute_starting_gold`
+  sumber ditulis sebagai `level_config.get("starting_gold", 1000)` — jalur
+  `_core.compute_starting_gold` milik pemanggil (`Economy.starting_gold` di
+  `prototype_battle.gd` sudah port-nya). Demikian pula label pasif memakai
+  konstanta `GOLD_PER_SECOND = 3` (`_core.py:215`), karena jalur
+  `compute_gold_per_second` tidak terjangkau oracle tanpa `_core`.
+- Runtime engine: job `validate` hijau di run `38027646909` (commit `d87218c`),
+  termasuk replay fixture `level_intro_screen_checks.gd` di `run_all.gd`.
+- Yang belum: renderer Godot yang benar-benar menggambar layar intro dari
+  getter-getter ini (Slice ini hanya mesin statenya).
+
 ## Batas scope
 
 - Tidak ada portrait hero lain yang dimulai (hanya Kaizen + Thorne + fallback generik).
