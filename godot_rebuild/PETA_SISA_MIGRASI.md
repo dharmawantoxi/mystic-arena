@@ -402,6 +402,20 @@ berasal dari algoritma sumber yang sebenarnya.
   `godot-rebuild.yml` (sebelum tes Godot, jadi drift sumber maupun drift port
   sama-sama menggagalkan CI).
 
+## SpriteCache (state + getter, bukan drawing pygame)
+
+`SpriteCache` dari `_render.py` kini punya port state-only di
+`scripts/ui/sprite_cache.gd`, suite replay di `tests/sprite_cache_checks.gd`,
+dan oracle tanpa pygame di `tests/sprite_cache_source_oracle.py` dengan fixture
+`tests/fixtures/sprite_cache_source.json`. Port mempertahankan cache surface
+penuh dan cropped, callback render sebagai metadata state, anchor hasil crop,
+hit/miss, eviction FIFO, invalidation prefix, clear, statistik, serta shared
+shortcut. Surface pygame dan pixel drawing sengaja tidak diport.
+
+Suite dan oracle terdaftar di `tests/run_all.gd` dan
+`.github/workflows/godot-rebuild.yml`. Slice berikutnya sesuai urutan kerja
+adalah `RenderCache`.
+
 ## Batas scope
 
 - Tidak ada portrait hero lain yang dimulai (hanya Kaizen + Thorne + fallback generik).
@@ -414,7 +428,9 @@ berasal dari algoritma sumber yang sebenarnya.
   (yang terakhir hanya state + getter, lihat bagian di atas), serta `BossIntroCinematic`
   (juga state + getter). Masih belum ada
   (0 kemunculan di `scripts/` + `scenes/`):
-  `SpriteCache`, `RenderCache`. `DeathExplosion` kini punya port state + getter
+  `RenderCache`. `SpriteCache` kini punya port state + getter
+  (`scripts/ui/sprite_cache.gd` dan fixture oracle-nya), tetapi surface pygame
+  dan pixel drawing sengaja **tidak diport**. `DeathExplosion` kini punya port state + getter
   (`scripts/ui/death_explosion.gd` dan fixture oracle-nya), tetapi `draw()`
   pygame, flash sprite, dan spark drawing sengaja **tidak diport**.
   `BossDeathAnimation` kini punya port state + getter (`scripts/ui/
