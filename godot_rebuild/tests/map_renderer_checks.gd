@@ -169,7 +169,7 @@ func _check_runtime_wiring(check: Callable) -> void:
 	)
 	var wave_world := Prototype.new()
 	wave_world.setup_arena()
-	wave_world.scheduler.remaining_ticks = 1
+	wave_world.scheduler.remaining_ticks = 0
 	wave_world.step_tick()
 	(
 		check
