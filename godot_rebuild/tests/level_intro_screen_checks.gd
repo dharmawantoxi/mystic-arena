@@ -87,8 +87,8 @@ func _replay_steps(check: Callable, data: Dictionary, intro: LevelIntroScreen) -
 				check.call(false, "Level intro step %d should be idle" % index)
 				return
 			check.call(
-				not intro.is_prompt_visible(),
-				"Skipped intro never shows the prompt (step %d)" % index
+				not intro.is_active(),
+				"Skipped intro stays inactive (step %d)" % index
 			)
 			continue
 		if not intro.active or intro.timer != int(expected[TIMER]):
