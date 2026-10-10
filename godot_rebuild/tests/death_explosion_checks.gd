@@ -130,7 +130,7 @@ func _check_snapshot(explosion, expected: Dictionary, check: Callable, label: St
 			"%s first tick %d" % [label, int(expected["tick"])],
 			0
 		)
-		var last_index := explosion.get_particle_count() - 1
+		var last_index: int = explosion.get_particle_count() - 1
 		_compare_particle(
 			explosion.get_particle_snapshot(last_index),
 			expected["last"] as Dictionary,
