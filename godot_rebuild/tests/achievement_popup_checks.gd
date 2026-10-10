@@ -88,16 +88,14 @@ func _matches(popup, expected: Array) -> bool:
 	if not popup.is_showing():
 		return expected[CURVE] == null
 
+	if String(popup.current.get("title", "")) != String(expected[TITLE]):
+		return false
 	var curve: Array = expected[CURVE]
-	var titled := String(popup.current.get("title", "")) == String(expected[TITLE])
-	var tracked := (
-		is_equal_approx(popup.progress(), float(curve[PROGRESS]))
-		and popup.get_offset_x() == int(curve[OFFSET_X])
+	if not is_equal_approx(popup.progress(), float(curve[PROGRESS])):
+		return false
+	var glow: int = AchievementPopup.NO_GLOW if curve[GLOW] == null else int(curve[GLOW])
+	return (
+		popup.get_offset_x() == int(curve[OFFSET_X])
 		and popup.get_alpha() == int(curve[ALPHA])
+		and popup.get_glow_alpha() == glow
 	)
-	var glowing := (
-		popup.get_glow_alpha() == AchievementPopup.NO_GLOW
-		if curve[GLOW] == null
-		else popup.get_glow_alpha() == int(curve[GLOW])
-	)
-	return titled and tracked and glowing

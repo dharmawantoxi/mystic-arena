@@ -255,6 +255,25 @@ membaca `x_offset` / `alpha` / `glow_alpha` langsung dari frame.
   20 mengantre di belakang popup yang sedang tayang (antrean memuncak di 2),
   lalu popup berganti tepat di tick 180/360/540 dan antrean habis di tick 720.
 
+### Jebakan GDScript yang ditemukan di slice ini
+
+`gdparse` dan `gdlint` **tidak** menangkap error inferensi tipe — hanya CI
+yang menjalankan engine. Menulis
+
+```gdscript
+var tracked := (
+    is_equal_approx(a, b)
+    and x == int(c[0])
+)
+```
+
+gagal saat kompilasi dengan `Cannot infer the type of "tracked" variable`,
+karena `is_equal_approx` punya banyak overload sehingga tipe rantai `and`
+tidak bisa ditentukan. Bentuk yang sama di posisi **`return`** aman (dipakai
+`wave_announcer_checks.gd`), jadi solusinya mengembalikan ekspresi langsung
+atau memberi anotasi tipe eksplisit (`: bool`). Bila ragu, pakai `return`
+daripada `:=` untuk ekspresi majemuk.
+
 ### Catatan presisi
 
 Di tick 0 sumbernya memberi `x_offset == 299`, bukan 300: `_ease_out_back(0)`
