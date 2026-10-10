@@ -673,10 +673,10 @@ func _handle_keyboard_input(event: InputEvent) -> bool:
 		KEY_ESCAPE:
 			if hero_shop_panel != null and hero_shop_panel.is_open:
 				hero_shop_panel.set_open(false)
-			elif world.skip_boss_intro(KEY_ESCAPE) or world.skip_boss_death(KEY_ESCAPE):
-				pass
 			else:
-				handled = false
+				var skipped_intro := world.skip_boss_intro(KEY_ESCAPE)
+				var skipped_death := world.skip_boss_death(KEY_ESCAPE)
+				handled = skipped_intro or skipped_death
 		KEY_H:
 			_toggle_hero_shop()
 		KEY_A:
@@ -693,11 +693,10 @@ func _handle_keyboard_input(event: InputEvent) -> bool:
 			match_session.request_skill_r(match_session.selected_id)
 		KEY_SPACE, KEY_ENTER:
 			var code := key_event.physical_keycode
-			handled = (
-				world.skip_level_intro(code)
-				or world.skip_boss_intro(code)
-				or world.skip_boss_death(code)
-			)
+			var skipped_level := world.skip_level_intro(code)
+			var skipped_intro := world.skip_boss_intro(code)
+			var skipped_death := world.skip_boss_death(code)
+			handled = skipped_level or skipped_intro or skipped_death
 		_:
 			handled = false
 	return handled
