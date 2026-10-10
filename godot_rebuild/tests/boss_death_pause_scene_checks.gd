@@ -19,11 +19,42 @@ func run(tree: SceneTree, check: Callable) -> void:
 	var world = session.world
 	world.set_ai_enabled(false)
 	world.ai_hero_control_enabled = false
+	check.call(
+		(
+			bool(screen.level_intro_state().get("active", false))
+			and bool(screen.arena.overlay_draw_summary().get("level_intro_active", false))
+		),
+		"playable match starts with active LevelIntroScreen state and view summary"
+	)
+	var space_key := InputEventKey.new()
+	space_key.physical_keycode = KEY_SPACE
+	space_key.pressed = true
+	check.call(
+		(
+			screen._handle_keyboard_input(space_key)
+			and not bool(screen.level_intro_state().get("active", true))
+		),
+		"playable match Space key skips LevelIntroScreen"
+	)
 	var hero: HeroState = world.blue_hero()
 	var boss = world._spawn_boss("gornak")
 	check.call(
 		screen.name == "PrototypeMatch" and hero != null and boss != null,
 		"playable match creates a live hero and mini-boss"
+	)
+	check.call(
+		(
+			bool(screen.boss_intro_state().get("active", false))
+			and bool(screen.arena.overlay_draw_summary().get("boss_intro_active", false))
+		),
+		"playable boss spawn activates BossIntroCinematic state and view summary"
+	)
+	check.call(
+		(
+			screen._handle_keyboard_input(space_key)
+			and not bool(screen.boss_intro_state().get("active", true))
+		),
+		"playable match Space key skips BossIntroCinematic"
 	)
 	if hero != null and boss != null:
 		boss.entrance_timer = 0
@@ -92,8 +123,44 @@ func run(tree: SceneTree, check: Callable) -> void:
 					second_kill
 					and world.tick_count == tick_before_fast_frame
 					and world.boss_death_pause_ticks == 58
+					and bool(screen.boss_death_state().get("death_active", false))
 				),
 				"playable double-speed callback consumes two gated fixed ticks"
+			)
+			speed_runtime.speed = 1.0
+			speed_runtime.reset_match_clock()
+			for _frame in range(58):
+				session._physics_process(1.0 / 60.0)
+		var true_boss = world._spawn_boss("abaddon")
+		if true_boss != null:
+			true_boss.entrance_timer = 0
+			true_boss.hp = 1.0
+			true_boss.alive = true
+			true_boss.defeated = false
+			world._deliver_hit(
+				hero.id, world.BLUE, true_boss, 99999, "physical", true_boss.position
+			)
+			world._process_boss_result()
+			for _frame in range(90):
+				session._physics_process(1.0 / 60.0)
+			check.call(
+				(
+					bool(screen.boss_death_state().get("celebration_active", false))
+					and bool(
+						screen.arena.overlay_draw_summary().get("boss_celebration_active", false)
+					)
+				),
+				"playable true-boss defeat enters celebration overlay after 90-tick pause"
+			)
+			var esc_key := InputEventKey.new()
+			esc_key.physical_keycode = KEY_ESCAPE
+			esc_key.pressed = true
+			check.call(
+				(
+					screen._handle_keyboard_input(esc_key)
+					and not bool(screen.boss_death_state().get("celebration_active", true))
+				),
+				"playable Escape key skips active true-boss celebration"
 			)
 	screen.queue_free()
 	await tree.process_frame

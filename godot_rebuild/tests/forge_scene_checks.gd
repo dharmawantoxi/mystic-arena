@@ -19,6 +19,13 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	await _settle(tree)
 	check.call(panel.visible and panel.shop().is_open, "Forge toggle opens the scene overlay")
 	check.call(
+		(
+			is_equal_approx(float(panel.popup_animation_state().get("target", 0.0)), 1.0)
+			and float(panel.popup_animation_state().get("progress", 0.0)) > 0.0
+		),
+		"Opened scene Forge advances PopupAnimation in _process"
+	)
+	check.call(
 		panel.find_child("ItemForgeGrid", true, false).get_child_count() == 8,
 		"Opened scene Forge draws the current 4x2 item page"
 	)
@@ -89,6 +96,15 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	check.call(
 		screen.hero_shop_panel.visible and screen.hero_shop_panel.is_open,
 		"Dire arena shop click opens Hero Shop through MapRenderer hit-test"
+	)
+	check.call(
+		(
+			is_equal_approx(
+				float(screen.hero_shop_panel.popup_animation_state().get("target", 0.0)), 1.0
+			)
+			and float(screen.hero_shop_panel.popup_animation_state().get("progress", 0.0)) > 0.0
+		),
+		"Opened scene Hero Shop advances PopupAnimation in _process"
 	)
 	screen.hero_shop_panel.set_open(false)
 	await _settle(tree)
