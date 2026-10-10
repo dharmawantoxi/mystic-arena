@@ -326,7 +326,7 @@ func _check_skips(label: String, rows: Array, _data: Dictionary, check: Callable
 			"y": 0.0,
 			"name": "Skip",
 			"title": "Test",
-			"boss_class": "true" if row_label.begins_with("celebration") else "mini",
+			"boss_class": "true" if label == "true" else "mini",
 			"color": [180, 90, 80],
 			"color_dark": [90, 45, 40],
 			"entrance_color": [255, 140, 80],

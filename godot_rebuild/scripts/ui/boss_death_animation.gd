@@ -36,6 +36,8 @@ var timer := MINI_DURATION
 var explosion_waves: Array = []
 var fragments: Array = []
 var rising_particles: Array = []
+var fragment_colors: Array = []
+var rising_colors: Array = []
 var sound_played := false
 var celebration_timer := 0
 var celebration_duration := CELEBRATION_DURATION
@@ -70,6 +72,7 @@ func configure(
 	explosion_waves = _make_waves()
 	fragments = _make_fragments(particle_specs)
 	rising_particles = _make_rising_particles(rising_specs)
+	_cache_particle_colors()
 	sound_played = false
 	celebration_timer = 0
 	celebration_duration = CELEBRATION_DURATION
@@ -152,7 +155,9 @@ func get_fragment_count() -> int:
 
 
 func get_fragment_snapshot(index: int) -> Dictionary:
-	return (fragments[index] as Dictionary).duplicate(true)
+	var snapshot: Dictionary = (fragments[index] as Dictionary).duplicate(true)
+	snapshot["color"] = (fragment_colors[index] as Array).duplicate()
+	return snapshot
 
 
 func get_rising_particle_count() -> int:
@@ -160,7 +165,9 @@ func get_rising_particle_count() -> int:
 
 
 func get_rising_particle_snapshot(index: int) -> Dictionary:
-	return (rising_particles[index] as Dictionary).duplicate(true)
+	var snapshot: Dictionary = (rising_particles[index] as Dictionary).duplicate(true)
+	snapshot["color"] = (rising_colors[index] as Array).duplicate()
+	return snapshot
 
 
 ## Values calculated in `_draw_death_sequence`, without drawing pygame pixels.
@@ -261,6 +268,17 @@ func get_celebration_visual_state(time_ticks: int = 0) -> Dictionary:
 		"hint_visible": hint_visible,
 		"hint_alpha": hint_alpha,
 	}
+
+
+func _cache_particle_colors() -> void:
+	fragment_colors.clear()
+	for value in fragments:
+		var fragment: Dictionary = value
+		fragment_colors.append((fragment["color"] as Array).duplicate())
+	rising_colors.clear()
+	for value in rising_particles:
+		var particle: Dictionary = value
+		rising_colors.append((particle["color"] as Array).duplicate())
 
 
 func _make_waves() -> Array:
