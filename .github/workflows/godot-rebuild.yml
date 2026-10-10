@@ -100,6 +100,7 @@ jobs:
           python godot_rebuild/tests/ai_shield_source_oracle.py
           python godot_rebuild/tests/floating_text_source_oracle.py
           python godot_rebuild/tests/hit_particle_source_oracle.py
+          python godot_rebuild/tests/death_explosion_source_oracle.py
           python godot_rebuild/tests/popup_animation_source_oracle.py
           python godot_rebuild/tests/screen_shake_source_oracle.py
           python godot_rebuild/tests/kill_feed_source_oracle.py

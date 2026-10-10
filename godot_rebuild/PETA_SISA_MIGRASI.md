@@ -414,10 +414,12 @@ berasal dari algoritma sumber yang sebenarnya.
   (yang terakhir hanya state + getter, lihat bagian di atas), serta `BossIntroCinematic`
   (juga state + getter). Masih belum ada
   (0 kemunculan di `scripts/` + `scenes/`):
-  `SpriteCache`, `RenderCache`. `DeathExplosion` dan
+  `SpriteCache`, `RenderCache`. `DeathExplosion` kini punya port state + getter
+  (`scripts/ui/death_explosion.gd` dan fixture oracle-nya), tetapi `draw()`
+  pygame, flash sprite, dan spark drawing sengaja **tidak diport**.
   `BossDeathAnimation` baru kontrak **waktunya** yang diport (via
-  `boss_presentation_source_oracle.py` + `boss_death_pause_checks.gd`),
-  kelas visualnya belum. `MapRenderer` juga belum — yang ada baru
+  `boss_presentation_source_oracle.py` + `boss_death_pause_checks.gd`); state
+  dan visual kelasnya belum. `MapRenderer` juga belum — yang ada baru
   `terrain/lane/river/wall_tiles.gd`.
 - Klaim "AIPlayer penuh belum ada" di `HERO_MIGRATION_PROGRESS.md` **sudah
   usang**: AI terport lintas 9 modul (`ai_build/controller/draft/
