@@ -151,4 +151,27 @@ func _check_shortcuts(check: Callable) -> void:
 
 
 func _json_equal(left: Variant, right: Variant) -> bool:
-	return JSON.stringify(left) == JSON.stringify(right)
+	var equal := false
+	if left is Dictionary and right is Dictionary:
+		var left_dict: Dictionary = left
+		var right_dict: Dictionary = right
+		equal = left_dict.size() == right_dict.size()
+		if equal:
+			for key in left_dict:
+				if not right_dict.has(key) or not _json_equal(left_dict[key], right_dict[key]):
+					equal = false
+					break
+	elif left is Array and right is Array:
+		var left_array: Array = left
+		var right_array: Array = right
+		equal = left_array.size() == right_array.size()
+		if equal:
+			for index in range(left_array.size()):
+				if not _json_equal(left_array[index], right_array[index]):
+					equal = false
+					break
+	elif (left is int or left is float) and (right is int or right is float):
+		equal = is_equal_approx(float(left), float(right))
+	else:
+		equal = left == right
+	return equal
