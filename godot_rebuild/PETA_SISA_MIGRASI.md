@@ -287,6 +287,45 @@ Isi visual panel: gradasi, border emas, `corner_ticks`, geometri ikon per
 `icon_type` (star/sword/skull/shield/gold), serta teks dan elipsis
 (`ui_theme.fit_ellipsis` bergantung metrik font).
 
+## LevelIntroScreen (state + getter, bukan draw)
+
+Kartu intro level (`_render.py::LevelIntroScreen`) — diport **hanya state dan
+fungsi `get_*()`**, mengikuti pola oracle yang sama. Kurva fade, tint tema,
+bar kesulitan, dan teks gold/passive/boss-tag ada di dalam `draw()` dan
+`_draw_*`, jadi oracle menjalankan draw() asli dengan shim pygame/font dan
+`sys.settrace` membaca lokalnya.
+
+- `scripts/ui/level_intro_screen.gd` — `setup()` menerima dict level dan dict
+  boss; `update()` menaikkan timer dan mengembalikan `true` hanya di tick
+  pertama (saat sumber memutar `wave_start`); `handle_skip()` menutup kartu
+  lewat spasi/enter/klik. `get_fade_alpha()` (`int(255 * t/30)`, lalu 255),
+  `get_theme_tint_alpha()`, `get_theme_tint_rgba()` (34 tema + default hutan),
+  `get_difficulty_info()`, `get_bar_color()`, `get_starting_gold_text()`,
+  `get_passive_text()`, `get_boss_tag()`, `get_begin_prompt()`,
+  `get_show_prompt()`.
+- Oracle: `level_intro_screen_source_oracle.py` → `fixtures/level_intro_screen_source.json`.
+  Timeline 70 tick pada level 1 (fade, prompt muncul setelah tick 30, lalu
+  skip), tabel skip (spasi, enter, huruf lain, klik, sudah nonaktif), dan
+  20 level × 3 kesulitan (easy/normal/hard) pada tick 40.
+
+### Yang sengaja tidak diport
+
+- Seluruh `draw()` / `_draw_level_info` / `_draw_boss_preview` /
+  `_draw_boss_silhouette` / `_draw_space_prompt`: vignette, divider, berlian,
+  siluet boss, sinar aura, glow mata, panah prompt, shadow, dan pulse
+  `pygame.time.get_ticks()` yang menggerakkannya.
+- Gold awal dan passive income di sumber memakai `_core.compute_starting_gold`
+  / `compute_gold_per_second` / `format_gold_rate`. Itu di luar slice ini,
+  jadi oracle sengaja menyediakan `_core` tanpa fungsi tersebut, sehingga
+  sumber jatuh ke fallback `except` (`starting_gold` dari level, default 1000,
+  dan `PASSIVE +3/s`). Port mengikuti fallback itu. Jalur `_core` penuh
+  belum diverifikasi.
+- Pemanggil yang mengambil boss dari `get_all_boss_types()` dan memanggil
+  `setup()` belum ada; saat ini kartu hanya bisa dibuat dari fixture/test.
+- `ui_theme.draw_icon("warn")` dan `corner_ticks` (ikon peringatan kedua sisi
+  teks "PREPARE FOR BATTLE") tidak diport; teks peringatannya hanya
+  tersedia lewat `get_warning_text()`.
+
 ## Slice berikutnya: efek `_render.py` — FloatingText lalu HitParticle
 
 Dua kelas efek murni-state yang paling mudah dikunci, dikerjakan berurutan
@@ -338,9 +377,9 @@ berasal dari algoritma sumber yang sebenarnya.
   berarti reinterpretasi, bukan port.
 - `EffectManager` keseluruhan tidak diport; baru `FloatingText`,
   `HitParticle`, `PopupAnimation`, `ScreenShake`, `KillFeed`, `ComboCounter`,
-  `WaveAnnouncer`, `PathPreview`, dan `AchievementPopup`. Masih belum ada
+  `WaveAnnouncer`, `PathPreview`, `AchievementPopup`, dan `LevelIntroScreen`
+  (yang terakhir hanya state + getter, lihat bagian di atas). Masih belum ada
   (0 kemunculan di `scripts/` + `scenes/`):
-  `LevelIntroScreen`,
   `BossIntroCinematic`, `SpriteCache`, `RenderCache`. `DeathExplosion` dan
   `BossDeathAnimation` baru kontrak **waktunya** yang diport (via
   `boss_presentation_source_oracle.py` + `boss_death_pause_checks.gd`),
