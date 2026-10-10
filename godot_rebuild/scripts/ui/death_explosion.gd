@@ -17,6 +17,7 @@ var y := 0.0
 var team := "red"
 var burst_size := "medium"
 var particles: Array = []
+var particle_colors: Array = []
 var flash_timer := 0
 var flash_max := FLASH_MAX
 
@@ -35,19 +36,22 @@ func configure(
 	team = particle_team
 	burst_size = particle_size
 	particles.clear()
+	particle_colors.clear()
 	if particle_specs.is_empty():
 		_spawn_random_particles()
 	else:
 		for spec_value in particle_specs:
 			var spec: Dictionary = spec_value
+			var color: Array = _to_rgb(spec.get("color", [255, 100, 100]))
 			particles.append(
 				_make_particle(
-					_to_rgb(spec.get("color", [255, 100, 100])),
+					color,
 					Vector2(float(spec["vx"]), float(spec["vy"])),
 					int(spec["lifetime"]),
 					int(spec["size"])
 				)
 			)
+			particle_colors.append(color)
 	flash_timer = FLASH_MAX
 	flash_max = FLASH_MAX
 
@@ -56,10 +60,14 @@ func update() -> void:
 	for particle in particles:
 		particle.update()
 	var live_particles: Array = []
-	for particle in particles:
+	var live_colors: Array = []
+	for index in range(particles.size()):
+		var particle: Variant = particles[index]
 		if particle.alive:
 			live_particles.append(particle)
+			live_colors.append(particle_colors[index])
 	particles = live_particles
+	particle_colors = live_colors
 	if flash_timer > 0:
 		flash_timer -= 1
 
@@ -75,7 +83,7 @@ func get_particle_count() -> int:
 ## State needed by presentation code without exposing the source draw body.
 func get_particle_snapshot(index: int) -> Dictionary:
 	var particle: Variant = particles[index]
-	var tint: Color = particle.color
+	var tint: Array = particle_colors[index]
 	return {
 		"x": particle.x,
 		"y": particle.y,
@@ -85,7 +93,7 @@ func get_particle_snapshot(index: int) -> Dictionary:
 		"max_lifetime": particle.max_lifetime,
 		"size": particle.size,
 		"alive": particle.alive,
-		"color": [tint.r8, tint.g8, tint.b8],
+		"color": tint.duplicate(),
 	}
 
 
@@ -114,6 +122,7 @@ func _spawn_random_particles() -> void:
 		var spark_size: int = randi_range(int(spark_range[0]), int(spark_range[1]))
 		var lifetime: int = randi_range(20, 35)
 		particles.append(_make_particle(color, velocity, lifetime, spark_size))
+		particle_colors.append(color)
 
 
 func _make_particle(color: Array, velocity: Vector2, lifetime: int, size: int) -> RefCounted:
