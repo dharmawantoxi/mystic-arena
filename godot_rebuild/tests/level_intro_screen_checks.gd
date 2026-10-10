@@ -63,9 +63,9 @@ func _intro_matches_info(intro: LevelIntroScreen, info: Dictionary) -> bool:
 		and intro.boss_type == str(info["boss_type"])
 		and intro.boss_name == str(info["boss_name"])
 		and intro.boss_title == str(info["boss_title"])
-		and _rgb(intro.boss_color) == info["boss_color"]
-		and _rgb(intro.boss_color_dark) == info["boss_color_dark"]
-		and _rgb(intro.boss_entrance_color) == info["boss_entrance_color"]
+		and _rgb_eq(intro.boss_color, info["boss_color"])
+		and _rgb_eq(intro.boss_color_dark, info["boss_color_dark"])
+		and _rgb_eq(intro.boss_entrance_color, info["boss_entrance_color"])
 		and intro.boss_class == str(info["boss_class"])
 	)
 
@@ -76,6 +76,11 @@ func _replay_steps(check: Callable, data: Dictionary, intro: LevelIntroScreen) -
 
 	for index in range(steps.size()):
 		var expected: Array = steps[index]
+		if int(expected[ACTIVE]) == 0 and intro.active:
+			# The oracle skipped with spacebar right here (end of tick 40).
+			if not intro.handle_skip(intro.KEY_SPACE):
+				check.call(false, "Level intro spacebar skip rejected at step %d" % index)
+				return
 		intro.update()
 		if int(expected[ACTIVE]) == 0:
 			if intro.active or intro.timer != int(expected[TIMER]):
@@ -149,15 +154,14 @@ func _replay_layout(check: Callable, data: Dictionary, boss_data: Dictionary) ->
 
 	var tag: Dictionary = intro.get_boss_tag()
 	var expected_tag: Array = layout["tag"]
-	if str(tag["text"]) != str(expected_tag[0]) or _rgb(tag["color"]) != expected_tag[1]:
+	if str(tag["text"]) != str(expected_tag[0]) or not _rgb_eq(tag["color"], expected_tag[1]):
 		check.call(false, "Boss tag drifted from the source")
 		return
 
 	var diamonds: Array = layout["diamonds"]
 	for index in range(diamonds.size()):
 		var expected: Array = diamonds[index]
-		var actual := [intro.divider_x(), intro.get_diamond_y(index)]
-		if actual != expected:
+		if intro.divider_x() != int(expected[0]) or intro.get_diamond_y(index) != int(expected[1]):
 			check.call(false, "Diamond %d drifted from the source" % index)
 			return
 	check.call(diamonds.size() == 3, "Three divider diamonds at y 250/450/650")
@@ -183,7 +187,7 @@ func _replay_difficulty(check: Callable, data: Dictionary, boss_data: Dictionary
 		if (
 			str(info["title"]) != str(expected["title"])
 			or int(info["level"]) != int(expected["level"])
-			or _rgb(info["color"]) != expected["color"]
+			or not _rgb_eq(info["color"], expected["color"])
 		):
 			check.call(false, "Difficulty %s info drifted from the source" % key)
 			return
@@ -194,7 +198,7 @@ func _replay_difficulty(check: Callable, data: Dictionary, boss_data: Dictionary
 			if (
 				intro.get_bar_x(index) != int(bar[1])
 				or intro.get_bar_y() != int(bar[2])
-				or _rgb(intro.get_bar_color(index)) != bar[3]
+				or not _rgb_eq(intro.get_bar_color(index), bar[3])
 			):
 				check.call(false, "Difficulty %s bar %d drifted" % [key, index])
 				return
@@ -218,15 +222,18 @@ func _replay_themes(check: Callable, data: Dictionary) -> void:
 		for _tick in range(100):
 			intro.update()
 		var tint := intro.get_theme_tint()
-		if (
-			_rgb(tint) != [int(expected[0]), int(expected[1]), int(expected[2])]
-			or intro.get_theme_tint_alpha() != int(expected[3])
-		):
+		if not _rgb_eq(tint, expected) or intro.get_theme_tint_alpha() != int(expected[3]):
 			check.call(false, "Theme tint %s drifted from the source" % key)
 			return
 	check.call(themes.size() == 35, "All 34 source themes + forest fallback locked")
 	check.call(true, "Theme tints replay the source exactly")
 
 
-func _rgb(color: Color) -> Array:
-	return [color.r8, color.g8, color.b8]
+func _rgb_eq(color: Color, expected: Variant) -> bool:
+	if not (expected is Array) or expected.size() < 3:
+		return false
+	return (
+		color.r8 == int(expected[0])
+		and color.g8 == int(expected[1])
+		and color.b8 == int(expected[2])
+	)
