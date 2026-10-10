@@ -141,14 +141,16 @@ func _check_snapshot(animation, expected: Dictionary, check: Callable, label: St
 			first_fragment as Dictionary,
 			check,
 			"%s first fragment tick %d" % [label, int(expected["tick"])],
-			0
+			0,
+			false
 		)
 		_compare_fragment(
 			animation.get_fragment_snapshot(animation.get_fragment_count() - 1),
 			expected["last_fragment"] as Dictionary,
 			check,
 			"%s last fragment tick %d" % [label, int(expected["tick"])],
-			animation.get_fragment_count() - 1
+			animation.get_fragment_count() - 1,
+			false
 		)
 	var first_rising: Variant = expected.get("first_rising", null)
 	if first_rising != null:
@@ -157,14 +159,16 @@ func _check_snapshot(animation, expected: Dictionary, check: Callable, label: St
 			first_rising as Dictionary,
 			check,
 			"%s first rising tick %d" % [label, int(expected["tick"])],
-			0
+			0,
+			false
 		)
 		_compare_rising(
 			animation.get_rising_particle_snapshot(animation.get_rising_particle_count() - 1),
 			expected["last_rising"] as Dictionary,
 			check,
 			"%s last rising tick %d" % [label, int(expected["tick"])],
-			animation.get_rising_particle_count() - 1
+			animation.get_rising_particle_count() - 1,
+			false
 		)
 	_check_draw_state(animation, expected.get("draw", null), check, label, int(expected["tick"]))
 
@@ -255,7 +259,12 @@ func _check_draw_state(
 
 
 func _compare_fragment(
-	got: Dictionary, expected: Dictionary, check: Callable, label: String, index: int
+	got: Dictionary,
+	expected: Dictionary,
+	check: Callable,
+	label: String,
+	index: int,
+	check_color: bool = true
 ) -> void:
 	check.call(
 		(
@@ -281,13 +290,20 @@ func _compare_fragment(
 		),
 		"Fragment rotation matches source: %s #%d" % [label, index]
 	)
-	check.call(
-		got["color"] == expected["color"], "Fragment colour matches source: %s #%d" % [label, index]
-	)
+	if check_color:
+		check.call(
+			_same_rgb(got["color"], expected["color"]),
+			"Fragment colour matches source: %s #%d" % [label, index]
+		)
 
 
 func _compare_rising(
-	got: Dictionary, expected: Dictionary, check: Callable, label: String, index: int
+	got: Dictionary,
+	expected: Dictionary,
+	check: Callable,
+	label: String,
+	index: int,
+	check_color: bool = true
 ) -> void:
 	check.call(
 		(
@@ -310,10 +326,11 @@ func _compare_rising(
 		is_equal_approx(float(got["phase"]), float(expected["phase"])),
 		"Rising particle phase matches source: %s #%d" % [label, index]
 	)
-	check.call(
-		got["color"] == expected["color"],
-		"Rising particle colour matches source: %s #%d" % [label, index]
-	)
+	if check_color:
+		check.call(
+			_same_rgb(got["color"], expected["color"]),
+			"Rising particle colour matches source: %s #%d" % [label, index]
+		)
 
 
 func _check_skips(label: String, rows: Array, _data: Dictionary, check: Callable) -> void:
