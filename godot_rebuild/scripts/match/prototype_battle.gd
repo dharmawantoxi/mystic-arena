@@ -21,6 +21,8 @@ const AiDraft = preload("res://scripts/match/ai_draft.gd")
 const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
 const TacticalCommands = preload("res://scripts/match/tactical_commands.gd")
 const HitStopRuntime = preload("res://scripts/match/hit_stop_runtime.gd")
+const BossDeathAnimation = preload("res://scripts/ui/boss_death_animation.gd")
+const BossIntroCinematic = preload("res://scripts/ui/boss_intro_cinematic.gd")
 const EffectManager = preload("res://scripts/ui/effect_manager.gd")
 const LevelIntroScreen = preload("res://scripts/ui/level_intro_screen.gd")
 const MapRenderer = preload("res://scripts/ui/map_renderer.gd")
@@ -110,6 +112,8 @@ const HERO_DEATH_REWARD := 150
 var economy := Economy.new()
 var effects := EffectManager.new()
 var level_intro := LevelIntroScreen.new()
+var boss_intro: BossIntroCinematic = null
+var boss_death: BossDeathAnimation = null
 var map_renderer := MapRenderer.new()
 var sprite_cache: SpriteCache = SpriteCache.get_shared()
 var render_cache: RenderCache = RenderCache.get_shared()
@@ -299,6 +303,135 @@ func level_intro_state(touch_mode: bool = false) -> Dictionary:
 		"prompt_text": level_intro.get_begin_prompt(touch_mode),
 		"warning_text": level_intro.get_warning_text(),
 	}
+
+
+func _configure_boss_intro(boss: BossState) -> void:
+	if boss == null:
+		return
+	boss_intro = BossIntroCinematic.new()
+	(
+		boss_intro
+		. setup(
+			{
+				"name": boss.display_name,
+				"title": boss.title,
+				"boss_class": boss.boss_class,
+				"color": [int(boss.color.r8), int(boss.color.g8), int(boss.color.b8)],
+				"color_dark":
+				[int(boss.color_dark.r8), int(boss.color_dark.g8), int(boss.color_dark.b8)],
+				"entrance_color":
+				[
+					int(boss.entrance_color.r8),
+					int(boss.entrance_color.g8),
+					int(boss.entrance_color.b8),
+				],
+			},
+			MapRenderer.MAP_WIDTH,
+			MapRenderer.MAP_HEIGHT
+		)
+	)
+
+
+func step_boss_intro() -> bool:
+	if boss_intro == null or not boss_intro.is_active():
+		return false
+	var play_sound := boss_intro.update()
+	if play_sound:
+		AudioRuntime.play("nexus_hit")
+	return play_sound
+
+
+func skip_boss_intro(keycode: int = -1, click: bool = false) -> bool:
+	if boss_intro == null:
+		return false
+	return boss_intro.handle_skip(keycode, click)
+
+
+func boss_intro_state() -> Dictionary:
+	if boss_intro == null:
+		return {"active": false}
+	return {
+		"active": boss_intro.is_active(),
+		"timer": boss_intro.timer,
+		"elapsed": boss_intro.get_elapsed(),
+		"boss_name": boss_intro.boss_name,
+		"boss_title": boss_intro.boss_title,
+		"boss_class": boss_intro.boss_class,
+		"tag": boss_intro.get_tag(),
+		"alpha": boss_intro.get_alpha(),
+		"background_alpha": boss_intro.get_background_alpha(),
+		"border_alpha": boss_intro.get_border_alpha(),
+		"entrance_color": boss_intro.get_entrance_color(),
+		"slide_offset": boss_intro.get_slide_offset(),
+		"banner_x": boss_intro.get_banner_x(),
+		"banner_y": boss_intro.get_banner_y(),
+		"banner_width": boss_intro.get_banner_width(),
+		"hp_progress": boss_intro.get_hp_progress(),
+		"hp_fill_width": boss_intro.get_hp_fill_width(),
+		"hp_bar_rect": boss_intro.get_hp_bar_rect(),
+	}
+
+
+func _configure_boss_death(boss: BossState) -> void:
+	if boss == null:
+		return
+	boss_death = BossDeathAnimation.new()
+	(
+		boss_death
+		. configure(
+			{
+				"x": boss.position.x,
+				"y": boss.position.y,
+				"name": boss.display_name,
+				"title": boss.title,
+				"boss_class": boss.boss_class,
+				"color": [int(boss.color.r8), int(boss.color.g8), int(boss.color.b8)],
+				"color_dark":
+				[int(boss.color_dark.r8), int(boss.color_dark.g8), int(boss.color_dark.b8)],
+				"entrance_color":
+				[
+					int(boss.entrance_color.r8),
+					int(boss.entrance_color.g8),
+					int(boss.entrance_color.b8),
+				],
+				"gold_reward": boss.gold_reward,
+				"radius": boss.radius,
+			},
+			MapRenderer.MAP_WIDTH,
+			MapRenderer.MAP_HEIGHT
+		)
+	)
+
+
+func step_boss_death() -> bool:
+	if boss_death == null or not boss_death.is_active():
+		return false
+	var was_sound_played := boss_death.sound_played
+	boss_death.update()
+	var play_sound := not was_sound_played and boss_death.sound_played
+	if play_sound:
+		AudioRuntime.play("victory")
+	return play_sound
+
+
+func skip_boss_death(keycode: int = -1, click: bool = false) -> bool:
+	if boss_death == null:
+		return false
+	return boss_death.handle_skip(keycode, click)
+
+
+func boss_death_state() -> Dictionary:
+	if boss_death == null:
+		return {"active": false, "death_active": false, "celebration_active": false}
+	var state := boss_death.get_state()
+	state["death_active"] = boss_death.is_death_active()
+	state["boss_name"] = boss_death.boss_name
+	state["boss_title"] = boss_death.boss_title
+	state["boss_class"] = boss_death.boss_class
+	state["gold_reward"] = boss_death.boss_gold_reward
+	state["death_visual"] = boss_death.get_death_visual_state()
+	state["celebration_visual"] = boss_death.get_celebration_visual_state(tick_count)
+	return state
 
 
 func _configure_map_renderer() -> void:
@@ -706,11 +839,16 @@ func step_tick() -> void:
 		return
 	if boss_death_pause_ticks > 0:
 		boss_death_pause_ticks -= 1
+		if boss_death != null and boss_death.is_death_active():
+			step_boss_death()
 		boss_death_froze_last_step = true
 		return
 	# Input transactions are handled by the session before this method.
 	economy.step_tick(wave_count)
 	step_level_intro()
+	step_boss_intro()
+	if boss_death != null and boss_death.is_active():
+		step_boss_death()
 	# Source wave gate ignores heroes; only living minions hold the field.
 	var field_clear := living_minion_count() == 0
 	var batch := scheduler.step_tick(
@@ -1119,6 +1257,7 @@ func _spawn_boss(boss_type: String) -> BossState:
 		boss.apply_scaling(enemy_hp_mult, enemy_damage_mult, enemy_speed_mult)
 	active_boss = boss
 	_cache_boss_assets(boss)
+	_configure_boss_intro(boss)
 	return boss
 
 
@@ -1560,6 +1699,7 @@ func _process_boss_result() -> void:
 	# Source runs the kill-attribution pass before it starts the boss-death
 	# gameplay pause and pays out the reward.
 	_process_boss_kill(boss)
+	_configure_boss_death(boss)
 	boss_death_pause_ticks = maxi(
 		boss_death_pause_ticks, int(BOSS_DEATH_PAUSE_TICKS.get(boss.boss_class, 0))
 	)

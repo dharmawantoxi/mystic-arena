@@ -673,6 +673,8 @@ func _handle_keyboard_input(event: InputEvent) -> bool:
 		KEY_ESCAPE:
 			if hero_shop_panel != null and hero_shop_panel.is_open:
 				hero_shop_panel.set_open(false)
+			elif world.skip_boss_intro(KEY_ESCAPE) or world.skip_boss_death(KEY_ESCAPE):
+				pass
 			else:
 				handled = false
 		KEY_H:
@@ -690,7 +692,12 @@ func _handle_keyboard_input(event: InputEvent) -> bool:
 		KEY_R:
 			match_session.request_skill_r(match_session.selected_id)
 		KEY_SPACE, KEY_ENTER:
-			handled = world.skip_level_intro(key_event.physical_keycode)
+			var code := key_event.physical_keycode
+			handled = (
+				world.skip_level_intro(code)
+				or world.skip_boss_intro(code)
+				or world.skip_boss_death(code)
+			)
 		_:
 			handled = false
 	return handled
@@ -857,6 +864,8 @@ func _primary_action(point: Vector2) -> void:
 	if not world.is_running() or not _point_in_arena(point):
 		return
 	world.skip_level_intro(-1, true)
+	world.skip_boss_intro(-1, true)
+	world.skip_boss_death(-1, true)
 	var local := arena.get_global_transform_with_canvas().affine_inverse() * point
 	var slot_id := world.slot_at(local)
 	if slot_id >= 0:
@@ -903,6 +912,16 @@ func _handle_shop_click(world: Prototype, local: Vector2) -> bool:
 func level_intro_state() -> Dictionary:
 	var world := match_session.world as Prototype
 	return world.level_intro_state(OS.has_feature("android"))
+
+
+func boss_intro_state() -> Dictionary:
+	var world := match_session.world as Prototype
+	return world.boss_intro_state()
+
+
+func boss_death_state() -> Dictionary:
+	var world := match_session.world as Prototype
+	return world.boss_death_state()
 
 
 func _route_controller_action(action: String) -> void:

@@ -6,6 +6,7 @@ extends RefCounted
 ## the numbers below are the source's, not a copy of its formulas.
 
 const BossIntroCinematic = preload("res://scripts/ui/boss_intro_cinematic.gd")
+const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const FIXTURE := "res://tests/fixtures/boss_intro_cinematic_source.json"
 
 const KEY_BY_NAME := {"space": KEY_SPACE, "escape": KEY_ESCAPE, "letter_a": KEY_A}
@@ -23,6 +24,7 @@ func run(check: Callable) -> void:
 	_check_skips(check, data)
 	_check_bosses(check, data)
 	_check_literals(check)
+	_check_runtime_wiring(check)
 
 
 func _check_constants(check: Callable, data: Dictionary) -> void:
@@ -177,6 +179,56 @@ func _check_literals(check: Callable) -> void:
 	narrow.setup({"name": "Narrow", "title": "Test"}, 500, 300)
 	check.call(narrow.get_banner_width() == 460, "Banner shrinks to fit a narrow screen")
 	check.call(narrow.get_tag()["text"] == "TRUE BOSS", "Boss class defaults to TRUE BOSS")
+
+
+func _check_runtime_wiring(check: Callable) -> void:
+	var world := Prototype.new()
+	world.setup_arena()
+	check.call(
+		world.boss_intro == null and not bool(world.boss_intro_state().get("active", true)),
+		"Prototype starts without an active boss intro cinematic"
+	)
+	var mini := world._spawn_boss("gornak")
+	check.call(
+		(
+			mini != null
+			and world.boss_intro != null
+			and world.boss_intro.is_active()
+			and world.boss_intro.boss_name == mini.display_name
+			and world.boss_intro.boss_class == "mini"
+			and String(world.boss_intro_state().get("tag", {}).get("text", "")) == "MINI BOSS"
+		),
+		"Spawning a mini-boss configures BossIntroCinematic on Prototype"
+	)
+	world.step_tick()
+	check.call(
+		(
+			world.boss_intro.timer == BossIntroCinematic.DURATION - 1
+			and world.boss_intro.sound_played
+			and int(world.boss_intro_state().get("elapsed", 0)) == 1
+		),
+		"Prototype.step_tick advances BossIntroCinematic and arms first-tick sound"
+	)
+	check.call(
+		world.skip_boss_intro(KEY_SPACE) and not world.boss_intro.is_active(),
+		"Prototype.skip_boss_intro ends the active boss intro cinematic"
+	)
+	world.active_boss = null
+	var true_boss := world._spawn_boss("abaddon")
+	check.call(
+		(
+			true_boss != null
+			and world.boss_intro != null
+			and world.boss_intro.is_active()
+			and world.boss_intro.boss_class == "true"
+			and String(world.boss_intro_state().get("tag", {}).get("text", "")) == "TRUE BOSS"
+		),
+		"Spawning a true boss reconfigures BossIntroCinematic with TRUE BOSS tag"
+	)
+	check.call(
+		world.skip_boss_intro(-1, true) and not bool(world.boss_intro_state().get("active", true)),
+		"Prototype.skip_boss_intro supports click dismissal"
+	)
 
 
 func _ints(value: Variant) -> Array:
