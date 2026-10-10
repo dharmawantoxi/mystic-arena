@@ -240,6 +240,9 @@ def _trace_draw(animation):
             for key in ("elapsed", "progress", "flash_alpha"):
                 if key in local:
                     death[key] = _round(local[key]) if isinstance(local[key], float) else int(local[key])
+            if "body_surf" in local and "dissolve_alpha" in local and "dissolve_size" in local:
+                death["dissolve_alpha"] = int(local["dissolve_alpha"])
+                death["dissolve_size"] = int(local["dissolve_size"])
             if "ring_surf" in local and all(key in local for key in ("wave_elapsed", "wave_progress", "radius", "alpha", "color")):
                 ring_surface = local["ring_surf"]
                 if not any(ring_surface is seen for seen in seen_ring_surfaces):

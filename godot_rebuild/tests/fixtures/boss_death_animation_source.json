@@ -603,7 +603,9 @@
       "death": {
        "elapsed": 0,
        "progress": 0.0,
-       "flash_alpha": 200
+       "flash_alpha": 200,
+       "dissolve_alpha": 255,
+       "dissolve_size": 40
       }
      }
     },
@@ -687,6 +689,8 @@
        "elapsed": 1,
        "progress": 0.016667,
        "flash_alpha": 186,
+       "dissolve_alpha": 246,
+       "dissolve_size": 39,
        "waves": [
         {
          "wave_elapsed": 1,
@@ -782,6 +786,8 @@
       "death": {
        "elapsed": 15,
        "progress": 0.25,
+       "dissolve_alpha": 127,
+       "dissolve_size": 35,
        "waves": [
         {
          "wave_elapsed": 15,
@@ -2128,7 +2134,9 @@
       "death": {
        "elapsed": 0,
        "progress": 0.0,
-       "flash_alpha": 200
+       "flash_alpha": 200,
+       "dissolve_alpha": 255,
+       "dissolve_size": 60
       }
      }
     },
@@ -2212,6 +2220,8 @@
        "elapsed": 1,
        "progress": 0.011111,
        "flash_alpha": 186,
+       "dissolve_alpha": 249,
+       "dissolve_size": 59,
        "waves": [
         {
          "wave_elapsed": 1,
@@ -2307,6 +2317,8 @@
       "death": {
        "elapsed": 15,
        "progress": 0.166667,
+       "dissolve_alpha": 170,
+       "dissolve_size": 55,
        "waves": [
         {
          "wave_elapsed": 15,
@@ -2402,6 +2414,8 @@
       "death": {
        "elapsed": 30,
        "progress": 0.333333,
+       "dissolve_alpha": 85,
+       "dissolve_size": 50,
        "waves": [
         {
          "wave_elapsed": 30,
