@@ -326,6 +326,39 @@ bar kesulitan, dan teks gold/passive/boss-tag ada di dalam `draw()` dan
   teks "PREPARE FOR BATTLE") tidak diport; teks peringatannya hanya
   tersedia lewat `get_warning_text()`.
 
+## BossIntroCinematic (state + getter, bukan draw)
+
+Banner nama boss di atas layar (`_render.py::BossIntroCinematic`). Tidak
+memause gameplay. Diport **hanya state dan getter**, dengan oracle yang sama
+seperti `LevelIntroScreen`: `draw()` asli dijalankan di bawah shim, dan
+`sys.settrace` membaca `alpha`, `x_offset`, `banner_x`, `fill`, dan tag; shim
+juga mencatat rectangle `pygame.draw.rect` sehingga lebar banner, alpha
+background/border, dan rect bar HP datang dari sumber.
+
+- `scripts/ui/boss_intro_cinematic.gd` — `setup()` menerima dict boss;
+  `update()` menghitung mundur 100 tick dan mengembalikan `true` hanya di tick
+  pertama (saat sumber memutar `nexus_hit`); `handle_skip()` menutup banner lewat
+  spasi, escape, atau klik. Getter: `get_alpha()` (fade-in 12 tick, fade-out 20
+  tick terakhir), `get_slide_offset()` (ease-out kubik, 18 tick, dari -640),
+  `get_banner_x()`/`get_banner_width()` (maks 600), `get_background_alpha()`,
+  `get_hp_fill_width()` (penuh di 85% durasi), `get_hp_bar_rect()`, `get_tag()`.
+- Oracle: `boss_intro_cinematic_source_oracle.py` →
+  `fixtures/boss_intro_cinematic_source.json`. Timeline penuh 100 tick pada
+  `abaddon`, tabel skip (spasi, escape, huruf lain, klik, sudah nonaktif), dan
+  seluruh 216 boss pada tick 1/12/18/40/80/88/99.
+
+### Yang sengaja tidak diport
+
+- Pixel drawing: sudut emas (`corner_ticks`), background rounded-rect, dan
+  pengisian bar HP. Semuanya dipetakan ke angka di atas, tapi tidak digambar.
+- Siluet boss, aura, dan sinar (`_draw_boss_silhouette`, `_draw_true_boss_silhouette`,
+  `_draw_mini_boss_silhouette`) — ia dipanggil dari draw dan bergantung pada
+  pulse `pygame.time.get_ticks()`. Belum ada port visualnya.
+- `_draw_boss_text`, `_draw_hp_preview`, dan `_draw_skip_hint` tidak pernah
+  dipanggil dari `draw()` (kode mati di sumber), jadi tidak diport.
+- Pemanggil yang membuat banner dari `Boss` hidup (`_core.py` di dua tempat)
+  belum ada di Godot; saat ini banner hanya bisa dibuat dari fixture/test.
+
 ## Slice berikutnya: efek `_render.py` — FloatingText lalu HitParticle
 
 Dua kelas efek murni-state yang paling mudah dikunci, dikerjakan berurutan
@@ -378,9 +411,10 @@ berasal dari algoritma sumber yang sebenarnya.
 - `EffectManager` keseluruhan tidak diport; baru `FloatingText`,
   `HitParticle`, `PopupAnimation`, `ScreenShake`, `KillFeed`, `ComboCounter`,
   `WaveAnnouncer`, `PathPreview`, `AchievementPopup`, dan `LevelIntroScreen`
-  (yang terakhir hanya state + getter, lihat bagian di atas). Masih belum ada
+  (yang terakhir hanya state + getter, lihat bagian di atas), serta `BossIntroCinematic`
+  (juga state + getter). Masih belum ada
   (0 kemunculan di `scripts/` + `scenes/`):
-  `BossIntroCinematic`, `SpriteCache`, `RenderCache`. `DeathExplosion` dan
+  `SpriteCache`, `RenderCache`. `DeathExplosion` dan
   `BossDeathAnimation` baru kontrak **waktunya** yang diport (via
   `boss_presentation_source_oracle.py` + `boss_death_pause_checks.gd`),
   kelas visualnya belum. `MapRenderer` juga belum — yang ada baru
