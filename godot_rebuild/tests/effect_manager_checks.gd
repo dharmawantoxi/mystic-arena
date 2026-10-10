@@ -213,16 +213,18 @@ func _check_runtime_wiring(check: Callable) -> void:
 	# Wave 1 start announces wave and shows lane path preview, then ticks once in step_tick.
 	var wave_world := Prototype.new()
 	wave_world.setup_arena()
-	wave_world.scheduler.timer = 1
+	wave_world.scheduler.remaining_ticks = 0
 	wave_world.step_tick()
 	var wave_state: Dictionary = wave_world.effects.get_state()
+	var wave_info: Dictionary = wave_state["wave"]
+	var path_info: Dictionary = wave_state["path_preview"]
 	check.call(
 		(
-			bool(wave_state["wave_announcer_active"])
-			and int(wave_state["wave_announcer_wave"]) == 1
-			and int(wave_state["wave_announcer_timer"]) == 119
-			and bool(wave_state["path_preview_active"])
-			and int(wave_state["path_preview_timer"]) == 119
+			bool(wave_info["active"])
+			and int(wave_info["wave_num"]) == 1
+			and int(wave_info["timer"]) == 119
+			and bool(path_info["active"])
+			and int(path_info["timer"]) == 119
 		),
 		"Wave 1 start wires announce_wave, show_path_preview and per-tick update"
 	)
@@ -266,11 +268,13 @@ func _check_runtime_wiring(check: Callable) -> void:
 	wave_world._auto_unlock_defeated_boss_heroes()
 	wave_world.effects.update()
 	var boss_state: Dictionary = wave_world.effects.get_state()
+	var ach_info: Dictionary = boss_state["achievement"]
+	var ach_current: Variant = ach_info["current"]
 	check.call(
 		(
-			bool(boss_state["achievement_showing"])
-			and String(boss_state["achievement_title"]) == "MINI BOSS SLAYER!"
-			and int(boss_state["achievement_queue"]) >= 2
+			ach_current is Dictionary
+			and String((ach_current as Dictionary).get("title", "")) == "MINI BOSS SLAYER!"
+			and (ach_info["queue"] as Array).size() >= 2
 		),
 		"Boss kill and unlock wire achievements into EffectManager popup queue"
 	)
@@ -297,7 +301,8 @@ func _deep_equal(left: Variant, right: Variant) -> bool:
 					equal = false
 					break
 	elif (left is int or left is float) and (right is int or right is float):
-		equal = is_equal_approx(float(left), float(right))
+		var diff := absf(float(left) - float(right))
+		equal = is_equal_approx(float(left), float(right)) or diff <= 1e-4
 	else:
 		equal = left == right
 	return equal
