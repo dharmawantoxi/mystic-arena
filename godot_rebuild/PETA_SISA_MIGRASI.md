@@ -449,24 +449,15 @@ adalah `EffectManager`.
 - `lighting.py` tidak diport: ia post-process per-piksel di atas pygame
   Surface, sementara `godot_rebuild` menggambar vektor. Memaksanya masuk
   berarti reinterpretasi, bukan port.
-- `EffectManager` keseluruhan tidak diport; baru `FloatingText`,
-  `HitParticle`, `PopupAnimation`, `ScreenShake`, `KillFeed`, `ComboCounter`,
-  `WaveAnnouncer`, `PathPreview`, `AchievementPopup`, dan `LevelIntroScreen`
-  (yang terakhir hanya state + getter, lihat bagian di atas), serta `BossIntroCinematic`
-  (juga state + getter). Masih belum ada
-  (0 kemunculan di `scripts/` + `scenes/`):
-  `EffectManager`. `MapRenderer`, `RenderCache`, dan `SpriteCache` kini punya
-  port state + getter (`scripts/ui/map_renderer.gd`,
-  `scripts/ui/render_cache.gd`, `scripts/ui/sprite_cache.gd`, serta fixture
-  oracle masing-masing), tetapi delegasi renderer, surface/font pygame dan
-  pixel drawing sengaja **tidak diport**. `DeathExplosion` kini punya port state + getter
-  (`scripts/ui/death_explosion.gd` dan fixture oracle-nya), tetapi `draw()`
-  pygame, flash sprite, dan spark drawing sengaja **tidak diport**.
-  `BossDeathAnimation` kini punya port state + getter (`scripts/ui/
-  boss_death_animation.gd` dan fixture oracle-nya), tetapi seluruh `draw()`
-  pygame (gelombang, dissolve, fragmen, dan celebration) sengaja
-  **tidak diport**. `MapRenderer` juga belum — yang ada baru
-  `terrain/lane/river/wall_tiles.gd`.
+- Port ini tetap state-only. `FloatingText`, `HitParticle`, `PopupAnimation`,
+  `ScreenShake`, `KillFeed`, `ComboCounter`, `WaveAnnouncer`, `PathPreview`,
+  `AchievementPopup`, `LevelIntroScreen`, `BossIntroCinematic`, `DeathExplosion`,
+  `BossDeathAnimation`, `SpriteCache`, `RenderCache`, `MapRenderer`, dan
+  `EffectManager` mempertahankan state/getter yang diperlukan, tetapi seluruh
+  surface/font pygame, delegasi renderer, serta pixel drawing sengaja
+  **tidak diport**. `MapRenderer` masih mendelegasikan layer terrain/lane/river/
+  wall ke data port yang ada; `EffectManager` mendelegasikan state ke kelas
+  efek UI tanpa mengambil alih gambar mereka.`
 - Klaim "AIPlayer penuh belum ada" di `HERO_MIGRATION_PROGRESS.md` **sudah
   usang**: AI terport lintas 9 modul (`ai_build/controller/draft/
   hero_control/items/policy/recruitment/shields/upgrades`, 52 fungsi) dengan

@@ -39,6 +39,7 @@ const BossDeathAnimationChecks = preload("res://tests/boss_death_animation_check
 const SpriteCacheChecks = preload("res://tests/sprite_cache_checks.gd")
 const RenderCacheChecks = preload("res://tests/render_cache_checks.gd")
 const MapRendererChecks = preload("res://tests/map_renderer_checks.gd")
+const EffectManagerChecks = preload("res://tests/effect_manager_checks.gd")
 const PopupAnimationChecks = preload("res://tests/popup_animation_checks.gd")
 const ScreenShakeChecks = preload("res://tests/screen_shake_checks.gd")
 const KillFeedChecks = preload("res://tests/kill_feed_checks.gd")
