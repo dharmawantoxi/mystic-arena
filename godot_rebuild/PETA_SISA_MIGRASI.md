@@ -402,23 +402,62 @@ berasal dari algoritma sumber yang sebenarnya.
   `godot-rebuild.yml` (sebelum tes Godot, jadi drift sumber maupun drift port
   sama-sama menggagalkan CI).
 
+## SpriteCache (state + getter, bukan drawing pygame)
+
+`SpriteCache` dari `_render.py` kini punya port state-only di
+`scripts/ui/sprite_cache.gd`, suite replay di `tests/sprite_cache_checks.gd`,
+dan oracle tanpa pygame di `tests/sprite_cache_source_oracle.py` dengan fixture
+`tests/fixtures/sprite_cache_source.json`. Port mempertahankan cache surface
+penuh dan cropped, callback render sebagai metadata state, anchor hasil crop,
+hit/miss, eviction FIFO, invalidation prefix, clear, statistik, serta shared
+shortcut. Surface pygame dan pixel drawing sengaja tidak diport.
+
+Suite dan oracle terdaftar di `tests/run_all.gd` dan
+`.github/workflows/godot-rebuild.yml`.
+
+## RenderCache (state + getter, bukan drawing pygame)
+
+`RenderCache` dari `_render.py` kini punya port state-only di
+`scripts/ui/render_cache.gd`, suite replay di `tests/render_cache_checks.gd`,
+dan oracle tanpa pygame di `tests/render_cache_source_oracle.py` dengan fixture
+`tests/fixtures/render_cache_source.json`. Port mempertahankan clamp ukuran
+font, key style/bold, cache circle dengan clamp warna, cache glow dan metadata
+layer, statistik, clear yang mempertahankan font, serta shared shortcut.
+Objek Font/Surface pygame dan pixel drawing sengaja tidak diport.
+
+Suite dan oracle terdaftar di `tests/run_all.gd` dan
+`.github/workflows/godot-rebuild.yml`.
+
+## MapRenderer (state + getter, bukan drawing pygame)
+
+`MapRenderer` dari `_render.py` kini punya port state-only di
+`scripts/ui/map_renderer.gd`, suite replay di `tests/map_renderer_checks.gd`,
+dan oracle tanpa pygame di `tests/map_renderer_source_oracle.py` dengan fixture
+`tests/fixtures/map_renderer_source.json`. Port mempertahankan dimensi map,
+theme, data lane/river/dekorasi, readiness layer statis/dinamis, posisi toko,
+getter lane/shop, serta hit-testing toko. Delegasi StaticRenderer,
+DecorationRenderer, ShopRenderer, DynamicRenderer, dan seluruh pixel drawing
+pygame sengaja tidak diport.
+
+Suite dan oracle terdaftar di `tests/run_all.gd` dan
+`.github/workflows/godot-rebuild.yml`. Slice berikutnya sesuai urutan kerja
+adalah `EffectManager`.
+
 ## Batas scope
 
 - Tidak ada portrait hero lain yang dimulai (hanya Kaizen + Thorne + fallback generik).
 - `lighting.py` tidak diport: ia post-process per-piksel di atas pygame
   Surface, sementara `godot_rebuild` menggambar vektor. Memaksanya masuk
   berarti reinterpretasi, bukan port.
-- `EffectManager` keseluruhan tidak diport; baru `FloatingText`,
-  `HitParticle`, `PopupAnimation`, `ScreenShake`, `KillFeed`, `ComboCounter`,
-  `WaveAnnouncer`, `PathPreview`, `AchievementPopup`, dan `LevelIntroScreen`
-  (yang terakhir hanya state + getter, lihat bagian di atas), serta `BossIntroCinematic`
-  (juga state + getter). Masih belum ada
-  (0 kemunculan di `scripts/` + `scenes/`):
-  `SpriteCache`, `RenderCache`. `DeathExplosion` dan
-  `BossDeathAnimation` baru kontrak **waktunya** yang diport (via
-  `boss_presentation_source_oracle.py` + `boss_death_pause_checks.gd`),
-  kelas visualnya belum. `MapRenderer` juga belum — yang ada baru
-  `terrain/lane/river/wall_tiles.gd`.
+- Port ini tetap state-only. `FloatingText`, `HitParticle`, `PopupAnimation`,
+  `ScreenShake`, `KillFeed`, `ComboCounter`, `WaveAnnouncer`, `PathPreview`,
+  `AchievementPopup`, `LevelIntroScreen`, `BossIntroCinematic`, `DeathExplosion`,
+  `BossDeathAnimation`, `SpriteCache`, `RenderCache`, `MapRenderer`, dan
+  `EffectManager` mempertahankan state/getter yang diperlukan, tetapi seluruh
+  surface/font pygame, delegasi renderer, serta pixel drawing sengaja
+  **tidak diport**. `MapRenderer` masih mendelegasikan layer terrain/lane/river/
+  wall ke data port yang ada; `EffectManager` mendelegasikan state ke kelas
+  efek UI tanpa mengambil alih gambar mereka.`
 - Klaim "AIPlayer penuh belum ada" di `HERO_MIGRATION_PROGRESS.md` **sudah
   usang**: AI terport lintas 9 modul (`ai_build/controller/draft/
   hero_control/items/policy/recruitment/shields/upgrades`, 52 fungsi) dengan

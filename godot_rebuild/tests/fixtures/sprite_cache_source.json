@@ -1,0 +1,736 @@
+{
+ "source": "_render.py::SpriteCache",
+ "default_max_cache": 2000,
+ "singleton_same_instance": true,
+ "cases": [
+  {
+   "name": "basic_cache_lifecycle",
+   "max_cache": 2000,
+   "operations": [
+    {
+     "op": "full",
+     "key": [
+      "unit",
+      "red",
+      1
+     ],
+     "width": 64,
+     "height": 80,
+     "marker": "full-first",
+     "bounds": [
+      5,
+      6,
+      10,
+      20
+     ]
+    },
+    {
+     "op": "full",
+     "key": [
+      "unit",
+      "red",
+      1
+     ],
+     "width": 12,
+     "height": 14,
+     "marker": "full-hit-must-not-render",
+     "bounds": [
+      1,
+      2,
+      3,
+      4
+     ]
+    },
+    {
+     "op": "full",
+     "key": "string-key",
+     "width": 32,
+     "height": 24,
+     "marker": "string-entry",
+     "bounds": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "op": "cropped",
+     "key": [
+      "crop",
+      "blue"
+     ],
+     "width": 100,
+     "height": 80,
+     "marker": "crop-first",
+     "bounds": [
+      10,
+      20,
+      30,
+      40
+     ]
+    },
+    {
+     "op": "cropped",
+     "key": [
+      "crop",
+      "blue"
+     ],
+     "width": 4,
+     "height": 5,
+     "marker": "crop-hit-must-not-render",
+     "bounds": [
+      1,
+      2,
+      3,
+      4
+     ]
+    },
+    {
+     "op": "cropped",
+     "key": [
+      "empty",
+      "bounds"
+     ],
+     "width": 20,
+     "height": 30,
+     "marker": "empty-bounds",
+     "bounds": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "anchor": [
+      2,
+      3
+     ]
+    },
+    {
+     "op": "full",
+     "key": [
+      "prefix",
+      "shared"
+     ],
+     "width": 50,
+     "height": 50,
+     "marker": "prefix-full",
+     "bounds": [
+      0,
+      0,
+      10,
+      10
+     ]
+    },
+    {
+     "op": "cropped",
+     "key": [
+      "prefix",
+      "shared"
+     ],
+     "width": 50,
+     "height": 50,
+     "marker": "prefix-cropped",
+     "bounds": [
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    {
+     "op": "cropped",
+     "key": [
+      "prefix",
+      "cropped-only"
+     ],
+     "width": 40,
+     "height": 40,
+     "marker": "cropped-only",
+     "bounds": [
+      2,
+      3,
+      4,
+      5
+     ]
+    },
+    {
+     "op": "full",
+     "key": "prefix",
+     "width": 40,
+     "height": 40,
+     "marker": "string-prefix",
+     "bounds": [
+      0,
+      0,
+      8,
+      8
+     ]
+    },
+    {
+     "op": "invalidate",
+     "prefix": "prefix"
+    },
+    {
+     "op": "stats"
+    },
+    {
+     "op": "cropped",
+     "key": [
+      "prefix",
+      "cropped-only"
+     ],
+     "width": 40,
+     "height": 40,
+     "marker": "cropped-only-after-invalidate",
+     "bounds": [
+      2,
+      3,
+      4,
+      5
+     ]
+    },
+    {
+     "op": "full",
+     "key": [
+      "prefix",
+      "shared"
+     ],
+     "width": 50,
+     "height": 50,
+     "marker": "prefix-full-after-invalidate",
+     "bounds": [
+      0,
+      0,
+      10,
+      10
+     ]
+    },
+    {
+     "op": "clear"
+    },
+    {
+     "op": "stats"
+    }
+   ],
+   "outputs": [
+    {
+     "surface": {
+      "width": 64,
+      "height": 80,
+      "marker": "full-first"
+     },
+     "render_calls": 1,
+     "stats": {
+      "cached": 1,
+      "hits": 0,
+      "misses": 1,
+      "hit_rate": "0.0%"
+     }
+    },
+    {
+     "surface": {
+      "width": 64,
+      "height": 80,
+      "marker": "full-first"
+     },
+     "render_calls": 1,
+     "stats": {
+      "cached": 1,
+      "hits": 1,
+      "misses": 1,
+      "hit_rate": "50.0%"
+     }
+    },
+    {
+     "surface": {
+      "width": 32,
+      "height": 24,
+      "marker": "string-entry"
+     },
+     "render_calls": 2,
+     "stats": {
+      "cached": 2,
+      "hits": 1,
+      "misses": 2,
+      "hit_rate": "33.3%"
+     }
+    },
+    {
+     "surface": {
+      "width": 30,
+      "height": 40,
+      "marker": "crop-first"
+     },
+     "anchor": [
+      40,
+      20
+     ],
+     "render_calls": 3,
+     "stats": {
+      "cached": 3,
+      "hits": 1,
+      "misses": 3,
+      "hit_rate": "25.0%"
+     }
+    },
+    {
+     "surface": {
+      "width": 30,
+      "height": 40,
+      "marker": "crop-first"
+     },
+     "anchor": [
+      40,
+      20
+     ],
+     "render_calls": 3,
+     "stats": {
+      "cached": 3,
+      "hits": 2,
+      "misses": 3,
+      "hit_rate": "40.0%"
+     }
+    },
+    {
+     "surface": {
+      "width": 20,
+      "height": 30,
+      "marker": "empty-bounds"
+     },
+     "anchor": [
+      2,
+      3
+     ],
+     "render_calls": 4,
+     "stats": {
+      "cached": 4,
+      "hits": 2,
+      "misses": 4,
+      "hit_rate": "33.3%"
+     }
+    },
+    {
+     "surface": {
+      "width": 50,
+      "height": 50,
+      "marker": "prefix-full"
+     },
+     "render_calls": 5,
+     "stats": {
+      "cached": 5,
+      "hits": 2,
+      "misses": 5,
+      "hit_rate": "28.6%"
+     }
+    },
+    {
+     "surface": {
+      "width": 6,
+      "height": 7,
+      "marker": "prefix-cropped"
+     },
+     "anchor": [
+      21,
+      20
+     ],
+     "render_calls": 6,
+     "stats": {
+      "cached": 6,
+      "hits": 2,
+      "misses": 6,
+      "hit_rate": "25.0%"
+     }
+    },
+    {
+     "surface": {
+      "width": 4,
+      "height": 5,
+      "marker": "cropped-only"
+     },
+     "anchor": [
+      18,
+      17
+     ],
+     "render_calls": 7,
+     "stats": {
+      "cached": 7,
+      "hits": 2,
+      "misses": 7,
+      "hit_rate": "22.2%"
+     }
+    },
+    {
+     "surface": {
+      "width": 40,
+      "height": 40,
+      "marker": "string-prefix"
+     },
+     "render_calls": 8,
+     "stats": {
+      "cached": 8,
+      "hits": 2,
+      "misses": 8,
+      "hit_rate": "20.0%"
+     }
+    },
+    {
+     "render_calls": 8,
+     "stats": {
+      "cached": 6,
+      "hits": 2,
+      "misses": 8,
+      "hit_rate": "20.0%"
+     }
+    },
+    {
+     "render_calls": 8,
+     "stats": {
+      "cached": 6,
+      "hits": 2,
+      "misses": 8,
+      "hit_rate": "20.0%"
+     }
+    },
+    {
+     "surface": {
+      "width": 4,
+      "height": 5,
+      "marker": "cropped-only"
+     },
+     "anchor": [
+      18,
+      17
+     ],
+     "render_calls": 8,
+     "stats": {
+      "cached": 6,
+      "hits": 3,
+      "misses": 8,
+      "hit_rate": "27.3%"
+     }
+    },
+    {
+     "surface": {
+      "width": 50,
+      "height": 50,
+      "marker": "prefix-full-after-invalidate"
+     },
+     "render_calls": 9,
+     "stats": {
+      "cached": 7,
+      "hits": 3,
+      "misses": 9,
+      "hit_rate": "25.0%"
+     }
+    },
+    {
+     "render_calls": 9,
+     "stats": {
+      "cached": 0,
+      "hits": 3,
+      "misses": 9,
+      "hit_rate": "25.0%"
+     }
+    },
+    {
+     "render_calls": 9,
+     "stats": {
+      "cached": 0,
+      "hits": 3,
+      "misses": 9,
+      "hit_rate": "25.0%"
+     }
+    }
+   ]
+  },
+  {
+   "name": "small_capacity_eviction",
+   "max_cache": 3,
+   "operations": [
+    {
+     "op": "full",
+     "key": [
+      "full",
+      0
+     ],
+     "width": 10,
+     "height": 11,
+     "marker": "full-0",
+     "bounds": [
+      0,
+      0,
+      1,
+      1
+     ]
+    },
+    {
+     "op": "full",
+     "key": [
+      "full",
+      1
+     ],
+     "width": 12,
+     "height": 13,
+     "marker": "full-1",
+     "bounds": [
+      0,
+      0,
+      1,
+      1
+     ]
+    },
+    {
+     "op": "full",
+     "key": [
+      "full",
+      2
+     ],
+     "width": 14,
+     "height": 15,
+     "marker": "full-2",
+     "bounds": [
+      0,
+      0,
+      1,
+      1
+     ]
+    },
+    {
+     "op": "full",
+     "key": [
+      "full",
+      0
+     ],
+     "width": 99,
+     "height": 99,
+     "marker": "full-0-after-eviction",
+     "bounds": [
+      0,
+      0,
+      1,
+      1
+     ]
+    },
+    {
+     "op": "cropped",
+     "key": [
+      "cropped",
+      0
+     ],
+     "width": 60,
+     "height": 60,
+     "marker": "cropped-0",
+     "bounds": [
+      3,
+      4,
+      20,
+      21
+     ]
+    },
+    {
+     "op": "cropped",
+     "key": [
+      "cropped",
+      1
+     ],
+     "width": 62,
+     "height": 62,
+     "marker": "cropped-1",
+     "bounds": [
+      3,
+      4,
+      20,
+      21
+     ]
+    },
+    {
+     "op": "cropped",
+     "key": [
+      "cropped",
+      2
+     ],
+     "width": 64,
+     "height": 64,
+     "marker": "cropped-2",
+     "bounds": [
+      3,
+      4,
+      20,
+      21
+     ]
+    },
+    {
+     "op": "cropped",
+     "key": [
+      "cropped",
+      0
+     ],
+     "width": 99,
+     "height": 99,
+     "marker": "cropped-0-after-eviction",
+     "bounds": [
+      3,
+      4,
+      20,
+      21
+     ]
+    },
+    {
+     "op": "clear"
+    },
+    {
+     "op": "stats"
+    }
+   ],
+   "outputs": [
+    {
+     "surface": {
+      "width": 10,
+      "height": 11,
+      "marker": "full-0"
+     },
+     "render_calls": 1,
+     "stats": {
+      "cached": 1,
+      "hits": 0,
+      "misses": 1,
+      "hit_rate": "0.0%"
+     }
+    },
+    {
+     "surface": {
+      "width": 12,
+      "height": 13,
+      "marker": "full-1"
+     },
+     "render_calls": 2,
+     "stats": {
+      "cached": 2,
+      "hits": 0,
+      "misses": 2,
+      "hit_rate": "0.0%"
+     }
+    },
+    {
+     "surface": {
+      "width": 14,
+      "height": 15,
+      "marker": "full-2"
+     },
+     "render_calls": 3,
+     "stats": {
+      "cached": 3,
+      "hits": 0,
+      "misses": 3,
+      "hit_rate": "0.0%"
+     }
+    },
+    {
+     "surface": {
+      "width": 10,
+      "height": 11,
+      "marker": "full-0"
+     },
+     "render_calls": 3,
+     "stats": {
+      "cached": 3,
+      "hits": 1,
+      "misses": 3,
+      "hit_rate": "25.0%"
+     }
+    },
+    {
+     "surface": {
+      "width": 20,
+      "height": 21,
+      "marker": "cropped-0"
+     },
+     "anchor": [
+      27,
+      26
+     ],
+     "render_calls": 4,
+     "stats": {
+      "cached": 4,
+      "hits": 1,
+      "misses": 4,
+      "hit_rate": "20.0%"
+     }
+    },
+    {
+     "surface": {
+      "width": 20,
+      "height": 21,
+      "marker": "cropped-1"
+     },
+     "anchor": [
+      28,
+      27
+     ],
+     "render_calls": 5,
+     "stats": {
+      "cached": 5,
+      "hits": 1,
+      "misses": 5,
+      "hit_rate": "16.7%"
+     }
+    },
+    {
+     "surface": {
+      "width": 20,
+      "height": 21,
+      "marker": "cropped-2"
+     },
+     "anchor": [
+      29,
+      28
+     ],
+     "render_calls": 6,
+     "stats": {
+      "cached": 6,
+      "hits": 1,
+      "misses": 6,
+      "hit_rate": "14.3%"
+     }
+    },
+    {
+     "surface": {
+      "width": 20,
+      "height": 21,
+      "marker": "cropped-0"
+     },
+     "anchor": [
+      27,
+      26
+     ],
+     "render_calls": 6,
+     "stats": {
+      "cached": 6,
+      "hits": 2,
+      "misses": 6,
+      "hit_rate": "25.0%"
+     }
+    },
+    {
+     "render_calls": 6,
+     "stats": {
+      "cached": 0,
+      "hits": 2,
+      "misses": 6,
+      "hit_rate": "25.0%"
+     }
+    },
+    {
+     "render_calls": 6,
+     "stats": {
+      "cached": 0,
+      "hits": 2,
+      "misses": 6,
+      "hit_rate": "25.0%"
+     }
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,1100 @@
+{
+ "source": "_render.py::DeathExplosion",
+ "flash_max": 8,
+ "snapshot_ticks": [
+  0,
+  1,
+  8,
+  20,
+  35,
+  36
+ ],
+ "cases": [
+  {
+   "name": "red_small",
+   "config": {
+    "x": 120.0,
+    "y": 80.0,
+    "team": "red",
+    "size": "small"
+   },
+   "seed": 1729,
+   "particle_specs": [
+    {
+     "color": [
+      255,
+      150,
+      100
+     ],
+     "vx": 3.711086,
+     "vy": -0.084602,
+     "lifetime": 34,
+     "size": 4
+    },
+    {
+     "color": [
+      255,
+      150,
+      100
+     ],
+     "vx": 0.795796,
+     "vy": 1.4402,
+     "lifetime": 31,
+     "size": 4
+    },
+    {
+     "color": [
+      255,
+      100,
+      100
+     ],
+     "vx": 1.55505,
+     "vy": -1.578127,
+     "lifetime": 35,
+     "size": 4
+    },
+    {
+     "color": [
+      255,
+      150,
+      100
+     ],
+     "vx": 2.640819,
+     "vy": 0.095453,
+     "lifetime": 33,
+     "size": 3
+    },
+    {
+     "color": [
+      255,
+      150,
+      100
+     ],
+     "vx": -2.069126,
+     "vy": -1.991522,
+     "lifetime": 21,
+     "size": 2
+    },
+    {
+     "color": [
+      255,
+      100,
+      100
+     ],
+     "vx": 1.657941,
+     "vy": -2.814567,
+     "lifetime": 32,
+     "size": 4
+    },
+    {
+     "color": [
+      255,
+      150,
+      100
+     ],
+     "vx": 2.386156,
+     "vy": -1.849377,
+     "lifetime": 20,
+     "size": 3
+    },
+    {
+     "color": [
+      255,
+      150,
+      100
+     ],
+     "vx": -2.67705,
+     "vy": -1.204222,
+     "lifetime": 35,
+     "size": 4
+    }
+   ],
+   "snapshots": [
+    {
+     "tick": 0,
+     "particle_count": 8,
+     "flash_timer": 8,
+     "alive": true,
+     "first": {
+      "x": 120.0,
+      "y": 80.0,
+      "vx": 3.711086,
+      "vy": -0.084602,
+      "lifetime": 34,
+      "max_lifetime": 34,
+      "size": 4,
+      "alive": true,
+      "color": [
+       255,
+       150,
+       100
+      ]
+     },
+     "last": {
+      "x": 120.0,
+      "y": 80.0,
+      "vx": -2.67705,
+      "vy": -1.204222,
+      "lifetime": 35,
+      "max_lifetime": 35,
+      "size": 4,
+      "alive": true,
+      "color": [
+       255,
+       150,
+       100
+      ]
+     },
+     "draw_flash": {
+      "intensity": 1.0,
+      "size": 20
+     }
+    },
+    {
+     "tick": 1,
+     "particle_count": 8,
+     "flash_timer": 7,
+     "alive": true,
+     "first": {
+      "x": 123.711086,
+      "y": 79.915398,
+      "vx": 3.525532,
+      "vy": 0.065398,
+      "lifetime": 33,
+      "max_lifetime": 34,
+      "size": 4,
+      "alive": true,
+      "color": [
+       255,
+       150,
+       100
+      ]
+     },
+     "last": {
+      "x": 117.32295,
+      "y": 78.795778,
+      "vx": -2.543197,
+      "vy": -1.054222,
+      "lifetime": 34,
+      "max_lifetime": 35,
+      "size": 4,
+      "alive": true,
+      "color": [
+       255,
+       150,
+       100
+      ]
+     },
+     "draw_flash": {
+      "intensity": 0.875,
+      "size": 17
+     }
+    },
+    {
+     "tick": 8,
+     "particle_count": 8,
+     "flash_timer": 0,
+     "alive": true,
+     "first": {
+      "x": 144.981515,
+      "y": 83.523188,
+      "vx": 2.46201,
+      "vy": 1.115398,
+      "lifetime": 26,
+      "max_lifetime": 34,
+      "size": 4,
+      "alive": true,
+      "color": [
+       255,
+       150,
+       100
+      ]
+     },
+     "last": {
+      "x": 101.979196,
+      "y": 74.566226,
+      "vx": -1.776009,
+      "vy": -0.004222,
+      "lifetime": 27,
+      "max_lifetime": 35,
+      "size": 4,
+      "alive": true,
+      "color": [
+       255,
+       150,
+       100
+      ]
+     },
+     "draw_flash": null
+    },
+    {
+     "tick": 20,
+     "particle_count": 7,
+     "flash_timer": 0,
+     "alive": true,
+     "first": {
+      "x": 167.614279,
+      "y": 106.807969,
+      "vx": 1.330372,
+      "vy": 2.915398,
+      "lifetime": 14,
+      "max_lifetime": 34,
+      "size": 4,
+      "alive": true,
+      "color": [
+       255,
+       150,
+       100
+      ]
+     },
+     "last": {
+      "x": 85.6527,
+      "y": 84.415565,
+      "vx": -0.959685,
+      "vy": 1.795778,
+      "lifetime": 15,
+      "max_lifetime": 35,
+      "size": 4,
+      "alive": true,
+      "color": [
+       255,
+       150,
+       100
+      ]
+     },
+     "draw_flash": null
+    },
+    {
+     "tick": 35,
+     "particle_count": 0,
+     "flash_timer": 0,
+     "alive": false,
+     "first": null,
+     "last": null,
+     "draw_flash": null
+    },
+    {
+     "tick": 36,
+     "particle_count": 0,
+     "flash_timer": 0,
+     "alive": false,
+     "first": null,
+     "last": null,
+     "draw_flash": null
+    }
+   ]
+  },
+  {
+   "name": "blue_medium",
+   "config": {
+    "x": 320.0,
+    "y": 180.0,
+    "team": "blue",
+    "size": "medium"
+   },
+   "seed": 2718,
+   "particle_specs": [
+    {
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "vx": 0.467707,
+     "vy": 2.23839,
+     "lifetime": 20,
+     "size": 3
+    },
+    {
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "vx": 1.626898,
+     "vy": -0.710071,
+     "lifetime": 35,
+     "size": 3
+    },
+    {
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "vx": -0.39869,
+     "vy": 1.903288,
+     "lifetime": 25,
+     "size": 3
+    },
+    {
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "vx": 2.934726,
+     "vy": -1.655851,
+     "lifetime": 20,
+     "size": 5
+    },
+    {
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "vx": 1.150755,
+     "vy": -1.283167,
+     "lifetime": 30,
+     "size": 3
+    },
+    {
+     "color": [
+      150,
+      220,
+      255
+     ],
+     "vx": 2.868197,
+     "vy": 0.795812,
+     "lifetime": 33,
+     "size": 4
+    },
+    {
+     "color": [
+      150,
+      220,
+      255
+     ],
+     "vx": -0.474251,
+     "vy": 1.534536,
+     "lifetime": 29,
+     "size": 3
+    },
+    {
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "vx": 2.867523,
+     "vy": 0.700463,
+     "lifetime": 25,
+     "size": 5
+    },
+    {
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "vx": 2.342158,
+     "vy": -0.396112,
+     "lifetime": 30,
+     "size": 4
+    },
+    {
+     "color": [
+      150,
+      220,
+      255
+     ],
+     "vx": -0.655537,
+     "vy": 2.359362,
+     "lifetime": 26,
+     "size": 3
+    },
+    {
+     "color": [
+      150,
+      220,
+      255
+     ],
+     "vx": 2.118361,
+     "vy": -2.454052,
+     "lifetime": 24,
+     "size": 4
+    },
+    {
+     "color": [
+      200,
+      240,
+      255
+     ],
+     "vx": -2.985096,
+     "vy": 2.579255,
+     "lifetime": 24,
+     "size": 3
+    },
+    {
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "vx": -1.291271,
+     "vy": 1.201057,
+     "lifetime": 31,
+     "size": 4
+    },
+    {
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "vx": -1.200809,
+     "vy": 2.916251,
+     "lifetime": 30,
+     "size": 3
+    },
+    {
+     "color": [
+      150,
+      220,
+      255
+     ],
+     "vx": 2.034057,
+     "vy": 0.899169,
+     "lifetime": 26,
+     "size": 4
+    }
+   ],
+   "snapshots": [
+    {
+     "tick": 0,
+     "particle_count": 15,
+     "flash_timer": 8,
+     "alive": true,
+     "first": {
+      "x": 320.0,
+      "y": 180.0,
+      "vx": 0.467707,
+      "vy": 2.23839,
+      "lifetime": 20,
+      "max_lifetime": 20,
+      "size": 3,
+      "alive": true,
+      "color": [
+       100,
+       200,
+       255
+      ]
+     },
+     "last": {
+      "x": 320.0,
+      "y": 180.0,
+      "vx": 2.034057,
+      "vy": 0.899169,
+      "lifetime": 26,
+      "max_lifetime": 26,
+      "size": 4,
+      "alive": true,
+      "color": [
+       150,
+       220,
+       255
+      ]
+     },
+     "draw_flash": {
+      "intensity": 1.0,
+      "size": 20
+     }
+    },
+    {
+     "tick": 1,
+     "particle_count": 15,
+     "flash_timer": 7,
+     "alive": true,
+     "first": {
+      "x": 320.467707,
+      "y": 182.23839,
+      "vx": 0.444322,
+      "vy": 2.38839,
+      "lifetime": 19,
+      "max_lifetime": 20,
+      "size": 3,
+      "alive": true,
+      "color": [
+       100,
+       200,
+       255
+      ]
+     },
+     "last": {
+      "x": 322.034057,
+      "y": 180.899169,
+      "vx": 1.932354,
+      "vy": 1.049169,
+      "lifetime": 25,
+      "max_lifetime": 26,
+      "size": 4,
+      "alive": true,
+      "color": [
+       150,
+       220,
+       255
+      ]
+     },
+     "draw_flash": {
+      "intensity": 0.875,
+      "size": 17
+     }
+    },
+    {
+     "tick": 8,
+     "particle_count": 15,
+     "flash_timer": 0,
+     "alive": true,
+     "first": {
+      "x": 323.148414,
+      "y": 202.107123,
+      "vx": 0.310287,
+      "vy": 3.43839,
+      "lifetime": 12,
+      "max_lifetime": 20,
+      "size": 3,
+      "alive": true,
+      "color": [
+       100,
+       200,
+       255
+      ]
+     },
+     "last": {
+      "x": 333.692439,
+      "y": 191.393351,
+      "vx": 1.349435,
+      "vy": 2.099169,
+      "lifetime": 18,
+      "max_lifetime": 26,
+      "size": 4,
+      "alive": true,
+      "color": [
+       150,
+       220,
+       255
+      ]
+     },
+     "draw_flash": null
+    },
+    {
+     "tick": 20,
+     "particle_count": 13,
+     "flash_timer": 0,
+     "alive": true,
+     "first": {
+      "x": 340.873565,
+      "y": 194.298574,
+      "vx": 0.58322,
+      "vy": 2.289929,
+      "lifetime": 15,
+      "max_lifetime": 35,
+      "size": 3,
+      "alive": true,
+      "color": [
+       100,
+       200,
+       255
+      ]
+     },
+     "last": {
+      "x": 346.097521,
+      "y": 226.483378,
+      "vx": 0.729181,
+      "vy": 3.899169,
+      "lifetime": 6,
+      "max_lifetime": 26,
+      "size": 4,
+      "alive": true,
+      "color": [
+       150,
+       220,
+       255
+      ]
+     },
+     "draw_flash": null
+    },
+    {
+     "tick": 35,
+     "particle_count": 0,
+     "flash_timer": 0,
+     "alive": false,
+     "first": null,
+     "last": null,
+     "draw_flash": null
+    },
+    {
+     "tick": 36,
+     "particle_count": 0,
+     "flash_timer": 0,
+     "alive": false,
+     "first": null,
+     "last": null,
+     "draw_flash": null
+    }
+   ]
+  },
+  {
+   "name": "blue_large",
+   "config": {
+    "x": 640.0,
+    "y": 360.0,
+    "team": "blue",
+    "size": "large"
+   },
+   "seed": 31415,
+   "particle_specs": [
+    {
+     "color": [
+      150,
+      220,
+      255
+     ],
+     "vx": -1.860637,
+     "vy": -1.180584,
+     "lifetime": 33,
+     "size": 4
+    },
+    {
+     "color": [
+      200,
+      240,
+      255
+     ],
+     "vx": 2.744348,
+     "vy": 2.889197,
+     "lifetime": 32,
+     "size": 5
+    },
+    {
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "vx": 1.232823,
+     "vy": 2.438746,
+     "lifetime": 26,
+     "size": 6
+    },
+    {
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "vx": -2.660007,
+     "vy": -2.655941,
+     "lifetime": 20,
+     "size": 5
+    },
+    {
+     "color": [
+      200,
+      240,
+      255
+     ],
+     "vx": 1.593769,
+     "vy": -2.331603,
+     "lifetime": 34,
+     "size": 6
+    },
+    {
+     "color": [
+      150,
+      220,
+      255
+     ],
+     "vx": 1.768543,
+     "vy": -1.149307,
+     "lifetime": 28,
+     "size": 6
+    },
+    {
+     "color": [
+      150,
+      220,
+      255
+     ],
+     "vx": -2.083236,
+     "vy": -2.659661,
+     "lifetime": 26,
+     "size": 5
+    },
+    {
+     "color": [
+      150,
+      220,
+      255
+     ],
+     "vx": -1.378196,
+     "vy": 3.07289,
+     "lifetime": 30,
+     "size": 4
+    },
+    {
+     "color": [
+      200,
+      240,
+      255
+     ],
+     "vx": 0.722327,
+     "vy": 3.285089,
+     "lifetime": 22,
+     "size": 5
+    },
+    {
+     "color": [
+      200,
+      240,
+      255
+     ],
+     "vx": 2.081204,
+     "vy": 0.260658,
+     "lifetime": 23,
+     "size": 5
+    },
+    {
+     "color": [
+      150,
+      220,
+      255
+     ],
+     "vx": 1.703015,
+     "vy": -1.163879,
+     "lifetime": 23,
+     "size": 4
+    },
+    {
+     "color": [
+      200,
+      240,
+      255
+     ],
+     "vx": -1.802043,
+     "vy": -1.96534,
+     "lifetime": 20,
+     "size": 6
+    },
+    {
+     "color": [
+      150,
+      220,
+      255
+     ],
+     "vx": -0.857202,
+     "vy": 1.349326,
+     "lifetime": 20,
+     "size": 6
+    },
+    {
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "vx": -1.348465,
+     "vy": -3.558625,
+     "lifetime": 26,
+     "size": 6
+    },
+    {
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "vx": 2.352701,
+     "vy": -1.585353,
+     "lifetime": 32,
+     "size": 6
+    },
+    {
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "vx": -2.63516,
+     "vy": 2.931818,
+     "lifetime": 23,
+     "size": 5
+    },
+    {
+     "color": [
+      200,
+      240,
+      255
+     ],
+     "vx": 3.469322,
+     "vy": 1.692541,
+     "lifetime": 30,
+     "size": 6
+    },
+    {
+     "color": [
+      200,
+      240,
+      255
+     ],
+     "vx": -2.434629,
+     "vy": -1.764931,
+     "lifetime": 26,
+     "size": 6
+    },
+    {
+     "color": [
+      200,
+      240,
+      255
+     ],
+     "vx": 0.471166,
+     "vy": -3.882105,
+     "lifetime": 28,
+     "size": 5
+    },
+    {
+     "color": [
+      200,
+      240,
+      255
+     ],
+     "vx": 1.569922,
+     "vy": 1.586834,
+     "lifetime": 27,
+     "size": 4
+    },
+    {
+     "color": [
+      200,
+      240,
+      255
+     ],
+     "vx": 2.559756,
+     "vy": -0.854583,
+     "lifetime": 27,
+     "size": 5
+    },
+    {
+     "color": [
+      150,
+      220,
+      255
+     ],
+     "vx": 2.378222,
+     "vy": 0.414149,
+     "lifetime": 27,
+     "size": 4
+    },
+    {
+     "color": [
+      150,
+      220,
+      255
+     ],
+     "vx": 0.273819,
+     "vy": -2.396421,
+     "lifetime": 26,
+     "size": 6
+    },
+    {
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "vx": 1.235239,
+     "vy": 1.165365,
+     "lifetime": 26,
+     "size": 5
+    },
+    {
+     "color": [
+      150,
+      220,
+      255
+     ],
+     "vx": -1.544816,
+     "vy": 2.429316,
+     "lifetime": 31,
+     "size": 6
+    }
+   ],
+   "snapshots": [
+    {
+     "tick": 0,
+     "particle_count": 25,
+     "flash_timer": 8,
+     "alive": true,
+     "first": {
+      "x": 640.0,
+      "y": 360.0,
+      "vx": -1.860637,
+      "vy": -1.180584,
+      "lifetime": 33,
+      "max_lifetime": 33,
+      "size": 4,
+      "alive": true,
+      "color": [
+       150,
+       220,
+       255
+      ]
+     },
+     "last": {
+      "x": 640.0,
+      "y": 360.0,
+      "vx": -1.544816,
+      "vy": 2.429316,
+      "lifetime": 31,
+      "max_lifetime": 31,
+      "size": 6,
+      "alive": true,
+      "color": [
+       150,
+       220,
+       255
+      ]
+     },
+     "draw_flash": {
+      "intensity": 1.0,
+      "size": 20
+     }
+    },
+    {
+     "tick": 1,
+     "particle_count": 25,
+     "flash_timer": 7,
+     "alive": true,
+     "first": {
+      "x": 638.139363,
+      "y": 358.819416,
+      "vx": -1.767606,
+      "vy": -1.030584,
+      "lifetime": 32,
+      "max_lifetime": 33,
+      "size": 4,
+      "alive": true,
+      "color": [
+       150,
+       220,
+       255
+      ]
+     },
+     "last": {
+      "x": 638.455184,
+      "y": 362.429316,
+      "vx": -1.467575,
+      "vy": 2.579316,
+      "lifetime": 30,
+      "max_lifetime": 31,
+      "size": 6,
+      "alive": true,
+      "color": [
+       150,
+       220,
+       255
+      ]
+     },
+     "draw_flash": {
+      "intensity": 0.875,
+      "size": 17
+     }
+    },
+    {
+     "tick": 8,
+     "particle_count": 25,
+     "flash_timer": 0,
+     "alive": true,
+     "first": {
+      "x": 627.474949,
+      "y": 354.755327,
+      "vx": -1.234385,
+      "vy": 0.019416,
+      "lifetime": 25,
+      "max_lifetime": 33,
+      "size": 4,
+      "alive": true,
+      "color": [
+       150,
+       220,
+       255
+      ]
+     },
+     "last": {
+      "x": 629.60093,
+      "y": 383.634527,
+      "vx": -1.024862,
+      "vy": 3.629316,
+      "lifetime": 23,
+      "max_lifetime": 31,
+      "size": 6,
+      "alive": true,
+      "color": [
+       150,
+       220,
+       255
+      ]
+     },
+     "draw_flash": null
+    },
+    {
+     "tick": 20,
+     "particle_count": 22,
+     "flash_timer": 0,
+     "alive": true,
+     "first": {
+      "x": 616.127497,
+      "y": 364.888317,
+      "vx": -0.667012,
+      "vy": 1.819416,
+      "lifetime": 13,
+      "max_lifetime": 33,
+      "size": 4,
+      "alive": true,
+      "color": [
+       150,
+       220,
+       255
+      ]
+     },
+     "last": {
+      "x": 620.179576,
+      "y": 437.086317,
+      "vx": -0.553795,
+      "vy": 5.429316,
+      "lifetime": 11,
+      "max_lifetime": 31,
+      "size": 6,
+      "alive": true,
+      "color": [
+       150,
+       220,
+       255
+      ]
+     },
+     "draw_flash": null
+    },
+    {
+     "tick": 35,
+     "particle_count": 0,
+     "flash_timer": 0,
+     "alive": false,
+     "first": null,
+     "last": null,
+     "draw_flash": null
+    },
+    {
+     "tick": 36,
+     "particle_count": 0,
+     "flash_timer": 0,
+     "alive": false,
+     "first": null,
+     "last": null,
+     "draw_flash": null
+    }
+   ]
+  }
+ ]
+}

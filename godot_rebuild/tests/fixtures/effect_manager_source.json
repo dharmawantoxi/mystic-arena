@@ -1,0 +1,5985 @@
+{
+ "source": "_render.py::EffectManager",
+ "max_floating": 300,
+ "max_particles": 500,
+ "max_explosions": 80,
+ "cases": [
+  {
+   "name": "basic_effect_flow",
+   "seed": 1729,
+   "settings": {
+    "damage_numbers_enabled": true,
+    "particles": true,
+    "particle_ratio": 1.0,
+    "max_damage_numbers": 300,
+    "screen_shake_enabled": true
+   },
+   "operations": [
+    {
+     "op": "damage",
+     "x": 100,
+     "y": 200,
+     "damage": 25,
+     "damage_type": "normal"
+    },
+    {
+     "op": "damage",
+     "x": 120,
+     "y": 210,
+     "damage": 40,
+     "is_critical": true
+    },
+    {
+     "op": "damage",
+     "x": 140,
+     "y": 220,
+     "damage": 8,
+     "damage_type": "heal"
+    },
+    {
+     "op": "damage",
+     "x": 160,
+     "y": 230,
+     "damage": 12,
+     "damage_type": "fire"
+    },
+    {
+     "op": "damage",
+     "x": 180,
+     "y": 240,
+     "damage": 13,
+     "damage_type": "ice"
+    },
+    {
+     "op": "damage",
+     "x": 200,
+     "y": 250,
+     "damage": 14,
+     "damage_type": "magic"
+    },
+    {
+     "op": "gold",
+     "x": 250,
+     "y": 300,
+     "amount": 75
+    },
+    {
+     "op": "particles",
+     "x": 300,
+     "y": 320,
+     "team": "red",
+     "count": 3
+    },
+    {
+     "op": "particles",
+     "x": 340,
+     "y": 360,
+     "team": "blue",
+     "count": 2
+    },
+    {
+     "op": "explosion",
+     "x": 400,
+     "y": 380,
+     "team": "blue",
+     "size": "small"
+    },
+    {
+     "op": "shake",
+     "intensity": 7
+    },
+    {
+     "op": "path",
+     "paths": [
+      [
+       [
+        0,
+        100
+       ],
+       [
+        100,
+        110
+       ]
+      ],
+      [
+       [
+        0,
+        300
+       ],
+       [
+        100,
+        300
+       ]
+      ]
+     ]
+    },
+    {
+     "op": "wave",
+     "wave_num": 4
+    },
+    {
+     "op": "achievement",
+     "title": "First Blood",
+     "description": "Win a duel",
+     "icon": "skull"
+    },
+    {
+     "op": "kill",
+     "killer": "Tower",
+     "victim": "Enemy",
+     "team": "blue"
+    },
+    {
+     "op": "update",
+     "steps": 1
+    },
+    {
+     "op": "update",
+     "steps": 20
+    },
+    {
+     "op": "settings",
+     "damage_numbers_enabled": false,
+     "particles": false,
+     "particle_ratio": 0.0,
+     "max_damage_numbers": 8,
+     "screen_shake_enabled": false,
+     "sync": true
+    },
+    {
+     "op": "damage",
+     "x": 500,
+     "y": 500,
+     "damage": 99,
+     "damage_type": "normal"
+    },
+    {
+     "op": "particles",
+     "x": 500,
+     "y": 500,
+     "team": "red",
+     "count": 5
+    },
+    {
+     "op": "shake",
+     "intensity": 12
+    },
+    {
+     "op": "update",
+     "steps": 5
+    }
+   ],
+   "outputs": [
+    {
+     "replay": {
+      "offset_x": -7.0,
+      "offset_y": 0.0,
+      "drift": 0.000782,
+      "created": true
+     },
+     "snapshot": {
+      "floating_count": 1,
+      "particle_count": 0,
+      "explosion_count": 0,
+      "floating": [
+       {
+        "x": 93.0,
+        "y": 200.0,
+        "text": "25",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.000782,
+        "scale": 0.3,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [],
+      "explosions": [],
+      "screen_shake": {
+       "intensity": 0.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": false,
+       "wave_num": 0,
+       "timer": 0,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": false,
+       "paths": [],
+       "timer": 0,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": null,
+       "timer": 0,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": {
+      "offset_x": -3.0,
+      "offset_y": 2.0,
+      "drift": -0.265095,
+      "created": true
+     },
+     "snapshot": {
+      "floating_count": 2,
+      "particle_count": 0,
+      "explosion_count": 0,
+      "floating": [
+       {
+        "x": 93.0,
+        "y": 200.0,
+        "text": "25",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.000782,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 117.0,
+        "y": 212.0,
+        "text": "40!",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": true,
+        "font_size": 24,
+        "x_drift": -0.265095,
+        "scale": 0.3,
+        "target_scale": 1.2
+       }
+      ],
+      "particles": [],
+      "explosions": [],
+      "screen_shake": {
+       "intensity": 0.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": false,
+       "wave_num": 0,
+       "timer": 0,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": false,
+       "paths": [],
+       "timer": 0,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": null,
+       "timer": 0,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": {
+      "offset_x": 1.0,
+      "offset_y": 1.0,
+      "drift": -0.082144,
+      "created": true
+     },
+     "snapshot": {
+      "floating_count": 3,
+      "particle_count": 0,
+      "explosion_count": 0,
+      "floating": [
+       {
+        "x": 93.0,
+        "y": 200.0,
+        "text": "25",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.000782,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 117.0,
+        "y": 212.0,
+        "text": "40!",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": true,
+        "font_size": 24,
+        "x_drift": -0.265095,
+        "scale": 0.3,
+        "target_scale": 1.2
+       },
+       {
+        "x": 141.0,
+        "y": 221.0,
+        "text": "+8",
+        "color": [
+         100,
+         255,
+         100
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.082144,
+        "scale": 0.3,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [],
+      "explosions": [],
+      "screen_shake": {
+       "intensity": 0.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": false,
+       "wave_num": 0,
+       "timer": 0,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": false,
+       "paths": [],
+       "timer": 0,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": null,
+       "timer": 0,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": {
+      "offset_x": 1.0,
+      "offset_y": -2.0,
+      "drift": 0.261853,
+      "created": true
+     },
+     "snapshot": {
+      "floating_count": 4,
+      "particle_count": 0,
+      "explosion_count": 0,
+      "floating": [
+       {
+        "x": 93.0,
+        "y": 200.0,
+        "text": "25",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.000782,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 117.0,
+        "y": 212.0,
+        "text": "40!",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": true,
+        "font_size": 24,
+        "x_drift": -0.265095,
+        "scale": 0.3,
+        "target_scale": 1.2
+       },
+       {
+        "x": 141.0,
+        "y": 221.0,
+        "text": "+8",
+        "color": [
+         100,
+         255,
+         100
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.082144,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 161.0,
+        "y": 228.0,
+        "text": "12",
+        "color": [
+         255,
+         150,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.261853,
+        "scale": 0.3,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [],
+      "explosions": [],
+      "screen_shake": {
+       "intensity": 0.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": false,
+       "wave_num": 0,
+       "timer": 0,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": false,
+       "paths": [],
+       "timer": 0,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": null,
+       "timer": 0,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": {
+      "offset_x": -4.0,
+      "offset_y": 3.0,
+      "drift": 0.138481,
+      "created": true
+     },
+     "snapshot": {
+      "floating_count": 5,
+      "particle_count": 0,
+      "explosion_count": 0,
+      "floating": [
+       {
+        "x": 93.0,
+        "y": 200.0,
+        "text": "25",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.000782,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 117.0,
+        "y": 212.0,
+        "text": "40!",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": true,
+        "font_size": 24,
+        "x_drift": -0.265095,
+        "scale": 0.3,
+        "target_scale": 1.2
+       },
+       {
+        "x": 141.0,
+        "y": 221.0,
+        "text": "+8",
+        "color": [
+         100,
+         255,
+         100
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.082144,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 161.0,
+        "y": 228.0,
+        "text": "12",
+        "color": [
+         255,
+         150,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.261853,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 176.0,
+        "y": 243.0,
+        "text": "13",
+        "color": [
+         150,
+         220,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.138481,
+        "scale": 0.3,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [],
+      "explosions": [],
+      "screen_shake": {
+       "intensity": 0.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": false,
+       "wave_num": 0,
+       "timer": 0,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": false,
+       "paths": [],
+       "timer": 0,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": null,
+       "timer": 0,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": {
+      "offset_x": 7.0,
+      "offset_y": -3.0,
+      "drift": 0.068003,
+      "created": true
+     },
+     "snapshot": {
+      "floating_count": 6,
+      "particle_count": 0,
+      "explosion_count": 0,
+      "floating": [
+       {
+        "x": 93.0,
+        "y": 200.0,
+        "text": "25",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.000782,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 117.0,
+        "y": 212.0,
+        "text": "40!",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": true,
+        "font_size": 24,
+        "x_drift": -0.265095,
+        "scale": 0.3,
+        "target_scale": 1.2
+       },
+       {
+        "x": 141.0,
+        "y": 221.0,
+        "text": "+8",
+        "color": [
+         100,
+         255,
+         100
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.082144,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 161.0,
+        "y": 228.0,
+        "text": "12",
+        "color": [
+         255,
+         150,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.261853,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 176.0,
+        "y": 243.0,
+        "text": "13",
+        "color": [
+         150,
+         220,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.138481,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 207.0,
+        "y": 247.0,
+        "text": "14",
+        "color": [
+         200,
+         150,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.068003,
+        "scale": 0.3,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [],
+      "explosions": [],
+      "screen_shake": {
+       "intensity": 0.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": false,
+       "wave_num": 0,
+       "timer": 0,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": false,
+       "paths": [],
+       "timer": 0,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": null,
+       "timer": 0,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": {
+      "drift": -0.077767
+     },
+     "snapshot": {
+      "floating_count": 7,
+      "particle_count": 0,
+      "explosion_count": 0,
+      "floating": [
+       {
+        "x": 93.0,
+        "y": 200.0,
+        "text": "25",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.000782,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 117.0,
+        "y": 212.0,
+        "text": "40!",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": true,
+        "font_size": 24,
+        "x_drift": -0.265095,
+        "scale": 0.3,
+        "target_scale": 1.2
+       },
+       {
+        "x": 141.0,
+        "y": 221.0,
+        "text": "+8",
+        "color": [
+         100,
+         255,
+         100
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.082144,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 161.0,
+        "y": 228.0,
+        "text": "12",
+        "color": [
+         255,
+         150,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.261853,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 176.0,
+        "y": 243.0,
+        "text": "13",
+        "color": [
+         150,
+         220,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.138481,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 207.0,
+        "y": 247.0,
+        "text": "14",
+        "color": [
+         200,
+         150,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.068003,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 250.0,
+        "y": 290.0,
+        "text": "+75G",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -1.5,
+        "lifetime": 50,
+        "max_lifetime": 50,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.077767,
+        "scale": 0.3,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [],
+      "explosions": [],
+      "screen_shake": {
+       "intensity": 0.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": false,
+       "wave_num": 0,
+       "timer": 0,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": false,
+       "paths": [],
+       "timer": 0,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": null,
+       "timer": 0,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": {
+      "specs": [
+       {
+        "color": [
+         255,
+         200,
+         150
+        ],
+        "vx": -1.242185,
+        "vy": 1.606653,
+        "lifetime": 17,
+        "size": 2
+       },
+       {
+        "color": [
+         255,
+         150,
+         100
+        ],
+        "vx": -0.885514,
+        "vy": 0.626222,
+        "lifetime": 13,
+        "size": 3
+       },
+       {
+        "color": [
+         255,
+         200,
+         150
+        ],
+        "vx": 1.510733,
+        "vy": -1.170886,
+        "lifetime": 17,
+        "size": 2
+       }
+      ]
+     },
+     "snapshot": {
+      "floating_count": 7,
+      "particle_count": 3,
+      "explosion_count": 0,
+      "floating": [
+       {
+        "x": 93.0,
+        "y": 200.0,
+        "text": "25",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.000782,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 117.0,
+        "y": 212.0,
+        "text": "40!",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": true,
+        "font_size": 24,
+        "x_drift": -0.265095,
+        "scale": 0.3,
+        "target_scale": 1.2
+       },
+       {
+        "x": 141.0,
+        "y": 221.0,
+        "text": "+8",
+        "color": [
+         100,
+         255,
+         100
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.082144,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 161.0,
+        "y": 228.0,
+        "text": "12",
+        "color": [
+         255,
+         150,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.261853,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 176.0,
+        "y": 243.0,
+        "text": "13",
+        "color": [
+         150,
+         220,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.138481,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 207.0,
+        "y": 247.0,
+        "text": "14",
+        "color": [
+         200,
+         150,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.068003,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 250.0,
+        "y": 290.0,
+        "text": "+75G",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -1.5,
+        "lifetime": 50,
+        "max_lifetime": 50,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.077767,
+        "scale": 0.3,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         200,
+         150
+        ],
+        "vx": -1.242185,
+        "vy": 1.606653,
+        "lifetime": 17,
+        "max_lifetime": 17,
+        "size": 2,
+        "alive": true
+       },
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         150,
+         100
+        ],
+        "vx": -0.885514,
+        "vy": 0.626222,
+        "lifetime": 13,
+        "max_lifetime": 13,
+        "size": 3,
+        "alive": true
+       },
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         200,
+         150
+        ],
+        "vx": 1.510733,
+        "vy": -1.170886,
+        "lifetime": 17,
+        "max_lifetime": 17,
+        "size": 2,
+        "alive": true
+       }
+      ],
+      "explosions": [],
+      "screen_shake": {
+       "intensity": 0.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": false,
+       "wave_num": 0,
+       "timer": 0,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": false,
+       "paths": [],
+       "timer": 0,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": null,
+       "timer": 0,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": {
+      "specs": [
+       {
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": -1.697428,
+        "vy": -0.763557,
+        "lifetime": 19,
+        "size": 3
+       },
+       {
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": -1.28188,
+        "vy": 0.418687,
+        "lifetime": 18,
+        "size": 2
+       }
+      ]
+     },
+     "snapshot": {
+      "floating_count": 7,
+      "particle_count": 5,
+      "explosion_count": 0,
+      "floating": [
+       {
+        "x": 93.0,
+        "y": 200.0,
+        "text": "25",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.000782,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 117.0,
+        "y": 212.0,
+        "text": "40!",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": true,
+        "font_size": 24,
+        "x_drift": -0.265095,
+        "scale": 0.3,
+        "target_scale": 1.2
+       },
+       {
+        "x": 141.0,
+        "y": 221.0,
+        "text": "+8",
+        "color": [
+         100,
+         255,
+         100
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.082144,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 161.0,
+        "y": 228.0,
+        "text": "12",
+        "color": [
+         255,
+         150,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.261853,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 176.0,
+        "y": 243.0,
+        "text": "13",
+        "color": [
+         150,
+         220,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.138481,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 207.0,
+        "y": 247.0,
+        "text": "14",
+        "color": [
+         200,
+         150,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.068003,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 250.0,
+        "y": 290.0,
+        "text": "+75G",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -1.5,
+        "lifetime": 50,
+        "max_lifetime": 50,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.077767,
+        "scale": 0.3,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         200,
+         150
+        ],
+        "vx": -1.242185,
+        "vy": 1.606653,
+        "lifetime": 17,
+        "max_lifetime": 17,
+        "size": 2,
+        "alive": true
+       },
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         150,
+         100
+        ],
+        "vx": -0.885514,
+        "vy": 0.626222,
+        "lifetime": 13,
+        "max_lifetime": 13,
+        "size": 3,
+        "alive": true
+       },
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         200,
+         150
+        ],
+        "vx": 1.510733,
+        "vy": -1.170886,
+        "lifetime": 17,
+        "max_lifetime": 17,
+        "size": 2,
+        "alive": true
+       },
+       {
+        "x": 340.0,
+        "y": 360.0,
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": -1.697428,
+        "vy": -0.763557,
+        "lifetime": 19,
+        "max_lifetime": 19,
+        "size": 3,
+        "alive": true
+       },
+       {
+        "x": 340.0,
+        "y": 360.0,
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": -1.28188,
+        "vy": 0.418687,
+        "lifetime": 18,
+        "max_lifetime": 18,
+        "size": 2,
+        "alive": true
+       }
+      ],
+      "explosions": [],
+      "screen_shake": {
+       "intensity": 0.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": false,
+       "wave_num": 0,
+       "timer": 0,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": false,
+       "paths": [],
+       "timer": 0,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": null,
+       "timer": 0,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": {
+      "specs": [
+       {
+        "color": [
+         150,
+         220,
+         255
+        ],
+        "vx": 1.645981,
+        "vy": -1.014053,
+        "lifetime": 34,
+        "size": 4
+       },
+       {
+        "color": [
+         100,
+         200,
+         255
+        ],
+        "vx": 2.041042,
+        "vy": 1.602699,
+        "lifetime": 31,
+        "size": 4
+       },
+       {
+        "color": [
+         150,
+         220,
+         255
+        ],
+        "vx": -0.52871,
+        "vy": 3.53362,
+        "lifetime": 26,
+        "size": 3
+       },
+       {
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": -0.772237,
+        "vy": 1.45348,
+        "lifetime": 35,
+        "size": 4
+       },
+       {
+        "color": [
+         100,
+         200,
+         255
+        ],
+        "vx": 2.31562,
+        "vy": 0.718589,
+        "lifetime": 25,
+        "size": 4
+       },
+       {
+        "color": [
+         150,
+         220,
+         255
+        ],
+        "vx": -0.686428,
+        "vy": -2.815225,
+        "lifetime": 34,
+        "size": 2
+       },
+       {
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": -0.536811,
+        "vy": -3.68643,
+        "lifetime": 23,
+        "size": 3
+       },
+       {
+        "color": [
+         100,
+         200,
+         255
+        ],
+        "vx": -0.266742,
+        "vy": 3.282025,
+        "lifetime": 35,
+        "size": 2
+       }
+      ]
+     },
+     "snapshot": {
+      "floating_count": 7,
+      "particle_count": 5,
+      "explosion_count": 1,
+      "floating": [
+       {
+        "x": 93.0,
+        "y": 200.0,
+        "text": "25",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.000782,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 117.0,
+        "y": 212.0,
+        "text": "40!",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": true,
+        "font_size": 24,
+        "x_drift": -0.265095,
+        "scale": 0.3,
+        "target_scale": 1.2
+       },
+       {
+        "x": 141.0,
+        "y": 221.0,
+        "text": "+8",
+        "color": [
+         100,
+         255,
+         100
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.082144,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 161.0,
+        "y": 228.0,
+        "text": "12",
+        "color": [
+         255,
+         150,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.261853,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 176.0,
+        "y": 243.0,
+        "text": "13",
+        "color": [
+         150,
+         220,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.138481,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 207.0,
+        "y": 247.0,
+        "text": "14",
+        "color": [
+         200,
+         150,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.068003,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 250.0,
+        "y": 290.0,
+        "text": "+75G",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -1.5,
+        "lifetime": 50,
+        "max_lifetime": 50,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.077767,
+        "scale": 0.3,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         200,
+         150
+        ],
+        "vx": -1.242185,
+        "vy": 1.606653,
+        "lifetime": 17,
+        "max_lifetime": 17,
+        "size": 2,
+        "alive": true
+       },
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         150,
+         100
+        ],
+        "vx": -0.885514,
+        "vy": 0.626222,
+        "lifetime": 13,
+        "max_lifetime": 13,
+        "size": 3,
+        "alive": true
+       },
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         200,
+         150
+        ],
+        "vx": 1.510733,
+        "vy": -1.170886,
+        "lifetime": 17,
+        "max_lifetime": 17,
+        "size": 2,
+        "alive": true
+       },
+       {
+        "x": 340.0,
+        "y": 360.0,
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": -1.697428,
+        "vy": -0.763557,
+        "lifetime": 19,
+        "max_lifetime": 19,
+        "size": 3,
+        "alive": true
+       },
+       {
+        "x": 340.0,
+        "y": 360.0,
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": -1.28188,
+        "vy": 0.418687,
+        "lifetime": 18,
+        "max_lifetime": 18,
+        "size": 2,
+        "alive": true
+       }
+      ],
+      "explosions": [
+       {
+        "x": 400,
+        "y": 380,
+        "flash_timer": 8,
+        "flash_max": 8,
+        "particle_count": 8,
+        "alive": true
+       }
+      ],
+      "screen_shake": {
+       "intensity": 0.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": false,
+       "wave_num": 0,
+       "timer": 0,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": false,
+       "paths": [],
+       "timer": 0,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": null,
+       "timer": 0,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": null,
+     "snapshot": {
+      "floating_count": 7,
+      "particle_count": 5,
+      "explosion_count": 1,
+      "floating": [
+       {
+        "x": 93.0,
+        "y": 200.0,
+        "text": "25",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.000782,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 117.0,
+        "y": 212.0,
+        "text": "40!",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": true,
+        "font_size": 24,
+        "x_drift": -0.265095,
+        "scale": 0.3,
+        "target_scale": 1.2
+       },
+       {
+        "x": 141.0,
+        "y": 221.0,
+        "text": "+8",
+        "color": [
+         100,
+         255,
+         100
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.082144,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 161.0,
+        "y": 228.0,
+        "text": "12",
+        "color": [
+         255,
+         150,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.261853,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 176.0,
+        "y": 243.0,
+        "text": "13",
+        "color": [
+         150,
+         220,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.138481,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 207.0,
+        "y": 247.0,
+        "text": "14",
+        "color": [
+         200,
+         150,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.068003,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 250.0,
+        "y": 290.0,
+        "text": "+75G",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -1.5,
+        "lifetime": 50,
+        "max_lifetime": 50,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.077767,
+        "scale": 0.3,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         200,
+         150
+        ],
+        "vx": -1.242185,
+        "vy": 1.606653,
+        "lifetime": 17,
+        "max_lifetime": 17,
+        "size": 2,
+        "alive": true
+       },
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         150,
+         100
+        ],
+        "vx": -0.885514,
+        "vy": 0.626222,
+        "lifetime": 13,
+        "max_lifetime": 13,
+        "size": 3,
+        "alive": true
+       },
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         200,
+         150
+        ],
+        "vx": 1.510733,
+        "vy": -1.170886,
+        "lifetime": 17,
+        "max_lifetime": 17,
+        "size": 2,
+        "alive": true
+       },
+       {
+        "x": 340.0,
+        "y": 360.0,
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": -1.697428,
+        "vy": -0.763557,
+        "lifetime": 19,
+        "max_lifetime": 19,
+        "size": 3,
+        "alive": true
+       },
+       {
+        "x": 340.0,
+        "y": 360.0,
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": -1.28188,
+        "vy": 0.418687,
+        "lifetime": 18,
+        "max_lifetime": 18,
+        "size": 2,
+        "alive": true
+       }
+      ],
+      "explosions": [
+       {
+        "x": 400,
+        "y": 380,
+        "flash_timer": 8,
+        "flash_max": 8,
+        "particle_count": 8,
+        "alive": true
+       }
+      ],
+      "screen_shake": {
+       "intensity": 7.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": false,
+       "wave_num": 0,
+       "timer": 0,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": false,
+       "paths": [],
+       "timer": 0,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": null,
+       "timer": 0,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": null,
+     "snapshot": {
+      "floating_count": 7,
+      "particle_count": 5,
+      "explosion_count": 1,
+      "floating": [
+       {
+        "x": 93.0,
+        "y": 200.0,
+        "text": "25",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.000782,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 117.0,
+        "y": 212.0,
+        "text": "40!",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": true,
+        "font_size": 24,
+        "x_drift": -0.265095,
+        "scale": 0.3,
+        "target_scale": 1.2
+       },
+       {
+        "x": 141.0,
+        "y": 221.0,
+        "text": "+8",
+        "color": [
+         100,
+         255,
+         100
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.082144,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 161.0,
+        "y": 228.0,
+        "text": "12",
+        "color": [
+         255,
+         150,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.261853,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 176.0,
+        "y": 243.0,
+        "text": "13",
+        "color": [
+         150,
+         220,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.138481,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 207.0,
+        "y": 247.0,
+        "text": "14",
+        "color": [
+         200,
+         150,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.068003,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 250.0,
+        "y": 290.0,
+        "text": "+75G",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -1.5,
+        "lifetime": 50,
+        "max_lifetime": 50,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.077767,
+        "scale": 0.3,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         200,
+         150
+        ],
+        "vx": -1.242185,
+        "vy": 1.606653,
+        "lifetime": 17,
+        "max_lifetime": 17,
+        "size": 2,
+        "alive": true
+       },
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         150,
+         100
+        ],
+        "vx": -0.885514,
+        "vy": 0.626222,
+        "lifetime": 13,
+        "max_lifetime": 13,
+        "size": 3,
+        "alive": true
+       },
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         200,
+         150
+        ],
+        "vx": 1.510733,
+        "vy": -1.170886,
+        "lifetime": 17,
+        "max_lifetime": 17,
+        "size": 2,
+        "alive": true
+       },
+       {
+        "x": 340.0,
+        "y": 360.0,
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": -1.697428,
+        "vy": -0.763557,
+        "lifetime": 19,
+        "max_lifetime": 19,
+        "size": 3,
+        "alive": true
+       },
+       {
+        "x": 340.0,
+        "y": 360.0,
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": -1.28188,
+        "vy": 0.418687,
+        "lifetime": 18,
+        "max_lifetime": 18,
+        "size": 2,
+        "alive": true
+       }
+      ],
+      "explosions": [
+       {
+        "x": 400,
+        "y": 380,
+        "flash_timer": 8,
+        "flash_max": 8,
+        "particle_count": 8,
+        "alive": true
+       }
+      ],
+      "screen_shake": {
+       "intensity": 7.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": false,
+       "wave_num": 0,
+       "timer": 0,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": true,
+       "paths": [
+        [
+         [
+          0,
+          100
+         ],
+         [
+          100,
+          110
+         ]
+        ],
+        [
+         [
+          0,
+          300
+         ],
+         [
+          100,
+          300
+         ]
+        ]
+       ],
+       "timer": 120,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": null,
+       "timer": 0,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": null,
+     "snapshot": {
+      "floating_count": 7,
+      "particle_count": 5,
+      "explosion_count": 1,
+      "floating": [
+       {
+        "x": 93.0,
+        "y": 200.0,
+        "text": "25",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.000782,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 117.0,
+        "y": 212.0,
+        "text": "40!",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": true,
+        "font_size": 24,
+        "x_drift": -0.265095,
+        "scale": 0.3,
+        "target_scale": 1.2
+       },
+       {
+        "x": 141.0,
+        "y": 221.0,
+        "text": "+8",
+        "color": [
+         100,
+         255,
+         100
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.082144,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 161.0,
+        "y": 228.0,
+        "text": "12",
+        "color": [
+         255,
+         150,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.261853,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 176.0,
+        "y": 243.0,
+        "text": "13",
+        "color": [
+         150,
+         220,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.138481,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 207.0,
+        "y": 247.0,
+        "text": "14",
+        "color": [
+         200,
+         150,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.068003,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 250.0,
+        "y": 290.0,
+        "text": "+75G",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -1.5,
+        "lifetime": 50,
+        "max_lifetime": 50,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.077767,
+        "scale": 0.3,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         200,
+         150
+        ],
+        "vx": -1.242185,
+        "vy": 1.606653,
+        "lifetime": 17,
+        "max_lifetime": 17,
+        "size": 2,
+        "alive": true
+       },
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         150,
+         100
+        ],
+        "vx": -0.885514,
+        "vy": 0.626222,
+        "lifetime": 13,
+        "max_lifetime": 13,
+        "size": 3,
+        "alive": true
+       },
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         200,
+         150
+        ],
+        "vx": 1.510733,
+        "vy": -1.170886,
+        "lifetime": 17,
+        "max_lifetime": 17,
+        "size": 2,
+        "alive": true
+       },
+       {
+        "x": 340.0,
+        "y": 360.0,
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": -1.697428,
+        "vy": -0.763557,
+        "lifetime": 19,
+        "max_lifetime": 19,
+        "size": 3,
+        "alive": true
+       },
+       {
+        "x": 340.0,
+        "y": 360.0,
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": -1.28188,
+        "vy": 0.418687,
+        "lifetime": 18,
+        "max_lifetime": 18,
+        "size": 2,
+        "alive": true
+       }
+      ],
+      "explosions": [
+       {
+        "x": 400,
+        "y": 380,
+        "flash_timer": 8,
+        "flash_max": 8,
+        "particle_count": 8,
+        "alive": true
+       }
+      ],
+      "screen_shake": {
+       "intensity": 7.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": true,
+       "wave_num": 4,
+       "timer": 120,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": true,
+       "paths": [
+        [
+         [
+          0,
+          100
+         ],
+         [
+          100,
+          110
+         ]
+        ],
+        [
+         [
+          0,
+          300
+         ],
+         [
+          100,
+          300
+         ]
+        ]
+       ],
+       "timer": 120,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": null,
+       "timer": 0,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": null,
+     "snapshot": {
+      "floating_count": 7,
+      "particle_count": 5,
+      "explosion_count": 1,
+      "floating": [
+       {
+        "x": 93.0,
+        "y": 200.0,
+        "text": "25",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.000782,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 117.0,
+        "y": 212.0,
+        "text": "40!",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": true,
+        "font_size": 24,
+        "x_drift": -0.265095,
+        "scale": 0.3,
+        "target_scale": 1.2
+       },
+       {
+        "x": 141.0,
+        "y": 221.0,
+        "text": "+8",
+        "color": [
+         100,
+         255,
+         100
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.082144,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 161.0,
+        "y": 228.0,
+        "text": "12",
+        "color": [
+         255,
+         150,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.261853,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 176.0,
+        "y": 243.0,
+        "text": "13",
+        "color": [
+         150,
+         220,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.138481,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 207.0,
+        "y": 247.0,
+        "text": "14",
+        "color": [
+         200,
+         150,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.068003,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 250.0,
+        "y": 290.0,
+        "text": "+75G",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -1.5,
+        "lifetime": 50,
+        "max_lifetime": 50,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.077767,
+        "scale": 0.3,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         200,
+         150
+        ],
+        "vx": -1.242185,
+        "vy": 1.606653,
+        "lifetime": 17,
+        "max_lifetime": 17,
+        "size": 2,
+        "alive": true
+       },
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         150,
+         100
+        ],
+        "vx": -0.885514,
+        "vy": 0.626222,
+        "lifetime": 13,
+        "max_lifetime": 13,
+        "size": 3,
+        "alive": true
+       },
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         200,
+         150
+        ],
+        "vx": 1.510733,
+        "vy": -1.170886,
+        "lifetime": 17,
+        "max_lifetime": 17,
+        "size": 2,
+        "alive": true
+       },
+       {
+        "x": 340.0,
+        "y": 360.0,
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": -1.697428,
+        "vy": -0.763557,
+        "lifetime": 19,
+        "max_lifetime": 19,
+        "size": 3,
+        "alive": true
+       },
+       {
+        "x": 340.0,
+        "y": 360.0,
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": -1.28188,
+        "vy": 0.418687,
+        "lifetime": 18,
+        "max_lifetime": 18,
+        "size": 2,
+        "alive": true
+       }
+      ],
+      "explosions": [
+       {
+        "x": 400,
+        "y": 380,
+        "flash_timer": 8,
+        "flash_max": 8,
+        "particle_count": 8,
+        "alive": true
+       }
+      ],
+      "screen_shake": {
+       "intensity": 7.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": true,
+       "wave_num": 4,
+       "timer": 120,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": true,
+       "paths": [
+        [
+         [
+          0,
+          100
+         ],
+         [
+          100,
+          110
+         ]
+        ],
+        [
+         [
+          0,
+          300
+         ],
+         [
+          100,
+          300
+         ]
+        ]
+       ],
+       "timer": 120,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [
+        {
+         "title": "First Blood",
+         "description": "Win a duel",
+         "icon_type": "skull"
+        }
+       ],
+       "current": null,
+       "timer": 0,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": null,
+     "snapshot": {
+      "floating_count": 7,
+      "particle_count": 5,
+      "explosion_count": 1,
+      "floating": [
+       {
+        "x": 93.0,
+        "y": 200.0,
+        "text": "25",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.000782,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 117.0,
+        "y": 212.0,
+        "text": "40!",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": true,
+        "font_size": 24,
+        "x_drift": -0.265095,
+        "scale": 0.3,
+        "target_scale": 1.2
+       },
+       {
+        "x": 141.0,
+        "y": 221.0,
+        "text": "+8",
+        "color": [
+         100,
+         255,
+         100
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.082144,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 161.0,
+        "y": 228.0,
+        "text": "12",
+        "color": [
+         255,
+         150,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.261853,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 176.0,
+        "y": 243.0,
+        "text": "13",
+        "color": [
+         150,
+         220,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.138481,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 207.0,
+        "y": 247.0,
+        "text": "14",
+        "color": [
+         200,
+         150,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.068003,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 250.0,
+        "y": 290.0,
+        "text": "+75G",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -1.5,
+        "lifetime": 50,
+        "max_lifetime": 50,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.077767,
+        "scale": 0.3,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         200,
+         150
+        ],
+        "vx": -1.242185,
+        "vy": 1.606653,
+        "lifetime": 17,
+        "max_lifetime": 17,
+        "size": 2,
+        "alive": true
+       },
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         150,
+         100
+        ],
+        "vx": -0.885514,
+        "vy": 0.626222,
+        "lifetime": 13,
+        "max_lifetime": 13,
+        "size": 3,
+        "alive": true
+       },
+       {
+        "x": 300.0,
+        "y": 320.0,
+        "color": [
+         255,
+         200,
+         150
+        ],
+        "vx": 1.510733,
+        "vy": -1.170886,
+        "lifetime": 17,
+        "max_lifetime": 17,
+        "size": 2,
+        "alive": true
+       },
+       {
+        "x": 340.0,
+        "y": 360.0,
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": -1.697428,
+        "vy": -0.763557,
+        "lifetime": 19,
+        "max_lifetime": 19,
+        "size": 3,
+        "alive": true
+       },
+       {
+        "x": 340.0,
+        "y": 360.0,
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": -1.28188,
+        "vy": 0.418687,
+        "lifetime": 18,
+        "max_lifetime": 18,
+        "size": 2,
+        "alive": true
+       }
+      ],
+      "explosions": [
+       {
+        "x": 400,
+        "y": 380,
+        "flash_timer": 8,
+        "flash_max": 8,
+        "particle_count": 8,
+        "alive": true
+       }
+      ],
+      "screen_shake": {
+       "intensity": 7.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": true,
+       "wave_num": 4,
+       "timer": 120,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": true,
+       "paths": [
+        [
+         [
+          0,
+          100
+         ],
+         [
+          100,
+          110
+         ]
+        ],
+        [
+         [
+          0,
+          300
+         ],
+         [
+          100,
+          300
+         ]
+        ]
+       ],
+       "timer": 120,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [
+        {
+         "title": "First Blood",
+         "description": "Win a duel",
+         "icon_type": "skull"
+        }
+       ],
+       "current": null,
+       "timer": 0,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": null,
+     "snapshot": {
+      "floating_count": 7,
+      "particle_count": 5,
+      "explosion_count": 1,
+      "floating": [
+       {
+        "x": 93.000782,
+        "y": 198.0,
+        "text": "25",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -1.9,
+        "lifetime": 44,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.000782,
+        "scale": 0.51,
+        "target_scale": 1.0
+       },
+       {
+        "x": 116.734905,
+        "y": 210.0,
+        "text": "40!",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -1.9,
+        "lifetime": 44,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": true,
+        "font_size": 24,
+        "x_drift": -0.265095,
+        "scale": 0.57,
+        "target_scale": 1.2
+       },
+       {
+        "x": 140.917856,
+        "y": 219.0,
+        "text": "+8",
+        "color": [
+         100,
+         255,
+         100
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -1.9,
+        "lifetime": 44,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.082144,
+        "scale": 0.51,
+        "target_scale": 1.0
+       },
+       {
+        "x": 161.261853,
+        "y": 226.0,
+        "text": "12",
+        "color": [
+         255,
+         150,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -1.9,
+        "lifetime": 44,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.261853,
+        "scale": 0.51,
+        "target_scale": 1.0
+       },
+       {
+        "x": 176.138481,
+        "y": 241.0,
+        "text": "13",
+        "color": [
+         150,
+         220,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -1.9,
+        "lifetime": 44,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.138481,
+        "scale": 0.51,
+        "target_scale": 1.0
+       },
+       {
+        "x": 207.068003,
+        "y": 245.0,
+        "text": "14",
+        "color": [
+         200,
+         150,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -1.9,
+        "lifetime": 44,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.068003,
+        "scale": 0.51,
+        "target_scale": 1.0
+       },
+       {
+        "x": 249.922233,
+        "y": 288.5,
+        "text": "+75G",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -1.425,
+        "lifetime": 49,
+        "max_lifetime": 50,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.077767,
+        "scale": 0.51,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [
+       {
+        "x": 298.757815,
+        "y": 321.606653,
+        "color": [
+         255,
+         200,
+         150
+        ],
+        "vx": -1.180075,
+        "vy": 1.756653,
+        "lifetime": 16,
+        "max_lifetime": 17,
+        "size": 2,
+        "alive": true
+       },
+       {
+        "x": 299.114486,
+        "y": 320.626222,
+        "color": [
+         255,
+         150,
+         100
+        ],
+        "vx": -0.841238,
+        "vy": 0.776222,
+        "lifetime": 12,
+        "max_lifetime": 13,
+        "size": 3,
+        "alive": true
+       },
+       {
+        "x": 301.510733,
+        "y": 318.829114,
+        "color": [
+         255,
+         200,
+         150
+        ],
+        "vx": 1.435197,
+        "vy": -1.020886,
+        "lifetime": 16,
+        "max_lifetime": 17,
+        "size": 2,
+        "alive": true
+       },
+       {
+        "x": 338.302572,
+        "y": 359.236443,
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": -1.612556,
+        "vy": -0.613557,
+        "lifetime": 18,
+        "max_lifetime": 19,
+        "size": 3,
+        "alive": true
+       },
+       {
+        "x": 338.71812,
+        "y": 360.418687,
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": -1.217786,
+        "vy": 0.568687,
+        "lifetime": 17,
+        "max_lifetime": 18,
+        "size": 2,
+        "alive": true
+       }
+      ],
+      "explosions": [
+       {
+        "x": 400,
+        "y": 380,
+        "flash_timer": 7,
+        "flash_max": 8,
+        "particle_count": 8,
+        "alive": true
+       }
+      ],
+      "screen_shake": {
+       "intensity": 5.95,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": true,
+       "wave_num": 4,
+       "timer": 119,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": true,
+       "paths": [
+        [
+         [
+          0,
+          100
+         ],
+         [
+          100,
+          110
+         ]
+        ],
+        [
+         [
+          0,
+          300
+         ],
+         [
+          100,
+          300
+         ]
+        ]
+       ],
+       "timer": 119,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": {
+        "title": "First Blood",
+        "description": "Win a duel",
+        "icon_type": "skull"
+       },
+       "timer": 180,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": null,
+     "snapshot": {
+      "floating_count": 7,
+      "particle_count": 0,
+      "explosion_count": 1,
+      "floating": [
+       {
+        "x": 93.016427,
+        "y": 173.622465,
+        "text": "25",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.000782,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 111.433008,
+        "y": 185.622465,
+        "text": "40!",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": true,
+        "font_size": 24,
+        "x_drift": -0.265095,
+        "scale": 1.199497,
+        "target_scale": 1.2
+       },
+       {
+        "x": 139.274975,
+        "y": 194.622465,
+        "text": "+8",
+        "color": [
+         100,
+         255,
+         100
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.082144,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 166.498912,
+        "y": 201.622465,
+        "text": "12",
+        "color": [
+         255,
+         150,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.261853,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 178.90811,
+        "y": 216.622465,
+        "text": "13",
+        "color": [
+         150,
+         220,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.138481,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 208.428054,
+        "y": 220.622465,
+        "text": "14",
+        "color": [
+         200,
+         150,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.068003,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 248.366888,
+        "y": 270.216849,
+        "text": "+75G",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.510842,
+        "lifetime": 29,
+        "max_lifetime": 50,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.077767,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [],
+      "explosions": [
+       {
+        "x": 400,
+        "y": 380,
+        "flash_timer": 0,
+        "flash_max": 8,
+        "particle_count": 8,
+        "alive": true
+       }
+      ],
+      "screen_shake": {
+       "intensity": 0.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": true,
+       "wave_num": 4,
+       "timer": 99,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": true,
+       "paths": [
+        [
+         [
+          0,
+          100
+         ],
+         [
+          100,
+          110
+         ]
+        ],
+        [
+         [
+          0,
+          300
+         ],
+         [
+          100,
+          300
+         ]
+        ]
+       ],
+       "timer": 99,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": {
+        "title": "First Blood",
+        "description": "Win a duel",
+        "icon_type": "skull"
+       },
+       "timer": 160,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": null,
+     "snapshot": {
+      "floating_count": 7,
+      "particle_count": 0,
+      "explosion_count": 1,
+      "floating": [
+       {
+        "x": 93.016427,
+        "y": 173.622465,
+        "text": "25",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.000782,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 111.433008,
+        "y": 185.622465,
+        "text": "40!",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": true,
+        "font_size": 24,
+        "x_drift": -0.265095,
+        "scale": 1.199497,
+        "target_scale": 1.2
+       },
+       {
+        "x": 139.274975,
+        "y": 194.622465,
+        "text": "+8",
+        "color": [
+         100,
+         255,
+         100
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.082144,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 166.498912,
+        "y": 201.622465,
+        "text": "12",
+        "color": [
+         255,
+         150,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.261853,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 178.90811,
+        "y": 216.622465,
+        "text": "13",
+        "color": [
+         150,
+         220,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.138481,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 208.428054,
+        "y": 220.622465,
+        "text": "14",
+        "color": [
+         200,
+         150,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.068003,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 248.366888,
+        "y": 270.216849,
+        "text": "+75G",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.510842,
+        "lifetime": 29,
+        "max_lifetime": 50,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.077767,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [],
+      "explosions": [
+       {
+        "x": 400,
+        "y": 380,
+        "flash_timer": 0,
+        "flash_max": 8,
+        "particle_count": 8,
+        "alive": true
+       }
+      ],
+      "screen_shake": {
+       "intensity": 0.0,
+       "enabled": false
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": true,
+       "wave_num": 4,
+       "timer": 99,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": true,
+       "paths": [
+        [
+         [
+          0,
+          100
+         ],
+         [
+          100,
+          110
+         ]
+        ],
+        [
+         [
+          0,
+          300
+         ],
+         [
+          100,
+          300
+         ]
+        ]
+       ],
+       "timer": 99,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": {
+        "title": "First Blood",
+        "description": "Win a duel",
+        "icon_type": "skull"
+       },
+       "timer": 160,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": null,
+     "snapshot": {
+      "floating_count": 7,
+      "particle_count": 0,
+      "explosion_count": 1,
+      "floating": [
+       {
+        "x": 93.016427,
+        "y": 173.622465,
+        "text": "25",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.000782,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 111.433008,
+        "y": 185.622465,
+        "text": "40!",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": true,
+        "font_size": 24,
+        "x_drift": -0.265095,
+        "scale": 1.199497,
+        "target_scale": 1.2
+       },
+       {
+        "x": 139.274975,
+        "y": 194.622465,
+        "text": "+8",
+        "color": [
+         100,
+         255,
+         100
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.082144,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 166.498912,
+        "y": 201.622465,
+        "text": "12",
+        "color": [
+         255,
+         150,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.261853,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 178.90811,
+        "y": 216.622465,
+        "text": "13",
+        "color": [
+         150,
+         220,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.138481,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 208.428054,
+        "y": 220.622465,
+        "text": "14",
+        "color": [
+         200,
+         150,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.068003,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 248.366888,
+        "y": 270.216849,
+        "text": "+75G",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.510842,
+        "lifetime": 29,
+        "max_lifetime": 50,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.077767,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [],
+      "explosions": [
+       {
+        "x": 400,
+        "y": 380,
+        "flash_timer": 0,
+        "flash_max": 8,
+        "particle_count": 8,
+        "alive": true
+       }
+      ],
+      "screen_shake": {
+       "intensity": 0.0,
+       "enabled": false
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": true,
+       "wave_num": 4,
+       "timer": 99,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": true,
+       "paths": [
+        [
+         [
+          0,
+          100
+         ],
+         [
+          100,
+          110
+         ]
+        ],
+        [
+         [
+          0,
+          300
+         ],
+         [
+          100,
+          300
+         ]
+        ]
+       ],
+       "timer": 99,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": {
+        "title": "First Blood",
+        "description": "Win a duel",
+        "icon_type": "skull"
+       },
+       "timer": 160,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": null,
+     "snapshot": {
+      "floating_count": 7,
+      "particle_count": 0,
+      "explosion_count": 1,
+      "floating": [
+       {
+        "x": 93.016427,
+        "y": 173.622465,
+        "text": "25",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.000782,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 111.433008,
+        "y": 185.622465,
+        "text": "40!",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": true,
+        "font_size": 24,
+        "x_drift": -0.265095,
+        "scale": 1.199497,
+        "target_scale": 1.2
+       },
+       {
+        "x": 139.274975,
+        "y": 194.622465,
+        "text": "+8",
+        "color": [
+         100,
+         255,
+         100
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.082144,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 166.498912,
+        "y": 201.622465,
+        "text": "12",
+        "color": [
+         255,
+         150,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.261853,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 178.90811,
+        "y": 216.622465,
+        "text": "13",
+        "color": [
+         150,
+         220,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.138481,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 208.428054,
+        "y": 220.622465,
+        "text": "14",
+        "color": [
+         200,
+         150,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.068003,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 248.366888,
+        "y": 270.216849,
+        "text": "+75G",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.510842,
+        "lifetime": 29,
+        "max_lifetime": 50,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.077767,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [],
+      "explosions": [
+       {
+        "x": 400,
+        "y": 380,
+        "flash_timer": 0,
+        "flash_max": 8,
+        "particle_count": 8,
+        "alive": true
+       }
+      ],
+      "screen_shake": {
+       "intensity": 0.0,
+       "enabled": false
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": true,
+       "wave_num": 4,
+       "timer": 99,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": true,
+       "paths": [
+        [
+         [
+          0,
+          100
+         ],
+         [
+          100,
+          110
+         ]
+        ],
+        [
+         [
+          0,
+          300
+         ],
+         [
+          100,
+          300
+         ]
+        ]
+       ],
+       "timer": 99,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": {
+        "title": "First Blood",
+        "description": "Win a duel",
+        "icon_type": "skull"
+       },
+       "timer": 160,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": null,
+     "snapshot": {
+      "floating_count": 7,
+      "particle_count": 0,
+      "explosion_count": 1,
+      "floating": [
+       {
+        "x": 93.016427,
+        "y": 173.622465,
+        "text": "25",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.000782,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 111.433008,
+        "y": 185.622465,
+        "text": "40!",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": true,
+        "font_size": 24,
+        "x_drift": -0.265095,
+        "scale": 1.199497,
+        "target_scale": 1.2
+       },
+       {
+        "x": 139.274975,
+        "y": 194.622465,
+        "text": "+8",
+        "color": [
+         100,
+         255,
+         100
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.082144,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 166.498912,
+        "y": 201.622465,
+        "text": "12",
+        "color": [
+         255,
+         150,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.261853,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 178.90811,
+        "y": 216.622465,
+        "text": "13",
+        "color": [
+         150,
+         220,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.138481,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 208.428054,
+        "y": 220.622465,
+        "text": "14",
+        "color": [
+         200,
+         150,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.681123,
+        "lifetime": 24,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.068003,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       },
+       {
+        "x": 248.366888,
+        "y": 270.216849,
+        "text": "+75G",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.510842,
+        "lifetime": 29,
+        "max_lifetime": 50,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.077767,
+        "scale": 0.999609,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [],
+      "explosions": [
+       {
+        "x": 400,
+        "y": 380,
+        "flash_timer": 0,
+        "flash_max": 8,
+        "particle_count": 8,
+        "alive": true
+       }
+      ],
+      "screen_shake": {
+       "intensity": 0.0,
+       "enabled": false
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": true,
+       "wave_num": 4,
+       "timer": 99,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": true,
+       "paths": [
+        [
+         [
+          0,
+          100
+         ],
+         [
+          100,
+          110
+         ]
+        ],
+        [
+         [
+          0,
+          300
+         ],
+         [
+          100,
+          300
+         ]
+        ]
+       ],
+       "timer": 99,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": {
+        "title": "First Blood",
+        "description": "Win a duel",
+        "icon_type": "skull"
+       },
+       "timer": 160,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": null,
+     "snapshot": {
+      "floating_count": 7,
+      "particle_count": 0,
+      "explosion_count": 1,
+      "floating": [
+       {
+        "x": 93.020338,
+        "y": 170.540804,
+        "text": "25",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.52704,
+        "lifetime": 19,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.000782,
+        "scale": 0.999934,
+        "target_scale": 1.0
+       },
+       {
+        "x": 110.107534,
+        "y": 182.540804,
+        "text": "40!",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.52704,
+        "lifetime": 19,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": true,
+        "font_size": 24,
+        "x_drift": -0.265095,
+        "scale": 1.199916,
+        "target_scale": 1.2
+       },
+       {
+        "x": 138.864255,
+        "y": 191.540804,
+        "text": "+8",
+        "color": [
+         100,
+         255,
+         100
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.52704,
+        "lifetime": 19,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.082144,
+        "scale": 0.999934,
+        "target_scale": 1.0
+       },
+       {
+        "x": 167.808177,
+        "y": 198.540804,
+        "text": "12",
+        "color": [
+         255,
+         150,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.52704,
+        "lifetime": 19,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.261853,
+        "scale": 0.999934,
+        "target_scale": 1.0
+       },
+       {
+        "x": 179.600518,
+        "y": 213.540804,
+        "text": "13",
+        "color": [
+         150,
+         220,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.52704,
+        "lifetime": 19,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.138481,
+        "scale": 0.999934,
+        "target_scale": 1.0
+       },
+       {
+        "x": 208.768067,
+        "y": 217.540804,
+        "text": "14",
+        "color": [
+         200,
+         150,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.52704,
+        "lifetime": 19,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.068003,
+        "scale": 0.999934,
+        "target_scale": 1.0
+       },
+       {
+        "x": 247.978052,
+        "y": 267.905603,
+        "text": "+75G",
+        "color": [
+         255,
+         220,
+         50
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -0.39528,
+        "lifetime": 24,
+        "max_lifetime": 50,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.077767,
+        "scale": 0.999934,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [],
+      "explosions": [
+       {
+        "x": 400,
+        "y": 380,
+        "flash_timer": 0,
+        "flash_max": 8,
+        "particle_count": 5,
+        "alive": true
+       }
+      ],
+      "screen_shake": {
+       "intensity": 0.0,
+       "enabled": false
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": true,
+       "wave_num": 4,
+       "timer": 94,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": true,
+       "paths": [
+        [
+         [
+          0,
+          100
+         ],
+         [
+          100,
+          110
+         ]
+        ],
+        [
+         [
+          0,
+          300
+         ],
+         [
+          100,
+          300
+         ]
+        ]
+       ],
+       "timer": 94,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": {
+        "title": "First Blood",
+        "description": "Win a duel",
+        "icon_type": "skull"
+       },
+       "timer": 155,
+       "duration": 180
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "quality_caps_and_expiry",
+   "seed": 2718,
+   "settings": {
+    "damage_numbers_enabled": true,
+    "particles": true,
+    "particle_ratio": 0.4,
+    "max_damage_numbers": 2,
+    "screen_shake_enabled": true
+   },
+   "operations": [
+    {
+     "op": "damage",
+     "x": 10,
+     "y": 20,
+     "damage": 1,
+     "damage_type": "normal"
+    },
+    {
+     "op": "damage",
+     "x": 20,
+     "y": 30,
+     "damage": 2,
+     "damage_type": "normal"
+    },
+    {
+     "op": "damage",
+     "x": 30,
+     "y": 40,
+     "damage": 3,
+     "damage_type": "normal"
+    },
+    {
+     "op": "particles",
+     "x": 50,
+     "y": 60,
+     "team": "blue",
+     "count": 5
+    },
+    {
+     "op": "explosion",
+     "x": 80,
+     "y": 90,
+     "team": "red",
+     "size": "small"
+    },
+    {
+     "op": "shake",
+     "intensity": 3
+    },
+    {
+     "op": "update",
+     "steps": 12
+    },
+    {
+     "op": "update",
+     "steps": 50
+    }
+   ],
+   "outputs": [
+    {
+     "replay": {
+      "offset_x": -2.0,
+      "offset_y": -3.0,
+      "drift": -0.111184,
+      "created": true
+     },
+     "snapshot": {
+      "floating_count": 1,
+      "particle_count": 0,
+      "explosion_count": 0,
+      "floating": [
+       {
+        "x": 8.0,
+        "y": 17.0,
+        "text": "1",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.111184,
+        "scale": 0.3,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [],
+      "explosions": [],
+      "screen_shake": {
+       "intensity": 0.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": false,
+       "wave_num": 0,
+       "timer": 0,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": false,
+       "paths": [],
+       "timer": 0,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": null,
+       "timer": 0,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": {
+      "offset_x": -2.0,
+      "offset_y": -2.0,
+      "drift": -0.2964,
+      "created": true
+     },
+     "snapshot": {
+      "floating_count": 2,
+      "particle_count": 0,
+      "explosion_count": 0,
+      "floating": [
+       {
+        "x": 8.0,
+        "y": 17.0,
+        "text": "1",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.111184,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 18.0,
+        "y": 28.0,
+        "text": "2",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.2964,
+        "scale": 0.3,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [],
+      "explosions": [],
+      "screen_shake": {
+       "intensity": 0.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": false,
+       "wave_num": 0,
+       "timer": 0,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": false,
+       "paths": [],
+       "timer": 0,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": null,
+       "timer": 0,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": {
+      "offset_x": 2.0,
+      "offset_y": -3.0,
+      "drift": 0.094367,
+      "created": true
+     },
+     "snapshot": {
+      "floating_count": 2,
+      "particle_count": 0,
+      "explosion_count": 0,
+      "floating": [
+       {
+        "x": 18.0,
+        "y": 28.0,
+        "text": "2",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.2964,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 32.0,
+        "y": 37.0,
+        "text": "3",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.094367,
+        "scale": 0.3,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [],
+      "explosions": [],
+      "screen_shake": {
+       "intensity": 0.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": false,
+       "wave_num": 0,
+       "timer": 0,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": false,
+       "paths": [],
+       "timer": 0,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": null,
+       "timer": 0,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": {
+      "specs": [
+       {
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": 2.138489,
+        "vy": 0.0449,
+        "lifetime": 14,
+        "size": 2
+       },
+       {
+        "color": [
+         100,
+         200,
+         255
+        ],
+        "vx": 0.873964,
+        "vy": -0.89024,
+        "lifetime": 20,
+        "size": 2
+       }
+      ]
+     },
+     "snapshot": {
+      "floating_count": 2,
+      "particle_count": 2,
+      "explosion_count": 0,
+      "floating": [
+       {
+        "x": 18.0,
+        "y": 28.0,
+        "text": "2",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.2964,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 32.0,
+        "y": 37.0,
+        "text": "3",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.094367,
+        "scale": 0.3,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [
+       {
+        "x": 50.0,
+        "y": 60.0,
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": 2.138489,
+        "vy": 0.0449,
+        "lifetime": 14,
+        "max_lifetime": 14,
+        "size": 2,
+        "alive": true
+       },
+       {
+        "x": 50.0,
+        "y": 60.0,
+        "color": [
+         100,
+         200,
+         255
+        ],
+        "vx": 0.873964,
+        "vy": -0.89024,
+        "lifetime": 20,
+        "max_lifetime": 20,
+        "size": 2,
+        "alive": true
+       }
+      ],
+      "explosions": [],
+      "screen_shake": {
+       "intensity": 0.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": false,
+       "wave_num": 0,
+       "timer": 0,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": false,
+       "paths": [],
+       "timer": 0,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": null,
+       "timer": 0,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": {
+      "specs": [
+       {
+        "color": [
+         255,
+         100,
+         100
+        ],
+        "vx": 1.150755,
+        "vy": -1.283167,
+        "lifetime": 30,
+        "size": 2
+       },
+       {
+        "color": [
+         255,
+         150,
+         100
+        ],
+        "vx": 2.868197,
+        "vy": 0.795812,
+        "lifetime": 33,
+        "size": 3
+       },
+       {
+        "color": [
+         255,
+         150,
+         100
+        ],
+        "vx": -0.474251,
+        "vy": 1.534536,
+        "lifetime": 29,
+        "size": 2
+       },
+       {
+        "color": [
+         255,
+         100,
+         100
+        ],
+        "vx": 2.867523,
+        "vy": 0.700463,
+        "lifetime": 25,
+        "size": 4
+       },
+       {
+        "color": [
+         255,
+         100,
+         100
+        ],
+        "vx": 2.342158,
+        "vy": -0.396112,
+        "lifetime": 30,
+        "size": 3
+       },
+       {
+        "color": [
+         255,
+         150,
+         100
+        ],
+        "vx": -0.655537,
+        "vy": 2.359362,
+        "lifetime": 26,
+        "size": 2
+       },
+       {
+        "color": [
+         255,
+         150,
+         100
+        ],
+        "vx": 2.118361,
+        "vy": -2.454052,
+        "lifetime": 24,
+        "size": 3
+       },
+       {
+        "color": [
+         255,
+         200,
+         100
+        ],
+        "vx": -2.985096,
+        "vy": 2.579255,
+        "lifetime": 24,
+        "size": 2
+       }
+      ]
+     },
+     "snapshot": {
+      "floating_count": 2,
+      "particle_count": 2,
+      "explosion_count": 1,
+      "floating": [
+       {
+        "x": 18.0,
+        "y": 28.0,
+        "text": "2",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.2964,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 32.0,
+        "y": 37.0,
+        "text": "3",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.094367,
+        "scale": 0.3,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [
+       {
+        "x": 50.0,
+        "y": 60.0,
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": 2.138489,
+        "vy": 0.0449,
+        "lifetime": 14,
+        "max_lifetime": 14,
+        "size": 2,
+        "alive": true
+       },
+       {
+        "x": 50.0,
+        "y": 60.0,
+        "color": [
+         100,
+         200,
+         255
+        ],
+        "vx": 0.873964,
+        "vy": -0.89024,
+        "lifetime": 20,
+        "max_lifetime": 20,
+        "size": 2,
+        "alive": true
+       }
+      ],
+      "explosions": [
+       {
+        "x": 80,
+        "y": 90,
+        "flash_timer": 8,
+        "flash_max": 8,
+        "particle_count": 8,
+        "alive": true
+       }
+      ],
+      "screen_shake": {
+       "intensity": 0.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": false,
+       "wave_num": 0,
+       "timer": 0,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": false,
+       "paths": [],
+       "timer": 0,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": null,
+       "timer": 0,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": null,
+     "snapshot": {
+      "floating_count": 2,
+      "particle_count": 2,
+      "explosion_count": 1,
+      "floating": [
+       {
+        "x": 18.0,
+        "y": 28.0,
+        "text": "2",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.2964,
+        "scale": 0.3,
+        "target_scale": 1.0
+       },
+       {
+        "x": 32.0,
+        "y": 37.0,
+        "text": "3",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -2.0,
+        "lifetime": 45,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.094367,
+        "scale": 0.3,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [
+       {
+        "x": 50.0,
+        "y": 60.0,
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": 2.138489,
+        "vy": 0.0449,
+        "lifetime": 14,
+        "max_lifetime": 14,
+        "size": 2,
+        "alive": true
+       },
+       {
+        "x": 50.0,
+        "y": 60.0,
+        "color": [
+         100,
+         200,
+         255
+        ],
+        "vx": 0.873964,
+        "vy": -0.89024,
+        "lifetime": 20,
+        "max_lifetime": 20,
+        "size": 2,
+        "alive": true
+       }
+      ],
+      "explosions": [
+       {
+        "x": 80,
+        "y": 90,
+        "flash_timer": 8,
+        "flash_max": 8,
+        "particle_count": 8,
+        "alive": true
+       }
+      ],
+      "screen_shake": {
+       "intensity": 3.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": false,
+       "wave_num": 0,
+       "timer": 0,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": false,
+       "paths": [],
+       "timer": 0,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": null,
+       "timer": 0,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": null,
+     "snapshot": {
+      "floating_count": 2,
+      "particle_count": 2,
+      "explosion_count": 1,
+      "floating": [
+       {
+        "x": 14.4432,
+        "y": 9.614404,
+        "text": "2",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -1.08072,
+        "lifetime": 33,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": -0.2964,
+        "scale": 0.990311,
+        "target_scale": 1.0
+       },
+       {
+        "x": 33.132404,
+        "y": 18.614404,
+        "text": "3",
+        "color": [
+         255,
+         255,
+         255
+        ],
+        "velocity_x": 0.0,
+        "velocity_y": -1.08072,
+        "lifetime": 33,
+        "max_lifetime": 45,
+        "alive": true,
+        "critical": false,
+        "font_size": 18,
+        "x_drift": 0.094367,
+        "scale": 0.990311,
+        "target_scale": 1.0
+       }
+      ],
+      "particles": [
+       {
+        "x": 69.658694,
+        "y": 70.438799,
+        "color": [
+         200,
+         240,
+         255
+        ],
+        "vx": 1.155554,
+        "vy": 1.8449,
+        "lifetime": 2,
+        "max_lifetime": 14,
+        "size": 2,
+        "alive": true
+       },
+       {
+        "x": 58.034171,
+        "y": 59.217117,
+        "color": [
+         100,
+         200,
+         255
+        ],
+        "vx": 0.472255,
+        "vy": 0.90976,
+        "lifetime": 8,
+        "max_lifetime": 20,
+        "size": 2,
+        "alive": true
+       }
+      ],
+      "explosions": [
+       {
+        "x": 80,
+        "y": 90,
+        "flash_timer": 0,
+        "flash_max": 8,
+        "particle_count": 8,
+        "alive": true
+       }
+      ],
+      "screen_shake": {
+       "intensity": 0.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": false,
+       "wave_num": 0,
+       "timer": 0,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": false,
+       "paths": [],
+       "timer": 0,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": null,
+       "timer": 0,
+       "duration": 180
+      }
+     }
+    },
+    {
+     "replay": null,
+     "snapshot": {
+      "floating_count": 0,
+      "particle_count": 0,
+      "explosion_count": 0,
+      "floating": [],
+      "particles": [],
+      "explosions": [],
+      "screen_shake": {
+       "intensity": 0.0,
+       "enabled": true
+      },
+      "combo": {
+       "count": 0,
+       "timer": 0,
+       "max_timer": 120,
+       "display_scale": 0.0,
+       "target_scale": 1.0,
+       "color_flash": 0,
+       "last_combo": 0
+      },
+      "wave": {
+       "active": false,
+       "wave_num": 0,
+       "timer": 0,
+       "duration": 120
+      },
+      "kill_feed": [],
+      "path_preview": {
+       "active": false,
+       "paths": [],
+       "timer": 0,
+       "duration": 120
+      },
+      "achievement": {
+       "queue": [],
+       "current": null,
+       "timer": 0,
+       "duration": 180
+      }
+     }
+    }
+   ]
+  }
+ ]
+}
