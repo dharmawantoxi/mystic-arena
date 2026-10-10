@@ -1,0 +1,831 @@
+{
+ "source": "_render.py::RenderCache",
+ "font_min": 8,
+ "font_max": 220,
+ "singleton_same_instance": true,
+ "cases": [
+  {
+   "name": "font_and_shape_reuse",
+   "operations": [
+    {
+     "op": "font",
+     "size": 6,
+     "style": "body",
+     "bold": false
+    },
+    {
+     "op": "font",
+     "size": 300,
+     "style": "title",
+     "bold": true
+    },
+    {
+     "op": "font",
+     "size": 6,
+     "style": "body",
+     "bold": false
+    },
+    {
+     "op": "font",
+     "size": 16,
+     "style": "body",
+     "bold": true
+    },
+    {
+     "op": "circle",
+     "radius": 10,
+     "color": [
+      -20,
+      128,
+      300
+     ],
+     "width": 0
+    },
+    {
+     "op": "circle",
+     "radius": 10,
+     "color": [
+      0,
+      128,
+      255
+     ],
+     "width": 0
+    },
+    {
+     "op": "circle",
+     "radius": 10,
+     "color": [
+      0,
+      128,
+      255,
+      999
+     ],
+     "width": 2
+    },
+    {
+     "op": "circle",
+     "radius": 10,
+     "color": [
+      0,
+      128,
+      255,
+      999
+     ],
+     "width": 2
+    },
+    {
+     "op": "glow",
+     "radius": 12,
+     "color": [
+      40,
+      80,
+      120,
+      10
+     ],
+     "layers": 4
+    },
+    {
+     "op": "glow",
+     "radius": 12,
+     "color": [
+      40,
+      80,
+      120,
+      220
+     ],
+     "layers": 4
+    },
+    {
+     "op": "glow",
+     "radius": 3,
+     "color": [
+      200,
+      100,
+      50
+     ],
+     "layers": 5
+    },
+    {
+     "op": "stats"
+    },
+    {
+     "op": "clear"
+    },
+    {
+     "op": "stats"
+    },
+    {
+     "op": "font",
+     "size": 6,
+     "style": "body",
+     "bold": false
+    },
+    {
+     "op": "circle",
+     "radius": 10,
+     "color": [
+      0,
+      128,
+      255
+     ],
+     "width": 0
+    }
+   ],
+   "outputs": [
+    {
+     "font": {
+      "size": 8,
+      "style": "body",
+      "bold": false
+     },
+     "font_calls": 1,
+     "stats": {
+      "fonts": 1,
+      "circles": 0,
+      "surfaces": 0
+     }
+    },
+    {
+     "font": {
+      "size": 220,
+      "style": "title",
+      "bold": true
+     },
+     "font_calls": 2,
+     "stats": {
+      "fonts": 2,
+      "circles": 0,
+      "surfaces": 0
+     }
+    },
+    {
+     "font": {
+      "size": 8,
+      "style": "body",
+      "bold": false
+     },
+     "font_calls": 2,
+     "stats": {
+      "fonts": 2,
+      "circles": 0,
+      "surfaces": 0
+     }
+    },
+    {
+     "font": {
+      "size": 16,
+      "style": "body",
+      "bold": true
+     },
+     "font_calls": 3,
+     "stats": {
+      "fonts": 3,
+      "circles": 0,
+      "surfaces": 0
+     }
+    },
+    {
+     "surface": {
+      "width": 24,
+      "height": 24,
+      "draw_calls": [
+       {
+        "color": [
+         0,
+         128,
+         255
+        ],
+        "center": [
+         12,
+         12
+        ],
+        "radius": 10,
+        "width": 0
+       }
+      ]
+     },
+     "font_calls": 3,
+     "stats": {
+      "fonts": 3,
+      "circles": 1,
+      "surfaces": 0
+     }
+    },
+    {
+     "surface": {
+      "width": 24,
+      "height": 24,
+      "draw_calls": [
+       {
+        "color": [
+         0,
+         128,
+         255
+        ],
+        "center": [
+         12,
+         12
+        ],
+        "radius": 10,
+        "width": 0
+       }
+      ]
+     },
+     "font_calls": 3,
+     "stats": {
+      "fonts": 3,
+      "circles": 1,
+      "surfaces": 0
+     }
+    },
+    {
+     "surface": {
+      "width": 24,
+      "height": 24,
+      "draw_calls": [
+       {
+        "color": [
+         0,
+         128,
+         255,
+         255
+        ],
+        "center": [
+         12,
+         12
+        ],
+        "radius": 10,
+        "width": 2
+       }
+      ]
+     },
+     "font_calls": 3,
+     "stats": {
+      "fonts": 3,
+      "circles": 2,
+      "surfaces": 0
+     }
+    },
+    {
+     "surface": {
+      "width": 24,
+      "height": 24,
+      "draw_calls": [
+       {
+        "color": [
+         0,
+         128,
+         255,
+         255
+        ],
+        "center": [
+         12,
+         12
+        ],
+        "radius": 10,
+        "width": 2
+       }
+      ]
+     },
+     "font_calls": 3,
+     "stats": {
+      "fonts": 3,
+      "circles": 2,
+      "surfaces": 0
+     }
+    },
+    {
+     "surface": {
+      "width": 28,
+      "height": 28,
+      "draw_calls": [
+       {
+        "color": [
+         40,
+         80,
+         120,
+         200
+        ],
+        "center": [
+         14,
+         14
+        ],
+        "radius": 12,
+        "width": 0
+       },
+       {
+        "color": [
+         40,
+         80,
+         120,
+         150
+        ],
+        "center": [
+         14,
+         14
+        ],
+        "radius": 9,
+        "width": 0
+       },
+       {
+        "color": [
+         40,
+         80,
+         120,
+         100
+        ],
+        "center": [
+         14,
+         14
+        ],
+        "radius": 6,
+        "width": 0
+       },
+       {
+        "color": [
+         40,
+         80,
+         120,
+         50
+        ],
+        "center": [
+         14,
+         14
+        ],
+        "radius": 3,
+        "width": 0
+       }
+      ]
+     },
+     "font_calls": 3,
+     "stats": {
+      "fonts": 3,
+      "circles": 2,
+      "surfaces": 1
+     }
+    },
+    {
+     "surface": {
+      "width": 28,
+      "height": 28,
+      "draw_calls": [
+       {
+        "color": [
+         40,
+         80,
+         120,
+         200
+        ],
+        "center": [
+         14,
+         14
+        ],
+        "radius": 12,
+        "width": 0
+       },
+       {
+        "color": [
+         40,
+         80,
+         120,
+         150
+        ],
+        "center": [
+         14,
+         14
+        ],
+        "radius": 9,
+        "width": 0
+       },
+       {
+        "color": [
+         40,
+         80,
+         120,
+         100
+        ],
+        "center": [
+         14,
+         14
+        ],
+        "radius": 6,
+        "width": 0
+       },
+       {
+        "color": [
+         40,
+         80,
+         120,
+         50
+        ],
+        "center": [
+         14,
+         14
+        ],
+        "radius": 3,
+        "width": 0
+       }
+      ]
+     },
+     "font_calls": 3,
+     "stats": {
+      "fonts": 3,
+      "circles": 2,
+      "surfaces": 1
+     }
+    },
+    {
+     "surface": {
+      "width": 10,
+      "height": 10,
+      "draw_calls": [
+       {
+        "color": [
+         200,
+         100,
+         50,
+         200
+        ],
+        "center": [
+         5,
+         5
+        ],
+        "radius": 3,
+        "width": 0
+       },
+       {
+        "color": [
+         200,
+         100,
+         50,
+         160
+        ],
+        "center": [
+         5,
+         5
+        ],
+        "radius": 3,
+        "width": 0
+       },
+       {
+        "color": [
+         200,
+         100,
+         50,
+         120
+        ],
+        "center": [
+         5,
+         5
+        ],
+        "radius": 3,
+        "width": 0
+       },
+       {
+        "color": [
+         200,
+         100,
+         50,
+         80
+        ],
+        "center": [
+         5,
+         5
+        ],
+        "radius": 3,
+        "width": 0
+       },
+       {
+        "color": [
+         200,
+         100,
+         50,
+         40
+        ],
+        "center": [
+         5,
+         5
+        ],
+        "radius": 3,
+        "width": 0
+       }
+      ]
+     },
+     "font_calls": 3,
+     "stats": {
+      "fonts": 3,
+      "circles": 2,
+      "surfaces": 2
+     }
+    },
+    {
+     "font_calls": 3,
+     "stats": {
+      "fonts": 3,
+      "circles": 2,
+      "surfaces": 2
+     }
+    },
+    {
+     "font_calls": 3,
+     "stats": {
+      "fonts": 3,
+      "circles": 0,
+      "surfaces": 0
+     }
+    },
+    {
+     "font_calls": 3,
+     "stats": {
+      "fonts": 3,
+      "circles": 0,
+      "surfaces": 0
+     }
+    },
+    {
+     "font": {
+      "size": 8,
+      "style": "body",
+      "bold": false
+     },
+     "font_calls": 3,
+     "stats": {
+      "fonts": 3,
+      "circles": 0,
+      "surfaces": 0
+     }
+    },
+    {
+     "surface": {
+      "width": 24,
+      "height": 24,
+      "draw_calls": [
+       {
+        "color": [
+         0,
+         128,
+         255
+        ],
+        "center": [
+         12,
+         12
+        ],
+        "radius": 10,
+        "width": 0
+       }
+      ]
+     },
+     "font_calls": 3,
+     "stats": {
+      "fonts": 3,
+      "circles": 1,
+      "surfaces": 0
+     }
+    }
+   ]
+  },
+  {
+   "name": "style_and_layer_keys",
+   "operations": [
+    {
+     "op": "font",
+     "size": 20,
+     "style": "body_medium",
+     "bold": false
+    },
+    {
+     "op": "font",
+     "size": 20,
+     "style": "body_medium",
+     "bold": true
+    },
+    {
+     "op": "font",
+     "size": 20,
+     "style": "body_medium",
+     "bold": false
+    },
+    {
+     "op": "circle",
+     "radius": 0,
+     "color": [
+      255,
+      0,
+      0,
+      10
+     ],
+     "width": 0
+    },
+    {
+     "op": "circle",
+     "radius": 0,
+     "color": [
+      255,
+      0,
+      0,
+      10
+     ],
+     "width": 1
+    },
+    {
+     "op": "glow",
+     "radius": 10,
+     "color": [
+      10,
+      20,
+      30
+     ],
+     "layers": 1
+    },
+    {
+     "op": "glow",
+     "radius": 10,
+     "color": [
+      10,
+      20,
+      30
+     ],
+     "layers": 2
+    },
+    {
+     "op": "stats"
+    }
+   ],
+   "outputs": [
+    {
+     "font": {
+      "size": 20,
+      "style": "body_medium",
+      "bold": false
+     },
+     "font_calls": 1,
+     "stats": {
+      "fonts": 1,
+      "circles": 0,
+      "surfaces": 0
+     }
+    },
+    {
+     "font": {
+      "size": 20,
+      "style": "body_medium",
+      "bold": true
+     },
+     "font_calls": 2,
+     "stats": {
+      "fonts": 2,
+      "circles": 0,
+      "surfaces": 0
+     }
+    },
+    {
+     "font": {
+      "size": 20,
+      "style": "body_medium",
+      "bold": false
+     },
+     "font_calls": 2,
+     "stats": {
+      "fonts": 2,
+      "circles": 0,
+      "surfaces": 0
+     }
+    },
+    {
+     "surface": {
+      "width": 4,
+      "height": 4,
+      "draw_calls": [
+       {
+        "color": [
+         255,
+         0,
+         0,
+         10
+        ],
+        "center": [
+         2,
+         2
+        ],
+        "radius": 0,
+        "width": 0
+       }
+      ]
+     },
+     "font_calls": 2,
+     "stats": {
+      "fonts": 2,
+      "circles": 1,
+      "surfaces": 0
+     }
+    },
+    {
+     "surface": {
+      "width": 4,
+      "height": 4,
+      "draw_calls": [
+       {
+        "color": [
+         255,
+         0,
+         0,
+         10
+        ],
+        "center": [
+         2,
+         2
+        ],
+        "radius": 0,
+        "width": 1
+       }
+      ]
+     },
+     "font_calls": 2,
+     "stats": {
+      "fonts": 2,
+      "circles": 2,
+      "surfaces": 0
+     }
+    },
+    {
+     "surface": {
+      "width": 24,
+      "height": 24,
+      "draw_calls": [
+       {
+        "color": [
+         10,
+         20,
+         30,
+         200
+        ],
+        "center": [
+         12,
+         12
+        ],
+        "radius": 10,
+        "width": 0
+       }
+      ]
+     },
+     "font_calls": 2,
+     "stats": {
+      "fonts": 2,
+      "circles": 2,
+      "surfaces": 1
+     }
+    },
+    {
+     "surface": {
+      "width": 24,
+      "height": 24,
+      "draw_calls": [
+       {
+        "color": [
+         10,
+         20,
+         30,
+         200
+        ],
+        "center": [
+         12,
+         12
+        ],
+        "radius": 10,
+        "width": 0
+       },
+       {
+        "color": [
+         10,
+         20,
+         30,
+         100
+        ],
+        "center": [
+         12,
+         12
+        ],
+        "radius": 5,
+        "width": 0
+       }
+      ]
+     },
+     "font_calls": 2,
+     "stats": {
+      "fonts": 2,
+      "circles": 2,
+      "surfaces": 2
+     }
+    },
+    {
+     "font_calls": 2,
+     "stats": {
+      "fonts": 2,
+      "circles": 2,
+      "surfaces": 2
+     }
+    }
+   ]
+  }
+ ]
+}
