@@ -87,12 +87,14 @@ func overlay_draw_summary() -> Dictionary:
 	return {
 		"floating_texts": world.effects.floating_texts.size(),
 		"particles": world.effects.particles.size(),
+		"explosions": world.effects.explosions.size(),
 		"path_preview_active": world.effects.path_preview.active,
 		"wave_announcer_active": world.effects.wave_announcer.active,
 		"combo_visible": world.effects.combo_counter.display_scale > 0.0,
 		"achievement_showing": world.effects.achievement.is_showing(),
 		"level_intro_active": bool(intro.get("active", false)),
 		"boss_intro_active": bool(b_intro.get("active", false)),
+		"boss_death_active": bool(b_death.get("death_active", false)),
 		"boss_celebration_active": bool(b_death.get("celebration_active", false)),
 		"screen_shake_active":
 		(
@@ -126,6 +128,24 @@ func _draw_path_preview(world: Prototype) -> void:
 
 
 func _draw_world_effects(world: Prototype) -> void:
+	for explosion in world.effects.explosions:
+		if not explosion.is_alive():
+			continue
+		var flash: Dictionary = explosion.get_flash_state()
+		var f_size := float(flash.get("size", 0))
+		var f_intensity := clampf(float(flash.get("intensity", 0.0)), 0.0, 1.0)
+		var center := Vector2(float(explosion.x), float(explosion.y))
+		if f_size > 0.0 and f_intensity > 0.0:
+			draw_circle(center, f_size, Color(1.0, 1.0, 0.78, 0.78 * f_intensity))
+			draw_circle(center, f_size * 0.5, Color(1.0, 1.0, 1.0, f_intensity))
+		for spark in explosion.particles:
+			if not spark.alive:
+				continue
+			var s_alpha := clampf(float(spark.alpha()) / 255.0, 0.0, 1.0)
+			var s_size := float(spark.current_size())
+			if s_size > 0.0 and s_alpha > 0.0:
+				draw_circle(Vector2(spark.x, spark.y), s_size, Color(spark.color, s_alpha))
+	_draw_boss_death_sequence(world)
 	for particle in world.effects.particles:
 		if not particle.alive:
 			continue
@@ -148,6 +168,57 @@ func _draw_world_effects(world: Prototype) -> void:
 				f_size,
 				Color(item.color, t_alpha)
 			)
+
+
+func _draw_boss_death_sequence(world: Prototype) -> void:
+	if world.boss_death == null or not world.boss_death.is_death_active():
+		return
+	var anim = world.boss_death
+	var center := Vector2(float(anim.boss_x), float(anim.boss_y))
+	var visual: Dictionary = anim.get_death_visual_state()
+	for wave_value in visual.get("waves", []):
+		var wave: Dictionary = wave_value
+		var w_radius := float(wave.get("radius", 0))
+		var w_alpha := clampf(float(wave.get("alpha", 0)) / 255.0, 0.0, 1.0)
+		var w_rgb: Array = wave.get("color", [255, 220, 150])
+		if w_radius > 0.0 and w_alpha > 0.0 and w_rgb.size() >= 3:
+			var w_col := Color8(int(w_rgb[0]), int(w_rgb[1]), int(w_rgb[2]))
+			draw_arc(center, w_radius, 0.0, TAU, 48, Color(w_col, w_alpha), 3.0, true)
+	if bool(visual.get("body_visible", false)):
+		var d_size := float(visual.get("dissolve_size", 0))
+		var d_alpha := clampf(float(visual.get("dissolve_alpha", 0)) / 255.0, 0.0, 1.0)
+		var b_rgb: Array = anim.boss_color
+		if d_size > 0.0 and d_alpha > 0.0 and b_rgb.size() >= 3:
+			var b_col := Color8(int(b_rgb[0]), int(b_rgb[1]), int(b_rgb[2]))
+			draw_circle(center, d_size, Color(b_col, d_alpha))
+	for fragment_value in anim.fragments:
+		var frag: Dictionary = fragment_value
+		var f_life := int(frag.get("life", 0))
+		var f_max := maxi(1, int(frag.get("max_life", 60)))
+		if f_life <= 0:
+			continue
+		var f_alpha := clampf(float(f_life) / float(f_max), 0.0, 1.0)
+		var f_rgb: Array = frag.get("color", [180, 90, 80])
+		var f_col := Color8(int(f_rgb[0]), int(f_rgb[1]), int(f_rgb[2]))
+		draw_circle(
+			Vector2(float(frag.get("x", 0.0)), float(frag.get("y", 0.0))),
+			float(frag.get("size", 4)),
+			Color(f_col, f_alpha)
+		)
+	for rising_value in anim.rising_particles:
+		var rising: Dictionary = rising_value
+		var r_life := int(rising.get("life", 0))
+		var r_max := maxi(1, int(rising.get("max_life", 100)))
+		if r_life <= 0:
+			continue
+		var r_alpha := clampf(float(r_life) / float(r_max), 0.0, 1.0)
+		var r_rgb: Array = rising.get("color", [255, 220, 150])
+		var r_col := Color8(int(r_rgb[0]), int(r_rgb[1]), int(r_rgb[2]))
+		draw_circle(
+			Vector2(float(rising.get("x", 0.0)), float(rising.get("y", 0.0))),
+			float(rising.get("size", 3)),
+			Color(r_col, r_alpha)
+		)
 
 
 func _draw_wave_announcer(world: Prototype) -> void:
@@ -272,6 +343,14 @@ func _draw_boss_intro(world: Prototype) -> void:
 
 func _draw_boss_celebration(world: Prototype) -> void:
 	var death := world.boss_death_state()
+	if bool(death.get("death_active", false)):
+		var d_visual: Dictionary = death.get("death_visual", {})
+		if bool(d_visual.get("flash_visible", false)):
+			var flash_alpha := clampf(float(d_visual.get("flash_alpha", 0)) / 255.0, 0.0, 1.0)
+			if flash_alpha > 0.0:
+				draw_rect(
+					Rect2(Vector2.ZERO, Vector2(1280.0, 720.0)), Color(1.0, 1.0, 1.0, flash_alpha)
+				)
 	if not bool(death.get("celebration_active", false)):
 		return
 	var visual: Dictionary = death.get("celebration_visual", {})

@@ -6,6 +6,8 @@ extends RefCounted
 
 const BossDeathAnimation = preload("res://scripts/ui/boss_death_animation.gd")
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
+const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd")
+const PrototypeView = preload("res://scenes/prototype/prototype_view.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const FIXTURE := "res://tests/fixtures/boss_death_animation_source.json"
 const KEY_BY_NAME := {"space": KEY_SPACE, "escape": KEY_ESCAPE, "letter": KEY_A}
@@ -486,14 +488,20 @@ func _check_runtime_wiring(check: Callable) -> void:
 		"Hero lethal hit lands on mini-boss"
 	)
 	world._process_boss_result()
+	var session := PrototypeSession.new()
+	session.world = world
+	var view := PrototypeView.new()
+	view.session = session
 	check.call(
 		(
 			world.boss_death != null
 			and world.boss_death.is_death_active()
 			and world.boss_death.timer == BossDeathAnimation.MINI_DURATION
 			and bool(world.boss_death_state().get("death_active", false))
+			and bool(view.overlay_draw_summary().get("boss_death_active", false))
+			and int(view.overlay_draw_summary().get("explosions", 0)) >= 1
 		),
-		"Boss defeat configures BossDeathAnimation on Prototype"
+		"Boss defeat configures BossDeathAnimation on Prototype and PrototypeView summary"
 	)
 	for _tick in range(BossDeathAnimation.MINI_DURATION):
 		world.step_tick()
@@ -502,9 +510,12 @@ func _check_runtime_wiring(check: Callable) -> void:
 			not world.boss_death.is_death_active()
 			and not world.boss_death.is_active()
 			and world.boss_death_pause_ticks == 0
+			and not bool(view.overlay_draw_summary().get("boss_death_active", true))
 		),
 		"Mini-boss death animation completes alongside the 60-tick pause"
 	)
+	view.free()
+	session.free()
 	var true_boss := world._spawn_boss("abaddon")
 	check.call(true_boss != null, "Runtime wiring test spawns true boss")
 	if true_boss == null:
