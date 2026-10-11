@@ -635,5 +635,5 @@ Sumber memantulkan lewat `source.take_damage(dmg, team, "magic")` tanpa
 `-1`/`"neutral"` + tipe `"magic"` untuk seluruh penyerang (boss sejak 9i, unit
 sejak 9s); preload `BossState` dan cabangnya dihapus. Oracle
 `item_reflect_unit_source_oracle.py` (4 baris) plus suite
-`item_reflect_unit_checks.gd` (undead 170 vs 144, troll 170/170, hero armor
+`item_reflect_unit_checks.gd` (undead 170 vs 144, troll 170 vs 162, hero armor
 125/125, hero tanpa armor 170/170).

@@ -6,6 +6,7 @@
   "live_stats": {
     "undead_magic_resist": 0.15,
     "troll_armor": 2,
+    "troll_magic_resist": 0.05,
     "hero_armor": 6
   },
   "armor_item": "steel_aegis",
@@ -47,7 +48,7 @@
       "name": "reflect_on_troll_attacker",
       "attacker_kind": "troll",
       "hero_armor": 0,
-      "expect_divergence": false,
+      "expect_divergence": true,
       "expected": {
         "hp_loss": 170,
         "credited_total": 0,
@@ -60,7 +61,7 @@
         ]
       },
       "native_old": {
-        "hp_loss": 170,
+        "hp_loss": 162,
         "credited_total": 0,
         "reflect_args": [
           [

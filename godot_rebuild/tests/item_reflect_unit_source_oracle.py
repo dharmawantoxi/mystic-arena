@@ -39,6 +39,7 @@ BLUE = "blue"
 ATTACKER_ID = 11
 UNDEAD_MAGIC_RESIST = 0.15
 TROLL_ARMOR = 2
+TROLL_MAGIC_RESIST = 0.05
 HERO_ARMOR = 6
 ARMOR_ITEM = "steel_aegis"
 
@@ -51,7 +52,13 @@ def _minion_case(kind):
         "school": None,
         "source_school": None,
         "armor": TROLL_ARMOR if kind == "troll" else 0,
-        "magic_resist": UNDEAD_MAGIC_RESIST if kind == "undead" else 0.0,
+        "magic_resist": (
+            TROLL_MAGIC_RESIST
+            if kind == "troll"
+            else UNDEAD_MAGIC_RESIST
+            if kind == "undead"
+            else 0.0
+        ),
         "armor_shred": 0.0,
         "dmg_amp_timer": 0,
         "dmg_amp_amount": 0.0,
@@ -134,7 +141,7 @@ SCENARIOS = (
     {
         "name": "reflect_on_troll_attacker",
         "attacker_kind": "troll",
-        "expect_divergence": False,
+        "expect_divergence": True,
     },
     {
         "name": "reflect_on_armoured_hero_attacker",
@@ -209,6 +216,7 @@ def source_fixture():
         "live_stats": {
             "undead_magic_resist": UNDEAD_MAGIC_RESIST,
             "troll_armor": TROLL_ARMOR,
+            "troll_magic_resist": TROLL_MAGIC_RESIST,
             "hero_armor": HERO_ARMOR,
         },
         "armor_item": ARMOR_ITEM,

@@ -85,6 +85,10 @@ func _live_stats(fixture: Dictionary, check: Callable) -> void:
 		"the troll armour is the fixture value"
 	)
 	check.call(
+		is_equal_approx(float(TROLL.magic_resist), float(stats.get("troll_magic_resist", -1.0))),
+		"the troll magic resist is the fixture value"
+	)
+	check.call(
 		(
 			int(fixture.get("reflect_sent", -1)) == REFLECT_SENT
 			and int(fixture.get("incoming_damage", -1)) == INCOMING_DAMAGE
@@ -152,6 +156,12 @@ func _reflect_hit(data: Dictionary, legacy: bool, check: Callable) -> Dictionary
 		attacker = world.spawn_unit(UNDEAD, World.RED, 1)
 	else:
 		attacker = world.spawn_unit(TROLL, World.RED, 1)
+	if attacker != null:
+		# The live stubs carry the definition HP (troll 320, undead 65); the
+		# fixture models a durable attacker so the payload is not clamped by the
+		# death of the victim, exactly like the oracle stub.
+		attacker.hp = 1000.0
+		attacker.max_hp = 1000.0
 	if victim == null or attacker == null:
 		check.call(
 			false,
