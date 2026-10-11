@@ -162,17 +162,31 @@ func _tower_victim(check: Callable, data: Dictionary, label: String, raw: int) -
 		"%s: the control tower armour can cut a physical hit" % label
 	)
 	tower.position = thorne.position + Vector2(40.0, 0.0)
+	# `spawn_structure` hands a fresh tower the free shield, which would swallow
+	# the hit before HP; the fixture rows measure HP damage, so drop it first.
+	tower.shield = 0
+	tower.free_shield_active = false
+	tower.shield_active = false
 	var hp_before: float = tower.hp
 	var credit_before: int = thorne.damage_dealt
-	check.call(
-		world.cast_hero_q(thorne.id, world.structures), "%s: the production cast fires" % label
-	)
+	var cast_ok: bool = world.cast_hero_q(thorne.id, world.structures)
 	var loss := int(hp_before - tower.hp)
-	check.call(
-		loss == int(data["expected"]["hp_loss"]),
-		(
-			"%s: the structure takes the sourceless amount %d"
-			% [label, int(data["expected"]["hp_loss"])]
+	check.call(cast_ok, "%s: the production cast fires" % label)
+	(
+		check
+		. call(
+			loss == int(data["expected"]["hp_loss"]),
+			(
+				"%s: structure loss %d (sourceless expected %d, physical %d, raw %d, armor %.1f)"
+				% [
+					label,
+					loss,
+					int(data["expected"]["hp_loss"]),
+					physical,
+					raw,
+					armor,
+				]
+			)
 		)
 	)
 	check.call(
