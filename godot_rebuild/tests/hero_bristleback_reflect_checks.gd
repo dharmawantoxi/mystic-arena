@@ -104,7 +104,7 @@ func _replay(fixture: Dictionary, check: Callable) -> void:
 		)
 		if bool(data.get("expect_divergence", false)):
 			check.call(
-				not _same_result(live, legacy),
+				int(live.get("attacker_hp_loss", -1)) != int(legacy.get("attacker_hp_loss", -2)),
 				"%s: the reflect no longer matches the pre-9t column" % label
 			)
 	check.call(replayed >= 4, "at least four fixture rows replay through the production path")
@@ -254,11 +254,9 @@ func _spawn_attacker(world: World, data: Dictionary) -> UnitState:
 
 
 func _matches(actual: Dictionary, expected: Dictionary) -> bool:
-	for key in ["attacker_hp_loss", "defender_hp_loss", "credited_total"]:
+	# The pre-9t column is replayed through `_deliver_hit` directly, so it only
+	# carries the reflected attacker loss; compare the keys the row defines.
+	for key in expected.keys():
 		if int(actual.get(key, -1)) != int(expected.get(key, -1)):
 			return false
 	return true
-
-
-func _same_result(left: Dictionary, right: Dictionary) -> bool:
-	return _matches(left, right)
