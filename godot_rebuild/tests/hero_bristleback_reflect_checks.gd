@@ -25,6 +25,7 @@ const POS := Vector2(400.0, 380.0)
 const ATTACKER_OFFSET := Vector2(20.0, 0.0)
 const BRISTLEBACK_ACTIVE := 300
 const SOURCED_HIT := 50
+const NUMERIC_KEYS := ["attacker_hp_loss", "defender_hp_loss", "credited_total"]
 
 
 func run(check: Callable) -> void:
@@ -255,8 +256,11 @@ func _spawn_attacker(world: World, data: Dictionary) -> UnitState:
 
 func _matches(actual: Dictionary, expected: Dictionary) -> bool:
 	# The pre-9t column is replayed through `_deliver_hit` directly, so it only
-	# carries the reflected attacker loss; compare the keys the row defines.
-	for key in expected.keys():
+	# carries the reflected attacker loss; compare the numeric keys the row
+	# defines (the fixture also carries the `reflect_args` record).
+	for key in NUMERIC_KEYS:
+		if not expected.has(key):
+			continue
 		if int(actual.get(key, -1)) != int(expected.get(key, -1)):
 			return false
 	return true
