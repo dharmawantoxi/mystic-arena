@@ -71,6 +71,7 @@ func _draw() -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	_draw_wave_announcer(world)
 	_draw_combo_counter(world)
+	_draw_kill_feed(world)
 	_draw_achievement_popup(world)
 	_draw_boss_intro(world)
 	_draw_boss_celebration(world)
@@ -89,13 +90,20 @@ func overlay_draw_summary() -> Dictionary:
 		"floating_texts": world.effects.floating_texts.size(),
 		"particles": world.effects.particles.size(),
 		"explosions": world.effects.explosions.size(),
+		"kill_feed_count": world.effects.kill_feed.entries.size(),
 		"path_preview_active": world.effects.path_preview.active,
 		"wave_announcer_active": world.effects.wave_announcer.active,
 		"combo_visible": world.effects.combo_counter.display_scale > 0.0,
 		"achievement_showing": world.effects.achievement.is_showing(),
+		"achievement_glow_active":
+		(
+			world.effects.achievement.is_showing()
+			and int(world.effects.achievement.get_glow_alpha()) > 0
+		),
 		"level_intro_active": bool(intro.get("active", false)),
 		"level_intro_show_prompt": bool(intro.get("show_prompt", false)),
 		"boss_intro_active": bool(b_intro.get("active", false)),
+		"boss_intro_border_alpha": int(b_intro.get("border_alpha", 0)),
 		"boss_death_active": bool(b_death.get("death_active", false)),
 		"boss_celebration_active": bool(b_death.get("celebration_active", false)),
 		"boss_celebration_reward_visible": bool(c_vis.get("reward_visible", false)),
@@ -268,6 +276,30 @@ func _draw_combo_counter(world: Prototype) -> void:
 	)
 
 
+func _draw_kill_feed(world: Prototype) -> void:
+	var feed = world.effects.kill_feed
+	if feed == null or feed.entries.is_empty():
+		return
+	for entry_value in feed.entries:
+		var entry: Dictionary = entry_value
+		var life: int = int(entry.get("lifetime", 0))
+		var max_life: int = maxi(1, int(entry.get("max_lifetime", 180)))
+		if life <= 0:
+			continue
+		var alpha: float = clampf(float(life) / (float(max_life) * 0.35), 0.0, 1.0)
+		var y_pos: float = 96.0 + float(entry.get("y_offset", 0.0))
+		var tint: Color = entry.get("color", Color.WHITE) as Color
+		draw_string(
+			BossFont,
+			Vector2(980.0, y_pos),
+			String(entry.get("text", "")),
+			HORIZONTAL_ALIGNMENT_RIGHT,
+			270.0,
+			14,
+			Color(tint, alpha)
+		)
+
+
 func _draw_achievement_popup(world: Prototype) -> void:
 	var popup = world.effects.achievement
 	if popup == null or not popup.is_showing():
@@ -279,6 +311,10 @@ func _draw_achievement_popup(world: Prototype) -> void:
 		Vector2(float(popup.panel_x(1280)), float(popup.panel_y())),
 		Vector2(float(popup.PANEL_W), float(popup.PANEL_H))
 	)
+	var glow_raw: int = int(popup.get_glow_alpha())
+	if glow_raw > 0:
+		var glow_alpha: float = clampf(float(glow_raw) / 255.0, 0.0, 1.0)
+		draw_rect(rect.grow(4.0), Color(1.0, 0.88, 0.45, glow_alpha), false, 3.0)
 	draw_rect(rect, Color(0.06, 0.09, 0.14, 0.90 * alpha))
 	draw_rect(rect, Color(0.96, 0.83, 0.57, alpha), false, 2.0)
 	var title := String(popup.current.get("title", ""))
@@ -311,6 +347,7 @@ func _draw_boss_intro(world: Prototype) -> void:
 		return
 	var alpha := clampf(float(intro.get("alpha", 0)) / 255.0, 0.0, 1.0)
 	var bg_alpha := clampf(float(intro.get("background_alpha", 0)) / 255.0, 0.0, 1.0)
+	var border_alpha: float = clampf(float(intro.get("border_alpha", 0)) / 255.0, 0.0, 1.0)
 	if alpha <= 0.0:
 		return
 	var rect := Rect2(
@@ -320,7 +357,8 @@ func _draw_boss_intro(world: Prototype) -> void:
 	var border_rgb: Array = intro.get("entrance_color", [150, 100, 200])
 	var border_col := Color8(int(border_rgb[0]), int(border_rgb[1]), int(border_rgb[2]))
 	draw_rect(rect, Color(0.04, 0.05, 0.08, bg_alpha))
-	draw_rect(rect, Color(border_col, alpha), false, 2.0)
+	if border_alpha > 0.0:
+		draw_rect(rect, Color(border_col, border_alpha), false, 2.0)
 	var tag: Dictionary = intro.get("tag", {})
 	var header := "%s · %s" % [String(tag.get("text", "BOSS")), String(intro.get("boss_name", ""))]
 	draw_string(
@@ -332,6 +370,17 @@ func _draw_boss_intro(world: Prototype) -> void:
 		20,
 		Color(border_col, alpha)
 	)
+	var subtitle: String = String(intro.get("boss_title", ""))
+	if not subtitle.is_empty():
+		draw_string(
+			BossFont,
+			rect.position + Vector2(18.0, 56.0),
+			subtitle,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			rect.size.x - 200.0,
+			14,
+			Color(0.84, 0.88, 0.94, alpha)
+		)
 	var bar: Array = intro.get("hp_bar_rect", [0, 0, 150, 12])
 	var bar_rect := Rect2(
 		Vector2(float(bar[0]), float(bar[1])), Vector2(float(bar[2]), float(bar[3]))

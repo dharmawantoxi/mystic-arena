@@ -7,6 +7,8 @@ extends RefCounted
 
 const BossIntroCinematic = preload("res://scripts/ui/boss_intro_cinematic.gd")
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
+const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd")
+const PrototypeView = preload("res://scenes/prototype/prototype_view.gd")
 const FIXTURE := "res://tests/fixtures/boss_intro_cinematic_source.json"
 
 const KEY_BY_NAME := {"space": KEY_SPACE, "escape": KEY_ESCAPE, "letter_a": KEY_A}
@@ -201,14 +203,22 @@ func _check_runtime_wiring(check: Callable) -> void:
 		"Spawning a mini-boss configures BossIntroCinematic on Prototype"
 	)
 	world.step_tick()
+	var session := PrototypeSession.new()
+	session.world = world
+	var view := PrototypeView.new()
+	view.session = session
 	check.call(
 		(
 			world.boss_intro.timer == BossIntroCinematic.DURATION - 1
 			and world.boss_intro.sound_played
 			and int(world.boss_intro_state().get("elapsed", 0)) == 1
+			and int(view.overlay_draw_summary().get("boss_intro_border_alpha", 0)) > 0
+			and not String(world.boss_intro_state().get("boss_title", "")).is_empty()
 		),
-		"Prototype.step_tick advances BossIntroCinematic and arms first-tick sound"
+		"Prototype.step_tick advances BossIntroCinematic and arms first-tick sound and border alpha"
 	)
+	view.free()
+	session.free()
 	check.call(
 		world.skip_boss_intro(KEY_SPACE) and not world.boss_intro.is_active(),
 		"Prototype.skip_boss_intro ends the active boss intro cinematic"
