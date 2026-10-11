@@ -514,11 +514,11 @@ func _check_runtime_wiring(check: Callable) -> void:
 		),
 		"Mini-boss death animation completes alongside the 60-tick pause"
 	)
-	view.free()
-	session.free()
 	var true_boss := world._spawn_boss("abaddon")
 	check.call(true_boss != null, "Runtime wiring test spawns true boss")
 	if true_boss == null:
+		view.free()
+		session.free()
 		return
 	true_boss.entrance_timer = 0
 	true_boss.hp = 1.0
@@ -544,6 +544,15 @@ func _check_runtime_wiring(check: Callable) -> void:
 		world.boss_death.celebration_timer == BossDeathAnimation.CELEBRATION_DURATION - 1,
 		"Normal gameplay tick advances true-boss celebration timer"
 	)
+	for _tick in range(65):
+		world.step_tick()
+	check.call(
+		(
+			bool(view.overlay_draw_summary().get("boss_celebration_reward_visible", false))
+			and bool(view.overlay_draw_summary().get("boss_celebration_hint_visible", false))
+		),
+		"PrototypeView.overlay_draw_summary exposes celebration reward and skip hint visibility"
+	)
 	check.call(
 		(
 			world.skip_boss_death(KEY_SPACE)
@@ -552,6 +561,8 @@ func _check_runtime_wiring(check: Callable) -> void:
 		),
 		"Prototype.skip_boss_death dismisses active true-boss celebration"
 	)
+	view.free()
+	session.free()
 
 
 func _same_rgb(got: Variant, expected: Variant) -> bool:

@@ -84,6 +84,7 @@ func overlay_draw_summary() -> Dictionary:
 	var intro := world.level_intro_state()
 	var b_intro := world.boss_intro_state()
 	var b_death := world.boss_death_state()
+	var c_vis: Dictionary = b_death.get("celebration_visual", {})
 	return {
 		"floating_texts": world.effects.floating_texts.size(),
 		"particles": world.effects.particles.size(),
@@ -93,9 +94,12 @@ func overlay_draw_summary() -> Dictionary:
 		"combo_visible": world.effects.combo_counter.display_scale > 0.0,
 		"achievement_showing": world.effects.achievement.is_showing(),
 		"level_intro_active": bool(intro.get("active", false)),
+		"level_intro_show_prompt": bool(intro.get("show_prompt", false)),
 		"boss_intro_active": bool(b_intro.get("active", false)),
 		"boss_death_active": bool(b_death.get("death_active", false)),
 		"boss_celebration_active": bool(b_death.get("celebration_active", false)),
+		"boss_celebration_reward_visible": bool(c_vis.get("reward_visible", false)),
+		"boss_celebration_hint_visible": bool(c_vis.get("hint_visible", false)),
 		"screen_shake_active":
 		(
 			world.effects.screen_shake.intensity > 0.0
@@ -346,7 +350,7 @@ func _draw_boss_celebration(world: Prototype) -> void:
 	if bool(death.get("death_active", false)):
 		var d_visual: Dictionary = death.get("death_visual", {})
 		if bool(d_visual.get("flash_visible", false)):
-			var flash_alpha := clampf(float(d_visual.get("flash_alpha", 0)) / 255.0, 0.0, 1.0)
+			var flash_alpha: float = clampf(float(d_visual.get("flash_alpha", 0)) / 255.0, 0.0, 1.0)
 			if flash_alpha > 0.0:
 				draw_rect(
 					Rect2(Vector2.ZERO, Vector2(1280.0, 720.0)), Color(1.0, 1.0, 1.0, flash_alpha)
@@ -356,10 +360,15 @@ func _draw_boss_celebration(world: Prototype) -> void:
 	var visual: Dictionary = death.get("celebration_visual", {})
 	if not bool(visual.get("visible", false)):
 		return
-	var text_alpha := clampf(float(visual.get("text_alpha", 0)) / 255.0, 0.0, 1.0)
+	var overlay_alpha: float = clampf(float(visual.get("overlay_alpha", 0)) / 255.0, 0.0, 1.0)
+	if overlay_alpha > 0.0:
+		draw_rect(
+			Rect2(Vector2.ZERO, Vector2(1280.0, 720.0)), Color(0.02, 0.03, 0.06, overlay_alpha)
+		)
+	var text_alpha: float = clampf(float(visual.get("text_alpha", 0)) / 255.0, 0.0, 1.0)
 	if text_alpha <= 0.0:
 		return
-	var offset_y := float(visual.get("text_offset_y", 0))
+	var offset_y: float = float(visual.get("text_offset_y", 0))
 	draw_string(
 		BossFont,
 		Vector2(240.0, 260.0 + offset_y),
@@ -369,15 +378,55 @@ func _draw_boss_celebration(world: Prototype) -> void:
 		32,
 		Color(1.0, 0.86, 0.38, text_alpha)
 	)
+	var boss_title: String = String(death.get("boss_title", ""))
+	if not boss_title.is_empty():
+		draw_string(
+			BossFont,
+			Vector2(240.0, 294.0 + offset_y),
+			boss_title,
+			HORIZONTAL_ALIGNMENT_CENTER,
+			800.0,
+			18,
+			Color(0.85, 0.90, 0.96, text_alpha)
+		)
+	if bool(visual.get("reward_visible", false)):
+		var reward_alpha: float = clampf(float(visual.get("reward_alpha", 0)) / 255.0, 0.0, 1.0)
+		if reward_alpha > 0.0:
+			draw_string(
+				BossFont,
+				Vector2(240.0, 340.0),
+				"+%d GOLD REWARD" % int(death.get("gold_reward", 0)),
+				HORIZONTAL_ALIGNMENT_CENTER,
+				800.0,
+				22,
+				Color(1.0, 0.88, 0.35, reward_alpha)
+			)
+	if bool(visual.get("hint_visible", false)):
+		var hint_alpha: float = clampf(float(visual.get("hint_alpha", 0)) / 255.0, 0.0, 1.0)
+		if hint_alpha > 0.0:
+			draw_string(
+				BossFont,
+				Vector2(240.0, 420.0),
+				"PRESS SPACE OR ESC TO CONTINUE",
+				HORIZONTAL_ALIGNMENT_CENTER,
+				800.0,
+				16,
+				Color(0.82, 0.88, 0.94, hint_alpha)
+			)
 
 
 func _draw_level_intro(world: Prototype) -> void:
 	var intro := world.level_intro_state()
 	if not bool(intro.get("active", false)):
 		return
-	var alpha := clampf(float(intro.get("fade_alpha", 0)) / 255.0, 0.0, 1.0)
+	var alpha: float = clampf(float(intro.get("fade_alpha", 0)) / 255.0, 0.0, 1.0)
 	if alpha <= 0.0:
 		return
+	var tint_rgba: Array = intro.get("theme_tint_rgba", [20, 40, 20, 0])
+	if tint_rgba.size() >= 4 and int(tint_rgba[3]) > 0:
+		var tint_alpha: float = clampf(float(tint_rgba[3]) / 255.0, 0.0, 1.0)
+		var tint_col: Color = Color8(int(tint_rgba[0]), int(tint_rgba[1]), int(tint_rgba[2]))
+		draw_rect(Rect2(Vector2.ZERO, Vector2(1280.0, 720.0)), Color(tint_col, tint_alpha))
 	var card := Rect2(Vector2(320.0, 160.0), Vector2(640.0, 360.0))
 	draw_rect(card, Color(0.03, 0.05, 0.08, 0.86 * alpha))
 	draw_rect(card, Color(0.95, 0.82, 0.52, alpha), false, 2.0)
@@ -390,19 +439,77 @@ func _draw_level_intro(world: Prototype) -> void:
 		26,
 		Color(0.95, 0.82, 0.52, alpha)
 	)
-	var warning := String(intro.get("warning_text", ""))
+	var warning: String = String(intro.get("warning_text", ""))
 	if not warning.is_empty():
 		draw_string(
 			BossFont,
-			card.position + Vector2(24.0, 100.0),
+			card.position + Vector2(24.0, 92.0),
 			warning,
 			HORIZONTAL_ALIGNMENT_CENTER,
 			card.size.x - 48.0,
 			18,
 			Color(1.0, 0.45, 0.40, alpha)
 		)
+	var diff_info: Dictionary = intro.get("difficulty", {})
+	var diff_title: String = String(diff_info.get("title", ""))
+	if not diff_title.is_empty():
+		var diff_rgb: Array = diff_info.get("color", [100, 220, 150])
+		var diff_col: Color = Color8(int(diff_rgb[0]), int(diff_rgb[1]), int(diff_rgb[2]))
+		draw_string(
+			BossFont,
+			card.position + Vector2(36.0, 140.0),
+			diff_title,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			260.0,
+			16,
+			Color(diff_col, alpha)
+		)
+	var diff_bars: Array = intro.get("difficulty_bars", [])
+	for bar_idx in range(diff_bars.size()):
+		var bar_rgb: Array = diff_bars[bar_idx]
+		if bar_rgb.size() >= 3:
+			var bar_col: Color = Color8(int(bar_rgb[0]), int(bar_rgb[1]), int(bar_rgb[2]))
+			var bar_rect := Rect2(
+				card.position + Vector2(36.0 + float(bar_idx) * 28.0, 152.0), Vector2(22.0, 10.0)
+			)
+			draw_rect(bar_rect, Color(bar_col, alpha))
+	var economy_line: String = (
+		"%s · %s · %s"
+		% [
+			String(intro.get("starting_gold_text", "")),
+			String(intro.get("passive_text", "")),
+			String(intro.get("reward_text", "")),
+		]
+	)
+	draw_string(
+		BossFont,
+		card.position + Vector2(36.0, 200.0),
+		economy_line,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		card.size.x - 72.0,
+		15,
+		Color(0.92, 0.86, 0.62, alpha)
+	)
+	var boss_tag: Dictionary = intro.get("boss_tag", {})
+	var boss_header: String = (
+		"%s: %s (%s)"
+		% [
+			String(boss_tag.get("text", "BOSS")),
+			String(intro.get("boss_name", "")),
+			String(intro.get("boss_title", "")),
+		]
+	)
+	draw_string(
+		BossFont,
+		card.position + Vector2(36.0, 244.0),
+		boss_header,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		card.size.x - 72.0,
+		16,
+		Color(1.0, 0.62, 0.56, alpha)
+	)
 	if bool(intro.get("show_prompt", false)):
-		var prompt := String(intro.get("prompt_text", ""))
+		var prompt: String = String(intro.get("prompt_text", ""))
 		if not prompt.is_empty():
 			draw_string(
 				BossFont,

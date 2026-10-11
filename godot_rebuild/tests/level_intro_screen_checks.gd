@@ -7,6 +7,8 @@ extends RefCounted
 
 const LevelIntroScreen = preload("res://scripts/ui/level_intro_screen.gd")
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
+const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd")
+const PrototypeView = preload("res://scenes/prototype/prototype_view.gd")
 const FIXTURE := "res://tests/fixtures/level_intro_screen_source.json"
 
 const KEY_BY_NAME := {"space": KEY_SPACE, "return": KEY_ENTER, "letter_a": KEY_A}
@@ -254,6 +256,18 @@ func _check_runtime_wiring(check: Callable) -> void:
 		"Prototype configures LevelIntroScreen for level 1 and Abaddon"
 	)
 	check.call(world.setup_arena(), "Arena setup succeeds for LevelIntroScreen tick wiring")
+	var session := PrototypeSession.new()
+	session.world = world
+	var view := PrototypeView.new()
+	view.session = session
+	check.call(
+		(
+			(state.get("difficulty_bars", []) as Array).size() == 5
+			and bool(view.overlay_draw_summary().get("level_intro_active", false))
+			and not bool(view.overlay_draw_summary().get("level_intro_show_prompt", true))
+		),
+		"LevelIntroScreen state exposes 5 difficulty bars and initial view prompt state"
+	)
 	for _tick in range(31):
 		world.step_tick()
 	var faded_state: Dictionary = world.level_intro_state()
@@ -263,11 +277,14 @@ func _check_runtime_wiring(check: Callable) -> void:
 			int(faded_state["timer"]) == 31
 			and int(faded_state["fade_alpha"]) == 255
 			and bool(faded_state["show_prompt"])
+			and bool(view.overlay_draw_summary().get("level_intro_show_prompt", false))
 			and String(faded_state["prompt_text"]) == LevelIntroScreen.PROMPT_TEXT
 			and String(touch_state["prompt_text"]) == LevelIntroScreen.TOUCH_PROMPT_TEXT
 		),
 		"Prototype step_tick advances LevelIntroScreen fade and prompt state"
 	)
+	view.free()
+	session.free()
 	check.call(
 		(
 			not world.skip_level_intro(KEY_A)

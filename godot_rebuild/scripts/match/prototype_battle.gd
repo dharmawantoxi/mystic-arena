@@ -282,6 +282,11 @@ func skip_level_intro(keycode: int = -1, click: bool = false) -> bool:
 func level_intro_state(touch_mode: bool = false) -> Dictionary:
 	if level_intro == null:
 		return {}
+	var diff_info: Dictionary = level_intro.get_difficulty_info(difficulty)
+	var diff_level: int = int(diff_info.get("level", 1))
+	var diff_bars: Array = []
+	for index in range(5):
+		diff_bars.append(level_intro.get_bar_color(index, diff_level))
 	return {
 		"active": level_intro.is_active(),
 		"timer": level_intro.timer,
@@ -295,7 +300,8 @@ func level_intro_state(touch_mode: bool = false) -> Dictionary:
 		"boss_tag": level_intro.get_boss_tag(),
 		"fade_alpha": level_intro.get_fade_alpha(),
 		"theme_tint_rgba": level_intro.get_theme_tint_rgba(),
-		"difficulty": level_intro.get_difficulty_info(difficulty),
+		"difficulty": diff_info,
+		"difficulty_bars": diff_bars,
 		"starting_gold_text": level_intro.get_starting_gold_text(),
 		"passive_text": level_intro.get_passive_text(),
 		"reward_text": level_intro.get_reward_text(),
