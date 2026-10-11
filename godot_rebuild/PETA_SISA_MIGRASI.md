@@ -568,3 +568,16 @@ true strike/blind penyerang, dan korban non-hero menerima damage raw (menara
 armor 6: 56, bukan 41). Oracle `hero_skill_sourceless_source_oracle.py`
 (4 baris, dua kolom dieksekusi dari `Hero.take_damage` + `Tower.take_damage`
 asli, 7 cek bentuk) plus suite `hero_skill_sourceless_checks.gd`.
+
+
+## Ladder damage minion (layer 9n)
+
+Sumber `Minion.take_damage` (`_entity.py:5795-5825`) menjalankan amp Soul Rend
+lebih dulu, lalu bonus Corroder (`min(1, shred * 0.06)`, non-`fire`), baru
+mitigasi sekolah dengan `armor = self.armor - shred` (shred dikurangkan dua
+kali); sekolah bebas tetap membawa amp. Native lama melakukan mitigasi dulu,
+amp sesudahnya, dan `neutral` raw tanpa bonus shred. Kini
+`DamageRules.minion_amount()` memegang ladder sumber; boss tetap memakai urutan
+lama lewat `_school_first_amount()` karena `BaseBoss.take_damage` port
+tersendiri. Oracle `minion_damage_ladder_source_oracle.py` (9 kasus, kolom
+`expected`/`native_old`) plus suite `minion_damage_ladder_checks.gd`.

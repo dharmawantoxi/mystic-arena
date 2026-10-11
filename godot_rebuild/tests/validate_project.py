@@ -110,6 +110,18 @@ check('const HeroSkillSourcelessChecks = preload("res://tests/hero_skill_sourcel
       in ai_tests, "Sourceless skill suite must be preloaded")
 check("HeroSkillSourcelessChecks.new().run(_check)" in ai_tests,
       "Sourceless skill suite must run")
+
+from minion_damage_ladder_source_oracle import source_fixture as minion_ladder_fixture
+check('const MinionDamageLadderChecks = preload("res://tests/minion_damage_ladder_checks.gd")' in ai_tests,
+      "Minion damage ladder suite must be preloaded")
+check("MinionDamageLadderChecks.new().run(_check)" in ai_tests,
+      "Minion damage ladder suite must run")
+check((ROOT / "tests/fixtures/minion_damage_ladder_source.json").is_file(),
+      "Minion damage ladder fixture must exist")
+if (ROOT / "tests/fixtures/minion_damage_ladder_source.json").is_file():
+    check(minion_ladder_fixture() == json.loads(
+        (ROOT / "tests/fixtures/minion_damage_ladder_source.json").read_text(encoding="utf-8")),
+          "Minion damage ladder fixture must not drift from the oracle")
 check((ROOT / "tests/fixtures/hero_skill_sourceless_source.json").is_file(),
       "Sourceless skill arm requires a source fixture")
 if (ROOT / "tests/fixtures/hero_skill_sourceless_source.json").is_file():
