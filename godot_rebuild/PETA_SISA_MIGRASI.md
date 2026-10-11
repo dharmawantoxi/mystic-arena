@@ -440,8 +440,65 @@ DecorationRenderer, ShopRenderer, DynamicRenderer, dan seluruh pixel drawing
 pygame sengaja tidak diport.
 
 Suite dan oracle terdaftar di `tests/run_all.gd` dan
-`.github/workflows/godot-rebuild.yml`. Slice berikutnya sesuai urutan kerja
-adalah `EffectManager`.
+`.github/workflows/godot-rebuild.yml`.
+
+## Wiring Runtime, Rendering `PrototypeView`, dan Scene Checks (PR #329)
+
+Seluruh port UI/render dari `_render.py` kini telah dihubungkan ke runtime
+pertandingan (`scripts/match/prototype_battle.gd`,
+`scripts/match/battle_item_effects.gd`, `scenes/prototype/prototype_screen.gd`),
+panel modal (`hero_shop_panel.gd`, `item_forge_panel.gd`,
+`meta_hero_shop_panel.gd`), dan digambar secara vektor di
+`scenes/prototype/prototype_view.gd`:
+
+- **`EffectManager` (`scripts/ui/effect_manager.gd`)** — dikoordinasikan oleh
+  `Prototype.effects`: damage numbers, heal/status floating text, gold popups,
+  hit particles, death explosions, combo counter (`combo_count` & `combo_timer`
+  didelegasikan langsung ke `effects.combo_counter`), wave announcer + path
+  preview saat wave 1 dimulai, screen shake, kill feed (`register_kill` tetap
+  no-op sesuai sumber), dan achievement popup saat boss dikalahkan/di-unlock.
+- **`MapRenderer` (`scripts/ui/map_renderer.gd`)** — dikonfigurasi oleh
+  `Prototype._configure_map_renderer()` saat inisialisasi dan `configure_level()`
+  dengan path lane/river dan palet tema; menyediakan `is_click_on_shop()` dan
+  `clicked_shop_at()`, serta dihubungkan ke klik shop di `PrototypeScreen`.
+- **`SpriteCache` & `RenderCache` (`scripts/ui/sprite_cache.gd`,
+  `scripts/ui/render_cache.gd`)** — dihubungkan ke `FloatingText.configure()`,
+  `MapRenderer.cache_theme_assets()`, `EffectManager` (death explosion,
+  wave announcer, achievement popup), dan `Prototype` (`_cache_hero_assets`,
+  `_cache_boss_assets`, `cache_stats()`).
+- **`LevelIntroScreen` (`scripts/ui/level_intro_screen.gd`)** — dikonfigurasi
+  pada awal level (`_configure_level_intro()`), di-step tiap tick lewat
+  `step_level_intro()` (memutar `wave_start` pada tick pertama), dan dapat
+  di-skip lewat `KEY_SPACE`, `KEY_ENTER`, atau klik di `PrototypeScreen`.
+- **`BossIntroCinematic` & `BossDeathAnimation`
+  (`scripts/ui/boss_intro_cinematic.gd`, `scripts/ui/boss_death_animation.gd`)**
+  — dikonfigurasi saat spawn boss (`_configure_boss_intro()`, memutar
+  `nexus_hit` di tick pertama) dan saat boss dikalahkan
+  (`_configure_boss_death()`, berjalan selama `boss_death_pause_ticks` 60/90
+  tick lalu masuk fase celebration 120 tick untuk true boss), dengan dukungan
+  skip `KEY_SPACE`, `KEY_ESCAPE`, atau klik di `PrototypeScreen`.
+- **`PopupAnimation` (`scripts/ui/popup_animation.gd`)** — dihubungkan ke
+  `HeroShopPanel`, `ItemForgePanel`, dan `MetaHeroShopPanel` (`open_panel()`,
+  `close_panel()`, `_process()`, `popup_state()`).
+- **`ScreenShake` (`scripts/ui/screen_shake.gd`)** — `Prototype.current_screen_shake_offset()`
+  mempertahankan gate 8-tick `boss_presentation_offset()` untuk kompatibilitas
+  `boss_presentation_checks.gd`, lalu mendelegasikan offset ke
+  `effects.get_shake_offset()` dan dipakai oleh `PrototypeView._draw()`.
+- **Rendering `PrototypeView` (`scenes/prototype/prototype_view.gd`)** —
+  menggambar world effects (`_draw_path_preview`, `_draw_world_effects` termasuk
+  `DeathExplosion` dan `_draw_boss_death_sequence`) serta screen overlays
+  (`_draw_wave_announcer`, `_draw_combo_counter`, `_draw_kill_feed`,
+  `_draw_achievement_popup` dengan glow awal slot, `_draw_boss_intro` dengan
+  subtitle & border alpha, `_draw_boss_celebration` dengan backdrop/reward/hint,
+  dan `_draw_level_intro` dengan theme tint, difficulty bars, gold/passive,
+  boss preview), serta memaparkan `overlay_draw_summary()`.
+- **Scene & Runtime Checks** — diuji di `effect_manager_checks.gd`,
+  `map_renderer_checks.gd`, `sprite_cache_checks.gd`, `render_cache_checks.gd`,
+  `level_intro_screen_checks.gd`, `boss_intro_cinematic_checks.gd`,
+  `boss_death_animation_checks.gd`, `death_explosion_checks.gd`,
+  `popup_animation_checks.gd`, `screen_shake_checks.gd`, `kill_feed_checks.gd`,
+  `achievement_popup_checks.gd`, `boss_death_pause_scene_checks.gd`, dan
+  `forge_scene_checks.gd`.
 
 ## Batas scope
 
@@ -449,19 +506,12 @@ adalah `EffectManager`.
 - `lighting.py` tidak diport: ia post-process per-piksel di atas pygame
   Surface, sementara `godot_rebuild` menggambar vektor. Memaksanya masuk
   berarti reinterpretasi, bukan port.
-- Port ini tetap state-only. `FloatingText`, `HitParticle`, `PopupAnimation`,
-  `ScreenShake`, `KillFeed`, `ComboCounter`, `WaveAnnouncer`, `PathPreview`,
-  `AchievementPopup`, `LevelIntroScreen`, `BossIntroCinematic`, `DeathExplosion`,
-  `BossDeathAnimation`, `SpriteCache`, `RenderCache`, `MapRenderer`, dan
-  `EffectManager` mempertahankan state/getter yang diperlukan, tetapi seluruh
-  surface/font pygame, delegasi renderer, serta pixel drawing sengaja
-  **tidak diport**. `MapRenderer` masih mendelegasikan layer terrain/lane/river/
-  wall ke data port yang ada; `EffectManager` mendelegasikan state ke kelas
-  efek UI tanpa mengambil alih gambar mereka.`
+- Kelas state di `scripts/ui/` mempertahankan state/getter murni tanpa objek
+  Surface/Font pygame, sementara penggambaran vektor dilakukan secara native di
+  `PrototypeView` (`scenes/prototype/prototype_view.gd`).
 - Klaim "AIPlayer penuh belum ada" di `HERO_MIGRATION_PROGRESS.md` **sudah
   usang**: AI terport lintas 9 modul (`ai_build/controller/draft/
   hero_control/items/policy/recruitment/shields/upgrades`, 52 fungsi) dengan
   `ai_controller.tick()` sebagai entry.
 - Top-up flow Python dan voucher allowlist tidak disentuh.
 - Tidak ada sistem lain yang diaudit atau diubah.
-- Top-up flow Python dan voucher allowlist tidak disentuh.
