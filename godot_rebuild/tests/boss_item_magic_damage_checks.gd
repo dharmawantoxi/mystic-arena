@@ -70,7 +70,14 @@ class MagicDamageBus:
 			# Pre-9g body: every magic arm called the plain bus entry, so the
 			# boss took a "normal" hit that carried the dealing hero as source
 			# and the declared magic school.
-			return deal_damage(target_id, source_team, amount, school)
+			# Layer 9p moved the plain entry itself onto the sourceless route, so
+			# the counterfactual replays the pre-fix arguments explicitly instead
+			# of borrowing the production `deal_damage`.
+			var tgt: Object = world.get_unit(target_id)
+			if tgt == null:
+				return 0
+			world._deliver_hit(dealer_id, dealer_team, tgt, amount, school, dealer_pos)
+			return amount
 		return super.deal_damage_magic_sourceless(target_id, source_team, amount, school)
 
 
