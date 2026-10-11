@@ -195,6 +195,7 @@ func _bullet_hit(data: Dictionary, check: Callable) -> Dictionary:
 	var main: UnitState = null
 	if String(data.get("victim_kind", "minion")) == "hero":
 		victim = world.spawn_hero(World.VEX, World.RED, MAIN_POS)
+		main = victim
 		if victim != null and int(data.get("hero_armor", 0)) > 0:
 			victim.items.add(ARMOR_ITEM)
 		if victim != null and bool(data.get("wind_wall", false)):

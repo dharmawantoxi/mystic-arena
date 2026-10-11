@@ -216,11 +216,14 @@ func _school_guards(check: Callable) -> void:
 		world._projectile_school(boss, "magic") == "neutral",
 		"mage bolt on the boss resolves to no school either"
 	)
+	# Layer 9w generalised the 8q rule: `Bullet._on_hit` never passes a school,
+	# so every victim of a structure shot - boss, minion, hero - resolves to no
+	# school at all.
 	check.call(
-		world._projectile_school(minion, "physical") == "physical",
-		"minion target keeps the declared school"
+		world._projectile_school(minion, "physical") == "neutral",
+		"minion target resolves a structure shot to no school"
 	)
 	check.call(
-		world._projectile_school(minion, "magic") == "magic",
-		"non-boss targets keep the declared magic school"
+		world._projectile_school(minion, "magic") == "neutral",
+		"mage bolt on a non-boss target resolves to no school either"
 	)
