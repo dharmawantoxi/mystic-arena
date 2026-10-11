@@ -161,7 +161,8 @@ func _reflect_hit(data: Dictionary, legacy: bool, check: Callable) -> Dictionary
 		# fixture models a durable attacker so the payload is not clamped by the
 		# death of the victim, exactly like the oracle stub.
 		attacker.hp = 1000.0
-		attacker.max_hp = 1000.0
+		# `UnitState.max_hp` is definition-derived and read-only, so only the
+		# live hp is raised to keep the payload out of the death clamp.
 	if victim == null or attacker == null:
 		check.call(
 			false,
