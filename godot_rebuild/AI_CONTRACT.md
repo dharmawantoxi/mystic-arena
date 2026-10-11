@@ -679,7 +679,24 @@ oracle (bukan edit tangan) dan tetap di bawah 20k baris.
 - [x] Ganti assertion defender lama hanya setelah perilakunya benar-benar diganti;
   pertahankan suite dan invariant wallet/slot/replay. (6e; skenario merah tanpa
   sakelar AI kini dituntut tetap tanpa transaksi.)
-- [ ] Runtime CI hijau untuk setiap tahap dan uji integrasi penuh sebelum ready PR.
+- [x] **Uji integrasi penuh** (`tests/ai_match_integration_checks.gd`, seed
+  `20261011`): adegan penuh dijalankan di world produksi, bukan per adaptor.
+  Lima jendela nyata: (1) dua world identik dengan wave ditunda 4000 tick supaya
+  hanya aliran RNG AI yang ter-seed yang tersisa — fingerprint JSON (gold, spent,
+  earned, semua counter adapter, roster, tower id/hp/shield/cooldown/posisi,
+  target draft, jam berpikir) harus identik tick demi tick; (2) match hidup 4200
+  tick dengan invarian per tick: purse merah tidak pernah negatif, roster tidak
+  pernah melewati lima, pembelian non-hero wajib menyisakan reserve draft hidup
+  (`gold_after >= reserve_after`, gerbang sumber `gold >= cost + _ai_reserve()`),
+  dan rekrut sukses wajib menghapus target; ditambah bukti build nyata, kill gold
+  merah, dan target draft yang tidak pernah dibuang saat gold kurang. (3) jendela
+  hidup ber-purse pra-fund 30000: rekrut, upgrade tower, pembelian item, dan cast
+  auto-cast hero benar-benar terjadi lalu match dipaksa selesai lewat jalur
+  damage produksi — jam AI, counter, dan purse wajib beku setelah hasil. (4)
+  sakelar mati 600 tick: nol transaksi merah. (5) level 54 + hard 1200 tick:
+  scaling menyala, jadwal elite sembilan-tick/tiga-aksi, dan think tick berantai
+  lebih dari satu prioritas. Batas slice: hanya menguji yang sudah ada — tidak ada
+  perubahan policy, balance, UI, sumber Python, atau CI.
 
 Tidak mengklaim parity item, roster, AI lawan playable, balance, visual atau
 perangkat fisik dari tes policy ini.

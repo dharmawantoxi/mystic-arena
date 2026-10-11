@@ -515,3 +515,16 @@ panel modal (`hero_shop_panel.gd`, `item_forge_panel.gd`,
   `ai_controller.tick()` sebagai entry.
 - Top-up flow Python dan voucher allowlist tidak disentuh.
 - Tidak ada sistem lain yang diaudit atau diubah.
+
+## Integrasi penuh AI lawan (penutup "AIPlayer penuh")
+
+Checkbox terakhir di `AI_CONTRACT.md` ("uji integrasi penuh") ditutup oleh
+`tests/ai_match_integration_checks.gd`, terdaftar di `run_all.gd`. Suite itu
+menjalankan match produksi penuh, bukan per adaptor: replay deterministik dua
+world ber-seed sama (wave ditunda supaya hanya RNG AI yang aktif), invarian per
+tick pada match hidup (purse tidak negatif, roster <= 5, reserve draft hidup
+setelah belanja non-hero, target draft tidak pernah dibuang), jendela ber-purse
+pra-fund untuk rekrut/upgrade/item/auto-cast, pembekuan jam-counter-purse setelah
+hasil match, sakelar merah mati tetap nol transaksi, dan jadwal elite level 54
+hard (sembilan tick, tiga aksi). Tidak ada perubahan policy, balance, UI, sumber
+Python, atau CI di slice ini.
