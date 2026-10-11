@@ -94,10 +94,11 @@ func _replay(rows: Array, check: Callable) -> void:
 			attacker.damage_dealt - dealt_before == int(expected["hp_loss"]),
 			"%s: attacker credit follows the source" % String(data["name"])
 		)
-		# Divergence is only observable where the pre-9j column actually landed
-		# damage; rows with their own blocker (Wind Wall, Shadow Realm, Windrun)
-		# already read zero in both columns.
-		if int(data["native_old"]["hp_loss"]) > 0:
+		# Divergence is only asserted on rows where the fixture itself records a
+		# pre-9j gap (veil columns that used to land damage). Rows whose own
+		# blocker already read zero (Wind Wall, Shadow Realm, Windrun) and the
+		# veil-off control share one column in both builds by design.
+		if int(data["native_old"]["hp_loss"]) != int(expected["hp_loss"]):
 			check.call(
 				hp_loss != int(data["native_old"]["hp_loss"]),
 				"%s: the veil column no longer equals the pre-9j column" % String(data["name"])
