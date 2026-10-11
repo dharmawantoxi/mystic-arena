@@ -116,6 +116,18 @@ check('const MinionDamageLadderChecks = preload("res://tests/minion_damage_ladde
       "Minion damage ladder suite must be preloaded")
 check("MinionDamageLadderChecks.new().run(_check)" in ai_tests,
       "Minion damage ladder suite must run")
+
+from item_structure_arm_source_oracle import source_fixture as structure_arm_fixture
+check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
+      "Item structure arm suite must be preloaded")
+check("ItemStructureArmChecks.new().run(_check)" in ai_tests,
+      "Item structure arm suite must run")
+check((ROOT / "tests/fixtures/item_structure_arm_source.json").is_file(),
+      "Item structure arm fixture must exist")
+if (ROOT / "tests/fixtures/item_structure_arm_source.json").is_file():
+    check(structure_arm_fixture() == json.loads(
+        (ROOT / "tests/fixtures/item_structure_arm_source.json").read_text(encoding="utf-8")),
+          "Item structure arm fixture must not drift from the oracle")
 check((ROOT / "tests/fixtures/minion_damage_ladder_source.json").is_file(),
       "Minion damage ladder fixture must exist")
 if (ROOT / "tests/fixtures/minion_damage_ladder_source.json").is_file():

@@ -4,6 +4,7 @@ extends "res://scripts/match/item_effects.gd"
 
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const BossState = preload("res://scripts/match/boss_state.gd")
+const StructureState = preload("res://scripts/combat/structure_state.gd")
 var world: Object = null
 var dealer_id: int = -1
 var dealer_team: int = -1
@@ -14,6 +15,17 @@ func deal_damage(target_id: int, _source_team: int, amount: int, school: String 
 	var tgt: Object = world.get_unit(target_id)
 	if tgt == null:
 		return 0
+	if tgt is StructureState:
+		# Layer 9o: every source item arm lands the bonus on the basic-attack
+		# target as `target.take_damage(amount, h.team[, "magic"])`
+		# (`hero_items.py:2542/2568/2589/2633/2648`), with no `source=`. A
+		# tower/castle victim therefore runs `Tower.take_damage` /
+		# `Castle.take_damage` with `source=None` and `school=None`: the tower
+		# armour never cuts the arm (the resolver returns None), and
+		# `credit_hero_damage(None, ...)` records nothing, exactly like the
+		# sourceless hero skills of layer 9m.
+		world._deliver_hit(-1, dealer_team, tgt, amount, "neutral", dealer_pos)
+		return amount
 	world._deliver_hit(dealer_id, dealer_team, tgt, amount, school, dealer_pos)
 	return amount
 
