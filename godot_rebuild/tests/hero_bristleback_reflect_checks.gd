@@ -173,11 +173,9 @@ func _legacy_reflect(fixture: Dictionary, data: Dictionary, check: Callable) -> 
 			false, "%s: the legacy attacker stays registered" % String(data.get("name", "?"))
 		)
 		return {}
-	return {
-		"attacker_hp_loss": int(attacker_hp_before - attacker_after.hp),
-		"defender_hp_loss": 0,
-		"credited_total": 0,
-	}
+	# Only the reflected loss: the pre-9t delivery is replayed standalone, so
+	# the row's defender-side keys have no counterpart here.
+	return {"attacker_hp_loss": int(attacker_hp_before - attacker_after.hp)}
 
 
 func _payload(fixture: Dictionary, data: Dictionary) -> int:
