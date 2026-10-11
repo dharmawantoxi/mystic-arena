@@ -132,8 +132,8 @@ func _draw_world_effects(world: Prototype) -> void:
 		if not explosion.is_alive():
 			continue
 		var flash: Dictionary = explosion.get_flash_state()
-		var f_size := float(flash.get("size", 0))
-		var f_intensity := clampf(float(flash.get("intensity", 0.0)), 0.0, 1.0)
+		var f_size: float = float(flash.get("size", 0))
+		var f_intensity: float = clampf(float(flash.get("intensity", 0.0)), 0.0, 1.0)
 		var center := Vector2(float(explosion.x), float(explosion.y))
 		if f_size > 0.0 and f_intensity > 0.0:
 			draw_circle(center, f_size, Color(1.0, 1.0, 0.78, 0.78 * f_intensity))
@@ -141,8 +141,8 @@ func _draw_world_effects(world: Prototype) -> void:
 		for spark in explosion.particles:
 			if not spark.alive:
 				continue
-			var s_alpha := clampf(float(spark.alpha()) / 255.0, 0.0, 1.0)
-			var s_size := float(spark.current_size())
+			var s_alpha: float = clampf(float(spark.alpha()) / 255.0, 0.0, 1.0)
+			var s_size: float = float(spark.current_size())
 			if s_size > 0.0 and s_alpha > 0.0:
 				draw_circle(Vector2(spark.x, spark.y), s_size, Color(spark.color, s_alpha))
 	_draw_boss_death_sequence(world)
@@ -178,28 +178,28 @@ func _draw_boss_death_sequence(world: Prototype) -> void:
 	var visual: Dictionary = anim.get_death_visual_state()
 	for wave_value in visual.get("waves", []):
 		var wave: Dictionary = wave_value
-		var w_radius := float(wave.get("radius", 0))
-		var w_alpha := clampf(float(wave.get("alpha", 0)) / 255.0, 0.0, 1.0)
+		var w_radius: float = float(wave.get("radius", 0))
+		var w_alpha: float = clampf(float(wave.get("alpha", 0)) / 255.0, 0.0, 1.0)
 		var w_rgb: Array = wave.get("color", [255, 220, 150])
 		if w_radius > 0.0 and w_alpha > 0.0 and w_rgb.size() >= 3:
-			var w_col := Color8(int(w_rgb[0]), int(w_rgb[1]), int(w_rgb[2]))
+			var w_col: Color = Color8(int(w_rgb[0]), int(w_rgb[1]), int(w_rgb[2]))
 			draw_arc(center, w_radius, 0.0, TAU, 48, Color(w_col, w_alpha), 3.0, true)
 	if bool(visual.get("body_visible", false)):
-		var d_size := float(visual.get("dissolve_size", 0))
-		var d_alpha := clampf(float(visual.get("dissolve_alpha", 0)) / 255.0, 0.0, 1.0)
+		var d_size: float = float(visual.get("dissolve_size", 0))
+		var d_alpha: float = clampf(float(visual.get("dissolve_alpha", 0)) / 255.0, 0.0, 1.0)
 		var b_rgb: Array = anim.boss_color
 		if d_size > 0.0 and d_alpha > 0.0 and b_rgb.size() >= 3:
-			var b_col := Color8(int(b_rgb[0]), int(b_rgb[1]), int(b_rgb[2]))
+			var b_col: Color = Color8(int(b_rgb[0]), int(b_rgb[1]), int(b_rgb[2]))
 			draw_circle(center, d_size, Color(b_col, d_alpha))
 	for fragment_value in anim.fragments:
 		var frag: Dictionary = fragment_value
-		var f_life := int(frag.get("life", 0))
-		var f_max := maxi(1, int(frag.get("max_life", 60)))
+		var f_life: int = int(frag.get("life", 0))
+		var f_max: int = maxi(1, int(frag.get("max_life", 60)))
 		if f_life <= 0:
 			continue
-		var f_alpha := clampf(float(f_life) / float(f_max), 0.0, 1.0)
+		var f_alpha: float = clampf(float(f_life) / float(f_max), 0.0, 1.0)
 		var f_rgb: Array = frag.get("color", [180, 90, 80])
-		var f_col := Color8(int(f_rgb[0]), int(f_rgb[1]), int(f_rgb[2]))
+		var f_col: Color = Color8(int(f_rgb[0]), int(f_rgb[1]), int(f_rgb[2]))
 		draw_circle(
 			Vector2(float(frag.get("x", 0.0)), float(frag.get("y", 0.0))),
 			float(frag.get("size", 4)),
@@ -207,13 +207,13 @@ func _draw_boss_death_sequence(world: Prototype) -> void:
 		)
 	for rising_value in anim.rising_particles:
 		var rising: Dictionary = rising_value
-		var r_life := int(rising.get("life", 0))
-		var r_max := maxi(1, int(rising.get("max_life", 100)))
+		var r_life: int = int(rising.get("life", 0))
+		var r_max: int = maxi(1, int(rising.get("max_life", 100)))
 		if r_life <= 0:
 			continue
-		var r_alpha := clampf(float(r_life) / float(r_max), 0.0, 1.0)
+		var r_alpha: float = clampf(float(r_life) / float(r_max), 0.0, 1.0)
 		var r_rgb: Array = rising.get("color", [255, 220, 150])
-		var r_col := Color8(int(r_rgb[0]), int(r_rgb[1]), int(r_rgb[2]))
+		var r_col: Color = Color8(int(r_rgb[0]), int(r_rgb[1]), int(r_rgb[2]))
 		draw_circle(
 			Vector2(float(rising.get("x", 0.0)), float(rising.get("y", 0.0))),
 			float(rising.get("size", 3)),
