@@ -1,0 +1,162 @@
+{
+  "source": "hero_skills/_bundle.py::_NS_thorne_skills.cast_q :4563-4609",
+  "native_old_model": "pre-9m native arm: `_deliver_hit(hero.id, ..., hero.dmg_school)` - credits damage_dealt, consults the attacker's true strike/blind and applies school mitigation on non-hero victims",
+  "arm": {
+    "skill_base": 70,
+    "multiplier": 0.8,
+    "cone_length": 60.0,
+    "cone_half_angle": 0.5235987755982988,
+    "slow": [
+      0.4,
+      180
+    ],
+    "record": [
+      {
+        "damage": 56,
+        "from_team": "blue",
+        "damage_type": "normal",
+        "source": false,
+        "school": null
+      }
+    ],
+    "hit_targets": [
+      "structure_in_cone",
+      "unit_in_cone"
+    ],
+    "slow_targets": [
+      [
+        "unit_in_cone",
+        0.4,
+        180
+      ],
+      [
+        "structure_in_cone",
+        0.4,
+        180
+      ]
+    ]
+  },
+  "shape": {
+    "take_damage_has_two_positional_args": true,
+    "take_damage_passes_no_source": true,
+    "take_damage_passes_no_school": true,
+    "damage_multiplier_is_0_8": true,
+    "cone_length_is_60": true,
+    "cone_half_angle_is_30_degrees": true,
+    "slow_is_0_4_for_180_ticks": true
+  },
+  "cases": [
+    {
+      "name": "hero_victim_no_items",
+      "victim": "hero",
+      "item_armor": 0,
+      "raw_damage": 56,
+      "expected": {
+        "hp_loss": 56,
+        "school": null,
+        "credits": [
+          [
+            false,
+            56
+          ]
+        ],
+        "notified": 1,
+        "reflects": 0,
+        "random_draws": 0
+      },
+      "native_old": {
+        "hp_loss": 56,
+        "school": "physical",
+        "credits": [
+          [
+            true,
+            56
+          ]
+        ],
+        "notified": 1,
+        "reflects": 0,
+        "random_draws": 0
+      }
+    },
+    {
+      "name": "hero_victim_item_armor",
+      "victim": "hero",
+      "item_armor": 6,
+      "raw_damage": 56,
+      "expected": {
+        "hp_loss": 41,
+        "school": null,
+        "credits": [
+          [
+            false,
+            41
+          ]
+        ],
+        "notified": 1,
+        "reflects": 0,
+        "random_draws": 0
+      },
+      "native_old": {
+        "hp_loss": 41,
+        "school": "physical",
+        "credits": [
+          [
+            true,
+            41
+          ]
+        ],
+        "notified": 1,
+        "reflects": 0,
+        "random_draws": 0
+      }
+    },
+    {
+      "name": "tower_victim_sourceless",
+      "victim": "tower",
+      "tower_armor": 6.0,
+      "raw_damage": 56,
+      "expected": {
+        "hp_loss": 56,
+        "credits": [
+          [
+            false,
+            56
+          ]
+        ]
+      },
+      "native_old": {
+        "hp_loss": 41,
+        "credits": [
+          [
+            true,
+            41
+          ]
+        ]
+      }
+    },
+    {
+      "name": "tower_victim_no_armor",
+      "victim": "tower",
+      "tower_armor": 0,
+      "raw_damage": 56,
+      "expected": {
+        "hp_loss": 56,
+        "credits": [
+          [
+            false,
+            56
+          ]
+        ]
+      },
+      "native_old": {
+        "hp_loss": 56,
+        "credits": [
+          [
+            true,
+            56
+          ]
+        ]
+      }
+    }
+  ]
+}

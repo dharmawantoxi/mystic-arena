@@ -104,6 +104,18 @@ check('const HeroArmorModelChecks = preload("res://tests/hero_armor_model_checks
       "Hero armour model suite must be preloaded")
 check("HeroArmorModelChecks.new().run(_check)" in ai_tests,
       "Hero armour model suite must run")
+
+from hero_skill_sourceless_source_oracle import source_fixture as sourceless_fixture
+check('const HeroSkillSourcelessChecks = preload("res://tests/hero_skill_sourceless_checks.gd")'
+      in ai_tests, "Sourceless skill suite must be preloaded")
+check("HeroSkillSourcelessChecks.new().run(_check)" in ai_tests,
+      "Sourceless skill suite must run")
+check((ROOT / "tests/fixtures/hero_skill_sourceless_source.json").is_file(),
+      "Sourceless skill arm requires a source fixture")
+if (ROOT / "tests/fixtures/hero_skill_sourceless_source.json").is_file():
+    check(sourceless_fixture() == json.loads(
+        (ROOT / "tests/fixtures/hero_skill_sourceless_source.json").read_text(encoding="utf-8")),
+        "Sourceless skill arm source fixture drift")
 check((ROOT / "tests/fixtures/hero_armor_model_source.json").is_file(),
       "Hero armour model requires a source fixture")
 if (ROOT / "tests/fixtures/hero_armor_model_source.json").is_file():

@@ -558,3 +558,13 @@ hanya armor item yang relevan). Native sebelumnya memilih mitigasi dari sekolah
 + `resolve_armor()` memegang ladder itu, `_deliver_hit` meneruskan `damage_type`,
 dan jalur non-hero (magic minion -> MR, neutral raw) tetap. Oracle
 `hero_armor_model_source_oracle.py` (9 kasus) + suite `hero_armor_model_checks.gd`.
+
+## Arm skill sourceless (layer 9m)
+
+`ThorneSkills` Q (Viscous Nose) kini mengirim `_deliver_hit(-1, ..., "neutral")`
+sesuai sumber `e.take_damage(int(h.skill_damage * 0.8), h.team)` yang tanpa
+`source=`: tidak dikreditkan ke `damage_dealt`, evasi korban tetap berlaku tanpa
+true strike/blind penyerang, dan korban non-hero menerima damage raw (menara
+armor 6: 56, bukan 41). Oracle `hero_skill_sourceless_source_oracle.py`
+(4 baris, dua kolom dieksekusi dari `Hero.take_damage` + `Tower.take_damage`
+asli, 7 cek bentuk) plus suite `hero_skill_sourceless_checks.gd`.

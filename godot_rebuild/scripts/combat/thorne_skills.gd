@@ -40,12 +40,23 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 				if diff > PI:
 					diff = TAU - diff
 				if diff < PI / 6.0:
+					# Layer 9m: source `cast_q` (`hero_skills/_bundle.py:4601`)
+					# calls `e.take_damage(int(h.skill_damage * 0.8), h.team)` -
+					# two positional arguments, no `source=` and no school, so
+					# `Hero.take_damage` runs with `source=None`/`_school=None`:
+					# the hit is NOT credited to `damage_dealt` (command ATTACK
+					# DAMAGE DEALER), the victim's evasion applies without the
+					# attacker's true strike/blind, and a minion/tower victim
+					# takes it raw (no armor, because `_sch` is None). The native
+					# arm used to send `hero.id` with `hero.dmg_school`, which
+					# credited the caster and let a physical school cut minion
+					# armor. `neutral` is the native spelling of `_school = None`.
 					world._deliver_hit(
-						hero.id,
+						-1,
 						hero.team,
 						enemy,
 						int(hero.skill_damage() * 0.8),
-						hero.dmg_school,
+						"neutral",
 						hero.position
 					)
 					if enemy is UnitState:
