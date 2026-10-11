@@ -30,7 +30,7 @@ func _draw() -> void:
 		if wall_texture == null:
 			wall_texture = ImageTexture.create_from_image(WallTiles.raster())
 		cached_river_theme = map_theme
-	draw_set_transform(world.boss_presentation_offset(), 0.0, Vector2.ONE)
+	draw_set_transform(world.current_screen_shake_offset(), 0.0, Vector2.ONE)
 	super._draw()
 	var match_session := session as PrototypeSession
 	for arrow in world.hero_projectiles:
@@ -94,6 +94,11 @@ func overlay_draw_summary() -> Dictionary:
 		"level_intro_active": bool(intro.get("active", false)),
 		"boss_intro_active": bool(b_intro.get("active", false)),
 		"boss_celebration_active": bool(b_death.get("celebration_active", false)),
+		"screen_shake_active":
+		(
+			world.effects.screen_shake.intensity > 0.0
+			or (world.boss_screen_shake_timer > 0 and world.boss_screen_shake_intensity > 0.0)
+		),
 	}
 
 

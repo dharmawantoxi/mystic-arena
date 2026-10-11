@@ -1611,6 +1611,20 @@ func boss_presentation_offset() -> Vector2:
 	return Vector2(cos(phase), sin(phase * 1.23)) * boss_screen_shake_intensity
 
 
+func current_screen_shake_offset() -> Vector2:
+	if boss_screen_shake_timer > 0 and boss_screen_shake_intensity > 0.0:
+		return boss_presentation_offset()
+	if (
+		effects != null
+		and effects.screen_shake != null
+		and effects.screen_shake.enabled
+		and effects.screen_shake.intensity > 0.0
+	):
+		var offset: Vector2i = effects.get_shake_offset()
+		return Vector2(float(offset.x), float(offset.y))
+	return Vector2.ZERO
+
+
 func _tick_boss_death_presentations() -> void:
 	# DeathExplosion owns 20–35 tick sparks and an 8 tick central flash in the
 	# source. Keep the payload independent from active_boss retirement.

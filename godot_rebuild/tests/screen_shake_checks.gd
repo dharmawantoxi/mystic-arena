@@ -5,6 +5,9 @@ extends RefCounted
 ## exact values: both components are integers inside +/- int(intensity).
 
 const ScreenShake = preload("res://scripts/ui/screen_shake.gd")
+const Prototype = preload("res://scripts/match/prototype_battle.gd")
+const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd")
+const PrototypeView = preload("res://scenes/prototype/prototype_view.gd")
 const FIXTURE := "res://tests/fixtures/screen_shake_source.json"
 
 
@@ -20,6 +23,7 @@ func run(check: Callable) -> void:
 		_replay(entry as Dictionary, check)
 	_stacking(data, check)
 	_offsets(data, check)
+	_runtime_wiring(check)
 
 
 func _replay(entry: Dictionary, check: Callable) -> void:
@@ -79,3 +83,54 @@ func _offsets(data: Dictionary, check: Callable) -> void:
 			absi(offset.x) <= limit and absi(offset.y) <= limit,
 			"Native offset stays inside the intensity bound"
 		)
+
+
+func _runtime_wiring(check: Callable) -> void:
+	var world := Prototype.new()
+	world.setup_arena()
+	check.call(
+		world.current_screen_shake_offset() == Vector2.ZERO,
+		"Idle world returns zero screen shake offset"
+	)
+	world.effects.shake_screen(10.0)
+	var limit: int = int(world.effects.screen_shake.intensity)
+	var sample_offset: Vector2 = world.current_screen_shake_offset()
+	check.call(
+		(
+			limit == 10
+			and absf(sample_offset.x) <= float(limit)
+			and absf(sample_offset.y) <= float(limit)
+			and is_equal_approx(sample_offset.x, roundf(sample_offset.x))
+			and is_equal_approx(sample_offset.y, roundf(sample_offset.y))
+		),
+		"Prototype.current_screen_shake_offset delegates to EffectManager.screen_shake"
+	)
+	var session := PrototypeSession.new()
+	session.world = world
+	var view := PrototypeView.new()
+	view.session = session
+	check.call(
+		bool(view.overlay_draw_summary().get("screen_shake_active", false)),
+		"PrototypeView.overlay_draw_summary reports active screen shake"
+	)
+	world.boss_screen_shake_intensity = 20.0
+	world.boss_screen_shake_timer = 8
+	world.tick_count = 3
+	check.call(
+		world.current_screen_shake_offset().is_equal_approx(world.boss_presentation_offset()),
+		"Prototype.current_screen_shake_offset preserves 8-tick boss presentation offset gate"
+	)
+	world.boss_screen_shake_timer = 0
+	world.boss_screen_shake_intensity = 0.0
+	for _step in range(30):
+		world._step_combo_clock()
+	check.call(
+		(
+			is_equal_approx(world.effects.screen_shake.intensity, 0.0)
+			and world.current_screen_shake_offset() == Vector2.ZERO
+			and not bool(view.overlay_draw_summary().get("screen_shake_active", true))
+		),
+		"ScreenShake decays to zero across Prototype._step_combo_clock updates"
+	)
+	view.free()
+	session.free()
