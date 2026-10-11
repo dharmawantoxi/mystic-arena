@@ -7,7 +7,7 @@ const DeathExplosion = preload("res://scripts/ui/death_explosion.gd")
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd")
 const PrototypeView = preload("res://scenes/prototype/prototype_view.gd")
-const GOBLIN = preload("res://resources/units/goblin.tres")
+const GOBLIN = preload("res://data/minions/goblin.tres")
 const FIXTURE := "res://tests/fixtures/death_explosion_source.json"
 
 
