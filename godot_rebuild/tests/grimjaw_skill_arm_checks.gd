@@ -156,7 +156,10 @@ func _arm_hit(data: Dictionary, check: Callable) -> Dictionary:
 		"e":
 			cast = world.cast_hero_e(hero.id, structures)
 		_:
-			cast = world.cast_hero_r(hero.id, structures)
+			# The world exposes the R cast as `_cast_hero_r` (the public
+			# `cast_hero_r` wrapper only exists for q/w/e), exactly like
+			# `grimjaw_checks.gd` drives it.
+			cast = world._cast_hero_r(hero.id, structures)
 	if not cast:
 		check.call(false, "%s: the skill cast lands" % String(data.get("name", "?")))
 		return {}
