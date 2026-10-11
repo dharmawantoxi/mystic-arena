@@ -25,6 +25,10 @@ const HeroState = preload("res://scripts/combat/hero_state.gd")
 const UnitState = preload("res://scripts/combat/unit_state.gd")
 const StructureState = preload("res://scripts/combat/structure_state.gd")
 const TROLL = preload("res://data/minions/troll.tres")
+# `prototype_battle.gd` exposes VEX/THORNE as definitions; gornak has no
+# constant there, so the boss definition is preloaded here.
+const THORNE = preload("res://data/heroes/thorne.tres")
+const GORNAK = preload("res://data/heroes/gornak.tres")
 const ARCHER = preload("res://data/structures/archer_level_1.tres")
 const FIXTURE := "res://tests/fixtures/skill_hit_attribution_source.json"
 const POS := Vector2(600.0, 500.0)
@@ -119,9 +123,9 @@ func _live_stats(fixture: Dictionary, check: Callable) -> void:
 	)
 	var world := World.new()
 	world.setup_arena()
-	var vex: HeroState = world.spawn_hero("vex", World.BLUE, POS)
-	var thorne: HeroState = world.spawn_hero("thorne", World.BLUE, POS)
-	var gornak: HeroState = world.spawn_hero("gornak", World.BLUE, POS)
+	var vex: HeroState = world.spawn_hero(World.VEX, World.BLUE, POS)
+	var thorne: HeroState = world.spawn_hero(THORNE, World.BLUE, POS)
+	var gornak: HeroState = world.spawn_hero(GORNAK, World.BLUE, POS)
 	if vex == null or thorne == null or gornak == null:
 		check.call(false, "the fixture casters spawn")
 		return
@@ -161,7 +165,7 @@ func _vex_r(rows: Dictionary, check: Callable) -> void:
 		check.call(false, "the vex victim spawns")
 		return
 	troll.position = POS
-	var vex: HeroState = world.spawn_hero("vex", World.BLUE, POS + Vector2(GAP, 0.0))
+	var vex: HeroState = world.spawn_hero(World.VEX, World.BLUE, POS + Vector2(GAP, 0.0))
 	if vex == null:
 		check.call(false, "vex spawns")
 		return
@@ -207,7 +211,7 @@ func _thorne_e(rows: Dictionary, check: Callable) -> void:
 	tower.shield = 0.0
 	tower.free_shield_active = false
 	tower.shield_active = false
-	var thorne: HeroState = world.spawn_hero("thorne", World.BLUE, POS + Vector2(GAP, 0.0))
+	var thorne: HeroState = world.spawn_hero(THORNE, World.BLUE, POS + Vector2(GAP, 0.0))
 	if thorne == null:
 		check.call(false, "thorne spawns")
 		return
@@ -237,7 +241,7 @@ func _gornak_q(rows: Dictionary, check: Callable) -> void:
 		check.call(false, "the gornak victim spawns")
 		return
 	troll.position = POS
-	var gornak: HeroState = world.spawn_hero("gornak", World.BLUE, POS + Vector2(GAP, 0.0))
+	var gornak: HeroState = world.spawn_hero(GORNAK, World.BLUE, POS + Vector2(GAP, 0.0))
 	if gornak == null:
 		check.call(false, "gornak spawns")
 		return
