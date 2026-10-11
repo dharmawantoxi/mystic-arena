@@ -131,11 +131,22 @@ func _arm_hit(data: Dictionary, legacy: bool, check: Callable) -> Dictionary:
 	var world := StructArmWorld.new()
 	world.legacy_arm = legacy
 	world.setup_arena()
-	var hero: HeroState = _hero_of_team(world, World.BLUE)
-	var definition = ARCHER if kind == "tower" else NEXUS
-	var structure: StructureState = world.spawn_structure(definition, World.RED, STRUCTURE_POS)
+	var hero: HeroState = world.blue_hero()
+	# `setup_arena` already spawned the red nexus, and `spawn_structure` refuses
+	# a second nexus per team, so the castle rows reuse that live structure.
+	var structure: StructureState = (
+		world.spawn_structure(ARCHER, World.RED, STRUCTURE_POS)
+		if kind == "tower"
+		else world.nexuses[World.RED]
+	)
 	if hero == null or structure == null:
-		check.call(false, "the structure arm victim spawns")
+		check.call(
+			false,
+			(
+				"%s: the arm victim spawns (hero=%s structure=%s)"
+				% [String(data.get("name", "?")), hero != null, structure != null]
+			)
+		)
 		return {}
 	var item_id := String(data.get("item", ""))
 	if not hero.items.add(item_id):
@@ -164,7 +175,7 @@ func _sourced_credit(check: Callable) -> void:
 	# The hero's own basic attack passes `source=self`, so a tower hit keeps
 	# crediting the post-armour amount — that path must not change.
 	var world := _world()
-	var hero: HeroState = _hero_of_team(world, World.BLUE)
+	var hero: HeroState = world.blue_hero()
 	var tower: StructureState = world.spawn_structure(ARCHER, World.RED, STRUCTURE_POS)
 	if hero == null or tower == null:
 		check.call(false, "the sourced control tower spawns")
@@ -190,7 +201,7 @@ func _minion_fallback(check: Callable) -> void:
 	# The slice only touches structure victims: an arm that lands on a minion
 	# keeps the pre-9o fallback (declared school, dealer as source).
 	var world := _world()
-	var hero: HeroState = _hero_of_team(world, World.BLUE)
+	var hero: HeroState = world.blue_hero()
 	var minion: UnitState = world.spawn_unit(TROLL, World.RED, 1)
 	if hero == null or minion == null:
 		check.call(false, "the minion fallback victim spawns")
