@@ -669,3 +669,14 @@ paritas (sumber + sekolah `dmg_school`). Oracle
 `grimjaw_skill_arm_source_oracle.py` (5 baris) plus suite
 `grimjaw_skill_arm_checks.gd` (R troll 65 vs 58, R menara 65 vs 55, R hero armor
 48/48, spin troll 253/253, cone E troll 35/35).
+
+
+## Peluru menara/nexus (layer 9w)
+
+`Bullet._on_hit` tidak pernah mengirim `source=`/`school=`, jadi
+`siege_battle.gd::_projectile_school` kini selalu `"neutral"` dan gate Wind Wall
+membaca sekolah hasil resolve (override 8q untuk boss dihapus karena aturannya
+berlaku umum). Oracle `tower_bullet_school_source_oracle.py` (6 baris) plus
+suite `tower_bullet_school_checks.gd` (archer troll 20 vs 18, mage troll 17 vs
+16, splash cannon 25 vs 22, bolt mage vs Wind Wall 0 vs 17, hero armor 15/15,
+archer vs Wind Wall 0/0).

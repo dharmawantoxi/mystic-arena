@@ -1328,23 +1328,6 @@ func _structure_target(structure: StructureState) -> UnitState:
 	return target
 
 
-func _projectile_school(target: UnitState, school: String) -> String:
-	# Layer 8q: port of `_entity.resolve_damage_school` for a structure shot that
-	# lands on the boss. `Bullet._on_hit` calls
-	# `target.take_damage(damage, team, damage_type='projectile')` with no
-	# `school=` and no `source=`, and the resolver returns None for that
-	# combination, so `Boss.take_damage` skips BOTH the armor and the
-	# magic-resist branch - only resilience and the anti-burst cap apply. The
-	# native path handed the shooter's declared school ("physical"/"magic") to
-	# the boss instead, so every tower and nexus hit was cut by the boss armor
-	# (8..32 armor -> 32%..66% less damage than the source).
-	# Hero and minion targets keep the declared school: their callers and their
-	# recorded mitigation are different code paths.
-	if target is BossState:
-		return "neutral"
-	return school
-
-
 func _cannon_splash(shot: Projectile, main: UnitState) -> void:
 	# Layer 8r: port of the boss arm of the cannon splash. `Bullet._on_hit` runs
 	# its splash loop over `all_units`, whose last element is the live boss

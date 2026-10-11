@@ -125,6 +125,7 @@ from item_reflect_unit_source_oracle import source_fixture as reflect_unit_fixtu
 from hero_bristleback_reflect_source_oracle import source_fixture as bristleback_reflect_fixture
 from sylara_skill_arm_source_oracle import source_fixture as sylara_skill_arm_fixture
 from grimjaw_skill_arm_source_oracle import source_fixture as grimjaw_skill_arm_fixture
+from tower_bullet_school_source_oracle import source_fixture as tower_bullet_school_fixture
 check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
       "Item structure arm suite must be preloaded")
 check("ItemStructureArmChecks.new().run(_check)" in ai_tests,
@@ -205,6 +206,16 @@ if (ROOT / "tests/fixtures/grimjaw_skill_arm_source.json").is_file():
     check(grimjaw_skill_arm_fixture() == json.loads(
         (ROOT / "tests/fixtures/grimjaw_skill_arm_source.json").read_text(encoding="utf-8")),
           "Grimjaw skill arm fixture must not drift from the oracle")
+check('const TowerBulletSchoolChecks = preload("res://tests/tower_bullet_school_checks.gd")' in ai_tests,
+      "Tower bullet school suite must be preloaded")
+check("TowerBulletSchoolChecks.new().run(_check)" in ai_tests,
+      "Tower bullet school suite must run")
+check((ROOT / "tests/fixtures/tower_bullet_school_source.json").is_file(),
+      "Tower bullet school fixture must exist")
+if (ROOT / "tests/fixtures/tower_bullet_school_source.json").is_file():
+    check(tower_bullet_school_fixture() == json.loads(
+        (ROOT / "tests/fixtures/tower_bullet_school_source.json").read_text(encoding="utf-8")),
+          "Tower bullet school fixture must not drift from the oracle")
 check((ROOT / "tests/fixtures/minion_damage_ladder_source.json").is_file(),
       "Minion damage ladder fixture must exist")
 if (ROOT / "tests/fixtures/minion_damage_ladder_source.json").is_file():
@@ -1888,17 +1899,15 @@ check("super._cannon_splash(shot, main)" in boss_cannon_splash
       in boss_cannon_splash,
       "Match layer must splash the living boss with source-omitted attribution and burn")
 projectile_delivery = siege_battle.split("func _update_projectiles(", 1)[1].split("\nfunc ", 1)[0]
-check("_projectile_school(target, school)" in projectile_delivery
+check('var declared := "magic" if shot.kind == "mage" else "physical"' in projectile_delivery
+      and "var school := _projectile_school(target, declared)" in projectile_delivery
       and "_hero_blocks_projectile(target, school)" in projectile_delivery,
-      "Structure impacts must deliver damage under the resolved projectile school")
+      "Structure impacts must gate and deliver under the resolved projectile school")
 projectile_school_base = siege_battle.split("func _projectile_school(", 1)[1].split("\nfunc ", 1)[0]
-check("return school" in projectile_school_base,
-      "Base projectile school must stay the declared school for units and heroes")
-boss_projectile_school = prototype_battle.split("func _projectile_school(", 1)[1].split(
-    "\nfunc ", 1)[0]
-check("if target is BossState:" in boss_projectile_school
-      and 'return "neutral"' in boss_projectile_school,
-      "Boss targets must take structure shots without school mitigation, like the source")
+check('return "neutral"' in projectile_school_base,
+      "Structure shots must land school-free on every victim, like Bullet._on_hit")
+check("func _projectile_school(" not in prototype_battle,
+      "Match layer must not re-declare the resolved projectile school")
 ice_aoe_base = siege_battle.split("func _ice_aoe(", 1)[1].split("\nfunc ", 1)[0]
 check("for victim in units:" in ice_aoe_base
       and "victim.position.distance_to(main.position) > shot.slow_aoe" in ice_aoe_base
