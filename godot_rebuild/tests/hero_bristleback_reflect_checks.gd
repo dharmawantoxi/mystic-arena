@@ -256,10 +256,10 @@ func _spawn_attacker(world: World, data: Dictionary) -> UnitState:
 
 func _matches(actual: Dictionary, expected: Dictionary) -> bool:
 	# The pre-9t column is replayed through `_deliver_hit` directly, so it only
-	# carries the reflected attacker loss; compare the numeric keys the row
-	# defines (the fixture also carries the `reflect_args` record).
+	# carries the reflected attacker loss; compare the numeric keys both the row
+	# and the recorded result define (the fixture also carries `reflect_args`).
 	for key in NUMERIC_KEYS:
-		if not expected.has(key):
+		if not expected.has(key) or not actual.has(key):
 			continue
 		if int(actual.get(key, -1)) != int(expected.get(key, -1)):
 			return false
