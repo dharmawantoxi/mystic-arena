@@ -614,3 +614,15 @@ cabang boss sudah sourceless sejak 9e. Oracle
 `item_cleave_splash_source_oracle.py` (4 baris) plus suite
 `item_cleave_splash_checks.gd` (troll 50/0 vs 45/45, hero armor 37/0 vs 37/37,
 dua minion [50, 50]/0 vs [45, 50]/45).
+
+
+## Tipe damage lengan magic pada korban unit (layer 9r)
+
+Sumber memakai argumen posisional ketiga sebagai tipe damage
+(`take_damage(damage, team, "magic")`), jadi `deal_damage_magic_sourceless()`
+kini mengirim `"magic"` untuk seluruh korban (boss sejak 9g, unit sejak 9r) dan
+gate windrun `_hero_denies_hit()` mengikuti `_is_physical_hit` (hanya
+`normal`/`projectile` non-magic yang bisa meleset). Oracle
+`item_magic_arm_unit_source_oracle.py` (4 baris) plus suite
+`item_magic_arm_unit_checks.gd` (chain pada hero Windrun 45/0 vs 0/0, chain pada
+hero evasi 45/0 vs 0/0, pierce pada hero armor 40/40, pierce pada troll 55/55).

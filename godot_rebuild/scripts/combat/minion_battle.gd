@@ -418,7 +418,10 @@ func _hero_denies_hit(defender: HeroState, school: String, damage_type: String) 
 		return true
 	if damage_type == "projectile" and school != "magic" and defender.wind_wall_timer > 0:
 		return true
-	if defender.windrun_timer > 0 and school != "magic":
+	# Layer 9r: the source gate is `_is_physical_hit(damage_type, school)`
+	# (`_entity.py:92-103`), so only a normal/projectile hit that is not magic
+	# can miss - a `"magic"` type arm or any other damage type never rolls.
+	if defender.windrun_timer > 0 and damage_type in ["normal", "projectile"] and school != "magic":
 		var roll := (
 			float(windrun_roll_override.call())
 			if windrun_roll_override.is_valid()

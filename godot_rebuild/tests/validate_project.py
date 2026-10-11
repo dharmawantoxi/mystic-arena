@@ -120,6 +120,7 @@ check("MinionDamageLadderChecks.new().run(_check)" in ai_tests,
 from item_structure_arm_source_oracle import source_fixture as structure_arm_fixture
 from item_unit_arm_source_oracle import source_fixture as unit_arm_fixture
 from item_cleave_splash_source_oracle import source_fixture as cleave_splash_fixture
+from item_magic_arm_unit_source_oracle import source_fixture as magic_arm_unit_fixture
 check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
       "Item structure arm suite must be preloaded")
 check("ItemStructureArmChecks.new().run(_check)" in ai_tests,
@@ -150,6 +151,16 @@ if (ROOT / "tests/fixtures/item_cleave_splash_source.json").is_file():
     check(cleave_splash_fixture() == json.loads(
         (ROOT / "tests/fixtures/item_cleave_splash_source.json").read_text(encoding="utf-8")),
           "Item cleave splash fixture must not drift from the oracle")
+check('const ItemMagicArmUnitChecks = preload("res://tests/item_magic_arm_unit_checks.gd")' in ai_tests,
+      "Item magic arm unit suite must be preloaded")
+check("ItemMagicArmUnitChecks.new().run(_check)" in ai_tests,
+      "Item magic arm unit suite must run")
+check((ROOT / "tests/fixtures/item_magic_arm_unit_source.json").is_file(),
+      "Item magic arm unit fixture must exist")
+if (ROOT / "tests/fixtures/item_magic_arm_unit_source.json").is_file():
+    check(magic_arm_unit_fixture() == json.loads(
+        (ROOT / "tests/fixtures/item_magic_arm_unit_source.json").read_text(encoding="utf-8")),
+          "Item magic arm unit fixture must not drift from the oracle")
 check((ROOT / "tests/fixtures/minion_damage_ladder_source.json").is_file(),
       "Minion damage ladder fixture must exist")
 if (ROOT / "tests/fixtures/minion_damage_ladder_source.json").is_file():

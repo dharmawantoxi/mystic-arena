@@ -83,7 +83,7 @@ func deal_damage_sourceless(
 
 
 func deal_damage_magic_sourceless(
-	target_id: int, source_team: int, amount: int, school: String = "magic"
+	target_id: int, source_team: int, amount: int, _school: String = "magic"
 ) -> int:
 	# Layer 9g: the on-hit magic arms (arc chain `hero_items.py:2568`,
 	# Sundering Cudgel Piercing Bash `:2589`, Polycephaly multishot `:2633`,
@@ -96,17 +96,19 @@ func deal_damage_magic_sourceless(
 	# by boss magic resist while the source resolves no school at all
 	# (`resolve_damage_school('magic', None, None)` returns `None`,
 	# `_entity.py:106-130`), and a lethal hit credited the owner with the kill.
-	# Regular victims keep the declared school and the dealing hero as source,
-	# exactly as before this layer. Layer 9p: the non-boss fallback now runs the
-	# same sourceless route (`deal_damage` delivers `-1` + `neutral` to minion
-	# and hero victims too).
+	# Layer 9r: the unit victims take the same source shape - the third
+	# positional argument `"magic"` is the damage type, so minion and hero
+	# victims must receive `damage_type="magic"` as well. The declared `school`
+	# argument is the native bus convention: the source passes no school at all,
+	# so every victim runs school-free ("neutral"). `_deliver_hit` turns
+	# that into the source `_is_physical_hit` gates (`_entity.py:92-103`): a
+	# Windrun hero never rolls its 75% miss chance and an evasive hero never
+	# rolls Monarch Wings against these arms, exactly like the source.
 	var tgt: Object = world.get_unit(target_id)
 	if tgt == null:
 		return 0
-	if tgt is BossState:
-		world._deliver_hit(-1, source_team, tgt, amount, "neutral", dealer_pos, "magic")
-		return amount
-	return deal_damage(target_id, source_team, amount, school)
+	world._deliver_hit(-1, source_team, tgt, amount, "neutral", dealer_pos, "magic")
+	return amount
 
 
 func apply_stun(target_id: int, duration: int) -> void:
