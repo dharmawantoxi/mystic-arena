@@ -123,6 +123,7 @@ from item_cleave_splash_source_oracle import source_fixture as cleave_splash_fix
 from item_magic_arm_unit_source_oracle import source_fixture as magic_arm_unit_fixture
 from item_reflect_unit_source_oracle import source_fixture as reflect_unit_fixture
 from hero_bristleback_reflect_source_oracle import source_fixture as bristleback_reflect_fixture
+from sylara_skill_arm_source_oracle import source_fixture as sylara_skill_arm_fixture
 check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
       "Item structure arm suite must be preloaded")
 check("ItemStructureArmChecks.new().run(_check)" in ai_tests,
@@ -183,6 +184,16 @@ if (ROOT / "tests/fixtures/hero_bristleback_reflect_source.json").is_file():
     check(bristleback_reflect_fixture() == json.loads(
         (ROOT / "tests/fixtures/hero_bristleback_reflect_source.json").read_text(encoding="utf-8")),
           "Hero bristleback reflect fixture must not drift from the oracle")
+check('const SylaraSkillArmChecks = preload("res://tests/sylara_skill_arm_checks.gd")' in ai_tests,
+      "Sylara skill arm suite must be preloaded")
+check("SylaraSkillArmChecks.new().run(_check)" in ai_tests,
+      "Sylara skill arm suite must run")
+check((ROOT / "tests/fixtures/sylara_skill_arm_source.json").is_file(),
+      "Sylara skill arm fixture must exist")
+if (ROOT / "tests/fixtures/sylara_skill_arm_source.json").is_file():
+    check(sylara_skill_arm_fixture() == json.loads(
+        (ROOT / "tests/fixtures/sylara_skill_arm_source.json").read_text(encoding="utf-8")),
+          "Sylara skill arm fixture must not drift from the oracle")
 check((ROOT / "tests/fixtures/minion_damage_ladder_source.json").is_file(),
       "Minion damage ladder fixture must exist")
 if (ROOT / "tests/fixtures/minion_damage_ladder_source.json").is_file():

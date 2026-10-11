@@ -647,3 +647,14 @@ tanpa sekolah, jadi `_deliver_hit` kini mengirim pantulan Bristleback sebagai
 berubah. Oracle `hero_bristleback_reflect_source_oracle.py` (5 baris) plus suite
 `hero_bristleback_reflect_checks.gd` (troll 35 vs 31, troll masuk magic 42 vs
 38, undead 35/35, hero armor 26/26, hero tanpa armor 35/35).
+
+
+## Lengan skill Sylara (layer 9u)
+
+Empat panggilan damage sumber hanya mengirim tim (tanpa sekolah), jadi
+`sylara_skills.gd` kini mengirim `"neutral"` (Q line, E initial, E tick, R
+powershot) dan `_stun()` mengikuti gate `hasattr(target, 'attack_timer')`
+sehingga korban menara tidak ditulisi properti tak ada. Oracle
+`sylara_skill_arm_source_oracle.py` (4 baris) plus suite
+`sylara_skill_arm_checks.gd` (Q troll 95 vs 85, E troll 66 vs 59, E+tick troll
+104 vs 93, E menara 66 vs 56).
