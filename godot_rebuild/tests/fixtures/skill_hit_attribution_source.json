@@ -1,0 +1,2620 @@
+{
+  "source": "`hero_skills/_bundle.py` delivery shapes run through the real `Minion.take_damage`, `Tower.take_damage` and `Hero.take_damage`",
+  "callsite": "godot_rebuild/scripts/combat/skill_common.gd::hit",
+  "native_model": "`Common.hit(..., true)` and `world._deal_hero_aoe(...)` are the attributed arms; plain `Common.hit` and `_deliver_hit(-1, ...)` are sourceless",
+  "native_sites": {
+    "alchemist_skills.gd": {
+      "hit_total": 3,
+      "hit_attributed": 0,
+      "hit_sourceless": 3,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 0,
+      "attributed_mults": []
+    },
+    "boss_level_eighteen_skills.gd": {
+      "hit_total": 4,
+      "hit_attributed": 0,
+      "hit_sourceless": 4,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 1,
+      "attributed_mults": []
+    },
+    "boss_level_eleven_skills.gd": {
+      "hit_total": 7,
+      "hit_attributed": 0,
+      "hit_sourceless": 7,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 0,
+      "attributed_mults": []
+    },
+    "boss_level_fifteen_skills.gd": {
+      "hit_total": 3,
+      "hit_attributed": 0,
+      "hit_sourceless": 3,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 1,
+      "attributed_mults": []
+    },
+    "boss_level_five_skills.gd": {
+      "hit_total": 8,
+      "hit_attributed": 0,
+      "hit_sourceless": 8,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 0,
+      "attributed_mults": []
+    },
+    "boss_level_four_skills.gd": {
+      "hit_total": 3,
+      "hit_attributed": 0,
+      "hit_sourceless": 3,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 0,
+      "attributed_mults": []
+    },
+    "boss_level_fourteen_skills.gd": {
+      "hit_total": 4,
+      "hit_attributed": 0,
+      "hit_sourceless": 4,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 1,
+      "attributed_mults": []
+    },
+    "boss_level_nine_skills.gd": {
+      "hit_total": 9,
+      "hit_attributed": 0,
+      "hit_sourceless": 9,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 1,
+      "attributed_mults": []
+    },
+    "boss_level_nineteen_skills.gd": {
+      "hit_total": 3,
+      "hit_attributed": 0,
+      "hit_sourceless": 3,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 1,
+      "attributed_mults": []
+    },
+    "boss_level_one_skills.gd": {
+      "hit_total": 7,
+      "hit_attributed": 0,
+      "hit_sourceless": 7,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 2,
+      "attributed_mults": []
+    },
+    "boss_level_seven_skills.gd": {
+      "hit_total": 9,
+      "hit_attributed": 0,
+      "hit_sourceless": 9,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 0,
+      "attributed_mults": []
+    },
+    "boss_level_seventeen_skills.gd": {
+      "hit_total": 4,
+      "hit_attributed": 0,
+      "hit_sourceless": 4,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 1,
+      "attributed_mults": []
+    },
+    "boss_level_six_skills.gd": {
+      "hit_total": 4,
+      "hit_attributed": 0,
+      "hit_sourceless": 4,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 0,
+      "attributed_mults": []
+    },
+    "boss_level_sixteen_skills.gd": {
+      "hit_total": 3,
+      "hit_attributed": 0,
+      "hit_sourceless": 3,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 1,
+      "attributed_mults": []
+    },
+    "boss_level_ten_skills.gd": {
+      "hit_total": 8,
+      "hit_attributed": 0,
+      "hit_sourceless": 8,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 0,
+      "attributed_mults": []
+    },
+    "boss_level_thirteen_skills.gd": {
+      "hit_total": 7,
+      "hit_attributed": 0,
+      "hit_sourceless": 7,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 1,
+      "attributed_mults": []
+    },
+    "boss_level_three_skills.gd": {
+      "hit_total": 9,
+      "hit_attributed": 0,
+      "hit_sourceless": 9,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 0,
+      "attributed_mults": []
+    },
+    "boss_level_twelve_skills.gd": {
+      "hit_total": 3,
+      "hit_attributed": 0,
+      "hit_sourceless": 3,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 0,
+      "attributed_mults": []
+    },
+    "boss_level_twenty_skills.gd": {
+      "hit_total": 3,
+      "hit_attributed": 0,
+      "hit_sourceless": 3,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 1,
+      "attributed_mults": []
+    },
+    "grimjaw_skills.gd": {
+      "hit_total": 0,
+      "hit_attributed": 0,
+      "hit_sourceless": 0,
+      "aoe_sites": 3,
+      "direct_attributed": 1,
+      "direct_sourceless": 1,
+      "attributed_mults": []
+    },
+    "hero_projectiles.gd": {
+      "hit_total": 0,
+      "hit_attributed": 0,
+      "hit_sourceless": 0,
+      "aoe_sites": 0,
+      "direct_attributed": 1,
+      "direct_sourceless": 0,
+      "attributed_mults": []
+    },
+    "minion_battle.gd": {
+      "hit_total": 0,
+      "hit_attributed": 0,
+      "hit_sourceless": 0,
+      "aoe_sites": 4,
+      "direct_attributed": 4,
+      "direct_sourceless": 2,
+      "attributed_mults": []
+    },
+    "siege_battle.gd": {
+      "hit_total": 0,
+      "hit_attributed": 0,
+      "hit_sourceless": 0,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 0,
+      "attributed_mults": []
+    },
+    "skill_common.gd": {
+      "hit_total": 0,
+      "hit_attributed": 0,
+      "hit_sourceless": 0,
+      "aoe_sites": 0,
+      "direct_attributed": 1,
+      "direct_sourceless": 0,
+      "attributed_mults": []
+    },
+    "source_shared_boss_skills.gd": {
+      "hit_total": 2,
+      "hit_attributed": 2,
+      "hit_sourceless": 0,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 0,
+      "attributed_mults": [
+        "world, hero, Common.current(world, hero)",
+        "world, hero, enemy, mult, true"
+      ]
+    },
+    "sylara_skills.gd": {
+      "hit_total": 0,
+      "hit_attributed": 0,
+      "hit_sourceless": 0,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 4,
+      "attributed_mults": []
+    },
+    "thorne_skills.gd": {
+      "hit_total": 0,
+      "hit_attributed": 0,
+      "hit_sourceless": 0,
+      "aoe_sites": 3,
+      "direct_attributed": 0,
+      "direct_sourceless": 1,
+      "attributed_mults": []
+    },
+    "vex_skills.gd": {
+      "hit_total": 7,
+      "hit_attributed": 3,
+      "hit_sourceless": 4,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 0,
+      "attributed_mults": [
+        "world, hero, enemy, 0.4, true",
+        "world, hero, enemy, 2.5, true",
+        "world, hero, target, 0.3, true"
+      ]
+    },
+    "zephyr_skills.gd": {
+      "hit_total": 6,
+      "hit_attributed": 4,
+      "hit_sourceless": 2,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 0,
+      "attributed_mults": [
+        "world, hero, enemy, 0.3, true",
+        "world, hero, enemy, 0.5, true",
+        "world, hero, enemy, 1.8, true",
+        "world, hero, target, 0.35, true"
+      ]
+    },
+    "battle_item_effects.gd": {
+      "hit_total": 0,
+      "hit_attributed": 0,
+      "hit_sourceless": 0,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 5,
+      "attributed_mults": []
+    },
+    "boss_ai.gd": {
+      "hit_total": 0,
+      "hit_attributed": 0,
+      "hit_sourceless": 0,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 1,
+      "attributed_mults": []
+    },
+    "prototype_battle.gd": {
+      "hit_total": 0,
+      "hit_attributed": 0,
+      "hit_sourceless": 0,
+      "aoe_sites": 0,
+      "direct_attributed": 1,
+      "direct_sourceless": 2,
+      "attributed_mults": []
+    },
+    "reflect_item_effects.gd": {
+      "hit_total": 0,
+      "hit_attributed": 0,
+      "hit_sourceless": 0,
+      "aoe_sites": 0,
+      "direct_attributed": 0,
+      "direct_sourceless": 1,
+      "attributed_mults": []
+    }
+  },
+  "native_site_tokens": {
+    "res://scripts/combat/alchemist_skills.gd": {
+      "common_hit": 3,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/boss_level_eighteen_skills.gd": {
+      "common_hit": 4,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/boss_level_eleven_skills.gd": {
+      "common_hit": 7,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/boss_level_fifteen_skills.gd": {
+      "common_hit": 3,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/boss_level_five_skills.gd": {
+      "common_hit": 8,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/boss_level_four_skills.gd": {
+      "common_hit": 3,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/boss_level_fourteen_skills.gd": {
+      "common_hit": 4,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/boss_level_nine_skills.gd": {
+      "common_hit": 9,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/boss_level_nineteen_skills.gd": {
+      "common_hit": 3,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/boss_level_one_skills.gd": {
+      "common_hit": 7,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/boss_level_seven_skills.gd": {
+      "common_hit": 9,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/boss_level_seventeen_skills.gd": {
+      "common_hit": 4,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/boss_level_six_skills.gd": {
+      "common_hit": 4,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/boss_level_sixteen_skills.gd": {
+      "common_hit": 3,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/boss_level_ten_skills.gd": {
+      "common_hit": 8,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/boss_level_thirteen_skills.gd": {
+      "common_hit": 7,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/boss_level_three_skills.gd": {
+      "common_hit": 9,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/boss_level_twelve_skills.gd": {
+      "common_hit": 3,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/boss_level_twenty_skills.gd": {
+      "common_hit": 3,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/grimjaw_skills.gd": {
+      "common_hit": 0,
+      "true_suffix": 0,
+      "aoe_calls": 3
+    },
+    "res://scripts/combat/hero_projectiles.gd": {
+      "common_hit": 0,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/minion_battle.gd": {
+      "common_hit": 0,
+      "true_suffix": 0,
+      "aoe_calls": 4
+    },
+    "res://scripts/combat/siege_battle.gd": {
+      "common_hit": 0,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/skill_common.gd": {
+      "common_hit": 0,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/source_shared_boss_skills.gd": {
+      "common_hit": 2,
+      "true_suffix": 2,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/sylara_skills.gd": {
+      "common_hit": 0,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/thorne_skills.gd": {
+      "common_hit": 0,
+      "true_suffix": 0,
+      "aoe_calls": 3
+    },
+    "res://scripts/combat/vex_skills.gd": {
+      "common_hit": 7,
+      "true_suffix": 3,
+      "aoe_calls": 0
+    },
+    "res://scripts/combat/zephyr_skills.gd": {
+      "common_hit": 6,
+      "true_suffix": 4,
+      "aoe_calls": 0
+    },
+    "res://scripts/match/battle_item_effects.gd": {
+      "common_hit": 0,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/match/boss_ai.gd": {
+      "common_hit": 0,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    },
+    "res://scripts/match/prototype_battle.gd": {
+      "common_hit": 0,
+      "true_suffix": 3,
+      "aoe_calls": 0
+    },
+    "res://scripts/match/reflect_item_effects.gd": {
+      "common_hit": 0,
+      "true_suffix": 0,
+      "aoe_calls": 0
+    }
+  },
+  "source_counts": {
+    "GrimjawSkills": {
+      "attributed": 4,
+      "sourceless": 1,
+      "aoe_sites": 2,
+      "attributed_multipliers": [
+        "1.5",
+        "2.0",
+        "h.skill_damage",
+        "int(h.skill_damage * 0.6)"
+      ]
+    },
+    "KaizenSkills": {
+      "attributed": 4,
+      "sourceless": 0,
+      "aoe_sites": 4,
+      "attributed_multipliers": [
+        "1.0",
+        "1.0",
+        "1.5",
+        "2.0"
+      ]
+    },
+    "ThorneSkills": {
+      "attributed": 3,
+      "sourceless": 1,
+      "aoe_sites": 3,
+      "attributed_multipliers": [
+        "0.5",
+        "1.2",
+        "1.5"
+      ]
+    },
+    "VexSkills": {
+      "attributed": 3,
+      "sourceless": 4,
+      "aoe_sites": 1,
+      "attributed_multipliers": [
+        "2.5",
+        "int(h.skill_damage * 0.3)",
+        "int(h.skill_damage * 0.4)"
+      ]
+    },
+    "ZephyrSkills": {
+      "attributed": 4,
+      "sourceless": 2,
+      "aoe_sites": 1,
+      "attributed_multipliers": [
+        "1.8",
+        "int(h.skill_damage * 0.3)",
+        "int(h.skill_damage * 0.35)",
+        "int(h.skill_damage * 0.5)"
+      ]
+    },
+    "BossHeroSkills": {
+      "attributed": 2,
+      "sourceless": 259,
+      "aoe_sites": 0,
+      "attributed_multipliers": [
+        "int(h.skill_damage * mult)",
+        "int(h.skill_damage * mult)"
+      ]
+    }
+  },
+  "source_rows": [
+    {
+      "kit": "BossHeroSkills",
+      "method": "update_timers",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "update_timers",
+      "kind": "hit",
+      "multiplier": "clone_damage",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "update_timers",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_fallback_cast",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * mult)",
+      "attributed": true
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_fallback_cast",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * mult)",
+      "attributed": true
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_mana_break",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_counterspell",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.8)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_mana_void",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_spark_wraith",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_flux",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.5)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_magnetic_field",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.7)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_counter_helix",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.5)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_berserkers_call",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_culling_blade",
+      "kind": "hit",
+      "multiplier": "damage",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_mist_coil",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_aphotic_shield",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.5)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_darkness_gale",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_death_sever",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.5)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_acid_spray",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_unstable_concoction",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.5)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_greevils_greed",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.5)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_ice_vortex",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.6)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_chilling_touch",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.5)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_ice_blast",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.5)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_cold_feet",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 3.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_arctic_burn",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_splinter_blast",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_winters_curse",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_cold_embrace",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_dragon_breath",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.6)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_dragon_tail",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.9)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_elder_dragon_form",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 3.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_krobellus_exorcism",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.5)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_krobellus_silence",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_krobellus_siphon",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_krobellus_crypt",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.5)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_vhalzun_death_pulse",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.5)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_vhalzun_heartstopper",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_vhalzun_reapers_scythe",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.8)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_vhalzun_ghost_shroud",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.4)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_kunkka_tide",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.8)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_kunkka_xmark",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.5)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_kunkka_ghost",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_kunkka_torrent",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 3.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_nyxarath_shadowraze",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.8)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_nyxarath_necro",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.7)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_nyxarath_requiem",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 3.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_gravewake_anchor",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.4)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_gravewake_tide",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_gravewake_ravage",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_syrentha_riptide",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_syrentha_song",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_syrentha_siren",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_thalgryn_waveform",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.6)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_thalgryn_adaptive",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_thalgryn_adaptive",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.7)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_thalgryn_replicate",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_malzareth_disruption",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.5)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_malzareth_soul",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.4)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_malzareth_soul",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.7)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_malzareth_poison",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_malzareth_disillusion",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_akashari_strike",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.6)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_akashari_blink",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_akashari_scream",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.5)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_akashari_sonic",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_vorenmarr_bonds",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_vorenmarr_bonds",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.6)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_vorenmarr_upheaval",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.8)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_vorenmarr_golem",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_kenshiro_swiftslash",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_kenshiro_assault",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.4)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_kenshiro_gale",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_kenshiro_supremacy",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.8)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_khazan_chained",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_khazan_leap",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_khazan_spin",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_khazan_vanish",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.9)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_wiro_windcut",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_wiro_whirl",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_wiro_dash",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_wiro_typhoon",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.8)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_naraka_chaos",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_naraka_shadowstep",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_naraka_hammer",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_naraka_execution",
+      "kind": "hit",
+      "multiplier": "dmg",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_krognarr_strike",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_krognarr_seismic",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_krognarr_rampart",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.9)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_krognarr_eruption",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.8)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_raz_overdrive",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_raz_searing",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.4)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_raz_surge",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_raz_gloom",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.8)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_vraskhan_thorned",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_vraskhan_leap",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_vraskhan_deathslash",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_vraskhan_omni",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.8)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_aurethzar_marksman",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_aurethzar_piercing",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_aurethzar_frost",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_aurethzar_thunder",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.9)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_aeralith_tailwind",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_aeralith_windblade",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_aeralith_vacuum",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_aeralith_skyrider",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.8)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_aurex_shieldcrash",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_aurex_voltblast",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.4)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_aurex_aegis",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.9)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_aurex_spin",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.8)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_nyxareva_darkslash",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_nyxareva_mortalwound",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.4)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_nyxareva_sacrifice",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_nyxareva_avatar",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.8)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_thalakryon_bolt",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_thalakryon_aquashield",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.8)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_thalakryon_tidalrage",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_thalakryon_metamorph",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_aurelix_timebomb",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_aurelix_shockwave",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_aurelix_transcend",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.8)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_aurelyssa_whirlwind",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_aurelyssa_sweep",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_aurelyssa_wings",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_aurelyssa_phantom",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.8)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_vargrath_bloodthirst",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_vargrath_charge",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_vargrath_devilstrike",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_vargrath_souldom",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.8)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_nazulmor_typhoon",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_nazulmor_aquashield",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.8)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_nazulmor_tidalrage",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_nazulmor_chaotic",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_kaeldris_overwhelming",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_kaeldris_press",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_kaeldris_moment",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_kaeldris_duel",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.8)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_pyraklos_spearmars",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_pyraklos_rebuke",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_pyraklos_bulwark",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.7)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_pyraklos_arena",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.8)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_velmyrth_dagger",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_velmyrth_strike",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_velmyrth_blur",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_velmyrth_coup",
+      "kind": "hit",
+      "multiplier": "dmg",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_solvarin_purification",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_solvarin_repel",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_solvarin_degen",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.9)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_solvarin_guardian",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_azureth_arcanebolt",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_azureth_concussive",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.15)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_azureth_ancientseal",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_azureth_mysticflare",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.9)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_luminar_illuminate",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_luminar_blindinglight",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.15)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_luminar_wisp",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_luminar_spiritform",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.95)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_solara_starbreaker",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.25)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_solara_celestialhammer",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.15)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_solara_luminosity",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.95)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_solara_solarguardian",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.9)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_pyraethis_icarusdive",
+      "kind": "hit",
+      "multiplier": "dmg",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_pyraethis_firespirits",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_pyraethis_sunray",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.05)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_pyraethis_supernova",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_auroth_ionicedge",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.25)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_auroth_ward",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_auroth_consecration",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_auroth_guardian",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.9)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_morvein_puncture",
+      "kind": "hit",
+      "multiplier": "dmg",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_morvein_violentstrike",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_morvein_spectralcharge",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.05)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_morvein_phantomform",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.95)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_thorvak_seed",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_thorvak_natureswrath",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.15)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_thorvak_vengeance",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_thorvak_dryad",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.9)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_yamako_deepforest",
+      "kind": "hit",
+      "multiplier": "dmg",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_yamako_woodcreation",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.15)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_yamako_woodgolem",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_yamako_kannon",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.1)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_ignirus_searingtorrent",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_ignirus_flameshot",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.15)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_ignirus_burstfireball",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_ignirus_vengeance",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.95)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_leoric_fearlesscharge",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.25)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_leoric_sacredhammer",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.15)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_leoric_concealblast",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_leoric_immortality",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.9)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_shirotaka_hiraishin",
+      "kind": "hit",
+      "multiplier": "dmg",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_shirotaka_waterboundary",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.15)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_shirotaka_shadowclones",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_shirotaka_paperbomb",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.95)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_seiryukong_boundless",
+      "kind": "hit",
+      "multiplier": "dmg",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_seiryukong_treedance",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_seiryukong_jingusoldiers",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_seiryukong_wukong",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.15)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_kaelthorn_bravestfighter",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.25)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_kaelthorn_justiceblade",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.15)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_kaelthorn_defendersassault",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_kaelthorn_chivalryfists",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.9)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_solvanth_ringpunishment",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.25)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_solvanth_gloriouspathway",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.15)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_solvanth_laworder",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_solvanth_wrath",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.95)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_xyrael_finch",
+      "kind": "hit",
+      "multiplier": "dmg",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_xyrael_defiant",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.15)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_xyrael_tempest",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_xyrael_lightness",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.95)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_nyxareth_starsplit",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_nyxareth_realworld",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_nyxareth_spacetime",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.05)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_nyxareth_astrorealm",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_cryssalia_frostshock",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.25)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_cryssalia_bitterfrost",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.15)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_cryssalia_frostbites",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_cryssalia_coldest",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.95)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_kaelthar_chargingfist",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.3)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_kaelthar_quake",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_kaelthar_fistcrack",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.05)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_kaelthar_fistbreak",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_morkhaera_spiritburst",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.25)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_morkhaera_airstrike",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.15)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_morkhaera_energyimpact",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_morkhaera_ethereal",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.95)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_aurelion_callcourage",
+      "kind": "hit",
+      "multiplier": "dmg",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_aurelion_guardianassault",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_aurelion_kingscommand",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_aurelion_kingssummon",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_akahime_petalbarrage",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.25)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_akahime_soulscroll",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.15)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_akahime_shadow",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_akahime_higanbana",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.95)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_nyxthrael_ambush",
+      "kind": "hit",
+      "multiplier": "dmg",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_nyxthrael_nightfall",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.15)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_nyxthrael_darknightfall",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_nyxthrael_shadowbringer",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.95)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_sylvantheros_sprout",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_sylvantheros_teleport",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.15)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_sylvantheros_treants",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_sylvantheros_wrath",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.95)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_vaelindra_energywave",
+      "kind": "hit",
+      "multiplier": "dmg",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_vaelindra_spacering",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_vaelindra_violetrequiem",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.05)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_vaelindra_realm",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.25)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_astraelion_swordfall",
+      "kind": "hit",
+      "multiplier": "dmg",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_astraelion_spiritblade",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.15)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_astraelion_forceescape",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_astraelion_zeroreturn",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.95)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_morvaenthir_soulfragment",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.25)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_morvaenthir_spiritbind",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.15)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_morvaenthir_essence",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_morvaenthir_shadowrealm",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.95)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_thornvaegrim_bramble",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.25)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_thornvaegrim_twistedadvance",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.15)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_thornvaegrim_saplingthrow",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.0)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_thornvaegrim_grasp",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.95)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_q_morthraxis_batimpale",
+      "kind": "hit",
+      "multiplier": "dmg",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_w_morthraxis_sanguine",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_e_morthraxis_phantommob",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.05)",
+      "attributed": false
+    },
+    {
+      "kit": "BossHeroSkills",
+      "method": "_cast_r_morthraxis_baleful",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.25)",
+      "attributed": false
+    },
+    {
+      "kit": "GrimjawSkills",
+      "method": "update_timers",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.6)",
+      "attributed": true
+    },
+    {
+      "kit": "GrimjawSkills",
+      "method": "update_timers",
+      "kind": "hit",
+      "multiplier": "h.skill_damage",
+      "attributed": true
+    },
+    {
+      "kit": "GrimjawSkills",
+      "method": "cast_e",
+      "kind": "aoe",
+      "multiplier": "1.5",
+      "attributed": true
+    },
+    {
+      "kit": "GrimjawSkills",
+      "method": "cast_r",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 2.5)",
+      "attributed": false
+    },
+    {
+      "kit": "GrimjawSkills",
+      "method": "cast_r",
+      "kind": "aoe",
+      "multiplier": "2.0",
+      "attributed": true
+    },
+    {
+      "kit": "KaizenSkills",
+      "method": "_cast_steel_wind",
+      "kind": "aoe",
+      "multiplier": "1.0",
+      "attributed": true
+    },
+    {
+      "kit": "KaizenSkills",
+      "method": "_cast_dash_strike",
+      "kind": "aoe",
+      "multiplier": "1.5",
+      "attributed": true
+    },
+    {
+      "kit": "KaizenSkills",
+      "method": "cast_e",
+      "kind": "aoe",
+      "multiplier": "1.0",
+      "attributed": true
+    },
+    {
+      "kit": "KaizenSkills",
+      "method": "cast_r",
+      "kind": "aoe",
+      "multiplier": "2.0",
+      "attributed": true
+    },
+    {
+      "kit": "ThorneSkills",
+      "method": "cast_q",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.8)",
+      "attributed": false
+    },
+    {
+      "kit": "ThorneSkills",
+      "method": "cast_w",
+      "kind": "aoe",
+      "multiplier": "0.5",
+      "attributed": true
+    },
+    {
+      "kit": "ThorneSkills",
+      "method": "cast_e",
+      "kind": "aoe",
+      "multiplier": "1.2",
+      "attributed": true
+    },
+    {
+      "kit": "ThorneSkills",
+      "method": "cast_r",
+      "kind": "aoe",
+      "multiplier": "1.5",
+      "attributed": true
+    },
+    {
+      "kit": "VexSkills",
+      "method": "update_timers",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.3)",
+      "attributed": true
+    },
+    {
+      "kit": "VexSkills",
+      "method": "update_timers",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.4)",
+      "attributed": true
+    },
+    {
+      "kit": "VexSkills",
+      "method": "cast_q",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 1.2)",
+      "attributed": false
+    },
+    {
+      "kit": "VexSkills",
+      "method": "cast_q",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.5)",
+      "attributed": false
+    },
+    {
+      "kit": "VexSkills",
+      "method": "cast_w",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.8)",
+      "attributed": false
+    },
+    {
+      "kit": "VexSkills",
+      "method": "cast_e",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.6)",
+      "attributed": false
+    },
+    {
+      "kit": "VexSkills",
+      "method": "cast_r",
+      "kind": "aoe",
+      "multiplier": "2.5",
+      "attributed": true
+    },
+    {
+      "kit": "ZephyrSkills",
+      "method": "update_timers",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.35)",
+      "attributed": true
+    },
+    {
+      "kit": "ZephyrSkills",
+      "method": "update_timers",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.3)",
+      "attributed": true
+    },
+    {
+      "kit": "ZephyrSkills",
+      "method": "update_timers",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.5)",
+      "attributed": true
+    },
+    {
+      "kit": "ZephyrSkills",
+      "method": "cast_q",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.8)",
+      "attributed": false
+    },
+    {
+      "kit": "ZephyrSkills",
+      "method": "cast_e",
+      "kind": "hit",
+      "multiplier": "int(h.skill_damage * 0.6)",
+      "attributed": false
+    },
+    {
+      "kit": "ZephyrSkills",
+      "method": "cast_r",
+      "kind": "aoe",
+      "multiplier": "1.8",
+      "attributed": true
+    }
+  ],
+  "live_stats": {
+    "vex_skill_base": 95,
+    "thorne_skill_base": 70,
+    "gornak_skill_base": 224,
+    "vex_school": "magic",
+    "thorne_school": "physical",
+    "vex_multiplier": 2.5,
+    "gornak_multiplier": 1.2,
+    "tower_armor": 3.0,
+    "troll_armor": 2.0,
+    "troll_magic_resist": 0.05
+  },
+  "cases": [
+    {
+      "name": "vex_r_attributed_on_troll",
+      "cast": "VexSkills.cast(key=\"r\")",
+      "source_shape": "`_deal_aoe_damage` sends source=hero and school=hero.dmg_school",
+      "victim_kind": "minion",
+      "school": "magic",
+      "payload": 237,
+      "expected": {
+        "hp_loss": 225,
+        "credited_total": 225
+      }
+    },
+    {
+      "name": "vex_r_sourceless_on_troll",
+      "cast": "VexSkills.cast(key=\"r\")",
+      "source_shape": "two positional arguments (no source, no school)",
+      "victim_kind": "minion",
+      "school": null,
+      "payload": 237,
+      "expected": {
+        "hp_loss": 237,
+        "credited_total": 0
+      }
+    },
+    {
+      "name": "thorne_e_attributed_on_tower",
+      "cast": "ThorneSkills.cast(key=\"e\")",
+      "source_shape": "`_deal_aoe_damage` credits the dealing hero",
+      "victim_kind": "tower",
+      "school": "physical",
+      "payload": 84,
+      "expected": {
+        "hp_loss": 71,
+        "credited_total": 71
+      }
+    },
+    {
+      "name": "gornak_q_sourceless_on_troll",
+      "cast": "BossHeroSkills._cast_q_mana_break",
+      "source_shape": "`e.take_damage(int(h.skill_damage * 1.2), h.team)`",
+      "victim_kind": "minion",
+      "school": null,
+      "payload": 268,
+      "expected": {
+        "hp_loss": 268,
+        "credited_total": 0
+      }
+    }
+  ]
+}

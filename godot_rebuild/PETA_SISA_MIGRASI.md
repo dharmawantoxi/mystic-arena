@@ -693,3 +693,15 @@ hero armor 10/10, baris boss live: netral == jalur `_deliver_hit(-1, ...)`,
 physical lebih kecil, tanpa pantulan Razor Carapace ke minion, dan tanpa
 atribusi kill/source id: `killed_by` -1 untuk kill minion, boss tanpa
 `last_hit_source_id`).
+
+
+## Atribusi pengiriman skill bersama (layer 9y)
+
+Audit 116 situs `Common.hit(` + `_deal_hero_aoe(` menunjukkan split native sudah
+sama dengan sumber: 9 situs ber-atribut (shared 2, vex 3, zephyr 4), 107
+sourceless, dan semua resep boss tetap sourceless. Tidak ada kode produksi yang
+diubah; oracle `skill_hit_attribution_source_oracle.py` mengklasifikasi situs,
+memaku split per kit, dan mengeksekusi baris Vex R (225 kredit 225 vs
+sourceless 237 kredit 0), Thorne E (71 kredit 71), Gornak Q (268 kredit 0);
+suite `skill_hit_attribution_checks.gd` mereplay ketiganya lewat produksi dan
+menghitung ulang token situs dari skrip yang dikirim.

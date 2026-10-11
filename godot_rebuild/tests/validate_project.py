@@ -127,6 +127,7 @@ from sylara_skill_arm_source_oracle import source_fixture as sylara_skill_arm_fi
 from grimjaw_skill_arm_source_oracle import source_fixture as grimjaw_skill_arm_fixture
 from tower_bullet_school_source_oracle import source_fixture as tower_bullet_school_fixture
 from minion_melee_school_source_oracle import source_fixture as minion_melee_school_fixture
+from skill_hit_attribution_source_oracle import source_fixture as skill_hit_attribution_fixture
 check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
       "Item structure arm suite must be preloaded")
 check("ItemStructureArmChecks.new().run(_check)" in ai_tests,
@@ -227,6 +228,16 @@ if (ROOT / "tests/fixtures/minion_melee_school_source.json").is_file():
     check(minion_melee_school_fixture() == json.loads(
         (ROOT / "tests/fixtures/minion_melee_school_source.json").read_text(encoding="utf-8")),
           "Minion melee school fixture must not drift from the oracle")
+check('const SkillHitAttributionChecks = preload("res://tests/skill_hit_attribution_checks.gd")' in ai_tests,
+      "Skill hit attribution suite must be preloaded")
+check("SkillHitAttributionChecks.new().run(_check)" in ai_tests,
+      "Skill hit attribution suite must run")
+check((ROOT / "tests/fixtures/skill_hit_attribution_source.json").is_file(),
+      "Skill hit attribution fixture must exist")
+if (ROOT / "tests/fixtures/skill_hit_attribution_source.json").is_file():
+    check(skill_hit_attribution_fixture() == json.loads(
+        (ROOT / "tests/fixtures/skill_hit_attribution_source.json").read_text(encoding="utf-8")),
+          "Skill hit attribution fixture must not drift from the oracle")
 check((ROOT / "tests/fixtures/minion_damage_ladder_source.json").is_file(),
       "Minion damage ladder fixture must exist")
 if (ROOT / "tests/fixtures/minion_damage_ladder_source.json").is_file():
