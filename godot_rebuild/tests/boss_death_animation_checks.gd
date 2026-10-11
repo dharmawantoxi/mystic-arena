@@ -1,9 +1,14 @@
+# gdlint:disable=max-file-lines
 extends RefCounted
 ## Replays `_render.py::BossDeathAnimation` state through the native port.
 ## The source oracle executes the original draw under shims and records draw
 ## locals; no pygame drawing is reproduced here.
 
 const BossDeathAnimation = preload("res://scripts/ui/boss_death_animation.gd")
+const Prototype = preload("res://scripts/match/prototype_battle.gd")
+const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd")
+const PrototypeView = preload("res://scenes/prototype/prototype_view.gd")
+const HeroState = preload("res://scripts/combat/hero_state.gd")
 const FIXTURE := "res://tests/fixtures/boss_death_animation_source.json"
 const KEY_BY_NAME := {"space": KEY_SPACE, "escape": KEY_ESCAPE, "letter": KEY_A}
 
@@ -31,6 +36,7 @@ func run(check: Callable) -> void:
 	for case_name in data["skip_cases"]:
 		_check_skips(String(case_name), data["skip_cases"][case_name] as Array, data, check)
 	_random_branches(check)
+	_check_runtime_wiring(check)
 
 
 func _replay_case(case_data: Dictionary, check: Callable) -> void:
@@ -457,6 +463,106 @@ func _check_random_ranges(animation, is_true: bool, check: Callable) -> void:
 		animation.get_fragment_count() == (25 if is_true else 15),
 		"Random fragment tier count matches source"
 	)
+
+
+func _check_runtime_wiring(check: Callable) -> void:
+	var world := Prototype.new()
+	world.setup_arena()
+	world.set_ai_enabled(false)
+	world.ai_hero_control_enabled = false
+	check.call(
+		world.boss_death == null and not bool(world.boss_death_state().get("active", true)),
+		"Prototype starts without an active boss death animation"
+	)
+	var hero: HeroState = world.blue_hero()
+	var mini := world._spawn_boss("gornak")
+	check.call(hero != null and mini != null, "Runtime wiring test spawns hero and mini-boss")
+	if hero == null or mini == null:
+		return
+	mini.entrance_timer = 0
+	mini.hp = 1.0
+	mini.alive = true
+	mini.defeated = false
+	check.call(
+		world._deliver_hit(hero.id, world.BLUE, mini, 99999, "physical", mini.position),
+		"Hero lethal hit lands on mini-boss"
+	)
+	world._process_boss_result()
+	var session := PrototypeSession.new()
+	session.world = world
+	var view := PrototypeView.new()
+	view.session = session
+	check.call(
+		(
+			world.boss_death != null
+			and world.boss_death.is_death_active()
+			and world.boss_death.timer == BossDeathAnimation.MINI_DURATION
+			and bool(world.boss_death_state().get("death_active", false))
+			and bool(view.overlay_draw_summary().get("boss_death_active", false))
+			and int(view.overlay_draw_summary().get("explosions", 0)) >= 1
+		),
+		"Boss defeat configures BossDeathAnimation on Prototype and PrototypeView summary"
+	)
+	for _tick in range(BossDeathAnimation.MINI_DURATION):
+		world.step_tick()
+	check.call(
+		(
+			not world.boss_death.is_death_active()
+			and not world.boss_death.is_active()
+			and world.boss_death_pause_ticks == 0
+			and not bool(view.overlay_draw_summary().get("boss_death_active", true))
+		),
+		"Mini-boss death animation completes alongside the 60-tick pause"
+	)
+	var true_boss := world._spawn_boss("abaddon")
+	check.call(true_boss != null, "Runtime wiring test spawns true boss")
+	if true_boss == null:
+		view.free()
+		session.free()
+		return
+	true_boss.entrance_timer = 0
+	true_boss.hp = 1.0
+	true_boss.alive = true
+	true_boss.defeated = false
+	check.call(
+		world._deliver_hit(hero.id, world.BLUE, true_boss, 99999, "physical", true_boss.position),
+		"Hero lethal hit lands on true boss"
+	)
+	world._process_boss_result()
+	for _tick in range(BossDeathAnimation.TRUE_DURATION):
+		world.step_tick()
+	check.call(
+		(
+			not world.boss_death.is_death_active()
+			and world.boss_death.celebration_active
+			and world.boss_death.celebration_timer == BossDeathAnimation.CELEBRATION_DURATION
+		),
+		"True-boss death transitions into celebration after the 90-tick pause"
+	)
+	world.step_tick()
+	check.call(
+		world.boss_death.celebration_timer == BossDeathAnimation.CELEBRATION_DURATION - 1,
+		"Normal gameplay tick advances true-boss celebration timer"
+	)
+	for _tick in range(65):
+		world.step_tick()
+	check.call(
+		(
+			bool(view.overlay_draw_summary().get("boss_celebration_reward_visible", false))
+			and bool(view.overlay_draw_summary().get("boss_celebration_hint_visible", false))
+		),
+		"PrototypeView.overlay_draw_summary exposes celebration reward and skip hint visibility"
+	)
+	check.call(
+		(
+			world.skip_boss_death(KEY_SPACE)
+			and not world.boss_death.celebration_active
+			and not bool(world.boss_death_state().get("active", true))
+		),
+		"Prototype.skip_boss_death dismisses active true-boss celebration"
+	)
+	view.free()
+	session.free()
 
 
 func _same_rgb(got: Variant, expected: Variant) -> bool:

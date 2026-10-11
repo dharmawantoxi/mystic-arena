@@ -4,6 +4,7 @@ extends RefCounted
 ## or pygame drawing are reproduced here.
 
 const SpriteCache = preload("res://scripts/ui/sprite_cache.gd")
+const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const FIXTURE := "res://tests/fixtures/sprite_cache_source.json"
 
 var _render_calls := 0
@@ -33,6 +34,7 @@ func run(check: Callable) -> void:
 	for case_value in data["cases"]:
 		_replay_case(case_value as Dictionary, check)
 	_check_shortcuts(check)
+	_check_runtime_wiring(check)
 
 
 func _replay_case(case_data: Dictionary, check: Callable) -> void:
@@ -172,4 +174,44 @@ func _check_shortcuts(check: Callable) -> void:
 	check.call(
 		int(stats["cached"]) == 0 and int(stats["hits"]) == 1 and int(stats["misses"]) == 2,
 		"Global clear shortcut clears entries without resetting counters"
+	)
+
+
+func _check_runtime_wiring(check: Callable) -> void:
+	SpriteCache.reset_shared()
+	var world := Prototype.new()
+	var shared: SpriteCache = SpriteCache.get_shared()
+	var initial_state: Dictionary = world.sprite_cache.get_state()
+	check.call(
+		(
+			world.sprite_cache == shared
+			and world.effects.sprite_cache == shared
+			and int(initial_state["cached"]) == 3
+			and int(initial_state["misses"]) == 3
+		),
+		"Prototype wires shared SpriteCache and caches map/shop assets on init"
+	)
+	world._configure_map_renderer()
+	var reconfigured_state: Dictionary = world.sprite_cache.get_state()
+	check.call(
+		int(reconfigured_state["cached"]) == 3 and int(reconfigured_state["hits"]) == 3,
+		"Re-configuring same map theme reuses cached SpriteCache surfaces"
+	)
+	check.call(world.setup_arena(), "Arena setup succeeds for SpriteCache hero wiring")
+	var after_arena: Dictionary = world.sprite_cache.get_state()
+	check.call(
+		int(after_arena["cached"]) == 5 and int(after_arena["misses"]) == 5,
+		"Arena setup caches blue and red hero sprites in SpriteCache"
+	)
+	var boss = world._spawn_boss("gornak")
+	world.effects.add_death_explosion(200.0, 200.0, "red", "large")
+	world.effects.add_death_explosion(220.0, 220.0, "red", "large")
+	var after_boss_and_fx: Dictionary = world.cache_stats()["sprite_cache"]
+	check.call(
+		(
+			boss != null
+			and int(after_boss_and_fx["cached"]) == 7
+			and int(after_boss_and_fx["hits"]) == 4
+		),
+		"Boss spawn and repeated death explosion reuse SpriteCache entries"
 	)

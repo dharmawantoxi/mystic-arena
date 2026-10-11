@@ -6,6 +6,9 @@ extends RefCounted
 ## frame with `settrace`, so the numbers here are the source's, not a copy.
 
 const LevelIntroScreen = preload("res://scripts/ui/level_intro_screen.gd")
+const Prototype = preload("res://scripts/match/prototype_battle.gd")
+const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd")
+const PrototypeView = preload("res://scenes/prototype/prototype_view.gd")
 const FIXTURE := "res://tests/fixtures/level_intro_screen_source.json"
 
 const KEY_BY_NAME := {"space": KEY_SPACE, "return": KEY_ENTER, "letter_a": KEY_A}
@@ -25,6 +28,7 @@ func run(check: Callable) -> void:
 	_check_difficulty(check, data)
 	_check_themes(check, data)
 	_check_literals(check)
+	_check_runtime_wiring(check)
 
 
 func _check_constants(check: Callable, data: Dictionary) -> void:
@@ -234,6 +238,79 @@ func _check_literals(check: Callable) -> void:
 	)
 	check.call(
 		LevelIntroScreen._with_commas(999) == "999", "Thousands grouping leaves short numbers alone"
+	)
+
+
+func _check_runtime_wiring(check: Callable) -> void:
+	var world := Prototype.new()
+	var state: Dictionary = world.level_intro_state()
+	check.call(
+		(
+			bool(state["active"])
+			and int(state["timer"]) == 0
+			and int(state["level_num"]) == 1
+			and String(state["level_name"]) == String(world.level_config["name"])
+			and String(state["boss_type"]) == "abaddon"
+			and String(state["boss_name"]) == "Abaddon"
+		),
+		"Prototype configures LevelIntroScreen for level 1 and Abaddon"
+	)
+	check.call(world.setup_arena(), "Arena setup succeeds for LevelIntroScreen tick wiring")
+	var session := PrototypeSession.new()
+	session.world = world
+	var view := PrototypeView.new()
+	view.session = session
+	check.call(
+		(
+			(state.get("difficulty_bars", []) as Array).size() == 5
+			and bool(view.overlay_draw_summary().get("level_intro_active", false))
+			and not bool(view.overlay_draw_summary().get("level_intro_show_prompt", true))
+		),
+		"LevelIntroScreen state exposes 5 difficulty bars and initial view prompt state"
+	)
+	for _tick in range(31):
+		world.step_tick()
+	var faded_state: Dictionary = world.level_intro_state()
+	var touch_state: Dictionary = world.level_intro_state(true)
+	check.call(
+		(
+			int(faded_state["timer"]) == 31
+			and int(faded_state["fade_alpha"]) == 255
+			and bool(faded_state["show_prompt"])
+			and bool(view.overlay_draw_summary().get("level_intro_show_prompt", false))
+			and String(faded_state["prompt_text"]) == LevelIntroScreen.PROMPT_TEXT
+			and String(touch_state["prompt_text"]) == LevelIntroScreen.TOUCH_PROMPT_TEXT
+		),
+		"Prototype step_tick advances LevelIntroScreen fade and prompt state"
+	)
+	view.free()
+	session.free()
+	check.call(
+		(
+			not world.skip_level_intro(KEY_A)
+			and world.level_intro.is_active()
+			and world.skip_level_intro(KEY_SPACE)
+			and not world.level_intro.is_active()
+		),
+		"Prototype skip_level_intro honors source key filtering"
+	)
+	var level_two := Prototype.new()
+	check.call(
+		level_two.configure_level(2),
+		"Prototype configure_level(2) succeeds for LevelIntroScreen reconfiguration"
+	)
+	var l2_state: Dictionary = level_two.level_intro_state()
+	check.call(
+		(
+			bool(l2_state["active"])
+			and int(l2_state["timer"]) == 0
+			and int(l2_state["level_num"]) == 2
+			and String(l2_state["map_theme"]) == String(level_two.level_config["map_theme"])
+			and String(l2_state["boss_type"]) == String(level_two.level_config["true_boss"])
+			and level_two.skip_level_intro(-1, true)
+			and not level_two.level_intro.is_active()
+		),
+		"Prototype configure_level resets LevelIntroScreen and click skip dismisses it"
 	)
 
 

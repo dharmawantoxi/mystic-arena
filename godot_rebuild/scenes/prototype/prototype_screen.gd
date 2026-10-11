@@ -674,7 +674,9 @@ func _handle_keyboard_input(event: InputEvent) -> bool:
 			if hero_shop_panel != null and hero_shop_panel.is_open:
 				hero_shop_panel.set_open(false)
 			else:
-				handled = false
+				var skipped_intro := world.skip_boss_intro(KEY_ESCAPE)
+				var skipped_death := world.skip_boss_death(KEY_ESCAPE)
+				handled = skipped_intro or skipped_death
 		KEY_H:
 			_toggle_hero_shop()
 		KEY_A:
@@ -689,6 +691,12 @@ func _handle_keyboard_input(event: InputEvent) -> bool:
 			match_session.request_skill_e(match_session.selected_id)
 		KEY_R:
 			match_session.request_skill_r(match_session.selected_id)
+		KEY_SPACE, KEY_ENTER:
+			var code := key_event.physical_keycode
+			var skipped_level := world.skip_level_intro(code)
+			var skipped_intro := world.skip_boss_intro(code)
+			var skipped_death := world.skip_boss_death(code)
+			handled = skipped_level or skipped_intro or skipped_death
 		_:
 			handled = false
 	return handled
@@ -854,6 +862,9 @@ func _primary_action(point: Vector2) -> void:
 	var world := simulation.world as Prototype
 	if not world.is_running() or not _point_in_arena(point):
 		return
+	world.skip_level_intro(-1, true)
+	world.skip_boss_intro(-1, true)
+	world.skip_boss_death(-1, true)
 	var local := arena.get_global_transform_with_canvas().affine_inverse() * point
 	var slot_id := world.slot_at(local)
 	if slot_id >= 0:
@@ -861,6 +872,8 @@ func _primary_action(point: Vector2) -> void:
 		return
 	var marked := world.select_at(local)
 	var target := world.get_unit(marked)
+	if target == null and _handle_shop_click(world, local):
+		return
 	var selected := world.get_unit(match_session.selected_id) as HeroState
 	var target_hero := target as HeroState
 	var target_structure := target as Structure
@@ -879,6 +892,35 @@ func _primary_action(point: Vector2) -> void:
 			match_session.request_hero_move(selected.id, local)
 	else:
 		match_session.select_at(local)
+
+
+func _handle_shop_click(world: Prototype, local: Vector2) -> bool:
+	var clicked_shop: Variant = world.clicked_shop_at(local)
+	if clicked_shop == null:
+		return false
+	var label := String(clicked_shop)
+	if label == "item":
+		_toggle_forge()
+		return true
+	if label == "hero":
+		_toggle_hero_shop()
+		return true
+	return false
+
+
+func level_intro_state() -> Dictionary:
+	var world := match_session.world as Prototype
+	return world.level_intro_state(OS.has_feature("android"))
+
+
+func boss_intro_state() -> Dictionary:
+	var world := match_session.world as Prototype
+	return world.boss_intro_state()
+
+
+func boss_death_state() -> Dictionary:
+	var world := match_session.world as Prototype
+	return world.boss_death_state()
 
 
 func _route_controller_action(action: String) -> void:

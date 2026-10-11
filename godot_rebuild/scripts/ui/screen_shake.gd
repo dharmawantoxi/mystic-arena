@@ -4,10 +4,10 @@ extends RefCounted
 ## a random integer offset inside +/- int(intensity).
 ## `tests/screen_shake_checks.gd` replays the source oracle fixture.
 ##
-## NOTE: `prototype_battle.gd` still carries its own inline boss shake, which
-## adds an 8-tick gate and uses a cos/sin phase instead of a random offset.
-## That gate is locked by boss_presentation_checks.gd, so it is deliberately
-## left alone; see PETA_SISA_MIGRASI.md.
+## NOTE: `prototype_battle.gd` preserves its 8-tick inline boss shake gate
+## (`boss_presentation_offset()`) for `boss_presentation_checks.gd`, and routes
+## `current_screen_shake_offset()` through `boss_presentation_offset()` during
+## that gate before delegating to `effects.get_shake_offset()`.
 
 const DECAY := 0.85
 const CUTOFF := 0.5

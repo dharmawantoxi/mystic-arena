@@ -5,6 +5,9 @@ extends RefCounted
 ## both fire inside the replay.
 
 const KillFeed = preload("res://scripts/ui/kill_feed.gd")
+const Prototype = preload("res://scripts/match/prototype_battle.gd")
+const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd")
+const PrototypeView = preload("res://scenes/prototype/prototype_view.gd")
 const FIXTURE := "res://tests/fixtures/kill_feed_source.json"
 
 const TEXT := 0
@@ -45,6 +48,33 @@ func run(check: Callable) -> void:
 			return
 
 	check.call(true, "Kill feed replays %d source ticks exactly" % steps.size())
+	_check_view_wiring(check)
+
+
+func _check_view_wiring(check: Callable) -> void:
+	var world := Prototype.new()
+	world.setup_arena()
+	var session := PrototypeSession.new()
+	session.world = world
+	var view := PrototypeView.new()
+	view.session = session
+	check.call(
+		int(view.overlay_draw_summary().get("kill_feed_count", -1)) == 0,
+		"PrototypeView.overlay_draw_summary starts with zero kill feed entries"
+	)
+	world.effects.kill_feed.add_kill("Kaizen", "Grimjaw", "blue")
+	check.call(
+		int(view.overlay_draw_summary().get("kill_feed_count", 0)) == 1,
+		"PrototypeView.overlay_draw_summary reflects added KillFeed entry"
+	)
+	for _tick in range(KillFeed.LIFETIME):
+		world._step_combo_clock()
+	check.call(
+		int(view.overlay_draw_summary().get("kill_feed_count", -1)) == 0,
+		"KillFeed entry retires from PrototypeView.overlay_draw_summary after lifetime"
+	)
+	view.free()
+	session.free()
 
 
 func _matches(feed, expected: Array) -> bool:

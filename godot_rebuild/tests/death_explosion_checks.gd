@@ -4,6 +4,10 @@ extends RefCounted
 ## under shims; this suite never asks the Godot port to draw pygame pixels.
 
 const DeathExplosion = preload("res://scripts/ui/death_explosion.gd")
+const Prototype = preload("res://scripts/match/prototype_battle.gd")
+const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd")
+const PrototypeView = preload("res://scenes/prototype/prototype_view.gd")
+const GOBLIN = preload("res://data/minions/goblin.tres")
 const FIXTURE := "res://tests/fixtures/death_explosion_source.json"
 
 
@@ -22,6 +26,7 @@ func run(check: Callable) -> void:
 	for case_value in cases:
 		_replay(case_value as Dictionary, check)
 	_random_branches(check)
+	_runtime_view_wiring(check)
 
 
 func _replay(case_data: Dictionary, check: Callable) -> void:
@@ -177,6 +182,33 @@ func _check_ranges(
 			"Random spark size stays in source range"
 		)
 		check.call(palette.has(particle["color"]), "Random spark colour stays in source palette")
+
+
+func _runtime_view_wiring(check: Callable) -> void:
+	var world := Prototype.new()
+	world.setup_arena()
+	var session := PrototypeSession.new()
+	session.world = world
+	var view := PrototypeView.new()
+	view.session = session
+	check.call(
+		int(view.overlay_draw_summary().get("explosions", -1)) == 0,
+		"PrototypeView.overlay_draw_summary starts with zero explosions"
+	)
+	var minion = world.spawn_unit(GOBLIN, world.RED, 1)
+	world._on_death(world.BLUE, minion)
+	check.call(
+		int(view.overlay_draw_summary().get("explosions", 0)) == 1,
+		"Prototype._on_death populates DeathExplosion in PrototypeView.overlay_draw_summary"
+	)
+	for _step in range(40):
+		world._step_combo_clock()
+	check.call(
+		int(view.overlay_draw_summary().get("explosions", -1)) == 0,
+		"DeathExplosion retires from PrototypeView.overlay_draw_summary after spark lifetime"
+	)
+	view.free()
+	session.free()
 
 
 func _same_rgb(got: Variant, expected: Variant) -> bool:

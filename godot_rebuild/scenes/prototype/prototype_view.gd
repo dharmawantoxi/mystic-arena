@@ -1,3 +1,4 @@
+# gdlint:disable=max-file-lines
 extends "res://scenes/siege/siege_view.gd"
 
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
@@ -29,7 +30,7 @@ func _draw() -> void:
 		if wall_texture == null:
 			wall_texture = ImageTexture.create_from_image(WallTiles.raster())
 		cached_river_theme = map_theme
-	draw_set_transform(world.boss_presentation_offset(), 0.0, Vector2.ONE)
+	draw_set_transform(world.current_screen_shake_offset(), 0.0, Vector2.ONE)
 	super._draw()
 	var match_session := session as PrototypeSession
 	for arrow in world.hero_projectiles:
@@ -58,6 +59,8 @@ func _draw() -> void:
 		draw_line(slot.position - Vector2(6, 0), slot.position + Vector2(6, 0), color, 2, true)
 		draw_line(slot.position - Vector2(0, 6), slot.position + Vector2(0, 6), color, 2, true)
 	_draw_tactical(world)
+	_draw_path_preview(world)
+	_draw_world_effects(world)
 	var hero := world.get_unit(match_session.selected_id) as HeroState
 	if hero != null and hero.team == world.BLUE and hero.has_destination:
 		var mark := hero.destination
@@ -66,6 +69,506 @@ func _draw() -> void:
 		draw_line(mark - Vector2(5, 5), mark + Vector2(5, 5), color, 1.5, true)
 		draw_line(mark + Vector2(-5, 5), mark + Vector2(5, -5), color, 1.5, true)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	_draw_wave_announcer(world)
+	_draw_combo_counter(world)
+	_draw_kill_feed(world)
+	_draw_achievement_popup(world)
+	_draw_boss_intro(world)
+	_draw_boss_celebration(world)
+	_draw_level_intro(world)
+
+
+func overlay_draw_summary() -> Dictionary:
+	if session == null:
+		return {}
+	var world := session.world as Prototype
+	var intro := world.level_intro_state()
+	var b_intro := world.boss_intro_state()
+	var b_death := world.boss_death_state()
+	var c_vis: Dictionary = b_death.get("celebration_visual", {})
+	return {
+		"floating_texts": world.effects.floating_texts.size(),
+		"particles": world.effects.particles.size(),
+		"explosions": world.effects.explosions.size(),
+		"kill_feed_count": world.effects.kill_feed.entries.size(),
+		"path_preview_active": world.effects.path_preview.active,
+		"wave_announcer_active": world.effects.wave_announcer.active,
+		"combo_visible": world.effects.combo_counter.display_scale > 0.0,
+		"achievement_showing": world.effects.achievement.is_showing(),
+		"achievement_glow_active":
+		(
+			world.effects.achievement.is_showing()
+			and int(world.effects.achievement.get_glow_alpha()) > 0
+		),
+		"level_intro_active": bool(intro.get("active", false)),
+		"level_intro_show_prompt": bool(intro.get("show_prompt", false)),
+		"boss_intro_active": bool(b_intro.get("active", false)),
+		"boss_intro_border_alpha": int(b_intro.get("border_alpha", 0)),
+		"boss_death_active": bool(b_death.get("death_active", false)),
+		"boss_celebration_active": bool(b_death.get("celebration_active", false)),
+		"boss_celebration_reward_visible": bool(c_vis.get("reward_visible", false)),
+		"boss_celebration_hint_visible": bool(c_vis.get("hint_visible", false)),
+		"screen_shake_active":
+		(
+			world.effects.screen_shake.intensity > 0.0
+			or (world.boss_screen_shake_timer > 0 and world.boss_screen_shake_intensity > 0.0)
+		),
+	}
+
+
+func _draw_path_preview(world: Prototype) -> void:
+	var preview = world.effects.path_preview
+	if preview == null or not preview.active:
+		return
+	var base_alpha: int = preview.get_alpha()
+	if base_alpha <= 0:
+		return
+	for lane_value in preview.paths:
+		var lane: Array = lane_value
+		for index in range(lane.size()):
+			var raw: Variant = lane[index]
+			var pt := (
+				Vector2(float((raw as Array)[0]), float((raw as Array)[1]))
+				if raw is Array
+				else (raw as Vector2)
+			)
+			var pulse: int = preview.pulse_index(index, float(world.tick_count))
+			var radius := float(preview.arrow_size(pulse))
+			var alpha := clampf(float(preview.arrow_alpha(base_alpha, pulse)) / 255.0, 0.0, 1.0)
+			if radius > 0.0 and alpha > 0.0:
+				draw_circle(pt, radius, Color(1.0, 0.86, 0.39, alpha))
+
+
+func _draw_world_effects(world: Prototype) -> void:
+	for explosion in world.effects.explosions:
+		if not explosion.is_alive():
+			continue
+		var flash: Dictionary = explosion.get_flash_state()
+		var f_size: float = float(flash.get("size", 0))
+		var f_intensity: float = clampf(float(flash.get("intensity", 0.0)), 0.0, 1.0)
+		var center := Vector2(float(explosion.x), float(explosion.y))
+		if f_size > 0.0 and f_intensity > 0.0:
+			draw_circle(center, f_size, Color(1.0, 1.0, 0.78, 0.78 * f_intensity))
+			draw_circle(center, f_size * 0.5, Color(1.0, 1.0, 1.0, f_intensity))
+		for spark in explosion.particles:
+			if not spark.alive:
+				continue
+			var s_alpha: float = clampf(float(spark.alpha()) / 255.0, 0.0, 1.0)
+			var s_size: float = float(spark.current_size())
+			if s_size > 0.0 and s_alpha > 0.0:
+				draw_circle(Vector2(spark.x, spark.y), s_size, Color(spark.color, s_alpha))
+	_draw_boss_death_sequence(world)
+	for particle in world.effects.particles:
+		if not particle.alive:
+			continue
+		var p_alpha := clampf(float(particle.alpha()) / 255.0, 0.0, 1.0)
+		var p_size := float(particle.current_size())
+		if p_size > 0.0 and p_alpha > 0.0:
+			draw_circle(Vector2(particle.x, particle.y), p_size, Color(particle.color, p_alpha))
+	for item in world.effects.floating_texts:
+		if not item.alive or String(item.text).is_empty():
+			continue
+		var t_alpha := clampf(float(item.alpha()) / 255.0, 0.0, 1.0)
+		var f_size := maxi(8, int(round(float(item.font_size) * float(item.scale))))
+		if t_alpha > 0.0:
+			draw_string(
+				BossFont,
+				Vector2(float(item.x) - 80.0, float(item.y)),
+				String(item.text),
+				HORIZONTAL_ALIGNMENT_CENTER,
+				160.0,
+				f_size,
+				Color(item.color, t_alpha)
+			)
+
+
+func _draw_boss_death_sequence(world: Prototype) -> void:
+	if world.boss_death == null or not world.boss_death.is_death_active():
+		return
+	var anim = world.boss_death
+	var center := Vector2(float(anim.boss_x), float(anim.boss_y))
+	var visual: Dictionary = anim.get_death_visual_state()
+	for wave_value in visual.get("waves", []):
+		var wave: Dictionary = wave_value
+		var w_radius: float = float(wave.get("radius", 0))
+		var w_alpha: float = clampf(float(wave.get("alpha", 0)) / 255.0, 0.0, 1.0)
+		var w_rgb: Array = wave.get("color", [255, 220, 150])
+		if w_radius > 0.0 and w_alpha > 0.0 and w_rgb.size() >= 3:
+			var w_col: Color = Color8(int(w_rgb[0]), int(w_rgb[1]), int(w_rgb[2]))
+			draw_arc(center, w_radius, 0.0, TAU, 48, Color(w_col, w_alpha), 3.0, true)
+	if bool(visual.get("body_visible", false)):
+		var d_size: float = float(visual.get("dissolve_size", 0))
+		var d_alpha: float = clampf(float(visual.get("dissolve_alpha", 0)) / 255.0, 0.0, 1.0)
+		var b_rgb: Array = anim.boss_color
+		if d_size > 0.0 and d_alpha > 0.0 and b_rgb.size() >= 3:
+			var b_col: Color = Color8(int(b_rgb[0]), int(b_rgb[1]), int(b_rgb[2]))
+			draw_circle(center, d_size, Color(b_col, d_alpha))
+	for fragment_value in anim.fragments:
+		var frag: Dictionary = fragment_value
+		var f_life: int = int(frag.get("life", 0))
+		var f_max: int = maxi(1, int(frag.get("max_life", 60)))
+		if f_life <= 0:
+			continue
+		var f_alpha: float = clampf(float(f_life) / float(f_max), 0.0, 1.0)
+		var f_rgb: Array = frag.get("color", [180, 90, 80])
+		var f_col: Color = Color8(int(f_rgb[0]), int(f_rgb[1]), int(f_rgb[2]))
+		draw_circle(
+			Vector2(float(frag.get("x", 0.0)), float(frag.get("y", 0.0))),
+			float(frag.get("size", 4)),
+			Color(f_col, f_alpha)
+		)
+	for rising_value in anim.rising_particles:
+		var rising: Dictionary = rising_value
+		var r_life: int = int(rising.get("life", 0))
+		var r_max: int = maxi(1, int(rising.get("max_life", 100)))
+		if r_life <= 0:
+			continue
+		var r_alpha: float = clampf(float(r_life) / float(r_max), 0.0, 1.0)
+		var r_rgb: Array = rising.get("color", [255, 220, 150])
+		var r_col: Color = Color8(int(r_rgb[0]), int(r_rgb[1]), int(r_rgb[2]))
+		draw_circle(
+			Vector2(float(rising.get("x", 0.0)), float(rising.get("y", 0.0))),
+			float(rising.get("size", 3)),
+			Color(r_col, r_alpha)
+		)
+
+
+func _draw_wave_announcer(world: Prototype) -> void:
+	var announcer = world.effects.wave_announcer
+	if announcer == null or not announcer.active:
+		return
+	var alpha := clampf(float(announcer.get_alpha()) / 255.0, 0.0, 1.0)
+	if alpha <= 0.0:
+		return
+	var offset_x := float(announcer.get_offset_x(1280))
+	var rect := Rect2(Vector2(440.0 + offset_x, 150.0), Vector2(400.0, 64.0))
+	draw_rect(rect, Color(0.05, 0.08, 0.12, 0.82 * alpha))
+	draw_rect(rect, Color(0.96, 0.83, 0.57, alpha), false, 2.0)
+	draw_string(
+		BossFont,
+		Vector2(rect.position.x, rect.position.y + 42.0),
+		announcer.title(),
+		HORIZONTAL_ALIGNMENT_CENTER,
+		rect.size.x,
+		30,
+		Color(0.96, 0.83, 0.57, alpha)
+	)
+
+
+func _draw_combo_counter(world: Prototype) -> void:
+	var combo = world.effects.combo_counter
+	if combo == null or combo.display_scale <= 0.0:
+		return
+	var shown_count: int = combo.count if combo.count > 0 else combo.last_combo
+	if shown_count < 2:
+		return
+	var alpha := clampf(float(combo.display_scale), 0.0, 1.0)
+	var ink := Color.WHITE if combo.color_flash > 0 else Color(1.0, 0.82, 0.31)
+	var font_size := maxi(12, int(round(22.0 * clampf(float(combo.display_scale), 0.5, 1.5))))
+	draw_string(
+		BossFont,
+		Vector2(1020.0, 160.0),
+		"%d HIT COMBO" % shown_count,
+		HORIZONTAL_ALIGNMENT_RIGHT,
+		220.0,
+		font_size,
+		Color(ink, alpha)
+	)
+
+
+func _draw_kill_feed(world: Prototype) -> void:
+	var feed = world.effects.kill_feed
+	if feed == null or feed.entries.is_empty():
+		return
+	for entry_value in feed.entries:
+		var entry: Dictionary = entry_value
+		var life: int = int(entry.get("lifetime", 0))
+		var max_life: int = maxi(1, int(entry.get("max_lifetime", 180)))
+		if life <= 0:
+			continue
+		var alpha: float = clampf(float(life) / (float(max_life) * 0.35), 0.0, 1.0)
+		var y_pos: float = 96.0 + float(entry.get("y_offset", 0.0))
+		var tint: Color = entry.get("color", Color.WHITE) as Color
+		draw_string(
+			BossFont,
+			Vector2(980.0, y_pos),
+			String(entry.get("text", "")),
+			HORIZONTAL_ALIGNMENT_RIGHT,
+			270.0,
+			14,
+			Color(tint, alpha)
+		)
+
+
+func _draw_achievement_popup(world: Prototype) -> void:
+	var popup = world.effects.achievement
+	if popup == null or not popup.is_showing():
+		return
+	var alpha := clampf(float(popup.get_alpha()) / 255.0, 0.0, 1.0)
+	if alpha <= 0.0:
+		return
+	var rect := Rect2(
+		Vector2(float(popup.panel_x(1280)), float(popup.panel_y())),
+		Vector2(float(popup.PANEL_W), float(popup.PANEL_H))
+	)
+	var glow_raw: int = int(popup.get_glow_alpha())
+	if glow_raw > 0:
+		var glow_alpha: float = clampf(float(glow_raw) / 255.0, 0.0, 1.0)
+		draw_rect(rect.grow(4.0), Color(1.0, 0.88, 0.45, glow_alpha), false, 3.0)
+	draw_rect(rect, Color(0.06, 0.09, 0.14, 0.90 * alpha))
+	draw_rect(rect, Color(0.96, 0.83, 0.57, alpha), false, 2.0)
+	var title := String(popup.current.get("title", ""))
+	var desc := String(popup.current.get("description", ""))
+	if not title.is_empty():
+		draw_string(
+			BossFont,
+			rect.position + Vector2(14.0, 26.0),
+			title,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			rect.size.x - 28.0,
+			16,
+			Color(1.0, 0.88, 0.45, alpha)
+		)
+	if not desc.is_empty():
+		draw_string(
+			BossFont,
+			rect.position + Vector2(14.0, 46.0),
+			desc,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			rect.size.x - 28.0,
+			13,
+			Color(0.85, 0.90, 0.95, alpha)
+		)
+
+
+func _draw_boss_intro(world: Prototype) -> void:
+	var intro := world.boss_intro_state()
+	if not bool(intro.get("active", false)):
+		return
+	var alpha := clampf(float(intro.get("alpha", 0)) / 255.0, 0.0, 1.0)
+	var bg_alpha := clampf(float(intro.get("background_alpha", 0)) / 255.0, 0.0, 1.0)
+	var border_alpha: float = clampf(float(intro.get("border_alpha", 0)) / 255.0, 0.0, 1.0)
+	if alpha <= 0.0:
+		return
+	var rect := Rect2(
+		Vector2(float(intro.get("banner_x", 340)), float(intro.get("banner_y", 12))),
+		Vector2(float(intro.get("banner_width", 600)), 92.0)
+	)
+	var border_rgb: Array = intro.get("entrance_color", [150, 100, 200])
+	var border_col := Color8(int(border_rgb[0]), int(border_rgb[1]), int(border_rgb[2]))
+	draw_rect(rect, Color(0.04, 0.05, 0.08, bg_alpha))
+	if border_alpha > 0.0:
+		draw_rect(rect, Color(border_col, border_alpha), false, 2.0)
+	var tag: Dictionary = intro.get("tag", {})
+	var header := "%s · %s" % [String(tag.get("text", "BOSS")), String(intro.get("boss_name", ""))]
+	draw_string(
+		BossFont,
+		rect.position + Vector2(18.0, 34.0),
+		header,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		rect.size.x - 200.0,
+		20,
+		Color(border_col, alpha)
+	)
+	var subtitle: String = String(intro.get("boss_title", ""))
+	if not subtitle.is_empty():
+		draw_string(
+			BossFont,
+			rect.position + Vector2(18.0, 56.0),
+			subtitle,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			rect.size.x - 200.0,
+			14,
+			Color(0.84, 0.88, 0.94, alpha)
+		)
+	var bar: Array = intro.get("hp_bar_rect", [0, 0, 150, 12])
+	var bar_rect := Rect2(
+		Vector2(float(bar[0]), float(bar[1])), Vector2(float(bar[2]), float(bar[3]))
+	)
+	draw_rect(bar_rect, Color(0.15, 0.05, 0.05, alpha))
+	var fill_w := float(intro.get("hp_fill_width", 0))
+	if fill_w > 0.0:
+		draw_rect(
+			Rect2(bar_rect.position, Vector2(fill_w, bar_rect.size.y)),
+			Color(0.90, 0.25, 0.25, alpha)
+		)
+
+
+func _draw_boss_celebration(world: Prototype) -> void:
+	var death := world.boss_death_state()
+	if bool(death.get("death_active", false)):
+		var d_visual: Dictionary = death.get("death_visual", {})
+		if bool(d_visual.get("flash_visible", false)):
+			var flash_alpha: float = clampf(float(d_visual.get("flash_alpha", 0)) / 255.0, 0.0, 1.0)
+			if flash_alpha > 0.0:
+				draw_rect(
+					Rect2(Vector2.ZERO, Vector2(1280.0, 720.0)), Color(1.0, 1.0, 1.0, flash_alpha)
+				)
+	if not bool(death.get("celebration_active", false)):
+		return
+	var visual: Dictionary = death.get("celebration_visual", {})
+	if not bool(visual.get("visible", false)):
+		return
+	var overlay_alpha: float = clampf(float(visual.get("overlay_alpha", 0)) / 255.0, 0.0, 1.0)
+	if overlay_alpha > 0.0:
+		draw_rect(
+			Rect2(Vector2.ZERO, Vector2(1280.0, 720.0)), Color(0.02, 0.03, 0.06, overlay_alpha)
+		)
+	var text_alpha: float = clampf(float(visual.get("text_alpha", 0)) / 255.0, 0.0, 1.0)
+	if text_alpha <= 0.0:
+		return
+	var offset_y: float = float(visual.get("text_offset_y", 0))
+	draw_string(
+		BossFont,
+		Vector2(240.0, 260.0 + offset_y),
+		"%s DEFEATED!" % String(death.get("boss_name", "BOSS")).to_upper(),
+		HORIZONTAL_ALIGNMENT_CENTER,
+		800.0,
+		32,
+		Color(1.0, 0.86, 0.38, text_alpha)
+	)
+	var boss_title: String = String(death.get("boss_title", ""))
+	if not boss_title.is_empty():
+		draw_string(
+			BossFont,
+			Vector2(240.0, 294.0 + offset_y),
+			boss_title,
+			HORIZONTAL_ALIGNMENT_CENTER,
+			800.0,
+			18,
+			Color(0.85, 0.90, 0.96, text_alpha)
+		)
+	if bool(visual.get("reward_visible", false)):
+		var reward_alpha: float = clampf(float(visual.get("reward_alpha", 0)) / 255.0, 0.0, 1.0)
+		if reward_alpha > 0.0:
+			draw_string(
+				BossFont,
+				Vector2(240.0, 340.0),
+				"+%d GOLD REWARD" % int(death.get("gold_reward", 0)),
+				HORIZONTAL_ALIGNMENT_CENTER,
+				800.0,
+				22,
+				Color(1.0, 0.88, 0.35, reward_alpha)
+			)
+	if bool(visual.get("hint_visible", false)):
+		var hint_alpha: float = clampf(float(visual.get("hint_alpha", 0)) / 255.0, 0.0, 1.0)
+		if hint_alpha > 0.0:
+			draw_string(
+				BossFont,
+				Vector2(240.0, 420.0),
+				"PRESS SPACE OR ESC TO CONTINUE",
+				HORIZONTAL_ALIGNMENT_CENTER,
+				800.0,
+				16,
+				Color(0.82, 0.88, 0.94, hint_alpha)
+			)
+
+
+func _draw_level_intro(world: Prototype) -> void:
+	var intro := world.level_intro_state()
+	if not bool(intro.get("active", false)):
+		return
+	var alpha: float = clampf(float(intro.get("fade_alpha", 0)) / 255.0, 0.0, 1.0)
+	if alpha <= 0.0:
+		return
+	var tint_rgba: Array = intro.get("theme_tint_rgba", [20, 40, 20, 0])
+	if tint_rgba.size() >= 4 and int(tint_rgba[3]) > 0:
+		var tint_alpha: float = clampf(float(tint_rgba[3]) / 255.0, 0.0, 1.0)
+		var tint_col: Color = Color8(int(tint_rgba[0]), int(tint_rgba[1]), int(tint_rgba[2]))
+		draw_rect(Rect2(Vector2.ZERO, Vector2(1280.0, 720.0)), Color(tint_col, tint_alpha))
+	var card := Rect2(Vector2(320.0, 160.0), Vector2(640.0, 360.0))
+	draw_rect(card, Color(0.03, 0.05, 0.08, 0.86 * alpha))
+	draw_rect(card, Color(0.95, 0.82, 0.52, alpha), false, 2.0)
+	draw_string(
+		BossFont,
+		card.position + Vector2(24.0, 52.0),
+		"LEVEL %d · %s" % [int(intro.get("level_num", 1)), String(intro.get("level_name", ""))],
+		HORIZONTAL_ALIGNMENT_CENTER,
+		card.size.x - 48.0,
+		26,
+		Color(0.95, 0.82, 0.52, alpha)
+	)
+	var warning: String = String(intro.get("warning_text", ""))
+	if not warning.is_empty():
+		draw_string(
+			BossFont,
+			card.position + Vector2(24.0, 92.0),
+			warning,
+			HORIZONTAL_ALIGNMENT_CENTER,
+			card.size.x - 48.0,
+			18,
+			Color(1.0, 0.45, 0.40, alpha)
+		)
+	var diff_info: Dictionary = intro.get("difficulty", {})
+	var diff_title: String = String(diff_info.get("title", ""))
+	if not diff_title.is_empty():
+		var diff_rgb: Array = diff_info.get("color", [100, 220, 150])
+		var diff_col: Color = Color8(int(diff_rgb[0]), int(diff_rgb[1]), int(diff_rgb[2]))
+		draw_string(
+			BossFont,
+			card.position + Vector2(36.0, 140.0),
+			diff_title,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			260.0,
+			16,
+			Color(diff_col, alpha)
+		)
+	var diff_bars: Array = intro.get("difficulty_bars", [])
+	for bar_idx in range(diff_bars.size()):
+		var bar_rgb: Array = diff_bars[bar_idx]
+		if bar_rgb.size() >= 3:
+			var bar_col: Color = Color8(int(bar_rgb[0]), int(bar_rgb[1]), int(bar_rgb[2]))
+			var bar_rect := Rect2(
+				card.position + Vector2(36.0 + float(bar_idx) * 28.0, 152.0), Vector2(22.0, 10.0)
+			)
+			draw_rect(bar_rect, Color(bar_col, alpha))
+	var economy_line: String = (
+		"%s · %s · %s"
+		% [
+			String(intro.get("starting_gold_text", "")),
+			String(intro.get("passive_text", "")),
+			String(intro.get("reward_text", "")),
+		]
+	)
+	draw_string(
+		BossFont,
+		card.position + Vector2(36.0, 200.0),
+		economy_line,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		card.size.x - 72.0,
+		15,
+		Color(0.92, 0.86, 0.62, alpha)
+	)
+	var boss_tag: Dictionary = intro.get("boss_tag", {})
+	var boss_header: String = (
+		"%s: %s (%s)"
+		% [
+			String(boss_tag.get("text", "BOSS")),
+			String(intro.get("boss_name", "")),
+			String(intro.get("boss_title", "")),
+		]
+	)
+	draw_string(
+		BossFont,
+		card.position + Vector2(36.0, 244.0),
+		boss_header,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		card.size.x - 72.0,
+		16,
+		Color(1.0, 0.62, 0.56, alpha)
+	)
+	if bool(intro.get("show_prompt", false)):
+		var prompt: String = String(intro.get("prompt_text", ""))
+		if not prompt.is_empty():
+			draw_string(
+				BossFont,
+				card.position + Vector2(24.0, 320.0),
+				prompt,
+				HORIZONTAL_ALIGNMENT_CENTER,
+				card.size.x - 48.0,
+				18,
+				Color(0.85, 0.92, 0.98, alpha)
+			)
 
 
 func _draw_tactical(world: Prototype) -> void:

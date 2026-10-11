@@ -6,6 +6,9 @@ extends RefCounted
 ## source's, not a re-implementation.
 
 const AchievementPopup = preload("res://scripts/ui/achievement_popup.gd")
+const Prototype = preload("res://scripts/match/prototype_battle.gd")
+const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd")
+const PrototypeView = preload("res://scenes/prototype/prototype_view.gd")
 const FIXTURE := "res://tests/fixtures/achievement_popup_source.json"
 
 const SHOWING := 0
@@ -34,6 +37,36 @@ func run(check: Callable) -> void:
 	_check_layout(check, popup)
 	_check_defaults(check, popup)
 	_check_replay(check, popup, data)
+	_check_view_wiring(check)
+
+
+func _check_view_wiring(check: Callable) -> void:
+	var world := Prototype.new()
+	world.setup_arena()
+	var session := PrototypeSession.new()
+	session.world = world
+	var view := PrototypeView.new()
+	view.session = session
+	world.effects.unlock_achievement("GLOW TEST", "Early slot glow")
+	world._step_combo_clock()
+	check.call(
+		(
+			bool(view.overlay_draw_summary().get("achievement_showing", false))
+			and bool(view.overlay_draw_summary().get("achievement_glow_active", false))
+		),
+		"PrototypeView.overlay_draw_summary reports active achievement glow during early slot"
+	)
+	for _step in range(60):
+		world._step_combo_clock()
+	check.call(
+		(
+			bool(view.overlay_draw_summary().get("achievement_showing", false))
+			and not bool(view.overlay_draw_summary().get("achievement_glow_active", true))
+		),
+		"PrototypeView.overlay_draw_summary clears achievement glow after 30% slot threshold"
+	)
+	view.free()
+	session.free()
 
 
 func _check_layout(check: Callable, popup) -> void:

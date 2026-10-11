@@ -13,6 +13,7 @@ extends Control
 ## constants are duplicated here.
 
 const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
+const PopupAnimation = preload("res://scripts/ui/popup_animation.gd")
 const METADATA := "res://data/ai/item_catalog.json"
 const SHOP_TEXT := {
 	"title": "ITEM FORGE",
@@ -33,6 +34,8 @@ const SHOP_TEXT := {
 const DETAIL_SECTIONS := ["stats", "passive", "on_attack", "multishot", "bash", "active", "aura"]
 
 var world: Object = null
+var popup_animation := PopupAnimation.new()
+var _was_open := false
 var _chrome: VBoxContainer
 var _dim: ColorRect
 var _card: PanelContainer
@@ -46,9 +49,29 @@ var _detail_body: VBoxContainer
 var _detail_item := ""
 
 
+func _init() -> void:
+	popup_animation.hide()
+	popup_animation.progress = 0.0
+
+
 func bind(battle: Object) -> void:
 	world = battle
 	set_process_input(true)
+
+
+func _process(_delta: float) -> void:
+	if _was_open or not is_equal_approx(popup_animation.progress, popup_animation.target):
+		popup_animation.update()
+
+
+func popup_animation_state() -> Dictionary:
+	return {
+		"is_open": _was_open,
+		"progress": popup_animation.progress,
+		"target": popup_animation.target,
+		"scale": popup_animation.get_scale(),
+		"offset_y": popup_animation.get_offset_y(),
+	}
 
 
 func shop() -> Object:
@@ -98,9 +121,18 @@ func status_text(status: String) -> String:
 func refresh() -> void:
 	var shop_ui: Object = shop()
 	if shop_ui == null:
+		if _was_open:
+			_was_open = false
+			popup_animation.hide()
 		visible = false
 		return
-	visible = bool(shop_ui.is_open)
+	var now_open := bool(shop_ui.is_open)
+	if now_open and not _was_open:
+		popup_animation.show()
+	elif not now_open and _was_open:
+		popup_animation.hide()
+	_was_open = now_open
+	visible = now_open
 	if not visible:
 		return
 	if _chrome == null:

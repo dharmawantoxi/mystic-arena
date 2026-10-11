@@ -211,6 +211,7 @@ func _run() -> void:
 	WaveAnnouncerChecks.new().run(_check)
 	PathPreviewChecks.new().run(_check)
 	AchievementPopupChecks.new().run(_check)
+	EffectManagerChecks.new().run(_check)
 	LevelIntroScreenChecks.new().run(_check)
 	BossIntroCinematicChecks.new().run(_check)
 	LevelThemeChecks.new().run(_check)
