@@ -637,3 +637,13 @@ sejak 9s); preload `BossState` dan cabangnya dihapus. Oracle
 `item_reflect_unit_source_oracle.py` (4 baris) plus suite
 `item_reflect_unit_checks.gd` (undead 170 vs 144, troll 170 vs 162, hero armor
 125/125, hero tanpa armor 170/170).
+
+
+## Reflect Bristleback (layer 9t)
+
+Sumber memantulkan lewat `_src.take_damage(payload, self.team, source=None)`
+tanpa sekolah, jadi `_deliver_hit` kini mengirim pantulan Bristleback sebagai
+`"neutral"`/tipe `"normal"` dengan sumber `-1`; guard dan keep 0.70/0.85 tidak
+berubah. Oracle `hero_bristleback_reflect_source_oracle.py` (5 baris) plus suite
+`hero_bristleback_reflect_checks.gd` (troll 35 vs 31, troll masuk magic 42 vs
+38, undead 35/35, hero armor 26/26, hero tanpa armor 35/35).

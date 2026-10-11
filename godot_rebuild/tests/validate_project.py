@@ -122,6 +122,7 @@ from item_unit_arm_source_oracle import source_fixture as unit_arm_fixture
 from item_cleave_splash_source_oracle import source_fixture as cleave_splash_fixture
 from item_magic_arm_unit_source_oracle import source_fixture as magic_arm_unit_fixture
 from item_reflect_unit_source_oracle import source_fixture as reflect_unit_fixture
+from hero_bristleback_reflect_source_oracle import source_fixture as bristleback_reflect_fixture
 check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
       "Item structure arm suite must be preloaded")
 check("ItemStructureArmChecks.new().run(_check)" in ai_tests,
@@ -172,6 +173,16 @@ if (ROOT / "tests/fixtures/item_reflect_unit_source.json").is_file():
     check(reflect_unit_fixture() == json.loads(
         (ROOT / "tests/fixtures/item_reflect_unit_source.json").read_text(encoding="utf-8")),
           "Item reflect unit fixture must not drift from the oracle")
+check('const HeroBristlebackReflectChecks = preload("res://tests/hero_bristleback_reflect_checks.gd")' in ai_tests,
+      "Hero bristleback reflect suite must be preloaded")
+check("HeroBristlebackReflectChecks.new().run(_check)" in ai_tests,
+      "Hero bristleback reflect suite must run")
+check((ROOT / "tests/fixtures/hero_bristleback_reflect_source.json").is_file(),
+      "Hero bristleback reflect fixture must exist")
+if (ROOT / "tests/fixtures/hero_bristleback_reflect_source.json").is_file():
+    check(bristleback_reflect_fixture() == json.loads(
+        (ROOT / "tests/fixtures/hero_bristleback_reflect_source.json").read_text(encoding="utf-8")),
+          "Hero bristleback reflect fixture must not drift from the oracle")
 check((ROOT / "tests/fixtures/minion_damage_ladder_source.json").is_file(),
       "Minion damage ladder fixture must exist")
 if (ROOT / "tests/fixtures/minion_damage_ladder_source.json").is_file():

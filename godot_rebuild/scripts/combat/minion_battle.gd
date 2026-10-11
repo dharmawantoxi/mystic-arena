@@ -381,8 +381,15 @@ func _deliver_hit(
 	if target is HeroState and (target as HeroState).bristleback_timer > 0 and damage > 0:
 		var atk := get_unit(source_id)
 		if atk != null and atk.alive and atk.team != target.team:
+			# Layer 9t: the source reflect is
+			# `_src.take_damage(max(1, int(damage * 0.25)), self.team, source=None)`
+			# (`_entity.py:4697-4711`) - two positional arguments plus an
+			# explicit `source=None`, so the attacker runs school-free with the
+			# `"normal"` type default. The bus used to deliver the declared
+			# physical school, so an armoured attacker (troll, armor 2) ate an
+			# armour cut the source never applies.
 			_deliver_hit(
-				-1, target.team, atk, maxi(1, int(damage * 0.25)), "physical", target.position
+				-1, target.team, atk, maxi(1, int(damage * 0.25)), "neutral", target.position
 			)
 	_record(
 		{
