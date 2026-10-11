@@ -45,7 +45,7 @@ func run(check: Callable) -> void:
 	var fixture: Dictionary = parsed
 	_live_stats(fixture, check)
 	_shape(fixture, check)
-	_replay(fixture.cases, check)
+	_replay(fixture.cases, fixture.get("live_stats", {}), check)
 	_boss_row(fixture, check)
 	_controls(check)
 
@@ -96,14 +96,14 @@ func _shape(fixture: Dictionary, check: Callable) -> void:
 	)
 
 
-func _replay(rows: Array, check: Callable) -> void:
+func _replay(rows: Array, stats: Dictionary, check: Callable) -> void:
 	var replayed := 0
 	for row in rows:
 		var data: Dictionary = row as Dictionary
 		replayed += 1
 		var expected: Dictionary = data.get("expected", {})
 		var native_old: Dictionary = data.get("native_old", {})
-		var live := _melee_hit(data, check)
+		var live := _melee_hit(data, stats, check)
 		if live.is_empty():
 			continue
 		var label := String(data["name"])
@@ -133,7 +133,7 @@ func _replay(rows: Array, check: Callable) -> void:
 	check.call(replayed >= 3, "at least three fixture rows replay through the production path")
 
 
-func _melee_hit(data: Dictionary, check: Callable) -> Dictionary:
+func _melee_hit(data: Dictionary, stats: Dictionary, check: Callable) -> Dictionary:
 	var kind := String(data.get("victim_kind", "minion"))
 	var world := Siege.new()
 	world.setup_arena()
@@ -152,8 +152,14 @@ func _melee_hit(data: Dictionary, check: Callable) -> Dictionary:
 		world = World.new()
 		world.setup_arena()
 		victim = world.spawn_hero(World.VEX, World.RED, POS)
-		if victim != null and int(data.get("hero_armor", 0)) > 0:
-			victim.items.add(ARMOR_ITEM)
+		var hero_armor := int(data.get("hero_armor", stats.get("hero_armor", 0)))
+		if victim != null and hero_armor > 0:
+			# The fixture rows carry the armour through `live_stats`, exactly like
+			# the grimjaw/item suites drive the same item.
+			check.call(
+				(victim as HeroState).items.add(ARMOR_ITEM),
+				"%s: the armour item equips" % String(data.get("name", "?"))
+			)
 	else:
 		victim = world.spawn_unit(TROLL, World.RED, 1)
 		if victim != null:

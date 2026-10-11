@@ -690,4 +690,6 @@ untuk penyerang non-hero (hero tetap bersumber seperti sumber `Hero`). Oracle
 `minion_melee_school_source_oracle.py` (3 baris) plus suite
 `minion_melee_school_checks.gd` (orc pada menara 13 vs 11, pada troll 13 vs 12,
 hero armor 10/10, baris boss live: netral == jalur `_deliver_hit(-1, ...)`,
-physical lebih kecil, tanpa pantulan Razor Carapace ke minion).
+physical lebih kecil, tanpa pantulan Razor Carapace ke minion, dan tanpa
+atribusi kill/source id: `killed_by` -1 untuk kill minion, boss tanpa
+`last_hit_source_id`).
