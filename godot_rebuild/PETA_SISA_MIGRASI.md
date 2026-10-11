@@ -658,3 +658,14 @@ sehingga korban menara tidak ditulisi properti tak ada. Oracle
 `sylara_skill_arm_source_oracle.py` (4 baris) plus suite
 `sylara_skill_arm_checks.gd` (Q troll 95 vs 85, E troll 66 vs 59, E+tick troll
 104 vs 93, E menara 66 vs 56).
+
+
+## Hit pembuka R Grimjaw (layer 9v)
+
+Sumber memanggil `h.target.take_damage(int(h.skill_damage * 2.5), h.team)` tanpa
+sekolah, jadi `grimjaw_skills.gd` cabang `"r"` kini mengirim `"neutral"` (sumber
+tetap `-1`); spin Blade Fury, tick Omnislash, cone E dan AOE fallback R sudah
+paritas (sumber + sekolah `dmg_school`). Oracle
+`grimjaw_skill_arm_source_oracle.py` (5 baris) plus suite
+`grimjaw_skill_arm_checks.gd` (R troll 65 vs 58, R menara 65 vs 55, R hero armor
+48/48, spin troll 253/253, cone E troll 35/35).
