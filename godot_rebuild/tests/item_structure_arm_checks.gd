@@ -32,7 +32,8 @@ const TOWER_ARMOR := 3.0
 const CASTLE_SHIELD_MAX := 4000.0
 const SOURCED_HIT := 50
 const SOURCED_HIT_LOSS := 42
-const MINION_ARM_HIT := 49
+const MINION_ARM_FULL_HIT := 55
+const MINION_ARM_ARMORED_HIT := 49
 
 
 class StructArmBus:
@@ -198,28 +199,35 @@ func _sourced_credit(check: Callable) -> void:
 
 
 func _minion_fallback(check: Callable) -> void:
-	# The slice only touches structure victims: an arm that lands on a minion
-	# keeps the pre-9o fallback (declared school, dealer as source).
+	# Layer 9p moved the unit victims onto the same sourceless route as the
+	# structures of 9o, so `item_unit_arm_checks.gd` owns the minion/hero rows.
+	# Here the old fallback control only proves the shared bus still lands the
+	# full source amount without credit, while the sourced ladder keeps cutting.
 	var world := _world()
 	var hero: HeroState = world.blue_hero()
 	var minion: UnitState = world.spawn_unit(TROLL, World.RED, 1)
 	if hero == null or minion == null:
-		check.call(false, "the minion fallback victim spawns")
+		check.call(false, "the unit arm fallback victim spawns")
 		return
 	check.call(
-		DamageRules.minion_amount(minion, 55, "physical") == MINION_ARM_HIT,
-		"the minion ladder value the fallback still uses"
+		(
+			DamageRules.minion_amount(minion, MINION_ARM_FULL_HIT, "physical")
+			== MINION_ARM_ARMORED_HIT
+		),
+		"the sourced minion ladder value is unchanged by 9p"
 	)
 	hero.items.add("abyss_breaker")
+	var hp_before: float = minion.hp
 	var credit_before: int = hero.damage_dealt
 	world._item_rng.seed = Prior.new()._seed_below(1.0)
 	hero.items.on_basic_attack_hit(
 		minion.id, BASIC_DAMAGE, [], world._item_rng, world._battle_item_effects(hero)
 	)
 	check.call(
-		int(hero.damage_dealt - credit_before) == MINION_ARM_HIT,
-		"an arm on a minion still credits the dealing hero"
+		int(hp_before - minion.hp) == MINION_ARM_FULL_HIT,
+		"a 9p arm on a minion lands the full source amount"
 	)
+	check.call(int(hero.damage_dealt - credit_before) == 0, "a 9p arm on a minion credits nobody")
 
 
 func _world() -> World:

@@ -4,29 +4,27 @@ extends "res://scripts/match/item_effects.gd"
 
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const BossState = preload("res://scripts/match/boss_state.gd")
-const StructureState = preload("res://scripts/combat/structure_state.gd")
 var world: Object = null
 var dealer_id: int = -1
 var dealer_team: int = -1
 var dealer_pos: Vector2 = Vector2.ZERO
 
 
-func deal_damage(target_id: int, _source_team: int, amount: int, school: String = "magic") -> int:
+func deal_damage(target_id: int, _source_team: int, amount: int, _school: String = "magic") -> int:
 	var tgt: Object = world.get_unit(target_id)
 	if tgt == null:
 		return 0
-	if tgt is StructureState:
-		# Layer 9o: every source item arm lands the bonus on the basic-attack
-		# target as `target.take_damage(amount, h.team[, "magic"])`
-		# (`hero_items.py:2542/2568/2589/2633/2648`), with no `source=`. A
-		# tower/castle victim therefore runs `Tower.take_damage` /
-		# `Castle.take_damage` with `source=None` and `school=None`: the tower
-		# armour never cuts the arm (the resolver returns None), and
-		# `credit_hero_damage(None, ...)` records nothing, exactly like the
-		# sourceless hero skills of layer 9m.
-		world._deliver_hit(-1, dealer_team, tgt, amount, "neutral", dealer_pos)
-		return amount
-	world._deliver_hit(dealer_id, dealer_team, tgt, amount, school, dealer_pos)
+	# Layers 9o/9p: every source item arm lands the bonus on the basic-attack
+	# target as `target.take_damage(amount, h.team[, "magic"])`
+	# (`hero_items.py:2542/2568/2589/2633/2648`), with no `source=`. 9o routed
+	# tower/castle victims that way; 9p extends the same route to the unit
+	# victims. `Minion.take_damage` / `Hero.take_damage` therefore run with
+	# `source=None` and `school=None`: the minion armour and magic resist never
+	# cut the arm (the resolver returns None), a hero victim keeps its item
+	# armour only because the source armour branch is damage-type driven
+	# (`_entity.py` `Hero.take_damage`, layer 9l), and
+	# `credit_hero_damage(None, ...)` records nothing.
+	world._deliver_hit(-1, dealer_team, tgt, amount, "neutral", dealer_pos)
 	return amount
 
 
@@ -73,6 +71,8 @@ func deal_damage_sourceless(
 	# never cuts the bonus damage, and a lethal bash leaves `_killed_by = None`
 	# so `Game._process_boss_kill` credits nobody. Regular victims keep the
 	# declared school and the dealing hero as source, exactly as before.
+	# Layer 9p: the non-boss fallback now runs the same sourceless route
+	# (`deal_damage` delivers `-1` + `neutral` to minion and hero victims too).
 	var tgt: Object = world.get_unit(target_id)
 	if tgt == null:
 		return 0
@@ -97,7 +97,9 @@ func deal_damage_magic_sourceless(
 	# (`resolve_damage_school('magic', None, None)` returns `None`,
 	# `_entity.py:106-130`), and a lethal hit credited the owner with the kill.
 	# Regular victims keep the declared school and the dealing hero as source,
-	# exactly as before this layer.
+	# exactly as before this layer. Layer 9p: the non-boss fallback now runs the
+	# same sourceless route (`deal_damage` delivers `-1` + `neutral` to minion
+	# and hero victims too).
 	var tgt: Object = world.get_unit(target_id)
 	if tgt == null:
 		return 0

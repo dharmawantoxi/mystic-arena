@@ -589,7 +589,17 @@ Arm bonus damage item memanggil `target.take_damage(amount, h.team[, "magic"])`
 tanpa `source=`, jadi korban menara/kastil berjalan dengan sekolah `None`:
 armor menara tidak memotong bonus, tidak ada kredit `damage_dealt`, dan kastil
 tetap menyerap lewat shield + reduksi 0.88. Native lama mengirim `dealer_id` +
-sekolah deklarasi ke bus. Kini `battle_item_effects.deal_damage()` mengirim
-`-1`/`"neutral"` untuk target `StructureState`; korban minion/hero tetap
-fallback pra-9o. Oracle `item_structure_arm_source_oracle.py` (4 baris, kolom
-`expected`/`native_old`) plus suite `item_structure_arm_checks.gd`.
+sekolah deklarasi ke bus. Oracle `item_structure_arm_source_oracle.py` (4
+baris, kolom `expected`/`native_old`) plus suite
+`item_structure_arm_checks.gd`.
+
+
+## Arm item pada minion/hero (layer 9p)
+
+Rute sourceless 9o kini berlaku untuk seluruh korban bus arm item:
+`battle_item_effects.deal_damage()` mengirim `-1`/`"neutral"` ke `_deliver_hit`,
+jadi armor/magic resist minion tidak memotong bonus arm, kredit
+`credit_hero_damage(None, ...)` kosong, dan korban hero tetap menjalankan armor
+item (cabang armor sumber digerakkan damage_type, layer 9l). Oracle
+`item_unit_arm_source_oracle.py` (4 baris) plus suite `item_unit_arm_checks.gd`;
+kontrol minion suite 9o memaku nilai 9p (55/credit 0).
