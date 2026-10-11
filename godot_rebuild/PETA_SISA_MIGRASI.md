@@ -528,3 +528,12 @@ pra-fund untuk rekrut/upgrade/item/auto-cast, pembekuan jam-counter-purse setela
 hasil match, sakelar merah mati tetap nol transaksi, dan jadwal elite level 54
 hard (sembilan tick, tiga aksi). Tidak ada perubahan policy, balance, UI, sumber
 Python, atau CI di slice ini.
+
+## Tempest Veil (layer 9j)
+
+`is_veiled()` kini dipakai di tiga tempat seperti sumber: serangan keluar
+(`hero_basic_attack`, sudah ada), auto-cast opt-in pemain (`_step_hero_auto_cast`,
+baru), dan imunitas damage masuk (`_hero_denies_hit` di `minion_battle._deliver_hit`,
+baru - sebelumnya hero ber-veil justru menerima damage penuh). Oracle AST
+`hero_veil_immunity_source_oracle.py` (15 kasus, kolom `expected`/`native_old`,
+7 cek bentuk) plus suite replay `hero_veil_immunity_checks.gd`.

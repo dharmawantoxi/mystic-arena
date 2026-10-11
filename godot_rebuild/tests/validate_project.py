@@ -87,6 +87,18 @@ if (ROOT / "tests/fixtures/ai_control_tick_source.json").is_file():
         "Production AI control tick source fixture drift")
 check("AIRosterChecks.new().run(_check)" in ai_tests,
       "Production AI roster ownership replay must run")
+
+from hero_veil_immunity_source_oracle import source_fixture as hero_veil_fixture
+check('const HeroVeilImmunityChecks = preload("res://tests/hero_veil_immunity_checks.gd")'
+      in ai_tests, "Tempest Veil suite must be preloaded")
+check("HeroVeilImmunityChecks.new().run(_check)" in ai_tests,
+      "Tempest Veil suite must run")
+check((ROOT / "tests/fixtures/hero_veil_immunity_source.json").is_file(),
+      "Tempest Veil requires a source fixture")
+if (ROOT / "tests/fixtures/hero_veil_immunity_source.json").is_file():
+    check(hero_veil_fixture() == json.loads(
+        (ROOT / "tests/fixtures/hero_veil_immunity_source.json").read_text(encoding="utf-8")),
+        "Tempest Veil source fixture drift")
 check((ROOT / "tests/fixtures/ai_roster_source.json").is_file(),
       "AI roster ownership requires a source fixture")
 if (ROOT / "tests/fixtures/ai_roster_source.json").is_file():

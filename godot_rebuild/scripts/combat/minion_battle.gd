@@ -361,20 +361,8 @@ func _deliver_hit(
 		return false
 	if raw_damage <= 0 or school not in ["physical", "magic", "neutral"]:
 		return false
-	if target is HeroState:
-		var defender := target as HeroState
-		if defender.shadow_realm_timer > 0:
-			return false
-		if damage_type == "projectile" and school != "magic" and defender.wind_wall_timer > 0:
-			return false
-		if defender.windrun_timer > 0 and school != "magic":
-			var roll := (
-				float(windrun_roll_override.call())
-				if windrun_roll_override.is_valid()
-				else windrun_rng.randf()
-			)
-			if roll < 0.75:
-				return false
+	if target is HeroState and _hero_denies_hit(target as HeroState, school, damage_type):
+		return false
 	var damage := _damage_amount(target, raw_damage, school)
 	if target is HeroState:
 		damage = maxi(0, damage - int((target as HeroState).items.aura_guard_block))
@@ -406,6 +394,32 @@ func _deliver_hit(
 		if target.is_hero:
 			_on_hero_death(target as HeroState, source_id)
 	return true
+
+
+func _hero_denies_hit(defender: HeroState, school: String, damage_type: String) -> bool:
+	# Source `Hero.take_damage` pre-mitigation ladder (`_entity.py:4533-4599`):
+	# Shadow Realm, Windrun, Wind Wall, then Tempest Veil. The veil return sits
+	# after those three statuses and before the evasion block, school
+	# mitigation, `credit_hero_damage` and every reactive hook (Bristleback
+	# reflect, `notify_damage_taken`), so a veiled hero is immune to ALL
+	# incoming damage while the status holds. Layer 9j: before it the rebuild
+	# read `is_veiled()` only for the hero's own attack
+	# (`prototype_battle.hero_basic_attack`), so Tempest Veil muted the owner
+	# without protecting it. The source veil gate needs `damage > 0`; the
+	# non-positive guard in `_deliver_hit` already covers that.
+	if defender.shadow_realm_timer > 0:
+		return true
+	if damage_type == "projectile" and school != "magic" and defender.wind_wall_timer > 0:
+		return true
+	if defender.windrun_timer > 0 and school != "magic":
+		var roll := (
+			float(windrun_roll_override.call())
+			if windrun_roll_override.is_valid()
+			else windrun_rng.randf()
+		)
+		if roll < 0.75:
+			return true
+	return defender.items.is_veiled()
 
 
 func _damage_amount(target: UnitState, raw_damage: int, school: String) -> float:

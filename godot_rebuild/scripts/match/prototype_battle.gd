@@ -1970,8 +1970,12 @@ func try_auto_cast(hero: HeroState) -> void:
 
 
 func _step_hero_auto_cast(hero: HeroState) -> void:
-	# Player auto-cast: every 20 ticks, opt-in flag and no stun.
-	if hero.auto_cast_enabled and hero.stun_timer <= 0:
+	# Player auto-cast: every 20 ticks, opt-in flag and no stun. Source
+	# `Hero.update` (`_entity.py:3799`) folds Tempest Veil into the same
+	# `_disabled` gate, so a veiled hero neither casts nor advances its check
+	# timer. The AI path is deliberately untouched: `AIPlayer._control_heroes`
+	# calls the shared auto-cast directly, exactly like the source.
+	if hero.auto_cast_enabled and hero.stun_timer <= 0 and not hero.items.is_veiled():
 		hero.auto_cast_check_timer -= 1
 		if hero.auto_cast_check_timer <= 0:
 			hero.auto_cast_check_timer = 20
