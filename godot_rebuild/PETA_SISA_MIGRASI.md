@@ -548,3 +548,13 @@ dipakai match (`_item_rng`) dan lab (`block_rng`); `reset_ai` menyemai
 `block_rng = seed + 3`. Oracle `hero_block_source_oracle.py` (8 kasus, angka
 katalog asli) + suite `hero_block_checks.gd`. Kandidat berikutnya yang tercatat:
 model armor item untuk hit magic dan urutan amp-versus-armor.
+
+## Model armor hero (layer 9l)
+
+Sumber `Hero.take_damage` memakai amp Soul Rend dulu lalu formula armor untuk
+setiap hit non-fire tanpa melihat sekolah (semua hero `armor=0`/`MR=0`, jadi
+hanya armor item yang relevan). Native sebelumnya memilih mitigasi dari sekolah
+(magic -> MR = 0) dan menjalankan amp sesudahnya. Kini `DamageRules.hero_amount()`
++ `resolve_armor()` memegang ladder itu, `_deliver_hit` meneruskan `damage_type`,
+dan jalur non-hero (magic minion -> MR, neutral raw) tetap. Oracle
+`hero_armor_model_source_oracle.py` (9 kasus) + suite `hero_armor_model_checks.gd`.

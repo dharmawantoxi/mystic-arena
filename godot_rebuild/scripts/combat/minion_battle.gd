@@ -372,7 +372,7 @@ func _deliver_hit(
 	# Layer 9k: the item block (passive roll + Bulwark Guard aura) is applied
 	# inside `_damage_amount`, before the Bristleback keep, exactly like the
 	# source armour section.
-	var damage := _damage_amount(target, raw_damage, school)
+	var damage := _damage_amount(target, raw_damage, school, damage_type)
 	var damage_source := get_unit(source_id) as HeroState
 	if damage_source != null and damage > 0:
 		damage_source.damage_dealt += int(damage)
@@ -429,18 +429,18 @@ func _hero_denies_hit(defender: HeroState, school: String, damage_type: String) 
 	return defender.items.is_veiled()
 
 
-func _damage_amount(target: UnitState, raw_damage: int, school: String) -> float:
+func _damage_amount(
+	target: UnitState, raw_damage: int, school: String, damage_type: String = "normal"
+) -> float:
 	if target is StructureState:
 		# Structures absorb through armor + shield. Previously only the
 		# siege override did this; hero AOE needs it at this level too.
 		return (target as StructureState).absorb(raw_damage, school)
-	var damage := (
-		raw_damage
-		if school == "neutral"
-		# Layer 5b-3: item armor/shred and the Soul Rend amp live in the
-		# DamageRules helper (hero item stats).
-		else DamageRules.item_aware_amount(target, raw_damage, school)
-	)
+	# Layer 5b-3 + 9l: item armor/shred, the Soul Rend amp and the hero armour
+	# model (school-free, non-fire) live in the DamageRules helper. The neutral
+	# short-circuit now sits there too, because source heroes still take armour
+	# on school-free (damage_type 'normal') hits.
+	var damage: int = DamageRules.item_aware_amount(target, raw_damage, school, damage_type)
 	if target is HeroState and damage > 0:
 		damage = _after_hero_block(target as HeroState, damage)
 	if target is HeroState and (target as HeroState).bristleback_timer > 0 and damage > 0:

@@ -287,10 +287,12 @@ func _follow_lane(unit: UnitState) -> void:
 		_move_toward(unit, nexus.position)
 
 
-func _damage_amount(target: UnitState, raw_damage: int, school: String) -> float:
+func _damage_amount(
+	target: UnitState, raw_damage: int, school: String, damage_type: String = "normal"
+) -> float:
 	if target is StructureState:
 		return (target as StructureState).absorb(raw_damage, school)
-	return super._damage_amount(target, raw_damage, school)
+	return super._damage_amount(target, raw_damage, school, damage_type)
 
 
 func _on_death(source_team: int, target: UnitState) -> void:

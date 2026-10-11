@@ -139,9 +139,9 @@ class _FakeHero:
         self.radius = 16.0
         self.stun_timer = 0
         self.auto_cast_enabled = False
-        self.dmg_amp_timer = 0
-        self.dmg_amp_amount = 0.0
-        self.armor_shred_amount = 0.0
+        self.dmg_amp_timer = int(case.get("dmg_amp_timer", 0))
+        self.dmg_amp_amount = float(case.get("dmg_amp_amount", 0.0))
+        self.armor_shred_amount = float(case.get("armor_shred", 0.0))
         self.blind_timer = 0
         self.blind_amount = 0.0
         self._school = None

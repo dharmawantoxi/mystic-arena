@@ -98,6 +98,18 @@ from hero_block_source_oracle import source_fixture as hero_block_fixture
 check('const HeroBlockChecks = preload("res://tests/hero_block_checks.gd")' in ai_tests,
       "Hero block suite must be preloaded")
 check("HeroBlockChecks.new().run(_check)" in ai_tests, "Hero block suite must run")
+
+from hero_armor_model_source_oracle import source_fixture as hero_armor_fixture
+check('const HeroArmorModelChecks = preload("res://tests/hero_armor_model_checks.gd")' in ai_tests,
+      "Hero armour model suite must be preloaded")
+check("HeroArmorModelChecks.new().run(_check)" in ai_tests,
+      "Hero armour model suite must run")
+check((ROOT / "tests/fixtures/hero_armor_model_source.json").is_file(),
+      "Hero armour model requires a source fixture")
+if (ROOT / "tests/fixtures/hero_armor_model_source.json").is_file():
+    check(hero_armor_fixture() == json.loads(
+        (ROOT / "tests/fixtures/hero_armor_model_source.json").read_text(encoding="utf-8")),
+        "Hero armour model source fixture drift")
 check((ROOT / "tests/fixtures/hero_block_source.json").is_file(),
       "Hero block requires a source fixture")
 if (ROOT / "tests/fixtures/hero_block_source.json").is_file():
