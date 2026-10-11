@@ -73,6 +73,12 @@ var recent_events: Array[Dictionary] = []
 # Separate from structure bullets: source Hero owns its own homing arrows.
 var hero_projectiles: Array[Dictionary] = []
 var windrun_roll_override: Callable
+# Layer 9k: source `Hero.take_damage` rolls the passive item block with the
+# shared `random.random()`. The lab keeps its own stream here; a match injects
+# the seeded item RNG through `block_roll_override` (same seam pattern as
+# `windrun_roll_override`).
+var block_rng := RandomNumberGenerator.new()
+var block_roll_override: Callable
 var windrun_rng := RandomNumberGenerator.new()
 var _by_id: Dictionary = {}
 var _next_id := 1
@@ -363,9 +369,10 @@ func _deliver_hit(
 		return false
 	if target is HeroState and _hero_denies_hit(target as HeroState, school, damage_type):
 		return false
+	# Layer 9k: the item block (passive roll + Bulwark Guard aura) is applied
+	# inside `_damage_amount`, before the Bristleback keep, exactly like the
+	# source armour section.
 	var damage := _damage_amount(target, raw_damage, school)
-	if target is HeroState:
-		damage = maxi(0, damage - int((target as HeroState).items.aura_guard_block))
 	var damage_source := get_unit(source_id) as HeroState
 	if damage_source != null and damage > 0:
 		damage_source.damage_dealt += int(damage)
@@ -434,10 +441,38 @@ func _damage_amount(target: UnitState, raw_damage: int, school: String) -> float
 		# DamageRules helper (hero item stats).
 		else DamageRules.item_aware_amount(target, raw_damage, school)
 	)
+	if target is HeroState and damage > 0:
+		damage = _after_hero_block(target as HeroState, damage)
 	if target is HeroState and (target as HeroState).bristleback_timer > 0 and damage > 0:
 		var keep := 0.85 if school == "magic" else 0.70
 		return maxi(1, DamageRules.rounded_like_python(damage * keep))
 	return damage
+
+
+func _after_hero_block(defender: HeroState, damage: int) -> int:
+	# Source `Hero.take_damage` (`_entity.py:4652-4672`): the block section sits
+	# inside the non-fire armour branch, i.e. after school mitigation and the
+	# Soul Rend amp and before the Bristleback keep. `block_amt` starts as the
+	# rolled passive block (`get_block()` -> (chance, amount); the roll only
+	# happens when the owner really holds a block source) and the Bulwark Guard
+	# aura overrides it when larger, then both are subtracted once. Layer 9k:
+	# before this the rebuild consumed only the aura, and did it after the keep,
+	# so the passive `scarlet_bulwark` roll never fired at all.
+	var block_amt := 0
+	var block: Variant = defender.items.get_block()
+	if block != null and _block_roll() < float(block[0]):
+		block_amt = int(block[1])
+	if int(defender.items.aura_guard_block) > block_amt:
+		block_amt = int(defender.items.aura_guard_block)
+	if block_amt <= 0:
+		return damage
+	return maxi(0, damage - block_amt)
+
+
+func _block_roll() -> float:
+	if block_roll_override.is_valid():
+		return float(block_roll_override.call())
+	return block_rng.randf()
 
 
 func _on_death(source_team: int, target: UnitState) -> void:

@@ -227,6 +227,7 @@ func _init() -> void:
 	boss_table = boss_parsed if boss_parsed is Dictionary else {}
 	_configure_level_intro()
 	boss_rng.randomize()
+	block_rng.randomize()
 	_mini_boss_schedule = _roll_mini_boss_schedule()
 	_apply_difficulty()
 
@@ -673,6 +674,9 @@ func structure_limit() -> int:
 
 
 func setup_arena() -> bool:
+	# Layer 9k: match block rolls share the seeded item stream, so a replayed
+	# match draws the same passive blocks (lab worlds keep `block_rng`).
+	block_roll_override = Callable(self, "_item_block_roll")
 	if _arena_initialized or not is_running() or not structures.is_empty() or not units.is_empty():
 		return false
 	_arena_initialized = true
@@ -2059,9 +2063,11 @@ func reset_ai(seed_value: int = -1) -> void:
 	if seed_value >= 0:
 		ai_build.rng.seed = seed_value + 1
 		ai_draft.rng.seed = seed_value + 2
+		block_rng.seed = seed_value + 3
 	else:
 		ai_build.rng.randomize()
 		ai_draft.rng.randomize()
+		block_rng.randomize()
 
 
 func _step_ai() -> void:
@@ -2248,6 +2254,10 @@ func _deliver_hit(
 			)
 			effects.add_hit_particles(target.position.x, target.position.y, unit_team, 5)
 	return landed
+
+
+func _item_block_roll() -> float:
+	return _item_rng.randf()
 
 
 func _evaded(

@@ -93,6 +93,17 @@ check('const HeroVeilImmunityChecks = preload("res://tests/hero_veil_immunity_ch
       in ai_tests, "Tempest Veil suite must be preloaded")
 check("HeroVeilImmunityChecks.new().run(_check)" in ai_tests,
       "Tempest Veil suite must run")
+
+from hero_block_source_oracle import source_fixture as hero_block_fixture
+check('const HeroBlockChecks = preload("res://tests/hero_block_checks.gd")' in ai_tests,
+      "Hero block suite must be preloaded")
+check("HeroBlockChecks.new().run(_check)" in ai_tests, "Hero block suite must run")
+check((ROOT / "tests/fixtures/hero_block_source.json").is_file(),
+      "Hero block requires a source fixture")
+if (ROOT / "tests/fixtures/hero_block_source.json").is_file():
+    check(hero_block_fixture() == json.loads(
+        (ROOT / "tests/fixtures/hero_block_source.json").read_text(encoding="utf-8")),
+        "Hero block source fixture drift")
 check((ROOT / "tests/fixtures/hero_veil_immunity_source.json").is_file(),
       "Tempest Veil requires a source fixture")
 if (ROOT / "tests/fixtures/hero_veil_immunity_source.json").is_file():

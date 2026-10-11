@@ -537,3 +537,14 @@ baru), dan imunitas damage masuk (`_hero_denies_hit` di `minion_battle._deliver_
 baru - sebelumnya hero ber-veil justru menerima damage penuh). Oracle AST
 `hero_veil_immunity_source_oracle.py` (15 kasus, kolom `expected`/`native_old`,
 7 cek bentuk) plus suite replay `hero_veil_immunity_checks.gd`.
+
+## Block damage hero (layer 9k)
+
+`get_block()` kini benar-benar dikonsumsi: `minion_battle._damage_amount` memanggil
+`_after_hero_block()` di posisi sumber (setelah mitigasi + amp, sebelum keep
+Bristleback), dengan `max(block pasif, aura Bulwark Guard)`. Sebelumnya hanya aura
+yang dikurangkan, dan itu pun setelah keep. Seam roll baru `block_roll_override`
+dipakai match (`_item_rng`) dan lab (`block_rng`); `reset_ai` menyemai
+`block_rng = seed + 3`. Oracle `hero_block_source_oracle.py` (8 kasus, angka
+katalog asli) + suite `hero_block_checks.gd`. Kandidat berikutnya yang tercatat:
+model armor item untuk hit magic dan urutan amp-versus-armor.
