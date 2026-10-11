@@ -603,3 +603,14 @@ jadi armor/magic resist minion tidak memotong bonus arm, kredit
 item (cabang armor sumber digerakkan damage_type, layer 9l). Oracle
 `item_unit_arm_source_oracle.py` (4 baris) plus suite `item_unit_arm_checks.gd`;
 kontrol minion suite 9o memaku nilai 9p (55/credit 0).
+
+
+## Splash Cleave Axe (layer 9q)
+
+Loop cleave sumber memanggil `u.take_damage(splash, h.team)` tanpa `source=`,
+jadi `cleave_splash()` kini mengirim `-1`/`"neutral"` juga untuk korban unit
+(armor minion tidak memotong, kredit kosong, armor item hero tetap berlaku);
+cabang boss sudah sourceless sejak 9e. Oracle
+`item_cleave_splash_source_oracle.py` (4 baris) plus suite
+`item_cleave_splash_checks.gd` (troll 50/0 vs 45/45, hero armor 37/0 vs 37/37,
+dua minion [50, 50]/0 vs [45, 50]/45).

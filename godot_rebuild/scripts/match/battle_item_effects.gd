@@ -253,7 +253,13 @@ func cleave_splash(
 		if u == null or not u.alive or u.team == src_team or u.id == target_id:
 			continue
 		if center_pos.distance_to(u.position) <= radius:
-			world._deliver_hit(dealer_id, src_team, u, splash, "physical", src_pos)
+			# Layer 9q: the source splash is `u.take_damage(splash, h.team)`
+			# (`hero_items.py:2516`), so every unit victim runs school-free: the
+			# minion armour never cuts the splash and `credit_hero_damage(None, ...)`
+			# records nothing. A hero victim keeps its item armour (damage-type
+			# driven branch, layer 9l). Layer 9e already routed the boss victim
+			# of this loop that way.
+			world._deliver_hit(-1, src_team, u, splash, "neutral", src_pos)
 	# Source cleave radius gate is inclusive (`if d <= radius:`) and measured
 	# from the main target, exactly like the unit loop above.
 	var boss: Object = _onhit_boss(src_team, target_id)
@@ -264,8 +270,8 @@ func cleave_splash(
 		# blind block (it needs `source is not None`), makes
 		# `resolve_damage_school('normal', None, None)` return `None` so boss armor
 		# never cuts the splash, and leaves `_killed_by = None` on a lethal hit so
-		# `Game._process_boss_kill` credits nobody. Non-boss victims keep the
-		# physical delivery above, exactly as before this layer.
+		# `Game._process_boss_kill` credits nobody. Layer 9q moved the unit loop
+		# above onto the same sourceless route, so both branches now agree.
 		world._deliver_hit(-1, src_team, boss, splash, "neutral", src_pos)
 
 

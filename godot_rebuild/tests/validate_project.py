@@ -119,6 +119,7 @@ check("MinionDamageLadderChecks.new().run(_check)" in ai_tests,
 
 from item_structure_arm_source_oracle import source_fixture as structure_arm_fixture
 from item_unit_arm_source_oracle import source_fixture as unit_arm_fixture
+from item_cleave_splash_source_oracle import source_fixture as cleave_splash_fixture
 check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
       "Item structure arm suite must be preloaded")
 check("ItemStructureArmChecks.new().run(_check)" in ai_tests,
@@ -139,6 +140,16 @@ if (ROOT / "tests/fixtures/item_unit_arm_source.json").is_file():
     check(unit_arm_fixture() == json.loads(
         (ROOT / "tests/fixtures/item_unit_arm_source.json").read_text(encoding="utf-8")),
           "Item unit arm fixture must not drift from the oracle")
+check('const ItemCleaveSplashChecks = preload("res://tests/item_cleave_splash_checks.gd")' in ai_tests,
+      "Item cleave splash suite must be preloaded")
+check("ItemCleaveSplashChecks.new().run(_check)" in ai_tests,
+      "Item cleave splash suite must run")
+check((ROOT / "tests/fixtures/item_cleave_splash_source.json").is_file(),
+      "Item cleave splash fixture must exist")
+if (ROOT / "tests/fixtures/item_cleave_splash_source.json").is_file():
+    check(cleave_splash_fixture() == json.loads(
+        (ROOT / "tests/fixtures/item_cleave_splash_source.json").read_text(encoding="utf-8")),
+          "Item cleave splash fixture must not drift from the oracle")
 check((ROOT / "tests/fixtures/minion_damage_ladder_source.json").is_file(),
       "Minion damage ladder fixture must exist")
 if (ROOT / "tests/fixtures/minion_damage_ladder_source.json").is_file():
@@ -2252,9 +2263,10 @@ check(all(
 ), "9e a lethal cleave splash credits nobody in the source column")
 _cleave_dmg_bus = (ROOT / "scripts/match/battle_item_effects.gd").read_text(encoding="utf-8")
 check('world._deliver_hit(-1, src_team, boss, splash, "neutral", src_pos)' in _cleave_dmg_bus
+      and 'world._deliver_hit(-1, src_team, u, splash, "neutral", src_pos)' in _cleave_dmg_bus
       and 'world._deliver_hit(dealer_id, src_team, u, splash, "physical", src_pos)'
-      in _cleave_dmg_bus,
-      "9e the boss cleave arm is source-less and school-less while units stay physical")
+      not in _cleave_dmg_bus,
+      "9q both cleave arms are source-less and school-less")
 check('const BossItemCleaveDamageChecks = preload("res://tests/boss_item_cleave_damage_checks.gd")'
       in ai_tests
       and "BossItemCleaveDamageChecks.new().run(_check)" in ai_tests,
