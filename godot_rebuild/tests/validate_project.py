@@ -121,6 +121,7 @@ from item_structure_arm_source_oracle import source_fixture as structure_arm_fix
 from item_unit_arm_source_oracle import source_fixture as unit_arm_fixture
 from item_cleave_splash_source_oracle import source_fixture as cleave_splash_fixture
 from item_magic_arm_unit_source_oracle import source_fixture as magic_arm_unit_fixture
+from item_reflect_unit_source_oracle import source_fixture as reflect_unit_fixture
 check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
       "Item structure arm suite must be preloaded")
 check("ItemStructureArmChecks.new().run(_check)" in ai_tests,
@@ -161,6 +162,16 @@ if (ROOT / "tests/fixtures/item_magic_arm_unit_source.json").is_file():
     check(magic_arm_unit_fixture() == json.loads(
         (ROOT / "tests/fixtures/item_magic_arm_unit_source.json").read_text(encoding="utf-8")),
           "Item magic arm unit fixture must not drift from the oracle")
+check('const ItemReflectUnitChecks = preload("res://tests/item_reflect_unit_checks.gd")' in ai_tests,
+      "Item reflect unit suite must be preloaded")
+check("ItemReflectUnitChecks.new().run(_check)" in ai_tests,
+      "Item reflect unit suite must run")
+check((ROOT / "tests/fixtures/item_reflect_unit_source.json").is_file(),
+      "Item reflect unit fixture must exist")
+if (ROOT / "tests/fixtures/item_reflect_unit_source.json").is_file():
+    check(reflect_unit_fixture() == json.loads(
+        (ROOT / "tests/fixtures/item_reflect_unit_source.json").read_text(encoding="utf-8")),
+          "Item reflect unit fixture must not drift from the oracle")
 check((ROOT / "tests/fixtures/minion_damage_ladder_source.json").is_file(),
       "Minion damage ladder fixture must exist")
 if (ROOT / "tests/fixtures/minion_damage_ladder_source.json").is_file():
@@ -2595,11 +2606,11 @@ check(all(
     if row["scenario"] == "reflect_vs_boss_resist"
 ), "9i boss magic resist no longer cuts the reflected payload")
 _reflect_bus = (ROOT / "scripts/match/reflect_item_effects.gd").read_text(encoding="utf-8")
-check("attacker is BossState" in _reflect_bus
-      and 'world._deliver_hit(-1, src_team, attacker, amount, "neutral", attacker.position, "magic")'
-      in _reflect_bus
+check("attacker is BossState" not in _reflect_bus
+      and 'world._deliver_hit(' in _reflect_bus
+      and 'amount, "neutral", attacker.position, "magic"' in _reflect_bus
       and _auto_dmg_inv.count("effects.deal_damage(source_id, hero_team, dmg, \"magic\")") == 1,
-      "9i the reflect bus sends the boss the source-less neutral magic hit")
+      "9i/9s the reflect bus sends every attacker the source-less neutral magic hit")
 check('const BossItemReflectCarapaceChecks = preload("res://tests/boss_item_reflect_carapace_checks.gd")'
       in ai_tests
       and "BossItemReflectCarapaceChecks.new().run(_check)" in ai_tests,

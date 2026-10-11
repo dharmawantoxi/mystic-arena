@@ -626,3 +626,14 @@ gate windrun `_hero_denies_hit()` mengikuti `_is_physical_hit` (hanya
 `item_magic_arm_unit_source_oracle.py` (4 baris) plus suite
 `item_magic_arm_unit_checks.gd` (chain pada hero Windrun 45/0 vs 0/0, chain pada
 hero evasi 45/0 vs 0/0, pierce pada hero armor 40/40, pierce pada troll 55/55).
+
+
+## Reflect Razor Carapace pada penyerang unit (layer 9s)
+
+Sumber memantulkan lewat `source.take_damage(dmg, team, "magic")` tanpa
+`source=`, jadi `reflect_item_effects.deal_damage()` kini mengirim
+`-1`/`"neutral"` + tipe `"magic"` untuk seluruh penyerang (boss sejak 9i, unit
+sejak 9s); preload `BossState` dan cabangnya dihapus. Oracle
+`item_reflect_unit_source_oracle.py` (4 baris) plus suite
+`item_reflect_unit_checks.gd` (undead 170 vs 144, troll 170/170, hero armor
+125/125, hero tanpa armor 170/170).
