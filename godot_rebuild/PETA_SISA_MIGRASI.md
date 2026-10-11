@@ -680,3 +680,14 @@ berlaku umum). Oracle `tower_bullet_school_source_oracle.py` (6 baris) plus
 suite `tower_bullet_school_checks.gd` (archer troll 20 vs 18, mage troll 17 vs
 16, splash cannon 25 vs 22, bolt mage vs Wind Wall 0 vs 17, hero armor 15/15,
 archer vs Wind Wall 0/0).
+
+
+## Serangan dasar minion (layer 9x)
+
+`Minion.update` menyerang dengan `take_damage(self.damage, self.team)` tanpa
+source/sekolah, jadi `minion_battle.apply_hit` kini mengirim `-1` + `"neutral"`
+untuk penyerang non-hero (hero tetap bersumber seperti sumber `Hero`). Oracle
+`minion_melee_school_source_oracle.py` (3 baris) plus suite
+`minion_melee_school_checks.gd` (orc pada menara 13 vs 11, pada troll 13 vs 12,
+hero armor 10/10, baris boss live: netral == jalur `_deliver_hit(-1, ...)`,
+physical lebih kecil, tanpa pantulan Razor Carapace ke minion).

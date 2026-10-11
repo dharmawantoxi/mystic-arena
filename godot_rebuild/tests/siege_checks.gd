@@ -43,7 +43,20 @@ func _fixtures(check: Callable) -> void:
 		attacker_data.damage = int(sample.amount)
 		var attacker := world.spawn_unit(attacker_data, 0, 1)
 		attacker.position = Vector2(100, 100)
-		check.call(world.apply_hit(attacker.id, target.id, sample.school), "structure hit accepted")
+		# Layer 9x moved the minion attack to the sourceless shape, so the
+		# structure ladder rows drive the delivery directly with the fixture
+		# school (the ladder itself is unchanged).
+		check.call(
+			world._deliver_hit(
+				attacker.id,
+				attacker.team,
+				target,
+				int(sample.amount),
+				sample.school,
+				attacker.position
+			),
+			"structure hit accepted"
+		)
 		check.call(is_equal_approx(target.hp, sample.hp), "source shield/armor/reduction HP")
 		check.call(is_equal_approx(target.shield, sample.shield_after), "source shield remaining")
 		check.call(target.no_damage_ticks == 0, "absorbed hits reset regen clock")

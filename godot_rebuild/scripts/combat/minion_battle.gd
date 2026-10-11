@@ -198,9 +198,33 @@ func apply_hit(attacker_id: int, target_id: int, school: String = "physical") ->
 		return false
 	if attacker.position.distance_to(target.position) > attacker.definition.attack_range_px:
 		return false
-	if not _deliver_hit(
-		attacker.id, attacker.team, target, attacker.definition.damage, school, attacker.position
-	):
+	var landed := false
+	if attacker is HeroState:
+		# The hero melee branch (`_entity.py:4371-4373`) sends `source=self`
+		# plus its declared school; the utility keeps that shape for hero
+		# callers and tests.
+		landed = _deliver_hit(
+			attacker.id,
+			attacker.team,
+			target,
+			attacker.definition.damage,
+			school,
+			attacker.position
+		)
+	else:
+		# Layer 9x: `Minion.update` attacks with
+		# `self.target.take_damage(self.damage, self.team)` (`_entity.py:5580`) -
+		# two positional arguments, no `source=`, no school and no
+		# `damage_type` - so the victim's ladder resolves NO school at all:
+		# tower/nexus armour, minion armour/`magic_resist` and the boss
+		# mitigation never cut the hit, nothing is credited, the caster's blind
+		# is not consulted and `notify_damage_taken(source=None)` never
+		# reflects it back. This is the only production caller of the minion
+		# attack (the unit loop above).
+		landed = _deliver_hit(
+			-1, attacker.team, target, attacker.definition.damage, "neutral", attacker.position
+		)
+	if not landed:
 		return false
 	attacker.cooldown_ticks = _eff_attack_cd(attacker)
 	attacker.facing = -1.0 if target.position.x < attacker.position.x else 1.0
