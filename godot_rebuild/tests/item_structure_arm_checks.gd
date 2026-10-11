@@ -52,6 +52,19 @@ class StructArmBus:
 		world._deliver_hit(dealer_id, dealer_team, tgt, amount, school, dealer_pos)
 		return amount
 
+	func deal_damage_magic_sourceless(
+		target_id: int, source_team: int, amount: int, school: String = "magic"
+	) -> int:
+		if not legacy:
+			return super.deal_damage_magic_sourceless(target_id, source_team, amount, school)
+		# Pre-9o shape of the magic arms: layer 9r moved them off `deal_damage`,
+		# so the counterfactual replays the pre-9o arguments here.
+		var tgt: Object = world.get_unit(target_id)
+		if tgt == null:
+			return 0
+		world._deliver_hit(dealer_id, dealer_team, tgt, amount, school, dealer_pos)
+		return amount
+
 
 class StructArmWorld:
 	extends World
