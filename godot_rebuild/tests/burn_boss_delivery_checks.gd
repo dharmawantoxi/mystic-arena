@@ -323,8 +323,12 @@ func _sourced_control(check: Callable, world: Prototype) -> void:
 	)
 
 
-func _spawn(world: Prototype, kind: String):
-	var boss = world._spawn_boss(kind)
+func _spawn(world: Prototype, kind: String) -> BossState:
+	# Each probe needs its own live boss: `_spawn_boss` refuses to spawn while
+	# one is active, so the registry slot is released first (the fixture rows
+	# compare two or three bosses side by side).
+	world.active_boss = null
+	var boss: BossState = world._spawn_boss(kind)
 	if boss == null:
 		return null
 	boss.entrance_timer = 0
