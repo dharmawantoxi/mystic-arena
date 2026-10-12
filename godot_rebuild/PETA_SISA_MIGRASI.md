@@ -727,6 +727,6 @@ mengirim `world._deliver_hit(-1, source_team, tgt, amount, school, origin,
 damage_type, true)` (korban boss tetap memakai handle sumber 9b/9d plus
 `last_hit_is_miasma_tick`). Oracle `miasma_tick_delivery_source_oracle.py`
 (7 baris) plus suite `miasma_tick_delivery_checks.gd`: kredit 0 di semua kolom
-sourceless (native lama 30/22/5/28/30), troll MR 0.05 - 30 vs 28, shred
+sourceless (native lama 30/22/8/28/30), troll MR 0.05 - 30 vs 28, shred
 Corroder 39, menara armor 3 - 30 dengan kredit 0 vs 30, veil 0/0, dan kontrol
 Razor Carapace/`killed_by`/boss tetap dipaku.

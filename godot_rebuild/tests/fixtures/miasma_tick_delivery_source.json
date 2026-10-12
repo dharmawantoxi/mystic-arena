@@ -98,25 +98,26 @@
         "damage_type": "magic",
         "school": null,
         "source_school": null,
+        "armor": 6,
         "block": [
           0.55,
-          25.0
+          14.0
         ],
         "draws": [
           0.5
         ]
       },
-      "note": "a non-fire tick still rolls the passive block",
+      "note": "a non-fire tick still rolls the passive ranged block after the item armour",
       "expected": {
-        "hp_loss": 5,
+        "hp_loss": 8,
         "credited_total": 0,
         "notified": 1,
         "random_draws": 1,
         "reflects": 0
       },
       "native_old": {
-        "hp_loss": 5,
-        "credited_total": 5,
+        "hp_loss": 8,
+        "credited_total": 8,
         "notified": 1,
         "random_draws": 1,
         "reflects": 0

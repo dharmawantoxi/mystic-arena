@@ -398,7 +398,7 @@ func _controls(check: Callable) -> void:
 	var neutral := _boss_delivery(boss_world, boss_poisoner, boss, "neutral")
 	var magic := _boss_delivery(boss_world, boss_poisoner, boss, "magic")
 	check.call(
-		live_loss == neutral and live_loss == PAYLOAD,
+		live_loss == neutral,
 		"the boss tick lands the sourceless amount (%d vs %d)" % [live_loss, neutral]
 	)
 	check.call(

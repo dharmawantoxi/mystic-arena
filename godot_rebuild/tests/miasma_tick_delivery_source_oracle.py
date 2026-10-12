@@ -232,7 +232,8 @@ def source_fixture() -> dict:
     armored = _hero_row(take_damage, armor=ARMOR)
     blocked = _hero_row(
         take_damage,
-        block=[float(BLOCK["chance"]), float(BLOCK["melee_block"])],
+        armor=ARMOR,
+        block=[float(BLOCK["chance"]), float(BLOCK["ranged_block"])],
         draws=[0.5],
     )
     veiled = _hero_row(take_damage, veil=True)
@@ -269,12 +270,13 @@ def source_fixture() -> dict:
                 "damage_type": "magic",
                 "school": None,
                 "source_school": None,
-                "block": [float(BLOCK["chance"]), float(BLOCK["melee_block"])],
+                "armor": ARMOR,
+                "block": [float(BLOCK["chance"]), float(BLOCK["ranged_block"])],
                 "draws": [0.5],
             },
             expected=blocked,
             native_old=dict(blocked, credited_total=blocked["hp_loss"]),
-            note="a non-fire tick still rolls the passive block",
+            note="a non-fire tick still rolls the passive ranged block after the item armour",
         ),
         _row(
             "miasma_tick_on_veiled_hero",
