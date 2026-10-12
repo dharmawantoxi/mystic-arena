@@ -198,7 +198,7 @@
       "hit_sourceless": 0,
       "aoe_sites": 4,
       "direct_attributed": 4,
-      "direct_sourceless": 2,
+      "direct_sourceless": 3,
       "attributed_mults": []
     },
     "siege_battle.gd": {

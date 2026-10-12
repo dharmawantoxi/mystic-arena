@@ -705,3 +705,14 @@ memaku split per kit, dan mengeksekusi baris Vex R (225 kredit 225 vs
 sourceless 237 kredit 0), Thorne E (71 kredit 71), Gornak Q (268 kredit 0);
 suite `skill_hit_attribution_checks.gd` mereplay ketiganya lewat produksi dan
 menghitung ulang token situs dari skrip yang dikirim.
+
+
+## Tick burn unit (layer 9z)
+
+`_tick_burn` kini mengirim `_deliver_hit(-1, burn_team, unit, damage, "neutral",
+unit.position, "fire")` seperti sumber `self.take_damage(dmg, burn_team or team,
+"fire")`, dan blok hero dilewati untuk fire (bersarang di cabang non-fire).
+Oracle `burn_tick_delivery_source_oracle.py` (6 baris) plus suite
+`burn_tick_delivery_checks.gd`: hero amp 45 vs 30, Bristleback 21 vs 30, veil
+0 vs 30, shadow realm 0/0, block item 30 dengan 0 undian, troll 30/30
+(kontrol; Corroder hanya berlaku untuk hit non-fire 39).

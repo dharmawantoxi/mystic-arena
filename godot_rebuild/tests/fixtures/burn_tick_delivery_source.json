@@ -1,0 +1,194 @@
+{
+  "source": "`_core.py::TowerDebuffMixin._tick_tower_debuffs` burn branch run through the real `Hero.take_damage` and `Minion.take_damage`",
+  "callsite": "godot_rebuild/scripts/combat/minion_battle.gd::_tick_burn",
+  "native_old_model": "pre-9z native raw arm: `unit.hp = maxf(0, unit.hp - damage)` (+ a hand-rolled shadow-realm zero), recorded as the `native_old` column",
+  "burn_shape": {
+    "take_damage_calls": 1,
+    "three_positional_args": true,
+    "damage_is_accum": true,
+    "team_is_burn_team_or_team": true,
+    "third_arg_is_fire": true,
+    "no_source_keyword": true,
+    "no_school_keyword": true,
+    "accum_drained_before": true,
+    "guarded_by_alive": true,
+    "burn_tick_interval": 30,
+    "burn_fps": 60.0
+  },
+  "hero_fire_shape": {
+    "non_fire_guard_count": 1,
+    "block_roll_inside_non_fire": true,
+    "bristleback_keep_outside_non_fire": true,
+    "keep_is_not_magic_gated": true
+  },
+  "live_stats": {
+    "dps": 60.0,
+    "tick_frames": 30,
+    "payload": 30,
+    "block_item": "scarlet_bulwark",
+    "block_chance": 0.55,
+    "block_amount": 25.0,
+    "ranged_block_amount": 14.0,
+    "troll_armor": 2.0,
+    "troll_magic_resist": 0.05,
+    "troll_shred": 5.0,
+    "troll_shred_payload": 39,
+    "amped_payload": 45,
+    "bristleback_payload": 21
+  },
+  "cases": [
+    {
+      "name": "burn_tick_on_amped_hero",
+      "case": {
+        "damage": 30,
+        "damage_type": "fire",
+        "school": null,
+        "source_school": null,
+        "dmg_amp_timer": 120,
+        "dmg_amp_amount": 0.5
+      },
+      "note": "the Soul Rend amp runs before the fire branch, the raw column never applied it",
+      "expected": {
+        "hp_loss": 45,
+        "credited_total": 0,
+        "notified": 1,
+        "random_draws": 0,
+        "reflects": 0
+      },
+      "native_old": {
+        "hp_loss": 30,
+        "credited_total": 0,
+        "notified": 0,
+        "random_draws": 0,
+        "reflects": 0
+      }
+    },
+    {
+      "name": "burn_tick_on_bristleback_hero",
+      "case": {
+        "damage": 30,
+        "damage_type": "fire",
+        "school": null,
+        "source_school": null,
+        "bristleback": true
+      },
+      "note": "Bristleback keeps 30% because fire is not the magic school",
+      "expected": {
+        "hp_loss": 21,
+        "credited_total": 0,
+        "notified": 1,
+        "random_draws": 0,
+        "reflects": 0
+      },
+      "native_old": {
+        "hp_loss": 30,
+        "credited_total": 0,
+        "notified": 0,
+        "random_draws": 0,
+        "reflects": 0
+      }
+    },
+    {
+      "name": "burn_tick_on_veiled_hero",
+      "case": {
+        "damage": 30,
+        "damage_type": "fire",
+        "school": null,
+        "source_school": null,
+        "veil": true
+      },
+      "note": "Tempest Veil returns before the mitigation section, so the tick lands nothing",
+      "expected": {
+        "hp_loss": 0,
+        "credited_total": 0,
+        "notified": 0,
+        "random_draws": 0,
+        "reflects": 0
+      },
+      "native_old": {
+        "hp_loss": 30,
+        "credited_total": 0,
+        "notified": 0,
+        "random_draws": 0,
+        "reflects": 0
+      }
+    },
+    {
+      "name": "burn_tick_on_shadow_realm_hero",
+      "case": {
+        "damage": 30,
+        "damage_type": "fire",
+        "school": null,
+        "source_school": null,
+        "shadow_realm": true
+      },
+      "note": "Shadow Realm already returned in the raw column: control row",
+      "expected": {
+        "hp_loss": 0,
+        "credited_total": 0,
+        "notified": 0,
+        "random_draws": 0,
+        "reflects": 0
+      },
+      "native_old": {
+        "hp_loss": 0,
+        "credited_total": 0,
+        "notified": 0,
+        "random_draws": 0,
+        "reflects": 0
+      }
+    },
+    {
+      "name": "burn_tick_with_block_item",
+      "case": {
+        "damage": 30,
+        "damage_type": "fire",
+        "school": null,
+        "source_school": null,
+        "block": [
+          0.55,
+          25.0
+        ],
+        "draws": [
+          0.1
+        ]
+      },
+      "note": "the block section is nested in the non-fire branch, so fire consumes no draw",
+      "expected": {
+        "hp_loss": 30,
+        "credited_total": 0,
+        "notified": 1,
+        "random_draws": 0,
+        "reflects": 0
+      },
+      "native_old": {
+        "hp_loss": 30,
+        "credited_total": 0,
+        "notified": 0,
+        "random_draws": 0,
+        "reflects": 0
+      }
+    },
+    {
+      "name": "burn_tick_on_troll",
+      "case": {
+        "damage": 30,
+        "damage_type": "fire",
+        "school": null,
+        "armor": 2.0
+      },
+      "note": "minion control: fire skips armour and magic_resist, and the Corroder bonus",
+      "expected": {
+        "hp_loss": 30,
+        "credited_total": 0
+      },
+      "native_old": {
+        "hp_loss": 30,
+        "credited_total": 0,
+        "notified": 0,
+        "random_draws": 0,
+        "reflects": 0
+      }
+    }
+  ]
+}

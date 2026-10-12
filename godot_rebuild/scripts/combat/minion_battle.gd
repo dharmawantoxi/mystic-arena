@@ -261,30 +261,21 @@ func _tick_burn(unit: UnitState) -> void:
 		var damage := int(unit.burn_accum)
 		if damage > 0 and unit.alive:
 			unit.burn_accum -= damage
-			if unit is HeroState and unit.shadow_realm_timer > 0:
-				damage = 0
-			if damage > 0:
-				unit.hp = maxf(0, unit.hp - damage)
-				_record(
-					{
-						"kind": "hit",
-						"burn": true,
-						"source_id": -1,
-						"target_id": unit.id,
-						"from": unit.position,
-						"to": unit.position,
-						"damage": damage
-					}
-				)
-				if unit.hp <= 0:
-					unit.alive = false
-					_record({"kind": "death", "burn": true, "source_id": -1, "target_id": unit.id})
-					var credit_team := 1 - unit.team
-					if unit.burn_team in [BLUE, RED]:
-						credit_team = unit.burn_team
-					_on_death(credit_team, unit)
-					if unit.is_hero:
-						_on_hero_death(unit as HeroState, -1)
+			# Layer 9z: the source tick is
+			# `self.take_damage(dmg, self.burn_team or self.team, "fire")`
+			# (`_core.py:1023-1033`) - three positional arguments, no `source=`
+			# and no `school=` - so the victim runs its WHOLE ladder: a veiled or
+			# shadow-realm hero shrugs the tick off, the Soul Rend amp applies,
+			# Bristleback keeps its 30% (fire is not the magic school), the
+			# damage block section is skipped because it sits inside the
+			# source's non-fire branch (`_entity.py:4644-4675`), and the item
+			# reactions (`notify_damage_taken(source=None)`) fire without
+			# crediting anyone. The tick used to subtract hp directly, which
+			# skipped every one of those gates.
+			var burn_team := 1 - unit.team
+			if unit.burn_team in [BLUE, RED]:
+				burn_team = unit.burn_team
+			_deliver_hit(-1, burn_team, unit, damage, "neutral", unit.position, "fire")
 	if unit.burn_timer <= 0:
 		unit.burn_dps = 0.0
 		unit.burn_accum = 0.0
@@ -475,7 +466,10 @@ func _damage_amount(
 	# short-circuit now sits there too, because source heroes still take armour
 	# on school-free (damage_type 'normal') hits.
 	var damage: int = DamageRules.item_aware_amount(target, raw_damage, school, damage_type)
-	if target is HeroState and damage > 0:
+	if target is HeroState and damage > 0 and damage_type != "fire":
+		# Layer 9z: the source nests the damage block INSIDE the non-fire branch
+		# (`_entity.py:4644`), so a fire hit (the burn tick) never rolls the
+		# passive block and never consumes the Bulwark Guard aura.
 		damage = _after_hero_block(target as HeroState, damage)
 	if target is HeroState and (target as HeroState).bristleback_timer > 0 and damage > 0:
 		var keep := 0.85 if school == "magic" else 0.70
