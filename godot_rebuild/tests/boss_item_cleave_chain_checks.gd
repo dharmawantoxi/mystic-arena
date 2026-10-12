@@ -127,10 +127,18 @@ class CleaveChainWorld:
 		raw_damage: int,
 		school: String,
 		origin: Vector2,
-		damage_type: String = "normal"
+		damage_type: String = "normal",
+		ignore_team_guard: bool = false
 	) -> bool:
 		var landed: bool = super._deliver_hit(
-			source_id, source_team, target, raw_damage, school, origin, damage_type
+			source_id,
+			source_team,
+			target,
+			raw_damage,
+			school,
+			origin,
+			damage_type,
+			ignore_team_guard
 		)
 		if landed:
 			var unit_id := int(target.id)
