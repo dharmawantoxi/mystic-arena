@@ -362,14 +362,14 @@ def main() -> int:
     parser.add_argument("--self-test", action="store_true")
     parser.add_argument("--write", action="store_true")
     args = parser.parse_args()
-    if not (args.self_test or args.write):
-        parser.error("one of the arguments --self-test --write is required")
     fixture = source_fixture()
     if args.write:
         FIXTURE.parent.mkdir(parents=True, exist_ok=True)
         FIXTURE.write_text(json.dumps(fixture, indent=2) + "\n", encoding="utf-8")
         print("wrote %s (%d rows)" % (FIXTURE.name, len(fixture["rows"])))
         return 0
+    # A bare invocation verifies, like the other registered oracles: the CI
+    # step runs `python <oracle>.py` with no flag.
     committed = json.loads(FIXTURE.read_text(encoding="utf-8"))
     if fixture != committed:
         print("FAIL: fixture drift vs %s" % FIXTURE.name)
