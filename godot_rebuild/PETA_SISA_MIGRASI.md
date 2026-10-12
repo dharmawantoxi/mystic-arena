@@ -716,3 +716,17 @@ Oracle `burn_tick_delivery_source_oracle.py` (6 baris) plus suite
 `burn_tick_delivery_checks.gd`: hero amp 45 vs 30, Bristleback 21 vs 30, veil
 0 vs 30, shadow realm 0/0, block item 30 dengan 0 undian, troll 30/30
 (kontrol; Corroder hanya berlaku untuk hit non-fire 39).
+
+## Tick item Miasma (layer 9aa)
+
+`hero_items.py::_tick_miasma` (`:223-227`) mengirim `tgt.take_damage(m["damage"],
+team, "magic")` - tiga argumen posisional tanpa `source=`/`school=`, jadi
+sekolahnya `None` (`_entity.py:106-130`). Kini `tick_miasma` memakai
+`effects.deal_damage_from(..., "neutral", "magic")` dan cabang non-boss bus
+mengirim `world._deliver_hit(-1, source_team, tgt, amount, school, origin,
+damage_type, true)` (korban boss tetap memakai handle sumber 9b/9d plus
+`last_hit_is_miasma_tick`). Oracle `miasma_tick_delivery_source_oracle.py`
+(7 baris) plus suite `miasma_tick_delivery_checks.gd`: kredit 0 di semua kolom
+sourceless (native lama 30/22/5/28/30), troll MR 0.05 - 30 vs 28, shred
+Corroder 39, menara armor 3 - 30 dengan kredit 0 vs 30, veil 0/0, dan kontrol
+Razor Carapace/`killed_by`/boss tetap dipaku.

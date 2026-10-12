@@ -1,0 +1,206 @@
+{
+  "source": "`hero_items.py::_tick_miasma` run through the real `Hero.take_damage`, `Minion.take_damage` and `Tower.take_damage`",
+  "callsite": "godot_rebuild/scripts/match/battle_item_effects.gd::deal_damage_from",
+  "caller": "godot_rebuild/scripts/match/hero_item_inventory.gd::tick_miasma",
+  "native_model": "the tick reaches the bus as `deal_damage_from(..., \"neutral\", \"magic\")`: the owner id stays only for the boss replay handle (9b/9d) while every other victim is delivered sourceless",
+  "tick_shape": {
+    "take_damage_calls": 2,
+    "primary_three_positional_args": true,
+    "damage_is_tracker": true,
+    "team_is_source_team": true,
+    "third_arg_is_magic": true,
+    "no_source_keyword": true,
+    "no_school_keyword": true,
+    "fallback_two_positional": true,
+    "team_from_stored_source": true,
+    "tick_reset_is_30": true,
+    "drains_timer_and_tick_cd": true,
+    "expires_dead_or_spent": true,
+    "keep_alive_guard": true
+  },
+  "hero_shape": {
+    "non_fire_guard_count": 0,
+    "armor_keys_on_damage_type": true,
+    "block_inside_non_fire": true
+  },
+  "live_stats": {
+    "payload": 30,
+    "armor_item": "steel_aegis",
+    "armor": 6,
+    "block_item": "scarlet_bulwark",
+    "block_chance": 0.55,
+    "block_amount": 25.0,
+    "troll_armor": 2.0,
+    "troll_magic_resist": 0.05,
+    "troll_shred": 5.0,
+    "troll_shred_payload": 39,
+    "tower_armor": 3.0,
+    "school_resolution": {
+      "tick_school_for_hero": null,
+      "tick_school_for_minion": null,
+      "tick_school_with_active_hero": null
+    }
+  },
+  "cases": [
+    {
+      "name": "miasma_tick_on_plain_hero",
+      "case": {
+        "damage": 30,
+        "damage_type": "magic",
+        "school": null,
+        "source_school": null
+      },
+      "note": "the native bus credited the owner the landed amount",
+      "expected": {
+        "hp_loss": 30,
+        "credited_total": 0,
+        "notified": 1,
+        "random_draws": 0,
+        "reflects": 0
+      },
+      "native_old": {
+        "hp_loss": 30,
+        "credited_total": 30,
+        "notified": 1,
+        "random_draws": 0,
+        "reflects": 0
+      }
+    },
+    {
+      "name": "miasma_tick_on_armoured_hero",
+      "case": {
+        "damage": 30,
+        "damage_type": "magic",
+        "school": null,
+        "source_school": null,
+        "armor": 6
+      },
+      "note": "the hero armour formula keys on damage_type, so it still applies",
+      "expected": {
+        "hp_loss": 22,
+        "credited_total": 0,
+        "notified": 1,
+        "random_draws": 0,
+        "reflects": 0
+      },
+      "native_old": {
+        "hp_loss": 22,
+        "credited_total": 22,
+        "notified": 1,
+        "random_draws": 0,
+        "reflects": 0
+      }
+    },
+    {
+      "name": "miasma_tick_with_block_item",
+      "case": {
+        "damage": 30,
+        "damage_type": "magic",
+        "school": null,
+        "source_school": null,
+        "block": [
+          0.55,
+          25.0
+        ],
+        "draws": [
+          0.5
+        ]
+      },
+      "note": "a non-fire tick still rolls the passive block",
+      "expected": {
+        "hp_loss": 5,
+        "credited_total": 0,
+        "notified": 1,
+        "random_draws": 1,
+        "reflects": 0
+      },
+      "native_old": {
+        "hp_loss": 5,
+        "credited_total": 5,
+        "notified": 1,
+        "random_draws": 1,
+        "reflects": 0
+      }
+    },
+    {
+      "name": "miasma_tick_on_veiled_hero",
+      "case": {
+        "damage": 30,
+        "damage_type": "magic",
+        "school": null,
+        "source_school": null,
+        "veil": true
+      },
+      "note": "the veil gate returns before mitigation, so the tick lands nothing",
+      "expected": {
+        "hp_loss": 0,
+        "credited_total": 0,
+        "notified": 0,
+        "random_draws": 0,
+        "reflects": 0
+      },
+      "native_old": {
+        "hp_loss": 0,
+        "credited_total": 0,
+        "notified": 0,
+        "random_draws": 0,
+        "reflects": 0
+      }
+    },
+    {
+      "name": "miasma_tick_on_troll",
+      "case": {
+        "damage": 30,
+        "damage_type": "magic",
+        "school": null,
+        "armor": 2.0
+      },
+      "note": "no school means the troll magic_resist never cuts the tick",
+      "expected": {
+        "hp_loss": 30,
+        "credited_total": 0
+      },
+      "native_old": {
+        "hp_loss": 28,
+        "credited_total": 28
+      }
+    },
+    {
+      "name": "miasma_tick_on_shredded_troll",
+      "case": {
+        "damage": 30,
+        "damage_type": "magic",
+        "school": null,
+        "armor": 2.0,
+        "shred": 5.0
+      },
+      "note": "the Corroder shred bonus is not gated on the school",
+      "expected": {
+        "hp_loss": 39,
+        "credited_total": 0
+      },
+      "native_old": {
+        "hp_loss": 39,
+        "credited_total": 0
+      }
+    },
+    {
+      "name": "miasma_tick_on_tower",
+      "case": {
+        "damage": 30,
+        "damage_type": "magic",
+        "school": null,
+        "armor": 3.0
+      },
+      "note": "the tower magic branch needed a resolved school, which the source never provides",
+      "expected": {
+        "hp_loss": 30,
+        "credited_total": 0
+      },
+      "native_old": {
+        "hp_loss": 30,
+        "credited_total": 30
+      }
+    }
+  ]
+}

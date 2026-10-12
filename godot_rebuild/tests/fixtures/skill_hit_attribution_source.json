@@ -282,7 +282,7 @@
       "hit_sourceless": 0,
       "aoe_sites": 0,
       "direct_attributed": 0,
-      "direct_sourceless": 5,
+      "direct_sourceless": 6,
       "attributed_mults": []
     },
     "boss_ai.gd": {

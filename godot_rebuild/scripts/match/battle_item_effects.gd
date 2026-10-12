@@ -49,13 +49,25 @@ func deal_damage_from(
 		var current_pos: Variant = source.get("position")
 		if current_pos is Vector2:
 			origin = current_pos
+	if not (tgt is BossState):
+		# Layer 9aa: for every non-boss victim the source call is
+		# `tgt.take_damage(m["damage"], team, "magic")` (`hero_items.py:223-227`) -
+		# three positional arguments, no `source=`. The hit is therefore
+		# SOURCELESS and team-filter-free: it never credits the poison owner's
+		# `damage_dealt`, never reflects back through the victim's Razor Carapace
+		# or Bristleback, and a lethal tick leaves `killed_by` unset. The native
+		# bus used to pass the owner id, which did all three.
+		world._deliver_hit(-1, source_team, tgt, amount, school, origin, damage_type, true)
+		return amount
 	var landed: bool = world._deliver_hit(
 		source_id, source_team, tgt, amount, school, origin, damage_type
 	)
-	if landed and tgt is BossState:
+	if landed:
 		# Layer 9d: `_tick_miasma` calls `Boss.take_damage(damage, team, "magic")`
-		# with no `source=`. Preserve the stored owner ID for 9b hit-event replay,
-		# but mark this hit so `_process_boss_kill` cannot credit that owner.
+		# with no `source=`. The active boss keeps the stored owner ID purely as
+		# the native hit-event replay handle (9b pins it) and flags the tick so
+		# `_process_boss_kill` cannot credit that owner. The school it receives is
+		# the sourceless `"neutral"` the source resolves.
 		(tgt as BossState).last_hit_is_miasma_tick = true
 	return amount
 

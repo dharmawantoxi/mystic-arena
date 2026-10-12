@@ -129,6 +129,7 @@ from tower_bullet_school_source_oracle import source_fixture as tower_bullet_sch
 from minion_melee_school_source_oracle import source_fixture as minion_melee_school_fixture
 from skill_hit_attribution_source_oracle import source_fixture as skill_hit_attribution_fixture
 from burn_tick_delivery_source_oracle import source_fixture as burn_tick_delivery_fixture
+from miasma_tick_delivery_source_oracle import source_fixture as miasma_tick_delivery_fixture
 check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
       "Item structure arm suite must be preloaded")
 check("ItemStructureArmChecks.new().run(_check)" in ai_tests,
@@ -243,6 +244,17 @@ if (ROOT / "tests/fixtures/burn_tick_delivery_source.json").is_file():
     check(burn_tick_delivery_fixture() == json.loads(
         (ROOT / "tests/fixtures/burn_tick_delivery_source.json").read_text(encoding="utf-8")),
           "Burn tick delivery fixture must not drift from the oracle")
+check('const MiasmaTickDeliveryChecks = preload("res://tests/miasma_tick_delivery_checks.gd")'
+      in ai_tests,
+      "Miasma tick delivery suite must be preloaded")
+check("MiasmaTickDeliveryChecks.new().run(_check)" in ai_tests,
+      "Miasma tick delivery suite must run")
+check((ROOT / "tests/fixtures/miasma_tick_delivery_source.json").is_file(),
+      "Miasma tick delivery fixture must exist")
+if (ROOT / "tests/fixtures/miasma_tick_delivery_source.json").is_file():
+    check(miasma_tick_delivery_fixture() == json.loads(
+        (ROOT / "tests/fixtures/miasma_tick_delivery_source.json").read_text(encoding="utf-8")),
+          "Miasma tick delivery fixture must not drift from the oracle")
 check((ROOT / "tests/fixtures/skill_hit_attribution_source.json").is_file(),
       "Skill hit attribution fixture must exist")
 if (ROOT / "tests/fixtures/skill_hit_attribution_source.json").is_file():
@@ -2124,6 +2136,12 @@ check("func deal_damage_from(" in _miasma_effects
       and "var landed: bool = world._deliver_hit(" in _miasma_bus
       and "source_id, source_team, tgt, amount, school, origin, damage_type" in _miasma_bus,
       "9b damage bridge delivers poison using the stored source hero")
+check("world._deliver_hit(-1, source_team, tgt, amount, school, origin, damage_type, true)"
+      in _miasma_bus,
+      "9aa poison bridge is sourceless for non-boss victims and skips the team guard")
+check('effects.deal_damage_from(' in _miasma_inventory
+      and 'source_id, source_team, source_pos, tgt_id, dmg, "neutral", "magic"' in _miasma_inventory,
+      "9aa miasma tick resolves no school and uses the magic damage-type branch")
 check('const BossMiasmaChecks = preload("res://tests/boss_miasma_checks.gd")' in ai_tests
       and "BossMiasmaChecks.new().run(_check)" in ai_tests,
       "9b real-path boss Miasma replay registered")
@@ -2299,7 +2317,8 @@ check(all(
 ), "9d only lethal Miasma diverges; direct-hero and nonlethal controls match")
 _miasma_kill_bus = (ROOT / "scripts/match/battle_item_effects.gd").read_text(encoding="utf-8")
 _miasma_kill_proto = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
-check("if landed and tgt is BossState:" in _miasma_kill_bus
+check("if not (tgt is BossState):" in _miasma_kill_bus
+      and "if landed:" in _miasma_kill_bus
       and "(tgt as BossState).last_hit_is_miasma_tick = true" in _miasma_kill_bus
       and "var landed: bool = world._deliver_hit(" in _miasma_kill_bus
       and "if boss.last_hit_is_miasma_tick:" in _miasma_kill_proto
