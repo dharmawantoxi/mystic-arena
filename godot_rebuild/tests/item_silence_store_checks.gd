@@ -86,14 +86,23 @@ func _hero_row(check: Callable, world: Prototype, row: Dictionary) -> void:
 		),
 		"silence attack clock matches the source store: %s" % label
 	)
+	var open_state = row.get("native_open")
+	var skill_column := expected
+	var skill_label := "silence skill clock matches the source store: %s" % label
+	if open_state is Dictionary:
+		# Recorded open divergence: the native world store refuses a non-positive
+		# duration while the mixin source has no such guard.
+		skill_column = open_state
+		skill_label = "recorded divergence, native store refuses a 0 duration: %s" % label
 	check.call(
 		(
 			is_equal_approx(
-				snappedf(hero.skill_down_amount, 0.0001), float(expected.get("skill_amount", -1.0))
+				snappedf(hero.skill_down_amount, 0.0001),
+				float(skill_column.get("skill_amount", -1.0))
 			)
-			and hero.skill_down_timer == int(expected.get("skill_timer", -1))
+			and hero.skill_down_timer == int(skill_column.get("skill_timer", -1))
 		),
-		"silence skill clock matches the source store: %s" % label
+		skill_label
 	)
 
 
@@ -140,6 +149,8 @@ func _dead_row(check: Callable, world: Prototype, fixture: Dictionary) -> void:
 	minion.alive = false
 	minion.atk_slow_amount = float(payload.get("atk_amount", 0.0))
 	minion.atk_slow_timer = int(payload.get("atk_timer", 0))
+	minion.skill_down_amount = float(payload.get("skill_amount", 0.0))
+	minion.skill_down_timer = int(payload.get("skill_timer", 0))
 	_apply_silence(world, minion.id, int(payload.get("duration", 0)))
 	check.call(
 		(

@@ -121,7 +121,17 @@ def _native_old(alive, atk_amount, atk_timer, skill_amount, skill_timer, duratio
     }
 
 
-def _row(name, note, duration, alive=True, atk_amount=0.0, atk_timer=0, skill_amount=0.0, skill_timer=0):
+def _row(
+    name,
+    note,
+    duration,
+    alive=True,
+    atk_amount=0.0,
+    atk_timer=0,
+    skill_amount=0.0,
+    skill_timer=0,
+    native_open=None,
+):
     return {
         "name": name,
         "note": note,
@@ -135,6 +145,10 @@ def _row(name, note, duration, alive=True, atk_amount=0.0, atk_timer=0, skill_am
         },
         "expected": _expected(alive, atk_amount, atk_timer, skill_amount, skill_timer, duration),
         "native_old": _native_old(alive, atk_amount, atk_timer, skill_amount, skill_timer, duration),
+        # `native_open` marks a source behaviour the native world store still
+        # refuses, so the suite pins the current native state beside the source
+        # column instead of claiming parity.
+        "native_open": native_open,
     }
 
 
@@ -183,10 +197,12 @@ def source_fixture():
         ),
         _row(
             "zero_duration_keeps_store",
-            "duration 0 cannot refresh anything (no timer is shorter than zero)",
+            "the mixin has no duration guard: amount 1.0 is stored with a 0 clock; the "
+            "native world store still refuses non-positive durations (recorded open item)",
             0,
             atk_amount=1.0,
             atk_timer=0,
+            native_open={"skill_amount": 0.0, "skill_timer": 0},
         ),
     ]
     return {

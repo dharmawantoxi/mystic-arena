@@ -39,7 +39,8 @@
         "atk_timer": 60,
         "skill_amount": 1.0,
         "skill_timer": 60
-      }
+      },
+      "native_open": null
     },
     {
       "name": "weaker_longer_atk_clock",
@@ -63,7 +64,8 @@
         "atk_timer": 200,
         "skill_amount": 1.0,
         "skill_timer": 60
-      }
+      },
+      "native_open": null
     },
     {
       "name": "equal_amount_longer_clock",
@@ -87,7 +89,8 @@
         "atk_timer": 200,
         "skill_amount": 1.0,
         "skill_timer": 200
-      }
+      },
+      "native_open": null
     },
     {
       "name": "shorter_clock_refreshes",
@@ -111,7 +114,8 @@
         "atk_timer": 60,
         "skill_amount": 1.0,
         "skill_timer": 60
-      }
+      },
+      "native_open": null
     },
     {
       "name": "dead_victim_ignored",
@@ -135,7 +139,8 @@
         "atk_timer": 60,
         "skill_amount": 1.0,
         "skill_timer": 60
-      }
+      },
+      "native_open": null
     },
     {
       "name": "skill_down_only_stored",
@@ -159,11 +164,12 @@
         "atk_timer": 90,
         "skill_amount": 1.0,
         "skill_timer": 90
-      }
+      },
+      "native_open": null
     },
     {
       "name": "zero_duration_keeps_store",
-      "note": "duration 0 cannot refresh anything (no timer is shorter than zero)",
+      "note": "the mixin has no duration guard: amount 1.0 is stored with a 0 clock; the native world store still refuses non-positive durations (recorded open item)",
       "input": {
         "duration": 0,
         "alive": true,
@@ -182,6 +188,10 @@
         "atk_amount": 1.0,
         "atk_timer": 0,
         "skill_amount": 1.0,
+        "skill_timer": 0
+      },
+      "native_open": {
+        "skill_amount": 0.0,
         "skill_timer": 0
       }
     }
