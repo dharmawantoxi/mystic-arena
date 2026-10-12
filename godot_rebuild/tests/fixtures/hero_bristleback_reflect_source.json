@@ -1,0 +1,178 @@
+{
+  "source": "_entity.py::Hero.take_damage Bristleback reflect :4697-4711 via the real Minion.take_damage / Hero.take_damage of the attacker",
+  "native_old_model": "pre-9t native `_deliver_hit` reflect: `world._deliver_hit(-1, target.team, atk, payload, \"physical\", target.position)` with the `normal` damage type default",
+  "incoming_damage": 200,
+  "reflect_pct": 0.25,
+  "keep_physical": 0.7,
+  "keep_magic": 0.85,
+  "live_stats": {
+    "troll_armor": 2,
+    "troll_magic_resist": 0.05,
+    "undead_magic_resist": 0.15,
+    "hero_armor": 6
+  },
+  "armor_item": "steel_aegis",
+  "shape": {
+    "reflect_calls": 1,
+    "reflect_calls_with_source_kwarg_is_none": 1,
+    "reflect_calls_with_school_kwarg": 0,
+    "reflect_call": "_entity.py:4708 _src.take_damage(max(1, int(damage * 0.25)), self.team, source=None)"
+  },
+  "cases": [
+    {
+      "name": "bristleback_on_troll_attacker",
+      "attacker_kind": "troll",
+      "hero_armor": 0,
+      "incoming_school": "physical",
+      "expect_divergence": true,
+      "expected": {
+        "attacker_hp_loss": 35,
+        "defender_hp_loss": 140,
+        "credited_total": 0,
+        "reflect_args": [
+          [
+            35,
+            "normal",
+            "neutral"
+          ]
+        ]
+      },
+      "native_old": {
+        "attacker_hp_loss": 31,
+        "defender_hp_loss": 140,
+        "credited_total": 0,
+        "reflect_args": [
+          [
+            35,
+            "normal",
+            "neutral"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "bristleback_on_troll_attacker_magic_hit",
+      "attacker_kind": "troll",
+      "hero_armor": 0,
+      "incoming_school": "magic",
+      "expect_divergence": true,
+      "expected": {
+        "attacker_hp_loss": 42,
+        "defender_hp_loss": 170,
+        "credited_total": 0,
+        "reflect_args": [
+          [
+            42,
+            "normal",
+            "neutral"
+          ]
+        ]
+      },
+      "native_old": {
+        "attacker_hp_loss": 38,
+        "defender_hp_loss": 170,
+        "credited_total": 0,
+        "reflect_args": [
+          [
+            42,
+            "normal",
+            "neutral"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "bristleback_on_undead_attacker",
+      "attacker_kind": "undead",
+      "hero_armor": 0,
+      "incoming_school": "physical",
+      "expect_divergence": false,
+      "expected": {
+        "attacker_hp_loss": 35,
+        "defender_hp_loss": 140,
+        "credited_total": 0,
+        "reflect_args": [
+          [
+            35,
+            "normal",
+            "neutral"
+          ]
+        ]
+      },
+      "native_old": {
+        "attacker_hp_loss": 35,
+        "defender_hp_loss": 140,
+        "credited_total": 0,
+        "reflect_args": [
+          [
+            35,
+            "normal",
+            "neutral"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "bristleback_on_armoured_hero_attacker",
+      "attacker_kind": "hero",
+      "hero_armor": 6,
+      "incoming_school": "physical",
+      "expect_divergence": false,
+      "expected": {
+        "attacker_hp_loss": 26,
+        "defender_hp_loss": 140,
+        "credited_total": 0,
+        "reflect_args": [
+          [
+            35,
+            "normal",
+            "neutral"
+          ]
+        ]
+      },
+      "native_old": {
+        "attacker_hp_loss": 26,
+        "defender_hp_loss": 140,
+        "credited_total": 0,
+        "reflect_args": [
+          [
+            35,
+            "normal",
+            "neutral"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "bristleback_on_unarmoured_hero_attacker",
+      "attacker_kind": "hero",
+      "hero_armor": 0,
+      "incoming_school": "physical",
+      "expect_divergence": false,
+      "expected": {
+        "attacker_hp_loss": 35,
+        "defender_hp_loss": 140,
+        "credited_total": 0,
+        "reflect_args": [
+          [
+            35,
+            "normal",
+            "neutral"
+          ]
+        ]
+      },
+      "native_old": {
+        "attacker_hp_loss": 35,
+        "defender_hp_loss": 140,
+        "credited_total": 0,
+        "reflect_args": [
+          [
+            35,
+            "normal",
+            "neutral"
+          ]
+        ]
+      }
+    }
+  ]
+}

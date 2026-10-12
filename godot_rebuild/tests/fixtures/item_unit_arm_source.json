@@ -1,0 +1,149 @@
+{
+  "source": "_entity.py::Minion.take_damage :5795 / Hero.take_damage via the un-sourced item arms of hero_items.py",
+  "native_old_model": "pre-9p native bus: `deal_damage(target_id, hero_team, amount, school)` kept the dealing hero as source and the declared school",
+  "arm_sources": {
+    "bash": "hero_items.py:2542 abyss_breaker",
+    "pierce_bash": "hero_items.py:2589 sundering_cudgel"
+  },
+  "shape": {
+    "arm_take_damage_calls": 10,
+    "arm_calls_without_source_kwarg": 10,
+    "bash_call": "hero_items.py:2542 target.take_damage(bash['damage'], h.team)",
+    "magic_arms": "hero_items.py:2568/:2589/:2633/:2648 u.take_damage(damage, h.team, 'magic')"
+  },
+  "live_stats": {
+    "troll_armor": 2,
+    "undead_magic_resist": 0.15,
+    "hero_armor": 6
+  },
+  "cases": [
+    {
+      "name": "bash_on_minion_armor",
+      "victim_kind": "minion",
+      "minion_kind": "troll",
+      "native_school": "physical",
+      "item": "abyss_breaker",
+      "minion_armor": 2,
+      "minion_magic_resist": 0.0,
+      "hero_armor": 0,
+      "expected": {
+        "arm_damage": 55,
+        "hp_loss": 55,
+        "credits": [
+          [
+            false,
+            55
+          ]
+        ],
+        "credited_total": 0
+      },
+      "native_old": {
+        "arm_damage": 55,
+        "hp_loss": 49,
+        "credits": [
+          [
+            true,
+            49
+          ]
+        ],
+        "credited_total": 49
+      }
+    },
+    {
+      "name": "pierce_bash_on_minion_magic_resist",
+      "victim_kind": "minion",
+      "minion_kind": "undead",
+      "native_school": "magic",
+      "item": "sundering_cudgel",
+      "minion_armor": 0,
+      "minion_magic_resist": 0.15,
+      "hero_armor": 0,
+      "expected": {
+        "arm_damage": 55,
+        "hp_loss": 55,
+        "credits": [
+          [
+            false,
+            55
+          ]
+        ],
+        "credited_total": 0
+      },
+      "native_old": {
+        "arm_damage": 55,
+        "hp_loss": 47,
+        "credits": [
+          [
+            true,
+            47
+          ]
+        ],
+        "credited_total": 47
+      }
+    },
+    {
+      "name": "bash_on_hero_armor",
+      "victim_kind": "hero",
+      "minion_kind": "",
+      "native_school": "physical",
+      "item": "abyss_breaker",
+      "minion_armor": 0,
+      "minion_magic_resist": 0.0,
+      "hero_armor": 6,
+      "expected": {
+        "arm_damage": 55,
+        "hp_loss": 40,
+        "credits": [
+          [
+            false,
+            40
+          ]
+        ],
+        "credited_total": 0
+      },
+      "native_old": {
+        "arm_damage": 55,
+        "hp_loss": 40,
+        "credits": [
+          [
+            true,
+            40
+          ]
+        ],
+        "credited_total": 40
+      }
+    },
+    {
+      "name": "pierce_bash_on_hero_unarmoured",
+      "victim_kind": "hero",
+      "minion_kind": "",
+      "native_school": "magic",
+      "item": "sundering_cudgel",
+      "minion_armor": 0,
+      "minion_magic_resist": 0.0,
+      "hero_armor": 0,
+      "expected": {
+        "arm_damage": 55,
+        "hp_loss": 55,
+        "credits": [
+          [
+            false,
+            55
+          ]
+        ],
+        "credited_total": 0
+      },
+      "native_old": {
+        "arm_damage": 55,
+        "hp_loss": 55,
+        "credits": [
+          [
+            true,
+            55
+          ]
+        ],
+        "credited_total": 55
+      }
+    }
+  ]
+}

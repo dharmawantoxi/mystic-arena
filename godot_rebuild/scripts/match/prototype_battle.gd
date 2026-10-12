@@ -227,6 +227,7 @@ func _init() -> void:
 	boss_table = boss_parsed if boss_parsed is Dictionary else {}
 	_configure_level_intro()
 	boss_rng.randomize()
+	block_rng.randomize()
 	_mini_boss_schedule = _roll_mini_boss_schedule()
 	_apply_difficulty()
 
@@ -673,6 +674,9 @@ func structure_limit() -> int:
 
 
 func setup_arena() -> bool:
+	# Layer 9k: match block rolls share the seeded item stream, so a replayed
+	# match draws the same passive blocks (lab worlds keep `block_rng`).
+	block_roll_override = Callable(self, "_item_block_roll")
 	if _arena_initialized or not is_running() or not structures.is_empty() or not units.is_empty():
 		return false
 	_arena_initialized = true
@@ -1324,23 +1328,6 @@ func _structure_target(structure: StructureState) -> UnitState:
 	return target
 
 
-func _projectile_school(target: UnitState, school: String) -> String:
-	# Layer 8q: port of `_entity.resolve_damage_school` for a structure shot that
-	# lands on the boss. `Bullet._on_hit` calls
-	# `target.take_damage(damage, team, damage_type='projectile')` with no
-	# `school=` and no `source=`, and the resolver returns None for that
-	# combination, so `Boss.take_damage` skips BOTH the armor and the
-	# magic-resist branch - only resilience and the anti-burst cap apply. The
-	# native path handed the shooter's declared school ("physical"/"magic") to
-	# the boss instead, so every tower and nexus hit was cut by the boss armor
-	# (8..32 armor -> 32%..66% less damage than the source).
-	# Hero and minion targets keep the declared school: their callers and their
-	# recorded mitigation are different code paths.
-	if target is BossState:
-		return "neutral"
-	return school
-
-
 func _cannon_splash(shot: Projectile, main: UnitState) -> void:
 	# Layer 8r: port of the boss arm of the cannon splash. `Bullet._on_hit` runs
 	# its splash loop over `all_units`, whose last element is the live boss
@@ -1970,8 +1957,12 @@ func try_auto_cast(hero: HeroState) -> void:
 
 
 func _step_hero_auto_cast(hero: HeroState) -> void:
-	# Player auto-cast: every 20 ticks, opt-in flag and no stun.
-	if hero.auto_cast_enabled and hero.stun_timer <= 0:
+	# Player auto-cast: every 20 ticks, opt-in flag and no stun. Source
+	# `Hero.update` (`_entity.py:3799`) folds Tempest Veil into the same
+	# `_disabled` gate, so a veiled hero neither casts nor advances its check
+	# timer. The AI path is deliberately untouched: `AIPlayer._control_heroes`
+	# calls the shared auto-cast directly, exactly like the source.
+	if hero.auto_cast_enabled and hero.stun_timer <= 0 and not hero.items.is_veiled():
 		hero.auto_cast_check_timer -= 1
 		if hero.auto_cast_check_timer <= 0:
 			hero.auto_cast_check_timer = 20
@@ -2055,9 +2046,11 @@ func reset_ai(seed_value: int = -1) -> void:
 	if seed_value >= 0:
 		ai_build.rng.seed = seed_value + 1
 		ai_draft.rng.seed = seed_value + 2
+		block_rng.seed = seed_value + 3
 	else:
 		ai_build.rng.randomize()
 		ai_draft.rng.randomize()
+		block_rng.randomize()
 
 
 func _step_ai() -> void:
@@ -2186,7 +2179,8 @@ func _deliver_hit(
 	raw_damage: int,
 	school: String,
 	origin: Vector2,
-	damage_type: String = "normal"
+	damage_type: String = "normal",
+	ignore_team_guard: bool = false
 ) -> bool:
 	# Layer 5b-4: port of the evasion/true-strike gate of Hero.take_damage.
 	# Source `_school` is `resolve_damage_school`, which reads the attacker's
@@ -2231,7 +2225,7 @@ func _deliver_hit(
 	var before_hp := target.hp
 	var before_shield := (target as StructureState).shield if target is StructureState else 0.0
 	var landed := super._deliver_hit(
-		source_id, source_team, target, raw_damage, school, origin, damage_type
+		source_id, source_team, target, raw_damage, school, origin, damage_type, ignore_team_guard
 	)
 	if landed:
 		var after_shield := (target as StructureState).shield if target is StructureState else 0.0
@@ -2244,6 +2238,10 @@ func _deliver_hit(
 			)
 			effects.add_hit_particles(target.position.x, target.position.y, unit_team, 5)
 	return landed
+
+
+func _item_block_roll() -> float:
+	return _item_rng.randf()
 
 
 func _evaded(

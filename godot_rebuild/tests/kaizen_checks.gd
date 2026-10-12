@@ -372,7 +372,10 @@ func _take(check: Callable, expected: Dictionary) -> void:
 	check.call(hero.alive == bool(death["alive"]), "hero dies")
 	check.call(hero.hp == float(death["hp"]), "hero hp zero")
 	check.call(hero.deaths == int(death["deaths"]), "hero deaths count")
-	check.call(hero.killed_by == killer.id, "hero killer id")
+	# Layer 9x: the minion melee is sourceless (`Minion.update` sends only
+	# `damage, team`), and `Hero.take_damage` only records `_killed_by` when
+	# `source is not None`, so a minion kill leaves the sentinel `-1`.
+	check.call(hero.killed_by == -1, "sourceless minion kill leaves no killer id")
 	check.call(hero.slow_amount == 0.0 and hero.slow_timer == 0, "death clears slow")
 	check.call(battle.credited_gold[RED] == gold_before, "no gold for hero kill")
 	check.call(battle.get_unit(hero.id) == hero, "dead hero stays addressable")

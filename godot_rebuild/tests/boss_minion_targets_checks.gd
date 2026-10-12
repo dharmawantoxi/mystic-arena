@@ -181,16 +181,20 @@ func _live_minion_engages_boss(check: Callable) -> void:
 	)
 	check.call(striker.position.x > QUERIER.x, "live blue minion walks toward the acquired boss")
 	# The goblin swing lands inside the boss entrance window (120 ticks), so the
-	# boss cannot retaliate; stop on the first hit this striker is credited with.
+	# boss cannot retaliate; stop on the first landed hit. Layer 9x moved the
+	# minion attack onto the source shape (`Minion.update` sends only
+	# `damage, team`), so the delivery carries `-1` and the boss can no longer
+	# attribute the swing to the striker: nobody is credited for a minion kill,
+	# exactly like the source's `source=None` hits.
 	var ticks := 0
 	var struck := false
 	while ticks < 120 and not struck:
 		world.step_tick()
 		ticks += 1
-		struck = boss.last_hit_source_id == striker.id
+		struck = boss.hp < boss_hp
+	check.call(struck, "live minion damage reaches the boss")
 	check.call(
-		struck and boss.hp < boss_hp,
-		"live minion damage reaches the boss and preserves the source id"
+		boss.last_hit_source_id == -1, "the sourceless minion swing records no boss source id"
 	)
 
 

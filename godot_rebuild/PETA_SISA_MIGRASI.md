@@ -515,3 +515,218 @@ panel modal (`hero_shop_panel.gd`, `item_forge_panel.gd`,
   `ai_controller.tick()` sebagai entry.
 - Top-up flow Python dan voucher allowlist tidak disentuh.
 - Tidak ada sistem lain yang diaudit atau diubah.
+
+## Integrasi penuh AI lawan (penutup "AIPlayer penuh")
+
+Checkbox terakhir di `AI_CONTRACT.md` ("uji integrasi penuh") ditutup oleh
+`tests/ai_match_integration_checks.gd`, terdaftar di `run_all.gd`. Suite itu
+menjalankan match produksi penuh, bukan per adaptor: replay deterministik dua
+world ber-seed sama (wave ditunda supaya hanya RNG AI yang aktif), invarian per
+tick pada match hidup (purse tidak negatif, roster <= 5, reserve draft hidup
+setelah belanja non-hero, target draft tidak pernah dibuang), jendela ber-purse
+pra-fund untuk rekrut/upgrade/item/auto-cast, pembekuan jam-counter-purse setelah
+hasil match, sakelar merah mati tetap nol transaksi, dan jadwal elite level 54
+hard (sembilan tick, tiga aksi). Tidak ada perubahan policy, balance, UI, sumber
+Python, atau CI di slice ini.
+
+## Tempest Veil (layer 9j)
+
+`is_veiled()` kini dipakai di tiga tempat seperti sumber: serangan keluar
+(`hero_basic_attack`, sudah ada), auto-cast opt-in pemain (`_step_hero_auto_cast`,
+baru), dan imunitas damage masuk (`_hero_denies_hit` di `minion_battle._deliver_hit`,
+baru - sebelumnya hero ber-veil justru menerima damage penuh). Oracle AST
+`hero_veil_immunity_source_oracle.py` (15 kasus, kolom `expected`/`native_old`,
+7 cek bentuk) plus suite replay `hero_veil_immunity_checks.gd`.
+
+## Block damage hero (layer 9k)
+
+`get_block()` kini benar-benar dikonsumsi: `minion_battle._damage_amount` memanggil
+`_after_hero_block()` di posisi sumber (setelah mitigasi + amp, sebelum keep
+Bristleback), dengan `max(block pasif, aura Bulwark Guard)`. Sebelumnya hanya aura
+yang dikurangkan, dan itu pun setelah keep. Seam roll baru `block_roll_override`
+dipakai match (`_item_rng`) dan lab (`block_rng`); `reset_ai` menyemai
+`block_rng = seed + 3`. Oracle `hero_block_source_oracle.py` (8 kasus, angka
+katalog asli) + suite `hero_block_checks.gd`. Kandidat berikutnya yang tercatat:
+model armor item untuk hit magic dan urutan amp-versus-armor.
+
+## Model armor hero (layer 9l)
+
+Sumber `Hero.take_damage` memakai amp Soul Rend dulu lalu formula armor untuk
+setiap hit non-fire tanpa melihat sekolah (semua hero `armor=0`/`MR=0`, jadi
+hanya armor item yang relevan). Native sebelumnya memilih mitigasi dari sekolah
+(magic -> MR = 0) dan menjalankan amp sesudahnya. Kini `DamageRules.hero_amount()`
++ `resolve_armor()` memegang ladder itu, `_deliver_hit` meneruskan `damage_type`,
+dan jalur non-hero (magic minion -> MR, neutral raw) tetap. Oracle
+`hero_armor_model_source_oracle.py` (9 kasus) + suite `hero_armor_model_checks.gd`.
+
+## Arm skill sourceless (layer 9m)
+
+`ThorneSkills` Q (Viscous Nose) kini mengirim `_deliver_hit(-1, ..., "neutral")`
+sesuai sumber `e.take_damage(int(h.skill_damage * 0.8), h.team)` yang tanpa
+`source=`: tidak dikreditkan ke `damage_dealt`, evasi korban tetap berlaku tanpa
+true strike/blind penyerang, dan korban non-hero menerima damage raw (menara
+armor 6: 56, bukan 41). Oracle `hero_skill_sourceless_source_oracle.py`
+(4 baris, dua kolom dieksekusi dari `Hero.take_damage` + `Tower.take_damage`
+asli, 7 cek bentuk) plus suite `hero_skill_sourceless_checks.gd`.
+
+
+## Ladder damage minion (layer 9n)
+
+Sumber `Minion.take_damage` (`_entity.py:5795-5825`) menjalankan amp Soul Rend
+lebih dulu, lalu bonus Corroder (`min(1, shred * 0.06)`, non-`fire`), baru
+mitigasi sekolah dengan `armor = self.armor - shred` (shred dikurangkan dua
+kali); sekolah bebas tetap membawa amp. Native lama melakukan mitigasi dulu,
+amp sesudahnya, dan `neutral` raw tanpa bonus shred. Kini
+`DamageRules.minion_amount()` memegang ladder sumber; boss tetap memakai urutan
+lama lewat `_school_first_amount()` karena `BaseBoss.take_damage` port
+tersendiri. Oracle `minion_damage_ladder_source_oracle.py` (9 kasus, kolom
+`expected`/`native_old`) plus suite `minion_damage_ladder_checks.gd`.
+
+
+## Arm item pada menara/kastil (layer 9o)
+
+Arm bonus damage item memanggil `target.take_damage(amount, h.team[, "magic"])`
+tanpa `source=`, jadi korban menara/kastil berjalan dengan sekolah `None`:
+armor menara tidak memotong bonus, tidak ada kredit `damage_dealt`, dan kastil
+tetap menyerap lewat shield + reduksi 0.88. Native lama mengirim `dealer_id` +
+sekolah deklarasi ke bus. Oracle `item_structure_arm_source_oracle.py` (4
+baris, kolom `expected`/`native_old`) plus suite
+`item_structure_arm_checks.gd`.
+
+
+## Arm item pada minion/hero (layer 9p)
+
+Rute sourceless 9o kini berlaku untuk seluruh korban bus arm item:
+`battle_item_effects.deal_damage()` mengirim `-1`/`"neutral"` ke `_deliver_hit`,
+jadi armor/magic resist minion tidak memotong bonus arm, kredit
+`credit_hero_damage(None, ...)` kosong, dan korban hero tetap menjalankan armor
+item (cabang armor sumber digerakkan damage_type, layer 9l). Oracle
+`item_unit_arm_source_oracle.py` (4 baris) plus suite `item_unit_arm_checks.gd`;
+kontrol minion suite 9o memaku nilai 9p (55/credit 0).
+
+
+## Splash Cleave Axe (layer 9q)
+
+Loop cleave sumber memanggil `u.take_damage(splash, h.team)` tanpa `source=`,
+jadi `cleave_splash()` kini mengirim `-1`/`"neutral"` juga untuk korban unit
+(armor minion tidak memotong, kredit kosong, armor item hero tetap berlaku);
+cabang boss sudah sourceless sejak 9e. Oracle
+`item_cleave_splash_source_oracle.py` (4 baris) plus suite
+`item_cleave_splash_checks.gd` (troll 50/0 vs 45/45, hero armor 37/0 vs 37/37,
+dua minion [50, 50]/0 vs [45, 50]/45).
+
+
+## Tipe damage lengan magic pada korban unit (layer 9r)
+
+Sumber memakai argumen posisional ketiga sebagai tipe damage
+(`take_damage(damage, team, "magic")`), jadi `deal_damage_magic_sourceless()`
+kini mengirim `"magic"` untuk seluruh korban (boss sejak 9g, unit sejak 9r) dan
+gate windrun `_hero_denies_hit()` mengikuti `_is_physical_hit` (hanya
+`normal`/`projectile` non-magic yang bisa meleset). Oracle
+`item_magic_arm_unit_source_oracle.py` (4 baris) plus suite
+`item_magic_arm_unit_checks.gd` (chain pada hero Windrun 45/0 vs 0/0, chain pada
+hero evasi 45/0 vs 0/0, pierce pada hero armor 40/40, pierce pada troll 55/55).
+
+
+## Reflect Razor Carapace pada penyerang unit (layer 9s)
+
+Sumber memantulkan lewat `source.take_damage(dmg, team, "magic")` tanpa
+`source=`, jadi `reflect_item_effects.deal_damage()` kini mengirim
+`-1`/`"neutral"` + tipe `"magic"` untuk seluruh penyerang (boss sejak 9i, unit
+sejak 9s); preload `BossState` dan cabangnya dihapus. Oracle
+`item_reflect_unit_source_oracle.py` (4 baris) plus suite
+`item_reflect_unit_checks.gd` (undead 170 vs 144, troll 170 vs 162, hero armor
+125/125, hero tanpa armor 170/170).
+
+
+## Reflect Bristleback (layer 9t)
+
+Sumber memantulkan lewat `_src.take_damage(payload, self.team, source=None)`
+tanpa sekolah, jadi `_deliver_hit` kini mengirim pantulan Bristleback sebagai
+`"neutral"`/tipe `"normal"` dengan sumber `-1`; guard dan keep 0.70/0.85 tidak
+berubah. Oracle `hero_bristleback_reflect_source_oracle.py` (5 baris) plus suite
+`hero_bristleback_reflect_checks.gd` (troll 35 vs 31, troll masuk magic 42 vs
+38, undead 35/35, hero armor 26/26, hero tanpa armor 35/35).
+
+
+## Lengan skill Sylara (layer 9u)
+
+Empat panggilan damage sumber hanya mengirim tim (tanpa sekolah), jadi
+`sylara_skills.gd` kini mengirim `"neutral"` (Q line, E initial, E tick, R
+powershot) dan `_stun()` mengikuti gate `hasattr(target, 'attack_timer')`
+sehingga korban menara tidak ditulisi properti tak ada. Oracle
+`sylara_skill_arm_source_oracle.py` (4 baris) plus suite
+`sylara_skill_arm_checks.gd` (Q troll 95 vs 85, E troll 66 vs 59, E+tick troll
+104 vs 93, E menara 66 vs 56).
+
+
+## Hit pembuka R Grimjaw (layer 9v)
+
+Sumber memanggil `h.target.take_damage(int(h.skill_damage * 2.5), h.team)` tanpa
+sekolah, jadi `grimjaw_skills.gd` cabang `"r"` kini mengirim `"neutral"` (sumber
+tetap `-1`); spin Blade Fury, tick Omnislash, cone E dan AOE fallback R sudah
+paritas (sumber + sekolah `dmg_school`). Oracle
+`grimjaw_skill_arm_source_oracle.py` (5 baris) plus suite
+`grimjaw_skill_arm_checks.gd` (R troll 65 vs 58, R menara 65 vs 55, R hero armor
+48/48, spin troll 253/253, cone E troll 35/35).
+
+
+## Peluru menara/nexus (layer 9w)
+
+`Bullet._on_hit` tidak pernah mengirim `source=`/`school=`, jadi
+`siege_battle.gd::_projectile_school` kini selalu `"neutral"` dan gate Wind Wall
+membaca sekolah hasil resolve (override 8q untuk boss dihapus karena aturannya
+berlaku umum). Oracle `tower_bullet_school_source_oracle.py` (6 baris) plus
+suite `tower_bullet_school_checks.gd` (archer troll 20 vs 18, mage troll 17 vs
+16, splash cannon 25 vs 22, bolt mage vs Wind Wall 0 vs 17, hero armor 15/15,
+archer vs Wind Wall 0/0).
+
+
+## Serangan dasar minion (layer 9x)
+
+`Minion.update` menyerang dengan `take_damage(self.damage, self.team)` tanpa
+source/sekolah, jadi `minion_battle.apply_hit` kini mengirim `-1` + `"neutral"`
+untuk penyerang non-hero (hero tetap bersumber seperti sumber `Hero`). Oracle
+`minion_melee_school_source_oracle.py` (3 baris) plus suite
+`minion_melee_school_checks.gd` (orc pada menara 13 vs 11, pada troll 13 vs 12,
+hero armor 10/10, baris boss live: netral == jalur `_deliver_hit(-1, ...)`,
+physical lebih kecil, tanpa pantulan Razor Carapace ke minion, dan tanpa
+atribusi kill/source id: `killed_by` -1 untuk kill minion, boss tanpa
+`last_hit_source_id`).
+
+
+## Atribusi pengiriman skill bersama (layer 9y)
+
+Audit 116 situs `Common.hit(` + `_deal_hero_aoe(` menunjukkan split native sudah
+sama dengan sumber: 9 situs ber-atribut (shared 2, vex 3, zephyr 4), 107
+sourceless, dan semua resep boss tetap sourceless. Tidak ada kode produksi yang
+diubah; oracle `skill_hit_attribution_source_oracle.py` mengklasifikasi situs,
+memaku split per kit, dan mengeksekusi baris Vex R (225 kredit 225 vs
+sourceless 237 kredit 0), Thorne E (71 kredit 71), Gornak Q (268 kredit 0);
+suite `skill_hit_attribution_checks.gd` mereplay ketiganya lewat produksi dan
+menghitung ulang token situs dari skrip yang dikirim.
+
+
+## Tick burn unit (layer 9z)
+
+`_tick_burn` kini mengirim `_deliver_hit(-1, burn_team, unit, damage, "neutral",
+unit.position, "fire")` seperti sumber `self.take_damage(dmg, burn_team or team,
+"fire")`, dan blok hero dilewati untuk fire (bersarang di cabang non-fire).
+Oracle `burn_tick_delivery_source_oracle.py` (6 baris) plus suite
+`burn_tick_delivery_checks.gd`: hero amp 45 vs 30, Bristleback 21 vs 30, veil
+0 vs 30, shadow realm 0/0, block item 30 dengan 0 undian, troll 30/30
+(kontrol; Corroder hanya berlaku untuk hit non-fire 39).
+
+## Tick item Miasma (layer 9aa)
+
+`hero_items.py::_tick_miasma` (`:223-227`) mengirim `tgt.take_damage(m["damage"],
+team, "magic")` - tiga argumen posisional tanpa `source=`/`school=`, jadi
+sekolahnya `None` (`_entity.py:106-130`). Kini `tick_miasma` memakai
+`effects.deal_damage_from(..., "neutral", "magic")` dan cabang non-boss bus
+mengirim `world._deliver_hit(-1, source_team, tgt, amount, school, origin,
+damage_type, true)` (korban boss tetap memakai handle sumber 9b/9d plus
+`last_hit_is_miasma_tick`). Oracle `miasma_tick_delivery_source_oracle.py`
+(7 baris) plus suite `miasma_tick_delivery_checks.gd`: kredit 0 di semua kolom
+sourceless (native lama 30/22/8/28/30), troll MR 0.05 - 30 vs 28, shred
+Corroder 39, menara armor 3 - 30 dengan kredit 0 vs 30, veil 0/0, dan kontrol
+Razor Carapace/`killed_by`/boss tetap dipaku.

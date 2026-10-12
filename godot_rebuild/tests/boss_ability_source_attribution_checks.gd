@@ -47,7 +47,8 @@ class AttributionWorld:
 		raw_damage: int,
 		school: String,
 		origin: Vector2,
-		damage_type: String = "normal"
+		damage_type: String = "normal",
+		ignore_team_guard: bool = false
 	) -> bool:
 		if (
 			target is BossState
@@ -67,7 +68,14 @@ class AttributionWorld:
 		if target != null and target.id == tracked_target_id and raw_damage > 0:
 			target_hit_sources.append(eff_source)
 		return super._deliver_hit(
-			eff_source, source_team, target, raw_damage, school, origin, damage_type
+			eff_source,
+			source_team,
+			target,
+			raw_damage,
+			school,
+			origin,
+			damage_type,
+			ignore_team_guard
 		)
 
 

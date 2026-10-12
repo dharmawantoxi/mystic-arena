@@ -87,6 +87,210 @@ if (ROOT / "tests/fixtures/ai_control_tick_source.json").is_file():
         "Production AI control tick source fixture drift")
 check("AIRosterChecks.new().run(_check)" in ai_tests,
       "Production AI roster ownership replay must run")
+
+from hero_veil_immunity_source_oracle import source_fixture as hero_veil_fixture
+check('const HeroVeilImmunityChecks = preload("res://tests/hero_veil_immunity_checks.gd")'
+      in ai_tests, "Tempest Veil suite must be preloaded")
+check("HeroVeilImmunityChecks.new().run(_check)" in ai_tests,
+      "Tempest Veil suite must run")
+
+from hero_block_source_oracle import source_fixture as hero_block_fixture
+check('const HeroBlockChecks = preload("res://tests/hero_block_checks.gd")' in ai_tests,
+      "Hero block suite must be preloaded")
+check("HeroBlockChecks.new().run(_check)" in ai_tests, "Hero block suite must run")
+
+from hero_armor_model_source_oracle import source_fixture as hero_armor_fixture
+check('const HeroArmorModelChecks = preload("res://tests/hero_armor_model_checks.gd")' in ai_tests,
+      "Hero armour model suite must be preloaded")
+check("HeroArmorModelChecks.new().run(_check)" in ai_tests,
+      "Hero armour model suite must run")
+
+from hero_skill_sourceless_source_oracle import source_fixture as sourceless_fixture
+check('const HeroSkillSourcelessChecks = preload("res://tests/hero_skill_sourceless_checks.gd")'
+      in ai_tests, "Sourceless skill suite must be preloaded")
+check("HeroSkillSourcelessChecks.new().run(_check)" in ai_tests,
+      "Sourceless skill suite must run")
+
+from minion_damage_ladder_source_oracle import source_fixture as minion_ladder_fixture
+check('const MinionDamageLadderChecks = preload("res://tests/minion_damage_ladder_checks.gd")' in ai_tests,
+      "Minion damage ladder suite must be preloaded")
+check("MinionDamageLadderChecks.new().run(_check)" in ai_tests,
+      "Minion damage ladder suite must run")
+
+from item_structure_arm_source_oracle import source_fixture as structure_arm_fixture
+from item_unit_arm_source_oracle import source_fixture as unit_arm_fixture
+from item_cleave_splash_source_oracle import source_fixture as cleave_splash_fixture
+from item_magic_arm_unit_source_oracle import source_fixture as magic_arm_unit_fixture
+from item_reflect_unit_source_oracle import source_fixture as reflect_unit_fixture
+from hero_bristleback_reflect_source_oracle import source_fixture as bristleback_reflect_fixture
+from sylara_skill_arm_source_oracle import source_fixture as sylara_skill_arm_fixture
+from grimjaw_skill_arm_source_oracle import source_fixture as grimjaw_skill_arm_fixture
+from tower_bullet_school_source_oracle import source_fixture as tower_bullet_school_fixture
+from minion_melee_school_source_oracle import source_fixture as minion_melee_school_fixture
+from skill_hit_attribution_source_oracle import source_fixture as skill_hit_attribution_fixture
+from burn_tick_delivery_source_oracle import source_fixture as burn_tick_delivery_fixture
+from miasma_tick_delivery_source_oracle import source_fixture as miasma_tick_delivery_fixture
+check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
+      "Item structure arm suite must be preloaded")
+check("ItemStructureArmChecks.new().run(_check)" in ai_tests,
+      "Item structure arm suite must run")
+check((ROOT / "tests/fixtures/item_structure_arm_source.json").is_file(),
+      "Item structure arm fixture must exist")
+if (ROOT / "tests/fixtures/item_structure_arm_source.json").is_file():
+    check(structure_arm_fixture() == json.loads(
+        (ROOT / "tests/fixtures/item_structure_arm_source.json").read_text(encoding="utf-8")),
+          "Item structure arm fixture must not drift from the oracle")
+check('const ItemUnitArmChecks = preload("res://tests/item_unit_arm_checks.gd")' in ai_tests,
+      "Item unit arm suite must be preloaded")
+check("ItemUnitArmChecks.new().run(_check)" in ai_tests,
+      "Item unit arm suite must run")
+check((ROOT / "tests/fixtures/item_unit_arm_source.json").is_file(),
+      "Item unit arm fixture must exist")
+if (ROOT / "tests/fixtures/item_unit_arm_source.json").is_file():
+    check(unit_arm_fixture() == json.loads(
+        (ROOT / "tests/fixtures/item_unit_arm_source.json").read_text(encoding="utf-8")),
+          "Item unit arm fixture must not drift from the oracle")
+check('const ItemCleaveSplashChecks = preload("res://tests/item_cleave_splash_checks.gd")' in ai_tests,
+      "Item cleave splash suite must be preloaded")
+check("ItemCleaveSplashChecks.new().run(_check)" in ai_tests,
+      "Item cleave splash suite must run")
+check((ROOT / "tests/fixtures/item_cleave_splash_source.json").is_file(),
+      "Item cleave splash fixture must exist")
+if (ROOT / "tests/fixtures/item_cleave_splash_source.json").is_file():
+    check(cleave_splash_fixture() == json.loads(
+        (ROOT / "tests/fixtures/item_cleave_splash_source.json").read_text(encoding="utf-8")),
+          "Item cleave splash fixture must not drift from the oracle")
+check('const ItemMagicArmUnitChecks = preload("res://tests/item_magic_arm_unit_checks.gd")' in ai_tests,
+      "Item magic arm unit suite must be preloaded")
+check("ItemMagicArmUnitChecks.new().run(_check)" in ai_tests,
+      "Item magic arm unit suite must run")
+check((ROOT / "tests/fixtures/item_magic_arm_unit_source.json").is_file(),
+      "Item magic arm unit fixture must exist")
+if (ROOT / "tests/fixtures/item_magic_arm_unit_source.json").is_file():
+    check(magic_arm_unit_fixture() == json.loads(
+        (ROOT / "tests/fixtures/item_magic_arm_unit_source.json").read_text(encoding="utf-8")),
+          "Item magic arm unit fixture must not drift from the oracle")
+check('const ItemReflectUnitChecks = preload("res://tests/item_reflect_unit_checks.gd")' in ai_tests,
+      "Item reflect unit suite must be preloaded")
+check("ItemReflectUnitChecks.new().run(_check)" in ai_tests,
+      "Item reflect unit suite must run")
+check((ROOT / "tests/fixtures/item_reflect_unit_source.json").is_file(),
+      "Item reflect unit fixture must exist")
+if (ROOT / "tests/fixtures/item_reflect_unit_source.json").is_file():
+    check(reflect_unit_fixture() == json.loads(
+        (ROOT / "tests/fixtures/item_reflect_unit_source.json").read_text(encoding="utf-8")),
+          "Item reflect unit fixture must not drift from the oracle")
+check('const HeroBristlebackReflectChecks = preload("res://tests/hero_bristleback_reflect_checks.gd")' in ai_tests,
+      "Hero bristleback reflect suite must be preloaded")
+check("HeroBristlebackReflectChecks.new().run(_check)" in ai_tests,
+      "Hero bristleback reflect suite must run")
+check((ROOT / "tests/fixtures/hero_bristleback_reflect_source.json").is_file(),
+      "Hero bristleback reflect fixture must exist")
+if (ROOT / "tests/fixtures/hero_bristleback_reflect_source.json").is_file():
+    check(bristleback_reflect_fixture() == json.loads(
+        (ROOT / "tests/fixtures/hero_bristleback_reflect_source.json").read_text(encoding="utf-8")),
+          "Hero bristleback reflect fixture must not drift from the oracle")
+check('const SylaraSkillArmChecks = preload("res://tests/sylara_skill_arm_checks.gd")' in ai_tests,
+      "Sylara skill arm suite must be preloaded")
+check("SylaraSkillArmChecks.new().run(_check)" in ai_tests,
+      "Sylara skill arm suite must run")
+check((ROOT / "tests/fixtures/sylara_skill_arm_source.json").is_file(),
+      "Sylara skill arm fixture must exist")
+if (ROOT / "tests/fixtures/sylara_skill_arm_source.json").is_file():
+    check(sylara_skill_arm_fixture() == json.loads(
+        (ROOT / "tests/fixtures/sylara_skill_arm_source.json").read_text(encoding="utf-8")),
+          "Sylara skill arm fixture must not drift from the oracle")
+check('const GrimjawSkillArmChecks = preload("res://tests/grimjaw_skill_arm_checks.gd")' in ai_tests,
+      "Grimjaw skill arm suite must be preloaded")
+check("GrimjawSkillArmChecks.new().run(_check)" in ai_tests,
+      "Grimjaw skill arm suite must run")
+check((ROOT / "tests/fixtures/grimjaw_skill_arm_source.json").is_file(),
+      "Grimjaw skill arm fixture must exist")
+if (ROOT / "tests/fixtures/grimjaw_skill_arm_source.json").is_file():
+    check(grimjaw_skill_arm_fixture() == json.loads(
+        (ROOT / "tests/fixtures/grimjaw_skill_arm_source.json").read_text(encoding="utf-8")),
+          "Grimjaw skill arm fixture must not drift from the oracle")
+check('const TowerBulletSchoolChecks = preload("res://tests/tower_bullet_school_checks.gd")' in ai_tests,
+      "Tower bullet school suite must be preloaded")
+check("TowerBulletSchoolChecks.new().run(_check)" in ai_tests,
+      "Tower bullet school suite must run")
+check((ROOT / "tests/fixtures/tower_bullet_school_source.json").is_file(),
+      "Tower bullet school fixture must exist")
+if (ROOT / "tests/fixtures/tower_bullet_school_source.json").is_file():
+    check(tower_bullet_school_fixture() == json.loads(
+        (ROOT / "tests/fixtures/tower_bullet_school_source.json").read_text(encoding="utf-8")),
+          "Tower bullet school fixture must not drift from the oracle")
+check('const MinionMeleeSchoolChecks = preload("res://tests/minion_melee_school_checks.gd")' in ai_tests,
+      "Minion melee school suite must be preloaded")
+check("MinionMeleeSchoolChecks.new().run(_check)" in ai_tests,
+      "Minion melee school suite must run")
+check((ROOT / "tests/fixtures/minion_melee_school_source.json").is_file(),
+      "Minion melee school fixture must exist")
+if (ROOT / "tests/fixtures/minion_melee_school_source.json").is_file():
+    check(minion_melee_school_fixture() == json.loads(
+        (ROOT / "tests/fixtures/minion_melee_school_source.json").read_text(encoding="utf-8")),
+          "Minion melee school fixture must not drift from the oracle")
+check('const SkillHitAttributionChecks = preload("res://tests/skill_hit_attribution_checks.gd")' in ai_tests,
+      "Skill hit attribution suite must be preloaded")
+check("SkillHitAttributionChecks.new().run(_check)" in ai_tests,
+      "Skill hit attribution suite must run")
+check('const BurnTickDeliveryChecks = preload("res://tests/burn_tick_delivery_checks.gd")' in ai_tests,
+      "Burn tick delivery suite must be preloaded")
+check("BurnTickDeliveryChecks.new().run(_check)" in ai_tests,
+      "Burn tick delivery suite must run")
+check((ROOT / "tests/fixtures/burn_tick_delivery_source.json").is_file(),
+      "Burn tick delivery fixture must exist")
+if (ROOT / "tests/fixtures/burn_tick_delivery_source.json").is_file():
+    check(burn_tick_delivery_fixture() == json.loads(
+        (ROOT / "tests/fixtures/burn_tick_delivery_source.json").read_text(encoding="utf-8")),
+          "Burn tick delivery fixture must not drift from the oracle")
+check('const MiasmaTickDeliveryChecks = preload("res://tests/miasma_tick_delivery_checks.gd")'
+      in ai_tests,
+      "Miasma tick delivery suite must be preloaded")
+check("MiasmaTickDeliveryChecks.new().run(_check)" in ai_tests,
+      "Miasma tick delivery suite must run")
+check((ROOT / "tests/fixtures/miasma_tick_delivery_source.json").is_file(),
+      "Miasma tick delivery fixture must exist")
+if (ROOT / "tests/fixtures/miasma_tick_delivery_source.json").is_file():
+    check(miasma_tick_delivery_fixture() == json.loads(
+        (ROOT / "tests/fixtures/miasma_tick_delivery_source.json").read_text(encoding="utf-8")),
+          "Miasma tick delivery fixture must not drift from the oracle")
+check((ROOT / "tests/fixtures/skill_hit_attribution_source.json").is_file(),
+      "Skill hit attribution fixture must exist")
+if (ROOT / "tests/fixtures/skill_hit_attribution_source.json").is_file():
+    check(skill_hit_attribution_fixture() == json.loads(
+        (ROOT / "tests/fixtures/skill_hit_attribution_source.json").read_text(encoding="utf-8")),
+          "Skill hit attribution fixture must not drift from the oracle")
+check((ROOT / "tests/fixtures/minion_damage_ladder_source.json").is_file(),
+      "Minion damage ladder fixture must exist")
+if (ROOT / "tests/fixtures/minion_damage_ladder_source.json").is_file():
+    check(minion_ladder_fixture() == json.loads(
+        (ROOT / "tests/fixtures/minion_damage_ladder_source.json").read_text(encoding="utf-8")),
+          "Minion damage ladder fixture must not drift from the oracle")
+check((ROOT / "tests/fixtures/hero_skill_sourceless_source.json").is_file(),
+      "Sourceless skill arm requires a source fixture")
+if (ROOT / "tests/fixtures/hero_skill_sourceless_source.json").is_file():
+    check(sourceless_fixture() == json.loads(
+        (ROOT / "tests/fixtures/hero_skill_sourceless_source.json").read_text(encoding="utf-8")),
+        "Sourceless skill arm source fixture drift")
+check((ROOT / "tests/fixtures/hero_armor_model_source.json").is_file(),
+      "Hero armour model requires a source fixture")
+if (ROOT / "tests/fixtures/hero_armor_model_source.json").is_file():
+    check(hero_armor_fixture() == json.loads(
+        (ROOT / "tests/fixtures/hero_armor_model_source.json").read_text(encoding="utf-8")),
+        "Hero armour model source fixture drift")
+check((ROOT / "tests/fixtures/hero_block_source.json").is_file(),
+      "Hero block requires a source fixture")
+if (ROOT / "tests/fixtures/hero_block_source.json").is_file():
+    check(hero_block_fixture() == json.loads(
+        (ROOT / "tests/fixtures/hero_block_source.json").read_text(encoding="utf-8")),
+        "Hero block source fixture drift")
+check((ROOT / "tests/fixtures/hero_veil_immunity_source.json").is_file(),
+      "Tempest Veil requires a source fixture")
+if (ROOT / "tests/fixtures/hero_veil_immunity_source.json").is_file():
+    check(hero_veil_fixture() == json.loads(
+        (ROOT / "tests/fixtures/hero_veil_immunity_source.json").read_text(encoding="utf-8")),
+        "Tempest Veil source fixture drift")
 check((ROOT / "tests/fixtures/ai_roster_source.json").is_file(),
       "AI roster ownership requires a source fixture")
 if (ROOT / "tests/fixtures/ai_roster_source.json").is_file():
@@ -1740,17 +1944,15 @@ check("super._cannon_splash(shot, main)" in boss_cannon_splash
       in boss_cannon_splash,
       "Match layer must splash the living boss with source-omitted attribution and burn")
 projectile_delivery = siege_battle.split("func _update_projectiles(", 1)[1].split("\nfunc ", 1)[0]
-check("_projectile_school(target, school)" in projectile_delivery
+check('var declared := "magic" if shot.kind == "mage" else "physical"' in projectile_delivery
+      and "var school := _projectile_school(target, declared)" in projectile_delivery
       and "_hero_blocks_projectile(target, school)" in projectile_delivery,
-      "Structure impacts must deliver damage under the resolved projectile school")
+      "Structure impacts must gate and deliver under the resolved projectile school")
 projectile_school_base = siege_battle.split("func _projectile_school(", 1)[1].split("\nfunc ", 1)[0]
-check("return school" in projectile_school_base,
-      "Base projectile school must stay the declared school for units and heroes")
-boss_projectile_school = prototype_battle.split("func _projectile_school(", 1)[1].split(
-    "\nfunc ", 1)[0]
-check("if target is BossState:" in boss_projectile_school
-      and 'return "neutral"' in boss_projectile_school,
-      "Boss targets must take structure shots without school mitigation, like the source")
+check('return "neutral"' in projectile_school_base,
+      "Structure shots must land school-free on every victim, like Bullet._on_hit")
+check("func _projectile_school(" not in prototype_battle,
+      "Match layer must not re-declare the resolved projectile school")
 ice_aoe_base = siege_battle.split("func _ice_aoe(", 1)[1].split("\nfunc ", 1)[0]
 check("for victim in units:" in ice_aoe_base
       and "victim.position.distance_to(main.position) > shot.slow_aoe" in ice_aoe_base
@@ -1934,6 +2136,12 @@ check("func deal_damage_from(" in _miasma_effects
       and "var landed: bool = world._deliver_hit(" in _miasma_bus
       and "source_id, source_team, tgt, amount, school, origin, damage_type" in _miasma_bus,
       "9b damage bridge delivers poison using the stored source hero")
+check("world._deliver_hit(-1, source_team, tgt, amount, school, origin, damage_type, true)"
+      in _miasma_bus,
+      "9aa poison bridge is sourceless for non-boss victims and skips the team guard")
+check('effects.deal_damage_from(' in _miasma_inventory
+      and 'source_id, source_team, source_pos, tgt_id, dmg, "neutral", "magic"' in _miasma_inventory,
+      "9aa miasma tick resolves no school and uses the magic damage-type branch")
 check('const BossMiasmaChecks = preload("res://tests/boss_miasma_checks.gd")' in ai_tests
       and "BossMiasmaChecks.new().run(_check)" in ai_tests,
       "9b real-path boss Miasma replay registered")
@@ -2109,7 +2317,8 @@ check(all(
 ), "9d only lethal Miasma diverges; direct-hero and nonlethal controls match")
 _miasma_kill_bus = (ROOT / "scripts/match/battle_item_effects.gd").read_text(encoding="utf-8")
 _miasma_kill_proto = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
-check("if landed and tgt is BossState:" in _miasma_kill_bus
+check("if not (tgt is BossState):" in _miasma_kill_bus
+      and "if landed:" in _miasma_kill_bus
       and "(tgt as BossState).last_hit_is_miasma_tick = true" in _miasma_kill_bus
       and "var landed: bool = world._deliver_hit(" in _miasma_kill_bus
       and "if boss.last_hit_is_miasma_tick:" in _miasma_kill_proto
@@ -2170,9 +2379,10 @@ check(all(
 ), "9e a lethal cleave splash credits nobody in the source column")
 _cleave_dmg_bus = (ROOT / "scripts/match/battle_item_effects.gd").read_text(encoding="utf-8")
 check('world._deliver_hit(-1, src_team, boss, splash, "neutral", src_pos)' in _cleave_dmg_bus
+      and 'world._deliver_hit(-1, src_team, u, splash, "neutral", src_pos)' in _cleave_dmg_bus
       and 'world._deliver_hit(dealer_id, src_team, u, splash, "physical", src_pos)'
-      in _cleave_dmg_bus,
-      "9e the boss cleave arm is source-less and school-less while units stay physical")
+      not in _cleave_dmg_bus,
+      "9q both cleave arms are source-less and school-less")
 check('const BossItemCleaveDamageChecks = preload("res://tests/boss_item_cleave_damage_checks.gd")'
       in ai_tests
       and "BossItemCleaveDamageChecks.new().run(_check)" in ai_tests,
@@ -2490,11 +2700,11 @@ check(all(
     if row["scenario"] == "reflect_vs_boss_resist"
 ), "9i boss magic resist no longer cuts the reflected payload")
 _reflect_bus = (ROOT / "scripts/match/reflect_item_effects.gd").read_text(encoding="utf-8")
-check("attacker is BossState" in _reflect_bus
-      and 'world._deliver_hit(-1, src_team, attacker, amount, "neutral", attacker.position, "magic")'
-      in _reflect_bus
+check("attacker is BossState" not in _reflect_bus
+      and 'world._deliver_hit(' in _reflect_bus
+      and 'amount, "neutral", attacker.position, "magic"' in _reflect_bus
       and _auto_dmg_inv.count("effects.deal_damage(source_id, hero_team, dmg, \"magic\")") == 1,
-      "9i the reflect bus sends the boss the source-less neutral magic hit")
+      "9i/9s the reflect bus sends every attacker the source-less neutral magic hit")
 check('const BossItemReflectCarapaceChecks = preload("res://tests/boss_item_reflect_carapace_checks.gd")'
       in ai_tests
       and "BossItemReflectCarapaceChecks.new().run(_check)" in ai_tests,

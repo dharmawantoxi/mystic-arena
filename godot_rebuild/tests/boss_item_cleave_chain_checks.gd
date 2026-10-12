@@ -46,8 +46,9 @@ const CLEAVE_ITEM := "cleave_axe"
 const CHAIN_ITEM := "fenrir_chain"
 # Native delivery schools for the two arms. Arc chain deals
 # `effects.deal_damage(..., "magic")` like the source third positional argument
-# and keeps that school for regular units. Cleave still splashes physical onto
-# regular units, but layer 9e delivers the boss arm as "neutral": the source
+# and keeps that school for regular units. Layer 9q moved the cleave unit loop
+# onto the sourceless route too, so the remaining school pin below is the boss
+# arm of 9e: the source
 # call `u.take_damage(splash, h.team)` passes no school, so
 # `resolve_damage_school` returns `None` for the boss. Layer 9g applies the same
 # boss delivery to the arc chain (`u.take_damage(chain["damage"], h.team,
@@ -126,10 +127,18 @@ class CleaveChainWorld:
 		raw_damage: int,
 		school: String,
 		origin: Vector2,
-		damage_type: String = "normal"
+		damage_type: String = "normal",
+		ignore_team_guard: bool = false
 	) -> bool:
 		var landed: bool = super._deliver_hit(
-			source_id, source_team, target, raw_damage, school, origin, damage_type
+			source_id,
+			source_team,
+			target,
+			raw_damage,
+			school,
+			origin,
+			damage_type,
+			ignore_team_guard
 		)
 		if landed:
 			var unit_id := int(target.id)

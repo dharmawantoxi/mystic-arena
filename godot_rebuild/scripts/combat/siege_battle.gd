@@ -287,10 +287,12 @@ func _follow_lane(unit: UnitState) -> void:
 		_move_toward(unit, nexus.position)
 
 
-func _damage_amount(target: UnitState, raw_damage: int, school: String) -> float:
+func _damage_amount(
+	target: UnitState, raw_damage: int, school: String, damage_type: String = "normal"
+) -> float:
 	if target is StructureState:
 		return (target as StructureState).absorb(raw_damage, school)
-	return super._damage_amount(target, raw_damage, school)
+	return super._damage_amount(target, raw_damage, school, damage_type)
 
 
 func _on_death(source_team: int, target: UnitState) -> void:
@@ -354,17 +356,17 @@ func _update_projectiles(source: StructureState) -> void:
 		if offset.length() < shot.speed + shot.hit_radius:
 			# Deactivate BEFORE delivery: duplicate updates cannot apply the hit again.
 			shot.active = false
-			var school := "magic" if shot.kind == "mage" else "physical"
+			# Layer 9w: `Bullet._on_hit` (`_entity.py:242-247`) calls
+			# `target.take_damage(self.damage, self.team, damage_type='projectile')`
+			# - no `source=` and no `school=` - so `resolve_damage_school`
+			# returns None for EVERY victim of a structure shot and the Wind
+			# Wall gate reads that resolved (None) school, which walls a mage
+			# bolt too. `shot.kind` only picks the FX flavour.
+			var declared := "magic" if shot.kind == "mage" else "physical"
+			var school := _projectile_school(target, declared)
 			if _hero_blocks_projectile(target, school):
 				continue
-			_deliver_hit(
-				shot.source_id,
-				shot.team,
-				target,
-				shot.damage,
-				_projectile_school(target, school),
-				shot.position
-			)
+			_deliver_hit(shot.source_id, shot.team, target, shot.damage, school, shot.position)
 			if shot.kind == "cannon":
 				_cannon_impact(shot, target)
 			elif shot.kind == "ice":
@@ -382,12 +384,16 @@ func _hero_blocks_projectile(target: UnitState, school: String) -> bool:
 	return (target as HeroState).wind_wall_timer > 0
 
 
-func _projectile_school(_target: UnitState, school: String) -> String:
-	# School the impact delivers its damage under. The base keeps the shooter's
-	# declared school, which is what the minion/hero mitigation layers recorded;
-	# the match layer narrows it for the boss, whose source hit resolves to no
-	# school at all (see Prototype._projectile_school).
-	return school
+func _projectile_school(_target: UnitState, _declared: String) -> String:
+	# Layer 9w: the source impact never passes a school, so every victim of a
+	# structure shot takes it school-free - `Bullet._on_hit` runs
+	# `take_damage(damage, team, damage_type='projectile')` and
+	# `resolve_damage_school('projectile', None, None, target_is_hero=False)`
+	# is None (`_entity.py:106-130`). Minion armour/`magic_resist` do not cut
+	# the bolt, a hero keeps its damage-type-driven armour, and the Wind Wall
+	# gate sees the resolved school. Layer 8q's boss rule is the same rule, so
+	# it needs no override anymore.
+	return "neutral"
 
 
 func _cannon_impact(shot: Projectile, main: UnitState) -> void:

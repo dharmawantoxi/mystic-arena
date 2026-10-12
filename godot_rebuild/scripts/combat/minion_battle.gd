@@ -73,6 +73,12 @@ var recent_events: Array[Dictionary] = []
 # Separate from structure bullets: source Hero owns its own homing arrows.
 var hero_projectiles: Array[Dictionary] = []
 var windrun_roll_override: Callable
+# Layer 9k: source `Hero.take_damage` rolls the passive item block with the
+# shared `random.random()`. The lab keeps its own stream here; a match injects
+# the seeded item RNG through `block_roll_override` (same seam pattern as
+# `windrun_roll_override`).
+var block_rng := RandomNumberGenerator.new()
+var block_roll_override: Callable
 var windrun_rng := RandomNumberGenerator.new()
 var _by_id: Dictionary = {}
 var _next_id := 1
@@ -192,9 +198,33 @@ func apply_hit(attacker_id: int, target_id: int, school: String = "physical") ->
 		return false
 	if attacker.position.distance_to(target.position) > attacker.definition.attack_range_px:
 		return false
-	if not _deliver_hit(
-		attacker.id, attacker.team, target, attacker.definition.damage, school, attacker.position
-	):
+	var landed := false
+	if attacker is HeroState:
+		# The hero melee branch (`_entity.py:4371-4373`) sends `source=self`
+		# plus its declared school; the utility keeps that shape for hero
+		# callers and tests.
+		landed = _deliver_hit(
+			attacker.id,
+			attacker.team,
+			target,
+			attacker.definition.damage,
+			school,
+			attacker.position
+		)
+	else:
+		# Layer 9x: `Minion.update` attacks with
+		# `self.target.take_damage(self.damage, self.team)` (`_entity.py:5580`) -
+		# two positional arguments, no `source=`, no school and no
+		# `damage_type` - so the victim's ladder resolves NO school at all:
+		# tower/nexus armour, minion armour/`magic_resist` and the boss
+		# mitigation never cut the hit, nothing is credited, the caster's blind
+		# is not consulted and `notify_damage_taken(source=None)` never
+		# reflects it back. This is the only production caller of the minion
+		# attack (the unit loop above).
+		landed = _deliver_hit(
+			-1, attacker.team, target, attacker.definition.damage, "neutral", attacker.position
+		)
+	if not landed:
 		return false
 	attacker.cooldown_ticks = _eff_attack_cd(attacker)
 	attacker.facing = -1.0 if target.position.x < attacker.position.x else 1.0
@@ -231,30 +261,21 @@ func _tick_burn(unit: UnitState) -> void:
 		var damage := int(unit.burn_accum)
 		if damage > 0 and unit.alive:
 			unit.burn_accum -= damage
-			if unit is HeroState and unit.shadow_realm_timer > 0:
-				damage = 0
-			if damage > 0:
-				unit.hp = maxf(0, unit.hp - damage)
-				_record(
-					{
-						"kind": "hit",
-						"burn": true,
-						"source_id": -1,
-						"target_id": unit.id,
-						"from": unit.position,
-						"to": unit.position,
-						"damage": damage
-					}
-				)
-				if unit.hp <= 0:
-					unit.alive = false
-					_record({"kind": "death", "burn": true, "source_id": -1, "target_id": unit.id})
-					var credit_team := 1 - unit.team
-					if unit.burn_team in [BLUE, RED]:
-						credit_team = unit.burn_team
-					_on_death(credit_team, unit)
-					if unit.is_hero:
-						_on_hero_death(unit as HeroState, -1)
+			# Layer 9z: the source tick is
+			# `self.take_damage(dmg, self.burn_team or self.team, "fire")`
+			# (`_core.py:1023-1033`) - three positional arguments, no `source=`
+			# and no `school=` - so the victim runs its WHOLE ladder: a veiled or
+			# shadow-realm hero shrugs the tick off, the Soul Rend amp applies,
+			# Bristleback keeps its 30% (fire is not the magic school), the
+			# damage block section is skipped because it sits inside the
+			# source's non-fire branch (`_entity.py:4644-4675`), and the item
+			# reactions (`notify_damage_taken(source=None)`) fire without
+			# crediting anyone. The tick used to subtract hp directly, which
+			# skipped every one of those gates.
+			var burn_team := 1 - unit.team
+			if unit.burn_team in [BLUE, RED]:
+				burn_team = unit.burn_team
+			_deliver_hit(-1, burn_team, unit, damage, "neutral", unit.position, "fire", true)
 	if unit.burn_timer <= 0:
 		unit.burn_dps = 0.0
 		unit.burn_accum = 0.0
@@ -354,30 +375,25 @@ func _deliver_hit(
 	raw_damage: int,
 	school: String,
 	origin: Vector2,
-	damage_type: String = "normal"
+	damage_type: String = "normal",
+	ignore_team_guard: bool = false
 ) -> bool:
 	# Shared one-shot damage path for melee and projectile impacts.
-	if not is_running() or target == null or not target.alive or source_team == target.team:
+	# `ignore_team_guard` exists for the burn tick: the source `take_damage`
+	# never filters by team, so `apply_burn(id, dps, ticks, victim_team)` still
+	# kills (layer 9z).
+	if not is_running() or target == null or not target.alive:
+		return false
+	if source_team == target.team and not ignore_team_guard:
 		return false
 	if raw_damage <= 0 or school not in ["physical", "magic", "neutral"]:
 		return false
-	if target is HeroState:
-		var defender := target as HeroState
-		if defender.shadow_realm_timer > 0:
-			return false
-		if damage_type == "projectile" and school != "magic" and defender.wind_wall_timer > 0:
-			return false
-		if defender.windrun_timer > 0 and school != "magic":
-			var roll := (
-				float(windrun_roll_override.call())
-				if windrun_roll_override.is_valid()
-				else windrun_rng.randf()
-			)
-			if roll < 0.75:
-				return false
-	var damage := _damage_amount(target, raw_damage, school)
-	if target is HeroState:
-		damage = maxi(0, damage - int((target as HeroState).items.aura_guard_block))
+	if target is HeroState and _hero_denies_hit(target as HeroState, school, damage_type):
+		return false
+	# Layer 9k: the item block (passive roll + Bulwark Guard aura) is applied
+	# inside `_damage_amount`, before the Bristleback keep, exactly like the
+	# source armour section.
+	var damage := _damage_amount(target, raw_damage, school, damage_type)
 	var damage_source := get_unit(source_id) as HeroState
 	if damage_source != null and damage > 0:
 		damage_source.damage_dealt += int(damage)
@@ -386,8 +402,15 @@ func _deliver_hit(
 	if target is HeroState and (target as HeroState).bristleback_timer > 0 and damage > 0:
 		var atk := get_unit(source_id)
 		if atk != null and atk.alive and atk.team != target.team:
+			# Layer 9t: the source reflect is
+			# `_src.take_damage(max(1, int(damage * 0.25)), self.team, source=None)`
+			# (`_entity.py:4697-4711`) - two positional arguments plus an
+			# explicit `source=None`, so the attacker runs school-free with the
+			# `"normal"` type default. The bus used to deliver the declared
+			# physical school, so an armoured attacker (troll, armor 2) ate an
+			# armour cut the source never applies.
 			_deliver_hit(
-				-1, target.team, atk, maxi(1, int(damage * 0.25)), "physical", target.position
+				-1, target.team, atk, maxi(1, int(damage * 0.25)), "neutral", target.position
 			)
 	_record(
 		{
@@ -408,22 +431,82 @@ func _deliver_hit(
 	return true
 
 
-func _damage_amount(target: UnitState, raw_damage: int, school: String) -> float:
+func _hero_denies_hit(defender: HeroState, school: String, damage_type: String) -> bool:
+	# Source `Hero.take_damage` pre-mitigation ladder (`_entity.py:4533-4599`):
+	# Shadow Realm, Windrun, Wind Wall, then Tempest Veil. The veil return sits
+	# after those three statuses and before the evasion block, school
+	# mitigation, `credit_hero_damage` and every reactive hook (Bristleback
+	# reflect, `notify_damage_taken`), so a veiled hero is immune to ALL
+	# incoming damage while the status holds. Layer 9j: before it the rebuild
+	# read `is_veiled()` only for the hero's own attack
+	# (`prototype_battle.hero_basic_attack`), so Tempest Veil muted the owner
+	# without protecting it. The source veil gate needs `damage > 0`; the
+	# non-positive guard in `_deliver_hit` already covers that.
+	if defender.shadow_realm_timer > 0:
+		return true
+	if damage_type == "projectile" and school != "magic" and defender.wind_wall_timer > 0:
+		return true
+	# Layer 9r: the source gate is `_is_physical_hit(damage_type, school)`
+	# (`_entity.py:92-103`), so only a normal/projectile hit that is not magic
+	# can miss - a `"magic"` type arm or any other damage type never rolls.
+	if defender.windrun_timer > 0 and damage_type in ["normal", "projectile"] and school != "magic":
+		var roll := (
+			float(windrun_roll_override.call())
+			if windrun_roll_override.is_valid()
+			else windrun_rng.randf()
+		)
+		if roll < 0.75:
+			return true
+	return defender.items.is_veiled()
+
+
+func _damage_amount(
+	target: UnitState, raw_damage: int, school: String, damage_type: String = "normal"
+) -> float:
 	if target is StructureState:
 		# Structures absorb through armor + shield. Previously only the
 		# siege override did this; hero AOE needs it at this level too.
 		return (target as StructureState).absorb(raw_damage, school)
-	var damage := (
-		raw_damage
-		if school == "neutral"
-		# Layer 5b-3: item armor/shred and the Soul Rend amp live in the
-		# DamageRules helper (hero item stats).
-		else DamageRules.item_aware_amount(target, raw_damage, school)
-	)
+	# Layer 5b-3 + 9l: item armor/shred, the Soul Rend amp and the hero armour
+	# model (school-free, non-fire) live in the DamageRules helper. The neutral
+	# short-circuit now sits there too, because source heroes still take armour
+	# on school-free (damage_type 'normal') hits.
+	var damage: int = DamageRules.item_aware_amount(target, raw_damage, school, damage_type)
+	if target is HeroState and damage > 0 and damage_type != "fire":
+		# Layer 9z: the source nests the damage block INSIDE the non-fire branch
+		# (`_entity.py:4644`), so a fire hit (the burn tick) never rolls the
+		# passive block and never consumes the Bulwark Guard aura.
+		damage = _after_hero_block(target as HeroState, damage)
 	if target is HeroState and (target as HeroState).bristleback_timer > 0 and damage > 0:
 		var keep := 0.85 if school == "magic" else 0.70
 		return maxi(1, DamageRules.rounded_like_python(damage * keep))
 	return damage
+
+
+func _after_hero_block(defender: HeroState, damage: int) -> int:
+	# Source `Hero.take_damage` (`_entity.py:4652-4672`): the block section sits
+	# inside the non-fire armour branch, i.e. after school mitigation and the
+	# Soul Rend amp and before the Bristleback keep. `block_amt` starts as the
+	# rolled passive block (`get_block()` -> (chance, amount); the roll only
+	# happens when the owner really holds a block source) and the Bulwark Guard
+	# aura overrides it when larger, then both are subtracted once. Layer 9k:
+	# before this the rebuild consumed only the aura, and did it after the keep,
+	# so the passive `scarlet_bulwark` roll never fired at all.
+	var block_amt := 0
+	var block: Variant = defender.items.get_block()
+	if block != null and _block_roll() < float(block[0]):
+		block_amt = int(block[1])
+	if int(defender.items.aura_guard_block) > block_amt:
+		block_amt = int(defender.items.aura_guard_block)
+	if block_amt <= 0:
+		return damage
+	return maxi(0, damage - block_amt)
+
+
+func _block_roll() -> float:
+	if block_roll_override.is_valid():
+		return float(block_roll_override.call())
+	return block_rng.randf()
 
 
 func _on_death(source_team: int, target: UnitState) -> void:

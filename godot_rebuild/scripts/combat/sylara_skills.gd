@@ -48,13 +48,14 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 				return false
 			hero.shackle_timer = 150
 			hero.shackle_target_id = target.id
+			# Layer 9u: every Sylara damage call in the source passes the team
+			# only (`e.take_damage(int(h.skill_damage * ...), h.team)`), so the
+			# victim resolves no school: the minion armour/magic resist never
+			# cuts the skill and a tower victim keeps its armour out of the hit.
+			# The port used to send `hero.dmg_school` (`sylara.tres` =
+			# `"physical"`), which let both cut it.
 			world._deliver_hit(
-				-1,
-				hero.team,
-				target,
-				int(hero.skill_damage() * 0.7),
-				hero.dmg_school,
-				hero.position
+				-1, hero.team, target, int(hero.skill_damage() * 0.7), "neutral", hero.position
 			)
 			_stun(target, 45)
 			hero.e_cooldown = hero.e_cooldown_max
@@ -83,12 +84,7 @@ static func tick(world, hero: HeroState, structures: Array) -> void:
 		if target != null and target.alive:
 			if hero.shackle_timer % 15 == 0:
 				world._deliver_hit(
-					-1,
-					hero.team,
-					target,
-					int(hero.skill_damage() * 0.4),
-					hero.dmg_school,
-					hero.position
+					-1, hero.team, target, int(hero.skill_damage() * 0.4), "neutral", hero.position
 				)
 				_stun(target, 30)
 		else:
@@ -152,7 +148,7 @@ static func _line_damage(world, hero: HeroState, direction: Vector2, structures:
 					hero.team,
 					enemy,
 					int(hero.skill_damage() * falloff),
-					hero.dmg_school,
+					"neutral",
 					hero.position
 				)
 				hit_count += 1
@@ -180,15 +176,17 @@ static func _release_powershot(world, hero: HeroState, structures: Array) -> voi
 					hero.team,
 					enemy,
 					int(hero.skill_damage() * falloff),
-					hero.dmg_school,
+					"neutral",
 					hero.position
 				)
 				hit[enemy.id] = true
 
 
 static func _stun(target, duration: int) -> void:
-	# Python's attack_timer maps to different native clocks by unit type.
+	# Python's attack_timer maps to different native clocks by unit type, and the
+	# source gate is `hasattr(target, 'attack_timer')` (`hero_skills/_bundle.py`
+	# `_apply_stun`), so a tower victim is simply left untouched (layer 9u).
 	if target is HeroState:
 		target.attack_timer = duration
-	else:
+	elif "cooldown_ticks" in target:
 		target.cooldown_ticks = duration

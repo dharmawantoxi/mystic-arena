@@ -10,11 +10,21 @@ var dealer_team: int = -1
 var dealer_pos: Vector2 = Vector2.ZERO
 
 
-func deal_damage(target_id: int, _source_team: int, amount: int, school: String = "magic") -> int:
+func deal_damage(target_id: int, _source_team: int, amount: int, _school: String = "magic") -> int:
 	var tgt: Object = world.get_unit(target_id)
 	if tgt == null:
 		return 0
-	world._deliver_hit(dealer_id, dealer_team, tgt, amount, school, dealer_pos)
+	# Layers 9o/9p: every source item arm lands the bonus on the basic-attack
+	# target as `target.take_damage(amount, h.team[, "magic"])`
+	# (`hero_items.py:2542/2568/2589/2633/2648`), with no `source=`. 9o routed
+	# tower/castle victims that way; 9p extends the same route to the unit
+	# victims. `Minion.take_damage` / `Hero.take_damage` therefore run with
+	# `source=None` and `school=None`: the minion armour and magic resist never
+	# cut the arm (the resolver returns None), a hero victim keeps its item
+	# armour only because the source armour branch is damage-type driven
+	# (`_entity.py` `Hero.take_damage`, layer 9l), and
+	# `credit_hero_damage(None, ...)` records nothing.
+	world._deliver_hit(-1, dealer_team, tgt, amount, "neutral", dealer_pos)
 	return amount
 
 
@@ -39,13 +49,25 @@ func deal_damage_from(
 		var current_pos: Variant = source.get("position")
 		if current_pos is Vector2:
 			origin = current_pos
+	if not (tgt is BossState):
+		# Layer 9aa: for every non-boss victim the source call is
+		# `tgt.take_damage(m["damage"], team, "magic")` (`hero_items.py:223-227`) -
+		# three positional arguments, no `source=`. The hit is therefore
+		# SOURCELESS and team-filter-free: it never credits the poison owner's
+		# `damage_dealt`, never reflects back through the victim's Razor Carapace
+		# or Bristleback, and a lethal tick leaves `killed_by` unset. The native
+		# bus used to pass the owner id, which did all three.
+		world._deliver_hit(-1, source_team, tgt, amount, school, origin, damage_type, true)
+		return amount
 	var landed: bool = world._deliver_hit(
 		source_id, source_team, tgt, amount, school, origin, damage_type
 	)
-	if landed and tgt is BossState:
+	if landed:
 		# Layer 9d: `_tick_miasma` calls `Boss.take_damage(damage, team, "magic")`
-		# with no `source=`. Preserve the stored owner ID for 9b hit-event replay,
-		# but mark this hit so `_process_boss_kill` cannot credit that owner.
+		# with no `source=`. The active boss keeps the stored owner ID purely as
+		# the native hit-event replay handle (9b pins it) and flags the tick so
+		# `_process_boss_kill` cannot credit that owner. The school it receives is
+		# the sourceless `"neutral"` the source resolves.
 		(tgt as BossState).last_hit_is_miasma_tick = true
 	return amount
 
@@ -61,6 +83,8 @@ func deal_damage_sourceless(
 	# never cuts the bonus damage, and a lethal bash leaves `_killed_by = None`
 	# so `Game._process_boss_kill` credits nobody. Regular victims keep the
 	# declared school and the dealing hero as source, exactly as before.
+	# Layer 9p: the non-boss fallback now runs the same sourceless route
+	# (`deal_damage` delivers `-1` + `neutral` to minion and hero victims too).
 	var tgt: Object = world.get_unit(target_id)
 	if tgt == null:
 		return 0
@@ -71,7 +95,7 @@ func deal_damage_sourceless(
 
 
 func deal_damage_magic_sourceless(
-	target_id: int, source_team: int, amount: int, school: String = "magic"
+	target_id: int, source_team: int, amount: int, _school: String = "magic"
 ) -> int:
 	# Layer 9g: the on-hit magic arms (arc chain `hero_items.py:2568`,
 	# Sundering Cudgel Piercing Bash `:2589`, Polycephaly multishot `:2633`,
@@ -84,15 +108,19 @@ func deal_damage_magic_sourceless(
 	# by boss magic resist while the source resolves no school at all
 	# (`resolve_damage_school('magic', None, None)` returns `None`,
 	# `_entity.py:106-130`), and a lethal hit credited the owner with the kill.
-	# Regular victims keep the declared school and the dealing hero as source,
-	# exactly as before this layer.
+	# Layer 9r: the unit victims take the same source shape - the third
+	# positional argument `"magic"` is the damage type, so minion and hero
+	# victims must receive `damage_type="magic"` as well. The declared `school`
+	# argument is the native bus convention: the source passes no school at all,
+	# so every victim runs school-free ("neutral"). `_deliver_hit` turns
+	# that into the source `_is_physical_hit` gates (`_entity.py:92-103`): a
+	# Windrun hero never rolls its 75% miss chance and an evasive hero never
+	# rolls Monarch Wings against these arms, exactly like the source.
 	var tgt: Object = world.get_unit(target_id)
 	if tgt == null:
 		return 0
-	if tgt is BossState:
-		world._deliver_hit(-1, source_team, tgt, amount, "neutral", dealer_pos, "magic")
-		return amount
-	return deal_damage(target_id, source_team, amount, school)
+	world._deliver_hit(-1, source_team, tgt, amount, "neutral", dealer_pos, "magic")
+	return amount
 
 
 func apply_stun(target_id: int, duration: int) -> void:
@@ -239,7 +267,13 @@ func cleave_splash(
 		if u == null or not u.alive or u.team == src_team or u.id == target_id:
 			continue
 		if center_pos.distance_to(u.position) <= radius:
-			world._deliver_hit(dealer_id, src_team, u, splash, "physical", src_pos)
+			# Layer 9q: the source splash is `u.take_damage(splash, h.team)`
+			# (`hero_items.py:2516`), so every unit victim runs school-free: the
+			# minion armour never cuts the splash and `credit_hero_damage(None, ...)`
+			# records nothing. A hero victim keeps its item armour (damage-type
+			# driven branch, layer 9l). Layer 9e already routed the boss victim
+			# of this loop that way.
+			world._deliver_hit(-1, src_team, u, splash, "neutral", src_pos)
 	# Source cleave radius gate is inclusive (`if d <= radius:`) and measured
 	# from the main target, exactly like the unit loop above.
 	var boss: Object = _onhit_boss(src_team, target_id)
@@ -250,8 +284,8 @@ func cleave_splash(
 		# blind block (it needs `source is not None`), makes
 		# `resolve_damage_school('normal', None, None)` return `None` so boss armor
 		# never cuts the splash, and leaves `_killed_by = None` on a lethal hit so
-		# `Game._process_boss_kill` credits nobody. Non-boss victims keep the
-		# physical delivery above, exactly as before this layer.
+		# `Game._process_boss_kill` credits nobody. Layer 9q moved the unit loop
+		# above onto the same sourceless route, so both branches now agree.
 		world._deliver_hit(-1, src_team, boss, splash, "neutral", src_pos)
 
 

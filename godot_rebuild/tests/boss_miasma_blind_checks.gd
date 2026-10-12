@@ -158,13 +158,16 @@ func _replay(check: Callable, helper: Prior, world: MiasmaBlindWorld, row: Dicti
 			var delivery: Array = deliveries[deliveries.size() - 1] as Array
 			events.append([frame, int(delivery[0])])
 			schools.append(String(delivery[1]))
-	var magic_only: bool = true
+	# 9aa: the source tick resolves no school, so every poison tick reaches the
+	# boss with the unresolved `"neutral"` school while `damage_type` stays
+	# `"magic"` (the 9c invariant this suite replays through the blind gate).
+	var neutral_only: bool = true
 	for school: String in schools:
-		if school != "magic":
-			magic_only = false
+		if school != "neutral":
+			neutral_only = false
 	check.call(
-		schools.is_empty() or magic_only,
-		"9c every poison tick reaches the boss as magic " + _label(row)
+		schools.is_empty() or neutral_only,
+		"9c/9aa every poison tick reaches the boss with the unresolved school " + _label(row)
 	)
 	return events
 

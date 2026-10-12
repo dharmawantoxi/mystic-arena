@@ -58,14 +58,12 @@ func run(check: Callable) -> void:
 			# The fixture's third element is the source's third positional
 			# argument (`u.take_damage(dmg, h.team, "magic")` => `damage_type`
 			# "magic", `school=None`). The native recording stores the delivered
-			# school, and layer 9g keeps the boss arm sourceless: no school
-			# reaches `resolve_damage_school`, so the boss row is recorded as
-			# "neutral" while regular units keep the declared magic school.
-			var school: String = (
-				"neutral" if String(expected[i][0]) == "boss" else String(expected[i][2])
-			)
+			# school: layer 9g kept the boss arm sourceless, and layer 9p moved
+			# the unit arms (`deal_damage` -> `-1`/`neutral`) onto that same
+			# route, so no school reaches `resolve_damage_school` on either row.
+			check.call(String(expected[i][2]) == "magic", "9a source damage type is magic")
 			check.call(
-				int(hit[0]) == int(expected[i][1]) and String(hit[1]) == school,
+				int(hit[0]) == int(expected[i][1]) and String(hit[1]) == "neutral",
 				"9a 35 magic damage from source"
 			)
 		helper._reset_world(world, false)

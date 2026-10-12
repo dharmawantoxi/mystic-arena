@@ -53,14 +53,12 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 			var target = world.get_unit(target_id)
 			if target != null and target.alive:
 				hero.omnislash_target_id = target.id
-				# Immediate source hit has no source=hero; timed follow-ups do.
+				# Immediate source hit has no source=hero and no school
+				# (`h.target.take_damage(int(h.skill_damage * 2.5), h.team)`):
+				# layer 9v delivers it school-free, so minion armour and the
+				# tower armour never cut it. Timed follow-ups pass `source=h`.
 				world._deliver_hit(
-					-1,
-					hero.team,
-					target,
-					int(hero.skill_damage() * 2.5),
-					hero.dmg_school,
-					hero.position
+					-1, hero.team, target, int(hero.skill_damage() * 2.5), "neutral", hero.position
 				)
 			else:
 				world._deal_hero_aoe(

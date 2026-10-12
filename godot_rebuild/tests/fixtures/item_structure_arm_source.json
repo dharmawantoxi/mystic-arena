@@ -1,0 +1,135 @@
+{
+  "source": "_entity.py::Tower.take_damage :1053 / Castle.take_damage :1758 via the un-sourced item arms of hero_items.py",
+  "native_old_model": "pre-9o native bus: `deal_damage(target_id, hero_team, amount, school)` kept the dealing hero as source and the declared school",
+  "arm_sources": {
+    "bash": "hero_items.py:2542 abyss_breaker",
+    "pierce_bash": "hero_items.py:2589 sundering_cudgel"
+  },
+  "live_stats": {
+    "tower_armor": 3.0,
+    "castle_shield_max": 4000.0,
+    "castle_reduction": 0.88
+  },
+  "cases": [
+    {
+      "name": "bash_on_tower_sourceless",
+      "structure_kind": "tower",
+      "item": "abyss_breaker",
+      "castle_shield": 0.0,
+      "castle_shield_active": true,
+      "tower_armor": 3.0,
+      "expected": {
+        "arm_damage": 55,
+        "hp_loss": 55,
+        "credits": [
+          [
+            false,
+            55
+          ]
+        ],
+        "credited_total": 0
+      },
+      "native_old": {
+        "arm_damage": 55,
+        "hp_loss": 47,
+        "credits": [
+          [
+            true,
+            47
+          ]
+        ],
+        "credited_total": 47
+      }
+    },
+    {
+      "name": "pierce_bash_on_tower_sourceless",
+      "structure_kind": "tower",
+      "item": "sundering_cudgel",
+      "castle_shield": 0.0,
+      "castle_shield_active": true,
+      "tower_armor": 3.0,
+      "expected": {
+        "arm_damage": 55,
+        "hp_loss": 55,
+        "credits": [
+          [
+            false,
+            55
+          ]
+        ],
+        "credited_total": 0
+      },
+      "native_old": {
+        "arm_damage": 55,
+        "hp_loss": 55,
+        "credits": [
+          [
+            true,
+            55
+          ]
+        ],
+        "credited_total": 55
+      }
+    },
+    {
+      "name": "bash_on_castle_shielded",
+      "structure_kind": "castle",
+      "item": "abyss_breaker",
+      "castle_shield": 20.0,
+      "castle_shield_active": true,
+      "tower_armor": 0.0,
+      "expected": {
+        "arm_damage": 55,
+        "hp_loss": 4,
+        "credits": [
+          [
+            false,
+            4
+          ]
+        ],
+        "credited_total": 0
+      },
+      "native_old": {
+        "arm_damage": 55,
+        "hp_loss": 4,
+        "credits": [
+          [
+            true,
+            4
+          ]
+        ],
+        "credited_total": 4
+      }
+    },
+    {
+      "name": "bash_on_castle_shield_down",
+      "structure_kind": "castle",
+      "item": "abyss_breaker",
+      "castle_shield": 0.0,
+      "castle_shield_active": false,
+      "tower_armor": 0.0,
+      "expected": {
+        "arm_damage": 55,
+        "hp_loss": 55,
+        "credits": [
+          [
+            false,
+            55
+          ]
+        ],
+        "credited_total": 0
+      },
+      "native_old": {
+        "arm_damage": 55,
+        "hp_loss": 55,
+        "credits": [
+          [
+            true,
+            55
+          ]
+        ],
+        "credited_total": 55
+      }
+    }
+  ]
+}

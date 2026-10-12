@@ -826,7 +826,17 @@ func tick_miasma(dt: int, enemies: Array, effects: ItemEffects) -> void:
 			var source_team: int = int(m.get("source_team", hero_team))
 			var source_pos: Vector2 = m.get("source_pos", hero_position) as Vector2
 			if dmg > 0:
-				effects.deal_damage_from(source_id, source_team, source_pos, tgt_id, dmg, "magic")
+				# Layer 9aa: the source tick is
+				# `tgt.take_damage(m["damage"], team, "magic")` (`hero_items.py:223-227`)
+				# - three positional arguments, so `"magic"` is the DAMAGE TYPE
+				# and the school stays unresolved
+				# (`resolve_damage_school('magic', None, None, False)` -> `None`,
+				# `_entity.py:106-130`): no tower armour/magic-resist, no minion
+				# `magic_resist`, no boss magic-resist. The native bus used to
+				# pass `school="magic"` here, which cut the tick everywhere.
+				effects.deal_damage_from(
+					source_id, source_team, source_pos, tgt_id, dmg, "neutral", "magic"
+				)
 			effects.notify(tgt_id, "POISON")
 		if int(m["timer"]) <= 0:
 			expired.append(tgt_id)
