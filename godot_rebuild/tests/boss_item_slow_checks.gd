@@ -415,6 +415,14 @@ func _live_match_contrasts(check: Callable) -> void:
 		ef_hero.target_id = ef_boss.id
 		var minion: UnitState = ef_world.spawn_unit(GOBLIN, ef_world.RED, 1)
 		minion.position = Vector2(290.0, 380.0)
+		# Layer 9ae: a goblin has 45 hp, so the 130 blast damage would kill it
+		# and the source `e.apply_slow(...)` alive guard would refuse the slow.
+		# Keep this probe alive so the 0.45/210 column stays observable, and pin
+		# the guard itself with the doomed probe below.
+		minion.hp = 10000.0
+		minion.max_hp = 10000.0
+		var doomed: UnitState = ef_world.spawn_unit(GOBLIN, ef_world.RED, 1)
+		doomed.position = Vector2(310.0, 380.0)
 		if not ef_hero.items.add("everfrost_guard"):
 			check.call(false, "%s Everfrost Guard equips" % boss_type)
 			continue
@@ -428,4 +436,8 @@ func _live_match_contrasts(check: Callable) -> void:
 				and minion.slow_timer == 210
 			),
 			"%s Arctic Blast slows the boss 0.225/105 and the minion 0.45/210" % boss_type
+		)
+		check.call(
+			not doomed.alive and doomed.slow_amount == 0.0 and doomed.slow_timer == 0,
+			"%s source alive guard: a victim killed by the blast takes no slow" % boss_type
 		)

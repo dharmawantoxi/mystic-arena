@@ -13,6 +13,17 @@ const ABYSS_RESIST := 0.3
 const HERO_SPOT := Vector2(700, 380)
 
 
+class ResistProbe:
+	extends UnitState
+	## No live item grants the 0.60 cap (Abyss Breaker is 0.30), so the cap row
+	## runs the same production `UnitState.apply_slow` with the resist the
+	## source cap would report.
+	var resist := 0.0
+
+	func slow_resist() -> float:
+		return resist
+
+
 func run(check: Callable) -> void:
 	var fixture = JSON.parse_string(FileAccess.get_file_as_string(FIXTURE))
 	check.call(fixture is Dictionary and fixture.has("rows"), "item slow fixture parses")
@@ -67,6 +78,9 @@ func _replay_row(check: Callable, world: Prototype, row: Dictionary) -> void:
 	var label := String(row.get("name", "unknown"))
 	var payload: Dictionary = row.get("input", {})
 	var expected: Dictionary = row.get("expected", {})
+	if label == "hero_at_the_resist_cap":
+		_probe_row(check, row)
+		return
 	var target = null
 	if label.begins_with("minion"):
 		target = world.spawn_unit(GOBLIN, world.RED, 0)
@@ -91,6 +105,31 @@ func _replay_row(check: Callable, world: Prototype, row: Dictionary) -> void:
 			and target.slow_timer == int(expected.get("timer", -1))
 		),
 		"bus slow column matches the source mixin method: %s" % label
+	)
+
+
+func _probe_row(check: Callable, row: Dictionary) -> void:
+	var label := String(row.get("name", "unknown"))
+	var payload: Dictionary = row.get("input", {})
+	var expected: Dictionary = row.get("expected", {})
+	var probe := ResistProbe.new()
+	probe.alive = true
+	probe.resist = float(payload.get("resist", 0.0))
+	probe.slow_amount = float(payload.get("pre_amount", 0.0))
+	probe.slow_timer = int(payload.get("pre_timer", 0))
+	probe.apply_slow(float(payload.get("amount", 0.0)), int(payload.get("duration", 0)))
+	check.call(
+		(
+			is_equal_approx(
+				snappedf(probe.slow_amount, 0.0001), float(expected.get("amount", -1.0))
+			)
+			and probe.slow_timer == int(expected.get("timer", -1))
+		),
+		"resisted slow column matches the source cap: %s" % label
+	)
+	check.call(
+		is_equal_approx(snappedf(probe.slow_amount, 0.0001), 0.4),
+		"the 0.60 resist cap leaves 0.40 of a full root"
 	)
 
 
