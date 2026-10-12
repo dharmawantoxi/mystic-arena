@@ -730,3 +730,19 @@ damage_type, true)` (korban boss tetap memakai handle sumber 9b/9d plus
 sourceless (native lama 30/22/8/28/30), troll MR 0.05 - 30 vs 28, shred
 Corroder 39, menara armor 3 - 30 dengan kredit 0 vs 30, veil 0/0, dan kontrol
 Razor Carapace/`killed_by`/boss tetap dipaku.
+
+## Tick burn boss + damage number boss (layer 9ab)
+
+Tick burn pada boss sudah paritas sejak 8g (`boss_state.gd::tick_tower_debuffs` +
+`prototype_battle.gd::_step_active_boss`, sentinel `last_hit_source_id = -1`),
+jadi yang berpindah di layer ini adalah **presentasi**-nya: `Boss.take_damage`
+sumber memakai `is_critical=(effective_damage > max_hp * 0.03)` dan anchor
+`y - radius - 10`, sedangkan port lama memakai ambang datar `dealt > 100` dan
+`y - radius`. Helper `PrototypeBattle._boss_damage_number()` kini dipakai jalur
+tick burn maupun jalur `_deliver_hit` boss.
+
+Oracle `burn_boss_delivery_source_oracle.py` mengeksekusi `Boss.take_damage`
+dan `_tick_tower_debuffs` asli (10 kasus + 2 baris refresh store), suite
+`burn_boss_delivery_checks.gd` mereplay lewat `_step_active_boss` dan memaku
+nol kredit untuk kill burn, kesetaraan `world.apply_burn` versus store boss,
+serta interval tick `rules.burn_tick = 30 = DEBUFF_FPS 60`.

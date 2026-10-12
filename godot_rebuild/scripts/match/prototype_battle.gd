@@ -1501,13 +1501,15 @@ func _step_active_boss() -> void:
 	var burn_from_team := boss.burn_source_team()
 	var burn_damage := boss.tick_tower_debuffs()
 	if burn_damage > 0:
+		# Layer 9ab: the source tick is `self.take_damage(dmg, self.burn_team or
+		# self.team, "fire")` with no `source=` (`_core.py:1023-1033`), so the
+		# lethal tick leaves `_killed_by = None`: the native sentinel `-1` keeps
+		# `_process_boss_kill` from crediting anybody. The stale miasma flag is
+		# irrelevant here because a burn kill credits nobody either way, which
+		# the suite pins.
 		var dealt := boss.take_damage(null, burn_damage, "fire", "neutral", burn_from_team)
 		if dealt > 0:
-			var boss_team := "blue" if boss.team == BLUE else "red"
-			effects.add_damage_number(
-				boss.position.x, boss.position.y - boss.radius, dealt, dealt > 100, "fire"
-			)
-			effects.add_hit_particles(boss.position.x, boss.position.y, boss_team, 6)
+			_boss_damage_number(boss, dealt, "fire")
 		boss.last_hit_source_id = -1
 		if not boss.alive:
 			_queue_boss_death_presentation(boss)
@@ -2199,11 +2201,7 @@ func _deliver_hit(
 		if dealt < 0:
 			return false
 		if dealt > 0:
-			var boss_team := "blue" if boss.team == BLUE else "red"
-			effects.add_damage_number(
-				boss.position.x, boss.position.y - boss.radius, dealt, dealt > 100, damage_type
-			)
-			effects.add_hit_particles(boss.position.x, boss.position.y, boss_team, 6)
+			_boss_damage_number(boss, dealt, damage_type)
 		if attacker is HeroState and dealt > 0:
 			(attacker as HeroState).damage_dealt += dealt
 		boss.last_hit_source_id = source_id
@@ -2238,6 +2236,30 @@ func _deliver_hit(
 			)
 			effects.add_hit_particles(target.position.x, target.position.y, unit_team, 5)
 	return landed
+
+
+func _boss_damage_number(boss: BossState, dealt: int, damage_type: String) -> void:
+	# Layer 9ab: port of the presentation tail of `Boss.take_damage`
+	# (`bosses/base_boss.py:6044-6058`):
+	#
+	#     game.effects.add_damage_number(
+	#         self.x, self.y - self.radius - 10, effective_damage,
+	#         is_critical=(effective_damage > self.max_hp * 0.03),
+	#         damage_type=damage_type)
+	#     game.effects.add_hit_particles(self.x, self.y, team=self.team, count=6)
+	#
+	# The crit badge therefore tracks the boss' own hp pool (3%), not a flat
+	# threshold: a 105 damage burn tick on Abaddon (max_hp 36000) is a plain
+	# number in the source, while the old `dealt > 100` rule painted it gold.
+	var boss_team := "blue" if boss.team == BLUE else "red"
+	effects.add_damage_number(
+		boss.position.x,
+		boss.position.y - boss.radius - 10.0,
+		dealt,
+		float(dealt) > float(boss.max_hp) * 0.03,
+		damage_type
+	)
+	effects.add_hit_particles(boss.position.x, boss.position.y, boss_team, 6)
 
 
 func _item_block_roll() -> float:
