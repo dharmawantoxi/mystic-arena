@@ -2194,7 +2194,15 @@ func _deliver_hit(
 		return false
 	if target is BossState:
 		var boss := target as BossState
-		if not is_running() or not boss.alive or source_team == boss.team:
+		# Layer 9ac: `Boss.take_damage` never filters teams in the source - the
+		# caller decides - and the unit branch below already honors
+		# `ignore_team_guard` for the source-free ticks from 9z/9aa. The boss
+		# branch used to refuse a same-team delivery unconditionally, so a
+		# source-free tick that the source lands on a boss of the credited team
+		# (burn and miasma do not check teams) stopped at this guard.
+		if not is_running() or not boss.alive:
+			return false
+		if source_team == boss.team and not ignore_team_guard:
 			return false
 		var attacker: Object = get_unit(source_id)
 		var dealt := boss.take_damage(attacker, raw_damage, damage_type, school)

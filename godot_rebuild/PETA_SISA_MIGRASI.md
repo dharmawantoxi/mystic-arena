@@ -746,3 +746,13 @@ dan `_tick_tower_debuffs` asli (10 kasus + 2 baris refresh store), suite
 `burn_boss_delivery_checks.gd` mereplay lewat `_step_active_boss` dan memaku
 nol kredit untuk kill burn, kesetaraan `world.apply_burn` versus store boss,
 serta interval tick `rules.burn_tick = 30 = DEBUFF_FPS 60`.
+
+## Pengiriman damage boss tanpa source (layer 9ac)
+
+`Boss.take_damage(damage, from_team)` sumber tidak pernah membaca `from_team`
+maupun memfilter tim; blind hanya dikonsultasikan bila ada `source`
+(`bosses/base_boss.py:5983`). Cabang boss `_deliver_hit` kini membaca
+`ignore_team_guard` seperti cabang unit 9z/9aa, sehingga delivery sourceless
+bertim sama bisa mendarat persis seperti sumber tanpa mengubah perilaku lama
+tanpa flag. Oracle `boss_sourceless_delivery_source_oracle.py` (7 kasus, kolom
+undian blind dan kredit) plus suite `boss_sourceless_delivery_checks.gd`.

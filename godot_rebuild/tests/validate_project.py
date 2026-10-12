@@ -130,6 +130,7 @@ from minion_melee_school_source_oracle import source_fixture as minion_melee_sch
 from skill_hit_attribution_source_oracle import source_fixture as skill_hit_attribution_fixture
 from burn_tick_delivery_source_oracle import source_fixture as burn_tick_delivery_fixture
 from burn_boss_delivery_source_oracle import source_fixture as burn_boss_delivery_fixture
+from boss_sourceless_delivery_source_oracle import source_fixture as boss_sourceless_delivery_fixture
 from miasma_tick_delivery_source_oracle import source_fixture as miasma_tick_delivery_fixture
 check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
       "Item structure arm suite must be preloaded")
@@ -235,6 +236,16 @@ check('const SkillHitAttributionChecks = preload("res://tests/skill_hit_attribut
       "Skill hit attribution suite must be preloaded")
 check("SkillHitAttributionChecks.new().run(_check)" in ai_tests,
       "Skill hit attribution suite must run")
+check('const BossSourcelessDeliveryChecks = preload("res://tests/boss_sourceless_delivery_checks.gd")' in ai_tests,
+      "Boss sourceless delivery suite must be preloaded")
+check("BossSourcelessDeliveryChecks.new().run(_check)" in ai_tests,
+      "Boss sourceless delivery suite must run")
+check((ROOT / "tests/fixtures/boss_sourceless_delivery_source.json").is_file(),
+      "Boss sourceless delivery fixture must exist")
+if (ROOT / "tests/fixtures/boss_sourceless_delivery_source.json").is_file():
+    check(boss_sourceless_delivery_fixture() == json.loads(
+        (ROOT / "tests/fixtures/boss_sourceless_delivery_source.json").read_text(encoding="utf-8")),
+          "Boss sourceless delivery fixture must not drift from the oracle")
 check('const BurnBossDeliveryChecks = preload("res://tests/burn_boss_delivery_checks.gd")' in ai_tests,
       "Burn boss delivery suite must be preloaded")
 check("BurnBossDeliveryChecks.new().run(_check)" in ai_tests,
