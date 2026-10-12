@@ -7,21 +7,11 @@ const BossState = preload("res://scripts/match/boss_state.gd")
 const GOBLIN = preload("res://data/minions/goblin.tres")
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const FIXTURE := "res://tests/fixtures/item_slow_resist_source.json"
+const SlowResistProbe = preload("res://tests/slow_resist_probe.gd")
 
 const RESIST_CAP := 0.6
 const ABYSS_RESIST := 0.3
 const HERO_SPOT := Vector2(700, 380)
-
-
-class ResistProbe:
-	extends UnitState
-	## No live item grants the 0.60 cap (Abyss Breaker is 0.30), so the cap row
-	## runs the same production `UnitState.apply_slow` with the resist the
-	## source cap would report.
-	var resist := 0.0
-
-	func slow_resist() -> float:
-		return resist
 
 
 func run(check: Callable) -> void:
@@ -112,7 +102,7 @@ func _probe_row(check: Callable, row: Dictionary) -> void:
 	var label := String(row.get("name", "unknown"))
 	var payload: Dictionary = row.get("input", {})
 	var expected: Dictionary = row.get("expected", {})
-	var probe := ResistProbe.new()
+	var probe = SlowResistProbe.new()
 	probe.alive = true
 	probe.resist = float(payload.get("resist", 0.0))
 	probe.slow_amount = float(payload.get("pre_amount", 0.0))
