@@ -105,10 +105,18 @@ func _replay_row(
 	)
 	check.call(spy.rolls == 0, "a source-free hit consumes no blind draw: %s" % label)
 	check.call(boss.last_hit_source_id == -1, "sourceless hit keeps the sentinel: %s" % label)
-	check.call(
-		int(expected.get("credited", 0)) == 0 and expected.get("killed_by", null) == null,
-		"source fixture row stays unattributed: %s" % label
-	)
+	# The true-strike control is the only row whose source hit is credited, so
+	# it asserts the credit instead of the unattributed default.
+	if int(expected.get("credited", 0)) == 0:
+		check.call(
+			expected.get("killed_by", null) == null,
+			"source fixture row stays unattributed: %s" % label
+		)
+	else:
+		check.call(
+			int(expected.get("credited", 0)) == int(expected.get("hp_loss", -1)),
+			"source fixture row credits the attacker: %s" % label
+		)
 	if not column_row:
 		return
 	for school in expected.keys():
