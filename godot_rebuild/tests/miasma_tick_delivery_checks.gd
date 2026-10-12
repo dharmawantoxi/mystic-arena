@@ -212,6 +212,10 @@ func _hero_row(
 	var spy := RollSpy.new()
 	world.block_roll_override = Callable(spy, "roll")
 	_arm(victim, case, check, label)
+	check.call(
+		int(victim.items.get_armor()) == int(case.get("armor", 0)),
+		"%s: the live victim armour is the fixture value" % label
+	)
 	var credit_before: int = owner.damage_dealt
 	var kills_before: int = world.kills[World.BLUE]
 	var hp_before: float = victim.hp
@@ -236,7 +240,10 @@ func _hero_row(
 
 
 func _arm(victim: HeroState, case: Dictionary, check: Callable, label: String) -> void:
-	if int(case.get("armor", 0)) > 0:
+	# The block row carries the armour stat of the block item itself
+	# (`scarlet_bulwark` has armour 6), so only the armour-only row equips the
+	# Aegis; the live total is asserted against the fixture afterwards.
+	if int(case.get("armor", 0)) > 0 and not bool(case.get("armor_from_block_item", false)):
 		check.call(victim.items.add(ARMOR_ITEM), "%s: the armour item equips" % label)
 	if case.get("block") != null:
 		check.call(victim.items.add(BLOCK_ITEM), "%s: the block item equips" % label)

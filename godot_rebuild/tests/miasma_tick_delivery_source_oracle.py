@@ -271,6 +271,7 @@ def source_fixture() -> dict:
                 "school": None,
                 "source_school": None,
                 "armor": ARMOR,
+                "armor_from_block_item": True,
                 "block": [float(BLOCK["chance"]), float(BLOCK["ranged_block"])],
                 "draws": [0.5],
             },

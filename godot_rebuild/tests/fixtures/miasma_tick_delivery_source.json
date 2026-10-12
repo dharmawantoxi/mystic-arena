@@ -99,6 +99,7 @@
         "school": null,
         "source_school": null,
         "armor": 6,
+        "armor_from_block_item": true,
         "block": [
           0.55,
           14.0
