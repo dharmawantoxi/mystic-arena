@@ -131,6 +131,7 @@ from skill_hit_attribution_source_oracle import source_fixture as skill_hit_attr
 from burn_tick_delivery_source_oracle import source_fixture as burn_tick_delivery_fixture
 from burn_boss_delivery_source_oracle import source_fixture as burn_boss_delivery_fixture
 from boss_sourceless_delivery_source_oracle import source_fixture as boss_sourceless_delivery_fixture
+from boss_debuff_tenacity_source_oracle import source_fixture as boss_debuff_tenacity_fixture
 from miasma_tick_delivery_source_oracle import source_fixture as miasma_tick_delivery_fixture
 check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
       "Item structure arm suite must be preloaded")
@@ -240,6 +241,16 @@ check('const BossSourcelessDeliveryChecks = preload("res://tests/boss_sourceless
       "Boss sourceless delivery suite must be preloaded")
 check("BossSourcelessDeliveryChecks.new().run(_check)" in ai_tests,
       "Boss sourceless delivery suite must run")
+check('const BossDebuffTenacityChecks = preload("res://tests/boss_debuff_tenacity_checks.gd")' in ai_tests,
+      "Boss debuff tenacity suite must be preloaded")
+check("BossDebuffTenacityChecks.new().run(_check)" in ai_tests,
+      "Boss debuff tenacity suite must run")
+check((ROOT / "tests/fixtures/boss_debuff_tenacity_source.json").is_file(),
+      "Boss debuff tenacity fixture must exist")
+if (ROOT / "tests/fixtures/boss_debuff_tenacity_source.json").is_file():
+    check(boss_debuff_tenacity_fixture() == json.loads(
+        (ROOT / "tests/fixtures/boss_debuff_tenacity_source.json").read_text(encoding="utf-8")),
+          "Boss debuff tenacity fixture must not drift from the oracle")
 check((ROOT / "tests/fixtures/boss_sourceless_delivery_source.json").is_file(),
       "Boss sourceless delivery fixture must exist")
 if (ROOT / "tests/fixtures/boss_sourceless_delivery_source.json").is_file():

@@ -756,3 +756,20 @@ maupun memfilter tim; blind hanya dikonsultasikan bila ada `source`
 bertim sama bisa mendarat persis seperti sumber tanpa mengubah perilaku lama
 tanpa flag. Oracle `boss_sourceless_delivery_source_oracle.py` (7 kasus, kolom
 undian blind dan kredit) plus suite `boss_sourceless_delivery_checks.gd`.
+
+## Tenacity debuff boss (layer 9ad)
+
+`Boss.apply_slow` dan `Boss.apply_debuff` (`bosses/base_boss.py:528-552`) memotong `slow` dan
+`atk_slow` dengan tenacity 0.50 (magnitude `min(0.35, a * 0.5)`, durasi `int(d * 0.5)`), sedangkan
+`skill_down`/`anti_heal`/`burn` diteruskan mentah ke store `TowerDebuffMixin`; store unit sendiri
+tidak mengenal tenacity. Pemanggil item/menara semuanya polimorfik di sumber, jadi tiga jembatan
+native yang masih menulis ke store dunia diperbaiki: override `_mage_impact`, `apply_anti_heal` di
+`battle_item_effects.gd` (lewat metode korban), dan dua panggilan aura di `_update_auras` yang pindah
+ke bus boss-aware.
+
+Oracle `boss_debuff_tenacity_source_oracle.py` (28 baris, kolom unit sebagai kontrol) plus suite
+`boss_debuff_tenacity_checks.gd`. Angka terukur: mage L6 skill-down/anti-heal tetap 0.50/180 dan
+1.00/180, ice L6 slow 0.65/150 -> 0.325/75 dan atk-slow 0.40/150 -> 0.20/75, Frostbite 0.28/180 ->
+0.14/90 (anti-heal 0.45/180 mentah), Freezing Aura atk-slow 0.30/30 -> 0.15/15 (anti-heal 0.40/30
+mentah), Cauterize 0.50/30 mentah, Arctic Blast 0.45/210 -> 0.225/105, Entangle root 1.00/120 ->
+cap 0.35/60. Audit: Alchemist W / `_apply_slow` hanya menyasar unit, jadi jalur itu sudah paritas.

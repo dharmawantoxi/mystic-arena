@@ -235,6 +235,19 @@ func apply_atk_slow(target_id: int, amount: float, duration: int) -> void:
 
 
 func apply_anti_heal(target_id: int, amount: float, duration: int) -> void:
+	# Layer 9ad: every source anti-heal arm calls `u.apply_debuff('anti_heal',
+	# ...)` polymorphically - Frostbound Frostbite (`hero_items.py:2597-2599`),
+	# Everfrost Freezing Aura (`hero_items.py:2843-2844`) and Searbrand
+	# Cauterize (`hero_items.py:2869-2870`) - so a boss target now runs
+	# `Boss.apply_debuff` (`bosses/base_boss.py:540-552`). That override only
+	# cuts `slow` (through `Boss.apply_slow`) and `atk_slow` by tenacity 0.50,
+	# so the boss value for `anti_heal` stays the raw payload - the shape
+	# matches the source call and 9ad pins both columns (1.00/180 stays
+	# 1.00/180, unlike the atk_slow arm at 8w).
+	var t: Object = world.get_unit(target_id)
+	if t != null and t.has_method("apply_debuff"):
+		t.apply_debuff("anti_heal", amount, duration)
+		return
 	world.apply_anti_heal(target_id, amount, duration)
 
 
