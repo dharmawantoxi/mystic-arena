@@ -3,6 +3,8 @@ extends RefCounted
 ## Layer 9ad native suite: boss tenacity on tower item debuffs (slow/ice/mage/anti-heal).
 
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
+const BossState = preload("res://scripts/match/boss_state.gd")
+const BattleItemEffects = preload("res://scripts/match/battle_item_effects.gd")
 const Projectile = preload("res://scripts/combat/projectile_state.gd")
 const GOBLIN = preload("res://data/minions/goblin.tres")
 const MAGE_TWO = preload("res://data/structures/mage_level_2.tres")
@@ -189,7 +191,7 @@ func _item_row(
 	if boss == null:
 		check.call(false, "item tenacity probe spawns")
 		return
-	var bus := world._aura_item_effects()
+	var bus: BattleItemEffects = world._aura_item_effects()
 	var amount := float(payload.get("amount", 0.0))
 	var duration := int(payload.get("duration", 0))
 	match kind:

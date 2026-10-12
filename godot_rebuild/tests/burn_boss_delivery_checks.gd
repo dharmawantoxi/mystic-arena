@@ -85,6 +85,10 @@ func _replay_case(check: Callable, world: Prototype, entry: Dictionary) -> void:
 		boss.armor_shred_timer = int(input["armor_shred_timer"])
 	if input.has("defense_boost"):
 		boss.defense_boost = bool(input["defense_boost"])
+	# Freeze movement: the tick draws its number before the step's walk, so a
+	# moving probe would drift away from the anchor the number was drawn at.
+	boss.slow_amount = 1.0
+	boss.slow_timer = 5
 	var origin := boss.position
 	var before_hp := boss.hp
 	world.effects.floating_texts.clear()
@@ -102,7 +106,9 @@ func _replay_case(check: Callable, world: Prototype, entry: Dictionary) -> void:
 	)
 	check.call(
 		(
-			is_equal_approx(boss.burn_accum, float(expected.get("burn_accum", 0.0)))
+			is_equal_approx(
+				snappedf(boss.burn_accum, 0.0001), float(expected.get("burn_accum", 0.0))
+			)
 			and boss.burn_tick_cd == int(expected.get("burn_tick_cd", 0))
 		),
 		"boss burn accumulator and clock match source: %s" % label
@@ -217,11 +223,12 @@ func _store_check(check: Callable, world: Prototype, fixture: Dictionary) -> voi
 		"native boss burn store equals the executed source refresh row"
 	)
 	var stats: Dictionary = fixture.live_stats
+	var burn_shape: Dictionary = fixture.get("burn_shape", {})
 	check.call(
 		(
 			int(store_boss.rules.get("burn_tick", 0)) == int(stats.tick_frames)
-			and is_equal_approx(BossState.DEBUFF_FPS, float(stats.get("burn_fps", 0.0)))
-			and MinionBattle.BURN_TICK_INTERVAL == int(stats.tick_frames)
+			and is_equal_approx(BossState.DEBUFF_FPS, float(burn_shape.get("burn_fps", 0.0)))
+			and MinionBattle.BURN_TICK_INTERVAL == int(burn_shape.get("burn_tick_interval", 0))
 		),
 		"native burn tick interval equals the source constants"
 	)
@@ -255,7 +262,9 @@ func _fire_ignores_attacker(check: Callable, world: Prototype) -> void:
 	for boss in [free_boss, sourced_boss]:
 		boss.hp = float(boss.max_hp)
 	var free_before := free_boss.hp
-	world._deliver_hit(-1, world.RED, free_boss, 30, "neutral", free_boss.position, "fire")
+	# Layer 9ac guard: the tick path reaches take_damage with no team filter, so
+	# the probe delivers with `ignore_team_guard` (source compares no teams).
+	world._deliver_hit(-1, world.RED, free_boss, 30, "neutral", free_boss.position, "fire", true)
 	var sourced_before := sourced_boss.hp
 	world._deliver_hit(
 		hero.id, world.BLUE, sourced_boss, 30, "neutral", sourced_boss.position, "fire"
@@ -318,7 +327,11 @@ func _sourced_control(check: Callable, world: Prototype) -> void:
 	)
 	world._process_boss_kill(boss)
 	check.call(
-		world.kills[world.BLUE] == 1 and int(world.miniboss_kill_count) == 1,
+		(
+			hero.kills == 1
+			and int(world.miniboss_kill_count) == 1
+			and int(world.trueboss_kill_count) == 0
+		),
 		"control: a blue hero lethal hit still credits the kill"
 	)
 

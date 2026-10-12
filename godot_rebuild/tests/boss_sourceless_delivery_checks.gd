@@ -3,6 +3,7 @@ extends RefCounted
 ## Layer 9ac native suite: source-free boss hits and the boss team guard.
 
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
+const BossState = preload("res://scripts/match/boss_state.gd")
 const GOBLIN = preload("res://data/minions/goblin.tres")
 const FIXTURE := "res://tests/fixtures/boss_sourceless_delivery_source.json"
 
@@ -193,8 +194,7 @@ func _lethal_control(check: Callable, world: Prototype, fixture: Dictionary) -> 
 	world._process_boss_kill(boss)
 	check.call(
 		(
-			world.kills[world.BLUE] == 0
-			and world.kills[world.RED] == 0
+			int(world.total_kills) == 0
 			and int(world.miniboss_kill_count) == 0
 			and world.achievements_unlocked.size() == unlocks_before
 		),
