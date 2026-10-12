@@ -85,10 +85,6 @@ func _replay_case(check: Callable, world: Prototype, entry: Dictionary) -> void:
 		boss.armor_shred_timer = int(input["armor_shred_timer"])
 	if input.has("defense_boost"):
 		boss.defense_boost = bool(input["defense_boost"])
-	# Freeze movement: the tick draws its number before the step's walk, so a
-	# moving probe would drift away from the anchor the number was drawn at.
-	boss.slow_amount = 1.0
-	boss.slow_timer = 5
 	var origin := boss.position
 	var before_hp := boss.hp
 	world.effects.floating_texts.clear()
@@ -144,8 +140,11 @@ func _damage_number(
 		bool(number.critical) == bool(expected.get("is_critical", not source_crit)),
 		"boss damage number matches the fixture crit column: %s" % label
 	)
+	# `add_damage_number` jitters the stored point by `randi_range(-3, 3)` on y,
+	# so the source anchor is pinned inside that band (the pre-9ab anchor sits a
+	# full radius/10 - 10 px away, outside it).
 	check.call(
-		is_equal_approx(float(number.y), origin.y - boss.radius - 10.0),
+		absf(float(number.y) - (origin.y - boss.radius - 10.0)) <= 3.0,
 		"boss damage number anchor is source y - radius - 10: %s" % label
 	)
 	if int(old.get("hp_loss", 0)) != dealt:

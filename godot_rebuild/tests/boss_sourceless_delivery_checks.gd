@@ -95,29 +95,31 @@ func _replay_row(
 			"blinded attacker hp delta matches source: %s" % label
 		)
 		return
+	# The school-column rows carry one expected loss per school and deliver the
+	# plain hit with no school, i.e. the `neutral` column.
+	var column_row := not expected.has("hp_loss") and expected.has("neutral")
+	var primary_loss := int(expected.get("hp_loss", expected.get("neutral", -1)))
 	world._deliver_hit(-1, world.BLUE, boss, raw, "neutral", boss.position)
 	check.call(
-		int(before - boss.hp) == int(expected.get("hp_loss", -1)),
-		"sourceless hit payload matches source: %s" % label
+		int(before - boss.hp) == primary_loss, "sourceless hit payload matches source: %s" % label
 	)
 	check.call(spy.rolls == 0, "a source-free hit consumes no blind draw: %s" % label)
 	check.call(boss.last_hit_source_id == -1, "sourceless hit keeps the sentinel: %s" % label)
 	check.call(
-		int(expected.get("credited", -1)) == 0 and expected.get("killed_by", "missing") == null,
+		int(expected.get("credited", 0)) == 0 and expected.get("killed_by", null) == null,
 		"source fixture row stays unattributed: %s" % label
 	)
-	if label != "armored_school_columns":
+	if not column_row:
 		return
-	var columns: Dictionary = expected
-	for school in ["neutral", "physical", "magic"]:
+	for school in expected.keys():
 		var probe := _spawn(world, kind)
 		if probe == null:
 			continue
 		var probe_before := probe.hp
 		world._deliver_hit(-1, world.BLUE, probe, raw, String(school), probe.position)
 		check.call(
-			int(probe_before - probe.hp) == int(columns.get(school, -1)),
-			"armoured school column matches source: %s" % school
+			int(probe_before - probe.hp) == int(expected.get(school, -1)),
+			"armoured school column matches source: %s %s" % [label, String(school)]
 		)
 
 
