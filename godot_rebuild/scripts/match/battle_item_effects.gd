@@ -156,11 +156,17 @@ func apply_silence(target_id: int, duration: int) -> void:
 		t.apply_debuff("atk_slow", 1.0, duration)
 		t.apply_debuff("skill_down", 1.0, duration)
 		return
-	# UnitState already carries atk_slow/skill_down fields.
-	t.atk_slow_amount = 1.0
-	t.atk_slow_timer = maxi(t.atk_slow_timer, duration)
-	t.skill_down_amount = 1.0
-	t.skill_down_timer = maxi(t.skill_down_timer, duration)
+	# Layer 9af: heroes and minions carry the source mixin too, so their silence
+	# runs the same `apply_debuff` store the boss arm just used - the world level
+	# stores implement exactly that rule (alive guard, amount-greater-or-longer
+	# refresh). The raw write kept here before forced `1.0` into the amount even
+	# when the victim already carried a stronger-but-shorter or
+	# weaker-but-longer clock (measured: 0.9/200 + silence 60 -> source 1.0/60,
+	# old 1.0/200) and it silenced towers, which never join the mixin
+	# (`_entity.py` gives it to Hero/Minion/Boss only), while the world stores
+	# refuse structures exactly like the source `AttributeError` path.
+	world.apply_atk_slow(target_id, 1.0, duration)
+	world.apply_skill_down(target_id, 1.0, duration)
 
 
 func apply_slow(target_id: int, amount: float, duration: int) -> void:
