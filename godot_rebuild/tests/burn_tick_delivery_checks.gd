@@ -22,6 +22,7 @@ const HeroState = preload("res://scripts/combat/hero_state.gd")
 const UnitState = preload("res://scripts/combat/unit_state.gd")
 const StructureState = preload("res://scripts/combat/structure_state.gd")
 const TROLL = preload("res://data/minions/troll.tres")
+const GOBLIN = preload("res://data/minions/goblin.tres")
 const ARCHER = preload("res://data/structures/archer_level_1.tres")
 const FIXTURE := "res://tests/fixtures/burn_tick_delivery_source.json"
 const BLOCK_ITEM := "scarlet_bulwark"
@@ -125,7 +126,7 @@ func _replay(rows: Array, stats: Dictionary, check: Callable) -> void:
 	check.call(seen >= 6, "every fixture row replays through the burn branch")
 
 
-func _burn(world: World, target: UnitState, stats: Dictionary) -> void:
+func _burn(world, target: UnitState, stats: Dictionary) -> void:
 	world.apply_burn(
 		target.id, float(stats.get("dps", 60.0)), int(stats.get("tick_frames", 30)), TEAM
 	)
@@ -264,3 +265,20 @@ func _controls(stats: Dictionary, check: Callable) -> void:
 	match_world._deliver_hit(-1, TEAM, hero, 30, "neutral", POS, "normal")
 	check.call(spy.calls == 1, "a non-fire hit consumes the block roll")
 	check.call(int(hp_before - hero.hp) < 30, "a non-fire hit is cut by the passive block")
+	# The source `take_damage` has no team filter, so a same-team burn still
+	# kills: the tick bypasses `_deliver_hit`'s team guard and credits burn_team.
+	var same_team := World.new()
+	same_team.setup_arena()
+	var ally: UnitState = same_team.spawn_unit(GOBLIN, World.BLUE, 1)
+	check.call(ally != null, "the same-team burn victim spawns")
+	if ally == null:
+		return
+	ally.position = POS
+	ally.hp = 1.0
+	same_team.apply_burn(ally.id, 60.0, World.BURN_TICK_INTERVAL, World.BLUE)
+	ally.burn_tick_cd = 1
+	same_team._tick_burn(ally)
+	check.call(
+		not ally.alive and same_team.kills[World.BLUE] == 1 and same_team.kills[World.RED] == 0,
+		"a same-team burn still kills and credits burn_team"
+	)

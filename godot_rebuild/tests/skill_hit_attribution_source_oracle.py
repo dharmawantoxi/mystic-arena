@@ -145,9 +145,13 @@ def _native_tokens() -> dict:
             "_deliver_hit("
         ):
             continue
+        hits = re.findall(r"Common\.hit\((.*?)\)\n", text, re.S)
         tokens["res://scripts/%s" % path.relative_to(SCRIPTS).as_posix()] = {
-            "common_hit": text.count("Common.hit("),
-            "true_suffix": text.count(", true)"),
+            "common_hit": len(hits),
+            # Only the `Common.hit(...)` bodies count, so an unrelated
+            # `, true)` (e.g. the 9z burn tick passing its team-guard flag)
+            # cannot drift this token.
+            "hit_true_suffix": sum(1 for row in hits if row.rstrip().endswith("true")),
             "aoe_calls": text.count("_deal_hero_aoe(") - text.count("func _deal_hero_aoe("),
         }
     return tokens

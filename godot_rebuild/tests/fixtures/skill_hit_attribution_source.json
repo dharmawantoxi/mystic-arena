@@ -316,167 +316,167 @@
   "native_site_tokens": {
     "res://scripts/combat/alchemist_skills.gd": {
       "common_hit": 3,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/combat/boss_level_eighteen_skills.gd": {
       "common_hit": 4,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/combat/boss_level_eleven_skills.gd": {
       "common_hit": 7,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/combat/boss_level_fifteen_skills.gd": {
       "common_hit": 3,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/combat/boss_level_five_skills.gd": {
       "common_hit": 8,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/combat/boss_level_four_skills.gd": {
       "common_hit": 3,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/combat/boss_level_fourteen_skills.gd": {
       "common_hit": 4,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/combat/boss_level_nine_skills.gd": {
       "common_hit": 9,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/combat/boss_level_nineteen_skills.gd": {
       "common_hit": 3,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/combat/boss_level_one_skills.gd": {
       "common_hit": 7,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/combat/boss_level_seven_skills.gd": {
       "common_hit": 9,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/combat/boss_level_seventeen_skills.gd": {
       "common_hit": 4,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/combat/boss_level_six_skills.gd": {
       "common_hit": 4,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/combat/boss_level_sixteen_skills.gd": {
       "common_hit": 3,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/combat/boss_level_ten_skills.gd": {
       "common_hit": 8,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/combat/boss_level_thirteen_skills.gd": {
       "common_hit": 7,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/combat/boss_level_three_skills.gd": {
       "common_hit": 9,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/combat/boss_level_twelve_skills.gd": {
       "common_hit": 3,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/combat/boss_level_twenty_skills.gd": {
       "common_hit": 3,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/combat/grimjaw_skills.gd": {
       "common_hit": 0,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 3
     },
     "res://scripts/combat/hero_projectiles.gd": {
       "common_hit": 0,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/combat/minion_battle.gd": {
       "common_hit": 0,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 4
     },
     "res://scripts/combat/siege_battle.gd": {
       "common_hit": 0,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/combat/skill_common.gd": {
       "common_hit": 0,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/combat/source_shared_boss_skills.gd": {
       "common_hit": 2,
-      "true_suffix": 2,
+      "hit_true_suffix": 2,
       "aoe_calls": 0
     },
     "res://scripts/combat/sylara_skills.gd": {
       "common_hit": 0,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/combat/thorne_skills.gd": {
       "common_hit": 0,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 3
     },
     "res://scripts/combat/vex_skills.gd": {
       "common_hit": 7,
-      "true_suffix": 3,
+      "hit_true_suffix": 3,
       "aoe_calls": 0
     },
     "res://scripts/combat/zephyr_skills.gd": {
       "common_hit": 6,
-      "true_suffix": 4,
+      "hit_true_suffix": 4,
       "aoe_calls": 0
     },
     "res://scripts/match/battle_item_effects.gd": {
       "common_hit": 0,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/match/boss_ai.gd": {
       "common_hit": 0,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/match/prototype_battle.gd": {
       "common_hit": 0,
-      "true_suffix": 3,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     },
     "res://scripts/match/reflect_item_effects.gd": {
       "common_hit": 0,
-      "true_suffix": 0,
+      "hit_true_suffix": 0,
       "aoe_calls": 0
     }
   },

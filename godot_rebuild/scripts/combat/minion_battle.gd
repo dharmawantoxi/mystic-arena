@@ -275,7 +275,7 @@ func _tick_burn(unit: UnitState) -> void:
 			var burn_team := 1 - unit.team
 			if unit.burn_team in [BLUE, RED]:
 				burn_team = unit.burn_team
-			_deliver_hit(-1, burn_team, unit, damage, "neutral", unit.position, "fire")
+			_deliver_hit(-1, burn_team, unit, damage, "neutral", unit.position, "fire", true)
 	if unit.burn_timer <= 0:
 		unit.burn_dps = 0.0
 		unit.burn_accum = 0.0
@@ -375,10 +375,16 @@ func _deliver_hit(
 	raw_damage: int,
 	school: String,
 	origin: Vector2,
-	damage_type: String = "normal"
+	damage_type: String = "normal",
+	ignore_team_guard: bool = false
 ) -> bool:
 	# Shared one-shot damage path for melee and projectile impacts.
-	if not is_running() or target == null or not target.alive or source_team == target.team:
+	# `ignore_team_guard` exists for the burn tick: the source `take_damage`
+	# never filters by team, so `apply_burn(id, dps, ticks, victim_team)` still
+	# kills (layer 9z).
+	if not is_running() or target == null or not target.alive:
+		return false
+	if source_team == target.team and not ignore_team_guard:
 		return false
 	if raw_damage <= 0 or school not in ["physical", "magic", "neutral"]:
 		return false

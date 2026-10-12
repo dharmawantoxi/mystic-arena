@@ -64,7 +64,7 @@ func _tokens(fixture: Dictionary, check: Callable) -> void:
 		var text := FileAccess.get_file_as_string(String(path))
 		if (
 			text.count("Common.hit(") != int(row.get("common_hit", -1))
-			or text.count(", true)") != int(row.get("true_suffix", -1))
+			or _hit_true_suffix(text) != int(row.get("hit_true_suffix", -1))
 			or (
 				text.count("_deal_hero_aoe(") - text.count("func _deal_hero_aoe(")
 				!= int(row.get("aoe_calls", -1))
@@ -74,6 +74,26 @@ func _tokens(fixture: Dictionary, check: Callable) -> void:
 	check.call(
 		mismatches == 0, "every pinned delivery file keeps its site tokens (%d drift)" % mismatches
 	)
+
+
+func _hit_true_suffix(text: String) -> int:
+	# Mirror of the oracle's `Common\.hit\((.*?)\)\n` scan: only the bodies of
+	# `Common.hit(` calls ending in `true` are attributed.
+	var count := 0
+	var cursor := 0
+	var token := "Common.hit("
+	while true:
+		var start := text.find(token, cursor)
+		if start < 0:
+			break
+		var end := text.find(")\n", start)
+		if end < 0:
+			break
+		var body := text.substr(start + token.length(), end - start - token.length())
+		if body.strip_edges().ends_with("true"):
+			count += 1
+		cursor = end + 1
+	return count
 
 
 func _source_counts(fixture: Dictionary, check: Callable) -> void:

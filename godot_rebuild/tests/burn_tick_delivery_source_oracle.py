@@ -234,7 +234,8 @@ def source_fixture() -> dict:
     return {
         "source": "`_core.py::TowerDebuffMixin._tick_tower_debuffs` burn branch run through the real `Hero.take_damage` and `Minion.take_damage`",
         "callsite": "godot_rebuild/scripts/combat/minion_battle.gd::_tick_burn",
-        "native_old_model": "pre-9z native raw arm: `unit.hp = maxf(0, unit.hp - damage)` (+ a hand-rolled shadow-realm zero), recorded as the `native_old` column",
+        "team_guard": "`take_damage` has no team filter, so a same-team burn still kills; the native tick therefore bypasses `_deliver_hit`'s team guard",
+    "native_old_model": "pre-9z native raw arm: `unit.hp = maxf(0, unit.hp - damage)` (+ a hand-rolled shadow-realm zero), recorded as the `native_old` column",
         "burn_shape": _burn_shape(),
         "hero_fire_shape": _hero_fire_shape(),
         "live_stats": {

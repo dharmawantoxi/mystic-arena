@@ -2179,7 +2179,8 @@ func _deliver_hit(
 	raw_damage: int,
 	school: String,
 	origin: Vector2,
-	damage_type: String = "normal"
+	damage_type: String = "normal",
+	ignore_team_guard: bool = false
 ) -> bool:
 	# Layer 5b-4: port of the evasion/true-strike gate of Hero.take_damage.
 	# Source `_school` is `resolve_damage_school`, which reads the attacker's
@@ -2224,7 +2225,7 @@ func _deliver_hit(
 	var before_hp := target.hp
 	var before_shield := (target as StructureState).shield if target is StructureState else 0.0
 	var landed := super._deliver_hit(
-		source_id, source_team, target, raw_damage, school, origin, damage_type
+		source_id, source_team, target, raw_damage, school, origin, damage_type, ignore_team_guard
 	)
 	if landed:
 		var after_shield := (target as StructureState).shield if target is StructureState else 0.0
