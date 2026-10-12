@@ -189,6 +189,13 @@ func apply_heal_amp(amount: float, duration: int) -> void:
 		heal_amp_timer = duration
 
 
+func slow_resist() -> float:
+	# Layer 9ae: `TowerDebuffMixin.apply_slow` scales the incoming slow by the
+	# victim's item slow resist (`inv.get_slow_resist()`, Abyss Breaker 0.30,
+	# capped 0.60). Only a hero carries an inventory.
+	return items.get_slow_resist() if items != null else 0.0
+
+
 func upgrade_cost() -> int:
 	var price := int(HeroDefinition.level_data(level)["upgrade_cost"])
 	return int(price * 1.6) if settings().is_boss_hero else price

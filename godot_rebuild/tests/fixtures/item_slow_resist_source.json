@@ -1,0 +1,237 @@
+{
+  "source": "`_core.py::TowerDebuffMixin.apply_slow` + `hero_items.py::HeroItemInventory.get_slow_resist`",
+  "callsite": "godot_rebuild/scripts/match/battle_item_effects.gd::apply_slow",
+  "shape": {
+    "alive_guard": true,
+    "reads_items": true,
+    "scales_by_resist": true,
+    "resist_guarded": true,
+    "refresh_rule": true,
+    "catalog_resist_cap": true
+  },
+  "live_stats": {
+    "abyss_breaker_slow_resist": 0.3,
+    "resist_cap": 0.6,
+    "frostbound": {
+      "slow": 0.28,
+      "duration": 180
+    },
+    "arctic_blast": {
+      "slow": 0.45,
+      "duration": 210
+    },
+    "vine_root_duration": 120
+  },
+  "rows": [
+    {
+      "name": "hero_without_items_frostbound",
+      "note": "no inventory: the payload lands raw and both columns agree",
+      "source_name": "`hero_items.py::Frostbite`",
+      "input": {
+        "resist": null,
+        "amount": 0.28,
+        "duration": 180,
+        "alive": true,
+        "pre_amount": 0.0,
+        "pre_timer": 0
+      },
+      "expected": {
+        "amount": 0.28,
+        "timer": 180
+      },
+      "native_old": {
+        "amount": 0.28,
+        "timer": 180
+      }
+    },
+    {
+      "name": "hero_with_abyss_breaker_frostbound",
+      "note": "slow resist 0.30 scales the item slow before the store",
+      "source_name": "`hero_items.py::Frostbite` + `get_slow_resist`",
+      "input": {
+        "resist": 0.3,
+        "amount": 0.28,
+        "duration": 180,
+        "alive": true,
+        "pre_amount": 0.0,
+        "pre_timer": 0
+      },
+      "expected": {
+        "amount": 0.196,
+        "timer": 180
+      },
+      "native_old": {
+        "amount": 0.28,
+        "timer": 180
+      }
+    },
+    {
+      "name": "hero_with_abyss_breaker_arctic_blast",
+      "note": "Everfrost Arctic Blast slow is resisted the same way",
+      "source_name": "`hero_items.py::Arctic Blast`",
+      "input": {
+        "resist": 0.3,
+        "amount": 0.45,
+        "duration": 210,
+        "alive": true,
+        "pre_amount": 0.0,
+        "pre_timer": 0
+      },
+      "expected": {
+        "amount": 0.315,
+        "timer": 210
+      },
+      "native_old": {
+        "amount": 0.45,
+        "timer": 210
+      }
+    },
+    {
+      "name": "hero_with_abyss_breaker_entangle_root",
+      "note": "a full root (1.0) becomes 0.70 for a hero holding Abyss Breaker",
+      "source_name": "`hero_items.py::Entangle`",
+      "input": {
+        "resist": 0.3,
+        "amount": 1.0,
+        "duration": 120,
+        "alive": true,
+        "pre_amount": 0.0,
+        "pre_timer": 0
+      },
+      "expected": {
+        "amount": 0.7,
+        "timer": 120
+      },
+      "native_old": {
+        "amount": 1.0,
+        "timer": 120
+      }
+    },
+    {
+      "name": "hero_at_the_resist_cap",
+      "note": "the cap 0.60 leaves 0.40 of a full root",
+      "source_name": "`hero_items.py::get_slow_resist` cap",
+      "input": {
+        "resist": 0.6,
+        "amount": 1.0,
+        "duration": 120,
+        "alive": true,
+        "pre_amount": 0.0,
+        "pre_timer": 0
+      },
+      "expected": {
+        "amount": 0.4,
+        "timer": 120
+      },
+      "native_old": {
+        "amount": 1.0,
+        "timer": 120
+      }
+    },
+    {
+      "name": "merge_weak_long_after_strong_short",
+      "note": "source refresh rewrites both fields: 0.20/120 replaces 0.50/20",
+      "source_name": "`_core.py::TowerDebuffMixin.apply_slow`",
+      "input": {
+        "resist": null,
+        "amount": 0.2,
+        "duration": 120,
+        "alive": true,
+        "pre_amount": 0.5,
+        "pre_timer": 20
+      },
+      "expected": {
+        "amount": 0.2,
+        "timer": 120
+      },
+      "native_old": {
+        "amount": 0.5,
+        "timer": 120
+      }
+    },
+    {
+      "name": "merge_strong_short_after_weak_long",
+      "note": "a stronger shorter slow shortens the clock: 0.50/30 wins over 0.20/120",
+      "source_name": "`_core.py::TowerDebuffMixin.apply_slow`",
+      "input": {
+        "resist": null,
+        "amount": 0.5,
+        "duration": 30,
+        "alive": true,
+        "pre_amount": 0.2,
+        "pre_timer": 120
+      },
+      "expected": {
+        "amount": 0.5,
+        "timer": 30
+      },
+      "native_old": {
+        "amount": 0.5,
+        "timer": 120
+      }
+    },
+    {
+      "name": "merge_tie_keeps_clock",
+      "note": "equal strength and duration keeps the old clock (no write)",
+      "source_name": "`_core.py::TowerDebuffMixin.apply_slow`",
+      "input": {
+        "resist": null,
+        "amount": 0.3,
+        "duration": 60,
+        "alive": true,
+        "pre_amount": 0.3,
+        "pre_timer": 60
+      },
+      "expected": {
+        "amount": 0.3,
+        "timer": 60
+      },
+      "native_old": {
+        "amount": 0.3,
+        "timer": 60
+      }
+    },
+    {
+      "name": "dead_victim_ignored",
+      "note": "a dead victim takes no slow (pre-9ae wrote it anyway)",
+      "source_name": "`_core.py::TowerDebuffMixin.apply_slow`",
+      "input": {
+        "resist": null,
+        "amount": 0.5,
+        "duration": 120,
+        "alive": false,
+        "pre_amount": 0.0,
+        "pre_timer": 0
+      },
+      "expected": {
+        "amount": 0.0,
+        "timer": 0
+      },
+      "native_old": {
+        "amount": 0.5,
+        "timer": 120
+      }
+    },
+    {
+      "name": "minion_victim_no_items",
+      "note": "a minion carries no inventory, so only the store rule matters",
+      "source_name": "`_core.py::TowerDebuffMixin.apply_slow` (minion)",
+      "input": {
+        "resist": null,
+        "amount": 0.2,
+        "duration": 120,
+        "alive": true,
+        "pre_amount": 0.5,
+        "pre_timer": 20
+      },
+      "expected": {
+        "amount": 0.2,
+        "timer": 120
+      },
+      "native_old": {
+        "amount": 0.5,
+        "timer": 120
+      }
+    }
+  ]
+}

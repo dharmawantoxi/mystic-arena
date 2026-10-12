@@ -118,6 +118,7 @@ jobs:
           python godot_rebuild/tests/burn_boss_delivery_source_oracle.py
           python godot_rebuild/tests/boss_sourceless_delivery_source_oracle.py
           python godot_rebuild/tests/boss_debuff_tenacity_source_oracle.py
+          python godot_rebuild/tests/item_slow_resist_source_oracle.py
           gdparse $(find godot_rebuild -name '*.gd')
           gdlint $(find godot_rebuild -name '*.gd')
           gdformat --check $(find godot_rebuild -name '*.gd')

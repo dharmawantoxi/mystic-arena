@@ -177,6 +177,11 @@ func apply_slow(target_id: int, amount: float, duration: int) -> void:
 	# duration by tenacity 0.50 with a 0.35 magnitude cap and stores with the
 	# amount-greater-or-longer-refresh rule, so a rooted/arctic-blasted boss must
 	# not take the raw `UnitState` field write below.
+	#
+	# Layer 9ae: `UnitState.apply_slow` now carries the same mixin method for
+	# every other victim (alive guard, item slow resist, amount-or-timer
+	# refresh), so the delegation below reaches heroes, minions and structures
+	# too instead of only the boss.
 	if t.has_method("apply_slow"):
 		t.apply_slow(amount, duration)
 		return

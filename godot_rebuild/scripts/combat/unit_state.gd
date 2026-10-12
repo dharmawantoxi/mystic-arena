@@ -71,6 +71,32 @@ func apply_miss_chance(amount: float, duration: int) -> void:
 		blind_timer = duration
 
 
+func apply_slow(amount: float, duration: int) -> void:
+	# Layer 9ae: port of `TowerDebuffMixin.apply_slow` (`_core.py:853-867`), the
+	# polymorphic method every item slow arm calls (`target.apply_slow(...)` in
+	# Frostbite `hero_items.py:2594-2595`, Vine Rod Entangle `:2662`, Arctic
+	# Blast `:2290-2291`). A dead victim is ignored, the victim's item slow
+	# resist scales the incoming payload, and the store rewrites BOTH fields on
+	# `amount > slow_amount or slow_timer < duration`. The pre-9ae bus write
+	# (`maxf`/`maxi`, no resist, no alive guard) skipped all three for any
+	# victim that had no `apply_slow` method of its own - which was every unit
+	# but the boss.
+	if not alive:
+		return
+	var resist := slow_resist()
+	if resist > 0.0:
+		amount *= 1.0 - resist
+	if amount > slow_amount or slow_timer < duration:
+		slow_amount = amount
+		slow_timer = duration
+
+
+func slow_resist() -> float:
+	# Source reads the victim's inventory (`inv.get_slow_resist()`); only heroes
+	# carry one, so the base entity resists nothing.
+	return 0.0
+
+
 func tick_item_debuffs() -> void:
 	# Port of the item slice of TowerDebuffMixin._tick_tower_debuffs: each
 	# timer decays by one tick and clears its amount on the last tick.
