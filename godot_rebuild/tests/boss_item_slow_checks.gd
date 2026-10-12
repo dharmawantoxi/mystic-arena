@@ -419,8 +419,8 @@ func _live_match_contrasts(check: Callable) -> void:
 		# and the source `e.apply_slow(...)` alive guard would refuse the slow.
 		# Keep this probe alive so the 0.45/210 column stays observable, and pin
 		# the guard itself with the doomed probe below.
+		minion.max_hp = 10000
 		minion.hp = 10000.0
-		minion.max_hp = 10000.0
 		var doomed: UnitState = ef_world.spawn_unit(GOBLIN, ef_world.RED, 1)
 		doomed.position = Vector2(310.0, 380.0)
 		if not ef_hero.items.add("everfrost_guard"):
