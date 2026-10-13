@@ -4,6 +4,7 @@ extends RefCounted
 ## the Ice Vortex DOT damaged and slowed enemies every 20 ticks.
 
 const BossAI = preload("res://scripts/match/boss_ai.gd")
+const HeroState = preload("res://scripts/combat/hero_state.gd")
 const BossState = preload("res://scripts/match/boss_state.gd")
 const GOBLIN = preload("res://data/minions/goblin.tres")
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
