@@ -54,7 +54,7 @@ func _shape_check(check: Callable, fixture: Dictionary) -> void:
 
 
 func _spawn_hero_with_items(world: Prototype, items: Array) -> HeroState:
-	var hero = world.spawn_hero(Prototype.KAIZEN, world.BLUE, HERO_SPOT)
+	var hero: HeroState = world.spawn_hero(Prototype.KAIZEN, world.BLUE, HERO_SPOT)
 	if hero == null:
 		return null
 	for item_id in items:
@@ -67,7 +67,7 @@ func _payload_rows(check: Callable, world: Prototype, fixture: Dictionary) -> vo
 		var label := String(row.get("name", "unknown"))
 		var amount := float(row.input.amount)
 		var duration := int(row.input.duration)
-		var plain := _spawn_hero_with_items(world, [])
+		var plain: HeroState = _spawn_hero_with_items(world, [])
 		if plain == null:
 			check.call(false, "boss slow probe spawns: %s" % label)
 			return
@@ -81,7 +81,7 @@ func _payload_rows(check: Callable, world: Prototype, fixture: Dictionary) -> vo
 			),
 			"a plain victim takes the boss slow raw: %s" % label
 		)
-		var resisted := _spawn_hero_with_items(world, ["abyss_breaker"])
+		var resisted: HeroState = _spawn_hero_with_items(world, ["abyss_breaker"])
 		if resisted == null:
 			check.call(false, "resisted probe spawns: %s" % label)
 			return
@@ -101,7 +101,7 @@ func _merge_rows(check: Callable, world: Prototype, fixture: Dictionary) -> void
 	for row in fixture.merge_rows:
 		var label := String(row.get("name", "unknown"))
 		var payload: Dictionary = row.input
-		var hero = _spawn_hero_with_items(world, ["abyss_breaker"])
+		var hero: HeroState = _spawn_hero_with_items(world, ["abyss_breaker"])
 		if hero == null:
 			check.call(false, "merge probe spawns: %s" % label)
 			return
@@ -119,7 +119,7 @@ func _merge_rows(check: Callable, world: Prototype, fixture: Dictionary) -> void
 
 
 func _guards(check: Callable, world: Prototype) -> void:
-	var dead = _spawn_hero_with_items(world, [])
+	var dead: HeroState = _spawn_hero_with_items(world, [])
 	dead.alive = false
 	BossAI._slow(dead, 0.5, 180)
 	check.call(
@@ -151,9 +151,9 @@ func _vortex_dot(check: Callable, world: Prototype) -> void:
 	boss.entrance_timer = 0
 	boss.vortex_origin = boss.position + Vector2(300, 0)
 	boss.vortex_active_timer = 20
-	var inside = _spawn_hero_with_items(world, [])
-	var inside_resisted = _spawn_hero_with_items(world, ["abyss_breaker"])
-	var outside = _spawn_hero_with_items(world, [])
+	var inside: HeroState = _spawn_hero_with_items(world, [])
+	var inside_resisted: HeroState = _spawn_hero_with_items(world, ["abyss_breaker"])
+	var outside: HeroState = _spawn_hero_with_items(world, [])
 	if inside == null or inside_resisted == null or outside == null:
 		check.call(false, "vortex probes spawn")
 		return
@@ -161,7 +161,7 @@ func _vortex_dot(check: Callable, world: Prototype) -> void:
 	inside_resisted.position = boss.vortex_origin + Vector2(0, 10)
 	outside.position = boss.vortex_origin + Vector2(81, 0)
 	for hero in [inside, inside_resisted, outside]:
-		hero.max_hp = 100000.0
+		hero.max_hp = 100000
 		hero.hp = 100000.0
 	var enemies: Array[UnitState] = []
 	for unit in world.units:
@@ -169,9 +169,9 @@ func _vortex_dot(check: Callable, world: Prototype) -> void:
 			enemies.append(unit)
 	var per_tick := int(BossAI._skill_damage(boss, boss.skill_q_damage) / 3.0)
 	check.call(per_tick == 81, "the live skill_q_damage trisects to 81 like the source")
-	var inside_before := inside.hp
-	var resisted_before := inside_resisted.hp
-	var outside_before := outside.hp
+	var inside_before: float = inside.hp
+	var resisted_before: float = inside_resisted.hp
+	var outside_before: float = outside.hp
 	BossAI.tick(world, boss, enemies, null, INF)
 	check.call(
 		(
