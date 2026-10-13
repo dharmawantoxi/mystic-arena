@@ -169,16 +169,24 @@ func _vortex_dot(check: Callable, world: Prototype) -> void:
 			enemies.append(unit)
 	var per_tick := int(BossAI._skill_damage(boss, boss.skill_q_damage) / 3.0)
 	check.call(per_tick == 81, "the live skill_q_damage trisects to 81 like the source")
+	# The source dispatches `_smart_ai_ancient_apparition` only from the target
+	# branch, so the DOT needs a live target - and the ability clocks are held so
+	# only the vortex acts on these ticks.
+	boss.q_timer = 1000
+	boss.w_timer = 1000
+	boss.e_timer = 1000
+	boss.r_timer = 1000
+	boss.hp = float(boss.max_hp)
 	var inside_before: float = inside.hp
 	var resisted_before: float = inside_resisted.hp
 	var outside_before: float = outside.hp
-	BossAI.tick(world, boss, enemies, null, INF)
+	BossAI.tick(world, boss, enemies, inside, 100.0)
 	check.call(
 		(
 			int(inside_before - inside.hp) == per_tick
 			and int(resisted_before - inside_resisted.hp) == per_tick
 		),
-		"the vortex DOT damages every enemy inside the 80 px radius, target or not"
+		"the vortex DOT damages every enemy inside the 80 px radius"
 	)
 	check.call(
 		is_equal_approx(outside_before, outside.hp),
@@ -198,11 +206,11 @@ func _vortex_dot(check: Callable, world: Prototype) -> void:
 	check.call(boss.vortex_active_timer == 19, "the vortex clock advances once per tick")
 	inside.hp = 100000.0
 	inside_before = inside.hp
-	BossAI.tick(world, boss, enemies, null, INF)
+	BossAI.tick(world, boss, enemies, inside, 100.0)
 	check.call(
 		is_equal_approx(inside_before, inside.hp) and boss.vortex_active_timer == 18,
 		"off the 20 tick gate the vortex only counts down"
 	)
 	boss.vortex_active_timer = 1
-	BossAI.tick(world, boss, enemies, null, INF)
+	BossAI.tick(world, boss, enemies, inside, 100.0)
 	check.call(boss.vortex_active_timer == 0, "the vortex expires at zero")
