@@ -84,11 +84,19 @@ static func _outline(hero_type: String) -> Array[Vector2]:
 
 
 static func _generic_outline(hero_type: String) -> Array[Vector2]:
-	var code := fingerprint(hero_type)
-	var sides := 7 + code % 4
+	# Layer 9aj: the old wobble was `(code >> (index % 12)) % 5`, i.e. bits 0-9
+	# of a code below 1000003, so 33 pairs of the 220 generic heroes drew the
+	# exact same outline (`gravefang` shared `hitokage`'s figure, and so on).
+	# Spreading the whole code through a large multiplier and reading base-5
+	# digits keeps all 222 roster outlines distinct; the reach range is 1.00-1.12,
+	# still inside `MAX_REACH`.
+	var spread := fingerprint(hero_type) * 48271 + 1021
+	var sides := 7 + spread % 4
 	var result: Array[Vector2] = []
+	var divisor := 1
 	for index in range(sides):
 		var angle := -PI / 2.0 + TAU * float(index) / float(sides)
-		var wobble := float((code >> (index % 12)) % 5 - 2) * 0.06
+		var wobble := float((spread / divisor) % 5 - 2) * 0.06
 		result.append(Vector2(cos(angle), sin(angle)) * (1.0 + wobble))
+		divisor *= 5
 	return result

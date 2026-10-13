@@ -137,6 +137,7 @@ from item_silence_store_source_oracle import source_fixture as item_silence_stor
 from boss_ai_slow_source_oracle import source_fixture as boss_ai_slow_fixture
 from boss_attack_lock_source_oracle import source_fixture as boss_attack_lock_fixture
 from debuff_payload_reach_source_oracle import source_fixture as debuff_payload_reach_fixture
+from hero_marker_source_oracle import source_fixture as hero_marker_fixture
 from miasma_tick_delivery_source_oracle import source_fixture as miasma_tick_delivery_fixture
 check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
       "Item structure arm suite must be preloaded")
@@ -306,6 +307,18 @@ if (ROOT / "tests/fixtures/debuff_payload_reach_source.json").is_file():
     check(debuff_payload_reach_fixture() == json.loads(
         (ROOT / "tests/fixtures/debuff_payload_reach_source.json").read_text(encoding="utf-8")),
           "Debuff payload reach fixture must not drift from the oracle")
+check('const HeroMarkerChecks = preload("res://tests/hero_marker_checks.gd")' in ai_tests,
+      "Hero marker suite must be preloaded")
+check("HeroMarkerChecks.new().run(_check)" in ai_tests, "Hero marker suite must run")
+check((ROOT / "tests/fixtures/hero_marker_source.json").is_file(),
+      "Hero marker golden fixture must exist")
+if (ROOT / "tests/fixtures/hero_marker_source.json").is_file():
+    check(hero_marker_fixture() == json.loads(
+        (ROOT / "tests/fixtures/hero_marker_source.json").read_text(encoding="utf-8")),
+          "Hero marker fixture must not drift from the oracle")
+view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+check("HeroMarker.silhouette(" in view, "The arena view must draw the readable silhouette")
+check("HeroMarker.body(" not in view, "The arena view must not fall back to the placeholder body")
 check((ROOT / "tests/fixtures/boss_sourceless_delivery_source.json").is_file(),
       "Boss sourceless delivery fixture must exist")
 if (ROOT / "tests/fixtures/boss_sourceless_delivery_source.json").is_file():

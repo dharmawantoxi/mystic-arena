@@ -1,0 +1,1582 @@
+{
+  "source": "procedural: `godot_rebuild/scripts/ui/hero_marker.gd::silhouette`",
+  "callsite": "godot_rebuild/scenes/prototype/prototype_view.gd::_draw_hero",
+  "quantum": 10000,
+  "shape": {
+    "roster": 222,
+    "distinct_outlines": 222,
+    "collisions": 0,
+    "families": {
+      "generic": 220,
+      "kaizen": 1,
+      "thorne": 1
+    },
+    "sides": [
+      7,
+      8,
+      9,
+      10,
+      12
+    ],
+    "max_reach_milli": 1154,
+    "min_reach_milli": 1000,
+    "generic_reach_milli": 1120,
+    "digest": "daab089cf1763211"
+  },
+  "roster": {
+    "abaddon": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 101569,
+      "y_hash": 651520,
+      "reach_milli": 1120
+    },
+    "aelyrion": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 950314,
+      "y_hash": 926942,
+      "reach_milli": 1060
+    },
+    "aeralith": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 653311,
+      "y_hash": 585343,
+      "reach_milli": 1120
+    },
+    "akahime": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 663919,
+      "y_hash": 328776,
+      "reach_milli": 1120
+    },
+    "akaroth": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 800014,
+      "y_hash": 258774,
+      "reach_milli": 1120
+    },
+    "akashari": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 325533,
+      "y_hash": 366706,
+      "reach_milli": 1120
+    },
+    "akirakumo": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 876942,
+      "y_hash": 419742,
+      "reach_milli": 1120
+    },
+    "akiraze": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 250396,
+      "y_hash": 695794,
+      "reach_milli": 1000
+    },
+    "alchemist": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 520224,
+      "y_hash": 927535,
+      "reach_milli": 1120
+    },
+    "ancient_apparition": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 384714,
+      "y_hash": 279124,
+      "reach_milli": 1120
+    },
+    "astraelion": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 472954,
+      "y_hash": 296349,
+      "reach_milli": 1000
+    },
+    "aurelian": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 439386,
+      "y_hash": 656579,
+      "reach_milli": 1120
+    },
+    "aurelion": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 455834,
+      "y_hash": 211294,
+      "reach_milli": 1120
+    },
+    "aurelix": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 658505,
+      "y_hash": 138356,
+      "reach_milli": 1120
+    },
+    "aurelyssa": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 238120,
+      "y_hash": 973751,
+      "reach_milli": 1120
+    },
+    "aurethzar": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 633894,
+      "y_hash": 471736,
+      "reach_milli": 1120
+    },
+    "aurex": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 498553,
+      "y_hash": 776161,
+      "reach_milli": 1120
+    },
+    "auroth": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 861585,
+      "y_hash": 995992,
+      "reach_milli": 1120
+    },
+    "azkharion": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 135488,
+      "y_hash": 546516,
+      "reach_milli": 1120
+    },
+    "azureth": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 166231,
+      "y_hash": 749287,
+      "reach_milli": 1120
+    },
+    "bhorgathul": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 229896,
+      "y_hash": 309161,
+      "reach_milli": 1120
+    },
+    "broggmar": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 300853,
+      "y_hash": 225364,
+      "reach_milli": 1120
+    },
+    "brumhar": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 790912,
+      "y_hash": 439496,
+      "reach_milli": 1120
+    },
+    "celwynn": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 372866,
+      "y_hash": 730676,
+      "reach_milli": 1060
+    },
+    "cogsworth": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 878217,
+      "y_hash": 206039,
+      "reach_milli": 1120
+    },
+    "cryssalia": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 909905,
+      "y_hash": 945213,
+      "reach_milli": 1060
+    },
+    "deidara": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 132367,
+      "y_hash": 554880,
+      "reach_milli": 1120
+    },
+    "dorakai": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 187795,
+      "y_hash": 510789,
+      "reach_milli": 1120
+    },
+    "drakar": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 573770,
+      "y_hash": 337832,
+      "reach_milli": 1120
+    },
+    "drav": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 234086,
+      "y_hash": 82662,
+      "reach_milli": 1120
+    },
+    "emberwick": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 501714,
+      "y_hash": 533194,
+      "reach_milli": 1120
+    },
+    "garumenshi": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 732668,
+      "y_hash": 537217,
+      "reach_milli": 1120
+    },
+    "ghrakmaal": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 592956,
+      "y_hash": 197034,
+      "reach_milli": 1060
+    },
+    "gorath": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 509819,
+      "y_hash": 52223,
+      "reach_milli": 1120
+    },
+    "gornak": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 769899,
+      "y_hash": 407409,
+      "reach_milli": 1120
+    },
+    "gravefang": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 125695,
+      "y_hash": 478301,
+      "reach_milli": 1120
+    },
+    "gravewake": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 408882,
+      "y_hash": 688067,
+      "reach_milli": 1120
+    },
+    "grimjack": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 363720,
+      "y_hash": 49068,
+      "reach_milli": 1120
+    },
+    "grimjaw": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 505807,
+      "y_hash": 563373,
+      "reach_milli": 1120
+    },
+    "grimkor": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 452197,
+      "y_hash": 779611,
+      "reach_milli": 1120
+    },
+    "grimstalker": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 636162,
+      "y_hash": 797353,
+      "reach_milli": 1120
+    },
+    "grondarthul": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 707442,
+      "y_hash": 201505,
+      "reach_milli": 1060
+    },
+    "grondmauris": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 444213,
+      "y_hash": 404403,
+      "reach_milli": 1120
+    },
+    "hitokage": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 126549,
+      "y_hash": 6806,
+      "reach_milli": 1120
+    },
+    "hollowbane": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 367479,
+      "y_hash": 766311,
+      "reach_milli": 1120
+    },
+    "ignakhor": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 384521,
+      "y_hash": 415983,
+      "reach_milli": 1120
+    },
+    "ignirus": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 293733,
+      "y_hash": 314495,
+      "reach_milli": 1120
+    },
+    "ignis_drachorn": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 220952,
+      "y_hash": 576286,
+      "reach_milli": 1120
+    },
+    "infrakzaar": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 688548,
+      "y_hash": 289212,
+      "reach_milli": 1120
+    },
+    "kaedrin": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 894631,
+      "y_hash": 892453,
+      "reach_milli": 1060
+    },
+    "kaeldris": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 374593,
+      "y_hash": 882940,
+      "reach_milli": 1120
+    },
+    "kaelthar": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 405210,
+      "y_hash": 46029,
+      "reach_milli": 1120
+    },
+    "kaelthorn": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 149140,
+      "y_hash": 786757,
+      "reach_milli": 1060
+    },
+    "kaelthys": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 714617,
+      "y_hash": 123747,
+      "reach_milli": 1120
+    },
+    "kaelvyrn": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 363079,
+      "y_hash": 927397,
+      "reach_milli": 1120
+    },
+    "kaerinya": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 692883,
+      "y_hash": 505732,
+      "reach_milli": 1120
+    },
+    "kaerissa": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 599726,
+      "y_hash": 511380,
+      "reach_milli": 1120
+    },
+    "kaervosth": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 750179,
+      "y_hash": 791726,
+      "reach_milli": 1120
+    },
+    "kagetsuka": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 656540,
+      "y_hash": 264371,
+      "reach_milli": 1120
+    },
+    "kaineroth": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 386655,
+      "y_hash": 287004,
+      "reach_milli": 1120
+    },
+    "kairenji": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 853154,
+      "y_hash": 10671,
+      "reach_milli": 1120
+    },
+    "kaithros": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 14519,
+      "y_hash": 793326,
+      "reach_milli": 1120
+    },
+    "kaizen": {
+      "family": "kaizen",
+      "sides": 8,
+      "x_hash": 632807,
+      "y_hash": 851289,
+      "reach_milli": 1150
+    },
+    "kaizoku_raijin": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 154709,
+      "y_hash": 680835,
+      "reach_milli": 1120
+    },
+    "kaoruken": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 72249,
+      "y_hash": 562020,
+      "reach_milli": 1120
+    },
+    "karzhul": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 729206,
+      "y_hash": 961826,
+      "reach_milli": 1120
+    },
+    "kassadin": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 310080,
+      "y_hash": 868990,
+      "reach_milli": 1120
+    },
+    "kazreth": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 570497,
+      "y_hash": 444042,
+      "reach_milli": 1120
+    },
+    "kazuren": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 438908,
+      "y_hash": 321960,
+      "reach_milli": 1120
+    },
+    "kazureth": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 857661,
+      "y_hash": 388457,
+      "reach_milli": 1120
+    },
+    "kenshiro": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 170190,
+      "y_hash": 697789,
+      "reach_milli": 1120
+    },
+    "khalros": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 88802,
+      "y_hash": 803670,
+      "reach_milli": 1120
+    },
+    "khalzaredh": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 430302,
+      "y_hash": 190916,
+      "reach_milli": 1120
+    },
+    "khazan": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 885395,
+      "y_hash": 6123,
+      "reach_milli": 1060
+    },
+    "korokai": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 624269,
+      "y_hash": 833288,
+      "reach_milli": 1120
+    },
+    "krobellus": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 296586,
+      "y_hash": 732200,
+      "reach_milli": 1060
+    },
+    "krognarr": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 670282,
+      "y_hash": 436578,
+      "reach_milli": 1120
+    },
+    "kryvoxar": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 869301,
+      "y_hash": 945053,
+      "reach_milli": 1120
+    },
+    "kunkka": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 787196,
+      "y_hash": 108563,
+      "reach_milli": 1120
+    },
+    "kurogari": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 503912,
+      "y_hash": 837121,
+      "reach_milli": 1120
+    },
+    "kyrenzai": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 960130,
+      "y_hash": 538504,
+      "reach_milli": 1120
+    },
+    "kyumirra": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 781779,
+      "y_hash": 170476,
+      "reach_milli": 1120
+    },
+    "leoric": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 55592,
+      "y_hash": 119538,
+      "reach_milli": 1120
+    },
+    "luminar": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 898417,
+      "y_hash": 204983,
+      "reach_milli": 1120
+    },
+    "lyrenya": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 42222,
+      "y_hash": 187935,
+      "reach_milli": 1120
+    },
+    "lyrienne": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 37531,
+      "y_hash": 656509,
+      "reach_milli": 1120
+    },
+    "lyssarethys": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 437237,
+      "y_hash": 430548,
+      "reach_milli": 1120
+    },
+    "malzareth": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 655033,
+      "y_hash": 203252,
+      "reach_milli": 1120
+    },
+    "malzeroth": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 787019,
+      "y_hash": 632369,
+      "reach_milli": 1120
+    },
+    "molgravar": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 616103,
+      "y_hash": 592872,
+      "reach_milli": 1120
+    },
+    "morgath": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 331195,
+      "y_hash": 227878,
+      "reach_milli": 1120
+    },
+    "morkhaera": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 677038,
+      "y_hash": 187158,
+      "reach_milli": 1120
+    },
+    "morkhelvis": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 349069,
+      "y_hash": 417156,
+      "reach_milli": 1120
+    },
+    "morthraxis": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 804689,
+      "y_hash": 793926,
+      "reach_milli": 1120
+    },
+    "morthyrax": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 981227,
+      "y_hash": 215592,
+      "reach_milli": 1120
+    },
+    "morvaenthir": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 678203,
+      "y_hash": 353392,
+      "reach_milli": 1060
+    },
+    "morvaeth": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 35323,
+      "y_hash": 444414,
+      "reach_milli": 1120
+    },
+    "morvaeth2": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 440911,
+      "y_hash": 259659,
+      "reach_milli": 1060
+    },
+    "morvakhul": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 197229,
+      "y_hash": 891417,
+      "reach_milli": 1120
+    },
+    "morvath": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 943224,
+      "y_hash": 506713,
+      "reach_milli": 1120
+    },
+    "morvein": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 950335,
+      "y_hash": 881548,
+      "reach_milli": 1120
+    },
+    "morvekhar": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 904148,
+      "y_hash": 468106,
+      "reach_milli": 1120
+    },
+    "morvyssk": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 273882,
+      "y_hash": 924386,
+      "reach_milli": 1120
+    },
+    "naraka": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 125106,
+      "y_hash": 788634,
+      "reach_milli": 1060
+    },
+    "nazulmor": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 263755,
+      "y_hash": 332186,
+      "reach_milli": 1120
+    },
+    "nexthyrius": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 245957,
+      "y_hash": 73348,
+      "reach_milli": 1120
+    },
+    "nixweaver": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 224787,
+      "y_hash": 874359,
+      "reach_milli": 1120
+    },
+    "nyrellieth": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 403122,
+      "y_hash": 979617,
+      "reach_milli": 1000
+    },
+    "nyrethzalv": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 780696,
+      "y_hash": 909643,
+      "reach_milli": 1120
+    },
+    "nyxallaria": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 195254,
+      "y_hash": 125145,
+      "reach_milli": 1060
+    },
+    "nyxara": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 692092,
+      "y_hash": 445423,
+      "reach_milli": 1120
+    },
+    "nyxarath": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 963291,
+      "y_hash": 277379,
+      "reach_milli": 1120
+    },
+    "nyxareth": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 418035,
+      "y_hash": 664251,
+      "reach_milli": 1120
+    },
+    "nyxareva": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 410432,
+      "y_hash": 940745,
+      "reach_milli": 1120
+    },
+    "nyxariel": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 436677,
+      "y_hash": 917284,
+      "reach_milli": 1060
+    },
+    "nyxaris": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 835787,
+      "y_hash": 451902,
+      "reach_milli": 1120
+    },
+    "nyxaroth": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 986371,
+      "y_hash": 860295,
+      "reach_milli": 1120
+    },
+    "nyxharr": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 927490,
+      "y_hash": 897130,
+      "reach_milli": 1120
+    },
+    "nyxraal": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 94405,
+      "y_hash": 176997,
+      "reach_milli": 1120
+    },
+    "nyxthrael": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 454009,
+      "y_hash": 761640,
+      "reach_milli": 1060
+    },
+    "nyzrak": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 182313,
+      "y_hash": 425609,
+      "reach_milli": 1000
+    },
+    "obanai": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 503422,
+      "y_hash": 606052,
+      "reach_milli": 1120
+    },
+    "okeanora": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 205391,
+      "y_hash": 936319,
+      "reach_milli": 1120
+    },
+    "pyraena": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 342421,
+      "y_hash": 28201,
+      "reach_milli": 1120
+    },
+    "pyraethis": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 362348,
+      "y_hash": 362679,
+      "reach_milli": 1120
+    },
+    "pyraklos": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 756324,
+      "y_hash": 134757,
+      "reach_milli": 1120
+    },
+    "pyrenth": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 585516,
+      "y_hash": 363535,
+      "reach_milli": 1120
+    },
+    "pyrhaan": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 304665,
+      "y_hash": 118132,
+      "reach_milli": 1120
+    },
+    "rakzhan": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 658103,
+      "y_hash": 68071,
+      "reach_milli": 1060
+    },
+    "ravokkar": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 946243,
+      "y_hash": 210845,
+      "reach_milli": 1120
+    },
+    "raz": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 50489,
+      "y_hash": 756994,
+      "reach_milli": 1120
+    },
+    "razak": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 634174,
+      "y_hash": 360853,
+      "reach_milli": 1120
+    },
+    "rynvara": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 621413,
+      "y_hash": 166769,
+      "reach_milli": 1120
+    },
+    "sanguire": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 433446,
+      "y_hash": 782991,
+      "reach_milli": 1120
+    },
+    "sanguiveth": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 659066,
+      "y_hash": 806809,
+      "reach_milli": 1060
+    },
+    "sasori": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 340804,
+      "y_hash": 543183,
+      "reach_milli": 1120
+    },
+    "seiryukong": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 418276,
+      "y_hash": 194467,
+      "reach_milli": 1120
+    },
+    "selunara": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 145005,
+      "y_hash": 732561,
+      "reach_milli": 1120
+    },
+    "seraphienne": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 243596,
+      "y_hash": 467599,
+      "reach_milli": 1120
+    },
+    "sethrakhar": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 216254,
+      "y_hash": 654474,
+      "reach_milli": 1120
+    },
+    "shimorakh": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 819423,
+      "y_hash": 565564,
+      "reach_milli": 1060
+    },
+    "shirotaka": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 475178,
+      "y_hash": 973918,
+      "reach_milli": 1120
+    },
+    "sirakzan": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 474109,
+      "y_hash": 354921,
+      "reach_milli": 1120
+    },
+    "solara": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 587218,
+      "y_hash": 980215,
+      "reach_milli": 1120
+    },
+    "solareth": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 759746,
+      "y_hash": 467543,
+      "reach_milli": 1060
+    },
+    "solvanth": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 925955,
+      "y_hash": 892388,
+      "reach_milli": 1120
+    },
+    "solvarin": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 166893,
+      "y_hash": 481246,
+      "reach_milli": 1060
+    },
+    "sunakage": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 413953,
+      "y_hash": 219789,
+      "reach_milli": 1120
+    },
+    "sylara": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 139397,
+      "y_hash": 371376,
+      "reach_milli": 1060
+    },
+    "sylvantheros": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 444010,
+      "y_hash": 19576,
+      "reach_milli": 1120
+    },
+    "syrentha": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 417678,
+      "y_hash": 412452,
+      "reach_milli": 1120
+    },
+    "syrindra": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 1766,
+      "y_hash": 750152,
+      "reach_milli": 1120
+    },
+    "thalakryon": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 288675,
+      "y_hash": 975032,
+      "reach_milli": 1120
+    },
+    "thalgryn": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 523121,
+      "y_hash": 325706,
+      "reach_milli": 1120
+    },
+    "thalryndel": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 574239,
+      "y_hash": 320754,
+      "reach_milli": 1120
+    },
+    "thargoroth": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 233035,
+      "y_hash": 695174,
+      "reach_milli": 1120
+    },
+    "thoraz": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 5257,
+      "y_hash": 725911,
+      "reach_milli": 1060
+    },
+    "thorgaruk": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 888102,
+      "y_hash": 212193,
+      "reach_milli": 1120
+    },
+    "thorne": {
+      "family": "thorne",
+      "sides": 12,
+      "x_hash": 332539,
+      "y_hash": 393061,
+      "reach_milli": 1154
+    },
+    "thornvaegrim": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 630118,
+      "y_hash": 997159,
+      "reach_milli": 1060
+    },
+    "thorvak": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 18736,
+      "y_hash": 374295,
+      "reach_milli": 1120
+    },
+    "thorvin": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 910475,
+      "y_hash": 17355,
+      "reach_milli": 1120
+    },
+    "tsukiyora": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 509997,
+      "y_hash": 769606,
+      "reach_milli": 1120
+    },
+    "urgharun": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 649782,
+      "y_hash": 370914,
+      "reach_milli": 1120
+    },
+    "ursath": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 848400,
+      "y_hash": 684830,
+      "reach_milli": 1120
+    },
+    "vaelindra": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 440947,
+      "y_hash": 566328,
+      "reach_milli": 1000
+    },
+    "vaelkorr": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 27481,
+      "y_hash": 899724,
+      "reach_milli": 1120
+    },
+    "vaelmyrra": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 733517,
+      "y_hash": 616716,
+      "reach_milli": 1120
+    },
+    "vaerith": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 835638,
+      "y_hash": 294948,
+      "reach_milli": 1120
+    },
+    "valekris": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 339751,
+      "y_hash": 10166,
+      "reach_milli": 1120
+    },
+    "valthar": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 878086,
+      "y_hash": 903500,
+      "reach_milli": 1120
+    },
+    "vardrok": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 731157,
+      "y_hash": 21796,
+      "reach_milli": 1120
+    },
+    "vargrath": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 521676,
+      "y_hash": 499252,
+      "reach_milli": 1120
+    },
+    "vargroth": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 163687,
+      "y_hash": 921230,
+      "reach_milli": 1120
+    },
+    "varkul": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 460985,
+      "y_hash": 544439,
+      "reach_milli": 1120
+    },
+    "varkuthar": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 644922,
+      "y_hash": 959201,
+      "reach_milli": 1120
+    },
+    "velmyrth": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 349397,
+      "y_hash": 57338,
+      "reach_milli": 1120
+    },
+    "verdanix": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 997033,
+      "y_hash": 976813,
+      "reach_milli": 1120
+    },
+    "veshtrax": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 916808,
+      "y_hash": 752225,
+      "reach_milli": 1120
+    },
+    "vessyra": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 946650,
+      "y_hash": 535172,
+      "reach_milli": 1120
+    },
+    "vex": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 76665,
+      "y_hash": 225334,
+      "reach_milli": 1120
+    },
+    "vhaerinth": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 424635,
+      "y_hash": 693569,
+      "reach_milli": 1120
+    },
+    "vhaerith": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 421139,
+      "y_hash": 450947,
+      "reach_milli": 1120
+    },
+    "vhalzun": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 935303,
+      "y_hash": 244365,
+      "reach_milli": 1120
+    },
+    "vhorethzir": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 887969,
+      "y_hash": 737196,
+      "reach_milli": 1060
+    },
+    "vhyssarion": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 692582,
+      "y_hash": 563742,
+      "reach_milli": 1120
+    },
+    "vokrahn": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 12022,
+      "y_hash": 601493,
+      "reach_milli": 1120
+    },
+    "vorenmarr": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 663266,
+      "y_hash": 904494,
+      "reach_milli": 1120
+    },
+    "vorgath": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 557814,
+      "y_hash": 143835,
+      "reach_milli": 1120
+    },
+    "vorthakul": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 661211,
+      "y_hash": 837505,
+      "reach_milli": 1120
+    },
+    "vraskhan": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 931970,
+      "y_hash": 960125,
+      "reach_milli": 1120
+    },
+    "vulkareth": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 655633,
+      "y_hash": 856608,
+      "reach_milli": 1120
+    },
+    "vyraeth": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 267397,
+      "y_hash": 243566,
+      "reach_milli": 1060
+    },
+    "wiro": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 908086,
+      "y_hash": 898598,
+      "reach_milli": 1120
+    },
+    "xaelmoran": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 525209,
+      "y_hash": 681953,
+      "reach_milli": 1120
+    },
+    "xaerissa": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 651091,
+      "y_hash": 77931,
+      "reach_milli": 1120
+    },
+    "xareth": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 275558,
+      "y_hash": 426834,
+      "reach_milli": 1120
+    },
+    "xarnathul": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 409088,
+      "y_hash": 709411,
+      "reach_milli": 1120
+    },
+    "xarnthuul": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 513136,
+      "y_hash": 398991,
+      "reach_milli": 1060
+    },
+    "xelnarath": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 82625,
+      "y_hash": 496300,
+      "reach_milli": 1120
+    },
+    "xerakhotep": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 162308,
+      "y_hash": 394376,
+      "reach_milli": 1120
+    },
+    "xerakkuth": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 656210,
+      "y_hash": 98051,
+      "reach_milli": 1060
+    },
+    "xerathis": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 718393,
+      "y_hash": 323381,
+      "reach_milli": 1120
+    },
+    "xharokh": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 591188,
+      "y_hash": 481128,
+      "reach_milli": 1060
+    },
+    "xirthalis": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 869262,
+      "y_hash": 634398,
+      "reach_milli": 1120
+    },
+    "xyrael": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 656698,
+      "y_hash": 165701,
+      "reach_milli": 1120
+    },
+    "yamako": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 929024,
+      "y_hash": 223355,
+      "reach_milli": 1060
+    },
+    "yhoranth": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 180062,
+      "y_hash": 262037,
+      "reach_milli": 1120
+    },
+    "yomigetsu": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 560375,
+      "y_hash": 207993,
+      "reach_milli": 1060
+    },
+    "zahkareth": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 567912,
+      "y_hash": 742643,
+      "reach_milli": 1120
+    },
+    "zarethyr": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 368893,
+      "y_hash": 971646,
+      "reach_milli": 1120
+    },
+    "zephyr": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 749395,
+      "y_hash": 920844,
+      "reach_milli": 1120
+    },
+    "zhaeris": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 352341,
+      "y_hash": 37232,
+      "reach_milli": 1120
+    },
+    "zharakzuul": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 409739,
+      "y_hash": 265942,
+      "reach_milli": 1120
+    },
+    "zharok": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 476293,
+      "y_hash": 824801,
+      "reach_milli": 1120
+    },
+    "zhyrakaan": {
+      "family": "generic",
+      "sides": 10,
+      "x_hash": 908927,
+      "y_hash": 245910,
+      "reach_milli": 1060
+    },
+    "zhyvrek": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 513982,
+      "y_hash": 529657,
+      "reach_milli": 1120
+    },
+    "zorashi": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 146445,
+      "y_hash": 726368,
+      "reach_milli": 1120
+    },
+    "zorathiel": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 777582,
+      "y_hash": 227801,
+      "reach_milli": 1120
+    },
+    "zorothrax": {
+      "family": "generic",
+      "sides": 9,
+      "x_hash": 761280,
+      "y_hash": 776775,
+      "reach_milli": 1060
+    },
+    "zulkhaven": {
+      "family": "generic",
+      "sides": 7,
+      "x_hash": 353324,
+      "y_hash": 1430,
+      "reach_milli": 1120
+    },
+    "zyvareth": {
+      "family": "generic",
+      "sides": 8,
+      "x_hash": 161762,
+      "y_hash": 317061,
+      "reach_milli": 1120
+    }
+  }
+}
