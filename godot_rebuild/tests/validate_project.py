@@ -136,6 +136,7 @@ from item_slow_resist_source_oracle import source_fixture as item_slow_resist_fi
 from item_silence_store_source_oracle import source_fixture as item_silence_store_fixture
 from boss_ai_slow_source_oracle import source_fixture as boss_ai_slow_fixture
 from boss_attack_lock_source_oracle import source_fixture as boss_attack_lock_fixture
+from debuff_payload_reach_source_oracle import source_fixture as debuff_payload_reach_fixture
 from miasma_tick_delivery_source_oracle import source_fixture as miasma_tick_delivery_fixture
 check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
       "Item structure arm suite must be preloaded")
@@ -295,6 +296,16 @@ if (ROOT / "tests/fixtures/boss_attack_lock_source.json").is_file():
     check(boss_attack_lock_fixture() == json.loads(
         (ROOT / "tests/fixtures/boss_attack_lock_source.json").read_text(encoding="utf-8")),
           "Boss attack lock fixture must not drift from the oracle")
+check('const DebuffPayloadReachChecks = preload("res://tests/debuff_payload_reach_checks.gd")' in ai_tests,
+      "Debuff payload reach suite must be preloaded")
+check("DebuffPayloadReachChecks.new().run(_check)" in ai_tests,
+      "Debuff payload reach suite must run")
+check((ROOT / "tests/fixtures/debuff_payload_reach_source.json").is_file(),
+      "Debuff payload reach fixture must exist")
+if (ROOT / "tests/fixtures/debuff_payload_reach_source.json").is_file():
+    check(debuff_payload_reach_fixture() == json.loads(
+        (ROOT / "tests/fixtures/debuff_payload_reach_source.json").read_text(encoding="utf-8")),
+          "Debuff payload reach fixture must not drift from the oracle")
 check((ROOT / "tests/fixtures/boss_sourceless_delivery_source.json").is_file(),
       "Boss sourceless delivery fixture must exist")
 if (ROOT / "tests/fixtures/boss_sourceless_delivery_source.json").is_file():
