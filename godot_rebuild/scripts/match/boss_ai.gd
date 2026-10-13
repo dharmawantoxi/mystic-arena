@@ -185,6 +185,30 @@ static func tick(
 			_generic(world, boss, enemies)
 
 
+static func _tick_ice_vortex(world, boss: BossState, enemies: Array[UnitState]) -> void:
+	# Layer 9ag: port of the vortex duration block in `Boss.update`
+	# (`bosses/base_boss.py:1414-1427`). Every 20 ticks the vortex deals
+	# `stats.get("skill_q_damage", 180) // 3` - scaled by skill-down, difficulty
+	# and enrage through `_get_boss_stats`, the same multipliers `_skill_damage`
+	# applies - to every enemy within 80 px of the cast point, as
+	# `e.take_damage(damage, self.team)` with no `source=` (so the hit credits
+	# nobody, layer 8u), and then `e.apply_slow(0.5, 60)` behind `hasattr`
+	# (`_core.py:853-867`, which layer 9ae/9ag now reach for every unit).
+	# This runs at the top of the recipe because the source keeps it inside
+	# `_smart_ai_ancient_apparition` (`bosses/base_boss.py:1414-1427`), which
+	# `Boss.update` dispatches only from its target branch.
+	if boss.vortex_active_timer <= 0:
+		return
+	boss.vortex_active_timer -= 1
+	if boss.vortex_active_timer % 20 != 0:
+		return
+	var damage := int(_skill_damage(boss, boss.skill_q_damage) / 3.0)
+	for enemy in enemies:
+		if enemy.position.distance_to(boss.vortex_origin) <= 80.0:
+			_hit(world, boss, enemy, damage)
+			_slow(enemy, 0.5, 60)
+
+
 static func _tick_smart_clocks(world, boss: BossState, target: UnitState) -> void:
 	if boss.q_timer > 0:
 		boss.q_timer -= 1
@@ -233,8 +257,8 @@ static func _tick_smart_clocks(world, boss: BossState, target: UnitState) -> voi
 		if boss.arcane_buff_timer <= 0:
 			boss.arcane_buff_active = false
 			boss.damage = boss.base_damage
-	if boss.vortex_active_timer > 0:
-		boss.vortex_active_timer -= 1
+	# The Ice Vortex clock and DOT live in `_tick_ice_vortex`, called at the top
+	# of the ancient-apparition recipe (layer 9ag).
 	# xirthalis timelapse mark every 300 ticks
 	if boss.boss_type == "xirthalis":
 		boss.timelapse_mark_timer += 1
@@ -2931,6 +2955,7 @@ static func _morthraxis(
 static func _ancient_apparition(
 	world, boss: BossState, enemies: Array[UnitState], target: UnitState, distance: float
 ) -> void:
+	_tick_ice_vortex(world, boss, enemies)
 	var med_range := _count_near(boss, enemies, 300.0)
 	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
 	if hp_ratio < 0.4 and med_range >= 2 and boss.r_timer == 0:
@@ -3703,11 +3728,19 @@ static func _hit(world, boss: BossState, target: UnitState, raw_damage: int) -> 
 
 
 static func _slow(target: UnitState, amount: float, duration: int) -> void:
+	# Layer 9ag: every slow arm in `Boss._smart_ai_*` is
+	# `if hasattr(e, 'apply_slow'): e.apply_slow(amount, duration)`
+	# (`bosses/base_boss.py:1323-1324` and 18 more payload pairs), so the victim
+	# runs the `TowerDebuffMixin` method: alive guard, item slow resist
+	# (`inv.get_slow_resist()`, Abyss Breaker 0.30) and the
+	# amount-or-longer refresh rule that rewrites both fields (layer 9ae gave
+	# every unit that method). A tower has no mixin (`_entity.py:600` defines
+	# `class Tower` without it), which is why `hasattr` fails and the structure
+	# gate stays. The raw field write kept the untempered payload: a hero
+	# holding Abyss Breaker took the boss slow at full strength.
 	if target == null or not target.alive or target is StructureState:
 		return
-	if amount > target.slow_amount or target.slow_timer < duration:
-		target.slow_amount = amount
-		target.slow_timer = duration
+	target.apply_slow(amount, duration)
 
 
 static func _attack_lock(target: UnitState, duration: int) -> void:

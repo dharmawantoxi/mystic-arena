@@ -809,3 +809,17 @@ Divergensi terbuka yang ditemukan di layer ini (kandidat berikutnya): store duni
 non-positif (`amount <= 0 or duration <= 0`) sementara mixin sumber tidak punya guard itu. Terukur pada
 baris `zero_duration_keeps_store` (sumber: amount 1.0 dengan jam 0; native: store dibiarkan), dipaku lewat
 kolom `native_open`.
+
+## Slow smart-AI boss + DOT Ice Vortex (layer 9ag)
+
+39 lengan slow sumber di `Boss._smart_ai_*` dijalankan lewat `e.apply_slow(...)`; port `boss_ai.gd::_slow`
+dulu menulis field mentah sehingga slow resist item korban terlewat. Kini `_slow` memanggil metode korban
+(guard hidup + resist + aturan refresh 9ae); `StructureState` tetap dilewati seperti `hasattr` sumber.
+
+Temuan yang ikut ditutup: DOT Ice Vortex (`base_boss.py:1414-1427`) hilang total di jalur AI - hanya timer
+yang turun. `BossAI._tick_ice_vortex` kini menjalankan damage `skill_q_damage // 3` (243 -> 81) ke musuh
+dalam 80 px plus slow 0.5/60 di awal resep Ancient Apparition.
+
+Oracle `boss_ai_slow_source_oracle.py` (19 payload + 4 merge) dan suite `boss_ai_slow_checks.gd`; angka
+terukur: 0.5/180 polos vs **0.35/180** ber-resist (lama 0.5/180), merge store 0.4/10 -> 0.35/180, dan
+radius vortex 81 px nol damage.
