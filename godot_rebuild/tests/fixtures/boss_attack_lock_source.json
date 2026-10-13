@@ -1,0 +1,198 @@
+{
+  "source": "`bosses/base_boss.py` attack locks + `_entity.py::Hero.attack_timer`",
+  "callsite": "godot_rebuild/scripts/match/boss_ai.gd::_attack_lock",
+  "shape": {
+    "source_writes": 46,
+    "resolved_payloads": 46,
+    "hasattr_guarded": 46,
+    "owner_classes": [
+      "Hero"
+    ],
+    "payload_multiset": {
+      "30": 2,
+      "40": 2,
+      "45": 5,
+      "50": 2,
+      "55": 1,
+      "60": 12,
+      "70": 1,
+      "75": 3,
+      "80": 1,
+      "90": 10,
+      "100": 1,
+      "110": 1,
+      "120": 4,
+      "150": 1
+    },
+    "native_writes": 46,
+    "native_payload_multiset": {
+      "30": 2,
+      "40": 2,
+      "45": 5,
+      "50": 2,
+      "55": 1,
+      "60": 12,
+      "70": 1,
+      "75": 3,
+      "80": 1,
+      "90": 10,
+      "100": 1,
+      "110": 1,
+      "120": 4,
+      "150": 1
+    },
+    "native_unparsed": []
+  },
+  "live_stats": {
+    "hero_clock_owner": [
+      "Hero"
+    ],
+    "distinct_durations": 14
+  },
+  "rows": [
+    {
+      "name": "hero_empty_clock",
+      "note": "an idle hero takes the full 90 tick lock",
+      "input": {
+        "kind": "hero",
+        "duration": 90,
+        "pre_clock": 0,
+        "alive": true
+      },
+      "expected": {
+        "clock": 90
+      },
+      "native_old": {
+        "clock": 90
+      }
+    },
+    {
+      "name": "hero_longer_clock_kept",
+      "note": "a hero already locked for 200 keeps its longer clock",
+      "input": {
+        "kind": "hero",
+        "duration": 90,
+        "pre_clock": 200,
+        "alive": true
+      },
+      "expected": {
+        "clock": 200
+      },
+      "native_old": {
+        "clock": 200
+      }
+    },
+    {
+      "name": "hero_shorter_clock_raised",
+      "note": "a hero locked for 10 is raised to the 150 tick payload",
+      "input": {
+        "kind": "hero",
+        "duration": 150,
+        "pre_clock": 10,
+        "alive": true
+      },
+      "expected": {
+        "clock": 150
+      },
+      "native_old": {
+        "clock": 150
+      }
+    },
+    {
+      "name": "hero_takes_the_smallest_payload",
+      "note": "the smallest source payload (30) still raises an empty clock",
+      "input": {
+        "kind": "hero",
+        "duration": 30,
+        "pre_clock": 0,
+        "alive": true
+      },
+      "expected": {
+        "clock": 30
+      },
+      "native_old": {
+        "clock": 30
+      }
+    },
+    {
+      "name": "minion_clock_untouched",
+      "note": "a minion has no attack_timer, so the source locks nothing",
+      "input": {
+        "kind": "minion",
+        "duration": 90,
+        "pre_clock": 5,
+        "alive": true
+      },
+      "expected": {
+        "clock": 5
+      },
+      "native_old": {
+        "clock": 90
+      }
+    },
+    {
+      "name": "minion_longer_clock_kept",
+      "note": "a minion already at 200 is quiet in both columns (the old max rule kept it too)",
+      "input": {
+        "kind": "minion",
+        "duration": 90,
+        "pre_clock": 200,
+        "alive": true
+      },
+      "expected": {
+        "clock": 200
+      },
+      "native_old": {
+        "clock": 200
+      }
+    },
+    {
+      "name": "structure_clock_untouched",
+      "note": "a tower has no attack_timer either",
+      "input": {
+        "kind": "structure",
+        "duration": 120,
+        "pre_clock": 7,
+        "alive": true
+      },
+      "expected": {
+        "clock": 7
+      },
+      "native_old": {
+        "clock": 7
+      }
+    },
+    {
+      "name": "dead_hero_untouched",
+      "note": "the source enemy list holds living units only",
+      "input": {
+        "kind": "hero",
+        "duration": 90,
+        "pre_clock": 0,
+        "alive": false
+      },
+      "expected": {
+        "clock": 0
+      },
+      "native_old": {
+        "clock": 0
+      }
+    },
+    {
+      "name": "dead_minion_untouched",
+      "note": "a dead minion is not in the source enemy list",
+      "input": {
+        "kind": "minion",
+        "duration": 60,
+        "pre_clock": 3,
+        "alive": false
+      },
+      "expected": {
+        "clock": 3
+      },
+      "native_old": {
+        "clock": 3
+      }
+    }
+  ]
+}

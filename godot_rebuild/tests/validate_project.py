@@ -135,6 +135,7 @@ from boss_debuff_tenacity_source_oracle import source_fixture as boss_debuff_ten
 from item_slow_resist_source_oracle import source_fixture as item_slow_resist_fixture
 from item_silence_store_source_oracle import source_fixture as item_silence_store_fixture
 from boss_ai_slow_source_oracle import source_fixture as boss_ai_slow_fixture
+from boss_attack_lock_source_oracle import source_fixture as boss_attack_lock_fixture
 from miasma_tick_delivery_source_oracle import source_fixture as miasma_tick_delivery_fixture
 check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
       "Item structure arm suite must be preloaded")
@@ -284,6 +285,16 @@ if (ROOT / "tests/fixtures/boss_ai_slow_source.json").is_file():
     check(boss_ai_slow_fixture() == json.loads(
         (ROOT / "tests/fixtures/boss_ai_slow_source.json").read_text(encoding="utf-8")),
           "Boss AI slow fixture must not drift from the oracle")
+check('const BossAttackLockChecks = preload("res://tests/boss_attack_lock_checks.gd")' in ai_tests,
+      "Boss attack lock suite must be preloaded")
+check("BossAttackLockChecks.new().run(_check)" in ai_tests,
+      "Boss attack lock suite must run")
+check((ROOT / "tests/fixtures/boss_attack_lock_source.json").is_file(),
+      "Boss attack lock fixture must exist")
+if (ROOT / "tests/fixtures/boss_attack_lock_source.json").is_file():
+    check(boss_attack_lock_fixture() == json.loads(
+        (ROOT / "tests/fixtures/boss_attack_lock_source.json").read_text(encoding="utf-8")),
+          "Boss attack lock fixture must not drift from the oracle")
 check((ROOT / "tests/fixtures/boss_sourceless_delivery_source.json").is_file(),
       "Boss sourceless delivery fixture must exist")
 if (ROOT / "tests/fixtures/boss_sourceless_delivery_source.json").is_file():

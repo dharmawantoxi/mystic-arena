@@ -3744,10 +3744,17 @@ static func _slow(target: UnitState, amount: float, duration: int) -> void:
 
 
 static func _attack_lock(target: UnitState, duration: int) -> void:
-	if target == null or not target.alive or target is StructureState:
+	# Layer 9ah: every source attack lock is
+	# `if hasattr(e, 'attack_timer'): e.attack_timer = max(getattr(e,
+	# 'attack_timer', 0), N)` (`bosses/base_boss.py:1080-1082`, `:1542-1544`,
+	# `:1700-1701`, `:1729-1730` and 12 more payloads - 46 writes in total), and
+	# `attack_timer` belongs to `Hero` only (`_entity.py:3392`). A minion or a
+	# tower has no such attribute, so `hasattr` fails and the source lock never
+	# touches them. The `else` branch here pushed the duration into
+	# `cooldown_ticks`, stalling minion attacks the source never stalls.
+	if target == null or not target.alive:
 		return
-	if target is HeroState:
-		var hero := target as HeroState
-		hero.attack_timer = maxi(hero.attack_timer, duration)
-	else:
-		target.cooldown_ticks = maxi(target.cooldown_ticks, duration)
+	var hero := target as HeroState
+	if hero == null:
+		return
+	hero.attack_timer = maxi(hero.attack_timer, duration)

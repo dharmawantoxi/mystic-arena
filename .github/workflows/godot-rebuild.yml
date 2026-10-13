@@ -121,6 +121,7 @@ jobs:
           python godot_rebuild/tests/item_slow_resist_source_oracle.py
           python godot_rebuild/tests/item_silence_store_source_oracle.py
           python godot_rebuild/tests/boss_ai_slow_source_oracle.py
+          python godot_rebuild/tests/boss_attack_lock_source_oracle.py
           gdparse $(find godot_rebuild -name '*.gd')
           gdlint $(find godot_rebuild -name '*.gd')
           gdformat --check $(find godot_rebuild -name '*.gd')
