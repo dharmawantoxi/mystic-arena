@@ -150,7 +150,9 @@ func _vortex_dot(check: Callable, world: Prototype) -> void:
 		return
 	boss.entrance_timer = 0
 	boss.vortex_origin = boss.position + Vector2(300, 0)
-	boss.vortex_active_timer = 20
+	# The source decrements first and then tests `% 20`, so the DOT fires on the
+	# tick that brings the clock to a multiple of 20 (21 -> 20 -> damage).
+	boss.vortex_active_timer = 21
 	var inside: HeroState = _spawn_hero_with_items(world, [])
 	var inside_resisted: HeroState = _spawn_hero_with_items(world, ["abyss_breaker"])
 	var outside: HeroState = _spawn_hero_with_items(world, [])
@@ -203,12 +205,12 @@ func _vortex_dot(check: Callable, world: Prototype) -> void:
 		),
 		"the vortex slow respects the victim item resist (0.5 -> 0.35)"
 	)
-	check.call(boss.vortex_active_timer == 19, "the vortex clock advances once per tick")
+	check.call(boss.vortex_active_timer == 20, "the vortex clock advances once per tick")
 	inside.hp = 100000.0
 	inside_before = inside.hp
 	BossAI.tick(world, boss, enemies, inside, 100.0)
 	check.call(
-		is_equal_approx(inside_before, inside.hp) and boss.vortex_active_timer == 18,
+		is_equal_approx(inside_before, inside.hp) and boss.vortex_active_timer == 19,
 		"off the 20 tick gate the vortex only counts down"
 	)
 	boss.vortex_active_timer = 1
