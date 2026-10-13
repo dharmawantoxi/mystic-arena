@@ -1428,6 +1428,28 @@ func _append_volley_targets(
 		targets.append(boss)
 
 
+func _mage_impact(shot: Projectile, main: UnitState) -> void:
+	# Layer 9ad: port of the polymorphic boss arm of `Bullet._on_hit` "mage".
+	# The source runs `self.target.apply_debuff('skill_down', skill_down,
+	# debuff_duration)` and `apply_debuff('anti_heal', anti_heal,
+	# debuff_duration)` (`_entity.py:313-325`), so a boss primary target runs
+	# `BossState.apply_debuff` instead of the world stores. That override only
+	# cuts `slow`/`atk_slow` by tenacity, so the numbers do not move for a mage
+	# bolt (L6 skill-down 0.50 and anti-heal 1.00 for 180 ticks stay raw, as the
+	# source store rules dictate); what moves is that the boss method owns the
+	# store, exactly like the ice and aura arms from 8p/8s/8y.
+	var boss := main as BossState
+	if boss == null:
+		super._mage_impact(shot, main)
+		return
+	if not boss.alive:
+		return
+	if shot.skill_down_amount > 0.0:
+		boss.apply_debuff("skill_down", shot.skill_down_amount, shot.debuff_duration)
+	if shot.anti_heal_amount > 0.0:
+		boss.apply_debuff("anti_heal", shot.anti_heal_amount, shot.debuff_duration)
+
+
 func _boss_enemies() -> Array[UnitState]:
 	# Source Boss.update order: living units, then enemy towers, then enemy
 	# bases. Nexuses are kept separate because `structures` stores them first.
@@ -1501,13 +1523,15 @@ func _step_active_boss() -> void:
 	var burn_from_team := boss.burn_source_team()
 	var burn_damage := boss.tick_tower_debuffs()
 	if burn_damage > 0:
+		# Layer 9ab: the source tick is `self.take_damage(dmg, self.burn_team or
+		# self.team, "fire")` with no `source=` (`_core.py:1023-1033`), so the
+		# lethal tick leaves `_killed_by = None`: the native sentinel `-1` keeps
+		# `_process_boss_kill` from crediting anybody. The stale miasma flag is
+		# irrelevant here because a burn kill credits nobody either way, which
+		# the suite pins.
 		var dealt := boss.take_damage(null, burn_damage, "fire", "neutral", burn_from_team)
 		if dealt > 0:
-			var boss_team := "blue" if boss.team == BLUE else "red"
-			effects.add_damage_number(
-				boss.position.x, boss.position.y - boss.radius, dealt, dealt > 100, "fire"
-			)
-			effects.add_hit_particles(boss.position.x, boss.position.y, boss_team, 6)
+			_boss_damage_number(boss, dealt, "fire")
 		boss.last_hit_source_id = -1
 		if not boss.alive:
 			_queue_boss_death_presentation(boss)
@@ -2192,18 +2216,22 @@ func _deliver_hit(
 		return false
 	if target is BossState:
 		var boss := target as BossState
-		if not is_running() or not boss.alive or source_team == boss.team:
+		# Layer 9ac: `Boss.take_damage` never filters teams in the source - the
+		# caller decides - and the unit branch below already honors
+		# `ignore_team_guard` for the source-free ticks from 9z/9aa. The boss
+		# branch used to refuse a same-team delivery unconditionally, so a
+		# source-free tick that the source lands on a boss of the credited team
+		# (burn and miasma do not check teams) stopped at this guard.
+		if not is_running() or not boss.alive:
+			return false
+		if source_team == boss.team and not ignore_team_guard:
 			return false
 		var attacker: Object = get_unit(source_id)
 		var dealt := boss.take_damage(attacker, raw_damage, damage_type, school)
 		if dealt < 0:
 			return false
 		if dealt > 0:
-			var boss_team := "blue" if boss.team == BLUE else "red"
-			effects.add_damage_number(
-				boss.position.x, boss.position.y - boss.radius, dealt, dealt > 100, damage_type
-			)
-			effects.add_hit_particles(boss.position.x, boss.position.y, boss_team, 6)
+			_boss_damage_number(boss, dealt, damage_type)
 		if attacker is HeroState and dealt > 0:
 			(attacker as HeroState).damage_dealt += dealt
 		boss.last_hit_source_id = source_id
@@ -2238,6 +2266,30 @@ func _deliver_hit(
 			)
 			effects.add_hit_particles(target.position.x, target.position.y, unit_team, 5)
 	return landed
+
+
+func _boss_damage_number(boss: BossState, dealt: int, damage_type: String) -> void:
+	# Layer 9ab: port of the presentation tail of `Boss.take_damage`
+	# (`bosses/base_boss.py:6044-6058`):
+	#
+	#     game.effects.add_damage_number(
+	#         self.x, self.y - self.radius - 10, effective_damage,
+	#         is_critical=(effective_damage > self.max_hp * 0.03),
+	#         damage_type=damage_type)
+	#     game.effects.add_hit_particles(self.x, self.y, team=self.team, count=6)
+	#
+	# The crit badge therefore tracks the boss' own hp pool (3%), not a flat
+	# threshold: a 105 damage burn tick on Abaddon (max_hp 36000) is a plain
+	# number in the source, while the old `dealt > 100` rule painted it gold.
+	var boss_team := "blue" if boss.team == BLUE else "red"
+	effects.add_damage_number(
+		boss.position.x,
+		boss.position.y - boss.radius - 10.0,
+		dealt,
+		float(dealt) > float(boss.max_hp) * 0.03,
+		damage_type
+	)
+	effects.add_hit_particles(boss.position.x, boss.position.y, boss_team, 6)
 
 
 func _item_block_roll() -> float:
@@ -3016,13 +3068,20 @@ func _update_auras() -> void:
 					# instead of the world store the aura used before.
 					# Minions/heroes keep the identical world path.
 					aura_bus.apply_atk_slow(u.id, f_as, AURA_DEBUFF_DURATION)
-					apply_anti_heal(u.id, f_heal, AURA_DEBUFF_DURATION)
+					# Layer 9ad: `u.apply_debuff('anti_heal', ...)` is
+					# polymorphic in the source, so a boss in range runs the
+					# boss store; anti_heal is raw there (0.40/30 stays
+					# 0.40/30), unlike the aura attack slow at 8y.
+					aura_bus.apply_anti_heal(u.id, f_heal, AURA_DEBUFF_DURATION)
 					break
 			for src in solar_src:
 				if u.team == src.team:
 					continue
 				if src.position.distance_to(u.position) <= s_r:
-					apply_burn(u.id, s_burn, AURA_DEBUFF_DURATION, src.team)
+					# Layer 9ad: aura burn is `u.apply_debuff('burn', ...)` in
+					# the source, so the boss-aware bus owns it like 8y does for
+					# the attack slow.
+					aura_bus.apply_burn(u.id, s_burn, AURA_DEBUFF_DURATION, src.team)
 					# Source Scorched Earth also blinds: incoming physical
 					# hits of the unit inside the aura can miss.
 					u.apply_miss_chance(s_blind, AURA_DEBUFF_DURATION)
@@ -3031,8 +3090,8 @@ func _update_auras() -> void:
 				if u.team == src.team:
 					continue
 				if src.position.distance_to(u.position) <= se_r:
-					apply_anti_heal(u.id, se_heal, AURA_DEBUFF_DURATION)
-					apply_burn(u.id, se_burn, AURA_DEBUFF_DURATION, src.team)
+					aura_bus.apply_anti_heal(u.id, se_heal, AURA_DEBUFF_DURATION)
+					aura_bus.apply_burn(u.id, se_burn, AURA_DEBUFF_DURATION, src.team)
 					break
 
 	_aura_steel_aegis(all_heroes)

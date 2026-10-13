@@ -120,7 +120,7 @@ Dibaca hanya untuk memilih slice berikutnya, bukan audit menyeluruh:
 | item/forge | **Sudah terport** (`scripts/match/forge.gd`, `item_forge_panel.gd`, `forge_scene_checks.gd`) |
 | Katalog level, audio, player command/shop, match pacing | Selesai (PR #318/#323/#324/#325) |
 | `lighting.py` (239 baris) | **Belum terport** — tidak ada padanan di `godot_rebuild/` |
-| `hero_marker.gd` | Masih placeholder: "Temporary... Visual polish belongs after migration" |
+| `hero_marker.gd` | Selesai: placeholder 4-6 sisi tetap untuk `grimjaw_checks`, siluet per-hero dipakai `prototype_view.gd:619`; art roster dipaku golden fixture (layer 9aj) |
 
 Catatan: `ui_components/hero_portraits.py` yang di-impor `_core.py:3056`
 **tidak ada di repo**, jadi sumber Python untuk portrait arte-faktual sudah
@@ -730,3 +730,117 @@ damage_type, true)` (korban boss tetap memakai handle sumber 9b/9d plus
 sourceless (native lama 30/22/8/28/30), troll MR 0.05 - 30 vs 28, shred
 Corroder 39, menara armor 3 - 30 dengan kredit 0 vs 30, veil 0/0, dan kontrol
 Razor Carapace/`killed_by`/boss tetap dipaku.
+
+## Tick burn boss + damage number boss (layer 9ab)
+
+Tick burn pada boss sudah paritas sejak 8g (`boss_state.gd::tick_tower_debuffs` +
+`prototype_battle.gd::_step_active_boss`, sentinel `last_hit_source_id = -1`),
+jadi yang berpindah di layer ini adalah **presentasi**-nya: `Boss.take_damage`
+sumber memakai `is_critical=(effective_damage > max_hp * 0.03)` dan anchor
+`y - radius - 10`, sedangkan port lama memakai ambang datar `dealt > 100` dan
+`y - radius`. Helper `PrototypeBattle._boss_damage_number()` kini dipakai jalur
+tick burn maupun jalur `_deliver_hit` boss.
+
+Oracle `burn_boss_delivery_source_oracle.py` mengeksekusi `Boss.take_damage`
+dan `_tick_tower_debuffs` asli (10 kasus + 2 baris refresh store), suite
+`burn_boss_delivery_checks.gd` mereplay lewat `_step_active_boss` dan memaku
+nol kredit untuk kill burn, kesetaraan `world.apply_burn` versus store boss,
+serta interval tick `rules.burn_tick = 30 = DEBUFF_FPS 60`.
+
+## Pengiriman damage boss tanpa source (layer 9ac)
+
+`Boss.take_damage(damage, from_team)` sumber tidak pernah membaca `from_team`
+maupun memfilter tim; blind hanya dikonsultasikan bila ada `source`
+(`bosses/base_boss.py:5983`). Cabang boss `_deliver_hit` kini membaca
+`ignore_team_guard` seperti cabang unit 9z/9aa, sehingga delivery sourceless
+bertim sama bisa mendarat persis seperti sumber tanpa mengubah perilaku lama
+tanpa flag. Oracle `boss_sourceless_delivery_source_oracle.py` (7 kasus, kolom
+undian blind dan kredit) plus suite `boss_sourceless_delivery_checks.gd`.
+
+## Tenacity debuff boss (layer 9ad)
+
+`Boss.apply_slow` dan `Boss.apply_debuff` (`bosses/base_boss.py:528-552`) memotong `slow` dan
+`atk_slow` dengan tenacity 0.50 (magnitude `min(0.35, a * 0.5)`, durasi `int(d * 0.5)`), sedangkan
+`skill_down`/`anti_heal`/`burn` diteruskan mentah ke store `TowerDebuffMixin`; store unit sendiri
+tidak mengenal tenacity. Pemanggil item/menara semuanya polimorfik di sumber, jadi tiga jembatan
+native yang masih menulis ke store dunia diperbaiki: override `_mage_impact`, `apply_anti_heal` di
+`battle_item_effects.gd` (lewat metode korban), dan dua panggilan aura di `_update_auras` yang pindah
+ke bus boss-aware.
+
+Oracle `boss_debuff_tenacity_source_oracle.py` (28 baris, kolom unit sebagai kontrol) plus suite
+`boss_debuff_tenacity_checks.gd`. Angka terukur: mage L6 skill-down/anti-heal tetap 0.50/180 dan
+1.00/180, ice L6 slow 0.65/150 -> 0.325/75 dan atk-slow 0.40/150 -> 0.20/75, Frostbite 0.28/180 ->
+0.14/90 (anti-heal 0.45/180 mentah), Freezing Aura atk-slow 0.30/30 -> 0.15/15 (anti-heal 0.40/30
+mentah), Cauterize 0.50/30 mentah, Arctic Blast 0.45/210 -> 0.225/105, Entangle root 1.00/120 ->
+cap 0.35/60. Audit: Alchemist W / `_apply_slow` hanya menyasar unit, jadi jalur itu sudah paritas.
+
+## Slow resist item pada arm bus (layer 9ae)
+
+`TowerDebuffMixin.apply_slow` (`_core.py:853-867`) mengabaikan korban mati, menskalakan payload dengan
+slow resist item korban (Abyss Breaker 0.30, cap 0.60), lalu menulis kedua field dengan aturan
+`amount > slow_amount or slow_timer < duration`. Sebelumnya bus `battle_item_effects.gd::apply_slow`
+hanya mendelegasi ke metode entitas untuk bos, sehingga hero/minion/struktur menerima tulis mentah
+`maxf`/`maxi` tanpa resist dan tanpa guard mati. `UnitState.apply_slow` + `HeroState.slow_resist()`
+kini memegang metode itu; `BossState.apply_slow` tetap menimpa dengan tenacity.
+
+Oracle `item_slow_resist_source_oracle.py` (10 baris, kolom `native_old` pra-9ae) plus suite
+`item_slow_resist_checks.gd`. Angka terukur: Frostbite 0.28/180 -> 0.196/180 pada hero Abyss Breaker,
+Arctic Blast 0.45/210 -> 0.315/210, root 1.00 -> 0.70, cap 0.60 -> 0.40, merge menurun 0.50/20 lalu
+0.20/120 -> 0.20/120 (lama 0.50/120), merge memendek 0.20/120 lalu 0.50/30 -> 0.50/30 (lama 0.50/120),
+dan korban mati tidak lagi ditulis. Jalur dunia tetap 0.196 (resist sekali) dan bos tetap 0.14/90.
+
+Temuan samping: pin minion 0.45/210 di `boss_item_slow_checks.gd` dulu berlaku pada goblin yang mati
+(hp 45 ditelan 130 damage) - tulis mentah pra-9ae menembus kematian, sumber tidak. Probe kini hidup
+(hp 10000) dan guard `alive` dipaku terpisah oleh probe kedua yang mati. Baris cap resist 0.60 dijalankan
+lewat `ResistProbe` karena tidak ada item hidup dengan resist itu.
+
+## Store silence item pada korban unit (layer 9af)
+
+`_apply_silence_to` (`hero_items.py:2693-2697`) memanggil `target.apply_debuff('atk_slow'/'skill_down',
+1.0, duration)` di dalam `try`; mixin hanya milik Hero/Minion/Boss, jadi menara tidak pernah disilence.
+Cabang unit jembatan native dulu menulis field mentah (amount dipaksa 1.0, timer `maxi`, tanpa guard mati,
+dan menyilence struktur). Kini ia lewat store dunia yang identik dengan mixin.
+
+Oracle `item_silence_store_source_oracle.py` (7 baris) plus suite `item_silence_store_checks.gd`. Angka
+terukur: 0.9/200 + silence 60 -> 1.0/60 (lama 1.0/200), 1.0/200 tidak ditulis, 1.0/10 -> 1.0/60, korban mati
+0.5/5 tetap 0.5/5 (lama 1.0/60), skill-down 0.5/30 + 90 -> 1.0/90, dan menara tetap tak tersentuh.
+
+Divergensi terbuka yang ditemukan di layer ini (kandidat berikutnya): store dunia menolak payload
+non-positif (`amount <= 0 or duration <= 0`) sementara mixin sumber tidak punya guard itu. Terukur pada
+baris `zero_duration_keeps_store` (sumber: amount 1.0 dengan jam 0; native: store dibiarkan), dipaku lewat
+kolom `native_open`.
+
+## Slow smart-AI boss + DOT Ice Vortex (layer 9ag)
+
+39 lengan slow sumber di `Boss._smart_ai_*` dijalankan lewat `e.apply_slow(...)`; port `boss_ai.gd::_slow`
+dulu menulis field mentah sehingga slow resist item korban terlewat. Kini `_slow` memanggil metode korban
+(guard hidup + resist + aturan refresh 9ae); `StructureState` tetap dilewati seperti `hasattr` sumber.
+
+Temuan yang ikut ditutup: DOT Ice Vortex (`base_boss.py:1414-1427`) hilang total di jalur AI - hanya timer
+yang turun. `BossAI._tick_ice_vortex` kini menjalankan damage `skill_q_damage // 3` (243 -> 81) ke musuh
+dalam 80 px plus slow 0.5/60 di awal resep Ancient Apparition.
+
+Oracle `boss_ai_slow_source_oracle.py` (19 payload + 4 merge) dan suite `boss_ai_slow_checks.gd`; angka
+terukur: 0.5/180 polos vs **0.35/180** ber-resist (lama 0.5/180), merge store 0.4/10 -> 0.35/180, dan
+radius vortex 81 px nol damage.
+
+## Attack lock smart-AI boss (layer 9ah)
+
+46 penulisan `e.attack_timer = max(getattr(e, 'attack_timer', 0), N)` di `base_boss.py` semuanya di belakang
+`hasattr`, dan `attack_timer` hanya milik `Hero` (`_entity.py:3392`). Port `_attack_lock` menambahkan cabang
+`else` yang menulis `cooldown_ticks` minion - lock yang sumber tidak pernah pasang. Kini lock hanya untuk
+hero, dengan aturan `max` dan payload 46/46 yang sudah paritas.
+
+Oracle `boss_attack_lock_source_oracle.py` (9 baris: hero 90/200/150/30, minion 5 -> 5 vs lama 90, menara,
+dua probe mati) plus suite `boss_attack_lock_checks.gd` dengan kontrol resep hidup Ancient Apparition E
+(hero 90, minion 0).
+
+### Status item terbuka store debuff (ditutup oleh layer 9ai)
+
+Divergensi guard non-positif store dunia yang dicatat 9af kini **tertutup sebagai tidak terjangkau**, bukan sebagai paritas: seluruh payload sumber terbukti positif (minimum literal call site 0.35; tabel `ICE_LEVELS`/`CANNON_LEVELS`/`MAGE_LEVELS` minimum `slow 0.25`, `burn_dps 6`, `anti_heal 0.4`), dan lengan native (110 arm) tidak pernah mengirim payload non-positif. Guard tetap dipertahankan; enam baris divergensi dipaku dengan kolom `source_rule`/`divergence` di `tests/fixtures/debuff_payload_reach_source.json` (25 baris payload nyata + 4 sentinel + 2 window) dan direplay `tests/debuff_payload_reach_checks.gd`.
+
+### Siluet hero arena — selesai, lalu tabrakan art diperbaiki (layer 9aj)
+
+Rencana di atas sudah mendarat (`silhouette()`, `fill()` khas Kaizen/Thorne, `prototype_view.gd` menggambar siluet, suite `hero_marker_checks.gd` terdaftar). Yang belum: cakupan roster. Cabang generik memakai `(code >> (index % 12)) % 5`, yaitu hanya bit 0-9 dari kode di bawah 1000003, sehingga **33 pasang** dari 220 hero generik menggambar siluet identik (`gravefang` = `hitokage`, `kaerinya` = `kyumirra`, `lyrienne` = `lyssarethys`, dan 30 pasang lain).
+
+Perbaikan: `spread = fingerprint * 48271 + 1021`, jumlah sisi dari `spread % 4`, dan wobble dari digit basis-5 `spread` (bukan bit rendah). Terukur: **222/222 siluet unik**, sisi {7, 8, 9, 10} untuk generik (Kaizen 8, Thorne 12), reach 1000-1120 untuk generik (Kaizen 1150, Thorne 1154) - semuanya ≤ `MAX_REACH` 1200, sehingga cincin tim tetap membingkai. Oracle `hero_marker_source_oracle.py` menulis golden fixture `hero_marker_source.json` (222 entri: keluarga, jumlah sisi, hash terkuantisasi 1e-4, reach mili, digest) dan suite merekomputasi seluruhnya dari `silhouette()` produksi, termasuk kontrol **222/222 unik** dan view wiring (`prototype_view.gd` memakai `HeroMarker.silhouette(`, tidak memakai `HeroMarker.body(`) yang dipin `validate_project.py`.

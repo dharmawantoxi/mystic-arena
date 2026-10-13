@@ -129,6 +129,15 @@ from tower_bullet_school_source_oracle import source_fixture as tower_bullet_sch
 from minion_melee_school_source_oracle import source_fixture as minion_melee_school_fixture
 from skill_hit_attribution_source_oracle import source_fixture as skill_hit_attribution_fixture
 from burn_tick_delivery_source_oracle import source_fixture as burn_tick_delivery_fixture
+from burn_boss_delivery_source_oracle import source_fixture as burn_boss_delivery_fixture
+from boss_sourceless_delivery_source_oracle import source_fixture as boss_sourceless_delivery_fixture
+from boss_debuff_tenacity_source_oracle import source_fixture as boss_debuff_tenacity_fixture
+from item_slow_resist_source_oracle import source_fixture as item_slow_resist_fixture
+from item_silence_store_source_oracle import source_fixture as item_silence_store_fixture
+from boss_ai_slow_source_oracle import source_fixture as boss_ai_slow_fixture
+from boss_attack_lock_source_oracle import source_fixture as boss_attack_lock_fixture
+from debuff_payload_reach_source_oracle import source_fixture as debuff_payload_reach_fixture
+from hero_marker_source_oracle import source_fixture as hero_marker_fixture
 from miasma_tick_delivery_source_oracle import source_fixture as miasma_tick_delivery_fixture
 check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
       "Item structure arm suite must be preloaded")
@@ -234,6 +243,98 @@ check('const SkillHitAttributionChecks = preload("res://tests/skill_hit_attribut
       "Skill hit attribution suite must be preloaded")
 check("SkillHitAttributionChecks.new().run(_check)" in ai_tests,
       "Skill hit attribution suite must run")
+check('const BossSourcelessDeliveryChecks = preload("res://tests/boss_sourceless_delivery_checks.gd")' in ai_tests,
+      "Boss sourceless delivery suite must be preloaded")
+check("BossSourcelessDeliveryChecks.new().run(_check)" in ai_tests,
+      "Boss sourceless delivery suite must run")
+check('const BossDebuffTenacityChecks = preload("res://tests/boss_debuff_tenacity_checks.gd")' in ai_tests,
+      "Boss debuff tenacity suite must be preloaded")
+check("BossDebuffTenacityChecks.new().run(_check)" in ai_tests,
+      "Boss debuff tenacity suite must run")
+check((ROOT / "tests/fixtures/boss_debuff_tenacity_source.json").is_file(),
+      "Boss debuff tenacity fixture must exist")
+if (ROOT / "tests/fixtures/boss_debuff_tenacity_source.json").is_file():
+    check(boss_debuff_tenacity_fixture() == json.loads(
+        (ROOT / "tests/fixtures/boss_debuff_tenacity_source.json").read_text(encoding="utf-8")),
+          "Boss debuff tenacity fixture must not drift from the oracle")
+check('const ItemSlowResistChecks = preload("res://tests/item_slow_resist_checks.gd")' in ai_tests,
+      "Item slow resist suite must be preloaded")
+check("ItemSlowResistChecks.new().run(_check)" in ai_tests,
+      "Item slow resist suite must run")
+check((ROOT / "tests/fixtures/item_slow_resist_source.json").is_file(),
+      "Item slow resist fixture must exist")
+if (ROOT / "tests/fixtures/item_slow_resist_source.json").is_file():
+    check(item_slow_resist_fixture() == json.loads(
+        (ROOT / "tests/fixtures/item_slow_resist_source.json").read_text(encoding="utf-8")),
+          "Item slow resist fixture must not drift from the oracle")
+check('const ItemSilenceStoreChecks = preload("res://tests/item_silence_store_checks.gd")' in ai_tests,
+      "Item silence store suite must be preloaded")
+check("ItemSilenceStoreChecks.new().run(_check)" in ai_tests,
+      "Item silence store suite must run")
+check((ROOT / "tests/fixtures/item_silence_store_source.json").is_file(),
+      "Item silence store fixture must exist")
+if (ROOT / "tests/fixtures/item_silence_store_source.json").is_file():
+    check(item_silence_store_fixture() == json.loads(
+        (ROOT / "tests/fixtures/item_silence_store_source.json").read_text(encoding="utf-8")),
+          "Item silence store fixture must not drift from the oracle")
+check('const BossAiSlowChecks = preload("res://tests/boss_ai_slow_checks.gd")' in ai_tests,
+      "Boss AI slow suite must be preloaded")
+check("BossAiSlowChecks.new().run(_check)" in ai_tests,
+      "Boss AI slow suite must run")
+check((ROOT / "tests/fixtures/boss_ai_slow_source.json").is_file(),
+      "Boss AI slow fixture must exist")
+if (ROOT / "tests/fixtures/boss_ai_slow_source.json").is_file():
+    check(boss_ai_slow_fixture() == json.loads(
+        (ROOT / "tests/fixtures/boss_ai_slow_source.json").read_text(encoding="utf-8")),
+          "Boss AI slow fixture must not drift from the oracle")
+check('const BossAttackLockChecks = preload("res://tests/boss_attack_lock_checks.gd")' in ai_tests,
+      "Boss attack lock suite must be preloaded")
+check("BossAttackLockChecks.new().run(_check)" in ai_tests,
+      "Boss attack lock suite must run")
+check((ROOT / "tests/fixtures/boss_attack_lock_source.json").is_file(),
+      "Boss attack lock fixture must exist")
+if (ROOT / "tests/fixtures/boss_attack_lock_source.json").is_file():
+    check(boss_attack_lock_fixture() == json.loads(
+        (ROOT / "tests/fixtures/boss_attack_lock_source.json").read_text(encoding="utf-8")),
+          "Boss attack lock fixture must not drift from the oracle")
+check('const DebuffPayloadReachChecks = preload("res://tests/debuff_payload_reach_checks.gd")' in ai_tests,
+      "Debuff payload reach suite must be preloaded")
+check("DebuffPayloadReachChecks.new().run(_check)" in ai_tests,
+      "Debuff payload reach suite must run")
+check((ROOT / "tests/fixtures/debuff_payload_reach_source.json").is_file(),
+      "Debuff payload reach fixture must exist")
+if (ROOT / "tests/fixtures/debuff_payload_reach_source.json").is_file():
+    check(debuff_payload_reach_fixture() == json.loads(
+        (ROOT / "tests/fixtures/debuff_payload_reach_source.json").read_text(encoding="utf-8")),
+          "Debuff payload reach fixture must not drift from the oracle")
+check('const HeroMarkerChecks = preload("res://tests/hero_marker_checks.gd")' in ai_tests,
+      "Hero marker suite must be preloaded")
+check("HeroMarkerChecks.new().run(_check)" in ai_tests, "Hero marker suite must run")
+check((ROOT / "tests/fixtures/hero_marker_source.json").is_file(),
+      "Hero marker golden fixture must exist")
+if (ROOT / "tests/fixtures/hero_marker_source.json").is_file():
+    check(hero_marker_fixture() == json.loads(
+        (ROOT / "tests/fixtures/hero_marker_source.json").read_text(encoding="utf-8")),
+          "Hero marker fixture must not drift from the oracle")
+view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+check("HeroMarker.silhouette(" in view, "The arena view must draw the readable silhouette")
+check("HeroMarker.body(" not in view, "The arena view must not fall back to the placeholder body")
+check((ROOT / "tests/fixtures/boss_sourceless_delivery_source.json").is_file(),
+      "Boss sourceless delivery fixture must exist")
+if (ROOT / "tests/fixtures/boss_sourceless_delivery_source.json").is_file():
+    check(boss_sourceless_delivery_fixture() == json.loads(
+        (ROOT / "tests/fixtures/boss_sourceless_delivery_source.json").read_text(encoding="utf-8")),
+          "Boss sourceless delivery fixture must not drift from the oracle")
+check('const BurnBossDeliveryChecks = preload("res://tests/burn_boss_delivery_checks.gd")' in ai_tests,
+      "Burn boss delivery suite must be preloaded")
+check("BurnBossDeliveryChecks.new().run(_check)" in ai_tests,
+      "Burn boss delivery suite must run")
+check((ROOT / "tests/fixtures/burn_boss_delivery_source.json").is_file(),
+      "Burn boss delivery fixture must exist")
+if (ROOT / "tests/fixtures/burn_boss_delivery_source.json").is_file():
+    check(burn_boss_delivery_fixture() == json.loads(
+        (ROOT / "tests/fixtures/burn_boss_delivery_source.json").read_text(encoding="utf-8")),
+          "Burn boss delivery fixture must not drift from the oracle")
 check('const BurnTickDeliveryChecks = preload("res://tests/burn_tick_delivery_checks.gd")' in ai_tests,
       "Burn tick delivery suite must be preloaded")
 check("BurnTickDeliveryChecks.new().run(_check)" in ai_tests,

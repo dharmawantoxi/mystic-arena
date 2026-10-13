@@ -156,11 +156,17 @@ func apply_silence(target_id: int, duration: int) -> void:
 		t.apply_debuff("atk_slow", 1.0, duration)
 		t.apply_debuff("skill_down", 1.0, duration)
 		return
-	# UnitState already carries atk_slow/skill_down fields.
-	t.atk_slow_amount = 1.0
-	t.atk_slow_timer = maxi(t.atk_slow_timer, duration)
-	t.skill_down_amount = 1.0
-	t.skill_down_timer = maxi(t.skill_down_timer, duration)
+	# Layer 9af: heroes and minions carry the source mixin too, so their silence
+	# runs the same `apply_debuff` store the boss arm just used - the world level
+	# stores implement exactly that rule (alive guard, amount-greater-or-longer
+	# refresh). The raw write kept here before forced `1.0` into the amount even
+	# when the victim already carried a stronger-but-shorter or
+	# weaker-but-longer clock (measured: 0.9/200 + silence 60 -> source 1.0/60,
+	# old 1.0/200) and it silenced towers, which never join the mixin
+	# (`_entity.py` gives it to Hero/Minion/Boss only), while the world stores
+	# refuse structures exactly like the source `AttributeError` path.
+	world.apply_atk_slow(target_id, 1.0, duration)
+	world.apply_skill_down(target_id, 1.0, duration)
 
 
 func apply_slow(target_id: int, amount: float, duration: int) -> void:
@@ -177,6 +183,11 @@ func apply_slow(target_id: int, amount: float, duration: int) -> void:
 	# duration by tenacity 0.50 with a 0.35 magnitude cap and stores with the
 	# amount-greater-or-longer-refresh rule, so a rooted/arctic-blasted boss must
 	# not take the raw `UnitState` field write below.
+	#
+	# Layer 9ae: `UnitState.apply_slow` now carries the same mixin method for
+	# every other victim (alive guard, item slow resist, amount-or-timer
+	# refresh), so the delegation below reaches heroes, minions and structures
+	# too instead of only the boss.
 	if t.has_method("apply_slow"):
 		t.apply_slow(amount, duration)
 		return
@@ -235,6 +246,19 @@ func apply_atk_slow(target_id: int, amount: float, duration: int) -> void:
 
 
 func apply_anti_heal(target_id: int, amount: float, duration: int) -> void:
+	# Layer 9ad: every source anti-heal arm calls `u.apply_debuff('anti_heal',
+	# ...)` polymorphically - Frostbound Frostbite (`hero_items.py:2597-2599`),
+	# Everfrost Freezing Aura (`hero_items.py:2843-2844`) and Searbrand
+	# Cauterize (`hero_items.py:2869-2870`) - so a boss target now runs
+	# `Boss.apply_debuff` (`bosses/base_boss.py:540-552`). That override only
+	# cuts `slow` (through `Boss.apply_slow`) and `atk_slow` by tenacity 0.50,
+	# so the boss value for `anti_heal` stays the raw payload - the shape
+	# matches the source call and 9ad pins both columns (1.00/180 stays
+	# 1.00/180, unlike the atk_slow arm at 8w).
+	var t: Object = world.get_unit(target_id)
+	if t != null and t.has_method("apply_debuff"):
+		t.apply_debuff("anti_heal", amount, duration)
+		return
 	world.apply_anti_heal(target_id, amount, duration)
 
 

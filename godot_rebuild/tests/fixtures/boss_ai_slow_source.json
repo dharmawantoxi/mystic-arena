@@ -1,0 +1,494 @@
+{
+  "source": "`bosses/base_boss.py` smart-AI `e.apply_slow(...)` + `_core.py::TowerDebuffMixin.apply_slow`",
+  "callsite": "godot_rebuild/scripts/match/boss_ai.gd::_slow",
+  "shape": {
+    "source_calls": 39,
+    "vortex_block_found": true,
+    "vortex_every_20": true,
+    "vortex_radius": true,
+    "vortex_damage_trisect": true,
+    "vortex_slow_hasattr": true,
+    "vortex_slow_payload": true,
+    "hasattr_guarded": 39,
+    "unique_payloads": 19,
+    "native_slow_calls": 39,
+    "tower_has_mixin": false
+  },
+  "live_stats": {
+    "abyss_breaker_slow_resist": 0.3,
+    "resist_cap": 0.6,
+    "call_count": 39
+  },
+  "rows": [
+    {
+      "name": "boss_slow_0_35_120",
+      "note": "boss slow payload 0.35/120 delivered through the victim method",
+      "input": {
+        "amount": 0.35,
+        "duration": 120
+      },
+      "expected_plain": {
+        "amount": 0.35,
+        "timer": 120
+      },
+      "expected_resisted": {
+        "amount": 0.245,
+        "timer": 120
+      },
+      "native_old": {
+        "amount": 0.35,
+        "timer": 120
+      }
+    },
+    {
+      "name": "boss_slow_0_4_60",
+      "note": "boss slow payload 0.4/60 delivered through the victim method",
+      "input": {
+        "amount": 0.4,
+        "duration": 60
+      },
+      "expected_plain": {
+        "amount": 0.4,
+        "timer": 60
+      },
+      "expected_resisted": {
+        "amount": 0.28,
+        "timer": 60
+      },
+      "native_old": {
+        "amount": 0.4,
+        "timer": 60
+      }
+    },
+    {
+      "name": "boss_slow_0_4_120",
+      "note": "boss slow payload 0.4/120 delivered through the victim method",
+      "input": {
+        "amount": 0.4,
+        "duration": 120
+      },
+      "expected_plain": {
+        "amount": 0.4,
+        "timer": 120
+      },
+      "expected_resisted": {
+        "amount": 0.28,
+        "timer": 120
+      },
+      "native_old": {
+        "amount": 0.4,
+        "timer": 120
+      }
+    },
+    {
+      "name": "boss_slow_0_4_180",
+      "note": "boss slow payload 0.4/180 delivered through the victim method",
+      "input": {
+        "amount": 0.4,
+        "duration": 180
+      },
+      "expected_plain": {
+        "amount": 0.4,
+        "timer": 180
+      },
+      "expected_resisted": {
+        "amount": 0.28,
+        "timer": 180
+      },
+      "native_old": {
+        "amount": 0.4,
+        "timer": 180
+      }
+    },
+    {
+      "name": "boss_slow_0_5_60",
+      "note": "boss slow payload 0.5/60 delivered through the victim method (the Ice Vortex DOT arm)",
+      "input": {
+        "amount": 0.5,
+        "duration": 60
+      },
+      "expected_plain": {
+        "amount": 0.5,
+        "timer": 60
+      },
+      "expected_resisted": {
+        "amount": 0.35,
+        "timer": 60
+      },
+      "native_old": {
+        "amount": 0.5,
+        "timer": 60
+      }
+    },
+    {
+      "name": "boss_slow_0_5_90",
+      "note": "boss slow payload 0.5/90 delivered through the victim method",
+      "input": {
+        "amount": 0.5,
+        "duration": 90
+      },
+      "expected_plain": {
+        "amount": 0.5,
+        "timer": 90
+      },
+      "expected_resisted": {
+        "amount": 0.35,
+        "timer": 90
+      },
+      "native_old": {
+        "amount": 0.5,
+        "timer": 90
+      }
+    },
+    {
+      "name": "boss_slow_0_5_180",
+      "note": "boss slow payload 0.5/180 delivered through the victim method",
+      "input": {
+        "amount": 0.5,
+        "duration": 180
+      },
+      "expected_plain": {
+        "amount": 0.5,
+        "timer": 180
+      },
+      "expected_resisted": {
+        "amount": 0.35,
+        "timer": 180
+      },
+      "native_old": {
+        "amount": 0.5,
+        "timer": 180
+      }
+    },
+    {
+      "name": "boss_slow_0_5_240",
+      "note": "boss slow payload 0.5/240 delivered through the victim method",
+      "input": {
+        "amount": 0.5,
+        "duration": 240
+      },
+      "expected_plain": {
+        "amount": 0.5,
+        "timer": 240
+      },
+      "expected_resisted": {
+        "amount": 0.35,
+        "timer": 240
+      },
+      "native_old": {
+        "amount": 0.5,
+        "timer": 240
+      }
+    },
+    {
+      "name": "boss_slow_0_55_240",
+      "note": "boss slow payload 0.55/240 delivered through the victim method",
+      "input": {
+        "amount": 0.55,
+        "duration": 240
+      },
+      "expected_plain": {
+        "amount": 0.55,
+        "timer": 240
+      },
+      "expected_resisted": {
+        "amount": 0.385,
+        "timer": 240
+      },
+      "native_old": {
+        "amount": 0.55,
+        "timer": 240
+      }
+    },
+    {
+      "name": "boss_slow_0_6_180",
+      "note": "boss slow payload 0.6/180 delivered through the victim method",
+      "input": {
+        "amount": 0.6,
+        "duration": 180
+      },
+      "expected_plain": {
+        "amount": 0.6,
+        "timer": 180
+      },
+      "expected_resisted": {
+        "amount": 0.42,
+        "timer": 180
+      },
+      "native_old": {
+        "amount": 0.6,
+        "timer": 180
+      }
+    },
+    {
+      "name": "boss_slow_0_6_200",
+      "note": "boss slow payload 0.6/200 delivered through the victim method",
+      "input": {
+        "amount": 0.6,
+        "duration": 200
+      },
+      "expected_plain": {
+        "amount": 0.6,
+        "timer": 200
+      },
+      "expected_resisted": {
+        "amount": 0.42,
+        "timer": 200
+      },
+      "native_old": {
+        "amount": 0.6,
+        "timer": 200
+      }
+    },
+    {
+      "name": "boss_slow_0_6_240",
+      "note": "boss slow payload 0.6/240 delivered through the victim method",
+      "input": {
+        "amount": 0.6,
+        "duration": 240
+      },
+      "expected_plain": {
+        "amount": 0.6,
+        "timer": 240
+      },
+      "expected_resisted": {
+        "amount": 0.42,
+        "timer": 240
+      },
+      "native_old": {
+        "amount": 0.6,
+        "timer": 240
+      }
+    },
+    {
+      "name": "boss_slow_0_6_260",
+      "note": "boss slow payload 0.6/260 delivered through the victim method",
+      "input": {
+        "amount": 0.6,
+        "duration": 260
+      },
+      "expected_plain": {
+        "amount": 0.6,
+        "timer": 260
+      },
+      "expected_resisted": {
+        "amount": 0.42,
+        "timer": 260
+      },
+      "native_old": {
+        "amount": 0.6,
+        "timer": 260
+      }
+    },
+    {
+      "name": "boss_slow_0_65_240",
+      "note": "boss slow payload 0.65/240 delivered through the victim method",
+      "input": {
+        "amount": 0.65,
+        "duration": 240
+      },
+      "expected_plain": {
+        "amount": 0.65,
+        "timer": 240
+      },
+      "expected_resisted": {
+        "amount": 0.455,
+        "timer": 240
+      },
+      "native_old": {
+        "amount": 0.65,
+        "timer": 240
+      }
+    },
+    {
+      "name": "boss_slow_0_65_300",
+      "note": "boss slow payload 0.65/300 delivered through the victim method",
+      "input": {
+        "amount": 0.65,
+        "duration": 300
+      },
+      "expected_plain": {
+        "amount": 0.65,
+        "timer": 300
+      },
+      "expected_resisted": {
+        "amount": 0.455,
+        "timer": 300
+      },
+      "native_old": {
+        "amount": 0.65,
+        "timer": 300
+      }
+    },
+    {
+      "name": "boss_slow_0_7_180",
+      "note": "boss slow payload 0.7/180 delivered through the victim method",
+      "input": {
+        "amount": 0.7,
+        "duration": 180
+      },
+      "expected_plain": {
+        "amount": 0.7,
+        "timer": 180
+      },
+      "expected_resisted": {
+        "amount": 0.49,
+        "timer": 180
+      },
+      "native_old": {
+        "amount": 0.7,
+        "timer": 180
+      }
+    },
+    {
+      "name": "boss_slow_0_7_240",
+      "note": "boss slow payload 0.7/240 delivered through the victim method",
+      "input": {
+        "amount": 0.7,
+        "duration": 240
+      },
+      "expected_plain": {
+        "amount": 0.7,
+        "timer": 240
+      },
+      "expected_resisted": {
+        "amount": 0.49,
+        "timer": 240
+      },
+      "native_old": {
+        "amount": 0.7,
+        "timer": 240
+      }
+    },
+    {
+      "name": "boss_slow_0_75_200",
+      "note": "boss slow payload 0.75/200 delivered through the victim method",
+      "input": {
+        "amount": 0.75,
+        "duration": 200
+      },
+      "expected_plain": {
+        "amount": 0.75,
+        "timer": 200
+      },
+      "expected_resisted": {
+        "amount": 0.525,
+        "timer": 200
+      },
+      "native_old": {
+        "amount": 0.75,
+        "timer": 200
+      }
+    },
+    {
+      "name": "boss_slow_0_8_300",
+      "note": "boss slow payload 0.8/300 delivered through the victim method",
+      "input": {
+        "amount": 0.8,
+        "duration": 300
+      },
+      "expected_plain": {
+        "amount": 0.8,
+        "timer": 300
+      },
+      "expected_resisted": {
+        "amount": 0.56,
+        "timer": 300
+      },
+      "native_old": {
+        "amount": 0.8,
+        "timer": 300
+      }
+    }
+  ],
+  "merge_rows": [
+    {
+      "name": "resisted_weakens_a_stronger_stored_clock",
+      "note": "stored 0.4/10: the resisted 0.35 rewrites the magnitude, the raw 0.5 did not",
+      "input": {
+        "amount": 0.5,
+        "duration": 180,
+        "pre_amount": 0.4,
+        "pre_timer": 10
+      },
+      "expected_plain": {
+        "amount": 0.5,
+        "timer": 180
+      },
+      "expected_resisted": {
+        "amount": 0.35,
+        "timer": 180
+      },
+      "native_old": {
+        "amount": 0.5,
+        "timer": 180
+      }
+    },
+    {
+      "name": "resisted_keeps_a_stronger_stored_clock",
+      "note": "stored 0.9/50: the shorter clock lets the resisted 0.35 rewrite both fields",
+      "input": {
+        "amount": 0.5,
+        "duration": 180,
+        "pre_amount": 0.9,
+        "pre_timer": 50
+      },
+      "expected_plain": {
+        "amount": 0.5,
+        "timer": 180
+      },
+      "expected_resisted": {
+        "amount": 0.35,
+        "timer": 180
+      },
+      "native_old": {
+        "amount": 0.5,
+        "timer": 180
+      }
+    },
+    {
+      "name": "resisted_payload_replaces_a_weaker_store",
+      "note": "stored 0.2/400: the resisted 0.35 still beats it, so the clock shortens",
+      "input": {
+        "amount": 0.5,
+        "duration": 180,
+        "pre_amount": 0.2,
+        "pre_timer": 400
+      },
+      "expected_plain": {
+        "amount": 0.5,
+        "timer": 180
+      },
+      "expected_resisted": {
+        "amount": 0.35,
+        "timer": 180
+      },
+      "native_old": {
+        "amount": 0.5,
+        "timer": 180
+      }
+    },
+    {
+      "name": "plain_payload_refresh_rule_unchanged",
+      "note": "no items: both columns rewrite the stored 0.4/300 to 0.5/180",
+      "input": {
+        "amount": 0.5,
+        "duration": 180,
+        "pre_amount": 0.4,
+        "pre_timer": 300
+      },
+      "expected_plain": {
+        "amount": 0.5,
+        "timer": 180
+      },
+      "expected_resisted": {
+        "amount": 0.4,
+        "timer": 300
+      },
+      "native_old": {
+        "amount": 0.5,
+        "timer": 180
+      }
+    }
+  ]
+}
