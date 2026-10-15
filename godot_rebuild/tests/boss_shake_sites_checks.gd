@@ -5,6 +5,7 @@ extends RefCounted
 
 const BossAI = preload("res://scripts/match/boss_ai.gd")
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
+const UnitState = preload("res://scripts/combat/unit_state.gd")
 const FIXTURE := "res://tests/fixtures/boss_shake_sites_source.json"
 
 
