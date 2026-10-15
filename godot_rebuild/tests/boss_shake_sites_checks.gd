@@ -54,7 +54,12 @@ func _shape_check(check: Callable, fixture: Dictionary) -> void:
 			continue
 		wired = wired and bool(wiring[key])
 	check.call(wired, "the shake wiring pins all hold")
-	var multiset: Array = wiring.get("native_cast_multiset", [])
+	# JSON numbers parse as floats in GDScript - normalize both sides to int
+	# so the Array equality is exact.
+	var multiset: Array = []
+	for value in Array(wiring.get("native_cast_multiset", [])):
+		multiset.append(int(value))
+	multiset.sort()
 	var expected_multiset: Array = []
 	for row in fixture.get("rows", []):
 		if String(row.get("class", "")) == "cast" and bool(row.get("wired", false)):
