@@ -1098,3 +1098,45 @@ bertahap per keluarga boss; tiap sub-slice memindahkan baris fixture dari
 Batas slice 9ao: hanya payload enrage + tabel/oracle/fixture/suite/pin/docs.
 `screen_shake.gd`, EffectManager, shake mati, `lighting.py`, sumber Python,
 balance, dan UI tidak disentuh. Hero tetap prosedural (keputusan pengguna).
+
+## Wiring 30 situs shake cast keluarga teraudit (layer 9ao-2)
+
+Sub-slice pertama roadmap 9ao: SEMUA 30 situs `_shake_screen` dari enam
+keluarga boss yang sudah diaudit 9am/9an kini dirutekan lewat helper baru
+`BossAI._shake(world, intensity)` (presentasi-only, kembaran helper sumber
+`Boss._shake_screen:5947`):
+
+- alchemist: Q acid 8, W concoction 15, E rage 12 (setelah heal, urutan
+  sumber), R greed 25.
+- xirthalis: Q shukuchi 6, W swarm 12, E geminate 8 (guard whiff) / 14 (hit),
+  R timelapse 20.
+- nyxarath: Q shadowraze 12 (whiff `>300`) / 12 (guard dist-0 — cabang baru,
+  sumber `:4805`) / 18 (hit), W necromastery 16, E presence 14, R requiem 30
+  (sebelum heal 13%, urutan sumber).
+- thalgryn: Q waveform 12 (target null) / 12 (dist-0) / 18 (surge hit) —
+  cabang native direstruktur agar ketiga jalur sumber terlihat, W strike 15,
+  E morph 10, R replicate 22 (sebelum heal).
+- syrentha: Q riptide 10/10/12 (guard guard hit), W song 14, E mirror 10,
+  R siren 22 (sebelum heal).
+- kunkka: W x-marks 8, E ghost ship 18 (setelah heal, urutan sumber),
+  R torrent 28 (sebelum heal).
+
+Shake tidak menyentuh state gameplay (ScreenShake max-accumulate + decay,
+sudah diport dengan oracle sendiri), jadi penempatan mengikuti urutan statement
+sumber tanpa efek simulasi. Pin: oracle membandingkan MULTISET intensitas
+native (regex `_shake(world, N)`) dengan multiset 30 baris fixture ber-`wired`
+— persis sama (7×12, 4×10, 3×8, 3×18, 3×14, 2×22, 2×15, 6/30/28/25/20/16);
+validate memin helper + hitungan 30. Suite menambah dua probe replay hidup
+(rage cast → intensity 12.0; geminate whiff → 8.0) dan pin tabel bergeser ke
+32 wired / 96 sisa.
+
+Sisa roadmap 9ao: 96 situs cast / 89 method (fixture = tabel otoritatif),
+termasuk keluarga vhorethzir/vaerith/vhyssarion/razak/xerathis/gravewake dan
+puluhan boss lain — tiap sub-slice menambah method ke `FAMILY_METHODS`,
+mengangkat pin multiset, dan memindahkan baris `wired:false→true`.
+
+Batas slice 9ao-2: hanya 30 insert `_shake` + satu guard dist-0 baru (nyxarath
+Q, presentasi-only; jalur gameplay identik karena `normalized()` nol tidak
+menghasilkan hit) + restruktur cabang thalgryn Q (identik secara gameplay) +
+oracle/fixture/suite/pin/docs. `lighting.py`, sumber Python, balance, UI tidak
+disentuh. Hero tetap prosedural (keputusan pengguna).

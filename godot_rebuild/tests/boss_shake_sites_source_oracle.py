@@ -8,25 +8,48 @@ its own oracle + suite) plus the EffectManager route and the boss DEATH shake
 (`prototype_battle._queue_boss_death_presentation`).
 
 This oracle records the authoritative site table so the ability-shake wiring
-can proceed in stages, and pins the first wired sites: the one-shot
-enrage/frenzy shakes inside `Boss.update` (25 true class at `:624`, 15 mini at
-`:639`), now carried by `BossState.enrage_fx_shake` and consumed by
-`prototype_battle._present_boss_enrage_shake` through the same gate as the
-death shake. The remaining 126 cast sites across 112 methods stay a documented
-roadmap (sub-slices 9ao-2+ wire them family by family against this table).
+can proceed in stages, and pins the wired sites:
+
+* 9ao: the one-shot enrage/frenzy shakes inside `Boss.update` (25 true class
+  at `:624`, 15 mini at `:639`), carried by `BossState.enrage_fx_shake` and
+  consumed by `prototype_battle._present_boss_enrage_shake` through the same
+  gate as the death shake.
+* 9ao-2: all 30 cast sites of the six audited families (alchemist, xirthalis,
+  nyxarath, thalgryn, syrentha, kunkka), wired through the `BossAI._shake`
+  helper - including the whiff-guard branches (nyxarath/thalgryn/syrentha Q,
+  xirthalis E) and the zero-distance guard the native Q port folds into a
+  dedicated branch. The pin is the intensity MULTISET: every wired source
+  site must exist in `boss_ai.gd` with the same intensity.
+
+The remaining 96 cast sites across 89 methods stay a documented roadmap
+(later sub-slices wire them family by family against this table).
 
 Run: python godot_rebuild/tests/boss_shake_sites_source_oracle.py
 """
 import ast
 import json
+import re
 from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 BOSS_SRC = ROOT / "bosses" / "base_boss.py"
 BOSS_STATE = ROOT / "godot_rebuild" / "scripts" / "match" / "boss_state.gd"
+BOSS_AI = ROOT / "godot_rebuild" / "scripts" / "match" / "boss_ai.gd"
 PROTOTYPE = ROOT / "godot_rebuild" / "scripts" / "match" / "prototype_battle.gd"
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "boss_shake_sites_source.json"
+
+# 9ao-2 wired families: every cast shake site of these methods is routed
+# through BossAI._shake in the matching native recipe arm.
+FAMILY_METHODS = frozenset({
+    "_cast_q_acid_spray", "_cast_w_unstable_concoction", "_cast_e_chemical_rage",
+    "_cast_r_greevils_greed",
+    "_xirthalis_q", "_xirthalis_w", "_xirthalis_e", "_xirthalis_r",
+    "_nyxarath_q", "_nyxarath_w", "_nyxarath_e", "_nyxarath_r",
+    "_thalgryn_q", "_thalgryn_w", "_thalgryn_e", "_thalgryn_r",
+    "_syrentha_q", "_syrentha_w", "_syrentha_e", "_syrentha_r",
+    "_cast_w_x_marks", "_cast_e_ghost_ship", "_cast_r_torrent",
+})
 
 EXPECTED_TOTAL = 128
 EXPECTED_METHODS = 113
@@ -67,7 +90,7 @@ def _sites():
                     "line": node.lineno,
                     "intensity": intensity,
                     "class": klass,
-                    "wired": klass != "cast",
+                    "wired": klass != "cast" or func.name in FAMILY_METHODS,
                 })
     rows.sort(key=lambda row: row["line"])
     return rows
@@ -76,6 +99,7 @@ def _sites():
 def _native_wiring():
     state = BOSS_STATE.read_text(encoding="utf-8")
     proto = PROTOTYPE.read_text(encoding="utf-8")
+    ai = BOSS_AI.read_text(encoding="utf-8")
     wiring = {
         "state_field": "var enrage_fx_shake := 0" in state,
         "true_branch": ("maxi(18, int(float(attack_cooldown) * 0.75))\n"
@@ -87,7 +111,10 @@ def _native_wiring():
         "presenter": "func _present_boss_enrage_shake(boss: BossState) -> void:" in proto,
         "one_shot_clear": "boss.enrage_fx_shake = 0" in proto,
         "shake_routes": proto.count("effects.shake_screen(shake)") == 2,
+        "shake_helper": "static func _shake(world, intensity: float) -> void:" in ai,
     }
+    wiring["native_cast_multiset"] = sorted(
+        int(value) for value in re.findall(r"_shake\(world, (\d+)\)", ai))
     return wiring
 
 
@@ -103,12 +130,19 @@ def source_fixture():
         ("enrage_true", 25), ("enrage_mini", 15)], enrage_rows
     assert dict(histogram) == EXPECTED_HISTOGRAM, dict(histogram)
     wiring = _native_wiring()
-    assert all(wiring.values()), wiring
+    assert all(value for key, value in wiring.items() if key != "native_cast_multiset"), wiring
+    cast_wired = sorted(row["intensity"] for row in rows
+                        if row["class"] == "cast" and row["wired"])
+    assert len(cast_wired) == 30, len(cast_wired)
+    assert wiring["native_cast_multiset"] == cast_wired, (
+        wiring["native_cast_multiset"], cast_wired)
     shape = {
         "total_sites": len(rows),
         "method_count": len(methods),
         "cast_sites_total": len(cast_rows),
         "cast_method_count": len(set(row["method"] for row in cast_rows)),
+        "cast_sites_wired": sum(1 for row in cast_rows if row["wired"]),
+        "cast_sites_remaining": sum(1 for row in cast_rows if not row["wired"]),
         "intensity_histogram": dict(sorted(histogram.items(), key=lambda kv: int(kv[0]))),
         "enrage_sites": [
             {"class": row["class"], "intensity": row["intensity"], "line": row["line"]}
@@ -116,6 +150,7 @@ def source_fixture():
         ],
         "native_wiring": wiring,
     }
+    assert shape["cast_sites_wired"] == 30 and shape["cast_sites_remaining"] == 96, shape
     return {
         "source": "bosses/base_boss.py::Boss._shake_screen call sites",
         "shape": shape,
@@ -128,10 +163,11 @@ def main():
     FIXTURE.parent.mkdir(parents=True, exist_ok=True)
     FIXTURE.write_text(json.dumps(fixture, indent=2) + "\n", encoding="utf-8")
     shape = fixture["shape"]
-    print("boss_shake_sites: %d sites / %d methods (enrage wired: %d, cast roadmap: %d / %d)"
+    print("boss_shake_sites: %d sites / %d methods (enrage wired: %d, cast wired: %d, "
+          "cast roadmap: %d / %d methods)"
           % (shape["total_sites"], shape["method_count"],
-             len(shape["enrage_sites"]), shape["cast_sites_total"],
-             shape["cast_method_count"]))
+             len(shape["enrage_sites"]), shape["cast_sites_wired"],
+             shape["cast_sites_remaining"], shape["cast_method_count"]))
     print("wrote %s" % FIXTURE.relative_to(ROOT))
 
 

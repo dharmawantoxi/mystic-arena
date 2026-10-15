@@ -2201,6 +2201,12 @@ check("func _present_boss_enrage_shake(boss: BossState) -> void:" in _proto_text
 check("boss.enrage_fx_shake = 0" in _proto_text
       and _proto_text.count("effects.shake_screen(shake)") == 2,
       "The enrage shake must clear one-shot and route like the death shake")
+# Layer 9ao-2: the six audited boss families wire all 30 cast shake sites
+# through the BossAI._shake helper (intensity multiset pinned by the oracle).
+check("static func _shake(world, intensity: float) -> void:" in boss_ai_text,
+      "Boss AI must carry the presentation shake helper")
+check(len(re.findall(r"_shake\(world, \d+\)", boss_ai_text)) == 30,
+      "The audited families must wire exactly the 30 source cast shake sites")
 boss_ai_hit = boss_ai_text.split("static func _hit(", 1)[1].split(
     "\nstatic func _slow(", 1)[0]
 check("world._deliver_hit(-1, boss.team, target, raw_damage, school, boss.position)" in boss_ai_hit

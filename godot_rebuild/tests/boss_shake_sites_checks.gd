@@ -3,6 +3,7 @@ extends RefCounted
 ## through the death-shake gate, and the fixture carries the authoritative
 ## 128-site source table (the 126 cast sites remain a staged wiring roadmap).
 
+const BossAI = preload("res://scripts/match/boss_ai.gd")
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const FIXTURE := "res://tests/fixtures/boss_shake_sites_source.json"
 
@@ -15,6 +16,7 @@ func run(check: Callable) -> void:
 	_shape_check(check, fixture)
 	_enrage_replay(check, "alchemist", "true", 0.4, 25)
 	_enrage_replay(check, "morgath", "mini", 0.35, 15)
+	_cast_shake_probes(check)
 
 
 func _shape_check(check: Callable, fixture: Dictionary) -> void:
@@ -22,8 +24,14 @@ func _shape_check(check: Callable, fixture: Dictionary) -> void:
 	check.call(int(shape.get("total_sites", 0)) == 128, "the source fires 128 shake sites")
 	check.call(int(shape.get("method_count", 0)) == 113, "spread over 113 boss methods")
 	check.call(
-		int(shape.get("cast_sites_total", 0)) == 126,
-		"126 cast sites stay on the staged wiring roadmap"
+		int(shape.get("cast_sites_total", 0)) == 126, "the source fires 126 cast shake sites"
+	)
+	check.call(
+		(
+			int(shape.get("cast_sites_wired", 0)) == 30
+			and int(shape.get("cast_sites_remaining", -1)) == 96
+		),
+		"the six audited families wire 30 cast sites, 96 stay on the roadmap"
 	)
 	var enrage: Array = shape.get("enrage_sites", [])
 	check.call(
@@ -45,7 +53,35 @@ func _shape_check(check: Callable, fixture: Dictionary) -> void:
 	for row in fixture.get("rows", []):
 		if bool(row.get("wired", false)):
 			wired_rows += 1
-	check.call(wired_rows == 2, "exactly the two enrage sites are wired so far")
+	check.call(wired_rows == 32, "the two enrage sites plus the 30 family casts are wired")
+
+
+func _cast_shake_probes(check: Callable) -> void:
+	var enemies: Array[UnitState] = []
+	# Chemical Rage cast shakes 12 (`_cast_e_chemical_rage:1347`).
+	var world := Prototype.new()
+	world.setup_arena()
+	var alchemist := world._spawn_boss("alchemist")
+	check.call(alchemist != null, "rage shake probe spawns")
+	if alchemist != null:
+		alchemist.hp = float(alchemist.max_hp) * 0.5
+		BossAI._alchemist(world, alchemist, enemies, null, 999.0)
+		check.call(alchemist.rage_active, "the rage cast fires in the shake probe")
+		check.call(
+			world.effects.screen_shake.intensity == 12.0,
+			"the rage cast shakes the screen with intensity 12"
+		)
+	# Shukuchi geminate whiff shakes 8 (`_xirthalis_e:2313`).
+	var whiff_world := Prototype.new()
+	whiff_world.setup_arena()
+	var xirthalis := whiff_world._spawn_boss("xirthalis")
+	check.call(xirthalis != null, "whiff shake probe spawns")
+	if xirthalis != null:
+		BossAI._xirthalis(whiff_world, xirthalis, enemies, null, 200.0)
+		check.call(
+			whiff_world.effects.screen_shake.intensity == 8.0,
+			"the geminate whiff shakes the screen with intensity 8"
+		)
 
 
 func _enrage_replay(

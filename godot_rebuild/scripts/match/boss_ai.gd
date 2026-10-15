@@ -484,6 +484,7 @@ static func _alchemist(
 					kills_count += 1
 		if kills_count > 0:
 			boss.set_hp_value(minf(float(boss.max_hp), boss.hp + kills_count * 100.0))
+		_shake(world, 25)
 		return
 	if hp_ratio < 0.6 and not boss.rage_active and boss.e_timer == 0:
 		boss.e_timer = boss.skill_e_cooldown
@@ -492,6 +493,7 @@ static func _alchemist(
 		boss.rage_timer = 360
 		boss.damage = int(float(boss.damage) * 1.5)
 		_heal(boss, 0.15)
+		_shake(world, 12)
 		return
 	if nearby_count >= 2 and boss.w_timer == 0:
 		boss.w_timer = boss.skill_w_cooldown
@@ -501,11 +503,13 @@ static func _alchemist(
 			if enemy.position.distance_to(target_position) <= 100.0:
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
 				_slow(enemy, 0.5, 180)
+		_shake(world, 15)
 		return
 	if distance < 200.0 and boss.q_timer == 0:
 		boss.q_timer = boss.skill_q_cooldown
 		_set_skill(boss, "q", 40)
 		_hit(world, boss, target, _skill_damage(boss, boss.skill_q_damage))
+		_shake(world, 8)
 
 
 static func _malzareth(
@@ -658,6 +662,7 @@ static func _nyxarath(
 					var length := delta.length()
 					if length > 0.0:
 						enemy.position += delta / length * 20.0
+		_shake(world, 30)
 		_heal(boss, 0.13)
 		return
 	if hp_ratio < 0.6 and not boss.presence_active and boss.e_timer == 0:
@@ -670,6 +675,7 @@ static func _nyxarath(
 				_attack_lock(enemy, 90)
 				_slow(enemy, 0.5, 240)
 		_heal(boss, 0.1)
+		_shake(world, 14)
 		return
 	if nearby_count >= 2 and boss.w_timer == 0:
 		boss.w_timer = boss.skill_w_cooldown
@@ -687,6 +693,7 @@ static func _nyxarath(
 		boss.damage = int(float(_source_damage(boss)) * 1.4)
 		var heal_amount := int(float(boss.max_hp) * 0.06) + kills_count * 30
 		boss.set_hp_value(minf(float(boss.max_hp), boss.hp + heal_amount))
+		_shake(world, 16)
 		return
 	if distance < 280.0 and boss.q_timer == 0:
 		boss.q_timer = boss.skill_q_cooldown
@@ -699,6 +706,12 @@ static func _nyxarath(
 				closest_distance = enemy_distance
 				closest = enemy
 		if closest == null or closest_distance > 300.0:
+			# Source whiff guard shakes 12 (`_nyxarath_q`, base_boss.py:4797).
+			_shake(world, 12)
+			return
+		if closest_distance == 0.0:
+			# Source zero-distance guard shakes 12 and skips the beam (:4805).
+			_shake(world, 12)
 			return
 		var direction := (closest.position - boss.position).normalized()
 		for enemy in enemies:
@@ -708,6 +721,7 @@ static func _nyxarath(
 			if projection > 0.0 and projection < 280.0 and perpendicular < 50.0:
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_q_damage))
 				_attack_lock(enemy, 45)
+		_shake(world, 18)
 
 
 static func _thalgryn(
@@ -729,6 +743,7 @@ static func _thalgryn(
 			if boss.position.distance_to(enemy.position) <= 200.0:
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
 				_slow(enemy, 0.4, 180)
+		_shake(world, 22)
 		_heal(boss, 0.1)
 		return
 	if hp_ratio < 0.55 and not boss.morph_buff_active and boss.e_timer == 0:
@@ -738,10 +753,13 @@ static func _thalgryn(
 		boss.morph_buff_timer = 300
 		boss.damage = int(float(_source_damage(boss)) * 1.35)
 		_heal(boss, 0.14)
+		_shake(world, 10)
 		return
 	if distance > 150.0 and boss.q_timer == 0:
 		boss.q_timer = boss.skill_q_cooldown
 		_set_skill(boss, "q", 60)
+		# Source `_thalgryn_q` shakes 12 on both whiff guards (`:5012`, `:5019`)
+		# and 18 after the surge/blink hit path (`:5051`).
 		if target != null and target.alive:
 			var delta := target.position - boss.position
 			var length := delta.length()
@@ -754,6 +772,11 @@ static func _thalgryn(
 					if projection > 0.0 and projection < 250.0 and perpendicular < 50.0:
 						_hit(world, boss, enemy, _skill_damage(boss, boss.skill_q_damage))
 				boss.position += direction * minf(length, 200.0)
+				_shake(world, 18)
+			else:
+				_shake(world, 12)
+		else:
+			_shake(world, 12)
 		return
 	if distance < 280.0 and boss.w_timer == 0:
 		boss.w_timer = boss.skill_w_cooldown
@@ -769,6 +792,7 @@ static func _thalgryn(
 						enemy,
 						_skill_damage(boss, int(float(boss.skill_w_damage) / 3.0))
 					)
+		_shake(world, 15)
 
 
 static func _syrentha(
@@ -792,6 +816,7 @@ static func _syrentha(
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
 				_attack_lock(enemy, 150)
 				_slow(enemy, 0.8, 300)
+		_shake(world, 22)
 		_heal(boss, 0.1)
 		return
 	if hp_ratio < 0.6 and not boss.mirror_buff_active and boss.e_timer == 0:
@@ -803,6 +828,7 @@ static func _syrentha(
 		# read - not the baked base_damage snapshot (layer 9an).
 		boss.damage = int(float(_source_damage(boss)) * 1.4)
 		_heal(boss, 0.12)
+		_shake(world, 10)
 		return
 	if nearby_count >= 3 and boss.w_timer == 0:
 		boss.w_timer = boss.skill_w_cooldown
@@ -812,15 +838,20 @@ static func _syrentha(
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
 				_attack_lock(enemy, 120)
 				_slow(enemy, 0.7, 240)
+		_shake(world, 14)
 		return
 	if distance < 260.0 and boss.q_timer == 0:
 		boss.q_timer = boss.skill_q_cooldown
 		_set_skill(boss, "q", 45)
+		# Source `_syrentha_q` shakes 10 on both whiff guards (`:5236`, `:5243`)
+		# and 12 after the riptide hit path (`:5278`).
 		if target == null or not target.alive:
+			_shake(world, 10)
 			return
 		var delta := target.position - boss.position
 		var length := delta.length()
 		if length <= 0.0:
+			_shake(world, 10)
 			return
 		var direction := delta / length
 		for enemy in enemies:
@@ -830,6 +861,7 @@ static func _syrentha(
 			if projection > 0.0 and projection < 250.0 and perpendicular < 70.0:
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_q_damage))
 				_slow(enemy, 0.5, 180)
+		_shake(world, 12)
 
 
 static func _gravewake(
@@ -937,6 +969,7 @@ static func _kunkka(
 					var push_length := push.length()
 					if push_length > 0.0:
 						enemy.position += push / push_length * 20.0
+		_shake(world, 28)
 		_heal(boss, 0.2)
 		return
 	if hp_ratio < 0.6 and not boss.rum_buff_active and boss.e_timer == 0:
@@ -964,6 +997,7 @@ static func _kunkka(
 		# read - not the baked base_damage snapshot (layer 9an).
 		boss.damage = int(float(_source_damage(boss)) * 1.3)
 		_heal(boss, 0.15)
+		_shake(world, 18)
 		return
 	if nearby_count >= 2 and boss.w_timer == 0:
 		boss.w_timer = 300
@@ -971,6 +1005,7 @@ static func _kunkka(
 		if target != null and target.alive:
 			boss.x_mark_target_id = target.id
 			boss.x_mark_timer = 120
+		_shake(world, 8)
 		return
 	if distance < 220.0 and boss.q_timer == 0:
 		boss.q_timer = 240
@@ -3193,6 +3228,7 @@ static func _xirthalis(
 			if boss.position.distance_to(enemy.position) <= 160.0:
 				_attack_lock(enemy, 90)
 				_slow(enemy, 0.5, 180)
+		_shake(world, 20)
 		return
 	if hp_ratio < 0.65 and not boss.shukuchi_active and boss.q_timer == 0:
 		boss.q_timer = boss.skill_q_cooldown
@@ -3203,6 +3239,7 @@ static func _xirthalis(
 		# 80% off the RAW catalog speed for the 180-tick window (layer 9am;
 		# the pre-9am port set the flag without any speed write).
 		boss.speed_px_per_tick = boss.catalog_speed * 1.8
+		_shake(world, 6)
 		return
 	if nearby >= 2 and boss.w_timer == 0:
 		boss.w_timer = boss.skill_w_cooldown
@@ -3214,18 +3251,22 @@ static func _xirthalis(
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
 				_attack_lock(enemy, 60)
 				_slow(enemy, 0.6, 200)
+		_shake(world, 12)
 		return
 	if distance < 250.0 and boss.e_timer == 0:
 		boss.e_timer = boss.skill_e_cooldown
 		_set_skill(boss, "e", 45)
+		# Source `_xirthalis_e` shakes 8 on the whiff guard (`:2313`) and 14
+		# after the geminate strikes (`:2324`).
 		var closest := _closest_alive(boss, enemies)
-		if closest != null and boss.position.distance_to(closest.position) <= 270.0:
-			_hit(world, boss, closest, _skill_damage(boss, boss.skill_e_damage))
-			if closest.alive:
-				_hit(
-					world, boss, closest, int(float(_skill_damage(boss, boss.skill_e_damage)) * 0.6)
-				)
-			_attack_lock(closest, 50)
+		if closest == null or boss.position.distance_to(closest.position) > 270.0:
+			_shake(world, 8)
+			return
+		_hit(world, boss, closest, _skill_damage(boss, boss.skill_e_damage))
+		if closest.alive:
+			_hit(world, boss, closest, int(float(_skill_damage(boss, boss.skill_e_damage)) * 0.6))
+		_attack_lock(closest, 50)
+		_shake(world, 14)
 
 
 static func _vhyssarion(
@@ -3742,6 +3783,16 @@ static func _max_hp(target: UnitState) -> float:
 
 static func _heal(boss: BossState, fraction: float) -> void:
 	boss.set_hp_value(minf(float(boss.max_hp), boss.hp + int(float(boss.max_hp) * fraction)))
+
+
+static func _shake(world, intensity: float) -> void:
+	# Presentation twin of the source `Boss._shake_screen` helper
+	# (`bosses/base_boss.py:5947-5954`): routes into the EffectManager
+	# ScreenShake (max-accumulate, per-tick decay). Layer 9ao wires the
+	# audited boss families; the fixture table tracks the remaining sites.
+	if world == null:
+		return
+	world.effects.shake_screen(intensity)
 
 
 static func _hit(world, boss: BossState, target: UnitState, raw_damage: int) -> void:

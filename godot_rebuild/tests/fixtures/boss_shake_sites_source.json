@@ -5,6 +5,8 @@
     "method_count": 113,
     "cast_sites_total": 126,
     "cast_method_count": 112,
+    "cast_sites_wired": 30,
+    "cast_sites_remaining": 96,
     "intensity_histogram": {
       "5": 1,
       "6": 1,
@@ -42,7 +44,40 @@
       "step_hook": true,
       "presenter": true,
       "one_shot_clear": true,
-      "shake_routes": true
+      "shake_routes": true,
+      "shake_helper": true,
+      "native_cast_multiset": [
+        6,
+        8,
+        8,
+        8,
+        10,
+        10,
+        10,
+        10,
+        12,
+        12,
+        12,
+        12,
+        12,
+        12,
+        12,
+        14,
+        14,
+        14,
+        15,
+        15,
+        16,
+        18,
+        18,
+        18,
+        20,
+        22,
+        22,
+        25,
+        28,
+        30
+      ]
     }
   },
   "rows": [
@@ -93,28 +128,28 @@
       "line": 1300,
       "intensity": 8,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_cast_w_unstable_concoction",
       "line": 1330,
       "intensity": 15,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_cast_e_chemical_rage",
       "line": 1347,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_cast_r_greevils_greed",
       "line": 1382,
       "intensity": 25,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_cast_q_ice_vortex",
@@ -261,35 +296,35 @@
       "line": 2262,
       "intensity": 6,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_xirthalis_w",
       "line": 2293,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_xirthalis_e",
       "line": 2313,
       "intensity": 8,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_xirthalis_e",
       "line": 2324,
       "intensity": 14,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_xirthalis_r",
       "line": 2350,
       "intensity": 20,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_vhyssarion_q",
@@ -751,126 +786,126 @@
       "line": 4797,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_nyxarath_q",
       "line": 4805,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_nyxarath_q",
       "line": 4825,
       "intensity": 18,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_nyxarath_w",
       "line": 4853,
       "intensity": 16,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_nyxarath_e",
       "line": 4889,
       "intensity": 14,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_nyxarath_r",
       "line": 4929,
       "intensity": 30,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_thalgryn_q",
       "line": 5012,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_thalgryn_q",
       "line": 5019,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_thalgryn_q",
       "line": 5051,
       "intensity": 18,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_thalgryn_w",
       "line": 5087,
       "intensity": 15,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_thalgryn_e",
       "line": 5116,
       "intensity": 10,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_thalgryn_r",
       "line": 5154,
       "intensity": 22,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_syrentha_q",
       "line": 5236,
       "intensity": 10,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_syrentha_q",
       "line": 5243,
       "intensity": 10,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_syrentha_q",
       "line": 5278,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_syrentha_w",
       "line": 5309,
       "intensity": 14,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_syrentha_e",
       "line": 5338,
       "intensity": 10,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_syrentha_r",
       "line": 5380,
       "intensity": 22,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_gravewake_q",
@@ -926,21 +961,21 @@
       "line": 5788,
       "intensity": 8,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_cast_e_ghost_ship",
       "line": 5850,
       "intensity": 18,
       "class": "cast",
-      "wired": false
+      "wired": true
     },
     {
       "method": "_cast_r_torrent",
       "line": 5904,
       "intensity": 28,
       "class": "cast",
-      "wired": false
+      "wired": true
     }
   ]
 }
