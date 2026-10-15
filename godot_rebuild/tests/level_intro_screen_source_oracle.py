@@ -15,11 +15,17 @@ lines. The config and boss dictionaries come from the real `levels/level_data.py
 and `bosses/boss_data.py` (both pure data, loaded by file path so the
 `levels` / `bosses` package `__init__` files are not executed).
 
-Two inputs are stubbed on purpose and are NOT part of this slice:
-* `_core` exposes only `GameSettings`. `compute_starting_gold`,
-  `compute_gold_per_second` and `format_gold_rate` are left out, so the source
-  takes its own `except` fallbacks (`starting_gold` from the level config and
-  `PASSIVE +{GOLD_PER_SECOND}/s`). The Godot port mirrors those fallbacks.
+Layer 9al: `_core` now exposes the REAL `compute_starting_gold`,
+`compute_gold_per_second` and `format_gold_rate`, extracted verbatim from the
+`_core.py` gold block and executed here, so the source takes its production
+`try` path and the card shows the same numbers `Game.reset()` grants. The
+difficulty rows are recorded twice: once with the real functions
+(`starting_gold` / `passive_text`) and once against a `GameSettings`-only
+`_core`, which reproduces the source's own `except` fallbacks - the values the
+pre-9al port mirrored. Those are stored per row as `starting_gold_fallback` /
+`passive_text_fallback` so the suite can prove the two paths differ.
+
+One input is still stubbed on purpose and is NOT part of this slice:
 * `mobile.perf` is a no-op stub with `cheap_alpha = True` (the path a phone
   takes), and `pygame.time.get_ticks()` is pinned to 0.
 
@@ -195,9 +201,42 @@ def _install_stubs():
     sys.modules["mobile"] = mobile
     sys.modules["mobile.perf"] = perf
 
+    _set_core(with_gold_functions=True)
+
+
+def _set_core(with_gold_functions):
+    """Install the `_core` shim. With layer 9al the real gold functions are
+    extracted from `_core.py` and executed, so the source draw() takes its
+    production `try` path; without them it falls into its own `except`
+    fallbacks (the pre-9al port mirror, recorded as *_fallback columns)."""
     core = types.ModuleType("_core")
     core.GameSettings = _GameSettings
+    if with_gold_functions:
+        gold = _core_gold_namespace()
+        core.compute_starting_gold = gold["compute_starting_gold"]
+        core.compute_gold_per_second = gold["compute_gold_per_second"]
+        core.format_gold_rate = gold["format_gold_rate"]
     sys.modules["_core"] = core
+
+
+def _core_gold_namespace():
+    """Execute the `_core.py` gold block verbatim: constants plus
+    compute_starting_gold / compute_gold_per_second / format_gold_rate."""
+    lines = (ROOT / "_core.py").read_text(encoding="utf-8").splitlines()
+    block = _slice(
+        lines,
+        lambda line: line.startswith("GOLD_PER_SECOND = "),
+        lambda line: line.startswith("# ── MINION TYPES"),
+    )
+    namespace = {}
+    exec(compile(block, "_core.py:gold block", "exec"), namespace)
+    for name in (
+        "GOLD_PER_SECOND", "DIFFICULTY_GOLD_MULT", "GOLD_PER_LEVEL_BONUS",
+        "GOLD_PER_SECOND_LEVEL_BONUS", "compute_starting_gold",
+        "compute_gold_per_second", "format_gold_rate",
+    ):
+        assert name in namespace, "%s missing from the _core.py gold block" % name
+    return namespace
 
 
 def _load_file(name, path):
@@ -308,6 +347,40 @@ def _trace_draw(screen, lines):
     return rec
 
 
+def _difficulty_pass(cls, levels, lines):
+    """One full difficulty x level sweep against the currently installed `_core`."""
+    rows = []
+    for config in levels:
+        for difficulty in ("easy", "normal", "hard"):
+            SETTINGS["difficulty"] = difficulty
+            screen = cls(config, SCREEN_W, SCREEN_H)
+            for _ in range(40):
+                screen.update()
+            rec = _trace_draw(screen, lines)
+            rows.append({
+                "level": _level_subset(config),
+                "boss": _boss_subset({
+                    "name": screen.boss_name, "title": screen.boss_title,
+                    "boss_class": screen.boss_class,
+                    "color": screen.boss_color,
+                    "color_dark": screen.boss_color_dark,
+                    "entrance_color": screen.boss_entrance_color,
+                }),
+                "difficulty_setting": difficulty,
+                "hp_mult": screen.hp_mult,
+                "fade_alpha": rec["fade_alpha"],
+                "tint_alpha": rec["tint_alpha"],
+                "difficulty": rec["difficulty"],
+                "bars": rec["bars"],
+                "reward": screen.reward,
+                "starting_gold": rec["starting_gold"],
+                "passive_text": rec["passive_text"],
+                "boss_tag": rec["boss_tag"],
+                "prompt_text": rec["prompt_text"],
+            })
+    return rows
+
+
 def _level_subset(config):
     keys = (
         "level_number", "name", "description", "enemy_hp_mult",
@@ -382,35 +455,20 @@ def source_fixture():
     skips.append(["inactive", inactive.handle_skip(key=_PygameShim.K_SPACE), False])
 
     # 3. Difficulty x all 20 levels, sampled after the fade (timer 40).
-    difficulty_rows = []
-    for index, config in enumerate(levels):
-        for difficulty in ("easy", "normal", "hard"):
-            SETTINGS["difficulty"] = difficulty
-            screen = cls(config, SCREEN_W, SCREEN_H)
-            for _ in range(40):
-                screen.update()
-            rec = _trace_draw(screen, lines)
-            difficulty_rows.append({
-                "level": _level_subset(config),
-                "boss": _boss_subset({
-                    "name": screen.boss_name, "title": screen.boss_title,
-                    "boss_class": screen.boss_class,
-                    "color": screen.boss_color,
-                    "color_dark": screen.boss_color_dark,
-                    "entrance_color": screen.boss_entrance_color,
-                }),
-                "difficulty_setting": difficulty,
-                "hp_mult": screen.hp_mult,
-                "fade_alpha": rec["fade_alpha"],
-                "tint_alpha": rec["tint_alpha"],
-                "difficulty": rec["difficulty"],
-                "bars": rec["bars"],
-                "reward": screen.reward,
-                "starting_gold": rec["starting_gold"],
-                "passive_text": rec["passive_text"],
-                "boss_tag": rec["boss_tag"],
-                "prompt_text": rec["prompt_text"],
-            })
+    # Layer 9al records the pass twice: with the real `_core` gold functions
+    # (the production path the native port must now mirror) and with the
+    # GameSettings-only `_core` (the source's own except fallbacks, which the
+    # pre-9al port mirrored). The fallback values land in *_fallback columns.
+    _set_core(with_gold_functions=True)
+    difficulty_rows = _difficulty_pass(cls, levels, lines)
+    _set_core(with_gold_functions=False)
+    fallback_rows = _difficulty_pass(cls, levels, lines)
+    _set_core(with_gold_functions=True)
+    assert len(difficulty_rows) == len(fallback_rows)
+    for row, fallback in zip(difficulty_rows, fallback_rows):
+        assert row["difficulty_setting"] == fallback["difficulty_setting"]
+        row["starting_gold_fallback"] = fallback["starting_gold"]
+        row["passive_text_fallback"] = fallback["passive_text"]
     SETTINGS["difficulty"] = "normal"
 
     # 4. Theme tint for every theme the source names, plus the default.
@@ -450,6 +508,13 @@ def main():
              len(fixture["difficulty_rows"]), len(fixture["themes"])))
     print("  prompt: %s; fade at tick 15: %s; tint at tick 15: %s"
           % (fixture["begin_prompt"], fixture["timeline"][14][2], fixture["timeline"][14][3]))
+    diverging = sum(
+        1 for row in fixture["difficulty_rows"]
+        if row["starting_gold"] != row["starting_gold_fallback"]
+        or row["passive_text"] != row["passive_text_fallback"]
+    )
+    print("  9al: %d/%d difficulty rows differ from the pre-9al fallback columns"
+          % (diverging, len(fixture["difficulty_rows"])))
     print("wrote %s" % FIXTURE.relative_to(ROOT))
 
 

@@ -2907,6 +2907,43 @@ check('name="RegenShieldButton"' in _match_scene and 'name="CastleShieldButton"'
 check("request_regen_shield" in _screen and "request_castle_shield" in _screen,
       "9ak anchor: the shield buttons must stay wired to the session requests")
 
+# ── Layer 9al: level intro gold/passive run the full _core path ──
+# `_render.py:3073-3094` calls `_core.compute_starting_gold` /
+# `compute_gold_per_second` / `format_gold_rate` so the intro card shows the
+# same numbers `Game.reset()` grants. The pre-9al port mirrored only the
+# source's except fallbacks while the match ledger already ran the full path,
+# so level >1 or non-normal difficulty displayed the wrong gold/passive text.
+_intro = (ROOT / "scripts/ui/level_intro_screen.gd").read_text(encoding="utf-8")
+_economy = (ROOT / "scripts/match/match_economy.gd").read_text(encoding="utf-8")
+check("static func format_gold_rate" in _economy,
+      "9al match_economy.gd must port _core.format_gold_rate")
+check("Economy.starting_gold(" in _intro
+      and "Economy.passive_rate(" in _intro
+      and "Economy.format_gold_rate(" in _intro,
+      "9al the level intro card must use the shared full _core economy path")
+check("MapRenderer.MAP_HEIGHT, difficulty" in _battle,
+      "9al the match must configure the intro card with the live difficulty")
+_intro_fixture_path = ROOT / "tests/fixtures/level_intro_screen_source.json"
+check(_intro_fixture_path.is_file(), "9al level intro fixture must exist")
+if _intro_fixture_path.is_file():
+    _intro_rows = json.loads(_intro_fixture_path.read_text(encoding="utf-8"))["difficulty_rows"]
+    check(len(_intro_rows) == 60,
+          "9al level intro fixture must keep 20 levels x 3 difficulties")
+    check(all("starting_gold_fallback" in row and "passive_text_fallback" in row
+              for row in _intro_rows),
+          "9al every difficulty row must carry the pre-9al fallback columns")
+    _intro_diverging = sum(
+        1 for row in _intro_rows
+        if row["starting_gold"] != row["starting_gold_fallback"]
+        or row["passive_text"] != row["passive_text_fallback"]
+    )
+    check(_intro_diverging == 59,
+          "9al exactly the level-1 normal row may coincide with the fallback")
+    check(all(
+        row["passive_text"].startswith("PASSIVE +") and row["passive_text"].endswith("/s")
+        for row in _intro_rows
+    ), "9al passive text keeps the source format on the full path")
+
 
 for error in errors:
     print("FAIL:", error, file=sys.stderr)

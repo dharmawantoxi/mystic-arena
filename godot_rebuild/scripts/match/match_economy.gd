@@ -28,6 +28,18 @@ static func multiplier(difficulty: String) -> float:
 	return float({"easy": 1.25, "normal": 1.0, "hard": 0.75}.get(difficulty, 1.0))
 
 
+## `_core.format_gold_rate`: `f"{rate:.1f}".rstrip("0").rstrip(".")` —
+## 3.0 -> "3", 5.7 -> "5.7", 3.75 -> "3.8" (one decimal, ties-to-even on the
+## exact binary value, which `"%.1f"` reproduces).
+static func format_gold_rate(rate: float) -> String:
+	var text := "%.1f" % rate
+	while text.ends_with("0"):
+		text = text.left(text.length() - 1)
+	if text.ends_with("."):
+		text = text.left(text.length() - 1)
+	return text
+
+
 func step_tick(wave: int) -> void:
 	income_ticks += 1
 	if income_ticks < 60:

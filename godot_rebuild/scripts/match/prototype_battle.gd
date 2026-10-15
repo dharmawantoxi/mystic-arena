@@ -262,7 +262,9 @@ func _configure_level_intro() -> void:
 	var bosses: Dictionary = boss_table.get("bosses", {}) as Dictionary
 	var true_boss_id := String(level_config.get("true_boss", "abaddon"))
 	var boss_entry: Dictionary = bosses.get(true_boss_id, {}) as Dictionary
-	level_intro.setup(level_config, boss_entry, MapRenderer.MAP_WIDTH, MapRenderer.MAP_HEIGHT)
+	level_intro.setup(
+		level_config, boss_entry, MapRenderer.MAP_WIDTH, MapRenderer.MAP_HEIGHT, difficulty
+	)
 
 
 func step_level_intro() -> bool:

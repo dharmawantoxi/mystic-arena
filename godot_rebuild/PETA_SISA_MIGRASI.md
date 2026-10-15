@@ -323,8 +323,9 @@ bar kesulitan, dan teks gold/passive/boss-tag ada di dalam `draw()` dan
   / `compute_gold_per_second` / `format_gold_rate`. Itu di luar slice ini,
   jadi oracle sengaja menyediakan `_core` tanpa fungsi tersebut, sehingga
   sumber jatuh ke fallback `except` (`starting_gold` dari level, default 1000,
-  dan `PASSIVE +3/s`). Port mengikuti fallback itu. Jalur `_core` penuh
-  belum diverifikasi.
+  dan `PASSIVE +3/s`). Port mengikuti fallback itu. (**Ditutup layer 9al:**
+  jalur `_core` penuh kini diport lewat `match_economy.gd` dan dikunci fixture
+  dua kolom — lihat "Gold/passive intro dari `_core` penuh" di bawah.)
 - Pemanggil yang mengambil boss dari `get_all_boss_types()` dan memanggil
   `setup()` belum ada; saat ini kartu hanya bisa dibuat dari fixture/test.
 - `ui_theme.draw_icon("warn")` dan `corner_ticks` (ikon peringatan kedua sisi
@@ -905,3 +906,49 @@ dokumen/wiring dipin di `validate_project.py` mengikuti preseden pin
 view-wiring 9aj, sehingga `run_all.gd` dan workflow CI tidak berubah (CI
 sudah menjalankan `validate_project.py`). `lighting.py`, sumber Python,
 balance, FX, UI, dan project settings tidak disentuh.
+
+
+## Gold/passive intro dari `_core` penuh (layer 9al)
+
+Item terbuka terakhir slice LevelIntroScreen. Sumber (`_render.py:3073-3094`)
+memanggil `_core.compute_starting_gold` / `compute_gold_per_second` /
+`format_gold_rate` supaya angka di kartu intro SAMA dengan gold yang benar-benar
+diberikan `Game.reset()` (docstring `_core.py:232-241`). Port intro dulu hanya
+mencerminkan fallback `except` (`starting_gold` mentah dari config, `PASSIVE
++3/s` datar), sementara ledger match (`prototype_battle.gd::
+_apply_opening_economy`) sudah menjalankan jalur penuh lewat
+`Economy.starting_gold`/`passive_rate` — jadi kartu intro menampilkan angka
+yang salah di setiap level >1 atau difficulty non-normal. Terukur pada fixture
+lama: L5 hard menampilkan "1000 GOLD" / "PASSIVE +3/s" padahal match memberi
+1050 / 3.15→"3.2"; L1 easy menampilkan 1000 padahal match memberi 1250.
+
+Perubahan produksi:
+
+- `match_economy.gd` += `format_gold_rate()` — port `f"{rate:.1f}".rstrip("0")
+  .rstrip(".")`. `"%.1f"` Godot dan format Python membulat ties-to-even atas
+  nilai biner yang sama; kasus tie 3.75 → "3.8" (L1 easy) terekam di fixture.
+- `level_intro_screen.gd`: `setup()` menerima `difficulty` (default `"normal"`,
+  padanan `GameSettings().difficulty` di sumber), menghitung `starting_gold`
+  dan `passive_rate` lewat Economy, dan `get_passive_text()` memformat lewat
+  `format_gold_rate`. Konstanta `GOLD_PER_SECOND` tetap dipertahankan (dipin
+  suite sebagai konstanta fallback sumber).
+- `prototype_battle.gd::_configure_level_intro()` meneruskan difficulty hidup,
+  sehingga kartu dan ledger pembukaan tidak bisa drift.
+
+Oracle `level_intro_screen_source_oracle.py` kini mengeksekusi blok gold
+`_core.py` apa adanya (konstanta + tiga fungsi; tanpa pygame, tanpa import
+game) dan merekam 60 difficulty rows DUA kali: dengan `_core` penuh (kolom
+`starting_gold`/`passive_text` = jalur produksi) lalu dengan `_core` stub
+GameSettings-only (kolom `*_fallback` = perilaku pre-9al, jalur `except`
+sumber). **59/60 baris berbeda** — hanya L1 normal yang kebetulan sama. Suite
+`level_intro_screen_checks.gd` meneruskan difficulty per baris, mereplay kolom
+penuh, dan memaku bukti divergensi (baris diverging > 0). `validate_project.py`
+memin wiring (`Economy.starting_gold/passive_rate/format_gold_rate` di kartu,
+`difficulty` di caller, `format_gold_rate` di Economy) dan bentuk fixture (60
+baris, kolom fallback lengkap, tepat 59 diverging, format teks passive).
+
+Batas slice 9al: hanya kartu intro + formatter Economy + satu caller +
+oracle/fixture/suite/pin/docs. Ledger match tidak berubah (sudah paritas sejak
+slice ekonomi), `GameSettings` tetap shim di oracle (difficulty hidup datang
+dari world, bukan save settings), `lighting.py`, sumber Python, balance, FX,
+UI lain, dan project settings tidak disentuh.
