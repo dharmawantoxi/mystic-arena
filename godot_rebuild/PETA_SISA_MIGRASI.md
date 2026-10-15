@@ -128,7 +128,12 @@ hilang. Portrait karena itu dibangun prosedural, bukan disalin.
 
 `HERO_MIGRATION_PROGRESS.md` menyebut sisa di luar kit: *AIPlayer penuh,
 item/forge, art final — hanya atas permintaan pengguna*. Karena forge sudah
-ada, efektif tinggal AIPlayer penuh dan art final.
+ada, efektif tinggal AIPlayer penuh dan art final. (**Koreksi 9ak:** baris ini
+status pertengahan migrasi — AIPlayer penuh sejak itu ditutup, lihat
+"Integrasi penuh AI lawan" di bawah, banner pembaruan di
+`HERO_MIGRATION_PROGRESS.md`, dan "Rekonsiliasi klaim status AI" di akhir
+dokumen ini; sisa sebenarnya hanya art final, dan `lighting.py` tetap di luar
+scope.)
 
 ## Slice berikutnya: siluet hero arena (art)
 
@@ -844,3 +849,59 @@ Divergensi guard non-positif store dunia yang dicatat 9af kini **tertutup sebaga
 Rencana di atas sudah mendarat (`silhouette()`, `fill()` khas Kaizen/Thorne, `prototype_view.gd` menggambar siluet, suite `hero_marker_checks.gd` terdaftar). Yang belum: cakupan roster. Cabang generik memakai `(code >> (index % 12)) % 5`, yaitu hanya bit 0-9 dari kode di bawah 1000003, sehingga **33 pasang** dari 220 hero generik menggambar siluet identik (`gravefang` = `hitokage`, `kaerinya` = `kyumirra`, `lyrienne` = `lyssarethys`, dan 30 pasang lain).
 
 Perbaikan: `spread = fingerprint * 48271 + 1021`, jumlah sisi dari `spread % 4`, dan wobble dari digit basis-5 `spread` (bukan bit rendah). Terukur: **222/222 siluet unik**, sisi {7, 8, 9, 10} untuk generik (Kaizen 8, Thorne 12), reach 1000-1120 untuk generik (Kaizen 1150, Thorne 1154) - semuanya ≤ `MAX_REACH` 1200, sehingga cincin tim tetap membingkai. Oracle `hero_marker_source_oracle.py` menulis golden fixture `hero_marker_source.json` (222 entri: keluarga, jumlah sisi, hash terkuantisasi 1e-4, reach mili, digest) dan suite merekomputasi seluruhnya dari `silhouette()` produksi, termasuk kontrol **222/222 unik** dan view wiring (`prototype_view.gd` memakai `HeroMarker.silhouette(`, tidak memakai `HeroMarker.body(`) yang dipin `validate_project.py`.
+
+
+## Rekonsiliasi klaim status AI (layer 9ak, doc-only)
+
+Audit "kandidat berikutnya" menemukan premis "AIPlayer penuh belum ada" sudah
+usang tetapi masih tertulis di lima dokumen. Bukti audit (tanpa perubahan
+produksi): **79/79** resep `_smart_ai_*` sumber punya arm dispatch native di
+`boss_ai.gd` (set-diff kosong; `_generic` hanya untuk boss tanpa resep
+khusus), **55** oracle boss khusus, `ai_match_integration_checks.gd` benar-benar
+berjalan di `run_all.gd`, **0** TODO/stub di sembilan modul `ai_*.gd` maupun
+`boss_ai.gd`, dan spot-check paritas semuanya bersih (basic attack + cleave 8k,
+sourceless ability 8u, flux DOT/clone Morgath, Ice Vortex 9ag, attack lock 9ah,
+school proyektil 9w). `validate_project.py` **PASS 13546 static checks** pada
+`43e9637` sebelum slice ini.
+
+Koreksi in-place (konvensi repo: klaim usang dikoreksi dengan penanda, bukan
+dihapus diam-diam):
+
+- `AI_CONTRACT.md` — "Status paket" (dulu: "Belum port AIPlayer lengkap …
+  scene masih memakai defender lama"), bullet reserve (dulu: "item dan
+  pemilihan prioritas kandidat masih pending"), penutup roster (dulu:
+  "AIPlayer penuh … tetap belum selesai"), lengan upgrade (dulu: "Policy
+  scheduler dan wiring scene belum aktif"), shield scene (dulu: "Scene belum
+  memanggil AI shield otomatis dan belum memiliki tombol purchase shield" —
+  padahal `RegenShieldButton`/`CastleShieldButton` ada di HUD dan lengan
+  `regen_shield`/`castle_shield` ada di tabel prioritas), plus seksi 9ak baru.
+- `SHIELD_CONTRACT.md` — "Belum ada tombol beli shield atau AI otomatis di
+  scene" dan "kills descending masih pending" (keduanya sudah ada:
+  `_stable_kills_descending`).
+- `NEXUS_CONTRACT.md` — header "(WIP AIPlayer)" dan "loop AI otomatis belum
+  aktif" → selesai/aktif.
+- `UPGRADE_CONTRACT.md` — header "(WIP)" dan "urutan kandidat dan loop AI
+  scene belum aktif" → diterapkan/aktif.
+- `HERO_MIGRATION_PROGRESS.md` — banner pembaruan 9ak di bawah judul (bagian
+  historis tidak ditulis ulang), penanda koreksi di "Sisa dan blocker tepat",
+  dan pesan siap-salin diperbarui (versi lama adalah sumber premis usang yang
+  menular antar-sesi).
+- Dokumen ini — koreksi silang pada baris "efektif tinggal AIPlayer penuh dan
+  art final".
+
+Pin anti-drift baru di `validate_project.py` (blok 9ak): frase stale dilarang
+muncul lagi di kelima dokumen (dicocokkan pada teks ternormalisasi whitespace),
+penanda koreksi wajib ada, dan setiap klaim terkoreksi diikat ke anchor kode:
+`set_ai_enabled(true)` + `reset_ai(AI_MATCH_SEED)` di `prototype_session.gd`,
+`ai_controller.tick(` di `prototype_battle.gd`, delapan lengan prioritas di
+`ai_policy.gd`, `draft.reserve()` di `ai_items.gd`/`ai_shields.gd`,
+`_stable_kills_descending` di `ai_shields.gd`/`ai_upgrades.gd`,
+`AIMatchIntegrationChecks.new().run(_check)` di `run_all.gd`, dan tombol shield
+pemain di `PrototypeMatch.tscn`/`prototype_screen.gd`.
+
+Batas slice 9ak: hanya dokumen + `validate_project.py`. Tidak ada perubahan
+kode produksi, oracle, fixture, atau suite GDScript baru — fakta
+dokumen/wiring dipin di `validate_project.py` mengikuti preseden pin
+view-wiring 9aj, sehingga `run_all.gd` dan workflow CI tidak berubah (CI
+sudah menjalankan `validate_project.py`). `lighting.py`, sumber Python,
+balance, FX, UI, dan project settings tidak disentuh.

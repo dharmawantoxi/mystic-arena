@@ -76,9 +76,10 @@ Komposisi dibaca **saat wave start** per tim (bisa beda bila tier beda). Antrean
 - Tes native `nexus_checks.gd` + `nexus_scene_checks.gd` terintegrasi di `run_all.gd`, seluruh suite lama tetap berjalan.
 - Belum diuji: Windows fisik/GPU, Android, balance pertandingan panjang, paid shield melalui tombol UI/AI otomatis, auto-scaling AI dan hero behavior.
 
-## Adapter upgrade red (WIP AIPlayer)
+## Adapter upgrade red (AIPlayer penuh — selesai)
 
 Upgrade nexus internal kini dapat dipanggil untuk red dengan live reserve dan
 expected-level, melalui rumus HP/shield serta ledger yang sama. Wrapper UI tetap
-blue-only. Pembelian castle shield tersedia di domain; loop AI otomatis belum aktif; lihat
-[AI_CONTRACT.md](AI_CONTRACT.md).
+blue-only. Pembelian castle shield tersedia di domain dan loop AI otomatis aktif
+di scene (lengan `upgrade_nexus`/`castle_shield` di `ai_policy.gd`, di-tick
+`prototype_battle.gd`; koreksi 9ak); lihat [AI_CONTRACT.md](AI_CONTRACT.md).

@@ -62,9 +62,11 @@ Detail angka, quirk `tower_kind`, urutan ID vs spatial-hash, dan batas auto-scal
 
 Belum ada tes Windows/GPU/screenshots, Android nyata, performa perangkat atau balance pertandingan panjang. Penanda tier berupa titik dan inspeksi angka bukan port artwork/animasi Archer produksi.
 
-## Adapter AI (WIP)
+## Adapter AI (selesai)
 
 Wrapper upgrade tower UI tetap hanya milik blue. Domain internal kini dapat
 meng-upgrade red dengan validasi tim/slot/expected-level/reserve dan ledger sama.
-Pemilihan path Lv1 AI mengikuti cannon/ice/archer/mage; urutan kandidat dan loop AI
-scene belum aktif. Detail dan batas tes: [AI_CONTRACT.md](AI_CONTRACT.md).
+Pemilihan path Lv1 AI mengikuti cannon/ice/archer/mage; urutan kandidat kills
+descending stabil sudah diterapkan (`try_tower_priority`/`try_hero_priority`)
+dan loop AI scene aktif (layer 6d; koreksi 9ak). Detail dan batas tes:
+[AI_CONTRACT.md](AI_CONTRACT.md).

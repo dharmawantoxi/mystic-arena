@@ -2811,6 +2811,102 @@ check('const BossItemReflectCarapaceChecks = preload("res://tests/boss_item_refl
       and "BossItemReflectCarapaceChecks.new().run(_check)" in ai_tests,
       "9i production-path reflect replay is registered")
 
+# ── Layer 9ak: stale AI status claims reconciled (docs-only slice) ──
+# "AIPlayer penuh" was closed by layers 6a-6f plus ai_match_integration_checks.gd,
+# but five documents still carried mid-migration status lines ("belum port",
+# "masih pending", "belum aktif"). Those lines were corrected in place with
+# explicit markers; these pins keep the stale phrasing from creeping back and
+# bind every corrected claim to the code anchor that justifies it.
+
+
+def _flat(text):
+    return re.sub(r"\s+", " ", text)
+
+
+_ai_contract_doc = _flat((ROOT / "AI_CONTRACT.md").read_text(encoding="utf-8"))
+_shield_contract_doc = _flat((ROOT / "SHIELD_CONTRACT.md").read_text(encoding="utf-8"))
+_nexus_contract_doc = _flat((ROOT / "NEXUS_CONTRACT.md").read_text(encoding="utf-8"))
+_upgrade_contract_doc = _flat((ROOT / "UPGRADE_CONTRACT.md").read_text(encoding="utf-8"))
+_hero_progress_doc = _flat((ROOT / "HERO_MIGRATION_PROGRESS.md").read_text(encoding="utf-8"))
+_peta_doc = _flat((ROOT / "PETA_SISA_MIGRASI.md").read_text(encoding="utf-8"))
+
+for stale in (
+    "Belum port AIPlayer lengkap",
+    "Scene pertandingan masih memakai defender lama",
+    "masih pending",
+    "Policy scheduler dan wiring scene belum aktif",
+    "Scene belum memanggil AI shield otomatis",
+    "AIPlayer penuh, rebalance dan art final tetap belum selesai",
+):
+    check(stale not in _ai_contract_doc,
+          f"9ak AI_CONTRACT.md must not reclaim the stale status {stale!r}")
+check("merekonsiliasi klaim status AI yang stale" in _ai_contract_doc,
+      "9ak AI_CONTRACT.md must keep the reconciliation layer record")
+check("AIPlayer lengkap sudah diport dan aktif di scene pertandingan" in _ai_contract_doc,
+      "9ak AI_CONTRACT.md package status must state the port is complete and wired")
+
+for stale in (
+    "Belum ada tombol beli shield atau AI otomatis di scene",
+    "kills descending masih pending",
+):
+    check(stale not in _shield_contract_doc,
+          f"9ak SHIELD_CONTRACT.md must not reclaim the stale status {stale!r}")
+check("sudah memanggil AI shield otomatis" in _shield_contract_doc
+      and "_stable_kills_descending" in _shield_contract_doc,
+      "9ak SHIELD_CONTRACT.md must state the automatic shield arms and stable kills order")
+
+check("loop AI otomatis belum aktif" not in _nexus_contract_doc,
+      "9ak NEXUS_CONTRACT.md must not reclaim the stale status 'loop AI otomatis belum aktif'")
+check("loop AI otomatis aktif" in _nexus_contract_doc
+      and "Adapter upgrade red (AIPlayer penuh — selesai)" in _nexus_contract_doc,
+      "9ak NEXUS_CONTRACT.md must state the AI loop is active")
+
+check("urutan kandidat dan loop AI scene belum aktif" not in _upgrade_contract_doc
+      and "## Adapter AI (WIP)" not in _upgrade_contract_doc,
+      "9ak UPGRADE_CONTRACT.md must not reclaim the stale WIP status")
+check("loop AI scene aktif" in _upgrade_contract_doc,
+      "9ak UPGRADE_CONTRACT.md must state the scene AI loop is active")
+
+check("Pekerjaan berikutnya (di luar migrasi kit): AIPlayer penuh" not in _hero_progress_doc,
+      "9ak HERO_MIGRATION_PROGRESS.md copy-paste message must not list AIPlayer penuh as pending")
+check("Pembaruan 9ak" in _hero_progress_doc and "AIPlayer penuh SUDAH selesai" in _hero_progress_doc,
+      "9ak HERO_MIGRATION_PROGRESS.md must carry the update banner and the corrected message")
+
+check("efektif tinggal AIPlayer penuh dan art final. (**Koreksi 9ak:**" in _peta_doc
+      and "Rekonsiliasi klaim status AI (layer 9ak, doc-only)" in _peta_doc,
+      "9ak PETA_SISA_MIGRASI.md must cross-correct the stale remaining-work line")
+
+# Code anchors: the corrected claims must stay true in the shipped code.
+_session = (ROOT / "scripts/simulation/prototype_session.gd").read_text(encoding="utf-8")
+_battle = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+_items = (ROOT / "scripts/match/ai_items.gd").read_text(encoding="utf-8")
+_shields = (ROOT / "scripts/match/ai_shields.gd").read_text(encoding="utf-8")
+_upgrades = (ROOT / "scripts/match/ai_upgrades.gd").read_text(encoding="utf-8")
+_match_scene = (ROOT / "scenes/prototype/PrototypeMatch.tscn").read_text(encoding="utf-8")
+_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+check("set_ai_enabled(true)" in _session and "reset_ai(AI_MATCH_SEED)" in _session,
+      "9ak anchor: the session must still arm the seeded AI from the first tick")
+check("ai_controller.tick(" in _battle,
+      "9ak anchor: the match must still tick the AI controller every tick")
+for arm in ("build", "buy_hero", "upgrade_hero", "buy_item",
+            "upgrade_tower", "regen_shield", "castle_shield", "upgrade_nexus"):
+    check(f'"{arm}"' in ai_policy,
+          f"9ak anchor: ai_policy.gd must keep the source priority arm {arm!r}")
+check("draft.reserve()" in _items,
+      "9ak anchor: AI item purchases must still read the live draft reserve")
+check("draft.reserve()" in _shields and "_stable_kills_descending" in _shields,
+      "9ak anchor: AI shields must still read the live reserve and sort kills descending")
+check("_stable_kills_descending" in _upgrades
+      and "func try_tower_priority" in _upgrades
+      and "func try_hero_priority" in _upgrades,
+      "9ak anchor: AI upgrades must still expose the stable kills-descending priorities")
+check("AIMatchIntegrationChecks.new().run(_check)" in ai_tests,
+      "9ak anchor: the full AI integration suite must stay registered in run_all.gd")
+check('name="RegenShieldButton"' in _match_scene and 'name="CastleShieldButton"' in _match_scene,
+      "9ak anchor: the player shield purchase buttons must stay in the HUD scene")
+check("request_regen_shield" in _screen and "request_castle_shield" in _screen,
+      "9ak anchor: the shield buttons must stay wired to the session requests")
+
 
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
