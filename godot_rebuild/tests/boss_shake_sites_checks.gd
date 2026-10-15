@@ -48,8 +48,22 @@ func _shape_check(check: Callable, fixture: Dictionary) -> void:
 	var wiring: Dictionary = shape.get("native_wiring", {})
 	var wired := true
 	for key in wiring:
+		# `bool(...)` has no Array constructor in GDScript - fold only the
+		# boolean pins here and compare the multiset separately.
+		if String(key) == "native_cast_multiset":
+			continue
 		wired = wired and bool(wiring[key])
-	check.call(wired, "the enrage shake payload is wired end to end")
+	check.call(wired, "the shake wiring pins all hold")
+	var multiset: Array = wiring.get("native_cast_multiset", [])
+	var expected_multiset: Array = []
+	for row in fixture.get("rows", []):
+		if String(row.get("class", "")) == "cast" and bool(row.get("wired", false)):
+			expected_multiset.append(int(row.get("intensity", 0)))
+	expected_multiset.sort()
+	check.call(
+		multiset == expected_multiset,
+		"the native shake intensity multiset equals the wired source rows"
+	)
 	var wired_rows := 0
 	for row in fixture.get("rows", []):
 		if bool(row.get("wired", false)):
