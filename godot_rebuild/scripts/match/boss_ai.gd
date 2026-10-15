@@ -225,8 +225,11 @@ static func _tick_smart_clocks(world, boss: BossState, target: UnitState) -> voi
 	if boss.rage_active:
 		boss.rage_timer -= 1
 		if boss.rage_timer <= 0:
+			# Source expiry clears the flag ONLY (`_smart_ai_alchemist`,
+			# `bosses/base_boss.py:1257-1260`): the Chemical Rage 1.5x damage
+			# boost persists and compounds on every recast (layer 9am). The
+			# pre-9am reset to `_source_damage` was a native invention.
 			boss.rage_active = false
-			boss.damage = _source_damage(boss)
 	if boss.defense_timer > 0:
 		boss.defense_timer -= 1
 		if boss.defense_timer <= 0:
@@ -248,6 +251,11 @@ static func _tick_smart_clocks(world, boss: BossState, target: UnitState) -> voi
 		boss.shukuchi_timer -= 1
 		if boss.shukuchi_timer <= 0:
 			boss.shukuchi_active = false
+			# Source expiry restores the RAW catalog speed -
+			# `stats.get("speed", 1.15)` and `_get_boss_stats` scales only
+			# *damage* keys - so difficulty/enrage speed scaling is lost for
+			# good after one Shukuchi cycle, exactly like the source (9am).
+			boss.speed_px_per_tick = boss.catalog_speed
 	if boss.shield_active:
 		boss.shield_timer -= 1
 		if boss.shield_timer <= 0:
@@ -3177,6 +3185,10 @@ static func _xirthalis(
 		_set_skill(boss, "q", 60)
 		boss.shukuchi_active = true
 		boss.shukuchi_timer = 180
+		# Source `_xirthalis_q` (`bosses/base_boss.py:2255-2261`): speed climbs
+		# 80% off the RAW catalog speed for the 180-tick window (layer 9am;
+		# the pre-9am port set the flag without any speed write).
+		boss.speed_px_per_tick = boss.catalog_speed * 1.8
 		return
 	if nearby >= 2 and boss.w_timer == 0:
 		boss.w_timer = boss.skill_w_cooldown

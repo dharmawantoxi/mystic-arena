@@ -28,6 +28,10 @@ var damage := 0
 var base_damage := 0
 var speed_px_per_tick := 0.0
 var base_speed := 0.0
+## Raw catalog speed (`boss_data` row), never rescaled. The source smart-AI
+## reads it back as `_get_boss_stats()["speed"]` - which scales only *damage*
+## keys - when Xirthalis' Shukuchi expires (layer 9am).
+var catalog_speed := 0.0
 var attack_range := 0.0
 var min_distance := 200.0
 var prefer_distance := 280.0
@@ -179,6 +183,7 @@ func setup(boss_type_value: String, lane_path: PackedVector2Array, table: Dictio
 	base_damage = damage
 	speed_px_per_tick = float(stats["speed"])
 	base_speed = speed_px_per_tick
+	catalog_speed = float(stats.get("speed", 1.15))
 	attack_range = float(stats["attack_range"])
 	min_distance = float(stats.get("min_distance", 200))
 	prefer_distance = float(stats.get("prefer_distance", 280))

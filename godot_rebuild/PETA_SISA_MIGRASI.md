@@ -952,3 +952,54 @@ oracle/fixture/suite/pin/docs. Ledger match tidak berubah (sudah paritas sejak
 slice ekonomi), `GameSettings` tetap shim di oracle (difficulty hidup datang
 dari world, bukan save settings), `lighting.py`, sumber Python, balance, FX,
 UI lain, dan project settings tidak disentuh.
+
+## Lifecycle stat buff-mandiri boss (layer 9am)
+
+Audit `_tick_smart_clocks` terhadap resep sumber menemukan dua efek expiry
+timer buff yang menyimpang dari `bosses/base_boss.py`:
+
+- **Chemical Rage (alchemist).** Sumber (`:1257-1260`) meng-expire buff dengan
+  `rage_active = False` SAJA. Cast (`_cast_e_chemical_rage`, `:1341`) menulis
+  `self.damage = int(self.damage * 1.5)` terhadap damage SAAT INI, jadi boost
+  1.5x persisten setelah expiry dan COMPOUNDING tiap recast (165 → 247 → 370
+  di hard). Port pre-9am mereset `boss.damage = _source_damage(boss)` saat
+  expiry — penemuan native yang menghapus compounding sumber.
+- **Shukuchi (xirthalis).** Sumber `_xirthalis_q` (`:2248-2261`) menulis
+  `self.speed = base_speed * 1.8` dengan `base_speed = stats.get("speed",
+  1.15)` — speed KATALOG MENTAH, karena `_get_boss_stats` hanya men-scale key
+  *damage*. Expiry (`:2211-2216`) memulihkan katalog mentah itu, jadi scaling
+  speed difficulty/enrage HILANG permanen setelah satu siklus Q (perilaku
+  sumber direplikasi apa adanya). Port pre-9am men-set flag tanpa write speed
+  sama sekali dan expire tanpa memulihkan apa pun.
+
+Paritas terkonfirmasi (tidak disentuh): expiry dragon form (reset damage via
+stats ↔ `_source_damage`), dragon blood, corrosive, defense, arcane buff
+(reset `base_damage` dua sisi), shield, xirthalis timelapse mark.
+
+Perubahan produksi:
+
+- `boss_state.gd` += `catalog_speed` — snapshot `float(stats.get("speed",
+  1.15))` di `setup()`, kebal `apply_scaling`/enrage (padanan persis
+  `_get_boss_stats()["speed"]` sumber yang tidak pernah di-scale).
+- `boss_ai.gd::_tick_smart_clocks`: expiry rage kini HANYA clear flag; expiry
+  shukuchi menulis `boss.speed_px_per_tick = boss.catalog_speed`.
+- `boss_ai.gd::_xirthalis` arm Q: += `boss.speed_px_per_tick =
+  boss.catalog_speed * 1.8`.
+
+Oracle `boss_buff_expiry_source_oracle.py` memin bentuk AST (write-set kedua
+blok expiry + segmen persis kedua write cast) dan mengeksekusi method sumber
+ASLI (`_smart_ai_alchemist`, `_smart_ai_xirthalis`, `_cast_e_chemical_rage`,
+`_xirthalis_q`, `_get_boss_stats`) di stub dengan katalog `boss_data` riil:
+5 baris (cast/expiry/recast per boss), 4 divergent, tiap baris merekam kolom
+`expected` (sumber) dan `native_old` (port pre-9am) dengan input masing-masing.
+Suite `boss_buff_expiry_checks.gd` mereplay kolom `expected` lewat produksi
+hidup (`world._spawn_boss` + `BossAI._tick_smart_clocks` + arm resep), memaku
+restore katalog mentah (bukan `base_speed`), dan memaku visibilitas divergensi.
+`validate_project.py` memin wiring (`catalog_speed` di state, kedua write
+speed di AI, tepat satu `_source_damage` reset tersisa = dragon form) dan
+bentuk fixture.
+
+Batas slice 9am: hanya dua lifecycle buff di atas + oracle/fixture/suite/pin/
+docs. Resep cast alchemist/xirthalis sudah paritas sejak 8u (tidak diubah
+selain write speed Q), `lighting.py`, sumber Python, balance, FX, dan UI tidak
+disentuh.

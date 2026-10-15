@@ -136,6 +136,7 @@ from item_slow_resist_source_oracle import source_fixture as item_slow_resist_fi
 from item_silence_store_source_oracle import source_fixture as item_silence_store_fixture
 from boss_ai_slow_source_oracle import source_fixture as boss_ai_slow_fixture
 from boss_attack_lock_source_oracle import source_fixture as boss_attack_lock_fixture
+from boss_buff_expiry_source_oracle import source_fixture as boss_buff_expiry_fixture
 from debuff_payload_reach_source_oracle import source_fixture as debuff_payload_reach_fixture
 from hero_marker_source_oracle import source_fixture as hero_marker_fixture
 from miasma_tick_delivery_source_oracle import source_fixture as miasma_tick_delivery_fixture
@@ -297,6 +298,16 @@ if (ROOT / "tests/fixtures/boss_attack_lock_source.json").is_file():
     check(boss_attack_lock_fixture() == json.loads(
         (ROOT / "tests/fixtures/boss_attack_lock_source.json").read_text(encoding="utf-8")),
           "Boss attack lock fixture must not drift from the oracle")
+check('const BossBuffExpiryChecks = preload("res://tests/boss_buff_expiry_checks.gd")' in ai_tests,
+      "Boss buff expiry suite must be preloaded")
+check("BossBuffExpiryChecks.new().run(_check)" in ai_tests,
+      "Boss buff expiry suite must run")
+check((ROOT / "tests/fixtures/boss_buff_expiry_source.json").is_file(),
+      "Boss buff expiry fixture must exist")
+if (ROOT / "tests/fixtures/boss_buff_expiry_source.json").is_file():
+    check(boss_buff_expiry_fixture() == json.loads(
+        (ROOT / "tests/fixtures/boss_buff_expiry_source.json").read_text(encoding="utf-8")),
+          "Boss buff expiry fixture must not drift from the oracle")
 check('const DebuffPayloadReachChecks = preload("res://tests/debuff_payload_reach_checks.gd")' in ai_tests,
       "Debuff payload reach suite must be preloaded")
 check("DebuffPayloadReachChecks.new().run(_check)" in ai_tests,
@@ -2128,6 +2139,18 @@ check(not re.search(r"^\s*boss\.hp\s*=", boss_ai_text, re.M),
       "Boss AI hp increases must pass through the anti-heal setter")
 check(boss_ai_text.count("boss.set_hp_value(") == 6,
       "All source Boss AI healing writes must use the anti-heal setter")
+# Layer 9am: boss self-buff stat lifecycles (Chemical Rage persistence +
+# Shukuchi raw-catalog speed writes), pinned against the source oracle.
+check("var catalog_speed := 0.0" in boss_state,
+      "Boss state must snapshot the raw catalog speed for Shukuchi parity")
+check('catalog_speed = float(stats.get("speed", 1.15))' in boss_state,
+      "Catalog speed must come from the raw boss_data row")
+check("boss.speed_px_per_tick = boss.catalog_speed * 1.8" in boss_ai_text,
+      "Shukuchi cast must write the 1.8x raw catalog speed boost")
+check(boss_ai_text.count("boss.speed_px_per_tick = boss.catalog_speed\n") == 1,
+      "Shukuchi expiry must restore the raw catalog speed exactly once")
+check(boss_ai_text.count("boss.damage = _source_damage(boss)") == 1,
+      "Only the dragon form expiry may reset damage - Chemical Rage persists")
 boss_ai_hit = boss_ai_text.split("static func _hit(", 1)[1].split(
     "\nstatic func _slow(", 1)[0]
 check("world._deliver_hit(-1, boss.team, target, raw_damage, school, boss.position)" in boss_ai_hit
