@@ -636,7 +636,9 @@ static func _nyxarath(
 		boss.necro_buff_timer -= 1
 		if boss.necro_buff_timer <= 0:
 			boss.necro_buff_active = false
-			boss.damage = boss.base_damage
+			# Source resets through `_get_boss_stats()["damage"]` - the scaled
+			# catalog read, not the baked base_damage snapshot (layer 9an).
+			boss.damage = _source_damage(boss)
 	if boss.presence_active:
 		boss.presence_timer -= 1
 		if boss.presence_timer <= 0:
@@ -680,7 +682,9 @@ static func _nyxarath(
 					kills_count += 1
 		boss.necro_buff_active = true
 		boss.necro_buff_timer = 480
-		boss.damage = int(float(boss.base_damage) * 1.4)
+		# Source buffs off `stats.get("damage", 130)` - the scaled catalog
+		# read - not the baked base_damage snapshot (layer 9an).
+		boss.damage = int(float(_source_damage(boss)) * 1.4)
 		var heal_amount := int(float(boss.max_hp) * 0.06) + kills_count * 30
 		boss.set_hp_value(minf(float(boss.max_hp), boss.hp + heal_amount))
 		return
@@ -713,7 +717,9 @@ static func _thalgryn(
 		boss.morph_buff_timer -= 1
 		if boss.morph_buff_timer <= 0:
 			boss.morph_buff_active = false
-			boss.damage = boss.base_damage
+			# Source resets through the scaled `_get_boss_stats()["damage"]`
+			# catalog read, not the baked base_damage snapshot (layer 9an).
+			boss.damage = _source_damage(boss)
 	var nearby_count := _count_near(boss, enemies, 200.0)
 	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
 	if hp_ratio < 0.4 and nearby_count >= 2 and boss.r_timer == 0:
@@ -730,7 +736,7 @@ static func _thalgryn(
 		_set_skill(boss, "e", 60)
 		boss.morph_buff_active = true
 		boss.morph_buff_timer = 300
-		boss.damage = int(float(boss.base_damage) * 1.35)
+		boss.damage = int(float(_source_damage(boss)) * 1.35)
 		_heal(boss, 0.14)
 		return
 	if distance > 150.0 and boss.q_timer == 0:
@@ -773,7 +779,9 @@ static func _syrentha(
 		boss.mirror_buff_timer -= 1
 		if boss.mirror_buff_timer <= 0:
 			boss.mirror_buff_active = false
-			boss.damage = boss.base_damage
+			# Source resets through the scaled `_get_boss_stats()["damage"]`
+			# catalog read, not the baked base_damage snapshot (layer 9an).
+			boss.damage = _source_damage(boss)
 	var nearby_count := _count_near(boss, enemies, 200.0)
 	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
 	if hp_ratio < 0.45 and nearby_count >= 2 and boss.r_timer == 0:
@@ -791,7 +799,9 @@ static func _syrentha(
 		_set_skill(boss, "e", 70)
 		boss.mirror_buff_active = true
 		boss.mirror_buff_timer = 360
-		boss.damage = int(float(boss.base_damage) * 1.4)
+		# Source buffs off `stats.get("damage", 98)` - the scaled catalog
+		# read - not the baked base_damage snapshot (layer 9an).
+		boss.damage = int(float(_source_damage(boss)) * 1.4)
 		_heal(boss, 0.12)
 		return
 	if nearby_count >= 3 and boss.w_timer == 0:
@@ -896,7 +906,9 @@ static func _kunkka(
 		boss.rum_buff_timer -= 1
 		if boss.rum_buff_timer <= 0:
 			boss.rum_buff_active = false
-			boss.damage = boss.base_damage
+			# Source resets through the scaled `_get_boss_stats()["damage"]`
+			# catalog read, not the baked base_damage snapshot (layer 9an).
+			boss.damage = _source_damage(boss)
 	if boss.x_mark_timer > 0:
 		boss.x_mark_timer -= 1
 		if boss.x_mark_timer <= 0 and boss.x_mark_target_id != -1:
@@ -948,7 +960,9 @@ static func _kunkka(
 				_attack_lock(enemy, 90)
 		boss.rum_buff_active = true
 		boss.rum_buff_timer = 480
-		boss.damage = int(float(boss.base_damage) * 1.3)
+		# Source buffs off `stats.get("damage", 125)` - the scaled catalog
+		# read - not the baked base_damage snapshot (layer 9an).
+		boss.damage = int(float(_source_damage(boss)) * 1.3)
 		_heal(boss, 0.15)
 		return
 	if nearby_count >= 2 and boss.w_timer == 0:
@@ -3711,12 +3725,13 @@ static func _skill_damage(boss: BossState, base: int) -> int:
 
 
 static func _source_damage(boss: BossState) -> int:
-	var multiplier := 1.0
-	if boss.skill_down_timer > 0:
-		multiplier *= maxf(0.0, 1.0 - boss.skill_down_amount)
-	if boss.is_enraged:
-		multiplier *= 1.25
-	return Damage.rounded_like_python(float(boss.base_damage) * multiplier)
+	# Exact analogue of the source `_get_boss_stats().get("damage", X)` read:
+	# the RAW catalog damage times skill_down x dmg_scaling_mult x enrage,
+	# rounded ONCE like Python (layer 9an). The pre-9an form multiplied the
+	# difficulty-baked `base_damage` and dropped `dmg_scaling_mult`, which
+	# double-rounded (int-bake then round) and lost the single-round parity
+	# under hard difficulty and/or enrage.
+	return _skill_damage(boss, boss.catalog_damage)
 
 
 static func _max_hp(target: UnitState) -> float:

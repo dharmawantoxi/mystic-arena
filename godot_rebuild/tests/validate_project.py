@@ -137,6 +137,7 @@ from item_silence_store_source_oracle import source_fixture as item_silence_stor
 from boss_ai_slow_source_oracle import source_fixture as boss_ai_slow_fixture
 from boss_attack_lock_source_oracle import source_fixture as boss_attack_lock_fixture
 from boss_buff_expiry_source_oracle import source_fixture as boss_buff_expiry_fixture
+from boss_buff_scaling_source_oracle import source_fixture as boss_buff_scaling_fixture
 from debuff_payload_reach_source_oracle import source_fixture as debuff_payload_reach_fixture
 from hero_marker_source_oracle import source_fixture as hero_marker_fixture
 from miasma_tick_delivery_source_oracle import source_fixture as miasma_tick_delivery_fixture
@@ -308,6 +309,16 @@ if (ROOT / "tests/fixtures/boss_buff_expiry_source.json").is_file():
     check(boss_buff_expiry_fixture() == json.loads(
         (ROOT / "tests/fixtures/boss_buff_expiry_source.json").read_text(encoding="utf-8")),
           "Boss buff expiry fixture must not drift from the oracle")
+check('const BossBuffScalingChecks = preload("res://tests/boss_buff_scaling_checks.gd")' in ai_tests,
+      "Boss buff scaling suite must be preloaded")
+check("BossBuffScalingChecks.new().run(_check)" in ai_tests,
+      "Boss buff scaling suite must run")
+check((ROOT / "tests/fixtures/boss_buff_scaling_source.json").is_file(),
+      "Boss buff scaling fixture must exist")
+if (ROOT / "tests/fixtures/boss_buff_scaling_source.json").is_file():
+    check(boss_buff_scaling_fixture() == json.loads(
+        (ROOT / "tests/fixtures/boss_buff_scaling_source.json").read_text(encoding="utf-8")),
+          "Boss buff scaling fixture must not drift from the oracle")
 check('const DebuffPayloadReachChecks = preload("res://tests/debuff_payload_reach_checks.gd")' in ai_tests,
       "Debuff payload reach suite must be preloaded")
 check("DebuffPayloadReachChecks.new().run(_check)" in ai_tests,
@@ -2149,8 +2160,22 @@ check("boss.speed_px_per_tick = boss.catalog_speed * 1.8" in boss_ai_text,
       "Shukuchi cast must write the 1.8x raw catalog speed boost")
 check(boss_ai_text.count("boss.speed_px_per_tick = boss.catalog_speed\n") == 1,
       "Shukuchi expiry must restore the raw catalog speed exactly once")
-check(boss_ai_text.count("boss.damage = _source_damage(boss)") == 1,
-      "Only the dragon form expiry may reset damage - Chemical Rage persists")
+check(boss_ai_text.count("boss.damage = _source_damage(boss)") == 5,
+      "Dragon form plus the four buff expiries must reset via the scaled source read")
+# Layer 9an: the four buff damage writes read the scaled catalog damage -
+# `_get_boss_stats()["damage"]` rounded ONCE - while the xerathis arcane pair
+# stays verbatim on the difficulty-baked base_damage attribute.
+check("var catalog_damage := 0" in boss_state,
+      "Boss state must snapshot the raw catalog damage for the scaled stats read")
+check("catalog_damage = damage" in boss_state,
+      "Catalog damage must be captured before difficulty scaling bakes base_damage")
+check("return _skill_damage(boss, boss.catalog_damage)" in boss_ai_text,
+      "_source_damage must be the single-round scaled catalog read")
+check(boss_ai_text.count("int(float(_source_damage(boss)) *") == 8,
+      "Every stats-read buff cast must compound off _source_damage")
+check(boss_ai_text.count("boss.damage = boss.base_damage") == 1
+      and boss_ai_text.count("int(float(boss.base_damage) *") == 1,
+      "Only the xerathis arcane pair may keep the verbatim base_damage path")
 boss_ai_hit = boss_ai_text.split("static func _hit(", 1)[1].split(
     "\nstatic func _slow(", 1)[0]
 check("world._deliver_hit(-1, boss.team, target, raw_damage, school, boss.position)" in boss_ai_hit

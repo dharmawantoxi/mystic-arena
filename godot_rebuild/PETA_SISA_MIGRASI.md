@@ -1003,3 +1003,59 @@ Batas slice 9am: hanya dua lifecycle buff di atas + oracle/fixture/suite/pin/
 docs. Resep cast alchemist/xirthalis sudah paritas sejak 8u (tidak diubah
 selain write speed Q), `lighting.py`, sumber Python, balance, FX, dan UI tidak
 disentuh.
+
+## Write damage buff dari stats ter-scale (layer 9an)
+
+Audit lanjutan lifecycle buff boss (di luar sampel 8u) menemukan KELAS
+divergensi kedua: empat pasangan buff menulis damage dari snapshot
+`base_damage` (sudah di-bake difficulty, int-truncated) padahal sumber
+membaca `_get_boss_stats()["damage"]` — katalog MENTAH × skill_down ×
+dmg_scaling_mult × enrage, `int(round(v * mult))` — dibulatkan SEKALI:
+
+- nyxarath Necromastery (W): cast `int(stats.damage * 1.4)`, expiry reset
+  `stats.get("damage", 130)`.
+- thalgryn Morph (E): `× 1.35`, fallback 92.
+- syrentha Mirror Image (E): `× 1.4`, fallback 98.
+- kunkka Rum (E, Ghost Ship): `× 1.3`, fallback 125.
+
+Contoh hard + enrage nyxarath: sumber cast int(round(175×1.1×1.25)×1.4) = 337;
+port pre-9an int(int(175×1.1)×1.4) = 268. Expiry dengan skill-down 0.3 di
+hard: sumber 135; pre-9an 192 (baked, tanpa multiplier runtime).
+
+Kelas KEBALIKAN dipin apa adanya: xerathis Arcane memakai ATRIBUT
+`self.base_damage` sumber (cast `int(self.base_damage * 1.3)` :3583, expiry
+`self.damage = self.base_damage` :3513) dan `base_damage` sumber di-bake
+persis seperti native (init :388-389, apply_scaling :515-525) → native
+:267/:3420 paritas verbatim, TIDAK disentuh; oracle 9an memaku kedua kelas
+agar tidak pernah tertukar.
+
+Perubahan produksi:
+
+- `boss_state.gd` += `catalog_damage` — snapshot damage katalog mentah di
+  `setup()` sebelum `apply_scaling` membakar `base_damage` (padanan
+  `catalog_speed` 9am).
+- `boss_ai.gd::_source_damage` didefinisikan ulang = `_skill_damage(boss,
+  boss.catalog_damage)` — analog tepat bacaan stats sumber (single-round,
+  multiplier lengkap). Dragon form expiry (:241) dan empat cast lama (:414,
+  :3039, :3051, :3347) otomatis naik ke bentuk exact; pada multiplier 1.0
+  nilainya identik sehingga semua fixture lama tetap hijau.
+- Empat expiry (nyxarath/thalgryn/syrentha/kunkka) kini
+  `boss.damage = _source_damage(boss)`; empat cast kini
+  `int(float(_source_damage(boss)) * M)`.
+
+Oracle `boss_buff_scaling_source_oracle.py`: pin AST (write-set + segmen
+persis keempat expiry/cast, pasangan verbatim xerathis, segmen
+`int(round(v * mult))`, dua write bake `base_damage`) dan 8 baris numerik
+dari exec method sumber ASLI di stub dengan katalog riil (cast = hard+enrage,
+expiry = hard+skill-down 0.3; SEMUA divergen, kolom `expected`/`native_old`).
+Suite `boss_buff_scaling_checks.gd` mereplay kolom expected lewat produksi
+hidup (`_spawn_boss` + spawn goblin/hero + arm resep per boss), memaku
+`catalog_damage` mentah dan visibilitas divergensi. `validate_project.py`:
+pin 9am `_source_damage` expiry 1 → 5, cast `_source_damage` == 8, jalur
+verbatim base_damage tepat 1+1 (xerathis saja), wiring `catalog_damage`.
+
+Batas slice 9an: hanya write damage buff empat boss + definisi `_source_damage`
++ oracle/fixture/suite/pin/docs. Heal/lock/AOE cast sudah paritas (fixture
+boss_ability hijau sejak 8u), xerathis verbatim, presence/shell flag-only,
+flux/clones/x_mark memakai `_skill_damage`/damage hidup (paritas), `lighting.py`,
+sumber Python, balance, FX, UI tidak disentuh.

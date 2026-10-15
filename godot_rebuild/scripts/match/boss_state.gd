@@ -26,6 +26,13 @@ var rules: Dictionary = {}
 var max_hp := 0
 var damage := 0
 var base_damage := 0
+## Raw catalog damage (`boss_data` row), never rescaled. The source reads it
+## back through `_get_boss_stats()["damage"]` - catalog x skill_down x
+## dmg_scaling_mult x enrage, rounded ONCE - for the dragon form restore and
+## the four buff expiries/casts (layer 9an). `base_damage` instead mirrors the
+## source attribute of the same name: the difficulty-BAKED snapshot that the
+## xerathis arcane buff multiplies verbatim.
+var catalog_damage := 0
 var speed_px_per_tick := 0.0
 var base_speed := 0.0
 ## Raw catalog speed (`boss_data` row), never rescaled. The source smart-AI
@@ -181,6 +188,7 @@ func setup(boss_type_value: String, lane_path: PackedVector2Array, table: Dictio
 	hp = float(max_hp)
 	damage = int(stats["damage"])
 	base_damage = damage
+	catalog_damage = damage
 	speed_px_per_tick = float(stats["speed"])
 	base_speed = speed_px_per_tick
 	catalog_speed = float(stats.get("speed", 1.15))
