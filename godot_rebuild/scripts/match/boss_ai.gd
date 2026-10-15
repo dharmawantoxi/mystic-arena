@@ -1039,6 +1039,7 @@ static func _razak(
 		for enemy in enemies:
 			if boss.position.distance_to(enemy.position) <= 180.0:
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		_shake(world, 20)
 		return
 	if distance > 120.0 and distance < 260.0 and boss.e_timer == 0:
 		boss.e_timer = boss.skill_e_cooldown
@@ -1053,6 +1054,7 @@ static func _razak(
 			for enemy in enemies:
 				if boss.position.distance_to(enemy.position) <= 80.0:
 					_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		_shake(world, 12)
 		return
 	if distance <= 220.0 and boss.w_timer == 0:
 		boss.w_timer = boss.skill_w_cooldown
@@ -1062,6 +1064,7 @@ static func _razak(
 				if target.position.distance_to(enemy.position) <= 95.0:
 					_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
 					_attack_lock(enemy, 45)
+		_shake(world, 14)
 		return
 	if distance <= 260.0 and boss.q_timer == 0:
 		boss.q_timer = boss.skill_q_cooldown
@@ -1071,6 +1074,7 @@ static func _razak(
 				if target.position.distance_to(enemy.position) <= 75.0:
 					_hit(world, boss, enemy, _skill_damage(boss, boss.skill_q_damage))
 					_slow(enemy, 0.35, 120)
+		_shake(world, 10)
 
 
 static func _kenshiro(
@@ -3327,6 +3331,7 @@ static func _khalros(
 			if boss.position.distance_to(enemy.position) <= 200.0:
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
 				_attack_lock(enemy, 30)
+		_shake(world, 20)
 		return
 	if hp_ratio < 0.7 and boss.w_timer == 0:
 		boss.w_timer = boss.skill_w_cooldown
@@ -3336,6 +3341,7 @@ static func _khalros(
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
 				_slow(enemy, 0.5, 90)
 		_heal(boss, 0.08)
+		_shake(world, 12)
 		return
 	if distance > 110.0 and boss.e_timer == 0:
 		boss.e_timer = boss.skill_e_cooldown
@@ -3351,6 +3357,7 @@ static func _khalros(
 				if boss.position.distance_to(enemy.position) <= 85.0:
 					_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
 					_attack_lock(enemy, 40)
+		_shake(world, 14)
 		return
 	if distance <= 260.0 and boss.q_timer == 0:
 		boss.q_timer = boss.skill_q_cooldown
@@ -3359,6 +3366,7 @@ static func _khalros(
 			for enemy in enemies:
 				if enemy.position.distance_to(target.position) <= 70.0:
 					_hit(world, boss, enemy, _skill_damage(boss, boss.skill_q_damage))
+		_shake(world, 10)
 
 
 static func _gorath(
@@ -3379,6 +3387,7 @@ static func _gorath(
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
 		if target != null and target.alive:
 			_hit(world, boss, target, int(_skill_damage(boss, boss.skill_r_damage) / 2.0))
+		_shake(world, 22)
 		return
 	if not boss.rage_active and hp_ratio < 0.7 and boss.q_timer == 0:
 		boss.q_timer = boss.skill_q_cooldown
@@ -3387,6 +3396,7 @@ static func _gorath(
 		boss.rage_timer = 300
 		boss.damage = int(float(_source_damage(boss)) * 1.4)
 		_heal(boss, 0.08)
+		_shake(world, 12)
 		return
 	if nearby >= 2 and boss.w_timer == 0:
 		boss.w_timer = boss.skill_w_cooldown
@@ -3395,6 +3405,7 @@ static func _gorath(
 			if boss.position.distance_to(enemy.position) <= 150.0:
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
 				_attack_lock(enemy, 50)
+		_shake(world, 15)
 		return
 	if distance > 90.0 and boss.e_timer == 0:
 		boss.e_timer = boss.skill_e_cooldown
@@ -3409,6 +3420,7 @@ static func _gorath(
 			for enemy in enemies:
 				if boss.position.distance_to(enemy.position) <= 85.0:
 					_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		_shake(world, 12)
 		return
 	if hp_ratio < 0.45 and boss.r_timer == 0:
 		boss.r_timer = boss.skill_r_cooldown
@@ -3418,6 +3430,7 @@ static func _gorath(
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
 		if target != null and target.alive:
 			_hit(world, boss, target, int(_skill_damage(boss, boss.skill_r_damage) / 2.0))
+		_shake(world, 22)
 
 
 static func _varkul(
@@ -3432,6 +3445,7 @@ static func _varkul(
 			if boss.position.distance_to(enemy.position) <= 220.0:
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
 				_slow(enemy, 0.5, 180)
+		_shake(world, 20)
 		return
 	if hp_ratio < 0.5 and boss.e_timer == 0:
 		boss.e_timer = boss.skill_e_cooldown
@@ -3439,6 +3453,7 @@ static func _varkul(
 		if target != null and target.alive:
 			_hit(world, boss, target, _skill_damage(boss, boss.skill_e_damage))
 		_heal(boss, 0.12)
+		_shake(world, 10)
 		return
 	if distance <= 250.0 and boss.w_timer == 0:
 		boss.w_timer = boss.skill_w_cooldown
@@ -3446,6 +3461,7 @@ static func _varkul(
 		if target != null and target.alive:
 			_hit(world, boss, target, _skill_damage(boss, boss.skill_w_damage))
 			_attack_lock(target, 60)
+		_shake(world, 14)
 		return
 	if distance <= 280.0 and boss.q_timer == 0:
 		boss.q_timer = boss.skill_q_cooldown
@@ -3453,6 +3469,7 @@ static func _varkul(
 		if target != null and target.alive:
 			_hit(world, boss, target, _skill_damage(boss, boss.skill_q_damage))
 			_slow(target, 0.4, 120)
+		_shake(world, 10)
 
 
 static func _xerathis(
@@ -3466,6 +3483,7 @@ static func _xerathis(
 			if boss.position.distance_to(enemy.position) <= 240.0:
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
 				_slow(enemy, 0.55, 240)
+		_shake(world, 24)
 		return
 	if not boss.arcane_buff_active and boss.e_timer == 0:
 		boss.e_timer = boss.skill_e_cooldown
@@ -3474,6 +3492,7 @@ static func _xerathis(
 		boss.arcane_buff_timer = 360
 		boss.damage = int(float(boss.base_damage) * 1.3)
 		_heal(boss, 0.10)
+		_shake(world, 10)
 		return
 	if nearby >= 2 and boss.q_timer == 0:
 		boss.q_timer = boss.skill_q_cooldown
@@ -3483,6 +3502,7 @@ static func _xerathis(
 				if enemy.position.distance_to(target.position) <= 90.0:
 					_hit(world, boss, enemy, _skill_damage(boss, boss.skill_q_damage))
 					_slow(enemy, 0.4, 120)
+		_shake(world, 12)
 		return
 	if distance <= 280.0 and boss.w_timer == 0:
 		boss.w_timer = boss.skill_w_cooldown
@@ -3491,6 +3511,7 @@ static func _xerathis(
 			_hit(world, boss, target, _skill_damage(boss, boss.skill_w_damage))
 			_attack_lock(target, 75)
 			_slow(target, 0.6, 180)
+		_shake(world, 14)
 
 
 static func _nyzrak(
@@ -3508,6 +3529,7 @@ static func _nyzrak(
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
 				_slow(enemy, 0.5, 180)
 		_heal(boss, 0.15)
+		_shake(world, 22)
 		return
 	if distance <= 220.0 and boss.e_timer == 0:
 		boss.e_timer = boss.skill_e_cooldown
@@ -3516,6 +3538,7 @@ static func _nyzrak(
 			_hit(world, boss, target, _skill_damage(boss, boss.skill_e_damage))
 			_attack_lock(target, 90)
 			_slow(target, 0.7, 180)
+		_shake(world, 16)
 		return
 	if nearby >= 2 and boss.w_timer == 0:
 		boss.w_timer = boss.skill_w_cooldown
@@ -3524,6 +3547,7 @@ static func _nyzrak(
 			for enemy in enemies:
 				if enemy.position.distance_to(target.position) <= 80.0:
 					_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		_shake(world, 14)
 		return
 	if distance <= 260.0 and boss.q_timer == 0:
 		boss.q_timer = boss.skill_q_cooldown
@@ -3531,6 +3555,7 @@ static func _nyzrak(
 		if target != null and target.alive:
 			_hit(world, boss, target, _skill_damage(boss, boss.skill_q_damage))
 			_slow(target, 0.4, 120)
+		_shake(world, 12)
 
 
 static func _zharok(
@@ -3544,6 +3569,7 @@ static func _zharok(
 		for enemy in enemies:
 			if boss.position.distance_to(enemy.position) <= 220.0:
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		_shake(world, 20)
 		return
 	if nearby >= 2 and boss.e_timer == 0:
 		boss.e_timer = boss.skill_e_cooldown
@@ -3551,16 +3577,19 @@ static func _zharok(
 		for enemy in enemies:
 			if boss.position.distance_to(enemy.position) <= 150.0:
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		_shake(world, 15)
 		return
 	if distance < 200.0 and boss.w_timer == 0:
 		boss.w_timer = boss.skill_w_cooldown
 		_set_skill(boss, "w", 40)
+		_shake(world, 5)
 		return
 	if distance < 250.0 and boss.q_timer == 0:
 		boss.q_timer = boss.skill_q_cooldown
 		_set_skill(boss, "q", 50)
 		if target != null and target.alive:
 			_hit(world, boss, target, _skill_damage(boss, boss.skill_q_damage))
+		_shake(world, 10)
 
 
 static func _pyrenth(
@@ -3574,6 +3603,7 @@ static func _pyrenth(
 		for enemy in enemies:
 			if boss.position.distance_to(enemy.position) <= 220.0:
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		_shake(world, 25)
 		return
 	if nearby >= 3 and boss.e_timer == 0:
 		boss.e_timer = boss.skill_e_cooldown
@@ -3581,17 +3611,20 @@ static func _pyrenth(
 		for enemy in enemies:
 			if boss.position.distance_to(enemy.position) <= 180.0:
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		_shake(world, 18)
 		return
 	if hp_ratio < 0.6 and boss.w_timer == 0:
 		boss.w_timer = boss.skill_w_cooldown
 		_set_skill(boss, "w", 40)
 		_heal(boss, 0.08)
+		_shake(world, 10)
 		return
 	if distance < 200.0 and boss.q_timer == 0:
 		boss.q_timer = boss.skill_q_cooldown
 		_set_skill(boss, "q", 50)
 		if target != null and target.alive:
 			_hit(world, boss, target, _skill_damage(boss, boss.skill_q_damage))
+		_shake(world, 12)
 
 
 static func _vokrahn(
@@ -3605,6 +3638,7 @@ static func _vokrahn(
 		for enemy in enemies:
 			if boss.position.distance_to(enemy.position) <= 220.0:
 				_hit(world, boss, enemy, 150)
+		_shake(world, 20)
 		return
 	if nearby >= 3 and boss.w_timer == 0:
 		boss.w_timer = boss.skill_w_cooldown
@@ -3612,18 +3646,21 @@ static func _vokrahn(
 		for enemy in enemies:
 			if boss.position.distance_to(enemy.position) <= 220.0:
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		_shake(world, 18)
 		return
 	if distance < 200.0 and boss.e_timer == 0:
 		boss.e_timer = boss.skill_e_cooldown
 		_set_skill(boss, "e", 50)
 		if target != null and target.alive:
 			_hit(world, boss, target, _skill_damage(boss, boss.skill_e_damage))
+		_shake(world, 15)
 		return
 	if boss.q_timer == 0:
 		boss.q_timer = boss.skill_q_cooldown
 		_set_skill(boss, "q", 50)
 		if target != null and target.alive:
 			_hit(world, boss, target, _skill_damage(boss, boss.skill_q_damage))
+		_shake(world, 12)
 
 
 static func _nyxara(

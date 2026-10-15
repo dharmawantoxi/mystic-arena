@@ -5,8 +5,8 @@
     "method_count": 113,
     "cast_sites_total": 126,
     "cast_method_count": 112,
-    "cast_sites_wired": 30,
-    "cast_sites_remaining": 96,
+    "cast_sites_wired": 66,
+    "cast_sites_remaining": 60,
     "intensity_histogram": {
       "5": 1,
       "6": 1,
@@ -47,6 +47,7 @@
       "shake_routes": true,
       "shake_helper": true,
       "native_cast_multiset": [
+        5,
         6,
         8,
         8,
@@ -55,6 +56,13 @@
         10,
         10,
         10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10,
         12,
         12,
         12,
@@ -62,18 +70,47 @@
         12,
         12,
         12,
+        12,
+        12,
+        12,
+        12,
+        12,
+        12,
+        12,
+        12,
+        14,
+        14,
+        14,
+        14,
+        14,
         14,
         14,
         14,
         15,
         15,
+        15,
+        15,
+        15,
+        16,
         16,
         18,
         18,
         18,
+        18,
+        18,
+        20,
+        20,
+        20,
+        20,
+        20,
         20,
         22,
         22,
+        22,
+        22,
+        22,
+        24,
+        25,
         25,
         28,
         30
@@ -86,896 +123,1024 @@
       "line": 624,
       "intensity": 25,
       "class": "enrage_true",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 0
     },
     {
       "method": "update",
       "line": 639,
       "intensity": 15,
       "class": "enrage_mini",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 0
     },
     {
       "method": "_cast_q_mist_coil",
       "line": 1170,
       "intensity": 10,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_w_aphotic_shield",
       "line": 1190,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_e_darkness_gale",
       "line": 1211,
       "intensity": 8,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_r_death_sever",
       "line": 1227,
       "intensity": 20,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_q_acid_spray",
       "line": 1300,
       "intensity": 8,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_w_unstable_concoction",
       "line": 1330,
       "intensity": 15,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_e_chemical_rage",
       "line": 1347,
       "intensity": 12,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_r_greevils_greed",
       "line": 1382,
       "intensity": 25,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_q_ice_vortex",
       "line": 1482,
       "intensity": 10,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_w_chilling_touch",
       "line": 1528,
       "intensity": 8,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_e_ice_blast",
       "line": 1546,
       "intensity": 15,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_r_cold_feet",
       "line": 1590,
       "intensity": 25,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_q_dragon_breath",
       "line": 1712,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_w_dragon_tail",
       "line": 1750,
       "intensity": 15,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_e_dragon_blood",
       "line": 1777,
       "intensity": 10,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_r_elder_dragon_form",
       "line": 1825,
       "intensity": 28,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_vhorethzir_q",
       "line": 1896,
       "intensity": 10,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_vhorethzir_q",
       "line": 1910,
       "intensity": 14,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_vhorethzir_w",
       "line": 1930,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_vhorethzir_w",
       "line": 1943,
       "intensity": 16,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_vhorethzir_e",
       "line": 1968,
       "intensity": 14,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_vhorethzir_r",
       "line": 2011,
       "intensity": 30,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_vaerith_q",
       "line": 2077,
       "intensity": 8,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_vaerith_q",
       "line": 2085,
       "intensity": 10,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_vaerith_w",
       "line": 2117,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_vaerith_e",
       "line": 2137,
       "intensity": 10,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_vaerith_e",
       "line": 2149,
       "intensity": 14,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_vaerith_r",
       "line": 2185,
       "intensity": 24,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_xirthalis_q",
       "line": 2262,
       "intensity": 6,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_xirthalis_w",
       "line": 2293,
       "intensity": 12,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_xirthalis_e",
       "line": 2313,
       "intensity": 8,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_xirthalis_e",
       "line": 2324,
       "intensity": 14,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_xirthalis_r",
       "line": 2350,
       "intensity": 20,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_vhyssarion_q",
       "line": 2436,
       "intensity": 14,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_vhyssarion_w",
       "line": 2456,
       "intensity": 8,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_vhyssarion_w",
       "line": 2466,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_vhyssarion_e",
       "line": 2498,
       "intensity": 16,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_vhyssarion_r",
       "line": 2519,
       "intensity": 26,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_q_mana_break",
       "line": 2592,
       "intensity": 10,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_w_blink",
       "line": 2620,
       "intensity": 8,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_e_counterspell",
       "line": 2640,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_r_mana_void",
       "line": 2661,
       "intensity": 20,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_q_spark_wraith",
       "line": 2755,
       "intensity": 10,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_w_flux",
       "line": 2778,
       "intensity": 8,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_e_magnetic_field",
       "line": 2802,
       "intensity": 10,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_r_tempest_double",
       "line": 2823,
       "intensity": 15,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_q_battle_hunger",
       "line": 2921,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_w_counter_helix",
       "line": 2948,
       "intensity": 15,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_e_berserkers_call",
       "line": 2970,
       "intensity": 18,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_r_culling_blade",
       "line": 2992,
       "intensity": 25,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_razak_q",
       "line": 3044,
       "intensity": 10,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_razak_w",
       "line": 3072,
       "intensity": 14,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_razak_e",
       "line": 3099,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_razak_r",
       "line": 3118,
       "intensity": 20,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_khalros_q",
       "line": 3169,
       "intensity": 10,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_khalros_w",
       "line": 3184,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_khalros_e",
       "line": 3207,
       "intensity": 14,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_khalros_r",
       "line": 3221,
       "intensity": 20,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_gorath_q",
       "line": 3289,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_gorath_w",
       "line": 3315,
       "intensity": 15,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_gorath_e",
       "line": 3340,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_gorath_r",
       "line": 3360,
       "intensity": 22,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 2
     },
     {
       "method": "_varkul_q",
       "line": 3425,
       "intensity": 10,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_varkul_w",
       "line": 3446,
       "intensity": 14,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_varkul_e",
       "line": 3465,
       "intensity": 10,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_varkul_r",
       "line": 3485,
       "intensity": 20,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_xerathis_q",
       "line": 3551,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_xerathis_w",
       "line": 3574,
       "intensity": 14,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_xerathis_e",
       "line": 3593,
       "intensity": 10,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_xerathis_r",
       "line": 3613,
       "intensity": 24,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_nyzrak_q",
       "line": 3669,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_nyzrak_w",
       "line": 3693,
       "intensity": 14,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_nyzrak_e",
       "line": 3718,
       "intensity": 16,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_nyzrak_r",
       "line": 3745,
       "intensity": 22,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_zharok_q",
       "line": 3796,
       "intensity": 10,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_zharok_w",
       "line": 3816,
       "intensity": 5,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_zharok_e",
       "line": 3834,
       "intensity": 15,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_zharok_r",
       "line": 3853,
       "intensity": 20,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_pyrenth_q",
       "line": 3906,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_pyrenth_w",
       "line": 3921,
       "intensity": 10,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_pyrenth_e",
       "line": 3937,
       "intensity": 18,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_pyrenth_r",
       "line": 3955,
       "intensity": 25,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_vokrahn_q",
       "line": 4006,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_vokrahn_w",
       "line": 4029,
       "intensity": 18,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_vokrahn_e",
       "line": 4048,
       "intensity": 15,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_vokrahn_r",
       "line": 4069,
       "intensity": 20,
       "class": "cast",
-      "wired": false
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_malzareth_q",
       "line": 4480,
       "intensity": 14,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_malzareth_w",
       "line": 4493,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_malzareth_e",
       "line": 4504,
       "intensity": 10,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_malzareth_r",
       "line": 4518,
       "intensity": 22,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_akashari_q",
       "line": 4567,
       "intensity": 14,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_akashari_w",
       "line": 4586,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_akashari_e",
       "line": 4596,
       "intensity": 16,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_akashari_r",
       "line": 4610,
       "intensity": 25,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_vorenmarr_q",
       "line": 4661,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_vorenmarr_w",
       "line": 4670,
       "intensity": 8,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_vorenmarr_e",
       "line": 4691,
       "intensity": 18,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_vorenmarr_r",
       "line": 4705,
       "intensity": 25,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_nyxarath_q",
       "line": 4797,
       "intensity": 12,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_nyxarath_q",
       "line": 4805,
       "intensity": 12,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_nyxarath_q",
       "line": 4825,
       "intensity": 18,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_nyxarath_w",
       "line": 4853,
       "intensity": 16,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_nyxarath_e",
       "line": 4889,
       "intensity": 14,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_nyxarath_r",
       "line": 4929,
       "intensity": 30,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_thalgryn_q",
       "line": 5012,
       "intensity": 12,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_thalgryn_q",
       "line": 5019,
       "intensity": 12,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_thalgryn_q",
       "line": 5051,
       "intensity": 18,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_thalgryn_w",
       "line": 5087,
       "intensity": 15,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_thalgryn_e",
       "line": 5116,
       "intensity": 10,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_thalgryn_r",
       "line": 5154,
       "intensity": 22,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_syrentha_q",
       "line": 5236,
       "intensity": 10,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_syrentha_q",
       "line": 5243,
       "intensity": 10,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_syrentha_q",
       "line": 5278,
       "intensity": 12,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_syrentha_w",
       "line": 5309,
       "intensity": 14,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_syrentha_e",
       "line": 5338,
       "intensity": 10,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_syrentha_r",
       "line": 5380,
       "intensity": 22,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_gravewake_q",
       "line": 5459,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_gravewake_q",
       "line": 5466,
       "intensity": 12,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_gravewake_q",
       "line": 5501,
       "intensity": 15,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_gravewake_w",
       "line": 5533,
       "intensity": 14,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_gravewake_e",
       "line": 5558,
       "intensity": 10,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_gravewake_r",
       "line": 5609,
       "intensity": 25,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_q_tide_bringer",
       "line": 5762,
       "intensity": 15,
       "class": "cast",
-      "wired": false
+      "wired": false,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_w_x_marks",
       "line": 5788,
       "intensity": 8,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_e_ghost_ship",
       "line": 5850,
       "intensity": 18,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     },
     {
       "method": "_cast_r_torrent",
       "line": 5904,
       "intensity": 28,
       "class": "cast",
-      "wired": true
+      "wired": true,
+      "native_occurrences": 1
     }
   ]
 }

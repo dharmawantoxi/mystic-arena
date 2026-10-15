@@ -1140,3 +1140,43 @@ Q, presentasi-only; jalur gameplay identik karena `normalized()` nol tidak
 menghasilkan hit) + restruktur cabang thalgryn Q (identik secara gameplay) +
 oracle/fixture/suite/pin/docs. `lighting.py`, sumber Python, balance, UI tidak
 disentuh. Hero tetap prosedural (keputusan pengguna).
+
+## Wiring 36 situs shake cast sembilan keluarga tanpa guard (layer 9ao-3)
+
+Sub-slice kedua roadmap 9ao: SEMUA 36 situs `_shake_screen` dari sembilan
+keluarga yang shake-nya berada di ekor/tengah helper cast TANPA cabang guard
+(ast: 0 early-return, shake selalu dieksekusi) kini dirutekan lewat
+`BossAI._shake(world, intensity)` di akhir tiap cabang resep native:
+
+- razak: Q 10, W 14, E 12, R 20.
+- khalros: Q 10, W 12 (setelah heal 8%), E 14, R 20.
+- varkul: Q 10, W 14, E 10 (setelah heal 12%), R 20.
+- xerathis: Q 12, W 14, E 10 (cabang arcane buff, setelah heal 10%), R 24.
+- gorath: Q 12 (cabang self-enrage, setelah heal 8%), W 15, E 12, R 22 —
+  helper sumber `_gorath_r` dipanggil DUA gerbang smart-AI (target low-HP dan
+  self low-HP) dan arm native meng-inline keduanya, jadi shake 22 terpasang di
+  akhir KEDUA cabang R (2 situs native untuk 1 baris sumber).
+- nyzrak: Q 12, W 14, E 16, R 22 (setelah heal 15%).
+- zharok (`_cast_zharok_*`): Q 10, W 5 (cabang kosong selain set-skill),
+  E 15, R 20.
+- pyrenth (`_cast_pyrenth_*`): Q 12, W 10 (setelah heal 8%), E 18, R 25.
+- vokrahn (`_cast_vokrahn_*`): Q 12, W 18, E 15, R 20.
+
+Penempatan: shake di level cabang (di luar pembungkus `if target != null`),
+setara sumber karena helper cast tidak punya early-return — jalur whiff tetap
+shake. Pin: tiap baris fixture kini membawa `native_occurrences` (jumlah call
+site helper di sumber; `_gorath_r` = 2, lainnya 1) dan multiset oracle/suite
+mengekspansi baris wired dengan faktor itu — 66 baris wired → 67 situs native;
+validate memin hitungan 67. Suite menambah dua probe replay hidup (gorath
+cabang R low-HP → intensity 22.0 dengan q/e timer diblok; xerathis arcane buff
+→ 10.0) dan pin tabel bergeser ke 68 wired / 60 sisa.
+
+Sisa roadmap 9ao: 60 situs cast / 53 method (fixture = tabel otoritatif),
+didominasi keluarga ber-guard (vhorethzir, vaerith, gravewake, vhyssarion,
+malzareth, akashari, vorenmarr) plus cast 8u (abaddon, ancient_apparition,
+dragon, anti-mage, axe) dan tide_bringer Q.
+
+Batas slice 9ao-3: hanya 37 insert `_shake` (36 baris + duplikat gorath R) +
+oracle/fixture/suite/pin/docs — tanpa guard baru, tanpa restruktur cabang.
+`lighting.py`, sumber Python, balance, UI tidak disentuh. Hero tetap
+prosedural (keputusan pengguna).

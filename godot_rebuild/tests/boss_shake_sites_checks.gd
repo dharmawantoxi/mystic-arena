@@ -1,7 +1,8 @@
 extends RefCounted
-## Layer 9ao native suite: the one-shot enrage screen-shake payload routes
-## through the death-shake gate, and the fixture carries the authoritative
-## 128-site source table (the 126 cast sites remain a staged wiring roadmap).
+## Layer 9ao/9ao-2/9ao-3 native suite: the one-shot enrage screen-shake
+## payload routes through the death-shake gate, and the fixture carries the
+## authoritative 128-site source table (66 cast sites are wired; the
+## remaining 60 stay a staged wiring roadmap).
 
 const BossAI = preload("res://scripts/match/boss_ai.gd")
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
@@ -29,10 +30,10 @@ func _shape_check(check: Callable, fixture: Dictionary) -> void:
 	)
 	check.call(
 		(
-			int(shape.get("cast_sites_wired", 0)) == 30
-			and int(shape.get("cast_sites_remaining", -1)) == 96
+			int(shape.get("cast_sites_wired", 0)) == 66
+			and int(shape.get("cast_sites_remaining", -1)) == 60
 		),
-		"the six audited families wire 30 cast sites, 96 stay on the roadmap"
+		"the fifteen audited families wire 66 cast sites, 60 stay on the roadmap"
 	)
 	var enrage: Array = shape.get("enrage_sites", [])
 	check.call(
@@ -63,7 +64,11 @@ func _shape_check(check: Callable, fixture: Dictionary) -> void:
 	var expected_multiset: Array = []
 	for row in fixture.get("rows", []):
 		if String(row.get("class", "")) == "cast" and bool(row.get("wired", false)):
-			expected_multiset.append(int(row.get("intensity", 0)))
+			# `_gorath_r` answers TWO smart-AI gates, so its native arm shakes
+			# at the end of both R branches - expand each row by its source
+			# helper call-site count.
+			for _copy in range(int(row.get("native_occurrences", 1))):
+				expected_multiset.append(int(row.get("intensity", 0)))
 	expected_multiset.sort()
 	check.call(
 		multiset == expected_multiset,
@@ -73,7 +78,7 @@ func _shape_check(check: Callable, fixture: Dictionary) -> void:
 	for row in fixture.get("rows", []):
 		if bool(row.get("wired", false)):
 			wired_rows += 1
-	check.call(wired_rows == 32, "the two enrage sites plus the 30 family casts are wired")
+	check.call(wired_rows == 68, "the two enrage sites plus the 66 family casts are wired")
 
 
 func _cast_shake_probes(check: Callable) -> void:
@@ -101,6 +106,35 @@ func _cast_shake_probes(check: Callable) -> void:
 		check.call(
 			whiff_world.effects.screen_shake.intensity == 8.0,
 			"the geminate whiff shakes the screen with intensity 8"
+		)
+	# 9ao-3: gorath's low-self-HP R gate is the SECOND `_gorath_r` branch and
+	# shakes 22 after the execute hit (`_gorath_r:3338`, called twice).
+	var gorath_world := Prototype.new()
+	gorath_world.setup_arena()
+	var gorath := gorath_world._spawn_boss("gorath")
+	check.call(gorath != null, "gorath shake probe spawns")
+	if gorath != null:
+		gorath.hp = float(gorath.max_hp) * 0.4
+		gorath.q_timer = 1
+		gorath.e_timer = 1
+		BossAI._gorath(gorath_world, gorath, enemies, null, 999.0)
+		check.call(gorath.r_timer > 0, "the low-HP execute branch fires in the shake probe")
+		check.call(
+			gorath_world.effects.screen_shake.intensity == 22.0,
+			"the second gorath execute branch shakes the screen with intensity 22"
+		)
+	# 9ao-3: xerathis E is the arcane buff branch - the tail shake 10 lands
+	# after the buff fields and the heal (`_xerathis_e:3593`).
+	var arcane_world := Prototype.new()
+	arcane_world.setup_arena()
+	var xerathis := arcane_world._spawn_boss("xerathis")
+	check.call(xerathis != null, "xerathis shake probe spawns")
+	if xerathis != null:
+		BossAI._xerathis(arcane_world, xerathis, enemies, null, 999.0)
+		check.call(xerathis.arcane_buff_active, "the arcane buff cast fires in the shake probe")
+		check.call(
+			arcane_world.effects.screen_shake.intensity == 10.0,
+			"the arcane buff cast shakes the screen with intensity 10"
 		)
 
 

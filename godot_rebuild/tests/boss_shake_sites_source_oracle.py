@@ -20,8 +20,15 @@ can proceed in stages, and pins the wired sites:
   xirthalis E) and the zero-distance guard the native Q port folds into a
   dedicated branch. The pin is the intensity MULTISET: every wired source
   site must exist in `boss_ai.gd` with the same intensity.
+* 9ao-3: all 36 cast sites of the nine guard-free families (razak, khalros,
+  varkul, xerathis, gorath, nyzrak, zharok, pyrenth, vokrahn), wired at the
+  end of each native recipe branch. `_gorath_r` is called by TWO smart-AI
+  gates (low-HP target and low self HP) and the native arm inlines both, so
+  both native R branches shake 22: every row carries `native_occurrences`
+  (its helper call-site count in the source) and the multiset pin expands
+  each wired row by that factor (66 rows -> 67 native sites).
 
-The remaining 96 cast sites across 89 methods stay a documented roadmap
+The remaining 60 cast sites across 53 methods stay a documented roadmap
 (later sub-slices wire them family by family against this table).
 
 Run: python godot_rebuild/tests/boss_shake_sites_source_oracle.py
@@ -49,6 +56,16 @@ FAMILY_METHODS = frozenset({
     "_thalgryn_q", "_thalgryn_w", "_thalgryn_e", "_thalgryn_r",
     "_syrentha_q", "_syrentha_w", "_syrentha_e", "_syrentha_r",
     "_cast_w_x_marks", "_cast_e_ghost_ship", "_cast_r_torrent",
+    # 9ao-3 guard-free families.
+    "_razak_q", "_razak_w", "_razak_e", "_razak_r",
+    "_khalros_q", "_khalros_w", "_khalros_e", "_khalros_r",
+    "_varkul_q", "_varkul_w", "_varkul_e", "_varkul_r",
+    "_xerathis_q", "_xerathis_w", "_xerathis_e", "_xerathis_r",
+    "_gorath_q", "_gorath_w", "_gorath_e", "_gorath_r",
+    "_nyzrak_q", "_nyzrak_w", "_nyzrak_e", "_nyzrak_r",
+    "_cast_zharok_q", "_cast_zharok_w", "_cast_zharok_e", "_cast_zharok_r",
+    "_cast_pyrenth_q", "_cast_pyrenth_w", "_cast_pyrenth_e", "_cast_pyrenth_r",
+    "_cast_vokrahn_q", "_cast_vokrahn_w", "_cast_vokrahn_e", "_cast_vokrahn_r",
 })
 
 EXPECTED_TOTAL = 128
@@ -66,6 +83,13 @@ def _sites():
     lines = source.splitlines()
     tree = ast.parse(source)
     cls = next(n for n in tree.body if isinstance(n, ast.ClassDef))
+    call_counts = Counter()
+    for func in cls.body:
+        if not isinstance(func, ast.FunctionDef):
+            continue
+        for node in ast.walk(func):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+                call_counts[node.func.attr] += 1
     rows = []
     for func in cls.body:
         if not isinstance(func, ast.FunctionDef):
@@ -91,6 +115,7 @@ def _sites():
                     "intensity": intensity,
                     "class": klass,
                     "wired": klass != "cast" or func.name in FAMILY_METHODS,
+                    "native_occurrences": call_counts.get(func.name, 0),
                 })
     rows.sort(key=lambda row: row["line"])
     return rows
@@ -131,9 +156,11 @@ def source_fixture():
     assert dict(histogram) == EXPECTED_HISTOGRAM, dict(histogram)
     wiring = _native_wiring()
     assert all(value for key, value in wiring.items() if key != "native_cast_multiset"), wiring
-    cast_wired = sorted(row["intensity"] for row in rows
-                        if row["class"] == "cast" and row["wired"])
-    assert len(cast_wired) == 30, len(cast_wired)
+    wired_rows = [row for row in cast_rows if row["wired"]]
+    assert len(wired_rows) == 66, len(wired_rows)
+    cast_wired = sorted(row["intensity"] for row in wired_rows
+                        for _ in range(row["native_occurrences"]))
+    assert len(cast_wired) == 67, len(cast_wired)
     assert wiring["native_cast_multiset"] == cast_wired, (
         wiring["native_cast_multiset"], cast_wired)
     shape = {
@@ -150,7 +177,7 @@ def source_fixture():
         ],
         "native_wiring": wiring,
     }
-    assert shape["cast_sites_wired"] == 30 and shape["cast_sites_remaining"] == 96, shape
+    assert shape["cast_sites_wired"] == 66 and shape["cast_sites_remaining"] == 60, shape
     return {
         "source": "bosses/base_boss.py::Boss._shake_screen call sites",
         "shape": shape,
