@@ -1059,3 +1059,42 @@ Batas slice 9an: hanya write damage buff empat boss + definisi `_source_damage`
 boss_ability hijau sejak 8u), xerathis verbatim, presence/shell flag-only,
 flux/clones/x_mark memakai `_skill_damage`/damage hidup (paritas), `lighting.py`,
 sumber Python, balance, FX, UI tidak disentuh.
+
+## Tabel situs screen-shake boss + shake enrage (layer 9ao)
+
+Sumber menyalakan `_shake_screen(N)` dari **128 situs di 113 method**
+`bosses/base_boss.py` (presentasi-only: helper merute ke
+`game_instance.effects.shake_screen` dalam try/except). Fisika ScreenShake
+sudah diport penuh (`scripts/ui/screen_shake.gd` + oracle/suite sendiri) dan
+shake MATI boss sudah dirutekan (`_queue_boss_death_presentation`). Yang
+bolong: shake kemampuan — `boss_ai.gd` tidak memanggil shake sama sekali.
+
+Situs-situs cast tersebar di 112 method dengan pola posisi heterogen (64
+setelah blok komentar, 12 setelah `pass` FX, sisanya menempel heal/guard
+whiff/cabang enrage), jadi wiring 128 situs sekaligus tidak aman; slice ini
+membuka jalur bertahap:
+
+- Oracle `boss_shake_sites_source_oracle.py` merekam TABEL OTORITATIF semua
+  128 situs (method, line, intensity, kelas, status wired) + histogram
+  intensitas exact + pin wiring native. Fixture ini menjadi acuan sub-slice
+  9ao-2+ (wiring cast per keluarga boss).
+- Situs pertama yang di-wire: pasangan enrage one-shot di `Boss.update`
+  (`_shake_screen(25)` true class `:624`, `_shake_screen(15)` mini `:639`).
+  `boss_state.gd` += `enrage_fx_shake` (payload one-shot, diset di transisi
+  enrage/frenzy yang sudah ada), `prototype_battle.gd` +=
+  `_present_boss_enrage_shake()` yang mengonsumsi payload lewat gate 8-tick
+  `boss_screen_shake_*` + `effects.shake_screen` — persis jalur shake mati —
+  lalu mengosongkannya (konsumsi di `_step_active_boss` setelah
+  `advance_combat_clock`).
+- Suite `boss_shake_sites_checks.gd`: replay transisi enrage hidup (alchemist
+  true → 25, morgath mini → 15) sampai intensity ScreenShake di
+  EffectManager, memaku one-shot clear, gate 8-tick, bentuk tabel (128/113/
+  126/112 + histogram) dan bahwa tepat dua situs ber-status wired.
+
+Sisa roadmap 9ao: 126 situs cast / 112 method (tabel di fixture) — wiring
+bertahap per keluarga boss; tiap sub-slice memindahkan baris fixture dari
+`wired: false` ke `true` dan menaikkan pin hitungan.
+
+Batas slice 9ao: hanya payload enrage + tabel/oracle/fixture/suite/pin/docs.
+`screen_shake.gd`, EffectManager, shake mati, `lighting.py`, sumber Python,
+balance, dan UI tidak disentuh. Hero tetap prosedural (keputusan pengguna).

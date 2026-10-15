@@ -1541,6 +1541,8 @@ func _step_active_boss() -> void:
 		return
 	if not boss.advance_combat_clock():
 		return
+	if boss.enrage_fx_shake > 0:
+		_present_boss_enrage_shake(boss)
 	boss.timer = maxi(0, boss.timer - 1)
 	if boss.ability_timer > 0:
 		boss.ability_timer -= 1
@@ -1621,6 +1623,18 @@ func _queue_boss_death_presentation(boss: BossState) -> void:
 			String(snapshot.get("explosion_size", "large"))
 		)
 		effects.shake_screen(shake)
+
+
+func _present_boss_enrage_shake(boss: BossState) -> void:
+	# The source Boss.update shakes the screen at the one-shot enrage/frenzy
+	# transition (`_shake_screen(25)` true class, `base_boss.py:624`;
+	# `_shake_screen(15)` mini, `:639`). Layer 9ao routes the stored payload
+	# through the same gate and effect-manager path as the boss death shake.
+	var shake := float(boss.enrage_fx_shake)
+	boss.enrage_fx_shake = 0
+	boss_screen_shake_intensity = maxf(boss_screen_shake_intensity, shake)
+	boss_screen_shake_timer = maxi(boss_screen_shake_timer, 8)
+	effects.shake_screen(shake)
 
 
 func boss_presentation_offset() -> Vector2:

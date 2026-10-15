@@ -138,6 +138,7 @@ from boss_ai_slow_source_oracle import source_fixture as boss_ai_slow_fixture
 from boss_attack_lock_source_oracle import source_fixture as boss_attack_lock_fixture
 from boss_buff_expiry_source_oracle import source_fixture as boss_buff_expiry_fixture
 from boss_buff_scaling_source_oracle import source_fixture as boss_buff_scaling_fixture
+from boss_shake_sites_source_oracle import source_fixture as boss_shake_sites_fixture
 from debuff_payload_reach_source_oracle import source_fixture as debuff_payload_reach_fixture
 from hero_marker_source_oracle import source_fixture as hero_marker_fixture
 from miasma_tick_delivery_source_oracle import source_fixture as miasma_tick_delivery_fixture
@@ -319,6 +320,16 @@ if (ROOT / "tests/fixtures/boss_buff_scaling_source.json").is_file():
     check(boss_buff_scaling_fixture() == json.loads(
         (ROOT / "tests/fixtures/boss_buff_scaling_source.json").read_text(encoding="utf-8")),
           "Boss buff scaling fixture must not drift from the oracle")
+check('const BossShakeSitesChecks = preload("res://tests/boss_shake_sites_checks.gd")' in ai_tests,
+      "Boss shake site suite must be preloaded")
+check("BossShakeSitesChecks.new().run(_check)" in ai_tests,
+      "Boss shake site suite must run")
+check((ROOT / "tests/fixtures/boss_shake_sites_source.json").is_file(),
+      "Boss shake site fixture must exist")
+if (ROOT / "tests/fixtures/boss_shake_sites_source.json").is_file():
+    check(boss_shake_sites_fixture() == json.loads(
+        (ROOT / "tests/fixtures/boss_shake_sites_source.json").read_text(encoding="utf-8")),
+          "Boss shake site fixture must not drift from the oracle")
 check('const DebuffPayloadReachChecks = preload("res://tests/debuff_payload_reach_checks.gd")' in ai_tests,
       "Debuff payload reach suite must be preloaded")
 check("DebuffPayloadReachChecks.new().run(_check)" in ai_tests,
@@ -2176,6 +2187,20 @@ check(boss_ai_text.count("int(float(_source_damage(boss)) *") == 8,
 check(boss_ai_text.count("boss.damage = boss.base_damage") == 1
       and boss_ai_text.count("int(float(boss.base_damage) *") == 1,
       "Only the xerathis arcane pair may keep the verbatim base_damage path")
+# Layer 9ao: the one-shot enrage shake payload rides the death-shake gate.
+check("var enrage_fx_shake := 0" in boss_state,
+      "Boss state must carry the one-shot enrage shake payload")
+check(("maxi(18, int(float(attack_cooldown) * 0.75))\n\t\t\tenrage_fx_shake = 25" in boss_state
+       and "maxi(20, int(float(attack_cooldown) * 0.80))\n\t\t\tenrage_fx_shake = 15"
+       in boss_state),
+      "The enrage transitions must store the source 25/15 shake intensities")
+_proto_text = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+check("func _present_boss_enrage_shake(boss: BossState) -> void:" in _proto_text
+      and "if boss.enrage_fx_shake > 0:\n\t\t_present_boss_enrage_shake(boss)" in _proto_text,
+      "The boss step must consume the enrage shake payload")
+check("boss.enrage_fx_shake = 0" in _proto_text
+      and _proto_text.count("effects.shake_screen(shake)") == 2,
+      "The enrage shake must clear one-shot and route like the death shake")
 boss_ai_hit = boss_ai_text.split("static func _hit(", 1)[1].split(
     "\nstatic func _slow(", 1)[0]
 check("world._deliver_hit(-1, boss.team, target, raw_damage, school, boss.position)" in boss_ai_hit

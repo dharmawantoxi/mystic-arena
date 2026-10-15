@@ -97,6 +97,11 @@ var death_fx_particle_count := 25
 var death_fx_particle_min := 4
 var death_fx_particle_max := 6
 var death_fx_shake_intensity := 0
+## One-shot screen-shake payload of the enrage/frenzy transition: the source
+## `Boss.update` shakes 25 (true class, `base_boss.py:624`) or 15 (mini,
+## `:639`) when the transition fires; `prototype_battle` routes it through the
+## death-shake gate and clears it (layer 9ao).
+var enrage_fx_shake := 0
 var defense_boost := false
 var stun_timer := 0
 var cleave_radius := 0.0
@@ -322,6 +327,7 @@ func advance_combat_clock() -> bool:
 			speed_px_per_tick = eff_speed() * 1.25
 			damage = int(float(damage) * 1.25)
 			attack_cooldown = maxi(18, int(float(attack_cooldown) * 0.75))
+			enrage_fx_shake = 25
 		elif boss_class == "mini" and hp <= float(max_hp) * 0.40:
 			enrage_triggered = true
 			is_enraged = true
@@ -329,6 +335,7 @@ func advance_combat_clock() -> bool:
 			speed_px_per_tick = eff_speed() * 1.15
 			damage = int(float(damage) * 1.20)
 			attack_cooldown = maxi(20, int(float(attack_cooldown) * 0.80))
+			enrage_fx_shake = 15
 		if enrage_triggered:
 			rebuild_definition()
 	if is_enraged:
