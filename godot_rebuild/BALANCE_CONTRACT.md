@@ -52,6 +52,36 @@ karena itu tidak ada angka hero/boss yang diubah. Sel terpanas
 (PHYSICAL|TANK 1.38) masih di dalam penerimaan pass 2026-08-30 (spread
 identity 1.6x adalah target yang dikejar pass itu).
 
+## Lapisan override native (layer 9c) — mekanisme rebalance
+
+Permintaan "rebalance" (2026-10-16) dijawab dua lapis: baseline terukur (9b,
+di atas) dan **mekanisme perubahan angka** (`scripts/data/balance_overrides.gd`):
+
+- Satu-satunya permukaan native tempat deviasi rebalance yang disengaja dari
+  katalog paritas-sumber boleh hidup. Tabel produksi `HERO_OVERRIDES`
+  **KOSONG by decision**: audit `--ingame` melaporkan nol pelanggaran di
+  semua target yang ditegakkan alat; deviasi band prosa (MAGIC|CARRY dan
+  MAGIC|FIGHTER power 0.84 — satu tick di bawah lantai prosa 0.85;
+  PHYSICAL|TANK 1.38 di atas cap prosa 1.25) adalah trade yang DITERIMA pass
+  balance sumber 2026-08-30 (spread identity 1.6x adalah hasil yang dikejar
+  pass itu sendiri). Menggerakkan angka pool tanpa arahan playtest = opini,
+  bukan pengukuran.
+- Kontrak entri: `"damage_mult"` (default 1.0) dan `"hp_mult"` (default 1.0)
+  per hero id, plus `"reason"` WAJIB (metrik yang bergerak + alasan). Reader
+  murni menolak nilai non-numerik, <= 0, dan non-finite kembali ke 1.0.
+- Titik aplikasi: HANYA spawn produksi — `prototype_battle.
+  _spawn_production_hero` (4 call site: dua Kaizen awal, purchase biru,
+  purchase merah/AI) merutekan `spawn_hero` lalu menerapkan multiplier pada
+  `base_hp`/`base_damage` sebelum `apply_level_stats()` ulang (kurva level
+  ikut mengalikan, hp spawn penuh). Lab tempur (`minion_battle.gd::
+  spawn_hero` langsung) TETAP di jalur paritas sumber — nilai QA lab tidak
+  boleh bergeser oleh rebalance produksi.
+- Dengan tabel kosong, wrapper adalah no-op yang dibuktikan suite
+  `balance_override_layer_checks.gd` (spawn terute == spawn langsung, stat
+  `.tres` utuh); suite yang sama menolak entri tanpa reason dan memaku
+  tabel kosong — entri pertama harus mengupdate suite + baseline + PETA
+  dengan angka sebelum/sesudah secara sengaja.
+
 ## Catatan yang tetap berlaku
 
 - **Troll lab** (`COMBAT_CONTRACT.md`): regen 0.6 HP/tick (36 HP/detik) di

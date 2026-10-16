@@ -343,6 +343,20 @@ if (ROOT / "tests/fixtures/balance_baseline_ingame.json").is_file():
           "Balance baseline fixture must not drift from the oracle")
 check((ROOT / "BALANCE_CONTRACT.md").is_file(),
       "The balance contract must document the rebaseline doctrine")
+check('const BalanceOverrideLayerChecks = preload("res://tests/balance_override_layer_checks.gd")'
+      in ai_tests,
+      "Balance override layer suite must be preloaded")
+check("BalanceOverrideLayerChecks.new().run(_check)" in ai_tests,
+      "Balance override layer suite must run")
+_balance_overrides_text = (ROOT / "scripts/data/balance_overrides.gd").read_text(encoding="utf-8")
+check("const HERO_OVERRIDES: Dictionary = {}" in _balance_overrides_text,
+      "The production rebalance table must stay empty until a measured directive lands")
+_prototype_text = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+check('const BalanceOverrides = preload("res://scripts/data/balance_overrides.gd")'
+      in _prototype_text,
+      "Prototype battle must preload the rebalance surface")
+check(_prototype_text.count("_spawn_production_hero(") == 5,
+      "All four production hero spawns plus the wrapper must route the rebalance surface")
 check('const DebuffPayloadReachChecks = preload("res://tests/debuff_payload_reach_checks.gd")' in ai_tests,
       "Debuff payload reach suite must be preloaded")
 check("DebuffPayloadReachChecks.new().run(_check)" in ai_tests,

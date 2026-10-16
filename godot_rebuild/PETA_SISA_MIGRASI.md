@@ -1262,3 +1262,34 @@ Batas slice 9b: oracle/fixture/suite/registrasi/kontrak/docs saja — NOL
 perubahan angka gameplay. `lighting.py`, sumber Python, art tidak disentuh.
 Rebalance angka menunggu arahan desain eksplisit (kandidat terukur: starter
 gap 5.67x, sel PHYSICAL|TANK 1.38, regen Troll lab).
+
+## Lapisan override rebalance native, tabel kosong by decision (layer 9c)
+
+Menutup domain rebalance yang dibuka pengguna: sesudah baseline terukur (9b)
+menunjukkan NOL pelanggaran target yang ditegakkan audit, slice ini membangun
+MEKANISME perubahan angka tanpa mengubah satu angka pun:
+
+- Modul baru `scripts/data/balance_overrides.gd`: satu-satunya permukaan
+  native untuk deviasi rebalance yang disengaja. `HERO_OVERRIDES` kosong by
+  decision (deviasi band prosa 0.84/1.38 adalah trade yang diterima pass
+  balance sumber 2026-08-30; tanpa arahan playtest, mengubahnya = opini).
+  Kontrak entri: `damage_mult`/`hp_mult` default 1.0 + `reason` wajib;
+  reader murni menolak non-numerik/<=0/non-finite ke 1.0.
+- Titik aplikasi hanya produksi: `prototype_battle._spawn_production_hero`
+  merutekan keempat spawn hero produksi (Kaizen biru/merah awal, purchase
+  biru, purchase merah/AI); multiplier diterapkan ke base_hp/base_damage
+  sebelum `apply_level_stats()` ulang. Lab tempur tetap memanggil
+  `spawn_hero` langsung — paritas sumber lab tidak bergeser.
+- Suite baru `balance_override_layer_checks.gd` (run_all.gd): tabel kosong
+  dipaku, entries_without_reason() kosong, default 1.0/1.0 untuk id nyata &
+  tak dikenal, tujuh kasus reader sintetis (termasuk NAN/negatif/nol/string),
+  dan bukti no-op end-to-end: spawn terute stat-identik dengan spawn
+  langsung (.tres utuh, hp penuh).
+- Pin validate: preload suite, tabel kosong, preload BalanceOverrides di
+  prototype, dan tepat 5 kemunculan `_spawn_production_hero(` (definisi +
+  4 call site). BALANCE_CONTRACT.md mendapat seksi mekanisme 9c.
+
+Batas slice 9c: NOL perubahan angka gameplay (tabel kosong; wrapper no-op
+terbukti). Sumber Python, `.tres`, fixture 9b, `lighting.py`, art tidak
+disentuh. Entri rebalance pertama di masa depan wajib: reason + regenerate
+baseline + angka sebelum/sesudah di PETA.

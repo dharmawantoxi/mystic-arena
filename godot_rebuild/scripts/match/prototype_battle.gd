@@ -18,6 +18,7 @@ const AiUpgrades = preload("res://scripts/match/ai_upgrades.gd")
 const AiItems = preload("res://scripts/match/ai_items.gd")
 const AiShields = preload("res://scripts/match/ai_shields.gd")
 const AiDraft = preload("res://scripts/match/ai_draft.gd")
+const BalanceOverrides = preload("res://scripts/data/balance_overrides.gd")
 const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
 const TacticalCommands = preload("res://scripts/match/tactical_commands.gd")
 const HitStopRuntime = preload("res://scripts/match/hit_stop_runtime.gd")
@@ -688,12 +689,12 @@ func setup_arena() -> bool:
 	# Keep the existing free mirror for prototype compatibility, but register
 	# blue Kaizen as the first player-roster slot. The red mirror remains outside
 	# AIPlayer ownership.
-	var blue_kaizen := spawn_hero(KAIZEN, BLUE, HERO_SPAWN)
+	var blue_kaizen := _spawn_production_hero(KAIZEN, BLUE, HERO_SPAWN)
 	if blue_kaizen == null:
 		return false
 	player_hero_ids.append(blue_kaizen.id)
 	_cache_hero_assets(blue_kaizen)
-	var red_kaizen := spawn_hero(KAIZEN, RED, RED_HERO_SPAWN)
+	var red_kaizen := _spawn_production_hero(KAIZEN, RED, RED_HERO_SPAWN)
 	if red_kaizen == null:
 		return false
 	_cache_hero_assets(red_kaizen)
@@ -1038,6 +1039,28 @@ func player_hero_spawn_position(owned_count: int) -> Vector2:
 	return shop + Vector2(50 + owned_count * 30, 10)
 
 
+func _spawn_production_hero(
+	definition: HeroDefinition, team: int, pos: Vector2, level: int = 1
+) -> HeroState:
+	# Layer 9c: every PRODUCTION hero spawn routes through the explicit
+	# rebalance surface (`scripts/data/balance_overrides.gd`, doctrine in
+	# BALANCE_CONTRACT.md). The override table is empty by decision, so this
+	# is an exact no-op today; the combat lab keeps calling `spawn_hero`
+	# directly and stays on the untouched source-parity path.
+	var hero := spawn_hero(definition, team, pos, level)
+	if hero == null or definition == null:
+		return hero
+	var hp_mult := BalanceOverrides.hp_multiplier(definition.id)
+	var damage_mult := BalanceOverrides.damage_multiplier(definition.id)
+	if hp_mult == 1.0 and damage_mult == 1.0:
+		return hero
+	hero.base_hp = int(round(float(hero.base_hp) * hp_mult))
+	hero.base_damage = int(round(float(hero.base_damage) * damage_mult))
+	hero.apply_level_stats()
+	hero.hp = hero.max_hp
+	return hero
+
+
 func buy_player_hero(hero_type: String) -> bool:
 	# Atomic port of Game.try_buy_hero. Permanent unlock currency is separate;
 	# this transaction spends only match gold and summons one real native kit.
@@ -1072,7 +1095,7 @@ func buy_player_hero(hero_type: String) -> bool:
 	if not transaction_error.is_empty():
 		return false
 	var position := player_hero_spawn_position(roster.size())
-	var hero := spawn_hero(kit, BLUE, position)
+	var hero := _spawn_production_hero(kit, BLUE, position)
 	if hero == null:
 		transaction_error = "capacity"
 		return false
@@ -1120,7 +1143,7 @@ func _buy_ai_hero(hero_type: String, cost: int, pos: Vector2) -> bool:
 				transaction_error = "position"
 	if not transaction_error.is_empty():
 		return false
-	var hero := spawn_hero(kit, RED, pos)
+	var hero := _spawn_production_hero(kit, RED, pos)
 	if hero == null:
 		transaction_error = "capacity"
 		return false
