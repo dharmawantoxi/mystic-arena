@@ -177,7 +177,9 @@ static func classify_edges(points: PackedVector2Array) -> Dictionary:
 		var a := points[index]
 		var b := points[(index + 1) % points.size()]
 		signed += a.x * b.y - b.x * a.y
-	var toward_light := -Vector2(LIGHT_DIR)
+	# LIGHT_DIR is where the light COMES FROM (top-left), so it already points
+	# from the body toward the light.
+	var toward_light := Vector2(LIGHT_DIR)
 	for index in range(points.size()):
 		var a := points[index]
 		var b := points[(index + 1) % points.size()]
