@@ -349,8 +349,17 @@ check('const BalanceOverrideLayerChecks = preload("res://tests/balance_override_
 check("BalanceOverrideLayerChecks.new().run(_check)" in ai_tests,
       "Balance override layer suite must run")
 _balance_overrides_text = (ROOT / "scripts/data/balance_overrides.gd").read_text(encoding="utf-8")
-check("const HERO_OVERRIDES: Dictionary = {}" in _balance_overrides_text,
-      "The production rebalance table must stay empty until a measured directive lands")
+check("const STARTER_DAMAGE_MULT := 1.5" in _balance_overrides_text,
+      "The S1 starter catch-up multiplier must stay pinned at 1.5 (gap 5.67x -> 3.97x)")
+for _starter_id in ("kaizen", "thorne", "grimjaw", "sylara", "vex", "zephyr"):
+    check('\t"%s":\n\t{\n\t\t"damage_mult": STARTER_DAMAGE_MULT,' % _starter_id
+          in _balance_overrides_text,
+          "Starter %s must carry the S1 catch-up override entry" % _starter_id)
+check('const S1_REASON := "S1 starter catch-up 2026-10-16: starter gap 5.67x -> 3.97x (target <= 4.0x)"'
+      in _balance_overrides_text,
+      "The S1 reason must record the measured before/after starter gap")
+check(_balance_overrides_text.count('"reason": S1_REASON + "; auto-attack damage ') == 6,
+      "Exactly the six S1 starter entries carry the measured before/after reason")
 _prototype_text = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
 check('const BalanceOverrides = preload("res://scripts/data/balance_overrides.gd")'
       in _prototype_text,

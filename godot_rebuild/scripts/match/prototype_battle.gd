@@ -1044,8 +1044,8 @@ func _spawn_production_hero(
 ) -> HeroState:
 	# Layer 9c: every PRODUCTION hero spawn routes through the explicit
 	# rebalance surface (`scripts/data/balance_overrides.gd`, doctrine in
-	# BALANCE_CONTRACT.md). The override table is empty by decision, so this
-	# is an exact no-op today; the combat lab keeps calling `spawn_hero`
+	# BALANCE_CONTRACT.md). The table carries the directed entries (S1 starter
+	# catch-up, damage_mult 1.5); the combat lab keeps calling `spawn_hero`
 	# directly and stays on the untouched source-parity path.
 	var hero := spawn_hero(definition, team, pos, level)
 	if hero == null or definition == null:

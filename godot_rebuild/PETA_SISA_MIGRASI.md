@@ -1293,3 +1293,27 @@ Batas slice 9c: NOL perubahan angka gameplay (tabel kosong; wrapper no-op
 terbukti). Sumber Python, `.tres`, fixture 9b, `lighting.py`, art tidak
 disentuh. Entri rebalance pertama di masa depan wajib: reason + regenerate
 baseline + angka sebelum/sesudah di PETA.
+
+## Rebalance terarah S1: starter catch-up produksi (layer 9c, entri pertama)
+
+Arahan pengguna 2026-10-16: starter gap 5.67x -> <= 4.0x lewat entri
+`balance_overrides.gd` untuk enam hero starter (kaizen, thorne, grimjaw,
+sylara, vex, zephyr), `damage_mult` saja.
+
+- Pengukuran (rumus audit `tools/balance_audit.py` starter_gap, dijalankan
+  headless dengan stub pygame): unlock avg dps 486.1; starter avg 85.7 (gap
+  5.67x). Multiplier damage hanya menggerakkan porsi auto-attack (skill
+  tidak ikut, cermin `apply_level_stats`), sehingga estimasi linear 1.42
+  tidak cukup; sapuan 0.01: 1.45 -> 4.12x, 1.49 -> 4.00x (tepi), **1.5 ->
+  3.97x**. Dipilih 1.5 (bulat terkecil yang lolos). Depois: starter avg
+  dps 122.5, gap **3.97x**. Damage produksi: kaizen 45->68, thorne 41->62,
+  grimjaw 42->63, sylara 57->86, vex 43->65, zephyr 34->51; HP tetap.
+- Suite `balance_override_layer_checks.gd`: pin enam entri (mult 1.5, hp
+  1.0, reason berisi "5.67x -> 3.97x"), non-starter tetap 1.0/1.0, dan
+  bukti spawn: `_spawn_production_hero(KAIZEN)` damage 68 vs `spawn_hero`
+  langsung 45 (hp/skill identik, hp penuh).
+- Pin validate: `STARTER_DAMAGE_MULT := 1.5`, enam entri, tepat enam
+  reason S1. BALANCE_CONTRACT.md: tabel "Rebalance terarah" antes/depois.
+
+Batas S1: fixture 9b tidak diubah (override native tidak terlihat audit
+sumber); `.tres`, sumber Python, lab tempur, `lighting.py` tidak disentuh.

@@ -1,36 +1,57 @@
 extends RefCounted
-## Layer 9c native suite: the explicit rebalance surface is machinery-only.
-## The production override table is EMPTY BY DECISION (measured 9b baseline:
-## zero audit violations), the pure entry reader is unit-tested with synthetic
-## entries, every live entry must carry a doctrine reason, and the production
-## spawn wrapper is an exact no-op against the direct source-parity path.
+## Layer 9c native suite: the explicit rebalance surface. The production
+## override table carries the S1 starter catch-up directive (six starter
+## kits, damage_mult 1.5: measured starter gap 5.67x -> 3.97x, target
+## <= 4.0x), every live entry carries a doctrine reason, the pure entry
+## reader is unit-tested with synthetic entries, and the production spawn
+## wrapper applies the multiplier while the direct lab path stays parity.
 
 const BalanceOverrides = preload("res://scripts/data/balance_overrides.gd")
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
+const STARTER_IDS := ["kaizen", "thorne", "grimjaw", "sylara", "vex", "zephyr"]
+const STARTER_DAMAGE_MULT := 1.5
 
 
 func run(check: Callable) -> void:
 	_table_checks(check)
 	_reader_checks(check)
-	_noop_spawn_checks(check)
+	_production_spawn_checks(check)
 
 
 func _table_checks(check: Callable) -> void:
 	check.call(
-		BalanceOverrides.HERO_OVERRIDES.is_empty(),
-		"the production override table stays empty until a measured directive lands"
+		BalanceOverrides.HERO_OVERRIDES.size() == STARTER_IDS.size(),
+		"the production override table holds exactly the six S1 starter entries"
 	)
 	check.call(
 		Array(BalanceOverrides.entries_without_reason()).is_empty(),
 		"every override entry must carry a doctrine reason"
 	)
-	for hero_id in ["kaizen", "thorne", "zharok", "unported_probe"]:
+	for hero_id in STARTER_IDS:
+		check.call(
+			BalanceOverrides.HERO_OVERRIDES.has(hero_id),
+			"starter %s has an S1 catch-up entry" % hero_id
+		)
+		check.call(
+			is_equal_approx(BalanceOverrides.damage_multiplier(hero_id), STARTER_DAMAGE_MULT),
+			"starter %s carries the S1 damage multiplier 1.5" % hero_id
+		)
+		check.call(
+			BalanceOverrides.hp_multiplier(hero_id) == 1.0,
+			"starter %s keeps hp untouched by S1" % hero_id
+		)
+		var reason: String = String(BalanceOverrides.HERO_OVERRIDES[hero_id].get("reason", ""))
+		check.call(
+			reason.contains("5.67x -> 3.97x") and reason.contains("S1"),
+			"starter %s reason records the measured before/after gap" % hero_id
+		)
+	for hero_id in ["zharok", "abaddon", "unported_probe"]:
 		check.call(
 			(
 				BalanceOverrides.damage_multiplier(hero_id) == 1.0
 				and BalanceOverrides.hp_multiplier(hero_id) == 1.0
 			),
-			"hero %s keeps the default 1.0/1.0 multipliers" % hero_id
+			"non-starter %s keeps the default 1.0/1.0 multipliers" % hero_id
 		)
 
 
@@ -67,7 +88,7 @@ func _reader_checks(check: Callable) -> void:
 	)
 
 
-func _noop_spawn_checks(check: Callable) -> void:
+func _production_spawn_checks(check: Callable) -> void:
 	var world := Prototype.new()
 	world.setup_arena()
 	var definition = Prototype.KAIZEN
@@ -79,22 +100,26 @@ func _noop_spawn_checks(check: Callable) -> void:
 	check.call(routed != null and direct != null, "both spawn paths return a hero")
 	if routed == null or direct == null:
 		return
+	var expected_damage := int(round(float(definition.damage) * STARTER_DAMAGE_MULT))
+	check.call(expected_damage == 68, "kaizen's S1 production damage is 45 -> 68")
 	check.call(
-		(
-			routed.base_hp == direct.base_hp
-			and routed.base_damage == direct.base_damage
-			and routed.damage == direct.damage
-			and routed.max_hp == direct.max_hp
-			and routed.hp == direct.hp
-			and routed.skill_value == direct.skill_value
-		),
-		"the routed production spawn is stat-identical to the direct parity spawn"
+		routed.base_damage == expected_damage and routed.damage == expected_damage,
+		"the routed production spawn applies the S1 damage multiplier at level 1"
 	)
 	check.call(
 		(
-			routed.base_damage == definition.damage
-			and routed.base_hp == definition.max_hp
+			routed.base_hp == direct.base_hp
+			and routed.max_hp == direct.max_hp
 			and routed.hp == routed.max_hp
+			and routed.skill_value == direct.skill_value
 		),
-		"the routed spawn still carries the untouched .tres parity stats at full HP"
+		"the routed production spawn leaves hp and skill on the parity values at full HP"
+	)
+	check.call(
+		(
+			direct.base_damage == definition.damage
+			and direct.damage == definition.damage
+			and direct.base_hp == definition.max_hp
+		),
+		"the direct lab spawn still carries the untouched .tres parity stats"
 	)

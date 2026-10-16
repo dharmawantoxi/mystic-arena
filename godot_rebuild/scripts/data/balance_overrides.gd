@@ -3,17 +3,24 @@ extends RefCounted
 ## from the source-parity hero catalog may live (doctrine: BALANCE_CONTRACT.md,
 ## measured baseline: layer 9b, fixture `balance_baseline_ingame.json`).
 ##
-## The production table is EMPTY BY DECISION: the project's own ingame audit
-## (`tools/balance_audit.py --ingame`) reports zero violations on every
-## tool-enforced target (corr 0.535 <= 0.80, identity spread 1.64x >= 1.20,
-## school ratio 1.000/1.001 inside 0.90..1.15, boss pref 1.49 >= 1.20, price
-## spread 1.89x <= 2.20, pool power delta 1.000/1.000 within 0.12). The
-## prose-band deviations (MAGIC|CARRY and MAGIC|FIGHTER power 0.84, one tick
-## under the 0.85 prose floor; PHYSICAL|TANK 1.38 over the 1.25 prose cap)
-## are the accepted trade of the source 2026-08-30 balance pass, whose own
-## stated result is the 1.6x identity spread. Moving pooled numbers without a
-## playtest directive would be opinion, not measurement - so this layer ships
-## as tested, documented machinery that a future directive lands in.
+## Measured baseline (layer 9b, `tools/balance_audit.py --ingame`): zero
+## violations on every tool-enforced target (corr 0.535 <= 0.80, identity
+## spread 1.64x >= 1.20, school ratio 1.000/1.001 inside 0.90..1.15, boss pref
+## 1.49 >= 1.20, price spread 1.89x <= 2.20, pool power delta 1.000/1.000
+## within 0.12). The entries below are the explicit user directives of
+## 2026-10-16 on top of that baseline (see "Rebalance terarah" in
+## BALANCE_CONTRACT.md); the source fixture is NOT regenerated because these
+## overrides are native-only and the source audit cannot see them.
+##
+## S1 STARTER CATCH-UP (2026-10-16): the audit's starter-gap formula is
+## dps = base_damage * 60 / attack_cooldown + skill_base * 60 / skill_cd, so a
+## damage multiplier moves only the auto-attack share. Measured: unlock avg
+## dps 486.1 vs starter avg 85.7 (gap 5.67x). Smallest round multiplier that
+## reaches the <= 4.0x target over the six real starter kits (1.45 -> 4.12x,
+## 1.49 -> 4.00x edge, 1.5 -> 3.97x) is 1.5: starter avg 122.5, gap 3.97x.
+## Resulting production base_damage: kaizen 45 -> 68, thorne 41 -> 62,
+## grimjaw 42 -> 63, sylara 57 -> 86, vex 43 -> 65, zephyr 34 -> 51
+## (hp untouched; the lab spawn keeps the .tres values).
 ##
 ## Entry contract (per hero id; every entry is pinned by
 ## `balance_override_layer_checks.gd`):
@@ -28,7 +35,42 @@ extends RefCounted
 ## source-parity path; only production spawns route through
 ## `prototype_battle._spawn_production_hero`, which applies this table.
 
-const HERO_OVERRIDES: Dictionary = {}
+const STARTER_DAMAGE_MULT := 1.5
+## Shared S1 reason prefix: metric moved + target, per the entry contract.
+const S1_REASON := "S1 starter catch-up 2026-10-16: starter gap 5.67x -> 3.97x (target <= 4.0x)"
+
+const HERO_OVERRIDES: Dictionary = {
+	"kaizen":
+	{
+		"damage_mult": STARTER_DAMAGE_MULT,
+		"reason": S1_REASON + "; auto-attack damage 45 -> 68, hp untouched",
+	},
+	"thorne":
+	{
+		"damage_mult": STARTER_DAMAGE_MULT,
+		"reason": S1_REASON + "; auto-attack damage 41 -> 62, hp untouched",
+	},
+	"grimjaw":
+	{
+		"damage_mult": STARTER_DAMAGE_MULT,
+		"reason": S1_REASON + "; auto-attack damage 42 -> 63, hp untouched",
+	},
+	"sylara":
+	{
+		"damage_mult": STARTER_DAMAGE_MULT,
+		"reason": S1_REASON + "; auto-attack damage 57 -> 86, hp untouched",
+	},
+	"vex":
+	{
+		"damage_mult": STARTER_DAMAGE_MULT,
+		"reason": S1_REASON + "; auto-attack damage 43 -> 65, hp untouched",
+	},
+	"zephyr":
+	{
+		"damage_mult": STARTER_DAMAGE_MULT,
+		"reason": S1_REASON + "; auto-attack damage 34 -> 51, hp untouched",
+	},
+}
 
 
 ## Pure entry reader (unit-testable with synthetic entries): returns the
@@ -52,7 +94,7 @@ static func hp_multiplier(hero_id: String) -> float:
 
 
 ## Doctrine helper: every entry must carry a non-empty reason. The layer
-## suite runs this over the live table (trivially true while empty).
+## suite runs this over the live table.
 static func entries_without_reason() -> Array:
 	var missing: Array = []
 	for hero_id in HERO_OVERRIDES:

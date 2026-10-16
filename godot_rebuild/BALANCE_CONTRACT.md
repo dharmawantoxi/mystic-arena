@@ -38,7 +38,7 @@ untuk setiap perubahan angka berikutnya. Dibuka oleh permintaan pengguna
 | boss pref (p90/p10) | 1.49 | >= 1.20 | sehat ("bawa hero sesuai lawan" terasa) |
 | price spread in-band | 1.89x | <= 2.20 | sehat |
 | pool power delta (DPS/EHP) | 1.000 / 1.000 | max 0.12 | redistribusi, bukan buff/nerf global |
-| starter gap | 5.67x | (informasional; 8.51x sebelum pass) | membaik |
+| starter gap | 5.67x (sumber) / **3.97x produksi native** (S1) | <= 4.0x (arahan 2026-10-16) | **tercapai via override 9c** |
 | violations audit | **[]** | kosong | **sehat** |
 
 Sel identity grid (power): MAGIC|CARRY 0.84 (n=11), MAGIC|FIGHTER 0.84 (n=82),
@@ -82,6 +82,24 @@ di atas) dan **mekanisme perubahan angka** (`scripts/data/balance_overrides.gd`)
   tabel kosong — entri pertama harus mengupdate suite + baseline + PETA
   dengan angka sebelum/sesudah secara sengaja.
 
+## Rebalance terarah (arahan pengguna 2026-10-16) — entri override aktif
+
+Fixture 9b `balance_baseline_ingame.json` TIDAK berubah: override native tidak
+terlihat oleh audit sumber. Angka "depois" dihitung dengan rumus audit yang
+sama (`dps = base_damage*60/cd + skill_base*60/skill_cd`) di atas baris
+hero audit, dipaku di suite native + `validate_project.py`.
+
+| Slice | Entri | Antes | Depois | Bukti |
+|---|---|---|---|---|
+| S1 starter catch-up | kaizen/thorne/grimjaw/sylara/vex/zephyr `damage_mult 1.5` | starter avg dps 85.7, gap 5.67x | starter avg dps 122.5, gap **3.97x** (<= 4.0x) | `balance_override_layer_checks.gd`: spawn produksi Kaizen damage 45 -> 68, lab tetap 45 |
+
+Pemilihan S1: multiplier hanya menggerakkan porsi auto-attack (skill tidak
+dikalikan, cermin `HeroState.apply_level_stats`), jadi 1.42 (estimasi linear
+penuh) tidak cukup; sapuan 0.01 memberi 1.45 -> 4.12x, 1.49 -> 4.00x (tepi),
+1.5 -> 3.97x. Dipilih multiplier bulat terkecil yang lolos: **1.5**. HP starter
+tidak disentuh. Damage produksi: kaizen 68, thorne 62, grimjaw 63, sylara 86,
+vex 65, zephyr 51.
+
 ## Catatan yang tetap berlaku
 
 - **Troll lab** (`COMBAT_CONTRACT.md`): regen 0.6 HP/tick (36 HP/detik) di
@@ -89,8 +107,8 @@ di atas) dan **mekanisme perubahan angka** (`scripts/data/balance_overrides.gd`)
   cepat untuk uji kill pakai Goblin/Orc. Perubahan angka lab hanya lewat
   doktrin di atas.
 - Rebalance produksi (di luar baseline sehat ini) membutuhkan arahan desain
-  eksplisit pengguna: kandidat yang bisa diukur ulang kapan saja lewat audit
-  yang sama (mis. starter gap, sel grid terpanas, band harga tertentu).
+  eksplisit pengguna; arahan 2026-10-16 (S1 starter gap) sudah terpasang di
+  tabel di atas. Kandidat lain diukur ulang lewat audit yang sama.
 
 ## Regenerasi baseline
 
