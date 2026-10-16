@@ -364,6 +364,14 @@ _prototype_text = (ROOT / "scripts/match/prototype_battle.gd").read_text(encodin
 check('const BalanceOverrides = preload("res://scripts/data/balance_overrides.gd")'
       in _prototype_text,
       "Prototype battle must preload the rebalance surface")
+check("var balance_overrides_enabled := false" in _prototype_text
+      and "or not balance_overrides_enabled:" in _prototype_text,
+      "The rebalance table must be opt-in per world (off for parity suites and the lab)")
+check("session.enable_balance_overrides()" in (ROOT / "app/app.gd").read_text(encoding="utf-8"),
+      "The playable match flow must opt the arena into the rebalance table")
+check("func enable_balance_overrides() -> void:" in
+      (ROOT / "scripts/simulation/prototype_session.gd").read_text(encoding="utf-8"),
+      "PrototypeSession must expose the rebalance opt-in for app.gd")
 check(_prototype_text.count("_spawn_production_hero(") == 5,
       "All four production hero spawns plus the wrapper must route the rebalance surface")
 check('const DebuffPayloadReachChecks = preload("res://tests/debuff_payload_reach_checks.gd")' in ai_tests,

@@ -1312,8 +1312,15 @@ sylara, vex, zephyr), `damage_mult` saja.
   1.0, reason berisi "5.67x -> 3.97x"), non-starter tetap 1.0/1.0, dan
   bukti spawn: `_spawn_production_hero(KAIZEN)` damage 68 vs `spawn_hero`
   langsung 45 (hp/skill identik, hp penuh).
+- Opt-in per dunia: `Prototype.balance_overrides_enabled` (default false)
+  dinyalakan hanya oleh alur match playable (`app.gd` ->
+  `PrototypeSession.enable_balance_overrides()` sebelum `_ready`/setup_arena).
+  Dunia yang dibangun langsung oleh suite paritas-sumber dan lab tetap
+  memakai stat `.tres` sehingga fixture Python (ai_upgrade dkk.) tidak
+  bergeser; suite override memaku flag mati -> 45 dan flag hidup -> 68.
 - Pin validate: `STARTER_DAMAGE_MULT := 1.5`, enam entri, tepat enam
-  reason S1. BALANCE_CONTRACT.md: tabel "Rebalance terarah" antes/depois.
+  reason S1, flag opt-in + pemanggilan app.gd + method session.
+  BALANCE_CONTRACT.md: tabel "Rebalance terarah" antes/depois.
 
 Batas S1: fixture 9b tidak diubah (override native tidak terlihat audit
 sumber); `.tres`, sumber Python, lab tempur, `lighting.py` tidak disentuh.

@@ -130,6 +130,11 @@ var ai_heroes := AiHeroControl.new()
 # is the only switch; with it off the red side stays idle.
 var ai_controller := AiController.new()
 var ai_enabled := false
+## Layer 9c: the rebalance table only applies when the PLAYABLE match flow
+## (app.gd -> PrototypeSession.enable_balance_overrides) turns this on before
+## setup_arena. Direct worlds (lab, source-parity suites, oracles) keep the
+## untouched .tres stats so the Python-source fixtures stay valid.
+var balance_overrides_enabled := false
 var ai_hero_control_enabled := false
 # Ownership is explicit: the free mirrored red Kaizen is not an AIPlayer hero.
 var ai_hero_ids: Array[int] = []
@@ -1045,10 +1050,11 @@ func _spawn_production_hero(
 	# Layer 9c: every PRODUCTION hero spawn routes through the explicit
 	# rebalance surface (`scripts/data/balance_overrides.gd`, doctrine in
 	# BALANCE_CONTRACT.md). The table carries the directed entries (S1 starter
-	# catch-up, damage_mult 1.5); the combat lab keeps calling `spawn_hero`
-	# directly and stays on the untouched source-parity path.
+	# catch-up, damage_mult 1.5) and is applied only when the playable match
+	# flow enabled it; the combat lab and parity suites call `spawn_hero`
+	# directly or leave the flag off and stay on the source-parity path.
 	var hero := spawn_hero(definition, team, pos, level)
-	if hero == null or definition == null:
+	if hero == null or definition == null or not balance_overrides_enabled:
 		return hero
 	var hp_mult := BalanceOverrides.hp_multiplier(definition.id)
 	var damage_mult := BalanceOverrides.damage_multiplier(definition.id)

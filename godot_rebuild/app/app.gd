@@ -101,6 +101,9 @@ func _install_screen(scene: PackedScene) -> void:
 		current_screen.set("slot_path_template", slot_path_template)
 		current_screen.set("is_replay", prototype_is_replay)
 		var session = current_screen.get_node("Simulation")
+		# Layer 9c: only the playable match applies the rebalance override
+		# table (BALANCE_CONTRACT.md); lab/suite worlds stay source-parity.
+		session.enable_balance_overrides()
 		var profile := HeroUnlockStore.bootstrap_state(ProgressStore.load_state(progress_path))
 		if (
 			not session.configure_level(prototype_level, prototype_difficulty)

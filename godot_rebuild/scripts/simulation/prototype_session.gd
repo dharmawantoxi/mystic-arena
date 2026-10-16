@@ -37,6 +37,13 @@ func configure_player_profile(state: Dictionary) -> bool:
 	return (world as Prototype).configure_player_profile(state)
 
 
+## Layer 9c: the playable match flow (app.gd) opts the arena into the
+## rebalance override table before _ready spawns the production heroes.
+## Suites and the lab never call this, so their worlds stay source-parity.
+func enable_balance_overrides() -> void:
+	(world as Prototype).balance_overrides_enabled = true
+
+
 func _ready() -> void:
 	get_node("/root/GameSpeed").call("reset_match_clock")
 	super._ready()

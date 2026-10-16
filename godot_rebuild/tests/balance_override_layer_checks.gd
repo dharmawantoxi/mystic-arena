@@ -4,7 +4,8 @@ extends RefCounted
 ## kits, damage_mult 1.5: measured starter gap 5.67x -> 3.97x, target
 ## <= 4.0x), every live entry carries a doctrine reason, the pure entry
 ## reader is unit-tested with synthetic entries, and the production spawn
-## wrapper applies the multiplier while the direct lab path stays parity.
+## wrapper applies the multiplier only on a world the playable flow opted in
+## (`balance_overrides_enabled`), while the direct lab path stays parity.
 
 const BalanceOverrides = preload("res://scripts/data/balance_overrides.gd")
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
@@ -95,6 +96,16 @@ func _production_spawn_checks(check: Callable) -> void:
 	check.call(definition != null, "the kaizen definition preloads for the spawn probe")
 	if definition == null:
 		return
+	check.call(
+		not world.balance_overrides_enabled,
+		"a directly built world leaves the rebalance table off (source-parity suites)"
+	)
+	var parity = world._spawn_production_hero(definition, world.BLUE, Vector2(100, 300))
+	check.call(
+		parity != null and parity.base_damage == definition.damage,
+		"with the flag off the routed spawn keeps the .tres damage (fixture parity)"
+	)
+	world.balance_overrides_enabled = true
 	var routed = world._spawn_production_hero(definition, world.BLUE, Vector2(200, 300))
 	var direct = world.spawn_hero(definition, world.RED, Vector2(400, 300))
 	check.call(routed != null and direct != null, "both spawn paths return a hero")

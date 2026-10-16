@@ -93,6 +93,14 @@ hero audit, dipaku di suite native + `validate_project.py`.
 |---|---|---|---|---|
 | S1 starter catch-up | kaizen/thorne/grimjaw/sylara/vex/zephyr `damage_mult 1.5` | starter avg dps 85.7, gap 5.67x | starter avg dps 122.5, gap **3.97x** (<= 4.0x) | `balance_override_layer_checks.gd`: spawn produksi Kaizen damage 45 -> 68, lab tetap 45 |
 
+Titik aplikasi (revisi S1): tabel hanya diterapkan bila dunia dibuka oleh
+alur match playable — `app.gd` memanggil `PrototypeSession.
+enable_balance_overrides()` (set `Prototype.balance_overrides_enabled = true`)
+sebelum `setup_arena`. Dunia yang dibangun langsung (lab tempur, suite
+paritas-sumber, oracle) membiarkan flag mati sehingga fixture sumber Python
+(mis. `ai_upgrade` damage Kaizen 45) tetap valid; suite override membuktikan
+keduanya (flag mati -> 45, flag hidup -> 68).
+
 Pemilihan S1: multiplier hanya menggerakkan porsi auto-attack (skill tidak
 dikalikan, cermin `HeroState.apply_level_stats`), jadi 1.42 (estimasi linear
 penuh) tidak cukup; sapuan 0.01 memberi 1.45 -> 4.12x, 1.49 -> 4.00x (tepi),
