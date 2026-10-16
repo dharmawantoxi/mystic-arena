@@ -360,6 +360,17 @@ check('const S1_REASON := "S1 starter catch-up 2026-10-16: starter gap 5.67x -> 
       "The S1 reason must record the measured before/after starter gap")
 check(_balance_overrides_text.count('"reason": S1_REASON + "; auto-attack damage ') == 6,
       "Exactly the six S1 starter entries carry the measured before/after reason")
+check("const PHYSICAL_TANK_DAMAGE_MULT := 0.85" in _balance_overrides_text,
+      "The S2 PHYSICAL|TANK multiplier must stay pinned at 0.85 (cell power 1.38 -> 1.25)")
+check('const S2_REASON := "S2 PHYSICAL|TANK nerf 2026-10-16: cell power 1.38 -> 1.25 (prose cap 1.25)"'
+      in _balance_overrides_text,
+      "The S2 reason must record the measured before/after cell power")
+check(_balance_overrides_text.count('"reason": S2_REASON + "; auto-attack damage ') == 39,
+      "Exactly the 39 PHYSICAL|TANK heroes carry the S2 nerf entry")
+for _tank_id in ("akaroth", "cogsworth", "hollowbane", "sasori", "zhyvrek"):
+    check('\t"%s":\n\t{\n\t\t"damage_mult": PHYSICAL_TANK_DAMAGE_MULT,' % _tank_id
+          in _balance_overrides_text,
+          "PHYSICAL|TANK %s must carry the S2 nerf override entry" % _tank_id)
 _prototype_text = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
 check('const BalanceOverrides = preload("res://scripts/data/balance_overrides.gd")'
       in _prototype_text,

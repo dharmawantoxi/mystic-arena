@@ -41,9 +41,9 @@ untuk setiap perubahan angka berikutnya. Dibuka oleh permintaan pengguna
 | starter gap | 5.67x (sumber) / **3.97x produksi native** (S1) | <= 4.0x (arahan 2026-10-16) | **tercapai via override 9c** |
 | violations audit | **[]** | kosong | **sehat** |
 
-Sel identity grid (power): MAGIC|CARRY 0.84 (n=11), MAGIC|FIGHTER 0.84 (n=82),
+Sel identity grid (power, sumber): MAGIC|CARRY 0.84 (n=11), MAGIC|FIGHTER 0.84 (n=82),
 MAGIC|TANK 1.02 (n=25), PHYSICAL|CARRY 1.19 (n=10), PHYSICAL|FIGHTER 1.18
-(n=49), PHYSICAL|TANK 1.38 (n=39). Balance pass: 216 hero, hp_mult
+(n=49), PHYSICAL|TANK 1.38 (n=39) — produksi native sesudah S2: **1.25**. Balance pass: 216 hero, hp_mult
 0.7189..1.3868, dmg_mult 0.5851..2.0474; saklar `hero_balance.py`:
 `ENABLE_REBUDGET=True`, `ENABLE_SCHOOL_MOD=False`, `ENABLE_STARTER_CATCHUP=True`.
 
@@ -92,6 +92,7 @@ hero audit, dipaku di suite native + `validate_project.py`.
 | Slice | Entri | Antes | Depois | Bukti |
 |---|---|---|---|---|
 | S1 starter catch-up | kaizen/thorne/grimjaw/sylara/vex/zephyr `damage_mult 1.5` | starter avg dps 85.7, gap 5.67x | starter avg dps 122.5, gap **3.97x** (<= 4.0x) | `balance_override_layer_checks.gd`: spawn produksi Kaizen damage 45 -> 68, lab tetap 45 |
+| S2 nerf PHYSICAL\|TANK | 39 hero sel PHYSICAL\|TANK `damage_mult 0.85` | power sel 1.38 (avg dps 646.2, ehp 3069) | power sel **1.25** (avg dps 571.0, ehp tetap); spread 1.47x, corr 0.484, school 1.045/1.094, price 1.85x, pool dps 0.972 — violations tetap [] | suite: spawn produksi Akaroth damage 320 -> 272 |
 
 Titik aplikasi (revisi S1): tabel hanya diterapkan bila dunia dibuka oleh
 alur match playable — `app.gd` memanggil `PrototypeSession.
@@ -107,6 +108,15 @@ penuh) tidak cukup; sapuan 0.01 memberi 1.45 -> 4.12x, 1.49 -> 4.00x (tepi),
 1.5 -> 3.97x. Dipilih multiplier bulat terkecil yang lolos: **1.5**. HP starter
 tidak disentuh. Damage produksi: kaizen 68, thorne 62, grimjaw 63, sylara 86,
 vex 65, zephyr 51.
+
+Pemilihan S2: rumus power sel audit (`0.8*avg_dps/med_dps +
+0.2*avg_ehp/med_ehp`) dihitung ulang di atas baris hero audit dengan
+multiplier seragam pada sel (damage -> porsi auto-attack, hp -> ehp linear):
+damage_mult 0.90 -> 1.29, 0.88 -> 1.28, 0.86 -> 1.26, **0.85 -> 1.25**;
+hp_mult sendirian butuh 0.5 (corr jatuh ke -0.03); campuran (0.9/0.8,
+0.88/0.9) tidak lebih kecil. Sel lain bergeser <= 0.01 (MAGIC|CARRY 0.84 ->
+0.85). Tabel baseline 9b di atas tetap angka sumber; angka produksi native
+adalah kolom "Depois".
 
 ## Catatan yang tetap berlaku
 

@@ -1324,3 +1324,29 @@ sylara, vex, zephyr), `damage_mult` saja.
 
 Batas S1: fixture 9b tidak diubah (override native tidak terlihat audit
 sumber); `.tres`, sumber Python, lab tempur, `lighting.py` tidak disentuh.
+
+## Rebalance terarah S2: nerf sel PHYSICAL|TANK produksi (layer 9c)
+
+Arahan pengguna 2026-10-16: power sel PHYSICAL|TANK 1.38 -> <= 1.25 lewat
+entri override untuk hero-hero sel itu (39 hero: akaroth ... zhyvrek, daftar
+dipaku `PHYSICAL_TANK_IDS` di suite).
+
+- Pengukuran (hemat): baris hero audit `--ingame` diambil headless (stub
+  pygame), sel via `hero_archetypes.get_archetype`, kandidat multiplier
+  diterapkan ke dps/ehp baris sel, lalu power sel + identity spread + corr +
+  school ratio + price spread + pool delta dihitung ulang dengan rumus
+  audit. Hasil: damage_mult 0.90 -> 1.29, 0.88 -> 1.28, 0.86 -> 1.26,
+  **0.85 -> 1.25**; hp_mult sendirian baru 1.27 di 0.5 (corr -0.03);
+  campuran tidak lebih kecil. Dipilih `damage_mult 0.85` seragam (hp tetap).
+- Antes -> depois: power sel 1.38 -> 1.25 (avg dps 646.2 -> 571.0, ehp
+  3069 tetap); identity spread 1.64x -> 1.47x; corr 0.535 -> 0.484; school
+  ratio 1.000/1.001 -> 1.045/1.094; price spread 1.89x -> 1.85x; pool dps
+  0.972 / ehp 1.000; sel lain bergeser <= 0.01. Violations tetap [].
+- Suite `balance_override_layer_checks.gd`: 39 entri (mult 0.85, hp 1.0,
+  reason "1.38 -> 1.25"), tabel = 6 + 39, bukti spawn produksi Akaroth
+  damage 320 -> 272 (hp paritas, hp penuh). Pin validate: konstanta 0.85,
+  S2_REASON, tepat 39 reason S2, lima entri sampel. Kontrak: baris S2 di
+  tabel "Rebalance terarah".
+
+Batas S2: fixture 9b tidak diubah; `.tres`, sumber Python, lab, `lighting.py`
+tidak disentuh.

@@ -11,6 +11,50 @@ const BalanceOverrides = preload("res://scripts/data/balance_overrides.gd")
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const STARTER_IDS := ["kaizen", "thorne", "grimjaw", "sylara", "vex", "zephyr"]
 const STARTER_DAMAGE_MULT := 1.5
+## S2: the 39 PHYSICAL|TANK boss heroes (audit identity grid, n=39).
+const PHYSICAL_TANK_IDS := [
+	"akaroth",
+	"akirakumo",
+	"akiraze",
+	"aurelian",
+	"azkharion",
+	"broggmar",
+	"brumhar",
+	"cogsworth",
+	"deidara",
+	"garumenshi",
+	"grimkor",
+	"hitokage",
+	"hollowbane",
+	"kaelthys",
+	"kaerinya",
+	"kaerissa",
+	"kagetsuka",
+	"kairenji",
+	"kaithros",
+	"kaoruken",
+	"karzhul",
+	"korokai",
+	"kyrenzai",
+	"morvath",
+	"obanai",
+	"sasori",
+	"solareth",
+	"thoraz",
+	"thorgaruk",
+	"urgharun",
+	"vaelmyrra",
+	"vardrok",
+	"verdanix",
+	"vorthakul",
+	"xareth",
+	"yomigetsu",
+	"zhaeris",
+	"zhyrakaan",
+	"zhyvrek"
+]
+const PHYSICAL_TANK_DAMAGE_MULT := 0.85
+const Akaroth = preload("res://data/heroes/akaroth.tres")
 
 
 func run(check: Callable) -> void:
@@ -21,8 +65,11 @@ func run(check: Callable) -> void:
 
 func _table_checks(check: Callable) -> void:
 	check.call(
-		BalanceOverrides.HERO_OVERRIDES.size() == STARTER_IDS.size(),
-		"the production override table holds exactly the six S1 starter entries"
+		BalanceOverrides.HERO_OVERRIDES.size() == STARTER_IDS.size() + PHYSICAL_TANK_IDS.size(),
+		"the production override table holds exactly the S1 starter + S2 PHYSICAL|TANK entries"
+	)
+	check.call(
+		PHYSICAL_TANK_IDS.size() == 39, "the S2 cell lists the 39 audited PHYSICAL|TANK heroes"
 	)
 	check.call(
 		Array(BalanceOverrides.entries_without_reason()).is_empty(),
@@ -45,6 +92,24 @@ func _table_checks(check: Callable) -> void:
 		check.call(
 			reason.contains("5.67x -> 3.97x") and reason.contains("S1"),
 			"starter %s reason records the measured before/after gap" % hero_id
+		)
+	for hero_id in PHYSICAL_TANK_IDS:
+		check.call(
+			BalanceOverrides.HERO_OVERRIDES.has(hero_id),
+			"PHYSICAL|TANK %s has an S2 nerf entry" % hero_id
+		)
+		check.call(
+			is_equal_approx(BalanceOverrides.damage_multiplier(hero_id), PHYSICAL_TANK_DAMAGE_MULT),
+			"PHYSICAL|TANK %s carries the S2 damage multiplier 0.85" % hero_id
+		)
+		check.call(
+			BalanceOverrides.hp_multiplier(hero_id) == 1.0,
+			"PHYSICAL|TANK %s keeps hp untouched by S2" % hero_id
+		)
+		var tank_reason: String = String(BalanceOverrides.HERO_OVERRIDES[hero_id].get("reason", ""))
+		check.call(
+			tank_reason.contains("1.38 -> 1.25") and tank_reason.contains("S2"),
+			"PHYSICAL|TANK %s reason records the measured before/after cell power" % hero_id
 		)
 	for hero_id in ["zharok", "abaddon", "unported_probe"]:
 		check.call(
@@ -133,4 +198,13 @@ func _production_spawn_checks(check: Callable) -> void:
 			and direct.base_hp == definition.max_hp
 		),
 		"the direct lab spawn still carries the untouched .tres parity stats"
+	)
+	var tank = world._spawn_production_hero(Akaroth, world.RED, Vector2(500, 300))
+	check.call(
+		tank != null and Akaroth.damage == 320 and tank.base_damage == 272 and tank.damage == 272,
+		"akaroth's S2 production damage is 320 -> 272 (round(320 * 0.85))"
+	)
+	check.call(
+		tank != null and tank.base_hp == Akaroth.max_hp and tank.hp == tank.max_hp,
+		"akaroth's S2 spawn keeps hp on the parity value at full HP"
 	)
