@@ -125,6 +125,7 @@ jobs:
           python godot_rebuild/tests/boss_buff_expiry_source_oracle.py
           python godot_rebuild/tests/boss_buff_scaling_source_oracle.py
           python godot_rebuild/tests/boss_shake_sites_source_oracle.py
+          python godot_rebuild/tests/balance_baseline_source_oracle.py
           python godot_rebuild/tests/debuff_payload_reach_source_oracle.py
           python godot_rebuild/tests/hero_marker_source_oracle.py
           gdparse $(find godot_rebuild -name '*.gd')

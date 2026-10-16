@@ -252,5 +252,7 @@ fixture manual untuk meloloskan hasil yang berbeda dari sumber.
 > 127 call site `BossAI._shake`; layer 9ao-4, PR #332). Baca
 > PETA_SISA_MIGRASI.md, AI_CONTRACT.md, HERO_ROSTER_STATUS.md dan
 > data/ai/hero_migration_status.json. Hanya ubah godot_rebuild/; Python
-> asli read-only. Sisa: art final dan rebalance — hanya atas permintaan
-> pengguna; `lighting.py` di luar scope.
+> asli read-only. Rebalance (layer 9b): baseline terukur SEHAT dan dipaku CI
+> (`BALANCE_CONTRACT.md`, oracle `balance_baseline_source_oracle.py`) —
+> perubahan angka menunggu arahan desain eksplisit. Sisa: art final — hanya
+> atas permintaan pengguna; `lighting.py` di luar scope.

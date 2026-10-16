@@ -1,0 +1,184 @@
+{
+  "source": "tools/balance_audit.py --ingame (headless pygame stub)",
+  "switches": {
+    "ENABLE_REBUDGET": true,
+    "ENABLE_SCHOOL_MOD": false,
+    "ENABLE_STARTER_CATCHUP": true
+  },
+  "audit": {
+    "mode": "ingame",
+    "n_hero": 222,
+    "n_boss_hero": 216,
+    "corr_hp_dps": 0.535,
+    "identity_grid": {
+      "MAGIC|CARRY": {
+        "n": 11,
+        "avg_dps": 377.0,
+        "avg_ehp": 2296.0,
+        "dps_x": 0.83,
+        "ehp_x": 0.92,
+        "power": 0.84
+      },
+      "MAGIC|FIGHTER": {
+        "n": 82,
+        "avg_dps": 377.0,
+        "avg_ehp": 2280.0,
+        "dps_x": 0.83,
+        "ehp_x": 0.91,
+        "power": 0.84
+      },
+      "MAGIC|TANK": {
+        "n": 25,
+        "avg_dps": 433.0,
+        "avg_ehp": 3213.0,
+        "dps_x": 0.95,
+        "ehp_x": 1.29,
+        "power": 1.02
+      },
+      "PHYSICAL|CARRY": {
+        "n": 10,
+        "avg_dps": 579.0,
+        "avg_ehp": 2233.0,
+        "dps_x": 1.27,
+        "ehp_x": 0.9,
+        "power": 1.19
+      },
+      "PHYSICAL|FIGHTER": {
+        "n": 49,
+        "avg_dps": 574.0,
+        "avg_ehp": 2132.0,
+        "dps_x": 1.26,
+        "ehp_x": 0.86,
+        "power": 1.18
+      },
+      "PHYSICAL|TANK": {
+        "n": 39,
+        "avg_dps": 646.0,
+        "avg_ehp": 3069.0,
+        "dps_x": 1.42,
+        "ehp_x": 1.23,
+        "power": 1.38
+      }
+    },
+    "identity_spread_x": 1.64,
+    "effective_dps_vs_boss": {
+      "mini": {
+        "physical": 334.1,
+        "magic": 334.2,
+        "ratio_magic_over_phys": 1.0,
+        "boss_pref_p10_p50_p90": [
+          0.56,
+          0.65,
+          0.83
+        ]
+      },
+      "true": {
+        "physical": 324.0,
+        "magic": 324.2,
+        "ratio_magic_over_phys": 1.001,
+        "boss_pref_p10_p50_p90": [
+          0.53,
+          0.57,
+          0.75
+        ]
+      }
+    },
+    "boss_pref_ratio": 1.49,
+    "price_spread_by_band": {
+      "0k-1k": {
+        "n": 18,
+        "spread_x": 2.19
+      },
+      "1k-2k": {
+        "n": 35,
+        "spread_x": 1.93
+      },
+      "2k-3k": {
+        "n": 28,
+        "spread_x": 1.68
+      },
+      "3k-4k": {
+        "n": 29,
+        "spread_x": 1.88
+      },
+      "4k-5k": {
+        "n": 21,
+        "spread_x": 1.93
+      },
+      "5k-6k": {
+        "n": 20,
+        "spread_x": 1.72
+      },
+      "6k-7k": {
+        "n": 20,
+        "spread_x": 1.85
+      },
+      "7k-8k": {
+        "n": 20,
+        "spread_x": 1.89
+      },
+      "8k-9k": {
+        "n": 24,
+        "spread_x": 2.05
+      }
+    },
+    "price_spread_x": 1.89,
+    "burst_waste_vs_cap": {
+      "mini": {
+        "n": 162,
+        "median_%": 0.0,
+        "p90_%": 0.0,
+        "share_over_15%": 0.0
+      },
+      "true": {
+        "n": 54,
+        "median_%": 0.0,
+        "p90_%": 0.0,
+        "share_over_15%": 0.0
+      }
+    },
+    "starter_gap": {
+      "starter_avg_dps": 85.7,
+      "unlock_avg_dps": 486.1,
+      "gap_x": 5.67,
+      "starter_hp": [
+        658,
+        728,
+        728,
+        770,
+        1120,
+        1960
+      ]
+    },
+    "pool_power_delta": {
+      "n": 216,
+      "avg_dps_pristine": 486.1,
+      "avg_dps_balanced": 486.1,
+      "dps_x": 1.0,
+      "avg_ehp_pristine": 2495.4,
+      "avg_ehp_balanced": 2495.4,
+      "ehp_x": 1.0,
+      "anchor_applied": {
+        "dps": 1.0937411506268484,
+        "ehp": 1.089304840932699
+      }
+    },
+    "hero_level_curve": {
+      "max_level": 15,
+      "dmg_mult": 10.0,
+      "hp_mult": 12.5
+    },
+    "balance_pass": {
+      "applied_to": 216,
+      "hp_mult": [
+        0.7189,
+        1.3868
+      ],
+      "dmg_mult": [
+        0.5851,
+        2.0474
+      ]
+    },
+    "violations": []
+  }
+}

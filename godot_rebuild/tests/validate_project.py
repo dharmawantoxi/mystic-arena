@@ -135,6 +135,7 @@ from boss_debuff_tenacity_source_oracle import source_fixture as boss_debuff_ten
 from item_slow_resist_source_oracle import source_fixture as item_slow_resist_fixture
 from item_silence_store_source_oracle import source_fixture as item_silence_store_fixture
 from boss_ai_slow_source_oracle import source_fixture as boss_ai_slow_fixture
+from balance_baseline_source_oracle import balance_baseline as balance_baseline_fixture
 from boss_attack_lock_source_oracle import source_fixture as boss_attack_lock_fixture
 from boss_buff_expiry_source_oracle import source_fixture as boss_buff_expiry_fixture
 from boss_buff_scaling_source_oracle import source_fixture as boss_buff_scaling_fixture
@@ -330,6 +331,18 @@ if (ROOT / "tests/fixtures/boss_shake_sites_source.json").is_file():
     check(boss_shake_sites_fixture() == json.loads(
         (ROOT / "tests/fixtures/boss_shake_sites_source.json").read_text(encoding="utf-8")),
           "Boss shake site fixture must not drift from the oracle")
+check('const BalanceBaselineChecks = preload("res://tests/balance_baseline_checks.gd")' in ai_tests,
+      "Balance baseline suite must be preloaded")
+check("BalanceBaselineChecks.new().run(_check)" in ai_tests,
+      "Balance baseline suite must run")
+check((ROOT / "tests/fixtures/balance_baseline_ingame.json").is_file(),
+      "Balance baseline fixture must exist")
+if (ROOT / "tests/fixtures/balance_baseline_ingame.json").is_file():
+    check(balance_baseline_fixture() == json.loads(
+        (ROOT / "tests/fixtures/balance_baseline_ingame.json").read_text(encoding="utf-8")),
+          "Balance baseline fixture must not drift from the oracle")
+check((ROOT / "BALANCE_CONTRACT.md").is_file(),
+      "The balance contract must document the rebaseline doctrine")
 check('const DebuffPayloadReachChecks = preload("res://tests/debuff_payload_reach_checks.gd")' in ai_tests,
       "Debuff payload reach suite must be preloaded")
 check("DebuffPayloadReachChecks.new().run(_check)" in ai_tests,
@@ -449,6 +462,8 @@ for key, entry in recruitment["levels"].items():
 check((ROOT / "tests/fixtures/ai_draft_source.json").is_file(), "AI draft needs source fixture")
 workflow = (ROOT.parent / ".github/workflows/godot-rebuild.yml").read_text(encoding="utf-8")
 check("python godot_rebuild/tests/ai_draft_source_oracle.py" in workflow, "CI must detect recruitment data drift")
+check("python godot_rebuild/tests/balance_baseline_source_oracle.py" in workflow,
+      "CI must pin the ingame balance baseline")
 
 check("AIUpgradeChecks.new().run(_check)" in ai_tests, "AI upgrade suite must remain alongside baseline suites")
 check((ROOT / "tests/fixtures/ai_upgrade_source.json").is_file(), "AI upgrades require source fixture")

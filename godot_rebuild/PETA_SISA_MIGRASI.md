@@ -1224,3 +1224,41 @@ Batas slice 9ao-4: 60 insert `_shake` + 4 restruktur early-return line-AOE +
 >320 vhorethzir W menuju paritas sumber) + oracle/fixture/suite/pin/docs.
 `lighting.py`, sumber Python, balance, UI tidak disentuh. Hero tetap
 prosedural (keputusan pengguna).
+
+## Baseline balance terukur dipaku CI (layer 9b, rebalance v1)
+
+Permintaan pengguna membuka kunci rebalance dijawab dengan lapisan dasar yang
+mengukur, bukan mengubah angka: katalog produksi diaudit dengan alat proyek
+sendiri (`tools/balance_audit.py --ingame`, rumus identik dengan pass
+`hero_balance.py`) dan hasilnya SEHAT — violations [] (corr(HP,DPS) 0.535,
+identity spread 1.64x, school ratio 1.000/1.001, boss pref 1.49, price spread
+1.89x, pool power delta 1.000/1.000, starter gap 5.67x, balance pass 216
+hero). Karena tidak ada pelanggaran terukur, TIDAK ada angka hero/boss yang
+diubah; yang dibangun adalah infrastruktur agar setiap rebalance berikutnya
+harus menggerakkan metrik secara sengaja:
+
+- Oracle baru `tests/balance_baseline_source_oracle.py`: menjalankan audit
+  headless (stub pygame MagicMock via PYTHONPATH + SDL dummy — tanpa engine,
+  tanpa display, tanpa pygame terpasang), memaku saklar hero_balance
+  (REBUDGET on, SCHOOL_MOD off, CATCHUP on) dan snapshot metrik persis ke
+  fixture `tests/fixtures/balance_baseline_ingame.json`.
+- Suite native baru `tests/balance_baseline_checks.gd` (terdaftar di
+  `run_all.gd`): violations kosong, 222/216 hero, band target alat, pin
+  snapshot (corr/spread/boss-pref/price/starter/multiplier pass/level curve)
+  dan enam sel identity grid.
+- Baris CI baru di `godot-rebuild.yml` + pin validate (preload/run suite,
+  fixture ada, fixture tidak drift dari oracle, kontrak ada).
+- `BALANCE_CONTRACT.md` baru: doktrin 4 aturan (audit mengukur; sumber
+  read-only; baseline dipaku CI; rebalance = pergerakan metrik disengaja
+  dengan angka sebelum/sesudah) + tabel baseline + catatan Troll lab tetap
+  paritas sumber yang sengaja.
+
+Temuan audit sampingan (tidak diubah — paritas sudah benar): regen minion
+produksi SUDAH tick di native (`minion_battle.gd:175` dipakai bersama oleh
+prototype_battle lewat siege_battle, termasuk interaksi anti-heal dan skala
+nexus `scaled_minion_definition` — cermin `_entity.py:5534` + `:5422`).
+
+Batas slice 9b: oracle/fixture/suite/registrasi/kontrak/docs saja — NOL
+perubahan angka gameplay. `lighting.py`, sumber Python, art tidak disentuh.
+Rebalance angka menunggu arahan desain eksplisit (kandidat terukur: starter
+gap 5.67x, sel PHYSICAL|TANK 1.38, regen Troll lab).
