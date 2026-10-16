@@ -128,7 +128,12 @@ hilang. Portrait karena itu dibangun prosedural, bukan disalin.
 
 `HERO_MIGRATION_PROGRESS.md` menyebut sisa di luar kit: *AIPlayer penuh,
 item/forge, art final — hanya atas permintaan pengguna*. Karena forge sudah
-ada, efektif tinggal AIPlayer penuh dan art final.
+ada, efektif tinggal AIPlayer penuh dan art final. (**Koreksi 9ak:** baris ini
+status pertengahan migrasi — AIPlayer penuh sejak itu ditutup, lihat
+"Integrasi penuh AI lawan" di bawah, banner pembaruan di
+`HERO_MIGRATION_PROGRESS.md`, dan "Rekonsiliasi klaim status AI" di akhir
+dokumen ini; sisa sebenarnya hanya art final, dan `lighting.py` tetap di luar
+scope.)
 
 ## Slice berikutnya: siluet hero arena (art)
 
@@ -318,8 +323,9 @@ bar kesulitan, dan teks gold/passive/boss-tag ada di dalam `draw()` dan
   / `compute_gold_per_second` / `format_gold_rate`. Itu di luar slice ini,
   jadi oracle sengaja menyediakan `_core` tanpa fungsi tersebut, sehingga
   sumber jatuh ke fallback `except` (`starting_gold` dari level, default 1000,
-  dan `PASSIVE +3/s`). Port mengikuti fallback itu. Jalur `_core` penuh
-  belum diverifikasi.
+  dan `PASSIVE +3/s`). Port mengikuti fallback itu. (**Ditutup layer 9al:**
+  jalur `_core` penuh kini diport lewat `match_economy.gd` dan dikunci fixture
+  dua kolom — lihat "Gold/passive intro dari `_core` penuh" di bawah.)
 - Pemanggil yang mengambil boss dari `get_all_boss_types()` dan memanggil
   `setup()` belum ada; saat ini kartu hanya bisa dibuat dari fixture/test.
 - `ui_theme.draw_icon("warn")` dan `corner_ticks` (ikon peringatan kedua sisi
@@ -844,3 +850,446 @@ Divergensi guard non-positif store dunia yang dicatat 9af kini **tertutup sebaga
 Rencana di atas sudah mendarat (`silhouette()`, `fill()` khas Kaizen/Thorne, `prototype_view.gd` menggambar siluet, suite `hero_marker_checks.gd` terdaftar). Yang belum: cakupan roster. Cabang generik memakai `(code >> (index % 12)) % 5`, yaitu hanya bit 0-9 dari kode di bawah 1000003, sehingga **33 pasang** dari 220 hero generik menggambar siluet identik (`gravefang` = `hitokage`, `kaerinya` = `kyumirra`, `lyrienne` = `lyssarethys`, dan 30 pasang lain).
 
 Perbaikan: `spread = fingerprint * 48271 + 1021`, jumlah sisi dari `spread % 4`, dan wobble dari digit basis-5 `spread` (bukan bit rendah). Terukur: **222/222 siluet unik**, sisi {7, 8, 9, 10} untuk generik (Kaizen 8, Thorne 12), reach 1000-1120 untuk generik (Kaizen 1150, Thorne 1154) - semuanya ≤ `MAX_REACH` 1200, sehingga cincin tim tetap membingkai. Oracle `hero_marker_source_oracle.py` menulis golden fixture `hero_marker_source.json` (222 entri: keluarga, jumlah sisi, hash terkuantisasi 1e-4, reach mili, digest) dan suite merekomputasi seluruhnya dari `silhouette()` produksi, termasuk kontrol **222/222 unik** dan view wiring (`prototype_view.gd` memakai `HeroMarker.silhouette(`, tidak memakai `HeroMarker.body(`) yang dipin `validate_project.py`.
+
+
+## Rekonsiliasi klaim status AI (layer 9ak, doc-only)
+
+Audit "kandidat berikutnya" menemukan premis "AIPlayer penuh belum ada" sudah
+usang tetapi masih tertulis di lima dokumen. Bukti audit (tanpa perubahan
+produksi): **79/79** resep `_smart_ai_*` sumber punya arm dispatch native di
+`boss_ai.gd` (set-diff kosong; `_generic` hanya untuk boss tanpa resep
+khusus), **55** oracle boss khusus, `ai_match_integration_checks.gd` benar-benar
+berjalan di `run_all.gd`, **0** TODO/stub di sembilan modul `ai_*.gd` maupun
+`boss_ai.gd`, dan spot-check paritas semuanya bersih (basic attack + cleave 8k,
+sourceless ability 8u, flux DOT/clone Morgath, Ice Vortex 9ag, attack lock 9ah,
+school proyektil 9w). `validate_project.py` **PASS 13546 static checks** pada
+`43e9637` sebelum slice ini.
+
+Koreksi in-place (konvensi repo: klaim usang dikoreksi dengan penanda, bukan
+dihapus diam-diam):
+
+- `AI_CONTRACT.md` — "Status paket" (dulu: "Belum port AIPlayer lengkap …
+  scene masih memakai defender lama"), bullet reserve (dulu: "item dan
+  pemilihan prioritas kandidat masih pending"), penutup roster (dulu:
+  "AIPlayer penuh … tetap belum selesai"), lengan upgrade (dulu: "Policy
+  scheduler dan wiring scene belum aktif"), shield scene (dulu: "Scene belum
+  memanggil AI shield otomatis dan belum memiliki tombol purchase shield" —
+  padahal `RegenShieldButton`/`CastleShieldButton` ada di HUD dan lengan
+  `regen_shield`/`castle_shield` ada di tabel prioritas), plus seksi 9ak baru.
+- `SHIELD_CONTRACT.md` — "Belum ada tombol beli shield atau AI otomatis di
+  scene" dan "kills descending masih pending" (keduanya sudah ada:
+  `_stable_kills_descending`).
+- `NEXUS_CONTRACT.md` — header "(WIP AIPlayer)" dan "loop AI otomatis belum
+  aktif" → selesai/aktif.
+- `UPGRADE_CONTRACT.md` — header "(WIP)" dan "urutan kandidat dan loop AI
+  scene belum aktif" → diterapkan/aktif.
+- `HERO_MIGRATION_PROGRESS.md` — banner pembaruan 9ak di bawah judul (bagian
+  historis tidak ditulis ulang), penanda koreksi di "Sisa dan blocker tepat",
+  dan pesan siap-salin diperbarui (versi lama adalah sumber premis usang yang
+  menular antar-sesi).
+- Dokumen ini — koreksi silang pada baris "efektif tinggal AIPlayer penuh dan
+  art final".
+
+Pin anti-drift baru di `validate_project.py` (blok 9ak): frase stale dilarang
+muncul lagi di kelima dokumen (dicocokkan pada teks ternormalisasi whitespace),
+penanda koreksi wajib ada, dan setiap klaim terkoreksi diikat ke anchor kode:
+`set_ai_enabled(true)` + `reset_ai(AI_MATCH_SEED)` di `prototype_session.gd`,
+`ai_controller.tick(` di `prototype_battle.gd`, delapan lengan prioritas di
+`ai_policy.gd`, `draft.reserve()` di `ai_items.gd`/`ai_shields.gd`,
+`_stable_kills_descending` di `ai_shields.gd`/`ai_upgrades.gd`,
+`AIMatchIntegrationChecks.new().run(_check)` di `run_all.gd`, dan tombol shield
+pemain di `PrototypeMatch.tscn`/`prototype_screen.gd`.
+
+Batas slice 9ak: hanya dokumen + `validate_project.py`. Tidak ada perubahan
+kode produksi, oracle, fixture, atau suite GDScript baru — fakta
+dokumen/wiring dipin di `validate_project.py` mengikuti preseden pin
+view-wiring 9aj, sehingga `run_all.gd` dan workflow CI tidak berubah (CI
+sudah menjalankan `validate_project.py`). `lighting.py`, sumber Python,
+balance, FX, UI, dan project settings tidak disentuh.
+
+
+## Gold/passive intro dari `_core` penuh (layer 9al)
+
+Item terbuka terakhir slice LevelIntroScreen. Sumber (`_render.py:3073-3094`)
+memanggil `_core.compute_starting_gold` / `compute_gold_per_second` /
+`format_gold_rate` supaya angka di kartu intro SAMA dengan gold yang benar-benar
+diberikan `Game.reset()` (docstring `_core.py:232-241`). Port intro dulu hanya
+mencerminkan fallback `except` (`starting_gold` mentah dari config, `PASSIVE
++3/s` datar), sementara ledger match (`prototype_battle.gd::
+_apply_opening_economy`) sudah menjalankan jalur penuh lewat
+`Economy.starting_gold`/`passive_rate` — jadi kartu intro menampilkan angka
+yang salah di setiap level >1 atau difficulty non-normal. Terukur pada fixture
+lama: L5 hard menampilkan "1000 GOLD" / "PASSIVE +3/s" padahal match memberi
+1050 / 3.15→"3.2"; L1 easy menampilkan 1000 padahal match memberi 1250.
+
+Perubahan produksi:
+
+- `match_economy.gd` += `format_gold_rate()` — port `f"{rate:.1f}".rstrip("0")
+  .rstrip(".")`. `"%.1f"` Godot dan format Python membulat ties-to-even atas
+  nilai biner yang sama; kasus tie 3.75 → "3.8" (L1 easy) terekam di fixture.
+- `level_intro_screen.gd`: `setup()` menerima `difficulty` (default `"normal"`,
+  padanan `GameSettings().difficulty` di sumber), menghitung `starting_gold`
+  dan `passive_rate` lewat Economy, dan `get_passive_text()` memformat lewat
+  `format_gold_rate`. Konstanta `GOLD_PER_SECOND` tetap dipertahankan (dipin
+  suite sebagai konstanta fallback sumber).
+- `prototype_battle.gd::_configure_level_intro()` meneruskan difficulty hidup,
+  sehingga kartu dan ledger pembukaan tidak bisa drift.
+
+Oracle `level_intro_screen_source_oracle.py` kini mengeksekusi blok gold
+`_core.py` apa adanya (konstanta + tiga fungsi; tanpa pygame, tanpa import
+game) dan merekam 60 difficulty rows DUA kali: dengan `_core` penuh (kolom
+`starting_gold`/`passive_text` = jalur produksi) lalu dengan `_core` stub
+GameSettings-only (kolom `*_fallback` = perilaku pre-9al, jalur `except`
+sumber). **59/60 baris berbeda** — hanya L1 normal yang kebetulan sama. Suite
+`level_intro_screen_checks.gd` meneruskan difficulty per baris, mereplay kolom
+penuh, dan memaku bukti divergensi (baris diverging > 0). `validate_project.py`
+memin wiring (`Economy.starting_gold/passive_rate/format_gold_rate` di kartu,
+`difficulty` di caller, `format_gold_rate` di Economy) dan bentuk fixture (60
+baris, kolom fallback lengkap, tepat 59 diverging, format teks passive).
+
+Batas slice 9al: hanya kartu intro + formatter Economy + satu caller +
+oracle/fixture/suite/pin/docs. Ledger match tidak berubah (sudah paritas sejak
+slice ekonomi), `GameSettings` tetap shim di oracle (difficulty hidup datang
+dari world, bukan save settings), `lighting.py`, sumber Python, balance, FX,
+UI lain, dan project settings tidak disentuh.
+
+## Lifecycle stat buff-mandiri boss (layer 9am)
+
+Audit `_tick_smart_clocks` terhadap resep sumber menemukan dua efek expiry
+timer buff yang menyimpang dari `bosses/base_boss.py`:
+
+- **Chemical Rage (alchemist).** Sumber (`:1257-1260`) meng-expire buff dengan
+  `rage_active = False` SAJA. Cast (`_cast_e_chemical_rage`, `:1341`) menulis
+  `self.damage = int(self.damage * 1.5)` terhadap damage SAAT INI, jadi boost
+  1.5x persisten setelah expiry dan COMPOUNDING tiap recast (165 → 247 → 370
+  di hard). Port pre-9am mereset `boss.damage = _source_damage(boss)` saat
+  expiry — penemuan native yang menghapus compounding sumber.
+- **Shukuchi (xirthalis).** Sumber `_xirthalis_q` (`:2248-2261`) menulis
+  `self.speed = base_speed * 1.8` dengan `base_speed = stats.get("speed",
+  1.15)` — speed KATALOG MENTAH, karena `_get_boss_stats` hanya men-scale key
+  *damage*. Expiry (`:2211-2216`) memulihkan katalog mentah itu, jadi scaling
+  speed difficulty/enrage HILANG permanen setelah satu siklus Q (perilaku
+  sumber direplikasi apa adanya). Port pre-9am men-set flag tanpa write speed
+  sama sekali dan expire tanpa memulihkan apa pun.
+
+Paritas terkonfirmasi (tidak disentuh): expiry dragon form (reset damage via
+stats ↔ `_source_damage`), dragon blood, corrosive, defense, arcane buff
+(reset `base_damage` dua sisi), shield, xirthalis timelapse mark.
+
+Perubahan produksi:
+
+- `boss_state.gd` += `catalog_speed` — snapshot `float(stats.get("speed",
+  1.15))` di `setup()`, kebal `apply_scaling`/enrage (padanan persis
+  `_get_boss_stats()["speed"]` sumber yang tidak pernah di-scale).
+- `boss_ai.gd::_tick_smart_clocks`: expiry rage kini HANYA clear flag; expiry
+  shukuchi menulis `boss.speed_px_per_tick = boss.catalog_speed`.
+- `boss_ai.gd::_xirthalis` arm Q: += `boss.speed_px_per_tick =
+  boss.catalog_speed * 1.8`.
+
+Oracle `boss_buff_expiry_source_oracle.py` memin bentuk AST (write-set kedua
+blok expiry + segmen persis kedua write cast) dan mengeksekusi method sumber
+ASLI (`_smart_ai_alchemist`, `_smart_ai_xirthalis`, `_cast_e_chemical_rage`,
+`_xirthalis_q`, `_get_boss_stats`) di stub dengan katalog `boss_data` riil:
+5 baris (cast/expiry/recast per boss), 4 divergent, tiap baris merekam kolom
+`expected` (sumber) dan `native_old` (port pre-9am) dengan input masing-masing.
+Suite `boss_buff_expiry_checks.gd` mereplay kolom `expected` lewat produksi
+hidup (`world._spawn_boss` + `BossAI._tick_smart_clocks` + arm resep), memaku
+restore katalog mentah (bukan `base_speed`), dan memaku visibilitas divergensi.
+`validate_project.py` memin wiring (`catalog_speed` di state, kedua write
+speed di AI, tepat satu `_source_damage` reset tersisa = dragon form) dan
+bentuk fixture.
+
+Batas slice 9am: hanya dua lifecycle buff di atas + oracle/fixture/suite/pin/
+docs. Resep cast alchemist/xirthalis sudah paritas sejak 8u (tidak diubah
+selain write speed Q), `lighting.py`, sumber Python, balance, FX, dan UI tidak
+disentuh.
+
+## Write damage buff dari stats ter-scale (layer 9an)
+
+Audit lanjutan lifecycle buff boss (di luar sampel 8u) menemukan KELAS
+divergensi kedua: empat pasangan buff menulis damage dari snapshot
+`base_damage` (sudah di-bake difficulty, int-truncated) padahal sumber
+membaca `_get_boss_stats()["damage"]` — katalog MENTAH × skill_down ×
+dmg_scaling_mult × enrage, `int(round(v * mult))` — dibulatkan SEKALI:
+
+- nyxarath Necromastery (W): cast `int(stats.damage * 1.4)`, expiry reset
+  `stats.get("damage", 130)`.
+- thalgryn Morph (E): `× 1.35`, fallback 92.
+- syrentha Mirror Image (E): `× 1.4`, fallback 98.
+- kunkka Rum (E, Ghost Ship): `× 1.3`, fallback 125.
+
+Contoh hard + enrage nyxarath: sumber cast int(round(175×1.1×1.25)×1.4) = 337;
+port pre-9an int(int(175×1.1)×1.4) = 268. Expiry dengan skill-down 0.3 di
+hard: sumber 135; pre-9an 192 (baked, tanpa multiplier runtime).
+
+Kelas KEBALIKAN dipin apa adanya: xerathis Arcane memakai ATRIBUT
+`self.base_damage` sumber (cast `int(self.base_damage * 1.3)` :3583, expiry
+`self.damage = self.base_damage` :3513) dan `base_damage` sumber di-bake
+persis seperti native (init :388-389, apply_scaling :515-525) → native
+:267/:3420 paritas verbatim, TIDAK disentuh; oracle 9an memaku kedua kelas
+agar tidak pernah tertukar.
+
+Perubahan produksi:
+
+- `boss_state.gd` += `catalog_damage` — snapshot damage katalog mentah di
+  `setup()` sebelum `apply_scaling` membakar `base_damage` (padanan
+  `catalog_speed` 9am).
+- `boss_ai.gd::_source_damage` didefinisikan ulang = `_skill_damage(boss,
+  boss.catalog_damage)` — analog tepat bacaan stats sumber (single-round,
+  multiplier lengkap). Dragon form expiry (:241) dan empat cast lama (:414,
+  :3039, :3051, :3347) otomatis naik ke bentuk exact; pada multiplier 1.0
+  nilainya identik sehingga semua fixture lama tetap hijau.
+- Empat expiry (nyxarath/thalgryn/syrentha/kunkka) kini
+  `boss.damage = _source_damage(boss)`; empat cast kini
+  `int(float(_source_damage(boss)) * M)`.
+
+Oracle `boss_buff_scaling_source_oracle.py`: pin AST (write-set + segmen
+persis keempat expiry/cast, pasangan verbatim xerathis, segmen
+`int(round(v * mult))`, dua write bake `base_damage`) dan 8 baris numerik
+dari exec method sumber ASLI di stub dengan katalog riil (cast = hard+enrage,
+expiry = hard+skill-down 0.3; SEMUA divergen, kolom `expected`/`native_old`).
+Suite `boss_buff_scaling_checks.gd` mereplay kolom expected lewat produksi
+hidup (`_spawn_boss` + spawn goblin/hero + arm resep per boss), memaku
+`catalog_damage` mentah dan visibilitas divergensi. `validate_project.py`:
+pin 9am `_source_damage` expiry 1 → 5, cast `_source_damage` == 8, jalur
+verbatim base_damage tepat 1+1 (xerathis saja), wiring `catalog_damage`.
+
+Batas slice 9an: hanya write damage buff empat boss + definisi `_source_damage`
++ oracle/fixture/suite/pin/docs. Heal/lock/AOE cast sudah paritas (fixture
+boss_ability hijau sejak 8u), xerathis verbatim, presence/shell flag-only,
+flux/clones/x_mark memakai `_skill_damage`/damage hidup (paritas), `lighting.py`,
+sumber Python, balance, FX, UI tidak disentuh.
+
+## Tabel situs screen-shake boss + shake enrage (layer 9ao)
+
+Sumber menyalakan `_shake_screen(N)` dari **128 situs di 113 method**
+`bosses/base_boss.py` (presentasi-only: helper merute ke
+`game_instance.effects.shake_screen` dalam try/except). Fisika ScreenShake
+sudah diport penuh (`scripts/ui/screen_shake.gd` + oracle/suite sendiri) dan
+shake MATI boss sudah dirutekan (`_queue_boss_death_presentation`). Yang
+bolong: shake kemampuan — `boss_ai.gd` tidak memanggil shake sama sekali.
+
+Situs-situs cast tersebar di 112 method dengan pola posisi heterogen (64
+setelah blok komentar, 12 setelah `pass` FX, sisanya menempel heal/guard
+whiff/cabang enrage), jadi wiring 128 situs sekaligus tidak aman; slice ini
+membuka jalur bertahap:
+
+- Oracle `boss_shake_sites_source_oracle.py` merekam TABEL OTORITATIF semua
+  128 situs (method, line, intensity, kelas, status wired) + histogram
+  intensitas exact + pin wiring native. Fixture ini menjadi acuan sub-slice
+  9ao-2+ (wiring cast per keluarga boss).
+- Situs pertama yang di-wire: pasangan enrage one-shot di `Boss.update`
+  (`_shake_screen(25)` true class `:624`, `_shake_screen(15)` mini `:639`).
+  `boss_state.gd` += `enrage_fx_shake` (payload one-shot, diset di transisi
+  enrage/frenzy yang sudah ada), `prototype_battle.gd` +=
+  `_present_boss_enrage_shake()` yang mengonsumsi payload lewat gate 8-tick
+  `boss_screen_shake_*` + `effects.shake_screen` — persis jalur shake mati —
+  lalu mengosongkannya (konsumsi di `_step_active_boss` setelah
+  `advance_combat_clock`).
+- Suite `boss_shake_sites_checks.gd`: replay transisi enrage hidup (alchemist
+  true → 25, morgath mini → 15) sampai intensity ScreenShake di
+  EffectManager, memaku one-shot clear, gate 8-tick, bentuk tabel (128/113/
+  126/112 + histogram) dan bahwa tepat dua situs ber-status wired.
+
+Sisa roadmap 9ao: 126 situs cast / 112 method (tabel di fixture) — wiring
+bertahap per keluarga boss; tiap sub-slice memindahkan baris fixture dari
+`wired: false` ke `true` dan menaikkan pin hitungan.
+
+Batas slice 9ao: hanya payload enrage + tabel/oracle/fixture/suite/pin/docs.
+`screen_shake.gd`, EffectManager, shake mati, `lighting.py`, sumber Python,
+balance, dan UI tidak disentuh. Hero tetap prosedural (keputusan pengguna).
+
+## Wiring 30 situs shake cast keluarga teraudit (layer 9ao-2)
+
+Sub-slice pertama roadmap 9ao: SEMUA 30 situs `_shake_screen` dari enam
+keluarga boss yang sudah diaudit 9am/9an kini dirutekan lewat helper baru
+`BossAI._shake(world, intensity)` (presentasi-only, kembaran helper sumber
+`Boss._shake_screen:5947`):
+
+- alchemist: Q acid 8, W concoction 15, E rage 12 (setelah heal, urutan
+  sumber), R greed 25.
+- xirthalis: Q shukuchi 6, W swarm 12, E geminate 8 (guard whiff) / 14 (hit),
+  R timelapse 20.
+- nyxarath: Q shadowraze 12 (whiff `>300`) / 12 (guard dist-0 — cabang baru,
+  sumber `:4805`) / 18 (hit), W necromastery 16, E presence 14, R requiem 30
+  (sebelum heal 13%, urutan sumber).
+- thalgryn: Q waveform 12 (target null) / 12 (dist-0) / 18 (surge hit) —
+  cabang native direstruktur agar ketiga jalur sumber terlihat, W strike 15,
+  E morph 10, R replicate 22 (sebelum heal).
+- syrentha: Q riptide 10/10/12 (guard guard hit), W song 14, E mirror 10,
+  R siren 22 (sebelum heal).
+- kunkka: W x-marks 8, E ghost ship 18 (setelah heal, urutan sumber),
+  R torrent 28 (sebelum heal).
+
+Shake tidak menyentuh state gameplay (ScreenShake max-accumulate + decay,
+sudah diport dengan oracle sendiri), jadi penempatan mengikuti urutan statement
+sumber tanpa efek simulasi. Pin: oracle membandingkan MULTISET intensitas
+native (regex `_shake(world, N)`) dengan multiset 30 baris fixture ber-`wired`
+— persis sama (7×12, 4×10, 3×8, 3×18, 3×14, 2×22, 2×15, 6/30/28/25/20/16);
+validate memin helper + hitungan 30. Suite menambah dua probe replay hidup
+(rage cast → intensity 12.0; geminate whiff → 8.0) dan pin tabel bergeser ke
+32 wired / 96 sisa.
+
+Sisa roadmap 9ao: 96 situs cast / 89 method (fixture = tabel otoritatif),
+termasuk keluarga vhorethzir/vaerith/vhyssarion/razak/xerathis/gravewake dan
+puluhan boss lain — tiap sub-slice menambah method ke `FAMILY_METHODS`,
+mengangkat pin multiset, dan memindahkan baris `wired:false→true`.
+
+Batas slice 9ao-2: hanya 30 insert `_shake` + satu guard dist-0 baru (nyxarath
+Q, presentasi-only; jalur gameplay identik karena `normalized()` nol tidak
+menghasilkan hit) + restruktur cabang thalgryn Q (identik secara gameplay) +
+oracle/fixture/suite/pin/docs. `lighting.py`, sumber Python, balance, UI tidak
+disentuh. Hero tetap prosedural (keputusan pengguna).
+
+## Wiring 36 situs shake cast sembilan keluarga tanpa guard (layer 9ao-3)
+
+Sub-slice kedua roadmap 9ao: SEMUA 36 situs `_shake_screen` dari sembilan
+keluarga yang shake-nya berada di ekor/tengah helper cast TANPA cabang guard
+(ast: 0 early-return, shake selalu dieksekusi) kini dirutekan lewat
+`BossAI._shake(world, intensity)` di akhir tiap cabang resep native:
+
+- razak: Q 10, W 14, E 12, R 20.
+- khalros: Q 10, W 12 (setelah heal 8%), E 14, R 20.
+- varkul: Q 10, W 14, E 10 (setelah heal 12%), R 20.
+- xerathis: Q 12, W 14, E 10 (cabang arcane buff, setelah heal 10%), R 24.
+- gorath: Q 12 (cabang self-enrage, setelah heal 8%), W 15, E 12, R 22 —
+  helper sumber `_gorath_r` dipanggil DUA gerbang smart-AI (target low-HP dan
+  self low-HP) dan arm native meng-inline keduanya, jadi shake 22 terpasang di
+  akhir KEDUA cabang R (2 situs native untuk 1 baris sumber).
+- nyzrak: Q 12, W 14, E 16, R 22 (setelah heal 15%).
+- zharok (`_cast_zharok_*`): Q 10, W 5 (cabang kosong selain set-skill),
+  E 15, R 20.
+- pyrenth (`_cast_pyrenth_*`): Q 12, W 10 (setelah heal 8%), E 18, R 25.
+- vokrahn (`_cast_vokrahn_*`): Q 12, W 18, E 15, R 20.
+
+Penempatan: shake di level cabang (di luar pembungkus `if target != null`),
+setara sumber karena helper cast tidak punya early-return — jalur whiff tetap
+shake. Pin: tiap baris fixture kini membawa `native_occurrences` (jumlah call
+site helper di sumber; `_gorath_r` = 2, lainnya 1) dan multiset oracle/suite
+mengekspansi baris wired dengan faktor itu — 66 baris wired → 67 situs native;
+validate memin hitungan 67. Suite menambah dua probe replay hidup (gorath
+cabang R low-HP → intensity 22.0 dengan q/e timer diblok; xerathis arcane buff
+→ 10.0) dan pin tabel bergeser ke 68 wired / 60 sisa.
+
+Sisa roadmap 9ao: 60 situs cast / 53 method (fixture = tabel otoritatif),
+didominasi keluarga ber-guard (vhorethzir, vaerith, gravewake, vhyssarion,
+malzareth, akashari, vorenmarr) plus cast 8u (abaddon, ancient_apparition,
+dragon, anti-mage, axe) dan tide_bringer Q.
+
+Batas slice 9ao-3: hanya 37 insert `_shake` (36 baris + duplikat gorath R) +
+oracle/fixture/suite/pin/docs — tanpa guard baru, tanpa restruktur cabang.
+`lighting.py`, sumber Python, balance, UI tidak disentuh. Hero tetap
+prosedural (keputusan pengguna).
+
+## Wiring 60 situs shake cast terakhir — roadmap 9ao TUNTAS (layer 9ao-4)
+
+Sub-slice penutup roadmap 9ao: SEMUA 60 situs `_shake_screen` dari 53 method
+sisanya kini dirutekan lewat `BossAI._shake`, sehingga seluruh tabel 128 situs
+(2 enrage + 126 cast) ter-wire — 127 call site native (`_gorath_r` dua
+gerbang):
+
+- Enam keluarga 8u (helper cast tanpa guard, shake di ekor cabang): abaddon
+  Q 10 / W 12 (setelah heal perisai) / E 8 / R 20; ancient_apparition Q 10 /
+  E 15; ignis_drachorn W 15 / E 10 (setelah heal 20%) / R 28 (setelah heal
+  25%); gornak Q 10 / W 8 / E 12 / R 20; morgath Q 10 / W 8 / E 10 (setelah
+  heal 8%) / R 15 (setelah heal 15%); drakar Q 12 (cabang self-enrage,
+  setelah heal 10%) / W 15 / E 18 / R 25.
+- Line-AOE bersyarat (sumber early-return TANPA shake saat target hilang atau
+  dist 0; shake hanya di jalur tembak): cabang native direstruktur ke bentuk
+  early-return sumber (ekuivalen gameplay — `normalized()` nol tidak
+  menghasilkan hit) — ancient_apparition W chilling 8 / R cold feet 25,
+  ignis_drachorn Q dragon breath 12, kunkka Q tide bringer 15 (cabang native
+  sudah early-return, cukup append).
+- Tujuh keluarga guard: malzareth Q 14 / W 12 / E 10 / R 22; akashari Q 14 /
+  W 12 / E 16 / R 25; vorenmarr Q 12 / W 8 / E 18 / R 25; vhorethzir Q 10
+  (whiff >300) / 14 (hit) + W 12 (whiff >320) / 16 (hit) + E 14 + R 30;
+  vaerith Q 8 (whiff >280) / 10 + E 10 (whiff >220) / 14 (setelah lifesteal)
+  + W 12 + R 24; vhyssarion W 8 (whiff >300) / 12 + Q 14 + E 16 + R 26;
+  gravewake Q 12 (guard target hilang) / 12 (guard dist-0) / 15 (hit) + W 14
+  + E 10 + R 25. Guard whiff memakai inversi pembungkus `closest` (pola
+  xirthalis E 9ao-2); vhorethzir W sekaligus memulihkan cek `> 320` sumber
+  yang dulu hilang di port (paritas sumber; cabang `nearby >= 2` membuat
+  jalur itu praktis tak tercapai).
+
+Pin: oracle/fixture kini 126 baris wired / 0 sisa, multiset 127 == native;
+validate memin hitungan 127; suite menaikkan pin shape ke 126/0, wired_rows
+128, dan menambah dua probe replay hidup (gravewake Q whiff target-hilang →
+intensity 12.0; vhyssarion W whiff closest-hilang → 8.0).
+
+Roadmap shake 9ao SELESAI: 128/128 situs (2 enrage + 126 cast). Tidak ada
+baris `wired:false` tersisa di fixture.
+
+Batas slice 9ao-4: 60 insert `_shake` + 4 restruktur early-return line-AOE +
+5 inversi guard closest (semua ekuivalen gameplay kecuali pemulihan guard
+>320 vhorethzir W menuju paritas sumber) + oracle/fixture/suite/pin/docs.
+`lighting.py`, sumber Python, balance, UI tidak disentuh. Hero tetap
+prosedural (keputusan pengguna).
+
+## Baseline balance terukur dipaku CI (layer 9b, rebalance v1)
+
+Permintaan pengguna membuka kunci rebalance dijawab dengan lapisan dasar yang
+mengukur, bukan mengubah angka: katalog produksi diaudit dengan alat proyek
+sendiri (`tools/balance_audit.py --ingame`, rumus identik dengan pass
+`hero_balance.py`) dan hasilnya SEHAT — violations [] (corr(HP,DPS) 0.535,
+identity spread 1.64x, school ratio 1.000/1.001, boss pref 1.49, price spread
+1.89x, pool power delta 1.000/1.000, starter gap 5.67x, balance pass 216
+hero). Karena tidak ada pelanggaran terukur, TIDAK ada angka hero/boss yang
+diubah; yang dibangun adalah infrastruktur agar setiap rebalance berikutnya
+harus menggerakkan metrik secara sengaja:
+
+- Oracle baru `tests/balance_baseline_source_oracle.py`: menjalankan audit
+  headless (stub pygame MagicMock via PYTHONPATH + SDL dummy — tanpa engine,
+  tanpa display, tanpa pygame terpasang), memaku saklar hero_balance
+  (REBUDGET on, SCHOOL_MOD off, CATCHUP on) dan snapshot metrik persis ke
+  fixture `tests/fixtures/balance_baseline_ingame.json`.
+- Suite native baru `tests/balance_baseline_checks.gd` (terdaftar di
+  `run_all.gd`): violations kosong, 222/216 hero, band target alat, pin
+  snapshot (corr/spread/boss-pref/price/starter/multiplier pass/level curve)
+  dan enam sel identity grid.
+- Baris CI baru di `godot-rebuild.yml` + pin validate (preload/run suite,
+  fixture ada, fixture tidak drift dari oracle, kontrak ada).
+- `BALANCE_CONTRACT.md` baru: doktrin 4 aturan (audit mengukur; sumber
+  read-only; baseline dipaku CI; rebalance = pergerakan metrik disengaja
+  dengan angka sebelum/sesudah) + tabel baseline + catatan Troll lab tetap
+  paritas sumber yang sengaja.
+
+Temuan audit sampingan (tidak diubah — paritas sudah benar): regen minion
+produksi SUDAH tick di native (`minion_battle.gd:175` dipakai bersama oleh
+prototype_battle lewat siege_battle, termasuk interaksi anti-heal dan skala
+nexus `scaled_minion_definition` — cermin `_entity.py:5534` + `:5422`).
+
+Batas slice 9b: oracle/fixture/suite/registrasi/kontrak/docs saja — NOL
+perubahan angka gameplay. `lighting.py`, sumber Python, art tidak disentuh.
+Rebalance angka menunggu arahan desain eksplisit (kandidat terukur: starter
+gap 5.67x, sel PHYSICAL|TANK 1.38, regen Troll lab).
+
+## Lapisan override rebalance native, tabel kosong by decision (layer 9c)
+
+Menutup domain rebalance yang dibuka pengguna: sesudah baseline terukur (9b)
+menunjukkan NOL pelanggaran target yang ditegakkan audit, slice ini membangun
+MEKANISME perubahan angka tanpa mengubah satu angka pun:
+
+- Modul baru `scripts/data/balance_overrides.gd`: satu-satunya permukaan
+  native untuk deviasi rebalance yang disengaja. `HERO_OVERRIDES` kosong by
+  decision (deviasi band prosa 0.84/1.38 adalah trade yang diterima pass
+  balance sumber 2026-08-30; tanpa arahan playtest, mengubahnya = opini).
+  Kontrak entri: `damage_mult`/`hp_mult` default 1.0 + `reason` wajib;
+  reader murni menolak non-numerik/<=0/non-finite ke 1.0.
+- Titik aplikasi hanya produksi: `prototype_battle._spawn_production_hero`
+  merutekan keempat spawn hero produksi (Kaizen biru/merah awal, purchase
+  biru, purchase merah/AI); multiplier diterapkan ke base_hp/base_damage
+  sebelum `apply_level_stats()` ulang. Lab tempur tetap memanggil
+  `spawn_hero` langsung — paritas sumber lab tidak bergeser.
+- Suite baru `balance_override_layer_checks.gd` (run_all.gd): tabel kosong
+  dipaku, entries_without_reason() kosong, default 1.0/1.0 untuk id nyata &
+  tak dikenal, tujuh kasus reader sintetis (termasuk NAN/negatif/nol/string),
+  dan bukti no-op end-to-end: spawn terute stat-identik dengan spawn
+  langsung (.tres utuh, hp penuh).
+- Pin validate: preload suite, tabel kosong, preload BalanceOverrides di
+  prototype, dan tepat 5 kemunculan `_spawn_production_hero(` (definisi +
+  4 call site). BALANCE_CONTRACT.md mendapat seksi mekanisme 9c.
+
+Batas slice 9c: NOL perubahan angka gameplay (tabel kosong; wrapper no-op
+terbukti). Sumber Python, `.tres`, fixture 9b, `lighting.py`, art tidak
+disentuh. Entri rebalance pertama di masa depan wajib: reason + regenerate
+baseline + angka sebelum/sesudah di PETA.

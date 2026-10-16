@@ -2,11 +2,18 @@
 
 ## Status paket
 
-**Belum port AIPlayer lengkap. Jangan merge sebagai pengganti lawan sementara.**
-Target yang disepakati: AIPlayer lengkap beserta roster dan item dependensinya,
-bukan pembatasan diam-diam ke Kaizen. Scene pertandingan masih memakai defender
-lama dan pasangan Kaizen gratis. Tidak ada transaksi ekonomi otomatis baru di scene;
-adapter upgrade/shield red sudah tersedia untuk panggilan domain eksplisit; seluruh suite lama tetap dijalankan.
+**AIPlayer lengkap sudah diport dan aktif di scene pertandingan** — ditutup
+layer 6a–6f plus uji integrasi penuh `tests/ai_match_integration_checks.gd`
+(terdaftar dan dijalankan `run_all.gd`). Target yang disepakati tercapai:
+AIPlayer lengkap beserta roster (222 kit, 0 pending) dan item dependensinya,
+bukan pembatasan diam-diam ke Kaizen. Defender sementara sudah dibuang (layer
+6e); session menyalakan AI ber-seed sejak tick pertama (`prototype_session.gd`:
+`reset_ai(AI_MATCH_SEED)` + `set_ai_enabled(true)`), dan transaksi ekonomi
+otomatis berjalan di scene lewat `prototype_battle.gd` → `ai_controller.tick()`
+setiap tick match. Seluruh suite lama tetap dijalankan. (Koreksi layer 9ak:
+klaim lama "belum port AIPlayer lengkap / scene masih memakai defender lama /
+tidak ada transaksi ekonomi otomatis" adalah status pertengahan migrasi yang
+sudah usang.)
 
 Sumber read-only: `_entity.py::AIPlayer`, konstanta `_core.py`,
 `Game.update` (pemanggilan AI setelah loop entity), `levels/level_data.py`,
@@ -56,8 +63,12 @@ asli dan konfigurasi level asli. Harga unlock menu tidak dipakai untuk summon.
   available kosong dan pembelian sukses membersihkan target+harga reserve.
 - Reserve = `max(0, target_cost)` bila target ada, selain itu nol. Nonhero boleh
   belanja tepat pada `gold == cost + reserve`, tidak pada satu gold di bawahnya.
-  Reserve sudah diterapkan pada build tower, upgrade tower/nexus/hero dan kedua
-  pembelian shield nyata per kandidat; item dan pemilihan prioritas kandidat masih pending.
+  Reserve sudah diterapkan pada build tower, upgrade tower/nexus/hero, kedua
+  pembelian shield nyata per kandidat, dan pembelian item (`ai_items.gd`
+  meneruskan `draft.reserve()` ke `_buy_item_for`). Pemilihan prioritas
+  kandidat juga sudah diterapkan: kills descending stabil untuk upgrade
+  tower/hero dan regen shield, (kills, level) descending stabil untuk item —
+  tidak ada yang pending (koreksi layer 9ak).
 - `try_buy` menerima roster tipe authoritative, snapshot gold, dan callback
   **sinkron/atomik** `(hero_type, cost, position) -> bool`. Callback wajib
   memvalidasi ulang wallet/capacity, spawn kit benar, debit, lalu tambah roster;
@@ -111,7 +122,8 @@ semua suite lama tetap. Target 222 tercapai (PR #292 sudah merge).
 Catatan batch dan pesan
 kelanjutan: [HERO_MIGRATION_PROGRESS.md](HERO_MIGRATION_PROGRESS.md).
 Item/Forge player-side sudah dipindahkan bertahap di layer 5f–5f-4; belum
-ada panel Forge terpisah untuk hero AI di sumber. AIPlayer penuh, rebalance dan
+ada panel Forge terpisah untuk hero AI di sumber. AIPlayer penuh sudah ditutup
+(layer 6a–6f + `ai_match_integration_checks.gd`; koreksi 9ak); rebalance dan
 art final tetap belum selesai.
 
 ## Build tower lawan: transaksi domain nyata dan scheduler scene QA
@@ -173,7 +185,10 @@ Fungsi internal `_upgrade_*_for` menerima tim dan reserve; wrapper UI lama tetap
   indeks awal. Kandidat yang tidak terjangkau dilewati, pemindaian lanjut ke
   kandidat berikutnya, dan berhenti pada sukses pertama — sama seperti sumber.
   Tower kandidat = tower red hidup Lv<6; hero kandidat = hero red Lv<15
-  termasuk mati/respawning. Policy scheduler dan wiring scene belum aktif.
+  termasuk mati/respawning. Policy scheduler dan wiring scene **aktif** (layer
+  6d; koreksi 9ak): `ai_policy.gd` memanggil lengan `upgrade_tower`/
+  `upgrade_hero` dari tabel prioritas, dan `prototype_battle.gd` men-tick
+  `ai_controller` setiap tick match.
   Tidak menambahkan sorting berdasarkan angka kills palsu atau team kill total.
 - **Atribusi kills sumber:** `Hero.kills` hanya bertambah lewat
   `Game._process_hero_kill` — pukulan terakhir dari hero musuh nyata (bukan
@@ -191,8 +206,12 @@ semua tower red hidup yang eligible (termasuk Lv6), diurutkan kills descending
 stabil dan berhenti pada pembelian pertama yang berhasil. Keduanya 850 G + reserve
 untuk eligibility saldo, debit hanya 850. Tidak ada roll RNG atau increment
 counter upgrade. Flag per instance, regen/damage, upgrade dan refund mengikuti
-metode sumber; lihat [SHIELD_CONTRACT.md](SHIELD_CONTRACT.md). Scene belum
-memanggil AI shield otomatis dan belum memiliki tombol purchase shield.
+metode sumber; lihat [SHIELD_CONTRACT.md](SHIELD_CONTRACT.md). Scene memanggil
+AI shield otomatis lewat lengan `regen_shield`/`castle_shield` di tabel
+prioritas `ai_policy.gd` (tanpa roll RNG, sesuai sumber), dan tombol purchase
+shield pemain (`RegenShieldButton`/`CastleShieldButton`) tersedia di HUD
+`PrototypeMatch.tscn` → `request_regen_shield`/`request_castle_shield`
+(koreksi 9ak — klaim lama "belum ada" adalah status pertengahan migrasi).
 
 ## Oracle dan tes
 
@@ -1353,3 +1372,30 @@ Perbaikan produksi: `_generic_outline` menyebar seluruh kode lewat `spread = fin
 Oracle `hero_marker_source_oracle.py` mencerminkan algoritma marker (fingerprint, outline Kaizen/Thorne, spread basis-5) dan menulis golden fixture `hero_marker_source.json`: per hero `family`, `sides`, `x_hash`/`y_hash` dari vertex terkuantisasi 1e-4, `reach_milli`, plus `shape` (roster 222, distinct_outlines 222, collisions 0, families {generic 220, kaizen 1, thorne 1}, sides [7,8,9,10,12], max_reach_milli 1154, digest). Kuantisasi 1e-4 dipilih supaya perbedaan bit terakhir `cos`/`sin` antara oracle Python dan Godot tidak jadi alarm palsu, sementara perubahan bentuk nyata tetap menggeser hash. Suite `hero_marker_checks.gd` kini merekomputasi seluruh 222 entri dari `silhouette()` produksi (jumlah sisi, dua hash, reach, 222/222 unik, batas `MAX_REACH`) di samping kontrak lama (placeholder 4-6 sisi, sampel enam hero, fill opaque/stabil, Kaizen lebih ramping dari Thorne). `validate_project.py` memin preload + run suite, keberadaan fixture, anti-drift oracle, dan wiring view (`HeroMarker.silhouette(` ada, `HeroMarker.body(` tidak ada di `prototype_view.gd`); oraclenya dijalankan CI. Baris status `PETA_SISA_MIGRASI.md` yang masih menyebut `hero_marker.gd` placeholder sudah dikoreksi.
 
 Batas slice 9aj: hanya `hero_marker.gd::_generic_outline`, suite marker, registrasi, dan docs. `body()`/`fill()`/`silhouette()` Kaizen-Thorne, view, `hero_portrait.gd`, lengan boss, store debuff, hero, balance, FX, UI, project settings, sumber Python, dan `lighting.py` tidak diubah.
+
+Lapisan **9ak** (doc-only) merekonsiliasi klaim status AI yang stale. Audit
+"AIPlayer penuh" menutup premis bahwa area ini masih terbuka: 79/79 resep
+`_smart_ai_*` sumber punya arm dispatch di `boss_ai.gd` (set-diff kosong;
+`_generic` hanya untuk boss tanpa resep khusus), 55 oracle boss mengunci
+pengiriman damage/debuff/targeting, `ai_match_integration_checks.gd` berjalan
+di `run_all.gd`, dan tidak ada TODO/stub di sembilan modul `ai_*.gd` maupun
+`boss_ai.gd`. Fakta kode yang memverifikasi tiap koreksi: `prototype_session.gd`
+menyalakan AI ber-seed sejak session dibuat, `prototype_battle.gd` men-tick
+`ai_controller.tick(...)` setiap tick, tabel prioritas `ai_policy.gd` memuat
+delapan lengan sumber (build, buy_hero, upgrade_hero, buy_item, upgrade_tower,
+regen_shield, castle_shield, upgrade_nexus), `ai_items.gd`/`ai_shields.gd`/
+`ai_upgrades.gd` membaca `draft.reserve()` live dan memakai urutan kills
+descending stabil, serta HUD `PrototypeMatch.tscn` punya tombol shield pemain.
+Yang dikoreksi in-place: baris status usang di dokumen ini (Status paket,
+bullet reserve, penutup roster, scheduler upgrade, shield scene),
+`SHIELD_CONTRACT.md`, `NEXUS_CONTRACT.md`, `UPGRADE_CONTRACT.md`,
+`HERO_MIGRATION_PROGRESS.md` (banner pembaruan + pesan siap-salin), dan baris
+"efektif tinggal AIPlayer penuh" di `PETA_SISA_MIGRASI.md`.
+`validate_project.py` mendapat pin anti-drift 9ak: frase stale dilarang muncul
+lagi dan setiap klaim terkoreksi diikat ke anchor kode di atas.
+
+Batas slice 9ak: hanya dokumen + `validate_project.py`. Tidak ada perubahan
+kode produksi, oracle, fixture, atau suite GDScript baru (fakta dokumen/wiring
+dipin di `validate_project.py`, mengikuti preseden pin view-wiring 9aj);
+`lighting.py`, sumber Python, balance, FX, UI, dan project settings tidak
+disentuh.

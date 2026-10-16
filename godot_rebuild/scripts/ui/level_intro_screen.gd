@@ -12,11 +12,18 @@ extends RefCounted
 ##
 ## Left unported: every `draw()` / `_draw_*` body (the vignette, divider,
 ## silhouette, aura rays, eye glow, arrows, shadows) and the `pygame.time`
-## pulses that drive them. The starting gold and passive income come from
-## `_core.compute_starting_gold` / `compute_gold_per_second`, which are not
-## part of this slice, so the port uses the source's own `except` fallbacks.
+## pulses that drive them. Since layer 9al the starting gold and passive
+## income run the full `_core` path through the shared `match_economy.gd`
+## port (`compute_starting_gold` / `compute_gold_per_second` /
+## `format_gold_rate`), so the card shows exactly what
+## `_apply_opening_economy` grants; the source's `except` fallbacks live on
+## only as the fixture `*_fallback` columns the suite replays.
+
+const Economy = preload("res://scripts/match/match_economy.gd")
 
 const FADE_IN_DURATION := 30
+## Source `_render.py` fallback constant (`PASSIVE +{GOLD_PER_SECOND}/s`);
+## the live text comes from `Economy.format_gold_rate`, the suite pins this.
 const GOLD_PER_SECOND := 3
 const PROMPT_TEXT := "PRESS SPACE TO BEGIN"
 const TOUCH_PROMPT_TEXT := "TAP TO BEGIN"
@@ -77,6 +84,7 @@ var dmg_mult := 1.0
 var reward := FALLBACK_REWARD
 var map_theme := "forest"
 var starting_gold := FALLBACK_STARTING_GOLD
+var passive_rate := 3.0
 
 var boss_type := ""
 var boss_name := "Unknown"
@@ -89,7 +97,16 @@ var boss_class := "true"
 
 ## `level_config` is the level dictionary; `boss` is the entry the caller looked
 ## up in the boss table (an empty dictionary falls back to the source defaults).
-func setup(level_config: Dictionary, boss: Dictionary, width: int, height: int) -> void:
+## `difficulty` is the setting the source reads as `GameSettings().difficulty`;
+## the match caller passes its live difficulty so the card and the opening
+## ledger cannot drift apart (layer 9al).
+func setup(
+	level_config: Dictionary,
+	boss: Dictionary,
+	width: int,
+	height: int,
+	difficulty: String = "normal"
+) -> void:
 	screen_w = width
 	screen_h = height
 	level_num = int(level_config["level_number"])
@@ -99,7 +116,11 @@ func setup(level_config: Dictionary, boss: Dictionary, width: int, height: int) 
 	dmg_mult = float(level_config.get("enemy_damage_mult", 1.0))
 	reward = int(level_config.get("meta_gold_reward_win", FALLBACK_REWARD))
 	map_theme = String(level_config.get("map_theme", "forest"))
-	starting_gold = int(level_config.get("starting_gold", FALLBACK_STARTING_GOLD))
+	# Source `_render.py:3073-3094`: compute_starting_gold / compute_gold_per_second.
+	starting_gold = Economy.starting_gold(
+		int(level_config.get("starting_gold", FALLBACK_STARTING_GOLD)), level_num, difficulty
+	)
+	passive_rate = Economy.passive_rate(level_num, difficulty)
 
 	boss_type = String(level_config.get("true_boss", "abaddon"))
 	boss_name = String(boss.get("name", "Unknown"))
@@ -203,7 +224,7 @@ func get_starting_gold_text() -> String:
 
 
 func get_passive_text() -> String:
-	return "PASSIVE +%d/s" % GOLD_PER_SECOND
+	return "PASSIVE +%s/s" % Economy.format_gold_rate(passive_rate)
 
 
 func get_boss_tag() -> Dictionary:

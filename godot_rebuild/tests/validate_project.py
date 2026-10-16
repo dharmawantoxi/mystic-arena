@@ -135,7 +135,11 @@ from boss_debuff_tenacity_source_oracle import source_fixture as boss_debuff_ten
 from item_slow_resist_source_oracle import source_fixture as item_slow_resist_fixture
 from item_silence_store_source_oracle import source_fixture as item_silence_store_fixture
 from boss_ai_slow_source_oracle import source_fixture as boss_ai_slow_fixture
+from balance_baseline_source_oracle import balance_baseline as balance_baseline_fixture
 from boss_attack_lock_source_oracle import source_fixture as boss_attack_lock_fixture
+from boss_buff_expiry_source_oracle import source_fixture as boss_buff_expiry_fixture
+from boss_buff_scaling_source_oracle import source_fixture as boss_buff_scaling_fixture
+from boss_shake_sites_source_oracle import source_fixture as boss_shake_sites_fixture
 from debuff_payload_reach_source_oracle import source_fixture as debuff_payload_reach_fixture
 from hero_marker_source_oracle import source_fixture as hero_marker_fixture
 from miasma_tick_delivery_source_oracle import source_fixture as miasma_tick_delivery_fixture
@@ -297,6 +301,62 @@ if (ROOT / "tests/fixtures/boss_attack_lock_source.json").is_file():
     check(boss_attack_lock_fixture() == json.loads(
         (ROOT / "tests/fixtures/boss_attack_lock_source.json").read_text(encoding="utf-8")),
           "Boss attack lock fixture must not drift from the oracle")
+check('const BossBuffExpiryChecks = preload("res://tests/boss_buff_expiry_checks.gd")' in ai_tests,
+      "Boss buff expiry suite must be preloaded")
+check("BossBuffExpiryChecks.new().run(_check)" in ai_tests,
+      "Boss buff expiry suite must run")
+check((ROOT / "tests/fixtures/boss_buff_expiry_source.json").is_file(),
+      "Boss buff expiry fixture must exist")
+if (ROOT / "tests/fixtures/boss_buff_expiry_source.json").is_file():
+    check(boss_buff_expiry_fixture() == json.loads(
+        (ROOT / "tests/fixtures/boss_buff_expiry_source.json").read_text(encoding="utf-8")),
+          "Boss buff expiry fixture must not drift from the oracle")
+check('const BossBuffScalingChecks = preload("res://tests/boss_buff_scaling_checks.gd")' in ai_tests,
+      "Boss buff scaling suite must be preloaded")
+check("BossBuffScalingChecks.new().run(_check)" in ai_tests,
+      "Boss buff scaling suite must run")
+check((ROOT / "tests/fixtures/boss_buff_scaling_source.json").is_file(),
+      "Boss buff scaling fixture must exist")
+if (ROOT / "tests/fixtures/boss_buff_scaling_source.json").is_file():
+    check(boss_buff_scaling_fixture() == json.loads(
+        (ROOT / "tests/fixtures/boss_buff_scaling_source.json").read_text(encoding="utf-8")),
+          "Boss buff scaling fixture must not drift from the oracle")
+check('const BossShakeSitesChecks = preload("res://tests/boss_shake_sites_checks.gd")' in ai_tests,
+      "Boss shake site suite must be preloaded")
+check("BossShakeSitesChecks.new().run(_check)" in ai_tests,
+      "Boss shake site suite must run")
+check((ROOT / "tests/fixtures/boss_shake_sites_source.json").is_file(),
+      "Boss shake site fixture must exist")
+if (ROOT / "tests/fixtures/boss_shake_sites_source.json").is_file():
+    check(boss_shake_sites_fixture() == json.loads(
+        (ROOT / "tests/fixtures/boss_shake_sites_source.json").read_text(encoding="utf-8")),
+          "Boss shake site fixture must not drift from the oracle")
+check('const BalanceBaselineChecks = preload("res://tests/balance_baseline_checks.gd")' in ai_tests,
+      "Balance baseline suite must be preloaded")
+check("BalanceBaselineChecks.new().run(_check)" in ai_tests,
+      "Balance baseline suite must run")
+check((ROOT / "tests/fixtures/balance_baseline_ingame.json").is_file(),
+      "Balance baseline fixture must exist")
+if (ROOT / "tests/fixtures/balance_baseline_ingame.json").is_file():
+    check(balance_baseline_fixture() == json.loads(
+        (ROOT / "tests/fixtures/balance_baseline_ingame.json").read_text(encoding="utf-8")),
+          "Balance baseline fixture must not drift from the oracle")
+check((ROOT / "BALANCE_CONTRACT.md").is_file(),
+      "The balance contract must document the rebaseline doctrine")
+check('const BalanceOverrideLayerChecks = preload("res://tests/balance_override_layer_checks.gd")'
+      in ai_tests,
+      "Balance override layer suite must be preloaded")
+check("BalanceOverrideLayerChecks.new().run(_check)" in ai_tests,
+      "Balance override layer suite must run")
+_balance_overrides_text = (ROOT / "scripts/data/balance_overrides.gd").read_text(encoding="utf-8")
+check("const HERO_OVERRIDES: Dictionary = {}" in _balance_overrides_text,
+      "The production rebalance table must stay empty until a measured directive lands")
+_prototype_text = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+check('const BalanceOverrides = preload("res://scripts/data/balance_overrides.gd")'
+      in _prototype_text,
+      "Prototype battle must preload the rebalance surface")
+check(_prototype_text.count("_spawn_production_hero(") == 5,
+      "All four production hero spawns plus the wrapper must route the rebalance surface")
 check('const DebuffPayloadReachChecks = preload("res://tests/debuff_payload_reach_checks.gd")' in ai_tests,
       "Debuff payload reach suite must be preloaded")
 check("DebuffPayloadReachChecks.new().run(_check)" in ai_tests,
@@ -416,6 +476,8 @@ for key, entry in recruitment["levels"].items():
 check((ROOT / "tests/fixtures/ai_draft_source.json").is_file(), "AI draft needs source fixture")
 workflow = (ROOT.parent / ".github/workflows/godot-rebuild.yml").read_text(encoding="utf-8")
 check("python godot_rebuild/tests/ai_draft_source_oracle.py" in workflow, "CI must detect recruitment data drift")
+check("python godot_rebuild/tests/balance_baseline_source_oracle.py" in workflow,
+      "CI must pin the ingame balance baseline")
 
 check("AIUpgradeChecks.new().run(_check)" in ai_tests, "AI upgrade suite must remain alongside baseline suites")
 check((ROOT / "tests/fixtures/ai_upgrade_source.json").is_file(), "AI upgrades require source fixture")
@@ -2128,6 +2190,54 @@ check(not re.search(r"^\s*boss\.hp\s*=", boss_ai_text, re.M),
       "Boss AI hp increases must pass through the anti-heal setter")
 check(boss_ai_text.count("boss.set_hp_value(") == 6,
       "All source Boss AI healing writes must use the anti-heal setter")
+# Layer 9am: boss self-buff stat lifecycles (Chemical Rage persistence +
+# Shukuchi raw-catalog speed writes), pinned against the source oracle.
+check("var catalog_speed := 0.0" in boss_state,
+      "Boss state must snapshot the raw catalog speed for Shukuchi parity")
+check('catalog_speed = float(stats.get("speed", 1.15))' in boss_state,
+      "Catalog speed must come from the raw boss_data row")
+check("boss.speed_px_per_tick = boss.catalog_speed * 1.8" in boss_ai_text,
+      "Shukuchi cast must write the 1.8x raw catalog speed boost")
+check(boss_ai_text.count("boss.speed_px_per_tick = boss.catalog_speed\n") == 1,
+      "Shukuchi expiry must restore the raw catalog speed exactly once")
+check(boss_ai_text.count("boss.damage = _source_damage(boss)") == 5,
+      "Dragon form plus the four buff expiries must reset via the scaled source read")
+# Layer 9an: the four buff damage writes read the scaled catalog damage -
+# `_get_boss_stats()["damage"]` rounded ONCE - while the xerathis arcane pair
+# stays verbatim on the difficulty-baked base_damage attribute.
+check("var catalog_damage := 0" in boss_state,
+      "Boss state must snapshot the raw catalog damage for the scaled stats read")
+check("catalog_damage = damage" in boss_state,
+      "Catalog damage must be captured before difficulty scaling bakes base_damage")
+check("return _skill_damage(boss, boss.catalog_damage)" in boss_ai_text,
+      "_source_damage must be the single-round scaled catalog read")
+check(boss_ai_text.count("int(float(_source_damage(boss)) *") == 8,
+      "Every stats-read buff cast must compound off _source_damage")
+check(boss_ai_text.count("boss.damage = boss.base_damage") == 1
+      and boss_ai_text.count("int(float(boss.base_damage) *") == 1,
+      "Only the xerathis arcane pair may keep the verbatim base_damage path")
+# Layer 9ao: the one-shot enrage shake payload rides the death-shake gate.
+check("var enrage_fx_shake := 0" in boss_state,
+      "Boss state must carry the one-shot enrage shake payload")
+check(("maxi(18, int(float(attack_cooldown) * 0.75))\n\t\t\tenrage_fx_shake = 25" in boss_state
+       and "maxi(20, int(float(attack_cooldown) * 0.80))\n\t\t\tenrage_fx_shake = 15"
+       in boss_state),
+      "The enrage transitions must store the source 25/15 shake intensities")
+_proto_text = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+check("func _present_boss_enrage_shake(boss: BossState) -> void:" in _proto_text
+      and "if boss.enrage_fx_shake > 0:\n\t\t_present_boss_enrage_shake(boss)" in _proto_text,
+      "The boss step must consume the enrage shake payload")
+check("boss.enrage_fx_shake = 0" in _proto_text
+      and _proto_text.count("effects.shake_screen(shake)") == 2,
+      "The enrage shake must clear one-shot and route like the death shake")
+# Layer 9ao-2/9ao-3/9ao-4: ALL boss families wire the complete 126-site cast
+# shake table through the BossAI._shake helper (intensity multiset pinned by
+# the oracle; `_gorath_r` answers two smart-AI gates so the native file
+# carries 127 call sites for the 126 wired source rows).
+check("static func _shake(world, intensity: float) -> void:" in boss_ai_text,
+      "Boss AI must carry the presentation shake helper")
+check(len(re.findall(r"_shake\(world, \d+\)", boss_ai_text)) == 127,
+      "The boss families must wire exactly the 126 source cast shake sites")
 boss_ai_hit = boss_ai_text.split("static func _hit(", 1)[1].split(
     "\nstatic func _slow(", 1)[0]
 check("world._deliver_hit(-1, boss.team, target, raw_damage, school, boss.position)" in boss_ai_hit
@@ -2810,6 +2920,139 @@ check('const BossItemReflectCarapaceChecks = preload("res://tests/boss_item_refl
       in ai_tests
       and "BossItemReflectCarapaceChecks.new().run(_check)" in ai_tests,
       "9i production-path reflect replay is registered")
+
+# ── Layer 9ak: stale AI status claims reconciled (docs-only slice) ──
+# "AIPlayer penuh" was closed by layers 6a-6f plus ai_match_integration_checks.gd,
+# but five documents still carried mid-migration status lines ("belum port",
+# "masih pending", "belum aktif"). Those lines were corrected in place with
+# explicit markers; these pins keep the stale phrasing from creeping back and
+# bind every corrected claim to the code anchor that justifies it.
+
+
+def _flat(text):
+    return re.sub(r"\s+", " ", text)
+
+
+_ai_contract_doc = _flat((ROOT / "AI_CONTRACT.md").read_text(encoding="utf-8"))
+_shield_contract_doc = _flat((ROOT / "SHIELD_CONTRACT.md").read_text(encoding="utf-8"))
+_nexus_contract_doc = _flat((ROOT / "NEXUS_CONTRACT.md").read_text(encoding="utf-8"))
+_upgrade_contract_doc = _flat((ROOT / "UPGRADE_CONTRACT.md").read_text(encoding="utf-8"))
+_hero_progress_doc = _flat((ROOT / "HERO_MIGRATION_PROGRESS.md").read_text(encoding="utf-8"))
+_peta_doc = _flat((ROOT / "PETA_SISA_MIGRASI.md").read_text(encoding="utf-8"))
+
+for stale in (
+    "Belum port AIPlayer lengkap",
+    "Scene pertandingan masih memakai defender lama",
+    "masih pending",
+    "Policy scheduler dan wiring scene belum aktif",
+    "Scene belum memanggil AI shield otomatis",
+    "AIPlayer penuh, rebalance dan art final tetap belum selesai",
+):
+    check(stale not in _ai_contract_doc,
+          f"9ak AI_CONTRACT.md must not reclaim the stale status {stale!r}")
+check("merekonsiliasi klaim status AI yang stale" in _ai_contract_doc,
+      "9ak AI_CONTRACT.md must keep the reconciliation layer record")
+check("AIPlayer lengkap sudah diport dan aktif di scene pertandingan" in _ai_contract_doc,
+      "9ak AI_CONTRACT.md package status must state the port is complete and wired")
+
+for stale in (
+    "Belum ada tombol beli shield atau AI otomatis di scene",
+    "kills descending masih pending",
+):
+    check(stale not in _shield_contract_doc,
+          f"9ak SHIELD_CONTRACT.md must not reclaim the stale status {stale!r}")
+check("sudah memanggil AI shield otomatis" in _shield_contract_doc
+      and "_stable_kills_descending" in _shield_contract_doc,
+      "9ak SHIELD_CONTRACT.md must state the automatic shield arms and stable kills order")
+
+check("loop AI otomatis belum aktif" not in _nexus_contract_doc,
+      "9ak NEXUS_CONTRACT.md must not reclaim the stale status 'loop AI otomatis belum aktif'")
+check("loop AI otomatis aktif" in _nexus_contract_doc
+      and "Adapter upgrade red (AIPlayer penuh — selesai)" in _nexus_contract_doc,
+      "9ak NEXUS_CONTRACT.md must state the AI loop is active")
+
+check("urutan kandidat dan loop AI scene belum aktif" not in _upgrade_contract_doc
+      and "## Adapter AI (WIP)" not in _upgrade_contract_doc,
+      "9ak UPGRADE_CONTRACT.md must not reclaim the stale WIP status")
+check("loop AI scene aktif" in _upgrade_contract_doc,
+      "9ak UPGRADE_CONTRACT.md must state the scene AI loop is active")
+
+check("Pekerjaan berikutnya (di luar migrasi kit): AIPlayer penuh" not in _hero_progress_doc,
+      "9ak HERO_MIGRATION_PROGRESS.md copy-paste message must not list AIPlayer penuh as pending")
+check("Pembaruan 9ak" in _hero_progress_doc and "AIPlayer penuh SUDAH selesai" in _hero_progress_doc,
+      "9ak HERO_MIGRATION_PROGRESS.md must carry the update banner and the corrected message")
+
+check("efektif tinggal AIPlayer penuh dan art final. (**Koreksi 9ak:**" in _peta_doc
+      and "Rekonsiliasi klaim status AI (layer 9ak, doc-only)" in _peta_doc,
+      "9ak PETA_SISA_MIGRASI.md must cross-correct the stale remaining-work line")
+
+# Code anchors: the corrected claims must stay true in the shipped code.
+_session = (ROOT / "scripts/simulation/prototype_session.gd").read_text(encoding="utf-8")
+_battle = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+_items = (ROOT / "scripts/match/ai_items.gd").read_text(encoding="utf-8")
+_shields = (ROOT / "scripts/match/ai_shields.gd").read_text(encoding="utf-8")
+_upgrades = (ROOT / "scripts/match/ai_upgrades.gd").read_text(encoding="utf-8")
+_match_scene = (ROOT / "scenes/prototype/PrototypeMatch.tscn").read_text(encoding="utf-8")
+_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+check("set_ai_enabled(true)" in _session and "reset_ai(AI_MATCH_SEED)" in _session,
+      "9ak anchor: the session must still arm the seeded AI from the first tick")
+check("ai_controller.tick(" in _battle,
+      "9ak anchor: the match must still tick the AI controller every tick")
+for arm in ("build", "buy_hero", "upgrade_hero", "buy_item",
+            "upgrade_tower", "regen_shield", "castle_shield", "upgrade_nexus"):
+    check(f'"{arm}"' in ai_policy,
+          f"9ak anchor: ai_policy.gd must keep the source priority arm {arm!r}")
+check("draft.reserve()" in _items,
+      "9ak anchor: AI item purchases must still read the live draft reserve")
+check("draft.reserve()" in _shields and "_stable_kills_descending" in _shields,
+      "9ak anchor: AI shields must still read the live reserve and sort kills descending")
+check("_stable_kills_descending" in _upgrades
+      and "func try_tower_priority" in _upgrades
+      and "func try_hero_priority" in _upgrades,
+      "9ak anchor: AI upgrades must still expose the stable kills-descending priorities")
+check("AIMatchIntegrationChecks.new().run(_check)" in ai_tests,
+      "9ak anchor: the full AI integration suite must stay registered in run_all.gd")
+check('name="RegenShieldButton"' in _match_scene and 'name="CastleShieldButton"' in _match_scene,
+      "9ak anchor: the player shield purchase buttons must stay in the HUD scene")
+check("request_regen_shield" in _screen and "request_castle_shield" in _screen,
+      "9ak anchor: the shield buttons must stay wired to the session requests")
+
+# ── Layer 9al: level intro gold/passive run the full _core path ──
+# `_render.py:3073-3094` calls `_core.compute_starting_gold` /
+# `compute_gold_per_second` / `format_gold_rate` so the intro card shows the
+# same numbers `Game.reset()` grants. The pre-9al port mirrored only the
+# source's except fallbacks while the match ledger already ran the full path,
+# so level >1 or non-normal difficulty displayed the wrong gold/passive text.
+_intro = (ROOT / "scripts/ui/level_intro_screen.gd").read_text(encoding="utf-8")
+_economy = (ROOT / "scripts/match/match_economy.gd").read_text(encoding="utf-8")
+check("static func format_gold_rate" in _economy,
+      "9al match_economy.gd must port _core.format_gold_rate")
+check("Economy.starting_gold(" in _intro
+      and "Economy.passive_rate(" in _intro
+      and "Economy.format_gold_rate(" in _intro,
+      "9al the level intro card must use the shared full _core economy path")
+check("MapRenderer.MAP_HEIGHT, difficulty" in _battle,
+      "9al the match must configure the intro card with the live difficulty")
+_intro_fixture_path = ROOT / "tests/fixtures/level_intro_screen_source.json"
+check(_intro_fixture_path.is_file(), "9al level intro fixture must exist")
+if _intro_fixture_path.is_file():
+    _intro_rows = json.loads(_intro_fixture_path.read_text(encoding="utf-8"))["difficulty_rows"]
+    check(len(_intro_rows) == 60,
+          "9al level intro fixture must keep 20 levels x 3 difficulties")
+    check(all("starting_gold_fallback" in row and "passive_text_fallback" in row
+              for row in _intro_rows),
+          "9al every difficulty row must carry the pre-9al fallback columns")
+    _intro_diverging = sum(
+        1 for row in _intro_rows
+        if row["starting_gold"] != row["starting_gold_fallback"]
+        or row["passive_text"] != row["passive_text_fallback"]
+    )
+    check(_intro_diverging == 59,
+          "9al exactly the level-1 normal row may coincide with the fallback")
+    check(all(
+        row["passive_text"].startswith("PASSIVE +") and row["passive_text"].endswith("/s")
+        for row in _intro_rows
+    ), "9al passive text keeps the source format on the full path")
 
 
 for error in errors:

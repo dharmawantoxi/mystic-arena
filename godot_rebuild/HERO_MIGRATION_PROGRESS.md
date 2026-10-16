@@ -1,5 +1,15 @@
 # Checkpoint migrasi — 222/222 selesai (PR #292 sudah merge)
 
+> **Pembaruan 9ak (pasca-PR #331):** checkpoint ini adalah catatan historis era
+> PR #292. Dua dari tiga "sisa" yang disebut di bawah — **AIPlayer penuh** dan
+> **item/forge** — sejak itu **sudah selesai**: AIPlayer ditutup layer 6a–6f +
+> uji integrasi `ai_match_integration_checks.gd` (lihat
+> [AI_CONTRACT.md](AI_CONTRACT.md)); item/forge ditutup layer 5f–5f-4. Sisa
+> sebenarnya: **art final** (hanya atas permintaan pengguna) dan `lighting.py`
+> (dipertahankan tidak diport). Peta terkini:
+> [PETA_SISA_MIGRASI.md](PETA_SISA_MIGRASI.md). Bagian historis di bawah tidak
+> ditulis ulang; baris yang usang diberi penanda koreksi.
+
 **222 dari 222 hero target selesai; 0 pending.** CI Godot 4.7.2 hijau.
 Target tetap semua 222 kit, tidak dikurangi. Progres disimpan di branch sesi
 `arena/01a0e17d-mystic-arena` / `arena/01a0e217-mystic-arena` (batch 9, merge PR #291 → main c4381c0) /
@@ -179,7 +189,8 @@ lokal, GPU, perangkat fisik atau visual final teruji.**
 
 Hanya `godot_rebuild/` diubah; Python asli read-only. Kaizen gratis kedua tim,
 defender scene lama, UI/scene scheduler lama tetap. Tidak ada AIPlayer penuh,
-item/forge, desain ulang balance, pembelian AI otomatis atau art final. Marker
+item/forge, desain ulang balance, pembelian AI otomatis atau art final
+(historis era PR #292; koreksi 9ak: lihat banner pembaruan di atas). Marker
 hero/proyektil tetap prosedural sederhana. “Playable” di sini adalah kit/domain
 native tervalidasi, bukan semua fitur pertandingan Python sudah bermigrasi.
 
@@ -199,7 +210,12 @@ didanai 4000G), harga palsu `_buy_ai_hero("astraelion", 400)` tetap ditolak
 `kit`, dan `source_shared_boss_checks._no_fallback` memakai ID tak dikenal
 `unported_probe` (tidak ada substitusi generik).
 
-Yang tersisa di luar cakupan migrasi kit: AIPlayer penuh, item/forge, art final.
+Yang tersisa di luar cakupan migrasi kit pada checkpoint ini: AIPlayer penuh,
+item/forge, art final. (Koreksi 9ak: AIPlayer penuh dan item/forge sejak itu
+sudah selesai — lihat banner pembaruan di atas.) (Pembaruan 9ap: seri paritas
+9j–9ao menutup gap mekanik yang diaudit dari sumber; roadmap screen-shake
+boss tuntas 128/128 situs di layer 9ao-4 — sisa efektif hanya art final dan
+rebalance atas permintaan pengguna, `lighting.py` di luar scope.)
 PR #292 sudah direview dan di-merge (main `8119e31`).
 
 ## Menjalankan validasi
@@ -225,9 +241,20 @@ fixture manual untuk meloloskan hasil yang berbeda dari sumber.
 
 ## Pesan siap-salin untuk sesi berikutnya
 
+> (Diperbarui layer 9ap; versi lama menyebut "AIPlayer penuh, item/forge"
+> sebagai pekerjaan berikutnya — keduanya sudah selesai.)
 > Migrasi 222/222 kit hero native sudah merge ke main lewat PR #292 (merge
-> 8119e31), CI main hijau Godot 4.7.2 run 36329618088, 0 pending. Baca
-> HERO_MIGRATION_PROGRESS.md, HERO_ROSTER_STATUS.md dan
-> data/ai/hero_migration_status.json. Hanya ubah godot_rebuild/; Python asli
-> read-only. Pekerjaan berikutnya (di luar migrasi kit): AIPlayer penuh,
-> item/forge atau art — hanya atas permintaan pengguna.
+> 8119e31), CI main hijau Godot 4.7.2 run 36329618088, 0 pending.
+> AIPlayer penuh SUDAH selesai dan terkunci: sembilan modul `ai_*.gd`,
+> 79/79 resep boss AI, uji integrasi `ai_match_integration_checks.gd` di
+> `run_all.gd`. Item/forge selesai (5f–5f-4). Seri paritas 9j–9ao selesai:
+> roadmap screen-shake boss TUNTAS 128/128 situs (2 enrage + 126 cast,
+> 127 call site `BossAI._shake`; layer 9ao-4, PR #332). Baca
+> PETA_SISA_MIGRASI.md, AI_CONTRACT.md, HERO_ROSTER_STATUS.md dan
+> data/ai/hero_migration_status.json. Hanya ubah godot_rebuild/; Python
+> asli read-only. Rebalance SELESAI (layer 9b+9c): baseline terukur SEHAT
+> dipaku CI (`BALANCE_CONTRACT.md`, oracle `balance_baseline_source_oracle.py`)
+> dan mekanisme perubahan angka hidup di `scripts/data/balance_overrides.gd`
+> (tabel produksi kosong by decision — nol pelanggaran terukur; entri masa
+> depan wajib reason + re-baseline). Sisa: art final — hanya atas permintaan
+> pengguna; `lighting.py` di luar scope.

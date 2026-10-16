@@ -26,8 +26,19 @@ var rules: Dictionary = {}
 var max_hp := 0
 var damage := 0
 var base_damage := 0
+## Raw catalog damage (`boss_data` row), never rescaled. The source reads it
+## back through `_get_boss_stats()["damage"]` - catalog x skill_down x
+## dmg_scaling_mult x enrage, rounded ONCE - for the dragon form restore and
+## the four buff expiries/casts (layer 9an). `base_damage` instead mirrors the
+## source attribute of the same name: the difficulty-BAKED snapshot that the
+## xerathis arcane buff multiplies verbatim.
+var catalog_damage := 0
 var speed_px_per_tick := 0.0
 var base_speed := 0.0
+## Raw catalog speed (`boss_data` row), never rescaled. The source smart-AI
+## reads it back as `_get_boss_stats()["speed"]` - which scales only *damage*
+## keys - when Xirthalis' Shukuchi expires (layer 9am).
+var catalog_speed := 0.0
 var attack_range := 0.0
 var min_distance := 200.0
 var prefer_distance := 280.0
@@ -86,6 +97,11 @@ var death_fx_particle_count := 25
 var death_fx_particle_min := 4
 var death_fx_particle_max := 6
 var death_fx_shake_intensity := 0
+## One-shot screen-shake payload of the enrage/frenzy transition: the source
+## `Boss.update` shakes 25 (true class, `base_boss.py:624`) or 15 (mini,
+## `:639`) when the transition fires; `prototype_battle` routes it through the
+## death-shake gate and clears it (layer 9ao).
+var enrage_fx_shake := 0
 var defense_boost := false
 var stun_timer := 0
 var cleave_radius := 0.0
@@ -177,8 +193,10 @@ func setup(boss_type_value: String, lane_path: PackedVector2Array, table: Dictio
 	hp = float(max_hp)
 	damage = int(stats["damage"])
 	base_damage = damage
+	catalog_damage = damage
 	speed_px_per_tick = float(stats["speed"])
 	base_speed = speed_px_per_tick
+	catalog_speed = float(stats.get("speed", 1.15))
 	attack_range = float(stats["attack_range"])
 	min_distance = float(stats.get("min_distance", 200))
 	prefer_distance = float(stats.get("prefer_distance", 280))
@@ -309,6 +327,7 @@ func advance_combat_clock() -> bool:
 			speed_px_per_tick = eff_speed() * 1.25
 			damage = int(float(damage) * 1.25)
 			attack_cooldown = maxi(18, int(float(attack_cooldown) * 0.75))
+			enrage_fx_shake = 25
 		elif boss_class == "mini" and hp <= float(max_hp) * 0.40:
 			enrage_triggered = true
 			is_enraged = true
@@ -316,6 +335,7 @@ func advance_combat_clock() -> bool:
 			speed_px_per_tick = eff_speed() * 1.15
 			damage = int(float(damage) * 1.20)
 			attack_cooldown = maxi(20, int(float(attack_cooldown) * 0.80))
+			enrage_fx_shake = 15
 		if enrage_triggered:
 			rebuild_definition()
 	if is_enraged:

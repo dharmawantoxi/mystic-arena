@@ -1,0 +1,259 @@
+{
+  "source": "bosses/base_boss.py::(_smart_ai_alchemist, _smart_ai_xirthalis)",
+  "shape": {
+    "rage_expiry_writes": [
+      "rage_active"
+    ],
+    "rage_expiry_has_damage_write": false,
+    "shukuchi_expiry_writes": [
+      "shukuchi_active",
+      "speed"
+    ],
+    "shukuchi_expiry_speed_segment": "stats.get(\"speed\", 1.15)",
+    "q_cast_base_speed_segment": "stats.get(\"speed\", 1.15)",
+    "q_cast_speed_segment": "base_speed * 1.8",
+    "rage_cast_damage_segment": "int(self.damage * 1.5)",
+    "catalog_speed_xirthalis": 1.15,
+    "catalog_damage_alchemist": 150
+  },
+  "rows": [
+    {
+      "name": "xirthalis_shukuchi_cast",
+      "boss": "xirthalis",
+      "arm": "recipe",
+      "divergent": true,
+      "expected": {
+        "input": {
+          "hp": 11520.0,
+          "max_hp": 19200.0,
+          "speed": 1.3224999999999998,
+          "base_speed": 1.3224999999999998,
+          "q_timer": 0,
+          "w_timer": 999,
+          "e_timer": 999,
+          "r_timer": 999,
+          "shukuchi_active": false,
+          "shukuchi_timer": 0,
+          "target_distance": 999.0
+        },
+        "output": {
+          "speed": 2.07,
+          "shukuchi_active": true,
+          "shukuchi_timer": 180,
+          "q_timer": 180
+        }
+      },
+      "native_old": {
+        "input": {
+          "hp": 11520.0,
+          "max_hp": 19200.0,
+          "speed": 1.3224999999999998,
+          "base_speed": 1.3224999999999998,
+          "q_timer": 0,
+          "w_timer": 999,
+          "e_timer": 999,
+          "r_timer": 999,
+          "shukuchi_active": false,
+          "shukuchi_timer": 0,
+          "target_distance": 999.0
+        },
+        "output": {
+          "speed": 1.3224999999999998,
+          "shukuchi_active": true,
+          "shukuchi_timer": 180,
+          "q_timer": 180
+        }
+      }
+    },
+    {
+      "name": "xirthalis_shukuchi_expiry",
+      "boss": "xirthalis",
+      "arm": "clocks",
+      "divergent": true,
+      "expected": {
+        "input": {
+          "hp": 19200.0,
+          "max_hp": 19200.0,
+          "speed": 2.07,
+          "base_speed": 1.3224999999999998,
+          "q_timer": 180,
+          "w_timer": 999,
+          "e_timer": 999,
+          "r_timer": 999,
+          "shukuchi_active": true,
+          "shukuchi_timer": 1,
+          "target_distance": 999.0
+        },
+        "output": {
+          "speed": 1.15,
+          "shukuchi_active": false,
+          "shukuchi_timer": 0
+        }
+      },
+      "native_old": {
+        "input": {
+          "hp": 19200.0,
+          "max_hp": 19200.0,
+          "speed": 1.3224999999999998,
+          "base_speed": 1.3224999999999998,
+          "q_timer": 180,
+          "w_timer": 999,
+          "e_timer": 999,
+          "r_timer": 999,
+          "shukuchi_active": true,
+          "shukuchi_timer": 1,
+          "target_distance": 999.0
+        },
+        "output": {
+          "speed": 1.3224999999999998,
+          "shukuchi_active": false,
+          "shukuchi_timer": 0
+        }
+      }
+    },
+    {
+      "name": "alchemist_rage_cast_1",
+      "boss": "alchemist",
+      "arm": "recipe",
+      "divergent": false,
+      "expected": {
+        "input": {
+          "hp": 20000.0,
+          "max_hp": 40000.0,
+          "damage": 165,
+          "base_damage": 165,
+          "q_timer": 0,
+          "w_timer": 999,
+          "e_timer": 0,
+          "r_timer": 999,
+          "rage_active": false,
+          "rage_timer": 0,
+          "target_distance": 999.0
+        },
+        "output": {
+          "damage": 247,
+          "hp": 26000.0,
+          "rage_active": true,
+          "rage_timer": 360,
+          "e_timer": 480
+        }
+      },
+      "native_old": {
+        "input": {
+          "hp": 20000.0,
+          "max_hp": 40000.0,
+          "damage": 165,
+          "base_damage": 165,
+          "q_timer": 0,
+          "w_timer": 999,
+          "e_timer": 0,
+          "r_timer": 999,
+          "rage_active": false,
+          "rage_timer": 0,
+          "target_distance": 999.0
+        },
+        "output": {
+          "damage": 247,
+          "hp": 26000.0,
+          "rage_active": true,
+          "rage_timer": 360,
+          "e_timer": 480
+        }
+      }
+    },
+    {
+      "name": "alchemist_rage_expiry",
+      "boss": "alchemist",
+      "arm": "clocks",
+      "divergent": true,
+      "expected": {
+        "input": {
+          "hp": 20000.0,
+          "max_hp": 40000.0,
+          "damage": 247,
+          "base_damage": 165,
+          "q_timer": 0,
+          "w_timer": 999,
+          "e_timer": 480,
+          "r_timer": 999,
+          "rage_active": true,
+          "rage_timer": 1,
+          "target_distance": 999.0
+        },
+        "output": {
+          "damage": 247,
+          "rage_active": false,
+          "rage_timer": 0
+        }
+      },
+      "native_old": {
+        "input": {
+          "hp": 20000.0,
+          "max_hp": 40000.0,
+          "damage": 247,
+          "base_damage": 165,
+          "q_timer": 0,
+          "w_timer": 999,
+          "e_timer": 480,
+          "r_timer": 999,
+          "rage_active": true,
+          "rage_timer": 1,
+          "target_distance": 999.0
+        },
+        "output": {
+          "damage": 165,
+          "rage_active": false,
+          "rage_timer": 0
+        }
+      }
+    },
+    {
+      "name": "alchemist_rage_cast_2",
+      "boss": "alchemist",
+      "arm": "recipe",
+      "divergent": true,
+      "expected": {
+        "input": {
+          "hp": 20000.0,
+          "max_hp": 40000.0,
+          "damage": 247,
+          "base_damage": 165,
+          "q_timer": 0,
+          "w_timer": 999,
+          "e_timer": 0,
+          "r_timer": 999,
+          "rage_active": false,
+          "rage_timer": 0,
+          "target_distance": 999.0
+        },
+        "output": {
+          "damage": 370,
+          "rage_active": true,
+          "rage_timer": 360,
+          "e_timer": 480
+        }
+      },
+      "native_old": {
+        "input": {
+          "hp": 20000.0,
+          "max_hp": 40000.0,
+          "damage": 165,
+          "base_damage": 165,
+          "q_timer": 0,
+          "w_timer": 999,
+          "e_timer": 0,
+          "r_timer": 999,
+          "rage_active": false,
+          "rage_timer": 0,
+          "target_distance": 999.0
+        },
+        "output": {
+          "damage": 247,
+          "rage_active": true,
+          "rage_timer": 360,
+          "e_timer": 480
+        }
+      }
+    }
+  ]
+}

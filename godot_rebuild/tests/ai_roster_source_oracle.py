@@ -88,7 +88,7 @@ def _free_red_mirror_count() -> int:
     text = PROTOTYPE.read_text(encoding="utf-8")
     setup = re.search(r"func setup_arena\(\) -> bool:(.*?)(?=\nfunc )", text, re.DOTALL)
     assert setup, "PrototypeBattle.setup_arena must remain inspectable"
-    return len(re.findall(r"spawn_hero\(KAIZEN, RED, RED_HERO_SPAWN\)", setup.group(1)))
+    return len(re.findall(r"_spawn_production_hero\(KAIZEN, RED, RED_HERO_SPAWN\)", setup.group(1)))
 
 
 def source_fixture() -> dict:

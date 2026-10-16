@@ -8,9 +8,13 @@ Sumber read-only: `_entity.py::Tower` (`can_activate_regen_shield`,
 ## Status dan batas
 
 Transaksi shield tersedia di domain pertandingan untuk kedua tim. Adapter
-`ai_shields.gd` khusus red membaca reserve draft terkini, per kandidat. **Belum
-ada tombol beli shield atau AI otomatis di scene**. Prioritas kandidat tower
-kills descending masih pending, bukan diganti dengan total kill tim. Sumber
+`ai_shields.gd` khusus red membaca reserve draft terkini, per kandidat. Scene
+sudah memanggil AI shield otomatis (lengan `regen_shield`/`castle_shield` di
+tabel prioritas `ai_policy.gd`) dan tombol beli shield pemain
+(`RegenShieldButton`/`CastleShieldButton`) ada di HUD `PrototypeMatch.tscn`
+(koreksi 9ak — klaim lama "belum ada" adalah status pertengahan migrasi).
+Prioritas kandidat tower kills descending stabil sudah diterapkan
+(`_stable_kills_descending`), bukan diganti dengan total kill tim. Sumber
 aksi shield tidak melempar RNG dan tidak menaikkan counter upgrade; port sama.
 
 ## Regen Shield tower

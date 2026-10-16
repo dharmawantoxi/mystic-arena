@@ -4,6 +4,10 @@ extends RefCounted
 ## under a pygame / font shim and reads the fade curve, the theme tint, the
 ## difficulty bars and the gold / passive / boss-tag / prompt text off the
 ## frame with `settrace`, so the numbers here are the source's, not a copy.
+## Layer 9al: the difficulty rows carry the full `_core` gold path (real
+## `compute_starting_gold` / `compute_gold_per_second` / `format_gold_rate`)
+## plus `*_fallback` columns from the source's own except path, and the card
+## must match the full path — the same numbers the match ledger grants.
 
 const LevelIntroScreen = preload("res://scripts/ui/level_intro_screen.gd")
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
@@ -144,10 +148,11 @@ func _check_difficulty(check: Callable, data: Dictionary) -> void:
 	var rows: Array = data["difficulty_rows"]
 	var failures := 0
 	var first_failure := ""
+	var diverging := 0
 	for raw in rows:
 		var row: Dictionary = raw
 		var card := LevelIntroScreen.new()
-		card.setup(row["level"], row["boss"], 1280, 720)
+		card.setup(row["level"], row["boss"], 1280, 720, String(row["difficulty_setting"]))
 		for _tick in range(40):
 			card.update()
 		var problem := _difficulty_problem(card, row)
@@ -155,10 +160,21 @@ func _check_difficulty(check: Callable, data: Dictionary) -> void:
 			failures += 1
 			if first_failure == "":
 				first_failure = problem
+		# Layer 9al: rows where the full `_core` path differs from the source's
+		# own except fallback prove the card no longer shows the pre-9al text.
+		if (
+			int(row["starting_gold"]) != int(row["starting_gold_fallback"])
+			or String(row["passive_text"]) != String(row["passive_text_fallback"])
+		):
+			diverging += 1
 	if failures > 0:
 		check.call(false, "Difficulty card drifted in %d rows: %s" % [failures, first_failure])
 		return
-	check.call(true, "Difficulty card matches source for %d level/difficulty rows" % rows.size())
+	check.call(true, "Difficulty card matches the full _core gold path for %d rows" % rows.size())
+	check.call(
+		diverging > 0,
+		"%d rows prove the full _core path replaced the pre-9al fallback text" % diverging
+	)
 
 
 func _difficulty_problem(card, row: Dictionary) -> String:
