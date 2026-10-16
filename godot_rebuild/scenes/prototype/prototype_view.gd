@@ -6,6 +6,7 @@ const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd"
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const BossState = preload("res://scripts/match/boss_state.gd")
 const HeroMarker = preload("res://scripts/ui/hero_marker.gd")
+const SpriteLighting = preload("res://scripts/ui/sprite_lighting.gd")
 const BossFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
@@ -616,12 +617,41 @@ func _draw_unit(unit: UnitState) -> void:
 	# Team outline, stable ID polygon, and facing eye are intentionally basic.
 	draw_circle(point + Vector2(0, 4), radius + 5, Color("071518"))
 	draw_circle(point, radius + 5, team_color)
-	draw_colored_polygon(HeroMarker.silhouette(point, radius, hero.definition.id), fill)
+	_draw_lit_polygon(HeroMarker.silhouette(point, radius, hero.definition.id), fill)
 	draw_circle(point + Vector2(hero.facing * 5, -2), 3, Color("e1fff4"))
 	draw_line(point, point + Vector2(hero.facing * (radius + 10), 0), team_color, 2, true)
 	var health := float(hero.hp) / maxf(1.0, hero.max_hp)
 	draw_rect(Rect2(point + Vector2(-17, -radius - 14), Vector2(34, 4)), Color("071518"))
 	draw_rect(Rect2(point + Vector2(-17, -radius - 14), Vector2(34 * health, 4)), team_color)
+
+
+## Layer 9aq: `lighting.py` pass on a vector body - directional gradient over
+## the polygon's own box (the hero path lights the tight crop), 1 px rim on
+## the light-facing edges, two-band terminator on the shadow edges. Bodies
+## under the source's 24-solid-pixel floor stay flat, exactly like the source.
+func _draw_lit_polygon(points: PackedVector2Array, fill: Color) -> void:
+	if not SpriteLighting.should_light(points):
+		draw_colored_polygon(points, fill)
+		return
+	var box := Rect2(points[0], Vector2.ZERO)
+	for point in points:
+		box = box.expand(point)
+	draw_polygon(points, SpriteLighting.vertex_colors(points, fill, box))
+	var edges := SpriteLighting.classify_edges(points)
+	var shade := SpriteLighting.shade_color(fill)
+	var band2 := SpriteLighting.shade_color(fill, true)
+	for index in edges["shade"]:
+		var a := points[index]
+		var b := points[(index + 1) % points.size()]
+		var inward := SpriteLighting.inward_normal(points, index)
+		draw_line(a + inward * 0.5, b + inward * 0.5, shade, 1.0)
+		draw_line(a + inward * 1.5, b + inward * 1.5, band2, 1.0)
+	var rim := SpriteLighting.rim_color(fill)
+	for index in edges["rim"]:
+		var a := points[index]
+		var b := points[(index + 1) % points.size()]
+		var inward := SpriteLighting.inward_normal(points, index)
+		draw_line(a + inward * 0.5, b + inward * 0.5, rim, 1.0)
 
 
 func _draw_boss(boss: BossState) -> void:
@@ -648,7 +678,7 @@ func _draw_boss(boss: BossState) -> void:
 	# source boss IDs; gameplay and the source entrance/enrage states stay shared.
 	draw_circle(point + Vector2(0, radius + 3), radius + 3, Color("071518", 0.65))
 	var body_color := Color.WHITE if boss.hurt_flash_timer > 0 else boss.color
-	draw_circle(point, radius, body_color)
+	_draw_lit_polygon(SpriteLighting.circle_points(point, radius), body_color)
 	draw_arc(point, radius, 0, TAU, 32, boss.color_dark, 3, true)
 	var highlight := body_color.lightened(0.20)
 	draw_circle(

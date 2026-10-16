@@ -265,5 +265,9 @@ fixture manual untuk meloloskan hasil yang berbeda dari sumber.
 > (`balance_overrides_enabled`, dinyalakan `app.gd`); lab tempur, suite
 > paritas-sumber, fixture 9b, `.tres` dan sumber Python TIDAK bergeser.
 > Entri baru wajib reason + angka antes/depois di BALANCE_CONTRACT.md + PETA.
-> Sisa: art final — hanya atas permintaan pengguna; `lighting.py` di luar
-> scope.
+> Pembatas dibuka 2026-10-16 (kecuali render hero tetap prosedural):
+> `lighting.py` kini TERPORT (layer 9aq, `scripts/ui/sprite_lighting.gd`,
+> oracle `sprite_lighting_source_oracle.py`, dipakai `prototype_view.
+> _draw_lit_polygon` untuk siluet hero + badan boss). Sisa: tidak ada modul
+> sumber yang belum terport; art final tidak dibuat (hero prosedural by
+> decision).

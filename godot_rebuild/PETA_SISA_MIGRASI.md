@@ -119,7 +119,7 @@ Dibaca hanya untuk memilih slice berikutnya, bukan audit menyeluruh:
 | Kit hero | **222/222 selesai**, 0 pending (PR #292, merge `8119e31`) |
 | item/forge | **Sudah terport** (`scripts/match/forge.gd`, `item_forge_panel.gd`, `forge_scene_checks.gd`) |
 | Katalog level, audio, player command/shop, match pacing | Selesai (PR #318/#323/#324/#325) |
-| `lighting.py` (239 baris) | **Belum terport** — tidak ada padanan di `godot_rebuild/` |
+| `lighting.py` (239 baris) | **Terport (layer 9aq)** — `scripts/ui/sprite_lighting.gd`: matematika mask eksak (gradien kanonik 28x28, rim/terminator/band-2) dipaku oracle `sprite_lighting_source_oracle.py`; adaptor vektor dipakai `prototype_view._draw_lit_polygon` untuk siluet hero & badan boss |
 | `hero_marker.gd` | Selesai: placeholder 4-6 sisi tetap untuk `grimjaw_checks`, siluet per-hero dipakai `prototype_view.gd:619`; art roster dipaku golden fixture (layer 9aj) |
 
 Catatan: `ui_components/hero_portraits.py` yang di-impor `_core.py:3056`
@@ -509,9 +509,10 @@ panel modal (`hero_shop_panel.gd`, `item_forge_panel.gd`,
 ## Batas scope
 
 - Tidak ada portrait hero lain yang dimulai (hanya Kaizen + Thorne + fallback generik).
-- `lighting.py` tidak diport: ia post-process per-piksel di atas pygame
-  Surface, sementara `godot_rebuild` menggambar vektor. Memaksanya masuk
-  berarti reinterpretasi, bukan port.
+- `lighting.py` semula tidak diport (post-process per-piksel vs vektor).
+  **Dibuka pengguna 2026-10-16 ("migrasi penuh, buka semua pembatas")** →
+  layer 9aq: matematika mask diport eksak, pengecatan vektor sebagai adaptor
+  (lihat seksi "Lighting pass (layer 9aq)" di akhir dokumen).
 - Kelas state di `scripts/ui/` mempertahankan state/getter murni tanpa objek
   Surface/Font pygame, sementara penggambaran vektor dilakukan secara native di
   `PrototypeView` (`scenes/prototype/prototype_view.gd`).
@@ -1380,3 +1381,48 @@ lab tetap paritas sumber 0.6 (kontrak QA `COMBAT_CONTRACT.md`).
 
 Batas S3: fixture 9b, `.tres`, sumber Python, lab, `lighting.py` tidak
 disentuh. S1-S3 menutup arahan rebalance 2026-10-16.
+
+## Lighting pass `lighting.py` (layer 9aq) — pembatas dibuka pengguna
+
+Arahan 2026-10-16: "lakukan migrasi penuh, buka semua pembatas, kecuali
+render hero tetap prosedural". Satu-satunya modul sumber yang tercatat belum
+terport adalah `lighting.py` (pass pencahayaan per-sprite: gradien arah,
+rim light, terminator dua band, semua dari mask alpha, cahaya kiri-atas).
+
+- Oracle baru `tests/sprite_lighting_source_oracle.py`: menjalankan fungsi
+  SUMBER ASLI (`_canonical`, `contour_masks`) di bawah shim pygame
+  dict/set (Surface.set_at/get_at, Mask draw/erase/count) — tanpa pygame,
+  tanpa stub nilai. Fixture `sprite_lighting_source.json`: semua konstanta
+  (LIGHT_DIR (-1,-1), RIM_ADD (30,26,44), SHADE_MUL 168, BAND2_RATIO 0.42
+  → band-2 218, MASK_ALPHA 170, GRAD 205/255/22, 28 langkah, lantai 24
+  piksel), grid kanonik 28x28 (mul + add), dan set piksel rim/shade/
+  outer-rim/band-2 untuk tiga bentuk (persegi 8x8, L, "tiny" 20 piksel →
+  ditolak).
+- Modul native `scripts/ui/sprite_lighting.gd`: matematika mask EKSAK
+  (`gradient_t/mul/add`, `canonical_table`, `rim_shade_cells`,
+  `band2_cells`, `band2_mul`) + adaptor vektor karena Godot menggambar
+  poligon, bukan surface: `point_t` (posisi gradien kontinu di kotak
+  acuan), `lit_color` (mult + sheen, alpha utuh), `rim_color` (ADD),
+  `shade_color` (MULT 168 / 218), `classify_edges` (normal keluar vs arah
+  cahaya, independen winding), `inward_normal`, `should_light` (luas < 24
+  px → datar, cermin `solid.count() < 24`), `circle_points` (badan boss
+  32-gon). Tanpa aset — hero tetap prosedural (ini shading, bukan art).
+- View `prototype_view._draw_lit_polygon`: `draw_polygon` dengan warna per
+  vertex (gradien atas kotak poligon sendiri — jalur hero sumber menerangi
+  crop rapat), garis 1 px band-1 + band-2 di tepi bayangan (offset normal
+  ke dalam 0.5/1.5 px), garis rim 1 px di tepi cahaya. Dipakai untuk siluet
+  hero (`HeroMarker.silhouette`) dan badan boss (menggantikan
+  `draw_circle` datar). Varian `rim_add` per-boss sumber (mis. level2
+  (46,18,16)) tidak ikut: boss Godot adalah badan generik, jadi memakai
+  default RIM_ADD.
+- Suite `tests/sprite_lighting_checks.gd` (run_all.gd): konstanta, 784 sel
+  grid kanonik sel-demi-sel, set piksel tiga bentuk (rim/shade/outer/band-2
+  + penolakan tiny), klasifikasi tepi persegi (atas/kiri rim, kanan/bawah
+  shade, dua winding), normal ke dalam, lantai luas, `point_t`, angka warna
+  (122/127, 80, 130/126/144, 66/85), warna vertex, 32-gon boss, dan wiring
+  view. Pin validate: suite + baris CI oracle + fixture tidak drift +
+  konstanta + wiring view + modul bebas aset.
+
+Catatan paritas visual: hasilnya *setara komposisi* (arah cahaya, kekuatan
+rim/terminator/gradien identik angka) — bukan identik piksel, karena sumber
+bekerja pada bitmap sprite sedangkan Godot pada poligon vektor.
