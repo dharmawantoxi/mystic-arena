@@ -212,7 +212,10 @@ didanai 4000G), harga palsu `_buy_ai_hero("astraelion", 400)` tetap ditolak
 
 Yang tersisa di luar cakupan migrasi kit pada checkpoint ini: AIPlayer penuh,
 item/forge, art final. (Koreksi 9ak: AIPlayer penuh dan item/forge sejak itu
-sudah selesai — lihat banner pembaruan di atas.)
+sudah selesai — lihat banner pembaruan di atas.) (Pembaruan 9ap: seri paritas
+9j–9ao menutup gap mekanik yang diaudit dari sumber; roadmap screen-shake
+boss tuntas 128/128 situs di layer 9ao-4 — sisa efektif hanya art final dan
+rebalance atas permintaan pengguna, `lighting.py` di luar scope.)
 PR #292 sudah direview dan di-merge (main `8119e31`).
 
 ## Menjalankan validasi
@@ -238,13 +241,16 @@ fixture manual untuk meloloskan hasil yang berbeda dari sumber.
 
 ## Pesan siap-salin untuk sesi berikutnya
 
-> (Diperbarui layer 9ak; versi lama menyebut "AIPlayer penuh, item/forge"
+> (Diperbarui layer 9ap; versi lama menyebut "AIPlayer penuh, item/forge"
 > sebagai pekerjaan berikutnya — keduanya sudah selesai.)
 > Migrasi 222/222 kit hero native sudah merge ke main lewat PR #292 (merge
 > 8119e31), CI main hijau Godot 4.7.2 run 36329618088, 0 pending.
 > AIPlayer penuh SUDAH selesai dan terkunci: sembilan modul `ai_*.gd`,
 > 79/79 resep boss AI, uji integrasi `ai_match_integration_checks.gd` di
-> `run_all.gd`. Item/forge selesai (5f–5f-4). Baca PETA_SISA_MIGRASI.md,
-> AI_CONTRACT.md, HERO_ROSTER_STATUS.md dan data/ai/hero_migration_status.json.
-> Hanya ubah godot_rebuild/; Python asli read-only. Sisa: art final — hanya
-> atas permintaan pengguna; `lighting.py` di luar scope.
+> `run_all.gd`. Item/forge selesai (5f–5f-4). Seri paritas 9j–9ao selesai:
+> roadmap screen-shake boss TUNTAS 128/128 situs (2 enrage + 126 cast,
+> 127 call site `BossAI._shake`; layer 9ao-4, PR #332). Baca
+> PETA_SISA_MIGRASI.md, AI_CONTRACT.md, HERO_ROSTER_STATUS.md dan
+> data/ai/hero_migration_status.json. Hanya ubah godot_rebuild/; Python
+> asli read-only. Sisa: art final dan rebalance — hanya atas permintaan
+> pengguna; `lighting.py` di luar scope.
