@@ -27,9 +27,19 @@ can proceed in stages, and pins the wired sites:
   both native R branches shake 22: every row carries `native_occurrences`
   (its helper call-site count in the source) and the multiset pin expands
   each wired row by that factor (66 rows -> 67 native sites).
+* 9ao-4: the FINAL 60 cast sites across the remaining 53 methods - the six
+  8u-hero families (abaddon, ancient_apparition, ignis_drachorn, gornak,
+  morgath, drakar), kunkka's tide bringer Q, and the seven guard families
+  (vhorethzir, vaerith, vhyssarion, malzareth, akashari, vorenmarr,
+  gravewake). The line-AOE helpers (chilling touch, cold feet, dragon
+  breath, tide bringer) shake only on the fired path, so those native
+  branches were restructured to the source early-return shape; the whiff
+  guards (closest missing or out of range) shake the guard intensity and
+  return, mirroring the 9ao-2 xirthalis/thalgryn pattern. gravewake Q keeps
+  BOTH source whiff shakes (target missing and zero distance, 12 each).
 
-The remaining 60 cast sites across 53 methods stay a documented roadmap
-(later sub-slices wire them family by family against this table).
+The roadmap is now COMPLETE: all 126 cast sites are wired (127 native
+`BossAI._shake` call sites; `_gorath_r` answers two gates).
 
 Run: python godot_rebuild/tests/boss_shake_sites_source_oracle.py
 """
@@ -66,6 +76,27 @@ FAMILY_METHODS = frozenset({
     "_cast_zharok_q", "_cast_zharok_w", "_cast_zharok_e", "_cast_zharok_r",
     "_cast_pyrenth_q", "_cast_pyrenth_w", "_cast_pyrenth_e", "_cast_pyrenth_r",
     "_cast_vokrahn_q", "_cast_vokrahn_w", "_cast_vokrahn_e", "_cast_vokrahn_r",
+    # 9ao-4: the final families (roadmap complete).
+    "_cast_q_mist_coil", "_cast_w_aphotic_shield", "_cast_e_darkness_gale",
+    "_cast_r_death_sever",
+    "_cast_q_ice_vortex", "_cast_w_chilling_touch", "_cast_e_ice_blast",
+    "_cast_r_cold_feet",
+    "_cast_q_dragon_breath", "_cast_w_dragon_tail", "_cast_e_dragon_blood",
+    "_cast_r_elder_dragon_form",
+    "_cast_q_mana_break", "_cast_w_blink", "_cast_e_counterspell",
+    "_cast_r_mana_void",
+    "_cast_q_spark_wraith", "_cast_w_flux", "_cast_e_magnetic_field",
+    "_cast_r_tempest_double",
+    "_cast_q_battle_hunger", "_cast_w_counter_helix", "_cast_e_berserkers_call",
+    "_cast_r_culling_blade",
+    "_cast_q_tide_bringer",
+    "_vhorethzir_q", "_vhorethzir_w", "_vhorethzir_e", "_vhorethzir_r",
+    "_vaerith_q", "_vaerith_w", "_vaerith_e", "_vaerith_r",
+    "_vhyssarion_q", "_vhyssarion_w", "_vhyssarion_e", "_vhyssarion_r",
+    "_malzareth_q", "_malzareth_w", "_malzareth_e", "_malzareth_r",
+    "_akashari_q", "_akashari_w", "_akashari_e", "_akashari_r",
+    "_vorenmarr_q", "_vorenmarr_w", "_vorenmarr_e", "_vorenmarr_r",
+    "_gravewake_q", "_gravewake_w", "_gravewake_e", "_gravewake_r",
 })
 
 EXPECTED_TOTAL = 128
@@ -157,10 +188,10 @@ def source_fixture():
     wiring = _native_wiring()
     assert all(value for key, value in wiring.items() if key != "native_cast_multiset"), wiring
     wired_rows = [row for row in cast_rows if row["wired"]]
-    assert len(wired_rows) == 66, len(wired_rows)
+    assert len(wired_rows) == 126, len(wired_rows)
     cast_wired = sorted(row["intensity"] for row in wired_rows
                         for _ in range(row["native_occurrences"]))
-    assert len(cast_wired) == 67, len(cast_wired)
+    assert len(cast_wired) == 127, len(cast_wired)
     assert wiring["native_cast_multiset"] == cast_wired, (
         wiring["native_cast_multiset"], cast_wired)
     shape = {
@@ -177,7 +208,7 @@ def source_fixture():
         ],
         "native_wiring": wiring,
     }
-    assert shape["cast_sites_wired"] == 66 and shape["cast_sites_remaining"] == 60, shape
+    assert shape["cast_sites_wired"] == 126 and shape["cast_sites_remaining"] == 0, shape
     return {
         "source": "bosses/base_boss.py::Boss._shake_screen call sites",
         "shape": shape,

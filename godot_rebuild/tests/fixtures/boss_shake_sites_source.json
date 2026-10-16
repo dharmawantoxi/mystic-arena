@@ -5,8 +5,8 @@
     "method_count": 113,
     "cast_sites_total": 126,
     "cast_method_count": 112,
-    "cast_sites_wired": 66,
-    "cast_sites_remaining": 60,
+    "cast_sites_wired": 126,
+    "cast_sites_remaining": 0,
     "intensity_histogram": {
       "5": 1,
       "6": 1,
@@ -52,6 +52,13 @@
         8,
         8,
         8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
         10,
         10,
         10,
@@ -63,6 +70,29 @@
         10,
         10,
         10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        12,
+        12,
+        12,
+        12,
+        12,
+        12,
+        12,
+        12,
+        12,
+        12,
+        12,
+        12,
         12,
         12,
         12,
@@ -86,6 +116,19 @@
         14,
         14,
         14,
+        14,
+        14,
+        14,
+        14,
+        14,
+        14,
+        14,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
         15,
         15,
         15,
@@ -93,26 +136,43 @@
         15,
         16,
         16,
+        16,
+        16,
+        16,
         18,
         18,
         18,
         18,
         18,
+        18,
+        18,
         20,
         20,
         20,
         20,
         20,
         20,
+        20,
+        20,
+        22,
         22,
         22,
         22,
         22,
         22,
         24,
+        24,
         25,
         25,
+        25,
+        25,
+        25,
+        25,
+        25,
+        26,
         28,
+        28,
+        30,
         30
       ]
     }
@@ -139,7 +199,7 @@
       "line": 1170,
       "intensity": 10,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -147,7 +207,7 @@
       "line": 1190,
       "intensity": 12,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -155,7 +215,7 @@
       "line": 1211,
       "intensity": 8,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -163,7 +223,7 @@
       "line": 1227,
       "intensity": 20,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -203,7 +263,7 @@
       "line": 1482,
       "intensity": 10,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -211,7 +271,7 @@
       "line": 1528,
       "intensity": 8,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -219,7 +279,7 @@
       "line": 1546,
       "intensity": 15,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -227,7 +287,7 @@
       "line": 1590,
       "intensity": 25,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -235,7 +295,7 @@
       "line": 1712,
       "intensity": 12,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -243,7 +303,7 @@
       "line": 1750,
       "intensity": 15,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -251,7 +311,7 @@
       "line": 1777,
       "intensity": 10,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -259,7 +319,7 @@
       "line": 1825,
       "intensity": 28,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -267,7 +327,7 @@
       "line": 1896,
       "intensity": 10,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -275,7 +335,7 @@
       "line": 1910,
       "intensity": 14,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -283,7 +343,7 @@
       "line": 1930,
       "intensity": 12,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -291,7 +351,7 @@
       "line": 1943,
       "intensity": 16,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -299,7 +359,7 @@
       "line": 1968,
       "intensity": 14,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -307,7 +367,7 @@
       "line": 2011,
       "intensity": 30,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -315,7 +375,7 @@
       "line": 2077,
       "intensity": 8,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -323,7 +383,7 @@
       "line": 2085,
       "intensity": 10,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -331,7 +391,7 @@
       "line": 2117,
       "intensity": 12,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -339,7 +399,7 @@
       "line": 2137,
       "intensity": 10,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -347,7 +407,7 @@
       "line": 2149,
       "intensity": 14,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -355,7 +415,7 @@
       "line": 2185,
       "intensity": 24,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -403,7 +463,7 @@
       "line": 2436,
       "intensity": 14,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -411,7 +471,7 @@
       "line": 2456,
       "intensity": 8,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -419,7 +479,7 @@
       "line": 2466,
       "intensity": 12,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -427,7 +487,7 @@
       "line": 2498,
       "intensity": 16,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -435,7 +495,7 @@
       "line": 2519,
       "intensity": 26,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -443,7 +503,7 @@
       "line": 2592,
       "intensity": 10,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -451,7 +511,7 @@
       "line": 2620,
       "intensity": 8,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -459,7 +519,7 @@
       "line": 2640,
       "intensity": 12,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -467,7 +527,7 @@
       "line": 2661,
       "intensity": 20,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -475,7 +535,7 @@
       "line": 2755,
       "intensity": 10,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -483,7 +543,7 @@
       "line": 2778,
       "intensity": 8,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -491,7 +551,7 @@
       "line": 2802,
       "intensity": 10,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -499,7 +559,7 @@
       "line": 2823,
       "intensity": 15,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -507,7 +567,7 @@
       "line": 2921,
       "intensity": 12,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -515,7 +575,7 @@
       "line": 2948,
       "intensity": 15,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -523,7 +583,7 @@
       "line": 2970,
       "intensity": 18,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -531,7 +591,7 @@
       "line": 2992,
       "intensity": 25,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -827,7 +887,7 @@
       "line": 4480,
       "intensity": 14,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -835,7 +895,7 @@
       "line": 4493,
       "intensity": 12,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -843,7 +903,7 @@
       "line": 4504,
       "intensity": 10,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -851,7 +911,7 @@
       "line": 4518,
       "intensity": 22,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -859,7 +919,7 @@
       "line": 4567,
       "intensity": 14,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -867,7 +927,7 @@
       "line": 4586,
       "intensity": 12,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -875,7 +935,7 @@
       "line": 4596,
       "intensity": 16,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -883,7 +943,7 @@
       "line": 4610,
       "intensity": 25,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -891,7 +951,7 @@
       "line": 4661,
       "intensity": 12,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -899,7 +959,7 @@
       "line": 4670,
       "intensity": 8,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -907,7 +967,7 @@
       "line": 4691,
       "intensity": 18,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -915,7 +975,7 @@
       "line": 4705,
       "intensity": 25,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -1067,7 +1127,7 @@
       "line": 5459,
       "intensity": 12,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -1075,7 +1135,7 @@
       "line": 5466,
       "intensity": 12,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -1083,7 +1143,7 @@
       "line": 5501,
       "intensity": 15,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -1091,7 +1151,7 @@
       "line": 5533,
       "intensity": 14,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -1099,7 +1159,7 @@
       "line": 5558,
       "intensity": 10,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -1107,7 +1167,7 @@
       "line": 5609,
       "intensity": 25,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {
@@ -1115,7 +1175,7 @@
       "line": 5762,
       "intensity": 15,
       "class": "cast",
-      "wired": false,
+      "wired": true,
       "native_occurrences": 1
     },
     {

@@ -2201,14 +2201,14 @@ check("func _present_boss_enrage_shake(boss: BossState) -> void:" in _proto_text
 check("boss.enrage_fx_shake = 0" in _proto_text
       and _proto_text.count("effects.shake_screen(shake)") == 2,
       "The enrage shake must clear one-shot and route like the death shake")
-# Layer 9ao-2/9ao-3: the fifteen audited boss families wire all 66 cast shake
-# sites through the BossAI._shake helper (intensity multiset pinned by the
-# oracle; `_gorath_r` answers two smart-AI gates so the native arm carries 67
-# call sites for the 66 wired source rows).
+# Layer 9ao-2/9ao-3/9ao-4: ALL boss families wire the complete 126-site cast
+# shake table through the BossAI._shake helper (intensity multiset pinned by
+# the oracle; `_gorath_r` answers two smart-AI gates so the native file
+# carries 127 call sites for the 126 wired source rows).
 check("static func _shake(world, intensity: float) -> void:" in boss_ai_text,
       "Boss AI must carry the presentation shake helper")
-check(len(re.findall(r"_shake\(world, \d+\)", boss_ai_text)) == 67,
-      "The audited families must wire exactly the 66 source cast shake sites")
+check(len(re.findall(r"_shake\(world, \d+\)", boss_ai_text)) == 127,
+      "The boss families must wire exactly the 126 source cast shake sites")
 boss_ai_hit = boss_ai_text.split("static func _hit(", 1)[1].split(
     "\nstatic func _slow(", 1)[0]
 check("world._deliver_hit(-1, boss.team, target, raw_damage, school, boss.position)" in boss_ai_hit

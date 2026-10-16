@@ -1180,3 +1180,47 @@ Batas slice 9ao-3: hanya 37 insert `_shake` (36 baris + duplikat gorath R) +
 oracle/fixture/suite/pin/docs — tanpa guard baru, tanpa restruktur cabang.
 `lighting.py`, sumber Python, balance, UI tidak disentuh. Hero tetap
 prosedural (keputusan pengguna).
+
+## Wiring 60 situs shake cast terakhir — roadmap 9ao TUNTAS (layer 9ao-4)
+
+Sub-slice penutup roadmap 9ao: SEMUA 60 situs `_shake_screen` dari 53 method
+sisanya kini dirutekan lewat `BossAI._shake`, sehingga seluruh tabel 128 situs
+(2 enrage + 126 cast) ter-wire — 127 call site native (`_gorath_r` dua
+gerbang):
+
+- Enam keluarga 8u (helper cast tanpa guard, shake di ekor cabang): abaddon
+  Q 10 / W 12 (setelah heal perisai) / E 8 / R 20; ancient_apparition Q 10 /
+  E 15; ignis_drachorn W 15 / E 10 (setelah heal 20%) / R 28 (setelah heal
+  25%); gornak Q 10 / W 8 / E 12 / R 20; morgath Q 10 / W 8 / E 10 (setelah
+  heal 8%) / R 15 (setelah heal 15%); drakar Q 12 (cabang self-enrage,
+  setelah heal 10%) / W 15 / E 18 / R 25.
+- Line-AOE bersyarat (sumber early-return TANPA shake saat target hilang atau
+  dist 0; shake hanya di jalur tembak): cabang native direstruktur ke bentuk
+  early-return sumber (ekuivalen gameplay — `normalized()` nol tidak
+  menghasilkan hit) — ancient_apparition W chilling 8 / R cold feet 25,
+  ignis_drachorn Q dragon breath 12, kunkka Q tide bringer 15 (cabang native
+  sudah early-return, cukup append).
+- Tujuh keluarga guard: malzareth Q 14 / W 12 / E 10 / R 22; akashari Q 14 /
+  W 12 / E 16 / R 25; vorenmarr Q 12 / W 8 / E 18 / R 25; vhorethzir Q 10
+  (whiff >300) / 14 (hit) + W 12 (whiff >320) / 16 (hit) + E 14 + R 30;
+  vaerith Q 8 (whiff >280) / 10 + E 10 (whiff >220) / 14 (setelah lifesteal)
+  + W 12 + R 24; vhyssarion W 8 (whiff >300) / 12 + Q 14 + E 16 + R 26;
+  gravewake Q 12 (guard target hilang) / 12 (guard dist-0) / 15 (hit) + W 14
+  + E 10 + R 25. Guard whiff memakai inversi pembungkus `closest` (pola
+  xirthalis E 9ao-2); vhorethzir W sekaligus memulihkan cek `> 320` sumber
+  yang dulu hilang di port (paritas sumber; cabang `nearby >= 2` membuat
+  jalur itu praktis tak tercapai).
+
+Pin: oracle/fixture kini 126 baris wired / 0 sisa, multiset 127 == native;
+validate memin hitungan 127; suite menaikkan pin shape ke 126/0, wired_rows
+128, dan menambah dua probe replay hidup (gravewake Q whiff target-hilang →
+intensity 12.0; vhyssarion W whiff closest-hilang → 8.0).
+
+Roadmap shake 9ao SELESAI: 128/128 situs (2 enrage + 126 cast). Tidak ada
+baris `wired:false` tersisa di fixture.
+
+Batas slice 9ao-4: 60 insert `_shake` + 4 restruktur early-return line-AOE +
+5 inversi guard closest (semua ekuivalen gameplay kecuali pemulihan guard
+>320 vhorethzir W menuju paritas sumber) + oracle/fixture/suite/pin/docs.
+`lighting.py`, sumber Python, balance, UI tidak disentuh. Hero tetap
+prosedural (keputusan pengguna).
