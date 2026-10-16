@@ -242,7 +242,9 @@ fixture manual untuk meloloskan hasil yang berbeda dari sumber.
 ## Pesan siap-salin untuk sesi berikutnya
 
 > (Diperbarui layer 9ap; versi lama menyebut "AIPlayer penuh, item/forge"
-> sebagai pekerjaan berikutnya — keduanya sudah selesai.)
+> sebagai pekerjaan berikutnya — keduanya sudah selesai. Pembaruan 9c-S3:
+> tabel override produksi TIDAK lagi kosong — arahan rebalance 2026-10-16
+> S1–S3 terpasang, lihat kalimat Rebalance di bawah.)
 > Migrasi 222/222 kit hero native sudah merge ke main lewat PR #292 (merge
 > 8119e31), CI main hijau Godot 4.7.2 run 36329618088, 0 pending.
 > AIPlayer penuh SUDAH selesai dan terkunci: sembilan modul `ai_*.gd`,
@@ -254,7 +256,14 @@ fixture manual untuk meloloskan hasil yang berbeda dari sumber.
 > data/ai/hero_migration_status.json. Hanya ubah godot_rebuild/; Python
 > asli read-only. Rebalance SELESAI (layer 9b+9c): baseline terukur SEHAT
 > dipaku CI (`BALANCE_CONTRACT.md`, oracle `balance_baseline_source_oracle.py`)
-> dan mekanisme perubahan angka hidup di `scripts/data/balance_overrides.gd`
-> (tabel produksi kosong by decision — nol pelanggaran terukur; entri masa
-> depan wajib reason + re-baseline). Sisa: art final — hanya atas permintaan
-> pengguna; `lighting.py` di luar scope.
+> dan mekanisme perubahan angka hidup di `scripts/data/balance_overrides.gd`.
+> Arahan rebalance 2026-10-16 SUDAH terpasang di tabel itu (PR #333): S1
+> starter catch-up `damage_mult 1.5` (gap 5.67x -> 3.97x), S2 nerf 39 hero
+> PHYSICAL|TANK `damage_mult 0.85` (power 1.38 -> 1.25, violations tetap
+> []), S3 regen Troll produksi 0.6 -> 0.15/tick via `MINION_OVERRIDES`
+> (duplikat definisi). Semua hanya aktif pada dunia match playable
+> (`balance_overrides_enabled`, dinyalakan `app.gd`); lab tempur, suite
+> paritas-sumber, fixture 9b, `.tres` dan sumber Python TIDAK bergeser.
+> Entri baru wajib reason + angka antes/depois di BALANCE_CONTRACT.md + PETA.
+> Sisa: art final — hanya atas permintaan pengguna; `lighting.py` di luar
+> scope.

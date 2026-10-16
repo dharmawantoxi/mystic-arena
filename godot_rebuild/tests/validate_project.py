@@ -3018,6 +3018,9 @@ check("Pekerjaan berikutnya (di luar migrasi kit): AIPlayer penuh" not in _hero_
       "9ak HERO_MIGRATION_PROGRESS.md copy-paste message must not list AIPlayer penuh as pending")
 check("Pembaruan 9ak" in _hero_progress_doc and "AIPlayer penuh SUDAH selesai" in _hero_progress_doc,
       "9ak HERO_MIGRATION_PROGRESS.md must carry the update banner and the corrected message")
+check("tabel produksi kosong by decision" not in _hero_progress_doc
+      and "Arahan rebalance 2026-10-16 SUDAH terpasang di tabel itu (PR #333)" in _hero_progress_doc,
+      "9c-S3 HERO_MIGRATION_PROGRESS.md copy-paste message must not claim the override table is empty")
 
 check("efektif tinggal AIPlayer penuh dan art final. (**Koreksi 9ak:**" in _peta_doc
       and "Rekonsiliasi klaim status AI (layer 9ak, doc-only)" in _peta_doc,

@@ -59,7 +59,8 @@ di atas) dan **mekanisme perubahan angka** (`scripts/data/balance_overrides.gd`)
 
 - Satu-satunya permukaan native tempat deviasi rebalance yang disengaja dari
   katalog paritas-sumber boleh hidup. Tabel produksi `HERO_OVERRIDES`
-  **KOSONG by decision**: audit `--ingame` melaporkan nol pelanggaran di
+  semula **KOSONG by decision** (kini berisi entri arahan 2026-10-16 S1–S3,
+  seksi "Rebalance terarah" di bawah): audit `--ingame` melaporkan nol pelanggaran di
   semua target yang ditegakkan alat; deviasi band prosa (MAGIC|CARRY dan
   MAGIC|FIGHTER power 0.84 — satu tick di bawah lantai prosa 0.85;
   PHYSICAL|TANK 1.38 di atas cap prosa 1.25) adalah trade yang DITERIMA pass

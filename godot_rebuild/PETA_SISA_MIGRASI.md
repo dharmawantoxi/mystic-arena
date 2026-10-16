@@ -1265,6 +1265,9 @@ gap 5.67x, sel PHYSICAL|TANK 1.38, regen Troll lab).
 
 ## Lapisan override rebalance native, tabel kosong by decision (layer 9c)
 
+> (Catatan 9c-S3: tabel tidak lagi kosong — entri arahan 2026-10-16 S1–S3
+> tercatat di tiga seksi "Rebalance terarah" di akhir dokumen.)
+
 Menutup domain rebalance yang dibuka pengguna: sesudah baseline terukur (9b)
 menunjukkan NOL pelanggaran target yang ditegakkan audit, slice ini membangun
 MEKANISME perubahan angka tanpa mengubah satu angka pun:
