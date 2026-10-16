@@ -1350,3 +1350,30 @@ dipaku `PHYSICAL_TANK_IDS` di suite).
 
 Batas S2: fixture 9b tidak diubah; `.tres`, sumber Python, lab, `lighting.py`
 tidak disentuh.
+
+## Rebalance terarah S3: regen Troll produksi 0.6 -> 0.15/tick (layer 9c)
+
+Arahan pengguna 2026-10-16: turunkan regen Troll HANYA di jalur produksi;
+lab tetap paritas sumber 0.6 (kontrak QA `COMBAT_CONTRACT.md`).
+
+- Permukaan minion baru di `balance_overrides.gd`: `MINION_OVERRIDES
+  {"troll": {"regen_per_tick": 0.15, "reason": ...}}` + reader
+  `minion_definition_for(definition)` yang mengembalikan resource yang SAMA
+  bila tak ada entri, atau DUPLIKAT dengan nilai ditimpa (pola
+  `scaled_minion_definition`; `.tres`/definisi lab tidak pernah dimutasi).
+  `entries_without_reason()` kini memeriksa kedua tabel.
+- Titik aplikasi: `prototype_battle._spawn_match_minion` (gelombang
+  produksi) memakai duplikat itu bila `balance_overrides_enabled` (opt-in
+  alur match playable dari S1); skala tier nexus tetap mengalikan di
+  atasnya. Nilai: 0.15 < dps Orc 13/60 ~ 0.217 per tick sehingga duel bisa
+  selesai (antes 0.6 = 36 HP/s, depois 0.15 = 9 HP/s).
+- Suite `balance_override_layer_checks.gd`: pin entri + reason, orc 13 dmg
+  sebagai batas, `.tres` tetap 0.6, duplikat != resource sumber dengan stat
+  lain utuh, wave troll opt-in regen 100 -> 100.15, tanpa opt-in definisi
+  preload tetap, lab `minion_battle.spawn_unit` regen 100 -> 100.6. Pin
+  validate: entri 0.15, duplicate(), routing di `_spawn_match_minion`,
+  `.tres` 0.6. COMBAT_CONTRACT.md catatan Troll: rebalance produksi
+  terpasang, lab tetap paritas.
+
+Batas S3: fixture 9b, `.tres`, sumber Python, lab, `lighting.py` tidak
+disentuh. S1-S3 menutup arahan rebalance 2026-10-16.

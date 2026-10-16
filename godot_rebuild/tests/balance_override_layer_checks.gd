@@ -56,11 +56,16 @@ const PHYSICAL_TANK_IDS := [
 const PHYSICAL_TANK_DAMAGE_MULT := 0.85
 const Akaroth = preload("res://data/heroes/akaroth.tres")
 
+const Battle = preload("res://scripts/combat/minion_battle.gd")
+const TROLL = preload("res://data/minions/troll.tres")
+const ORC = preload("res://data/minions/orc.tres")
+
 
 func run(check: Callable) -> void:
 	_table_checks(check)
 	_reader_checks(check)
 	_production_spawn_checks(check)
+	_minion_override_checks(check)
 
 
 func _table_checks(check: Callable) -> void:
@@ -208,3 +213,82 @@ func _production_spawn_checks(check: Callable) -> void:
 		tank != null and tank.base_hp == Akaroth.max_hp and tank.hp == tank.max_hp,
 		"akaroth's S2 spawn keeps hp on the parity value at full HP"
 	)
+
+
+func _minion_override_checks(check: Callable) -> void:
+	var entry: Dictionary = BalanceOverrides.MINION_OVERRIDES.get("troll", {})
+	check.call(
+		BalanceOverrides.MINION_OVERRIDES.size() == 1 and not entry.is_empty(),
+		"the minion override surface holds exactly the S3 troll entry"
+	)
+	check.call(
+		is_equal_approx(float(entry.get("regen_per_tick", 0.0)), 0.15),
+		"S3 pins the production troll regen at 0.15 HP/tick"
+	)
+	check.call(
+		0.15 < float(ORC.damage) / float(ORC.attack_cooldown_ticks) and ORC.damage == 13,
+		"the S3 regen stays below the orc's damage per tick so a duel resolves"
+	)
+	check.call(
+		String(entry.get("reason", "")).contains("0.6 -> 0.15"),
+		"the S3 entry reason records the before/after regen"
+	)
+	check.call(
+		is_equal_approx(TROLL.regen_per_tick, 0.6), "the troll .tres keeps the 0.6 source regen"
+	)
+	var produced = BalanceOverrides.minion_definition_for(TROLL)
+	check.call(
+		produced != TROLL and is_equal_approx(produced.regen_per_tick, 0.15),
+		"minion_definition_for returns a duplicate troll at 0.15, never the preloaded resource"
+	)
+	check.call(
+		(
+			produced.max_hp == TROLL.max_hp
+			and produced.damage == TROLL.damage
+			and produced.id == TROLL.id
+			and is_equal_approx(TROLL.regen_per_tick, 0.6)
+		),
+		"the duplicate keeps every other troll stat and leaves the source definition untouched"
+	)
+	check.call(
+		BalanceOverrides.minion_definition_for(ORC) == ORC,
+		"a minion without an entry comes back as the same definition"
+	)
+	# Production wave path with the playable opt-in: 0.15; without it: 0.6.
+	var world := Prototype.new()
+	world.setup_arena()
+	var parity = world._spawn_match_minion(Prototype.MINIONS["troll"], world.BLUE, 0)
+	check.call(
+		parity != null and parity.definition == Prototype.MINIONS["troll"],
+		"without the opt-in the wave troll keeps the preloaded 0.6 definition"
+	)
+	world.balance_overrides_enabled = true
+	var wave = world._spawn_match_minion(Prototype.MINIONS["troll"], world.BLUE, 0)
+	check.call(
+		(
+			wave != null
+			and wave.definition != Prototype.MINIONS["troll"]
+			and is_equal_approx(wave.definition.regen_per_tick, 0.15)
+		),
+		"the playable wave troll spawns on the 0.15 duplicate definition"
+	)
+	if wave != null:
+		wave.hp = 100
+		world.step_tick()
+		check.call(
+			is_equal_approx(wave.hp, 100.15), "the production troll regenerates 0.15 per tick"
+		)
+	check.call(
+		is_equal_approx(Prototype.MINIONS["troll"].regen_per_tick, 0.6),
+		"the production spawn never mutates the preloaded troll"
+	)
+	# Combat lab direct path stays source parity (COMBAT_CONTRACT.md Troll note).
+	var lab := Battle.new()
+	var troll := lab.spawn_unit(TROLL, 0, 1)
+	check.call(
+		troll != null and troll.definition == TROLL, "the lab spawn keeps the 0.6 troll definition"
+	)
+	if troll != null:
+		troll.hp = 100
+		lab.step_tick()
+		check.call(is_equal_approx(troll.hp, 100.6), "the lab troll still regenerates 0.6 per tick")

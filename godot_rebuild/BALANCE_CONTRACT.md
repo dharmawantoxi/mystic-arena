@@ -93,6 +93,7 @@ hero audit, dipaku di suite native + `validate_project.py`.
 |---|---|---|---|---|
 | S1 starter catch-up | kaizen/thorne/grimjaw/sylara/vex/zephyr `damage_mult 1.5` | starter avg dps 85.7, gap 5.67x | starter avg dps 122.5, gap **3.97x** (<= 4.0x) | `balance_override_layer_checks.gd`: spawn produksi Kaizen damage 45 -> 68, lab tetap 45 |
 | S2 nerf PHYSICAL\|TANK | 39 hero sel PHYSICAL\|TANK `damage_mult 0.85` | power sel 1.38 (avg dps 646.2, ehp 3069) | power sel **1.25** (avg dps 571.0, ehp tetap); spread 1.47x, corr 0.484, school 1.045/1.094, price 1.85x, pool dps 0.972 — violations tetap [] | suite: spawn produksi Akaroth damage 320 -> 272 |
+| S3 regen Troll produksi | `MINION_OVERRIDES["troll"].regen_per_tick 0.15` (duplikat definisi, hanya `_spawn_match_minion` + opt-in playable) | regen 0.6 HP/tick (36 HP/s) > dps Orc 0.217/tick: duel Troll vs Orc tak selesai | regen **0.15 HP/tick** (9 HP/s) < 0.217: duel selesai; `.tres` + lab tetap 0.6 | suite: wave troll opt-in 100 -> 100.15/tick, lab troll 100 -> 100.6/tick |
 
 Titik aplikasi (revisi S1): tabel hanya diterapkan bila dunia dibuka oleh
 alur match playable — `app.gd` memanggil `PrototypeSession.
@@ -122,8 +123,8 @@ adalah kolom "Depois".
 
 - **Troll lab** (`COMBAT_CONTRACT.md`): regen 0.6 HP/tick (36 HP/detik) di
   lab duel adalah paritas sumber yang SENGAJA; jangan diubah diam-diam. Duel
-  cepat untuk uji kill pakai Goblin/Orc. Perubahan angka lab hanya lewat
-  doktrin di atas.
+  cepat untuk uji kill pakai Goblin/Orc. Produksi (gelombang match playable)
+  memakai 0.15 lewat `MINION_OVERRIDES` (S3) tanpa menyentuh `.tres`/lab.
 - Rebalance produksi (di luar baseline sehat ini) membutuhkan arahan desain
   eksplisit pengguna; arahan 2026-10-16 (S1 starter gap) sudah terpasang di
   tabel di atas. Kandidat lain diukur ulang lewat audit yang sama.

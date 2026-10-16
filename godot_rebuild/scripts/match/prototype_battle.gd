@@ -830,7 +830,13 @@ func _spawn_match_minion(definition: Definition, team: int, lane: int) -> UnitSt
 	# after the waypoint placement, then the lane Y offset (already applied by
 	# spawn_unit). Wave construction only; the lab entry stays exact so the
 	# existing contract tests can place units on demand.
-	var unit := spawn_unit(definition, team, lane)
+	# Layer 9c S3: the playable match swaps in the production minion override
+	# (a DUPLICATE definition - Troll regen 0.15/tick; the .tres and the lab
+	# keep the 0.6 source parity). Worlds without the opt-in stay exact.
+	var target: Definition = definition
+	if balance_overrides_enabled:
+		target = BalanceOverrides.minion_definition_for(definition)
+	var unit := spawn_unit(target, team, lane)
 	if unit != null:
 		unit.position += Vector2(
 			spawn_rng.randf_range(-SPAWN_JITTER, SPAWN_JITTER),

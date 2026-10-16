@@ -36,6 +36,14 @@ extends RefCounted
 ## 1.85x (<= 2.20), pool dps delta 0.972 (within 0.12); the other cells stay
 ## within 0.01 of baseline.
 ##
+## S3 TROLL REGEN, PRODUCTION ONLY (2026-10-16): the source Troll regen is
+## 0.6 HP/tick (36 HP/s, COMBAT_CONTRACT.md) - above the 13-damage Orc's
+## 13/60 ~ 0.217 dps-per-tick, so a Troll/Orc duel can never finish. The
+## production wave path (`prototype_battle._spawn_match_minion`) swaps in a
+## DUPLICATED definition with regen 0.15/tick (< 0.217, duels resolve; the
+## nexus-tier scale still multiplies on top). The .tres and the combat lab
+## (`minion_battle.spawn_unit` direct) stay at the 0.6 source parity.
+##
 ## Entry contract (per hero id; every entry is pinned by
 ## `balance_override_layer_checks.gd`):
 ##   "damage_mult": float, default 1.0 - multiplies HeroState.base_damage
@@ -48,6 +56,8 @@ extends RefCounted
 ## The combat lab (`minion_battle.gd::spawn_hero`) stays on the direct
 ## source-parity path; only production spawns route through
 ## `prototype_battle._spawn_production_hero`, which applies this table.
+
+const MinionDefinition = preload("res://scripts/data/minion_definition.gd")
 
 const STARTER_DAMAGE_MULT := 1.5
 ## Shared S1 reason prefix: metric moved + target, per the entry contract.
@@ -285,6 +295,20 @@ const HERO_OVERRIDES: Dictionary = {
 	},
 }
 
+## Minion surface (per minion definition id): "regen_per_tick" float plus the
+## REQUIRED "reason". Applied only by the production wave spawn.
+const MINION_OVERRIDES: Dictionary = {
+	"troll":
+	{
+		"regen_per_tick": 0.15,
+		"reason":
+		(
+			"S3 troll regen 2026-10-16: production waves 0.6 -> 0.15 HP/tick "
+			+ "(< orc dps 13/60 ~ 0.217 so duels resolve); lab/.tres stay 0.6"
+		),
+	},
+}
+
 
 ## Pure entry reader (unit-testable with synthetic entries): returns the
 ## requested multiplier, falling back to 1.0 for missing or non-finite data.
@@ -306,14 +330,31 @@ static func hp_multiplier(hero_id: String) -> float:
 	return multiplier_from(HERO_OVERRIDES.get(hero_id, {}), "hp_mult")
 
 
+## Production minion definition: returns the SAME resource when no entry
+## exists, otherwise a DUPLICATE with the overridden fields - the preloaded
+## .tres / lab definition is never mutated (scaled_minion_definition pattern).
+static func minion_definition_for(definition: MinionDefinition) -> MinionDefinition:
+	if definition == null:
+		return definition
+	var entry: Dictionary = MINION_OVERRIDES.get(definition.id, {})
+	if entry.is_empty():
+		return definition
+	var copy := definition.duplicate() as MinionDefinition
+	var regen = entry.get("regen_per_tick", null)
+	if (typeof(regen) == TYPE_FLOAT or typeof(regen) == TYPE_INT) and is_finite(float(regen)):
+		copy.regen_per_tick = maxf(0.0, float(regen))
+	return copy
+
+
 ## Doctrine helper: every entry must carry a non-empty reason. The layer
 ## suite runs this over the live table.
 static func entries_without_reason() -> Array:
 	var missing: Array = []
-	for hero_id in HERO_OVERRIDES:
-		var entry: Dictionary = HERO_OVERRIDES[hero_id]
-		var reason = entry.get("reason", "")
-		if typeof(reason) != TYPE_STRING or String(reason).is_empty():
-			missing.append(String(hero_id))
+	for table in [HERO_OVERRIDES, MINION_OVERRIDES]:
+		for entry_id in table:
+			var entry: Dictionary = table[entry_id]
+			var reason = entry.get("reason", "")
+			if typeof(reason) != TYPE_STRING or String(reason).is_empty():
+				missing.append(String(entry_id))
 	missing.sort()
 	return missing

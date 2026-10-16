@@ -375,6 +375,15 @@ _prototype_text = (ROOT / "scripts/match/prototype_battle.gd").read_text(encodin
 check('const BalanceOverrides = preload("res://scripts/data/balance_overrides.gd")'
       in _prototype_text,
       "Prototype battle must preload the rebalance surface")
+check('"troll":\n\t{\n\t\t"regen_per_tick": 0.15,' in _balance_overrides_text,
+      "The S3 production troll regen override must stay pinned at 0.15 HP/tick")
+check("static func minion_definition_for(definition: MinionDefinition) -> MinionDefinition:"
+      in _balance_overrides_text and "definition.duplicate() as MinionDefinition" in _balance_overrides_text,
+      "The minion override must duplicate the definition, never mutate the .tres")
+check("target = BalanceOverrides.minion_definition_for(definition)" in _prototype_text,
+      "The production wave spawn must route the minion override surface")
+check("regen_per_tick = 0.6" in (ROOT / "data/minions/troll.tres").read_text(encoding="utf-8"),
+      "The troll .tres must keep the 0.6 source regen (lab parity)")
 check("var balance_overrides_enabled := false" in _prototype_text
       and "or not balance_overrides_enabled:" in _prototype_text,
       "The rebalance table must be opt-in per world (off for parity suites and the lab)")
