@@ -14,15 +14,14 @@ const VOUCHER_FILE := "voucher_codes.txt"
 ## Project root first, then the save dir (`user://`), like the source.
 const DEFAULT_ROOTS: Array[String] = ["res://", "user://"]
 
-static var _code_re: RegEx
 
-
+## No static cache: a static RegEx would keep this script alive at exit
+## ("resources still in use"), and the check is only run on button presses.
 static func is_valid_format(code: Variant) -> bool:
 	if code == null:
 		return false
-	if _code_re == null:
-		_code_re = RegEx.create_from_string(CODE_PATTERN)
-	return _code_re.search(String(code).strip_edges().to_upper()) != null
+	var code_re := RegEx.create_from_string(CODE_PATTERN)
+	return code_re.search(String(code).strip_edges().to_upper()) != null
 
 
 ## Parse allowlist text -> `{CODE: gold or null}`; `null` when it holds no codes.

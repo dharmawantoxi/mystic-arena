@@ -17,12 +17,14 @@ const BASE_URL := "http://127.0.0.1:8321/"
 ## with the next `[ok, status, body]` entry (like the oracle's fake urllib).
 class FakeTransport:
 	extends RefCounted
-	var flow: TopupFlow
+	## Weak: the flow owns the transport, a strong back-reference would leak.
+	var flow_ref: WeakRef
 	var responses: Array = []
 	var requests: Array = []
 
 	func send(method: String, path: String, payload: Variant) -> void:
 		requests.append({"method": method, "path": path, "payload": payload})
+		var flow: TopupFlow = flow_ref.get_ref()
 		if responses.is_empty():
 			flow.on_http_result(false, 0, "no script".to_utf8_buffer())
 			return
@@ -393,7 +395,7 @@ func _menu_checks(data: Dictionary, check: Callable) -> void:
 func _server_flow(responses: Array, gold: int = 10) -> Array:
 	var flow := _new_flow("IDR", gold)
 	var transport := FakeTransport.new()
-	transport.flow = flow
+	transport.flow_ref = weakref(flow)
 	transport.responses = responses
 	flow.transport = transport
 	flow.server_url = BASE_URL
