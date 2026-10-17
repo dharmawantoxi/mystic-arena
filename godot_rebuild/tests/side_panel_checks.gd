@@ -101,7 +101,7 @@ func _snapshot_checks(name: String, expected: Dictionary, panel: Rect2i, check: 
 	for index in range(mini(texts.size(), built["texts"].size())):
 		var want: Dictionary = texts[index]
 		var got: Dictionary = built["texts"][index]
-		var same := (
+		var same: bool = (
 			String(got["text"]) == String(want["text"])
 			and got["color"] == _color(want["color"])
 			and got["pos"] == Vector2i(int(want["pos"][0]), int(want["pos"][1]))
@@ -112,7 +112,7 @@ func _snapshot_checks(name: String, expected: Dictionary, panel: Rect2i, check: 
 	for index in range(mini(rects.size(), built["rects"].size())):
 		var want: Dictionary = rects[index]
 		var got: Dictionary = built["rects"][index]
-		var same := (
+		var same: bool = (
 			got["rect"] == _rect(want["rect"])
 			and got["color"] == _color(want["color"])
 			and int(got["width"]) == int(want["width"])
@@ -124,7 +124,7 @@ func _snapshot_checks(name: String, expected: Dictionary, panel: Rect2i, check: 
 	for index in range(mini(circles.size(), built["circles"].size())):
 		var want: Dictionary = circles[index]
 		var got: Dictionary = built["circles"][index]
-		var same := (
+		var same: bool = (
 			got["center"] == Vector2i(int(want["center"][0]), int(want["center"][1]))
 			and got["color"] == _color(want["color"])
 			and int(got["radius"]) == int(want["radius"])
