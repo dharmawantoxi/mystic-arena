@@ -3,6 +3,17 @@
   "duration": 120,
   "wave_num": 7,
   "screen_w": 1280,
+  "screen_h": 720,
+  "visual_sample": {
+    "timer": 60,
+    "center_box": [
+      640,
+      240,
+      400,
+      80,
+      255
+    ]
+  },
   "steps": [
     [
       1,

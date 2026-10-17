@@ -56,6 +56,7 @@ func _check_lifetime(check: Callable, preview, data: Dictionary) -> void:
 
 func _check_samples(check: Callable, preview, data: Dictionary) -> void:
 	var point_indices: Array = data["point_indices"]
+	var arrow_segments: Array = data["arrow_segments"]
 	check.call(point_indices.size() == 5, "Source fixture keeps the 5 sampled arrows")
 
 	var samples: Array = data["samples"]
@@ -85,11 +86,17 @@ func _check_samples(check: Callable, preview, data: Dictionary) -> void:
 			return
 		for slot in range(arrows.size()):
 			var want: Array = arrows[slot]
-			var pulse: int = PathPreview.pulse_index(int(point_indices[slot]), animation_time)
+			var point_index := int(point_indices[slot])
+			var pulse: int = PathPreview.pulse_index(point_index, animation_time)
+			var segment: Array = arrow_segments[slot]
+			var source_point := Vector2(float(segment[0][0]), float(segment[0][1]))
+			var target_point := Vector2(float(segment[1][0]), float(segment[1][1]))
+			var points := PathPreview.arrow_points(source_point, target_point, int(want[1]))
 			if (
 				pulse != int(want[0])
 				or PathPreview.arrow_size(pulse) != int(want[1])
 				or PathPreview.arrow_alpha(int(sample["alpha"]), pulse) != int(want[2])
+				or not _points_match(points, want[3])
 			):
 				check.call(
 					false,
@@ -100,4 +107,17 @@ func _check_samples(check: Callable, preview, data: Dictionary) -> void:
 				)
 				return
 
-	check.call(true, "Path preview replays %d dash samples exactly" % samples.size())
+	check.call(
+		true,
+		"Path preview replays %d dash samples and source arrow geometry exactly" % samples.size()
+	)
+
+
+func _points_match(actual: PackedVector2Array, expected: Array) -> bool:
+	if actual.size() != expected.size():
+		return false
+	for index in range(actual.size()):
+		var pair: Array = expected[index]
+		if int(actual[index].x) != int(pair[0]) or int(actual[index].y) != int(pair[1]):
+			return false
+	return true

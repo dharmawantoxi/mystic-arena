@@ -6,6 +6,7 @@ const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd"
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const BossState = preload("res://scripts/match/boss_state.gd")
 const HeroMarker = preload("res://scripts/ui/hero_marker.gd")
+const PathPreview = preload("res://scripts/ui/path_preview.gd")
 const SpriteLighting = preload("res://scripts/ui/sprite_lighting.gd")
 const BossFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
 const LevelIntroLayout = preload("res://scripts/ui/level_intro_layout.gd")
@@ -127,18 +128,26 @@ func _draw_path_preview(world: Prototype) -> void:
 		return
 	for lane_value in preview.paths:
 		var lane: Array = lane_value
-		for index in range(lane.size()):
+		if lane.size() < 2:
+			continue
+		for index in range(0, lane.size() - 1, 8):
 			var raw: Variant = lane[index]
-			var pt := (
-				Vector2(float((raw as Array)[0]), float((raw as Array)[1]))
-				if raw is Array
-				else (raw as Vector2)
-			)
+			var point := _path_point(raw)
+			var next_point := Vector2(point.x + 1.0, point.y)
+			if index + 4 < lane.size():
+				next_point = _path_point(lane[index + 4])
 			var pulse: int = preview.pulse_index(index, float(world.tick_count))
-			var radius := float(preview.arrow_size(pulse))
-			var alpha := clampf(float(preview.arrow_alpha(base_alpha, pulse)) / 255.0, 0.0, 1.0)
-			if radius > 0.0 and alpha > 0.0:
-				draw_circle(pt, radius, Color(1.0, 0.86, 0.39, alpha))
+			var size: int = preview.arrow_size(pulse)
+			var alpha: int = preview.arrow_alpha(base_alpha, pulse)
+			var points := PathPreview.arrow_points(point, next_point, size)
+			draw_colored_polygon(points, Color8(255, 100, 100, alpha))
+
+
+func _path_point(raw: Variant) -> Vector2:
+	if raw is Array:
+		var pair: Array = raw
+		return Vector2(float(pair[0]), float(pair[1]))
+	return raw as Vector2
 
 
 func _draw_world_effects(world: Prototype) -> void:
@@ -239,22 +248,74 @@ func _draw_wave_announcer(world: Prototype) -> void:
 	var announcer = world.effects.wave_announcer
 	if announcer == null or not announcer.active:
 		return
-	var alpha := clampf(float(announcer.get_alpha()) / 255.0, 0.0, 1.0)
-	if alpha <= 0.0:
+	var alpha_i: int = announcer.get_alpha()
+	if alpha_i <= 0:
 		return
-	var offset_x := float(announcer.get_offset_x(1280))
-	var rect := Rect2(Vector2(440.0 + offset_x, 150.0), Vector2(400.0, 64.0))
-	draw_rect(rect, Color(0.05, 0.08, 0.12, 0.82 * alpha))
-	draw_rect(rect, Color(0.96, 0.83, 0.57, alpha), false, 2.0)
+	var alpha := clampf(float(alpha_i) / 255.0, 0.0, 1.0)
+	var rect: Rect2 = announcer.visual_rect(int(size.x), int(size.y))
+	var center_x := rect.get_center().x
+	var center_y := rect.get_center().y
+	for row in range(80):
+		var grad_alpha := int(float(alpha_i) * (1.0 - absf(float(row) - 40.0) / 40.0 * 0.3))
+		draw_rect(
+			Rect2(rect.position + Vector2(0.0, float(row)), Vector2(400.0, 1.0)),
+			Color8(16, 20, 40, grad_alpha)
+		)
+	draw_rect(rect, Color8(255, 220, 50, alpha_i), false, 3.0)
+	draw_rect(rect.grow(-2.0), Color8(255, 250, 180, alpha_i), false, 1.0)
+	for stripe in range(0, 400, 10):
+		draw_line(
+			rect.position + Vector2(float(stripe), 0.0),
+			rect.position + Vector2(float(stripe + 10), 80.0),
+			Color8(255, 220, 50, alpha_i / 4),
+			1.0,
+			true
+		)
+	if alpha_i > 60:
+		_draw_gold_corner_ticks(rect, alpha)
+	var title := announcer.title()
+	var title_y := center_y + 8.0
 	draw_string(
 		BossFont,
-		Vector2(rect.position.x, rect.position.y + 42.0),
-		announcer.title(),
+		Vector2(rect.position.x + 2.0, title_y + 2.0),
+		title,
 		HORIZONTAL_ALIGNMENT_CENTER,
 		rect.size.x,
-		30,
-		Color(0.96, 0.83, 0.57, alpha)
+		46,
+		Color(0.03, 0.03, 0.06, minf(200.0 / 255.0, alpha))
 	)
+	draw_string(
+		BossFont,
+		Vector2(rect.position.x, title_y),
+		title,
+		HORIZONTAL_ALIGNMENT_CENTER,
+		rect.size.x,
+		46,
+		Color(1.0, 0.88, 0.52, alpha)
+	)
+	draw_string(
+		BossFont,
+		Vector2(rect.position.x, center_y + 31.0),
+		"E N E M I E S   I N C O M I N G",
+		HORIZONTAL_ALIGNMENT_CENTER,
+		rect.size.x,
+		22,
+		Color(0.78, 0.78, 0.86, alpha)
+	)
+
+
+func _draw_gold_corner_ticks(rect: Rect2, alpha: float) -> void:
+	var left := rect.position.x + 5.0
+	var right := rect.end.x - 5.0
+	var top := rect.position.y + 5.0
+	var bottom := rect.end.y - 5.0
+	var ink := Color(1.0, 0.86, 0.47, alpha)
+	for x_sign in [-1.0, 1.0]:
+		for y_sign in [-1.0, 1.0]:
+			var x := left if x_sign < 0.0 else right
+			var y := top if y_sign < 0.0 else bottom
+			draw_line(Vector2(x, y), Vector2(x - x_sign * 12.0, y), ink, 2.0, true)
+			draw_line(Vector2(x, y), Vector2(x, y - y_sign * 12.0), ink, 2.0, true)
 
 
 func _draw_combo_counter(world: Prototype) -> void:

@@ -27,6 +27,7 @@ func run(check: Callable) -> void:
 		is_equal_approx(float(data["duration"]), float(banner.duration)),
 		"Wave banner duration matches source"
 	)
+	_check_visual_rect(check, banner, data)
 	check.call(int(data["wave_num"]) == 7, "Source fixture announces wave 7")
 
 	var screen_w: int = int(data["screen_w"])
@@ -54,6 +55,24 @@ func run(check: Callable) -> void:
 
 	check.call(true, "Wave announcer replays %d source ticks exactly" % steps.size())
 	check.call(not banner.active, "Wave banner retires itself once the timer runs out")
+
+
+func _check_visual_rect(check: Callable, banner, data: Dictionary) -> void:
+	var sample: Dictionary = data["visual_sample"]
+	var expected: Array = sample["center_box"]
+	banner.announce(int(data["wave_num"]))
+	banner.timer = int(sample["timer"])
+	var rect: Rect2 = banner.visual_rect(int(data["screen_w"]), int(data["screen_h"]))
+	check.call(
+		(
+			int(rect.get_center().x) == int(expected[0])
+			and int(rect.get_center().y) == int(expected[1])
+			and int(rect.size.x) == int(expected[2])
+			and int(rect.size.y) == int(expected[3])
+		),
+		"Banner dimensions and center match source draw geometry"
+	)
+	banner.timer = banner.duration
 
 
 func _matches(banner, screen_w: int, curve: Array) -> bool:

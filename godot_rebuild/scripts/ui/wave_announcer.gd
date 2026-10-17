@@ -46,6 +46,11 @@ func title() -> String:
 	return "WAVE %d" % wave_num
 
 
+func visual_rect(screen_w: int, screen_h: int) -> Rect2:
+	var center := Vector2(float(screen_w / 2 + get_offset_x(screen_w)), float(screen_h / 3))
+	return Rect2(center - Vector2(200.0, 40.0), Vector2(400.0, 80.0))
+
+
 func get_offset_x(screen_w: int) -> int:
 	var elapsed := progress()
 	if elapsed < SLIDE_IN_END:

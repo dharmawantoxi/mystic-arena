@@ -3290,6 +3290,27 @@ if _intro_fixture_path.is_file():
     ), "9al passive text keeps the source format on the full path")
 
 
+# ── Layer 9aw: complete wave banner and path arrow geometry ──
+_wave_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_path_script = (ROOT / "scripts/ui/path_preview.gd").read_text(encoding="utf-8")
+_wave_script = (ROOT / "scripts/ui/wave_announcer.gd").read_text(encoding="utf-8")
+_wave_fixture = json.loads((ROOT / "tests/fixtures/wave_announcer_source.json").read_text(encoding="utf-8"))
+_path_fixture = json.loads((ROOT / "tests/fixtures/path_preview_source.json").read_text(encoding="utf-8"))
+check("visual_rect(screen_w: int, screen_h: int)" in _wave_script,
+      "9aw wave banner must expose source-derived draw bounds")
+check("for row in range(80)" in _wave_view and "_draw_gold_corner_ticks" in _wave_view
+      and "E N E M I E S   I N C O M I N G" in _wave_view,
+      "9aw WaveAnnouncer must render gradient, gold corner detail, and subtitle")
+check("arrow_points(" in _path_script and "draw_colored_polygon(points" in _wave_view,
+      "9aw PathPreview must render source-geometry arrow polygons")
+check(_wave_fixture.get("visual_sample", {}).get("center_box", [])[2:4] == [400, 80],
+      "9aw source fixture must pin the banner's 400x80 visual box")
+check(all(len(arrow) >= 4 and len(arrow[3]) == 3
+          for sample in _path_fixture.get("samples", []) for arrow in sample.get("arrows", [])),
+      "9aw PathPreview oracle must pin all three world-space vertices per arrow")
+check("path_preview_source_oracle.py" in workflow and "wave_announcer_source_oracle.py" in workflow,
+      "9aw source oracles must remain in CI")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")
