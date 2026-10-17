@@ -184,7 +184,7 @@ def source_fixture():
     frame = 0
     while not splash.done and frame < 400:
         if frame in sample_frames:
-            timeline.append(_frame(splash))
+            timeline.append(dict(_frame(splash), frame=frame))
         splash.update(dt)
         frame += 1
     timeline.append(dict(_frame(splash), frame=frame))
@@ -214,11 +214,11 @@ def source_fixture():
     skip_timeline = []
     frames = 0
     while not skip_splash.done and frames < 100:
-        skip_timeline.append({"elapsed": skip_splash.elapsed,
+        skip_timeline.append({"frame": 60 + frames, "elapsed": skip_splash.elapsed,
                               "overall_alpha": round(skip_splash._overall_alpha(), 6)})
         skip_splash.update(dt)
         frames += 1
-    skip_done = {"frames_after_skip": frames, "elapsed": skip_splash.elapsed}
+    skip_done = {"frames_after_skip": frames, "frame": 60 + frames, "elapsed": skip_splash.elapsed}
 
     # Logo grow quantisation samples and glow ring alphas at full size.
     grow = []
@@ -235,7 +235,7 @@ def source_fixture():
     plain = ns2["SplashScreen"](Surface((W, H)))
     for _ in range(120):
         plain.update(dt)
-    plain_frame = _frame(plain)
+    plain_frame = dict(_frame(plain), frame=120)
 
     return {
         "source": "splash_screen.py (real SplashScreen under a recording pygame shim)",

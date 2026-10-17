@@ -21,6 +21,15 @@ static func _color(values: Array) -> Color:
 	return Color8(int(values[0]), int(values[1]), int(values[2]))
 
 
+## The source accumulates `elapsed += 1/60` per frame; replaying the same
+## IEEE additions reproduces its doubles exactly (JSON parsing would not).
+static func _elapsed_at(frame: int) -> float:
+	var elapsed := 0.0
+	for _step in range(frame):
+		elapsed += 1.0 / 60.0
+	return elapsed
+
+
 func run(check: Callable) -> void:
 	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(FIXTURE))
 	check.call(data is Dictionary, "Splash fixture parses")
@@ -56,8 +65,9 @@ func _constant_checks(data: Dictionary, check: Callable) -> void:
 func _timeline_checks(data: Dictionary, check: Callable) -> void:
 	for sample_value in data["timeline"]:
 		var sample: Dictionary = sample_value
-		var t := float(sample["elapsed"])
+		var t := _elapsed_at(int(sample["frame"]))
 		var tag := "t=%.3f " % t
+		check.call(absf(t - float(sample["elapsed"])) < 1e-9, tag + "accumulated elapsed matches")
 		check.call(
 			Timeline.title_alpha(t) == int(sample["title_alpha"]), tag + "title alpha matches"
 		)
@@ -69,7 +79,7 @@ func _timeline_checks(data: Dictionary, check: Callable) -> void:
 	check.call(int(data["done_frame"]) == 181, "3 s at 60 Hz ends on frame 181")
 	for sample_value in data["skip_timeline"]:
 		var sample: Dictionary = sample_value
-		var t := float(sample["elapsed"])
+		var t := _elapsed_at(int(sample["frame"]))
 		check.call(
 			absf(Timeline.overall_alpha(t, true) - float(sample["overall_alpha"])) < 1e-5,
 			"skip alpha at t=%.3f matches" % t
@@ -158,7 +168,7 @@ func _particle_checks(data: Dictionary, check: Callable) -> void:
 	# Twinkle colour / radius of the drawn particles at a sampled frame.
 	for sample_value in data["timeline"]:
 		var sample: Dictionary = sample_value
-		if not sample.has("particles") or absf(float(sample["elapsed"]) - 0.1) > 1e-6:
+		if not sample.has("particles") or int(sample["frame"]) != 6:
 			continue
 		var drawn: Array = sample["particles"]
 		var initial: Array = data["particles_initial"]
@@ -169,11 +179,11 @@ func _particle_checks(data: Dictionary, check: Callable) -> void:
 				"phase": float(p0["phase"]), "color": _color(p0["color"]), "r": float(p0["r"])
 			}
 			var want: Dictionary = drawn[index]
-			if Timeline.particle_color(fake, 0.1) != _color(want["color"]):
+			if Timeline.particle_color(fake, _elapsed_at(6)) != _color(want["color"]):
 				ok = false
 			if Timeline.particle_radius(fake) != int(want["radius"]):
 				ok = false
-		check.call(ok, "particle twinkle colours and radii match at t=0.1")
+		check.call(ok, "particle twinkle colours and radii match at frame 6")
 
 
 func _logo_checks(data: Dictionary, check: Callable) -> void:
@@ -222,7 +232,7 @@ func _layout_checks(data: Dictionary, check: Callable) -> void:
 		var sample: Dictionary = sample_value
 		if not bool(sample["drawn"]):
 			continue
-		var t := float(sample["elapsed"])
+		var t := _elapsed_at(int(sample["frame"]))
 		var frame: Dictionary = Timeline.layout(t, false, 1280, 720, Vector2i(320, 320), _measure)
 		var tag := "logo frame t=%.3f " % t
 		_text_checks(frame, sample, tag, check)
@@ -262,7 +272,7 @@ func _layout_checks(data: Dictionary, check: Callable) -> void:
 		_line_checks(frame, sample, tag, check)
 	var plain: Dictionary = data["plain_frame"]
 	var frame: Dictionary = Timeline.layout(
-		float(plain["elapsed"]), false, 1280, 720, Vector2i.ZERO, _measure
+		_elapsed_at(int(plain["frame"])), false, 1280, 720, Vector2i.ZERO, _measure
 	)
 	check.call(
 		not bool(frame["has_logo"]) and int(frame["title_size"]) == 92,
