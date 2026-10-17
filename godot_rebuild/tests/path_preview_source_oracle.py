@@ -11,10 +11,9 @@ own guess, so `draw()` is run against a tiny pygame shim and `sys.settrace`
 reads the real locals off the frame at two fixed lines. No third-party package
 is needed: CI has no pygame.
 
-Not captured (and therefore not ported): the arrow triangle points. They are
-pygame-surface geometry — offsets around the centre of a 20x20 blit surface —
-so a Godot renderer would re-centre them anyway. The captured data is the
-state machine plus the timing/colour decisions the renderer needs.
+Arrow points are captured from the source's `pts` local at the real polygon
+call and translated through the original 20x20 blit origin. The native renderer
+uses those source-derived vertices in world coordinates.
 
 Run: python godot_rebuild/tests/path_preview_source_oracle.py
 """
@@ -31,7 +30,10 @@ TAG = "_render.py:PathPreview"
 
 TOTAL_STEPS = 130
 # Straight lane: five arrows (range(0, len - 1, 8) over 40 points).
-LANE_PATH = [[index * 10, 100] for index in range(40)]
+LANE_PATH = [
+    [round(100 + 60 * math.cos(index * 0.2)), round(100 + 60 * math.sin(index * 0.2))]
+    for index in range(40)
+]
 # Exercises the `len(lane_path) < 2` early-continue.
 STUB_PATH = [[0, 0]]
 PATHS = [LANE_PATH, STUB_PATH]
@@ -98,8 +100,14 @@ def _trace_draw(item, lines, animation_time):
             if frame.f_lineno == lines["alpha"]:
                 captured["alpha"].append([local["alpha"], local["offset"]])
             elif frame.f_lineno == lines["arrow"]:
+                origin_x = int(local["x"]) - 10
+                origin_y = int(local["y"]) - 10
+                points = [
+                    [origin_x + int(point[0]), origin_y + int(point[1])]
+                    for point in local["pts"]
+                ]
                 captured["arrow"].append(
-                    [local["pulse_i"], local["arrow_size"], local["arrow_color"][3]]
+                    [local["pulse_i"], local["arrow_size"], local["arrow_color"][3], points]
                 )
         return tracer
 
@@ -158,6 +166,9 @@ def source_fixture():
         "source": "_render.py::PathPreview",
         "duration": preview.duration,
         "point_indices": point_indices,
+        "arrow_segments": [
+            [LANE_PATH[index], LANE_PATH[index + 4]] for index in point_indices
+        ],
         "steps": steps,
         "samples": samples,
     }

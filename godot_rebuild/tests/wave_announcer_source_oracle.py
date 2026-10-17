@@ -140,6 +140,32 @@ def _capture_line(class_block):
     raise AssertionError("WaveAnnouncer.draw() capture line not found")
 
 
+def _capture_banner_line(class_block):
+    for index, line in enumerate(class_block.splitlines()):
+        if line.strip().startswith("surface.blit(banner_surf,"):
+            return index + 1
+    raise AssertionError("WaveAnnouncer banner blit line not found")
+
+
+def _trace_banner(item, line):
+    captured = []
+
+    def tracer(frame, event, arg):
+        if event == "call":
+            return tracer if frame.f_code.co_filename == TAG else None
+        if event == "line" and frame.f_code.co_filename == TAG and frame.f_lineno == line:
+            local = frame.f_locals
+            captured.append([local["cx"], local["cy"], local["banner_w"], local["banner_h"], local["alpha"]])
+        return tracer
+
+    sys.settrace(tracer)
+    try:
+        item.draw(_SurfaceShim(), SCREEN_W, SCREEN_H)
+    finally:
+        sys.settrace(None)
+    return captured[0] if captured else None
+
+
 def _trace_draw(item, line):
     """Run draw() and read (progress, x_offset, alpha) off the real frame."""
     captured = []
@@ -170,8 +196,12 @@ def source_fixture():
     namespace, class_block = _load_class()
     cls = namespace["WaveAnnouncer"]
     line = _capture_line(class_block)
+    banner_line = _capture_banner_line(class_block)
 
     banner = cls()
+    banner.announce(WAVE_NUM)
+    banner.timer = 60
+    visual_sample = {"timer": banner.timer, "center_box": _trace_banner(banner, banner_line)}
     banner.announce(WAVE_NUM)
 
     steps = []
@@ -188,6 +218,8 @@ def source_fixture():
         "duration": banner.duration,
         "wave_num": WAVE_NUM,
         "screen_w": SCREEN_W,
+        "screen_h": SCREEN_H,
+        "visual_sample": visual_sample,
         "steps": steps,
     }
 

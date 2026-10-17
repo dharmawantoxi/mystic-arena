@@ -3,10 +3,10 @@
 `import _render` fails today with a pre-existing circular import, and the
 Python sources are read-only, so this oracle extracts the real
 `class HitParticle` block from `_render.py` and executes it with `math` and
-`random` in scope and pygame stubbed. Only the pixel-sprite pre-render in
-`__init__` is stubbed; `update()` - the motion and lifetime math that is
-actually being ported - runs the real source body unchanged. Nothing here
-requires pygame to be installed, so CI stays dependency-free.
+`random` in scope and a recording pygame shim. The pre-rendered sprite's two
+circle calls and dimensions are captured from the original constructor;
+`update()` runs the real source body unchanged. No pygame installation is
+needed, so CI stays dependency-free.
 
 Every number in the fixture therefore comes from the actual source
 algorithm. Cases with an explicit velocity are fully deterministic; the
@@ -23,16 +23,11 @@ from pathlib import Path
 
 
 class _SurfaceShim:
-    """Stand-in for pygame.Surface.
-
-    HitParticle.__init__ pre-renders a pixel sprite. That sprite is pixel
-    art we do not port (godot_rebuild draws vectors), and CI has no pygame,
-    so it is stubbed. update() - the motion and lifetime math that is
-    actually being ported - still runs the real source body.
-    """
+    """Headless pygame surface that records source sprite primitives."""
 
     def __init__(self, size, _flags=0):
         self._size = tuple(size)
+        self.circles = []
 
     def get_size(self):
         return self._size
@@ -40,8 +35,12 @@ class _SurfaceShim:
 
 class _DrawShim:
     @staticmethod
-    def circle(_surface, _color, _center, _radius):
-        return None
+    def circle(surface, color, center, radius):
+        surface.circles.append({
+            "color": list(color),
+            "center": list(center),
+            "radius": radius,
+        })
 
 
 class _PygameShim:
@@ -113,8 +112,14 @@ def _trace(cls, case):
             int(255 * ratio), max(1, int(item.size * ratio)),
         ])
     return {
-        "vx": start_vx, "vy": start_vy,
-        "gravity": item.gravity, "steps": steps,
+        "vx": start_vx,
+        "vy": start_vy,
+        "gravity": item.gravity,
+        "sprite": {
+            "size": list(item._psurf.get_size()),
+            "circles": item._psurf.circles,
+        },
+        "steps": steps,
     }
 
 
@@ -129,6 +134,7 @@ def source_fixture():
                        ("x", "y", "color", "velocity", "lifetime", "size")},
             "vx": traced["vx"], "vy": traced["vy"],
             "gravity": traced["gravity"],
+            "sprite": traced["sprite"],
             "steps": traced["steps"],
         })
     return {"source": "_render.py::HitParticle", "cases": cases}

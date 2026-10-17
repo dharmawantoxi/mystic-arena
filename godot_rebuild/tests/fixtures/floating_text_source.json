@@ -22,6 +22,270 @@
    },
    "x_drift": -0.280296,
    "font_size": 18,
+   "draw_samples": [
+    {
+     "tick": 0,
+     "blits": [
+      {
+       "text": "123",
+       "center": [
+        100,
+        200
+       ],
+       "size": [
+        16,
+        9
+       ],
+       "font_size": 9,
+       "style": "body_semibold",
+       "color": [
+        8,
+        8,
+        14
+       ],
+       "alpha": 220
+      },
+      {
+       "text": "123",
+       "center": [
+        99,
+        198
+       ],
+       "size": [
+        16,
+        9
+       ],
+       "font_size": 9,
+       "style": "body_semibold",
+       "color": [
+        255,
+        220,
+        50
+       ],
+       "alpha": 255
+      }
+     ]
+    },
+    {
+     "tick": 1,
+     "blits": [
+      {
+       "text": "123",
+       "center": [
+        100,
+        198
+       ],
+       "size": [
+        19,
+        11
+       ],
+       "font_size": 11,
+       "style": "body_semibold",
+       "color": [
+        8,
+        8,
+        14
+       ],
+       "alpha": 220
+      },
+      {
+       "text": "123",
+       "center": [
+        99,
+        196
+       ],
+       "size": [
+        19,
+        11
+       ],
+       "font_size": 11,
+       "style": "body_semibold",
+       "color": [
+        255,
+        220,
+        50
+       ],
+       "alpha": 255
+      }
+     ]
+    },
+    {
+     "tick": 3,
+     "blits": [
+      {
+       "text": "123",
+       "center": [
+        99,
+        194
+       ],
+       "size": [
+        24,
+        14
+       ],
+       "font_size": 14,
+       "style": "body_semibold",
+       "color": [
+        8,
+        8,
+        14
+       ],
+       "alpha": 220
+      },
+      {
+       "text": "123",
+       "center": [
+        98,
+        192
+       ],
+       "size": [
+        24,
+        14
+       ],
+       "font_size": 14,
+       "style": "body_semibold",
+       "color": [
+        255,
+        220,
+        50
+       ],
+       "alpha": 255
+      }
+     ]
+    },
+    {
+     "tick": 7,
+     "blits": [
+      {
+       "text": "123",
+       "center": [
+        98,
+        188
+       ],
+       "size": [
+        30,
+        17
+       ],
+       "font_size": 17,
+       "style": "body_semibold",
+       "color": [
+        8,
+        8,
+        14
+       ],
+       "alpha": 220
+      },
+      {
+       "text": "123",
+       "center": [
+        97,
+        186
+       ],
+       "size": [
+        30,
+        17
+       ],
+       "font_size": 17,
+       "style": "body_semibold",
+       "color": [
+        255,
+        220,
+        50
+       ],
+       "alpha": 255
+      }
+     ]
+    },
+    {
+     "tick": 15,
+     "blits": [
+      {
+       "text": "123",
+       "center": [
+        96,
+        179
+       ],
+       "size": [
+        30,
+        17
+       ],
+       "font_size": 17,
+       "style": "body_semibold",
+       "color": [
+        8,
+        8,
+        14
+       ],
+       "alpha": 220
+      },
+      {
+       "text": "123",
+       "center": [
+        95,
+        177
+       ],
+       "size": [
+        30,
+        17
+       ],
+       "font_size": 17,
+       "style": "body_semibold",
+       "color": [
+        255,
+        220,
+        50
+       ],
+       "alpha": 255
+      }
+     ]
+    },
+    {
+     "tick": 29,
+     "blits": [
+      {
+       "text": "123",
+       "center": [
+        92,
+        170
+       ],
+       "size": [
+        30,
+        17
+       ],
+       "font_size": 17,
+       "style": "body_semibold",
+       "color": [
+        8,
+        8,
+        14
+       ],
+       "alpha": 170
+      },
+      {
+       "text": "123",
+       "center": [
+        91,
+        168
+       ],
+       "size": [
+        30,
+        17
+       ],
+       "font_size": 17,
+       "style": "body_semibold",
+       "color": [
+        255,
+        220,
+        50
+       ],
+       "alpha": 170
+      }
+     ]
+    },
+    {
+     "tick": 44,
+     "blits": []
+    }
+   ],
    "steps": [
     [
      99.719704,
@@ -586,6 +850,231 @@
    },
    "x_drift": -0.280296,
    "font_size": 24,
+   "draw_samples": [
+    {
+     "tick": 0,
+     "blits": [
+      {
+       "text": "999!",
+       "center": [
+        50,
+        59
+       ],
+       "size": [
+        31,
+        13
+       ],
+       "font_size": 13,
+       "style": "body_bold",
+       "color": [
+        8,
+        8,
+        14
+       ],
+       "alpha": 220
+      },
+      {
+       "text": "999!",
+       "center": [
+        49,
+        57
+       ],
+       "size": [
+        31,
+        13
+       ],
+       "font_size": 13,
+       "style": "body_bold",
+       "color": [
+        255,
+        220,
+        50
+       ],
+       "alpha": 255
+      }
+     ]
+    },
+    {
+     "tick": 1,
+     "blits": [
+      {
+       "text": "999!",
+       "center": [
+        50,
+        57
+       ],
+       "size": [
+        43,
+        18
+       ],
+       "font_size": 18,
+       "style": "body_bold",
+       "color": [
+        8,
+        8,
+        14
+       ],
+       "alpha": 220
+      },
+      {
+       "text": "999!",
+       "center": [
+        49,
+        55
+       ],
+       "size": [
+        43,
+        18
+       ],
+       "font_size": 18,
+       "style": "body_bold",
+       "color": [
+        255,
+        220,
+        50
+       ],
+       "alpha": 255
+      }
+     ]
+    },
+    {
+     "tick": 3,
+     "blits": [
+      {
+       "text": "999!",
+       "center": [
+        49,
+        52
+       ],
+       "size": [
+        55,
+        23
+       ],
+       "font_size": 23,
+       "style": "body_bold",
+       "color": [
+        8,
+        8,
+        14
+       ],
+       "alpha": 220
+      },
+      {
+       "text": "999!",
+       "center": [
+        48,
+        50
+       ],
+       "size": [
+        55,
+        23
+       ],
+       "font_size": 23,
+       "style": "body_bold",
+       "color": [
+        255,
+        220,
+        50
+       ],
+       "alpha": 255
+      }
+     ]
+    },
+    {
+     "tick": 7,
+     "blits": [
+      {
+       "text": "999!",
+       "center": [
+        48,
+        45
+       ],
+       "size": [
+        64,
+        27
+       ],
+       "font_size": 27,
+       "style": "body_bold",
+       "color": [
+        8,
+        8,
+        14
+       ],
+       "alpha": 220
+      },
+      {
+       "text": "999!",
+       "center": [
+        47,
+        43
+       ],
+       "size": [
+        64,
+        27
+       ],
+       "font_size": 27,
+       "style": "body_bold",
+       "color": [
+        255,
+        220,
+        50
+       ],
+       "alpha": 255
+      }
+     ]
+    },
+    {
+     "tick": 15,
+     "blits": [
+      {
+       "text": "999!",
+       "center": [
+        46,
+        34
+       ],
+       "size": [
+        67,
+        28
+       ],
+       "font_size": 28,
+       "style": "body_bold",
+       "color": [
+        8,
+        8,
+        14
+       ],
+       "alpha": 220
+      },
+      {
+       "text": "999!",
+       "center": [
+        45,
+        32
+       ],
+       "size": [
+        67,
+        28
+       ],
+       "font_size": 28,
+       "style": "body_bold",
+       "color": [
+        255,
+        220,
+        50
+       ],
+       "alpha": 238
+      }
+     ]
+    },
+    {
+     "tick": 29,
+     "blits": []
+    },
+    {
+     "tick": 44,
+     "blits": []
+    }
+   ],
    "steps": [
     [
      49.719704,
@@ -1150,6 +1639,231 @@
    },
    "x_drift": -0.280296,
    "font_size": 14,
+   "draw_samples": [
+    {
+     "tick": 0,
+     "blits": [
+      {
+       "text": "+40",
+       "center": [
+        11,
+        21
+       ],
+       "size": [
+        14,
+        8
+       ],
+       "font_size": 8,
+       "style": "body_semibold",
+       "color": [
+        8,
+        8,
+        14
+       ],
+       "alpha": 220
+      },
+      {
+       "text": "+40",
+       "center": [
+        10,
+        19
+       ],
+       "size": [
+        14,
+        8
+       ],
+       "font_size": 8,
+       "style": "body_semibold",
+       "color": [
+        100,
+        255,
+        100
+       ],
+       "alpha": 255
+      }
+     ]
+    },
+    {
+     "tick": 1,
+     "blits": [
+      {
+       "text": "+40",
+       "center": [
+        12,
+        20
+       ],
+       "size": [
+        16,
+        9
+       ],
+       "font_size": 9,
+       "style": "body_semibold",
+       "color": [
+        8,
+        8,
+        14
+       ],
+       "alpha": 220
+      },
+      {
+       "text": "+40",
+       "center": [
+        11,
+        18
+       ],
+       "size": [
+        16,
+        9
+       ],
+       "font_size": 9,
+       "style": "body_semibold",
+       "color": [
+        100,
+        255,
+        100
+       ],
+       "alpha": 255
+      }
+     ]
+    },
+    {
+     "tick": 3,
+     "blits": [
+      {
+       "text": "+40",
+       "center": [
+        13,
+        18
+       ],
+       "size": [
+        19,
+        11
+       ],
+       "font_size": 11,
+       "style": "body_semibold",
+       "color": [
+        8,
+        8,
+        14
+       ],
+       "alpha": 220
+      },
+      {
+       "text": "+40",
+       "center": [
+        12,
+        16
+       ],
+       "size": [
+        19,
+        11
+       ],
+       "font_size": 11,
+       "style": "body_semibold",
+       "color": [
+        100,
+        255,
+        100
+       ],
+       "alpha": 255
+      }
+     ]
+    },
+    {
+     "tick": 7,
+     "blits": [
+      {
+       "text": "+40",
+       "center": [
+        16,
+        15
+       ],
+       "size": [
+        23,
+        13
+       ],
+       "font_size": 13,
+       "style": "body_semibold",
+       "color": [
+        8,
+        8,
+        14
+       ],
+       "alpha": 220
+      },
+      {
+       "text": "+40",
+       "center": [
+        15,
+        13
+       ],
+       "size": [
+        23,
+        13
+       ],
+       "font_size": 13,
+       "style": "body_semibold",
+       "color": [
+        100,
+        255,
+        100
+       ],
+       "alpha": 255
+      }
+     ]
+    },
+    {
+     "tick": 15,
+     "blits": [
+      {
+       "text": "+40",
+       "center": [
+        22,
+        10
+       ],
+       "size": [
+        23,
+        13
+       ],
+       "font_size": 13,
+       "style": "body_semibold",
+       "color": [
+        8,
+        8,
+        14
+       ],
+       "alpha": 102
+      },
+      {
+       "text": "+40",
+       "center": [
+        21,
+        8
+       ],
+       "size": [
+        23,
+        13
+       ],
+       "font_size": 13,
+       "style": "body_semibold",
+       "color": [
+        100,
+        255,
+        100
+       ],
+       "alpha": 102
+      }
+     ]
+    },
+    {
+     "tick": 29,
+     "blits": []
+    },
+    {
+     "tick": 44,
+     "blits": []
+    }
+   ],
    "steps": [
     [
      10.719704,
