@@ -18,15 +18,15 @@ const BASE_URL := "http://127.0.0.1:8321/"
 class FakeTransport:
 	extends RefCounted
 	var flow: TopupFlow
-	var script: Array = []
+	var responses: Array = []
 	var requests: Array = []
 
 	func send(method: String, path: String, payload: Variant) -> void:
 		requests.append({"method": method, "path": path, "payload": payload})
-		if script.is_empty():
+		if responses.is_empty():
 			flow.on_http_result(false, 0, "no script".to_utf8_buffer())
 			return
-		var entry: Array = script.pop_front()
+		var entry: Array = responses.pop_front()
 		var body: Variant = entry[2]
 		var bytes: PackedByteArray = (
 			body if body is PackedByteArray else String(body).to_utf8_buffer()
@@ -390,11 +390,11 @@ func _menu_checks(data: Dictionary, check: Callable) -> void:
 
 
 # ── server state machine ───────────────────────────────────────────────────
-func _server_flow(script: Array, gold: int = 10) -> Array:
+func _server_flow(responses: Array, gold: int = 10) -> Array:
 	var flow := _new_flow("IDR", gold)
 	var transport := FakeTransport.new()
 	transport.flow = flow
-	transport.script = script
+	transport.responses = responses
 	flow.transport = transport
 	flow.server_url = BASE_URL
 	flow.frame = 100
@@ -417,7 +417,7 @@ func _poll_due(flow: TopupFlow) -> void:
 	_drain(flow)
 
 
-func _script(entries: Array) -> Array:
+func _responses(entries: Array) -> Array:
 	var out: Array = []
 	for entry in entries:
 		var body: Variant = entry[2]
@@ -456,7 +456,9 @@ func _server_checks(data: Dictionary, check: Callable) -> void:
 	# happy path
 	var happy: Dictionary = data["happy"]
 	var parts := _server_flow(
-		_script([[true, 200, create], [true, 200, png], [true, 200, pending], [true, 200, settled]])
+		_responses(
+			[[true, 200, create], [true, 200, png], [true, 200, pending], [true, 200, settled]]
+		)
 	)
 	var flow: TopupFlow = parts[0]
 	var transport: FakeTransport = parts[1]
@@ -500,7 +502,7 @@ func _server_checks(data: Dictionary, check: Callable) -> void:
 			"request %d matches %s %s" % [index, want["method"], want["url"]]
 		)
 	# manual "I'VE PAID" polls immediately when idle
-	parts = _server_flow(_script([[true, 200, create], [true, 200, png], [true, 200, settled]]))
+	parts = _server_flow(_responses([[true, 200, create], [true, 200, png], [true, 200, settled]]))
 	flow = parts[0]
 	transport = parts[1]
 	_drain(flow)
@@ -524,7 +526,7 @@ func _server_checks(data: Dictionary, check: Callable) -> void:
 	check.call(
 		flow.pay_state == "creating" and parts[1].requests.size() == 2, "TRY AGAIN re-sends create"
 	)
-	parts = _server_flow(_script([[true, 400, {"error": "unknown_package"}]]))
+	parts = _server_flow(_responses([[true, 400, {"error": "unknown_package"}]]))
 	flow = parts[0]
 	_drain(flow)
 	_snapshot_matches(flow, data["create_rejected"], parts[2], "server create_rejected", check)
@@ -558,7 +560,9 @@ func _server_checks(data: Dictionary, check: Callable) -> void:
 	_drain(flow)
 	_poll_due(flow)
 	_snapshot_matches(flow, data["cancel"], parts[2], "server cancel", check)
-	parts = _server_flow(_script([[true, 200, create], [true, 200, png], [false, 0, "timed out"]]))
+	parts = _server_flow(
+		_responses([[true, 200, create], [true, 200, png], [false, 0, "timed out"]])
+	)
 	flow = parts[0]
 	_drain(flow)
 	_poll_due(flow)
