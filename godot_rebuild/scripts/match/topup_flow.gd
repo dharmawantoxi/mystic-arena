@@ -260,6 +260,7 @@ func complete_simulation() -> void:
 	tx_id = _tx_id(now_ms)
 	last_total = total
 	last_method = String(method.id)
+	sound_requested.emit("ui_buy")
 	changed.emit()
 
 
@@ -476,5 +477,8 @@ static func _tx_id(now_ms: int) -> String:
 static func _json(body: PackedByteArray) -> Dictionary:
 	if body.is_empty():
 		return {}
-	var parsed: Variant = JSON.parse_string(body.get_string_from_utf8())
+	var parser := JSON.new()
+	if parser.parse(body.get_string_from_utf8()) != OK:
+		return {}
+	var parsed: Variant = parser.data
 	return parsed if parsed is Dictionary else {}
