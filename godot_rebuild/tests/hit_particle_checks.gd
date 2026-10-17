@@ -80,7 +80,8 @@ func _check_sprite(entry: Dictionary, check: Callable) -> void:
 	var circles: Array = sprite["circles"]
 	var tint: Array = config["color"]
 	check.call(
-		sprite["size"] == [circle_size, circle_size], "Pre-render sprite bounds match source"
+		_int_array_matches(sprite["size"], [circle_size, circle_size]),
+		"Pre-render sprite bounds match source"
 	)
 	check.call(circles.size() == 2, "Source sprite contains both colored and white circles")
 	if circles.size() != 2:
@@ -89,20 +90,29 @@ func _check_sprite(entry: Dictionary, check: Callable) -> void:
 	var inner: Dictionary = circles[1]
 	check.call(
 		(
-			outer["center"] == [center, center]
+			_int_array_matches(outer["center"], [center, center])
 			and int(outer["radius"]) == base_size
-			and outer["color"] == [tint[0], tint[1], tint[2], 255]
+			and _int_array_matches(outer["color"], [tint[0], tint[1], tint[2], 255])
 		),
 		"Colored outer sprite circle matches source"
 	)
 	check.call(
 		(
-			inner["center"] == [center, center]
+			_int_array_matches(inner["center"], [center, center])
 			and int(inner["radius"]) == maxi(1, int(base_size / 2))
-			and inner["color"] == [255, 255, 255, 255]
+			and _int_array_matches(inner["color"], [255, 255, 255, 255])
 		),
 		"White inner sprite circle matches source"
 	)
+
+
+func _int_array_matches(actual: Array, expected: Array) -> bool:
+	if actual.size() != expected.size():
+		return false
+	for index in range(actual.size()):
+		if int(actual[index]) != int(expected[index]):
+			return false
+	return true
 
 
 ## The fixture pins a seeded draw, so cover the cone itself separately.
