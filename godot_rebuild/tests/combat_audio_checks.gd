@@ -6,6 +6,7 @@ extends RefCounted
 ## spacing / budget / channel / volume rules are not hand-written here.
 
 const CombatAudio = preload("res://scripts/audio/combat_audio.gd")
+const AudioRuntime = preload("res://scripts/audio/audio_runtime.gd")
 const FIXTURE := "res://tests/fixtures/combat_audio_source.json"
 const AUDIO_ROOT := "res://assets/audio/"
 
@@ -149,15 +150,22 @@ func _stream_checks(data: Dictionary, check: Callable) -> void:
 
 
 func _isolation_checks(check: Callable) -> void:
-	# Headless runs have no AudioManager: the production wrapper must behave
-	# like the source `_mati` branch (nothing plays, nothing counted).
+	# Without an AudioManager (pure headless runs) the production wrapper must
+	# behave like the source `_mati` branch (nothing plays, nothing counted);
+	# with the autoload present the wrapper routes through the shared gate.
 	var gate: RefCounted = CombatAudio.shared()
+	gate.new_frame()
 	var before: Dictionary = gate.stats.duplicate()
-	check.call(
-		CombatAudio.play(CombatAudio.MINION_HIT) == false,
-		"play() without an AudioManager returns false"
-	)
-	check.call(gate.stats == before, "play() without an AudioManager counts nothing")
+	var played: bool = CombatAudio.play(CombatAudio.MINION_HIT)
+	var main_delta: int = int(gate.stats["main"]) - int(before["main"])
+	if AudioRuntime.manager() == null:
+		check.call(played == false, "play() without an AudioManager returns false")
+		check.call(gate.stats == before, "play() without an AudioManager counts nothing")
+	else:
+		check.call(
+			main_delta == (1 if played else 0),
+			"play() with an AudioManager counts exactly the accepted request"
+		)
 	check.call(
 		CombatAudio.new().pick_file(CombatAudio.TOWER_ICE) == "tower_ice.wav",
 		"single-variant bank picks its only file"
