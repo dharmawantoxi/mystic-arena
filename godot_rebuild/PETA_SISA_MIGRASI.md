@@ -124,6 +124,7 @@ Dibaca hanya untuk memilih slice berikutnya, bukan audit menyeluruh:
 | `mobile/sidepanel.py` (741 baris) | **Terport (layer 9as)** — `scripts/ui/side_panel_layout.gd` (tata letak murni: aturan lebar layar 2200/120 px, kotak STATUS/HEROES/TACTICAL, hit-test popup) + `side_panel.gd` (Control: latar batu, irama segar 250 ms, sentuhan) dipaku oracle `side_panel_source_oracle.py`; dipasang `prototype_screen._build_side_panel`, `project.godot` stretch aspect `expand` |
 | `splash_screen.py` (371 baris) | **Terport (layer 9at)** — `scripts/ui/splash_timeline.gd` (fade/skip/partikel/gradien/vignette/logo/tata letak murni) + `scenes/splash/splash_screen.gd` (Control, latar dipanggang sekali, tap/klik/tombol skip) dipaku oracle `splash_screen_source_oracle.py`; `app.gd` kini boot ke SPLASH lalu `finished` -> menu; logo `assets/logo.png` disalin dari sumber |
 | Top-up / voucher (`topup_currency.py` 221, `topup_voucher.py` 95, `Menu.topup_*` di `_core.py`, klien `server/app.py`) | **Terport (layer 9au)** — `scripts/match/topup_currency.gd` (deteksi locale -> mata uang, konversi IDR, format harga), `scripts/match/topup_voucher.gd` (format `MA-`, allowlist `voucher_codes.txt`), `scripts/match/topup_flow.gd` (mesin fase select/processing/paying/success/redeem, grant + riwayat + cap 50), `scripts/net/topup_client.gd` (HTTPRequest ke `/api/topup/create|status|qr`, timeout 6 s), `scripts/ui/topup_panel.gd` (dialog modal di atas Hero Shop, keypad voucher, QR); oracle `topup_source_oracle.py` menjalankan modul sumber asli + metode Menu yang dipanen `ast` + `server/app.py` mode MOCK |
+| `LevelIntroScreen.draw()` (`_render.py` 2761-3391) | **Terport (layer 9av)** — `scripts/ui/level_intro_layout.gd` (op list murni: darken, tint tema 33+forest, vignette 60 cincin, pembatas + 3 berlian, kolom level dengan angka 200 px + 6 bayangan, bar kesulitan, koin reward/starting gold, kolom boss dengan pill tag, aura berdenyut, 12 sinar, siluet tubuh/inner/duri, mata bercahaya, nama + 5 bayangan, judul, PREPARE FOR BATTLE + ikon warn, prompt PRESS SPACE berdenyut + panah) dirender `prototype_view._draw_intro_op`; oracle `level_intro_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam |
 | `hero_marker.gd` | Selesai: placeholder 4-6 sisi tetap untuk `grimjaw_checks`, siluet per-hero dipakai `prototype_view.gd:619`; art roster dipaku golden fixture (layer 9aj) |
 
 Catatan: `ui_components/hero_portraits.py` yang di-impor `_core.py:3056`
@@ -1556,4 +1557,27 @@ Grant: `meta_gold` += jumlah, `redeemed_codes` (cap 50), `topup_history`
   allowlist, keypad, 10 skenario submit, cap, 8 alur server) +
   `tests/topup_scene_checks.gd` (tombol TOP UP -> dialog -> simulasi
   -> grant via save callable -> BACK; keypad via tombol).
+
+## Visual `LevelIntroScreen.draw()` (layer 9av)
+
+Sebelumnya hanya state/getter yang terport dan `prototype_view` menggambar
+kartu 640x360 pendekatan. Kini seluruh `draw()` sumber diport sebagai daftar
+op murni (`scripts/ui/level_intro_layout.gd::ops(state, timer, ticks_ms,
+measure, screen)`) yang dipaku per-op oleh oracle (7 frame: dua level,
+timer 0/15/31/45/60, tiga nilai `get_ticks`, kesulitan normal/hard/easy).
+
+- Jalur yang dipilih: `mobile.perf.Quality.cheap_alpha = True` (jalur HP:
+  vignette ter-cache, 6/5 lapis bayangan teks, 12 sinar aura).
+- Metrik font lewat `measure` callable: oracle memakai `int(0.55*size)` px
+  per glyph, view memakai `BossFont.get_string_size`; kode tata letak sama.
+- `prototype_battle.level_intro_state()` kini juga mengekspos `boss_class`,
+  `boss_entrance_color`, `boss_color_dark`, `hp_mult`, `difficulty_id`,
+  `screen_w/h`.
+- Semantik overwrite pygame pada surface SRCALPHA: cakram aura dan glow mata
+  yang digambar besar->kecil saling menimpa, jadi op lingkaran membawa
+  `ring_inner` dan view menggambar annulus (bukan cakram bertumpuk). Poligon
+  inner siluet (alpha/3 di atas tubuh hitam) tetap diblend normal — deviasi
+  kecil yang disadari (sumber memperlihatkan latar lewat area inner).
+- `ui_theme.letter/corner_ticks/draw_icon("warn")` dipanen dari `ui_theme.py`
+  asli di oracle; port GDScript-nya ada di layout yang sama.
 

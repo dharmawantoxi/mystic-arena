@@ -141,6 +141,7 @@ from combat_audio_source_oracle import source_fixture as combat_audio_fixture
 from side_panel_source_oracle import source_fixture as side_panel_fixture
 from splash_screen_source_oracle import source_fixture as splash_screen_fixture
 from topup_source_oracle import source_fixture as topup_fixture
+from level_intro_draw_source_oracle import source_fixture as level_intro_draw_fixture
 from boss_attack_lock_source_oracle import source_fixture as boss_attack_lock_fixture
 from boss_buff_expiry_source_oracle import source_fixture as boss_buff_expiry_fixture
 from boss_buff_scaling_source_oracle import source_fixture as boss_buff_scaling_fixture
@@ -673,6 +674,32 @@ check("hero_shop_panel.topup_requested.connect(_open_topup)" in _main_menu_text
 for _topup_path in ("scripts/match/topup_currency.gd", "scripts/net/topup_client.gd",
                     "scripts/ui/topup_panel.gd"):
     check((ROOT / _topup_path).is_file(), f"9au {_topup_path} must exist")
+
+# Layer 9av: LevelIntroScreen.draw() visuals (split screen, boss silhouette,
+# prompt) as a pure op list rendered by the prototype view.
+check('const LevelIntroDrawChecks = preload("res://tests/level_intro_draw_checks.gd")' in ai_tests
+      and "LevelIntroDrawChecks.new().run(_check)" in ai_tests,
+      "9av level intro draw suite must be preloaded and run")
+check("python godot_rebuild/tests/level_intro_draw_source_oracle.py" in workflow,
+      "9av CI must regenerate the level intro draw fixture from _render.py")
+check((ROOT / "tests/fixtures/level_intro_draw_source.json").is_file(),
+      "9av level intro draw fixture must exist")
+if (ROOT / "tests/fixtures/level_intro_draw_source.json").is_file():
+    check(level_intro_draw_fixture() == json.loads(
+        (ROOT / "tests/fixtures/level_intro_draw_source.json").read_text(encoding="utf-8")),
+          "9av level intro draw fixture must not drift from _render.py")
+_level_intro_layout_text = (ROOT / "scripts/ui/level_intro_layout.gd").read_text(encoding="utf-8")
+check("const FADE_IN := 30" in _level_intro_layout_text
+      and '"desert": [100, 60, 20]' in _level_intro_layout_text
+      and 'const WARNING_TEXT := "PREPARE FOR BATTLE"' in _level_intro_layout_text
+      and "func _silhouette(" in _level_intro_layout_text
+      and "func _space_prompt(" in _level_intro_layout_text,
+      "9av level intro layout must mirror LevelIntroScreen.draw()")
+_prototype_view_text = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+check("LevelIntroLayout.ops(" in _prototype_view_text
+      and "func _draw_intro_op(" in _prototype_view_text
+      and "_measure_intro_text" in _prototype_view_text,
+      "9av prototype view must render the level intro from the layout ops")
 check('const SPLASH = preload("res://scenes/splash/SplashScreen.tscn")' in app
       and "_install_screen(SPLASH)" in app
       and 'current_screen.connect("finished", show_menu)' in app,

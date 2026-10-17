@@ -8,6 +8,7 @@ const BossState = preload("res://scripts/match/boss_state.gd")
 const HeroMarker = preload("res://scripts/ui/hero_marker.gd")
 const SpriteLighting = preload("res://scripts/ui/sprite_lighting.gd")
 const BossFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
+const LevelIntroLayout = preload("res://scripts/ui/level_intro_layout.gd")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
@@ -469,106 +470,97 @@ func _draw_level_intro(world: Prototype) -> void:
 	var intro := world.level_intro_state()
 	if not bool(intro.get("active", false)):
 		return
-	var alpha: float = clampf(float(intro.get("fade_alpha", 0)) / 255.0, 0.0, 1.0)
-	if alpha <= 0.0:
-		return
-	var tint_rgba: Array = intro.get("theme_tint_rgba", [20, 40, 20, 0])
-	if tint_rgba.size() >= 4 and int(tint_rgba[3]) > 0:
-		var tint_alpha: float = clampf(float(tint_rgba[3]) / 255.0, 0.0, 1.0)
-		var tint_col: Color = Color8(int(tint_rgba[0]), int(tint_rgba[1]), int(tint_rgba[2]))
-		draw_rect(Rect2(Vector2.ZERO, Vector2(1280.0, 720.0)), Color(tint_col, tint_alpha))
-	var card := Rect2(Vector2(320.0, 160.0), Vector2(640.0, 360.0))
-	draw_rect(card, Color(0.03, 0.05, 0.08, 0.86 * alpha))
-	draw_rect(card, Color(0.95, 0.82, 0.52, alpha), false, 2.0)
-	draw_string(
-		BossFont,
-		card.position + Vector2(24.0, 52.0),
-		"LEVEL %d · %s" % [int(intro.get("level_num", 1)), String(intro.get("level_name", ""))],
-		HORIZONTAL_ALIGNMENT_CENTER,
-		card.size.x - 48.0,
-		26,
-		Color(0.95, 0.82, 0.52, alpha)
+	var ops := LevelIntroLayout.ops(
+		intro,
+		int(intro.get("timer", 0)),
+		Time.get_ticks_msec(),
+		_measure_intro_text,
+		Vector2i(int(intro.get("screen_w", 1280)), int(intro.get("screen_h", 720)))
 	)
-	var warning: String = String(intro.get("warning_text", ""))
-	if not warning.is_empty():
-		draw_string(
-			BossFont,
-			card.position + Vector2(24.0, 92.0),
-			warning,
-			HORIZONTAL_ALIGNMENT_CENTER,
-			card.size.x - 48.0,
-			18,
-			Color(1.0, 0.45, 0.40, alpha)
-		)
-	var diff_info: Dictionary = intro.get("difficulty", {})
-	var diff_title: String = String(diff_info.get("title", ""))
-	if not diff_title.is_empty():
-		var diff_rgb: Array = diff_info.get("color", [100, 220, 150])
-		var diff_col: Color = Color8(int(diff_rgb[0]), int(diff_rgb[1]), int(diff_rgb[2]))
-		draw_string(
-			BossFont,
-			card.position + Vector2(36.0, 140.0),
-			diff_title,
-			HORIZONTAL_ALIGNMENT_LEFT,
-			260.0,
-			16,
-			Color(diff_col, alpha)
-		)
-	var diff_bars: Array = intro.get("difficulty_bars", [])
-	for bar_idx in range(diff_bars.size()):
-		var bar_rgb: Array = diff_bars[bar_idx]
-		if bar_rgb.size() >= 3:
-			var bar_col: Color = Color8(int(bar_rgb[0]), int(bar_rgb[1]), int(bar_rgb[2]))
-			var bar_rect := Rect2(
-				card.position + Vector2(36.0 + float(bar_idx) * 28.0, 152.0), Vector2(22.0, 10.0)
+	for op in ops:
+		_draw_intro_op(op)
+
+
+## Layer 9av: real font metrics for the level intro layout (the oracle uses a
+## 0.55*size fake; the layout code is shared).
+func _measure_intro_text(text: String, font_size: int) -> Vector2i:
+	var measured := BossFont.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+	return Vector2i(int(measured.x), font_size)
+
+
+static func _intro_color(op: Dictionary) -> Color:
+	var rgba: Array = op.get("color", [255, 255, 255, 255])
+	var alpha := float(rgba[3]) * float(op.get("mult", 255)) / 255.0
+	return Color(
+		float(rgba[0]) / 255.0, float(rgba[1]) / 255.0, float(rgba[2]) / 255.0, alpha / 255.0
+	)
+
+
+## Renders one `LevelIntroLayout` op. pygame draws onto SRCALPHA surfaces
+## WITHOUT blending, so the aura / eye-glow discs are rendered as the annuli
+## (`ring_inner`) the overwrite sequence leaves behind.
+func _draw_intro_op(op: Dictionary) -> void:
+	var kind := String(op.get("kind", ""))
+	var color := _intro_color(op)
+	match kind:
+		"darken":
+			var alpha := float(op.get("alpha", 0)) / 255.0
+			draw_rect(Rect2(Vector2.ZERO, Vector2(1280.0, 720.0)), Color(0.0, 0.0, 0.0, alpha))
+		"fill", "rect":
+			var box: Array = op.get("rect", [0, 0, 0, 0])
+			var rect := Rect2(float(box[0]), float(box[1]), float(box[2]), float(box[3]))
+			var width := int(op.get("width", 0))
+			if color.a <= 0.0:
+				return
+			if width > 0:
+				draw_rect(rect, color, false, float(width))
+			else:
+				draw_rect(rect, color)
+		"circle":
+			var center: Array = op.get("center", [0, 0])
+			var at := Vector2(float(center[0]), float(center[1]))
+			var radius := float(op.get("radius", 1))
+			var width := int(op.get("width", 0))
+			if color.a <= 0.0:
+				return
+			if width > 0:
+				draw_arc(at, radius - float(width) * 0.5, 0.0, TAU, 48, color, float(width), true)
+			elif op.has("ring_inner") and float(op.get("ring_inner", 0)) > 0.0:
+				var inner := float(op.get("ring_inner", 0))
+				draw_arc(at, (radius + inner) * 0.5, 0.0, TAU, 64, color, radius - inner, true)
+			else:
+				draw_circle(at, radius, color)
+		"line":
+			var a: Array = op.get("a", [0, 0])
+			var b: Array = op.get("b", [0, 0])
+			if color.a <= 0.0:
+				return
+			draw_line(
+				Vector2(float(a[0]), float(a[1])),
+				Vector2(float(b[0]), float(b[1])),
+				color,
+				float(op.get("width", 1))
 			)
-			draw_rect(bar_rect, Color(bar_col, alpha))
-	var economy_line: String = (
-		"%s · %s · %s"
-		% [
-			String(intro.get("starting_gold_text", "")),
-			String(intro.get("passive_text", "")),
-			String(intro.get("reward_text", "")),
-		]
-	)
-	draw_string(
-		BossFont,
-		card.position + Vector2(36.0, 200.0),
-		economy_line,
-		HORIZONTAL_ALIGNMENT_LEFT,
-		card.size.x - 72.0,
-		15,
-		Color(0.92, 0.86, 0.62, alpha)
-	)
-	var boss_tag: Dictionary = intro.get("boss_tag", {})
-	var boss_header: String = (
-		"%s: %s (%s)"
-		% [
-			String(boss_tag.get("text", "BOSS")),
-			String(intro.get("boss_name", "")),
-			String(intro.get("boss_title", "")),
-		]
-	)
-	draw_string(
-		BossFont,
-		card.position + Vector2(36.0, 244.0),
-		boss_header,
-		HORIZONTAL_ALIGNMENT_LEFT,
-		card.size.x - 72.0,
-		16,
-		Color(1.0, 0.62, 0.56, alpha)
-	)
-	if bool(intro.get("show_prompt", false)):
-		var prompt: String = String(intro.get("prompt_text", ""))
-		if not prompt.is_empty():
+		"polygon":
+			var points := PackedVector2Array()
+			for point in op.get("points", []):
+				points.append(Vector2(float(point[0]), float(point[1])))
+			if color.a > 0.0 and points.size() >= 3:
+				draw_colored_polygon(points, color)
+		"text":
+			var pos: Array = op.get("pos", [0, 0])
+			var font_size := int(op.get("size", 16))
+			if color.a <= 0.0:
+				return
+			var ascent := BossFont.get_ascent(font_size)
 			draw_string(
 				BossFont,
-				card.position + Vector2(24.0, 320.0),
-				prompt,
-				HORIZONTAL_ALIGNMENT_CENTER,
-				card.size.x - 48.0,
-				18,
-				Color(0.85, 0.92, 0.98, alpha)
+				Vector2(float(pos[0]), float(pos[1]) + ascent),
+				String(op.get("text", "")),
+				HORIZONTAL_ALIGNMENT_LEFT,
+				-1,
+				font_size,
+				color
 			)
 
 

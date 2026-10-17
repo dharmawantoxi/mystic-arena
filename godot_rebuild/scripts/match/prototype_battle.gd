@@ -317,6 +317,13 @@ func level_intro_state(touch_mode: bool = false) -> Dictionary:
 		"show_prompt": level_intro.get_show_prompt(),
 		"prompt_text": level_intro.get_begin_prompt(touch_mode),
 		"warning_text": level_intro.get_warning_text(),
+		"boss_class": level_intro.boss_class,
+		"boss_entrance_color": level_intro.boss_entrance_color.duplicate(),
+		"boss_color_dark": level_intro.boss_color_dark.duplicate(),
+		"hp_mult": level_intro.hp_mult,
+		"difficulty_id": difficulty,
+		"screen_w": level_intro.screen_w,
+		"screen_h": level_intro.screen_h,
 	}
 
 
