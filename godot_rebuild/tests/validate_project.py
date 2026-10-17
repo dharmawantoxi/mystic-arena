@@ -138,6 +138,7 @@ from boss_ai_slow_source_oracle import source_fixture as boss_ai_slow_fixture
 from balance_baseline_source_oracle import balance_baseline as balance_baseline_fixture
 from sprite_lighting_source_oracle import lighting_fixture as sprite_lighting_fixture
 from combat_audio_source_oracle import source_fixture as combat_audio_fixture
+from side_panel_source_oracle import source_fixture as side_panel_fixture
 from boss_attack_lock_source_oracle import source_fixture as boss_attack_lock_fixture
 from boss_buff_expiry_source_oracle import source_fixture as boss_buff_expiry_fixture
 from boss_buff_scaling_source_oracle import source_fixture as boss_buff_scaling_fixture
@@ -582,6 +583,34 @@ check("CombatAudio.play(CombatAudio.MINION_HIT)" in _minion_text
 check("CombatAudio.tower_kind(source.settings().tower_path)" in _siege_text
       and "1.0 if source.team == BLUE else 0.8" in _siege_text,
       "9ar tower shots must play per path with the blue/red volume split")
+# Layer 9as: mobile/sidepanel.py port (wide-screen right panel).
+check('const SidePanelChecks = preload("res://tests/side_panel_checks.gd")' in ai_tests
+      and "SidePanelChecks.new().run(_check)" in ai_tests,
+      "9as side panel suite must be preloaded and run")
+check("python godot_rebuild/tests/side_panel_source_oracle.py" in workflow,
+      "9as CI must regenerate the side panel fixture from mobile/sidepanel.py")
+check((ROOT / "tests/fixtures/side_panel_source.json").is_file(),
+      "9as side panel fixture must exist")
+if (ROOT / "tests/fixtures/side_panel_source.json").is_file():
+    check(side_panel_fixture() == json.loads(
+        (ROOT / "tests/fixtures/side_panel_source.json").read_text(encoding="utf-8")),
+          "9as side panel fixture must not drift from mobile/sidepanel.py")
+_side_layout_text = (ROOT / "scripts/ui/side_panel_layout.gd").read_text(encoding="utf-8")
+check("const MAX_DISPLAY_WIDTH := 2200" in _side_layout_text
+      and "const MIN_PANEL_WIDTH := 120" in _side_layout_text
+      and "const REFRESH_MS := 250" in _side_layout_text
+      and "const MIN_TAP := 80" in _side_layout_text
+      and "const HERO_BOX_MAX := 236" in _side_layout_text,
+      "9as side panel layout constants must mirror sidepanel.py / platform_utils.py")
+_side_screen_text = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+check("side_panel.pause_requested.connect(pause_match)" in _side_screen_text
+      and "side_panel.tactical_down.connect(_start_panel_tactical)" in _side_screen_text
+      and "side_panel.tactical_up.connect(_finish_tactical)" in _side_screen_text
+      and "%TacticalPanel.visible = not side_panel.is_active()" in _side_screen_text,
+      "9as the match screen must mount the side panel and relocate the tactical box")
+_project_text = (ROOT / "project.godot").read_text(encoding="utf-8")
+check('window/stretch/aspect="expand"' in _project_text,
+      "9as the viewport must expand so wide screens expose the right panel")
 check("python godot_rebuild/tests/balance_baseline_source_oracle.py" in workflow,
       "CI must pin the ingame balance baseline")
 

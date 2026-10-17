@@ -10,6 +10,7 @@ const Structure = preload("res://scripts/combat/structure_state.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const ItemForgePanel = preload("res://scripts/ui/item_forge_panel.gd")
 const HeroShopPanel = preload("res://scripts/ui/hero_shop_panel.gd")
+const SidePanel = preload("res://scripts/ui/side_panel.gd")
 const ProgressStore = preload("res://scripts/match/level_progress_store.gd")
 const SaveSlotStore = preload("res://scripts/match/save_slot_store.gd")
 const LevelCatalog = preload("res://scripts/match/level_catalog.gd")
@@ -33,6 +34,7 @@ var result_shown := false
 var forge_panel: ItemForgePanel
 var hero_shop_panel: HeroShopPanel
 var hero_shop_toggle: Button
+var side_panel: SidePanel
 var ai_toggle: Button
 var migration_status: Label
 var touch_gestures = TouchGestureRuntime.new()
@@ -105,6 +107,7 @@ func _ready() -> void:
 	_build_ai_toggle()
 	_build_migration_status()
 	_setup_game_speed_control()
+	_build_side_panel()
 	%PauseButton.pressed.connect(pause_match)
 	%ResumeButton.pressed.connect(resume_match)
 	%RestartButton.pressed.connect(func() -> void: restart_requested.emit())
@@ -152,6 +155,7 @@ func _process(_delta: float) -> void:
 	)
 	_update_controller_hover()
 	_update_tactical_hud(world)
+	_update_side_panel(world)
 	if forge_panel != null and forge_panel.visible:
 		forge_panel.refresh()
 	if hero_shop_panel != null and hero_shop_panel.visible:
@@ -543,6 +547,90 @@ func _update_tactical_hud(world: Prototype) -> void:
 		y_offset = (1.0 - alpha) * 20.0
 	%TacticalFeedback.position.y = 112.0 + y_offset
 	%TacticalFeedback.modulate = Color(world.tactical.feedback_color, alpha)
+
+
+func _build_side_panel() -> void:
+	# Layer 9as: `mobile/sidepanel.py` - on screens wider than 16:9 the
+	# leftover width right of the 1280 px arena becomes the stone panel with
+	# PAUSE / STATUS / HEROES / TACTICAL COMMANDS; the floating tactical box
+	# moves there, exactly like the source hid its floating panels.
+	side_panel = SidePanel.new()
+	side_panel.name = "SidePanel"
+	side_panel.pause_requested.connect(pause_match)
+	side_panel.tactical_down.connect(_start_panel_tactical)
+	side_panel.tactical_up.connect(_finish_tactical)
+	$HUD.add_child(side_panel)
+	get_viewport().size_changed.connect(_layout_side_panel)
+	_layout_side_panel()
+
+
+func _layout_side_panel() -> void:
+	if side_panel == null:
+		return
+	side_panel.configure(int(get_viewport().get_visible_rect().size.x))
+	%TacticalPanel.visible = not side_panel.is_active()
+
+
+func _update_side_panel(world: Prototype) -> void:
+	if side_panel == null or not side_panel.is_active():
+		return
+	side_panel.update_snapshot(_side_panel_snapshot(world))
+
+
+## Source `SidePanel.draw(game)` reads: gold, difficulty, level/wave, the
+## castle shield flag, `game.heroes` (paid blue roster in summon order with
+## `is_skill_ready`), the live boss, the AI roster and the held command.
+func _side_panel_snapshot(world: Prototype) -> Dictionary:
+	var state := "playing"
+	if not world.is_running():
+		state = "victory" if world.winner == 0 else "defeat"
+	var heroes: Array = []
+	for hero_value in world.player_roster():
+		var hero: HeroState = hero_value
+		var ready: Array = []
+		if hero.skill_timer <= 0:
+			ready.append("q")
+		if hero.w_cooldown <= 0:
+			ready.append("w")
+		if hero.e_cooldown <= 0:
+			ready.append("e")
+		if hero.r_cooldown <= 0:
+			ready.append("r")
+		(
+			heroes
+			. append(
+				{
+					"name": hero.settings().display_name,
+					"alive": hero.alive,
+					"level": hero.level,
+					"hp": hero.hp,
+					"max_hp": hero.max_hp,
+					"ready": ready,
+				}
+			)
+		)
+	var has_enemy_hero := false
+	for enemy in world.ai_roster_heroes():
+		if enemy.alive:
+			has_enemy_hero = true
+	var blue_nexus = world.nexuses[0]
+	return {
+		"state": state,
+		"gold": int(world.economy.gold[0]),
+		"difficulty": world.difficulty,
+		"wave": world.wave_count,
+		"level": world.level_number,
+		"shield_active": blue_nexus != null and bool(blue_nexus.shield_active),
+		"heroes": heroes,
+		"has_boss": world.active_boss != null and world.active_boss.alive,
+		"has_enemy_hero": has_enemy_hero,
+		"held": world.tactical.held_command,
+		"popup_open":
+		(
+			(forge_panel != null and forge_panel.visible)
+			or (hero_shop_panel != null and hero_shop_panel.visible)
+		),
+	}
 
 
 func _build_forge_ui() -> void:

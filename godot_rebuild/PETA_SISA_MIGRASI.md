@@ -121,6 +121,7 @@ Dibaca hanya untuk memilih slice berikutnya, bukan audit menyeluruh:
 | Katalog level, audio, player command/shop, match pacing | Selesai (PR #318/#323/#324/#325) |
 | `lighting.py` (239 baris) | **Terport (layer 9aq)** — `scripts/ui/sprite_lighting.gd`: matematika mask eksak (gradien kanonik 28x28, rim/terminator/band-2) dipaku oracle `sprite_lighting_source_oracle.py`; adaptor vektor dipakai `prototype_view._draw_lit_polygon` untuk siluet hero & badan boss |
 | `mobile/combat_audio.py` (332 baris) | **Terport (layer 9ar)** — `scripts/audio/combat_audio.gd`: gate SFX tempur (7 jenis, `_KONFIG` volume/jeda, anggaran 4 per frame, 24 kanal tanpa rebut, master*sfx) dipaku oracle `combat_audio_source_oracle.py`; dipanggil di serangan dasar hero, tembakan menara per jalur (biru 1.0/merah 0.8), ayunan minion dan serangan boss; pool 24 `AudioStreamPlayer` di `audio_manager.gd` |
+| `mobile/sidepanel.py` (741 baris) | **Terport (layer 9as)** — `scripts/ui/side_panel_layout.gd` (tata letak murni: aturan lebar layar 2200/120 px, kotak STATUS/HEROES/TACTICAL, hit-test popup) + `side_panel.gd` (Control: latar batu, irama segar 250 ms, sentuhan) dipaku oracle `side_panel_source_oracle.py`; dipasang `prototype_screen._build_side_panel`, `project.godot` stretch aspect `expand` |
 | `hero_marker.gd` | Selesai: placeholder 4-6 sisi tetap untuk `grimjaw_checks`, siluet per-hero dipakai `prototype_view.gd:619`; art roster dipaku golden fixture (layer 9aj) |
 
 Catatan: `ui_components/hero_portraits.py` yang di-impor `_core.py:3056`
@@ -1453,3 +1454,28 @@ tetapi tidak pernah dimainkan: sumber memainkannya lewat gate
   18 keputusan + klasifikasi; `tests/combat_audio_checks.gd` memutarnya ulang.
 - Perbedaan sadar: anggaran direset per tick simulasi (60 Hz = frame sumber),
   jadi pada kecepatan permainan >1x budget per frame layar ikut berlipat.
+
+## Panel kanan layar lebar `mobile/sidepanel.py` (layer 9as)
+
+Sumber mengumpulkan sisa lebar layar >16:9 (lebar tampilan maks 2200 px,
+panel hanya bila sisa >= 120 px) di kanan arena 1280 px dan mengisinya
+dengan tombol JEDA, kotak STATUS (emas/mode/level/wave), daftar HEROES
+(nama, level, bar HP, titik Q/W/E/R) dan tombol TACTICAL COMMANDS.
+Notifikasi/kill feed sudah dihapus pengguna di sumber (no-op) - tidak diport.
+
+- `scripts/ui/side_panel_layout.gd`: `build(snapshot, panel, measure)`
+  menghasilkan daftar gambar yang sama persis dengan `_gambar_status/_hero/
+  _tactical` (angka, string, warna, hit box, aturan baris 42/38 px, tutup
+  236 px, syarat tombol taktis, warna hold/press), `hit_test` (popup -> hanya
+  JEDA), `display_width`/`panel_rect` dari `platform_utils.create_display`.
+- `scripts/ui/side_panel.gd`: Control di `HUD`, latar bata
+  (`_gambar_panel_samping`), cache 250 ms + segar saat status berubah /
+  animasi tekan, sentuhan: JEDA -> `pause_match`, taktis tekan/lepas ->
+  `_start_panel_tactical`/`_finish_tactical` (sama dengan tombol HUD).
+- `project.godot`: `window/stretch/aspect` `keep` -> `expand`; di 16:9 tidak
+  ada perubahan, di layar lebar area kanan menjadi panel dan kotak taktis
+  melayang disembunyikan (seperti sumber memindahkan panel melayangnya).
+- Oracle `tests/side_panel_source_oracle.py` menjalankan `SidePanel` ASLI di
+  bawah shim pygame perekam (glyph 7 px) untuk 5 skenario + 9 hit-test;
+  `tests/side_panel_checks.gd` memutar ulang; lebar teks nyata disuntik lewat
+  `measure` sehingga posisi rata-kanan/tengah mengikuti font Godot.

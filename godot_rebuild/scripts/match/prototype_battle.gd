@@ -2166,6 +2166,11 @@ func _ai_empty_slots() -> int:
 	return count
 
 
+## Public read of the AI roster for HUD/panel code (layer 9as).
+func ai_roster_heroes() -> Array:
+	return _ai_roster()
+
+
 func _ai_roster() -> Array:
 	# Match AIPlayer.heroes, not every red HeroState in the scene. In particular,
 	# setup_arena's free mirrored Kaizen is a combat fixture, not AI-owned.
