@@ -123,6 +123,7 @@ Dibaca hanya untuk memilih slice berikutnya, bukan audit menyeluruh:
 | `mobile/combat_audio.py` (332 baris) | **Terport (layer 9ar)** — `scripts/audio/combat_audio.gd`: gate SFX tempur (7 jenis, `_KONFIG` volume/jeda, anggaran 4 per frame, 24 kanal tanpa rebut, master*sfx) dipaku oracle `combat_audio_source_oracle.py`; dipanggil di serangan dasar hero, tembakan menara per jalur (biru 1.0/merah 0.8), ayunan minion dan serangan boss; pool 24 `AudioStreamPlayer` di `audio_manager.gd` |
 | `mobile/sidepanel.py` (741 baris) | **Terport (layer 9as)** — `scripts/ui/side_panel_layout.gd` (tata letak murni: aturan lebar layar 2200/120 px, kotak STATUS/HEROES/TACTICAL, hit-test popup) + `side_panel.gd` (Control: latar batu, irama segar 250 ms, sentuhan) dipaku oracle `side_panel_source_oracle.py`; dipasang `prototype_screen._build_side_panel`, `project.godot` stretch aspect `expand` |
 | `splash_screen.py` (371 baris) | **Terport (layer 9at)** — `scripts/ui/splash_timeline.gd` (fade/skip/partikel/gradien/vignette/logo/tata letak murni) + `scenes/splash/splash_screen.gd` (Control, latar dipanggang sekali, tap/klik/tombol skip) dipaku oracle `splash_screen_source_oracle.py`; `app.gd` kini boot ke SPLASH lalu `finished` -> menu; logo `assets/logo.png` disalin dari sumber |
+| Top-up / voucher (`topup_currency.py` 221, `topup_voucher.py` 95, `Menu.topup_*` di `_core.py`, klien `server/app.py`) | **Terport (layer 9au)** — `scripts/match/topup_currency.gd` (deteksi locale -> mata uang, konversi IDR, format harga), `scripts/match/topup_voucher.gd` (format `MA-`, allowlist `voucher_codes.txt`), `scripts/match/topup_flow.gd` (mesin fase select/processing/paying/success/redeem, grant + riwayat + cap 50), `scripts/net/topup_client.gd` (HTTPRequest ke `/api/topup/create|status|qr`, timeout 6 s), `scripts/ui/topup_panel.gd` (dialog modal di atas Hero Shop, keypad voucher, QR); oracle `topup_source_oracle.py` menjalankan modul sumber asli + metode Menu yang dipanen `ast` + `server/app.py` mode MOCK |
 | `hero_marker.gd` | Selesai: placeholder 4-6 sisi tetap untuk `grimjaw_checks`, siluet per-hero dipakai `prototype_view.gd:619`; art roster dipaku golden fixture (layer 9aj) |
 
 Catatan: `ui_components/hero_portraits.py` yang di-impor `_core.py:3056`
@@ -523,7 +524,7 @@ panel modal (`hero_shop_panel.gd`, `item_forge_panel.gd`,
   usang**: AI terport lintas 9 modul (`ai_build/controller/draft/
   hero_control/items/policy/recruitment/shields/upgrades`, 52 fungsi) dengan
   `ai_controller.tick()` sebagai entry.
-- Top-up flow Python dan voucher allowlist tidak disentuh.
+- Top-up flow Python dan voucher allowlist tidak disentuh (saat itu; kini terport di layer 9au).
 - Tidak ada sistem lain yang diaudit atau diubah.
 
 ## Integrasi penuh AI lawan (penutup "AIPlayer penuh")
@@ -1506,3 +1507,53 @@ perilaku sumber dipertahankan).
   di bawah shim pygame perekam (18 sampel linimasa, jalur skip, gerak partikel
   120 frame, tata letak dengan/tanpa logo); `tests/splash_screen_checks.gd`
   memutar ulang.
+
+## Top-up / voucher `topup_*.py` + `Menu.topup_*` + klien `server/app.py` (layer 9au)
+
+Dialog TOP UP HERO GOLD sumber dibuka dari Hero Shop (`topup_open`): pilih
+paket (`PAKET 50K`: 50.000 gold, Rp 10.000) + metode (GoPay/OVO/DANA/
+ShopeePay/Bank), lalu (a) tanpa `MYSTIC_TOPUP_URL` -> fase `processing`
+simulasi 1,6 s (97 frame akumulasi float) -> `topup_complete`; (b) dengan URL
+-> fase `paying`: POST `/api/topup/create {"pkg"}` -> invoice + GET QR PNG ->
+poll `/api/topup/status/<id>` 60 frame pertama lalu tiap 120 frame (atau
+tombol "I'VE PAID") -> `settled` + `code` -> `_redeem_grant` otomatis;
+`expired`/`cancel` -> pesan gagal; server tak terjangkau -> "Top up server
+tidak terjangkau..." + TRY AGAIN. Fase `redeem`: keypad 3x4 (`vpk_*`), kode
+`MA-` + maks 6 digit (regex 4-8 digit), pesan "Invalid code..." /
+"Code already redeemed." / "Unknown code. Contact admin." (allowlist
+`voucher_codes.txt`, tidak ada file = mode demo terima semua kode valid).
+Grant: `meta_gold` += jumlah, `redeemed_codes` (cap 50), `topup_history`
+(cap 50, tx `MA-` + 10 digit ms epoch, `price_cur` hasil `convert_idr`).
+
+- `scripts/match/topup_currency.gd`: tabel `IDR_PER_UNIT`/simbol/region/
+  bahasa identik, `parse_locale_name`, `currency_for`, `detect_currency`
+  (`OS.get_locale()` + fallback LANG/LC_*), `convert_idr`, `format_price`
+  (pembulatan half-even Python untuk mata uang tanpa desimal, pemisah ribuan
+  `{:,}`, IDR memakai titik), `fmt_idr`.
+- `scripts/match/topup_voucher.gd`: `is_valid_format`, `parse_allowlist`
+  (`CODE` / `CODE=jumlah`, komentar `#`, jumlah non-int dilewati, kosong =
+  null/demo), `load_vouchers` (`res://` lalu `user://`).
+- `scripts/match/topup_flow.gd`: port 1:1 handler klik (`topup_pay`,
+  `topup_paid`, `topup_cancel_pay`, `topup_retry`, `topup_redeem`, `vback`,
+  `vpk_*`, `topup_pkg_*`, `topup_method_*`), `tick()` per frame, mesin server
+  (`on_http_result` dikonsumsi pada tick berikutnya seperti thread sumber),
+  `grant()` bersama. Perbaikan kecil yang disengaja: pembelian simulasi juga
+  menyetel `last_method` (sumber membiarkan "redeem" menempel sehingga layar
+  sukses berikutnya salah judul).
+- `scripts/net/topup_client.gd`: `HTTPRequest` satu per waktu, header JSON
+  untuk POST, HTTP >= 400 dihitung gagal (setara `HTTPError` urllib).
+- `scripts/ui/topup_panel.gd`: dialog 920x580 di atas Hero Shop, lima halaman
+  fase, QR dari bytes PNG, keypad + tombol keyboard (digit/Backspace/Enter/
+  Esc); `meta_hero_shop_panel.gd` mendapat tombol TOP UP (`topup_requested`),
+  `main_menu.gd` menyambungkan flow + klien + panel dan menyimpan profil lewat
+  `SaveSlotStore.save_path`.
+- Oracle `tests/topup_source_oracle.py`: mengeksekusi `topup_currency.py` dan
+  `topup_voucher.py` asli, memanen metode `Menu.topup_*`/`_redeem_*`/
+  `_topup_server_tick` dari `_core.py` dengan `ast` (jam beku, urllib
+  terskrip, SoundManager/SaveManager perekam), serta mengimpor `server/app.py`
+  di bawah shim Flask (SQLite sementara, MOCK) untuk memaku kontrak JSON.
+  Suite `tests/topup_checks.gd` (harga 22 mata uang x 8 nominal, locale,
+  allowlist, keypad, 10 skenario submit, cap, 8 alur server) +
+  `tests/topup_scene_checks.gd` (tombol TOP UP -> dialog -> simulasi
+  -> grant via save callable -> BACK; keypad via tombol).
+

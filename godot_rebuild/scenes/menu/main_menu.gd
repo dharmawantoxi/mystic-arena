@@ -15,6 +15,10 @@ const LevelStats = preload("res://scripts/match/level_stats.gd")
 const HeroUnlockStore = preload("res://scripts/match/hero_unlock_store.gd")
 const SaveSlotStore = preload("res://scripts/match/save_slot_store.gd")
 const MetaHeroShopPanel = preload("res://scripts/ui/meta_hero_shop_panel.gd")
+const TopupFlow = preload("res://scripts/match/topup_flow.gd")
+const TopupCurrency = preload("res://scripts/match/topup_currency.gd")
+const TopupClient = preload("res://scripts/net/topup_client.gd")
+const TopupPanel = preload("res://scripts/ui/topup_panel.gd")
 const SaveSlotPanel = preload("res://scripts/ui/save_slot_panel.gd")
 const AudioSettingsPanel = preload("res://scripts/ui/audio_settings_panel.gd")
 
@@ -22,6 +26,9 @@ var slot_path_template := SaveSlotStore.PATH_TEMPLATE
 var progress_path := SaveSlotStore.current_path(slot_path_template)
 var active_slot := SaveSlotStore.get_current_slot()
 var hero_shop_panel: MetaHeroShopPanel
+var topup_flow: TopupFlow
+var topup_client: TopupClient
+var topup_panel: TopupPanel
 var save_slot_panel: SaveSlotPanel
 var audio_settings_panel: AudioSettingsPanel
 var _localization_runtime: Node
@@ -80,7 +87,43 @@ func _build_hero_shop() -> void:
 	hero_shop_panel = MetaHeroShopPanel.new()
 	hero_shop_panel.name = "MetaHeroShop"
 	hero_shop_panel.unlock_requested.connect(_unlock_hero)
+	hero_shop_panel.topup_requested.connect(_open_topup)
 	add_child(hero_shop_panel)
+	_build_topup()
+
+
+## Layer 9au: top-up dialog over the hero shop (simulation without
+## MYSTIC_TOPUP_URL, QRIS server flow with it) + voucher redeem.
+func _build_topup() -> void:
+	topup_flow = TopupFlow.new()
+	topup_flow.currency = TopupCurrency.detect_currency()
+	topup_flow.save_callable = _save_topup_profile
+	topup_flow.sound_requested.connect(func(key: String) -> void: AudioRuntime.play(key))
+	topup_client = TopupClient.new()
+	topup_client.name = "TopupClient"
+	add_child(topup_client)
+	topup_client.configure(topup_flow)
+	topup_panel = TopupPanel.new()
+	topup_panel.name = "TopupPanel"
+	topup_panel.bind(topup_flow)
+	add_child(topup_panel)
+
+
+func _open_topup() -> void:
+	AudioRuntime.play("ui_click")
+	topup_flow.profile = HeroUnlockStore.bootstrap_state(ProgressStore.load_state(progress_path))
+	topup_flow.click("topup_open")
+
+
+func _save_topup_profile(profile: Dictionary) -> bool:
+	var saved := SaveSlotStore.save_path(profile, progress_path, -1.0, slot_path_template)
+	if not saved:
+		AudioRuntime.play("ui_error")
+	elif hero_shop_panel.is_open:
+		hero_shop_panel.apply_state(
+			profile, "Hero Gold sekarang %d." % int(profile.get("meta_gold", 0))
+		)
+	return saved
 
 
 func _open_hero_shop() -> void:

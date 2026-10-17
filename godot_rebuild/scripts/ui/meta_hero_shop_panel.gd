@@ -3,6 +3,8 @@ extends Control
 ## save state are mutated atomically by MainMenu through HeroUnlockStore.
 
 signal unlock_requested(hero_type: String)
+## Layer 9au: the `topup_open` button of the source shop header.
+signal topup_requested
 
 const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
@@ -24,6 +26,7 @@ var _grid: GridContainer
 var _empty: Label
 var _notice: Label
 var _close: Button
+var _topup: Button
 
 
 func _init() -> void:
@@ -156,6 +159,12 @@ func _build() -> void:
 	header.add_child(_gold)
 	_bosses = Label.new()
 	header.add_child(_bosses)
+	_topup = Button.new()
+	_topup.name = "TopUpButton"
+	_topup.text = "TOP UP"
+	_topup.custom_minimum_size = Vector2(130, 42)
+	_topup.pressed.connect(func() -> void: topup_requested.emit())
+	header.add_child(_topup)
 	_close = Button.new()
 	_close.text = "Kembali  [Esc]"
 	_close.custom_minimum_size = Vector2(155, 42)

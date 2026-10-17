@@ -104,6 +104,7 @@ jobs:
           python godot_rebuild/tests/combat_audio_source_oracle.py
           python godot_rebuild/tests/side_panel_source_oracle.py
           python godot_rebuild/tests/splash_screen_source_oracle.py
+          python godot_rebuild/tests/topup_source_oracle.py
           python godot_rebuild/tests/death_explosion_source_oracle.py
           python godot_rebuild/tests/boss_death_animation_source_oracle.py
           python godot_rebuild/tests/sprite_cache_source_oracle.py

@@ -140,6 +140,7 @@ from sprite_lighting_source_oracle import lighting_fixture as sprite_lighting_fi
 from combat_audio_source_oracle import source_fixture as combat_audio_fixture
 from side_panel_source_oracle import source_fixture as side_panel_fixture
 from splash_screen_source_oracle import source_fixture as splash_screen_fixture
+from topup_source_oracle import source_fixture as topup_fixture
 from boss_attack_lock_source_oracle import source_fixture as boss_attack_lock_fixture
 from boss_buff_expiry_source_oracle import source_fixture as boss_buff_expiry_fixture
 from boss_buff_scaling_source_oracle import source_fixture as boss_buff_scaling_fixture
@@ -633,6 +634,45 @@ check("const DURATION := 3.0" in _splash_timeline_text
       and "const LOGO_BOX := Vector2(340.0, 320.0)" in _splash_timeline_text
       and "const VIGNETTE_MAX := 140" in _splash_timeline_text,
       "9at splash timeline constants must mirror splash_screen.py")
+
+# Layer 9au: top-up / voucher flow port (topup_currency.py, topup_voucher.py,
+# Menu.topup_* of _core.py, HTTP client for server/app.py).
+check('const TopupChecks = preload("res://tests/topup_checks.gd")' in ai_tests
+      and "TopupChecks.new().run(_check)" in ai_tests,
+      "9au top-up suite must be preloaded and run")
+check('const TopupSceneChecks = preload("res://tests/topup_scene_checks.gd")' in ai_tests
+      and "await TopupSceneChecks.new().run(root.get_tree(), app, _check)" in ai_tests,
+      "9au top-up scene suite must run against the live menu")
+check("python godot_rebuild/tests/topup_source_oracle.py" in workflow,
+      "9au CI must regenerate the top-up fixture from the source modules")
+check((ROOT / "tests/fixtures/topup_source.json").is_file(),
+      "9au top-up fixture must exist")
+if (ROOT / "tests/fixtures/topup_source.json").is_file():
+    check(topup_fixture() == json.loads(
+        (ROOT / "tests/fixtures/topup_source.json").read_text(encoding="utf-8")),
+          "9au top-up fixture must not drift from the source modules")
+_topup_flow_text = (ROOT / "scripts/match/topup_flow.gd").read_text(encoding="utf-8")
+check('{"label": "PAKET 50K", "gold": 50000, "bonus": 0, "price": 10000}' in _topup_flow_text
+      and "const PROCESSING_SECONDS := 1.6" in _topup_flow_text
+      and "const POLL_DELAY_FIRST := 60" in _topup_flow_text
+      and "const POLL_DELAY_REPEAT := 120" in _topup_flow_text
+      and "const HTTP_TIMEOUT := 6.0" in _topup_flow_text
+      and 'const ENV_SERVER_URL := "MYSTIC_TOPUP_URL"' in _topup_flow_text
+      and 'const CREATE_PATH := "/api/topup/create"' in _topup_flow_text,
+      "9au top-up flow constants must mirror _core.py / server/app.py")
+_topup_voucher_text = (ROOT / "scripts/match/topup_voucher.gd").read_text(encoding="utf-8")
+check('const CODE_PREFIX := "MA-"' in _topup_voucher_text
+      and "const MAX_DIGITS := 6" in _topup_voucher_text
+      and 'const CODE_PATTERN := "^MA-(\\\\d{4,8})$"' in _topup_voucher_text,
+      "9au voucher constants must mirror topup_voucher.py")
+_main_menu_text = (ROOT / "scenes/menu/main_menu.gd").read_text(encoding="utf-8")
+check("hero_shop_panel.topup_requested.connect(_open_topup)" in _main_menu_text
+      and "topup_client.configure(topup_flow)" in _main_menu_text
+      and "topup_panel.bind(topup_flow)" in _main_menu_text,
+      "9au menu must wire the hero shop TOP UP button to the dialog, client and flow")
+for _topup_path in ("scripts/match/topup_currency.gd", "scripts/net/topup_client.gd",
+                    "scripts/ui/topup_panel.gd"):
+    check((ROOT / _topup_path).is_file(), f"9au {_topup_path} must exist")
 check('const SPLASH = preload("res://scenes/splash/SplashScreen.tscn")' in app
       and "_install_screen(SPLASH)" in app
       and 'current_screen.connect("finished", show_menu)' in app,
