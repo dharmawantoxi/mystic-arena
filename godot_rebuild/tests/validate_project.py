@@ -139,6 +139,7 @@ from balance_baseline_source_oracle import balance_baseline as balance_baseline_
 from sprite_lighting_source_oracle import lighting_fixture as sprite_lighting_fixture
 from combat_audio_source_oracle import source_fixture as combat_audio_fixture
 from side_panel_source_oracle import source_fixture as side_panel_fixture
+from splash_screen_source_oracle import source_fixture as splash_screen_fixture
 from boss_attack_lock_source_oracle import source_fixture as boss_attack_lock_fixture
 from boss_buff_expiry_source_oracle import source_fixture as boss_buff_expiry_fixture
 from boss_buff_scaling_source_oracle import source_fixture as boss_buff_scaling_fixture
@@ -611,6 +612,35 @@ check("side_panel.pause_requested.connect(pause_match)" in _side_screen_text
 _project_text = (ROOT / "project.godot").read_text(encoding="utf-8")
 check('window/stretch/aspect="expand"' in _project_text,
       "9as the viewport must expand so wide screens expose the right panel")
+# Layer 9at: splash_screen.py port (boot splash before the menu).
+check('const SplashScreenChecks = preload("res://tests/splash_screen_checks.gd")' in ai_tests
+      and "SplashScreenChecks.new().run(_check)" in ai_tests,
+      "9at splash suite must be preloaded and run")
+check('application boots into the splash' in ai_tests and 'splash skip hands over to the menu' in ai_tests,
+      "9at runtime suite must boot through the splash into the menu")
+check("python godot_rebuild/tests/splash_screen_source_oracle.py" in workflow,
+      "9at CI must regenerate the splash fixture from splash_screen.py")
+check((ROOT / "tests/fixtures/splash_screen_source.json").is_file(),
+      "9at splash fixture must exist")
+if (ROOT / "tests/fixtures/splash_screen_source.json").is_file():
+    check(splash_screen_fixture() == json.loads(
+        (ROOT / "tests/fixtures/splash_screen_source.json").read_text(encoding="utf-8")),
+          "9at splash fixture must not drift from splash_screen.py")
+_splash_timeline_text = (ROOT / "scripts/ui/splash_timeline.gd").read_text(encoding="utf-8")
+check("const DURATION := 3.0" in _splash_timeline_text
+      and "const SKIP_FADE := 0.25" in _splash_timeline_text
+      and "const PARTICLE_COUNT := 46" in _splash_timeline_text
+      and "const LOGO_BOX := Vector2(340.0, 320.0)" in _splash_timeline_text
+      and "const VIGNETTE_MAX := 140" in _splash_timeline_text,
+      "9at splash timeline constants must mirror splash_screen.py")
+check('const SPLASH = preload("res://scenes/splash/SplashScreen.tscn")' in app
+      and "_install_screen(SPLASH)" in app
+      and 'current_screen.connect("finished", show_menu)' in app,
+      "9at the app must boot into the splash and hand over to the menu")
+check((ROOT / "scenes/splash/SplashScreen.tscn").is_file()
+      and (ROOT / "scenes/splash/splash_screen.gd").is_file()
+      and (ROOT / "assets/logo.png").is_file(),
+      "9at splash scene, script and logo must ship")
 check("python godot_rebuild/tests/balance_baseline_source_oracle.py" in workflow,
       "CI must pin the ingame balance baseline")
 

@@ -1,6 +1,7 @@
 extends Node
 ## Sole owner of screen lifetime. Transitions are deferred out of UI/input callbacks.
 
+const SPLASH = preload("res://scenes/splash/SplashScreen.tscn")
 const MENU = preload("res://scenes/menu/MainMenu.tscn")
 const PROTOTYPE = preload("res://scenes/prototype/PrototypeMatch.tscn")
 const SIEGE = preload("res://scenes/siege/SiegeArena.tscn")
@@ -30,7 +31,9 @@ func _ready() -> void:
 	SaveSlotStore.set_current_slot(active_slot)
 	SaveSlotStore.migrate_legacy(ProgressStore.PATH, slot_path_template)
 	progress_path = SaveSlotStore.slot_path(active_slot, slot_path_template)
-	_install_screen(MENU)
+	# Layer 9at: `main.py` boots into STATE_SPLASH; the splash hands over to
+	# the menu when its timeline ends or a tap skips it.
+	_install_screen(SPLASH)
 
 
 func show_menu() -> void:
@@ -117,7 +120,9 @@ func _install_screen(scene: PackedScene) -> void:
 		current_screen.set("active_slot", active_slot)
 		current_screen.set("progress_path", progress_path)
 	screen_root.add_child(current_screen)
-	if scene == MENU:
+	if scene == SPLASH:
+		current_screen.connect("finished", show_menu)
+	elif scene == MENU:
 		current_screen.connect("progress_slot_changed", _select_progress_slot)
 		current_screen.connect("play_requested", start_match)
 		current_screen.connect("combat_requested", start_combat)

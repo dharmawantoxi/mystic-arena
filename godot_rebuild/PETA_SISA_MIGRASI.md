@@ -122,6 +122,7 @@ Dibaca hanya untuk memilih slice berikutnya, bukan audit menyeluruh:
 | `lighting.py` (239 baris) | **Terport (layer 9aq)** — `scripts/ui/sprite_lighting.gd`: matematika mask eksak (gradien kanonik 28x28, rim/terminator/band-2) dipaku oracle `sprite_lighting_source_oracle.py`; adaptor vektor dipakai `prototype_view._draw_lit_polygon` untuk siluet hero & badan boss |
 | `mobile/combat_audio.py` (332 baris) | **Terport (layer 9ar)** — `scripts/audio/combat_audio.gd`: gate SFX tempur (7 jenis, `_KONFIG` volume/jeda, anggaran 4 per frame, 24 kanal tanpa rebut, master*sfx) dipaku oracle `combat_audio_source_oracle.py`; dipanggil di serangan dasar hero, tembakan menara per jalur (biru 1.0/merah 0.8), ayunan minion dan serangan boss; pool 24 `AudioStreamPlayer` di `audio_manager.gd` |
 | `mobile/sidepanel.py` (741 baris) | **Terport (layer 9as)** — `scripts/ui/side_panel_layout.gd` (tata letak murni: aturan lebar layar 2200/120 px, kotak STATUS/HEROES/TACTICAL, hit-test popup) + `side_panel.gd` (Control: latar batu, irama segar 250 ms, sentuhan) dipaku oracle `side_panel_source_oracle.py`; dipasang `prototype_screen._build_side_panel`, `project.godot` stretch aspect `expand` |
+| `splash_screen.py` (371 baris) | **Terport (layer 9at)** — `scripts/ui/splash_timeline.gd` (fade/skip/partikel/gradien/vignette/logo/tata letak murni) + `scenes/splash/splash_screen.gd` (Control, latar dipanggang sekali, tap/klik/tombol skip) dipaku oracle `splash_screen_source_oracle.py`; `app.gd` kini boot ke SPLASH lalu `finished` -> menu; logo `assets/logo.png` disalin dari sumber |
 | `hero_marker.gd` | Selesai: placeholder 4-6 sisi tetap untuk `grimjaw_checks`, siluet per-hero dipakai `prototype_view.gd:619`; art roster dipaku golden fixture (layer 9aj) |
 
 Catatan: `ui_components/hero_portraits.py` yang di-impor `_core.py:3056`
@@ -1479,3 +1480,26 @@ Notifikasi/kill feed sudah dihapus pengguna di sumber (no-op) - tidak diport.
   bawah shim pygame perekam (glyph 7 px) untuk 5 skenario + 9 hit-test;
   `tests/side_panel_checks.gd` memutar ulang; lebar teks nyata disuntik lewat
   `measure` sehingga posisi rata-kanan/tengah mengikuti font Godot.
+
+## Splash screen `splash_screen.py` (layer 9at)
+
+`main.py` boot ke `STATE_SPLASH`: logo (`assets/logo.png`, dimuat ke kotak
+340x320 lalu tumbuh 85 % -> 100 % dalam 0,9 s per 5 %) atau judul teks
+bercahaya, subjudul, petunjuk "Tap anywhere to skip", 46 partikel di atas
+gradien + vignette yang dipanggang sekali; fade-in 0,4 s, judul mulai 0,5 s
+selama 0,6 s, fade-out 0,45 s terakhir dari 3 s; tap -> `skipped`, selesai
+saat `elapsed` (sejak boot) >= 0,25 s (tap terlambat = potong langsung,
+perilaku sumber dipertahankan).
+
+- `scripts/ui/splash_timeline.gd`: semua angka murni (alpha, done, partikel,
+  48 baris gradien, 70 cincin vignette, skala/tumbuh logo dengan pembulatan
+  half-even Python, cincin glow, `layout()` dengan `measure` font).
+- `scenes/splash/splash_screen.gd` + `SplashScreen.tscn`: `advance(dt)` dengan
+  `min(0.05, delta)`, latar dipanggang ke `ImageTexture` sekali, glow judul
+  sebagai outline 24/14/8 px (adaptor vektor dari salinan blur sumber).
+- `app/app.gd`: `_install_screen(SPLASH)` saat boot, sinyal `finished` ->
+  `show_menu`; suite runtime `run_all.gd` kini boot ke splash, skip, lalu menu.
+- Oracle `tests/splash_screen_source_oracle.py` menjalankan `SplashScreen` ASLI
+  di bawah shim pygame perekam (18 sampel linimasa, jalur skip, gerak partikel
+  120 frame, tata letak dengan/tanpa logo); `tests/splash_screen_checks.gd`
+  memutar ulang.
