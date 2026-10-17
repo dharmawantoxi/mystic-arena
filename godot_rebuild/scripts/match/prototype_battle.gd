@@ -4,6 +4,7 @@ extends "res://scripts/combat/siege_battle.gd"
 
 const Upgrades = preload("res://scripts/match/archer_upgrades.gd")
 const AudioRuntime = preload("res://scripts/audio/audio_runtime.gd")
+const CombatAudio = preload("res://scripts/audio/combat_audio.gd")
 const CannonUpgrades = preload("res://scripts/match/cannon_upgrades.gd")
 const IceUpgrades = preload("res://scripts/match/ice_upgrades.gd")
 const MageUpgrades = preload("res://scripts/match/mage_upgrades.gd")
@@ -1529,6 +1530,9 @@ func _boss_basic_attack(target: UnitState, enemies: Array[UnitState]) -> void:
 	boss.basic_attack_seq += 1
 	boss.attack_facing = boss.facing
 	boss.attack_lock_timer = mini(15, maxi(6, int(boss.attack_cooldown / 3)))
+	# Layer 9ar: `base_boss.py:750` - bosses reuse the two hero attack sounds,
+	# melee vs ranged from their attack range (`_suara_serangan`).
+	CombatAudio.play(CombatAudio.attack_kind(boss.attack_range))
 	# Boss.update passes source=self for its primary hit. Preserve the live
 	# attacker ID so hero blind/evasion, reactive damage and item hooks can
 	# resolve the boss; source cleave deliberately omits source.
@@ -3246,6 +3250,9 @@ func hero_basic_attack(hero_id: int, target_id: int) -> bool:
 		var landed := _deliver_hit(hero.id, hero.team, target, raw, hero.dmg_school, hero.position)
 		if landed and target.alive:
 			hero.items.on_basic_attack_hit(target.id, raw, _hero_enemy_list(), _item_rng, bus)
+	# Layer 9ar: `_entity.py:4420` plays the basic-attack sound after BOTH
+	# branches (slash for melee, bow/bolt for ranged) through the gate.
+	CombatAudio.play_hero_basic(hero)
 	hero.hp = hero.items.hero_hp
 	return true
 

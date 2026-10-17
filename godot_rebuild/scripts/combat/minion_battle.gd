@@ -5,6 +5,7 @@ extends RefCounted
 const Definition = preload("res://scripts/data/minion_definition.gd")
 const UnitState = preload("res://scripts/combat/unit_state.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
+const CombatAudio = preload("res://scripts/audio/combat_audio.gd")
 const ThorneSkills = preload("res://scripts/combat/thorne_skills.gd")
 const GrimjawSkills = preload("res://scripts/combat/grimjaw_skills.gd")
 const VexSkills = preload("res://scripts/combat/vex_skills.gd")
@@ -149,6 +150,9 @@ func step_tick() -> void:
 	if not is_running():
 		return
 	tick_count += 1
+	# Layer 9ar: the source resets the per-frame sound budget once per main
+	# loop frame (60 Hz = one simulation tick).
+	CombatAudio.shared().new_frame()
 	for unit in units:
 		if not is_running():
 			break
@@ -224,6 +228,9 @@ func apply_hit(attacker_id: int, target_id: int, school: String = "physical") ->
 		landed = _deliver_hit(
 			-1, attacker.team, target, attacker.definition.damage, "neutral", attacker.position
 		)
+		if landed:
+			# Layer 9ar: `_entity.py:5588` - minion swing sound through the gate.
+			CombatAudio.play(CombatAudio.MINION_HIT)
 	if not landed:
 		return false
 	attacker.cooldown_ticks = _eff_attack_cd(attacker)

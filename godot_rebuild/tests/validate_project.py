@@ -137,6 +137,7 @@ from item_silence_store_source_oracle import source_fixture as item_silence_stor
 from boss_ai_slow_source_oracle import source_fixture as boss_ai_slow_fixture
 from balance_baseline_source_oracle import balance_baseline as balance_baseline_fixture
 from sprite_lighting_source_oracle import lighting_fixture as sprite_lighting_fixture
+from combat_audio_source_oracle import source_fixture as combat_audio_fixture
 from boss_attack_lock_source_oracle import source_fixture as boss_attack_lock_fixture
 from boss_buff_expiry_source_oracle import source_fixture as boss_buff_expiry_fixture
 from boss_buff_scaling_source_oracle import source_fixture as boss_buff_scaling_fixture
@@ -541,6 +542,46 @@ check("_draw_lit_polygon(HeroMarker.silhouette(" in view
       "9aq the arena view must route hero silhouettes and boss bodies through the lighting pass")
 check("import " not in _sprite_lighting_text and "load(" not in _sprite_lighting_text,
       "9aq sprite lighting stays asset-free (procedural shading only)")
+# Layer 9ar: mobile/combat_audio.py port (combat SFX gate + attack call sites).
+check('const CombatAudioChecks = preload("res://tests/combat_audio_checks.gd")' in ai_tests
+      and "CombatAudioChecks.new().run(_check)" in ai_tests,
+      "9ar combat audio suite must be preloaded and run")
+check("python godot_rebuild/tests/combat_audio_source_oracle.py" in workflow,
+      "9ar CI must regenerate the combat audio fixture from mobile/combat_audio.py")
+check((ROOT / "tests/fixtures/combat_audio_source.json").is_file(),
+      "9ar combat audio fixture must exist")
+if (ROOT / "tests/fixtures/combat_audio_source.json").is_file():
+    check(combat_audio_fixture() == json.loads(
+        (ROOT / "tests/fixtures/combat_audio_source.json").read_text(encoding="utf-8")),
+          "9ar combat audio fixture must not drift from mobile/combat_audio.py")
+_combat_audio_text = (ROOT / "scripts/audio/combat_audio.gd").read_text(encoding="utf-8")
+check("const RANGED_THRESHOLD := 100.0" in _combat_audio_text
+      and "const FRAME_BUDGET := 4" in _combat_audio_text
+      and "const MIXER_CHANNELS := 24" in _combat_audio_text
+      and "MINION_HIT: [0.50, 140, false]" in _combat_audio_text
+      and "HERO_MELEE: [0.78, 90, false]" in _combat_audio_text,
+      "9ar combat audio gate constants must mirror _KONFIG")
+for _name in ("hero_melee.wav", "hero_ranged.wav", "tower_archer.wav", "tower_cannon.wav",
+              "tower_ice.wav", "tower_mage.wav", "minion_hit.ogg"):
+    check((ROOT / "assets/audio" / _name).is_file(), "9ar combat sound %s must ship" % _name)
+_audio_manager_text = (ROOT / "scripts/audio/audio_manager.gd").read_text(encoding="utf-8")
+check("func play_combat(" in _audio_manager_text
+      and "func combat_free_channels(" in _audio_manager_text
+      and "func combat_global_volume(" in _audio_manager_text
+      and "const COMBAT_CHANNELS := 24" in _audio_manager_text,
+      "9ar AudioManager must expose the 24-channel combat pool")
+_proto_text = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+_minion_text = (ROOT / "scripts/combat/minion_battle.gd").read_text(encoding="utf-8")
+_siege_text = (ROOT / "scripts/combat/siege_battle.gd").read_text(encoding="utf-8")
+check("CombatAudio.play_hero_basic(hero)" in _proto_text
+      and "CombatAudio.play(CombatAudio.attack_kind(boss.attack_range))" in _proto_text,
+      "9ar hero basic attack and boss attack must play through the gate")
+check("CombatAudio.play(CombatAudio.MINION_HIT)" in _minion_text
+      and "CombatAudio.shared().new_frame()" in _minion_text,
+      "9ar minion swing must play through the gate and the budget resets per tick")
+check("CombatAudio.tower_kind(source.settings().tower_path)" in _siege_text
+      and "1.0 if source.team == BLUE else 0.8" in _siege_text,
+      "9ar tower shots must play per path with the blue/red volume split")
 check("python godot_rebuild/tests/balance_baseline_source_oracle.py" in workflow,
       "CI must pin the ingame balance baseline")
 

@@ -120,6 +120,7 @@ Dibaca hanya untuk memilih slice berikutnya, bukan audit menyeluruh:
 | item/forge | **Sudah terport** (`scripts/match/forge.gd`, `item_forge_panel.gd`, `forge_scene_checks.gd`) |
 | Katalog level, audio, player command/shop, match pacing | Selesai (PR #318/#323/#324/#325) |
 | `lighting.py` (239 baris) | **Terport (layer 9aq)** — `scripts/ui/sprite_lighting.gd`: matematika mask eksak (gradien kanonik 28x28, rim/terminator/band-2) dipaku oracle `sprite_lighting_source_oracle.py`; adaptor vektor dipakai `prototype_view._draw_lit_polygon` untuk siluet hero & badan boss |
+| `mobile/combat_audio.py` (332 baris) | **Terport (layer 9ar)** — `scripts/audio/combat_audio.gd`: gate SFX tempur (7 jenis, `_KONFIG` volume/jeda, anggaran 4 per frame, 24 kanal tanpa rebut, master*sfx) dipaku oracle `combat_audio_source_oracle.py`; dipanggil di serangan dasar hero, tembakan menara per jalur (biru 1.0/merah 0.8), ayunan minion dan serangan boss; pool 24 `AudioStreamPlayer` di `audio_manager.gd` |
 | `hero_marker.gd` | Selesai: placeholder 4-6 sisi tetap untuk `grimjaw_checks`, siluet per-hero dipakai `prototype_view.gd:619`; art roster dipaku golden fixture (layer 9aj) |
 
 Catatan: `ui_components/hero_portraits.py` yang di-impor `_core.py:3056`
@@ -1426,3 +1427,29 @@ rim light, terminator dua band, semua dari mask alpha, cahaya kiri-atas).
 Catatan paritas visual: hasilnya *setara komposisi* (arah cahaya, kekuatan
 rim/terminator/gradien identik angka) — bukan identik piksel, karena sumber
 bekerja pada bitmap sprite sedangkan Godot pada poligon vektor.
+
+## SFX tempur `mobile/combat_audio.py` (layer 9ar)
+
+Audit lanjutan arahan "migrasi penuh" menemukan berkas suara serangan
+(`hero_melee/hero_ranged/tower_*/minion_hit`) sudah ada di `assets/audio`
+tetapi tidak pernah dimainkan: sumber memainkannya lewat gate
+`mobile/combat_audio.py`, bukan `SoundManager`.
+
+- `scripts/audio/combat_audio.gd`: gate murni + clock-injected (`request()`),
+  konstanta `_KONFIG`, `AMBANG_RANGED=100`, anggaran 4/frame (`new_frame()`
+  dipanggil `minion_battle.step_tick`), statistik `main/tolak_jeda/
+  tolak_anggaran/tolak_channel`, klasifikasi `attack_kind/tower_kind/hero_kind`
+  (`is_melee` menang atas jangkauan, seperti `play_hero_basic`).
+- Titik panggil = titik sumber: `prototype_battle.hero_basic_attack`
+  (`_entity.py:4420`), `siege_battle.fire_projectile` untuk menara
+  (`_entity.py:881`, biru 1.0 / merah 0.8), `minion_battle.apply_hit` cabang
+  minion (`_entity.py:5588`), `prototype_battle._boss_basic_attack`
+  (`base_boss.py:750`).
+- `audio_manager.gd`: pool 24 kanal (`play_combat`, `combat_free_channels`,
+  `combat_global_volume`); tanpa AudioManager (suite headless) wrapper
+  berperilaku seperti cabang `_mati` sumber (tidak memainkan, tidak menghitung).
+- Oracle `tests/combat_audio_source_oracle.py` menjalankan modul sumber ASLI
+  di bawah shim pygame (jam, kanal kosong, volume SoundManager) dan merekam
+  18 keputusan + klasifikasi; `tests/combat_audio_checks.gd` memutarnya ulang.
+- Perbedaan sadar: anggaran direset per tick simulasi (60 Hz = frame sumber),
+  jadi pada kecepatan permainan >1x budget per frame layar ikut berlipat.

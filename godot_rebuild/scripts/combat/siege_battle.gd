@@ -202,6 +202,13 @@ func fire_projectile(source_id: int, target_id: int) -> bool:
 			shot.debuff_duration = source.settings().debuff_duration_ticks
 		projectiles.append(shot)
 	source.cooldown_ticks = source.definition.attack_cooldown_ticks
+	if source.settings().structure_kind == "tower":
+		# Layer 9ar: `Tower._shoot` (`_entity.py:881`) - one sound per tower
+		# path, the player's blue towers slightly louder than red ones.
+		CombatAudio.play(
+			CombatAudio.tower_kind(source.settings().tower_path),
+			1.0 if source.team == BLUE else 0.8
+		)
 	return true
 
 
