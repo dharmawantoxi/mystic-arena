@@ -130,6 +130,11 @@ var ai_heroes := AiHeroControl.new()
 # is the only switch; with it off the red side stays idle.
 var ai_controller := AiController.new()
 var ai_enabled := false
+## Layer 9c: the rebalance table only applies when the PLAYABLE match flow
+## (app.gd -> PrototypeSession.enable_balance_overrides) turns this on before
+## setup_arena. Direct worlds (lab, source-parity suites, oracles) keep the
+## untouched .tres stats so the Python-source fixtures stay valid.
+var balance_overrides_enabled := false
 var ai_hero_control_enabled := false
 # Ownership is explicit: the free mirrored red Kaizen is not an AIPlayer hero.
 var ai_hero_ids: Array[int] = []
@@ -312,6 +317,13 @@ func level_intro_state(touch_mode: bool = false) -> Dictionary:
 		"show_prompt": level_intro.get_show_prompt(),
 		"prompt_text": level_intro.get_begin_prompt(touch_mode),
 		"warning_text": level_intro.get_warning_text(),
+		"boss_class": level_intro.boss_class,
+		"boss_entrance_color": level_intro.boss_entrance_color.duplicate(),
+		"boss_color_dark": level_intro.boss_color_dark.duplicate(),
+		"hp_mult": level_intro.hp_mult,
+		"difficulty_id": difficulty,
+		"screen_w": level_intro.screen_w,
+		"screen_h": level_intro.screen_h,
 	}
 
 
@@ -825,7 +837,13 @@ func _spawn_match_minion(definition: Definition, team: int, lane: int) -> UnitSt
 	# after the waypoint placement, then the lane Y offset (already applied by
 	# spawn_unit). Wave construction only; the lab entry stays exact so the
 	# existing contract tests can place units on demand.
-	var unit := spawn_unit(definition, team, lane)
+	# Layer 9c S3: the playable match swaps in the production minion override
+	# (a DUPLICATE definition - Troll regen 0.15/tick; the .tres and the lab
+	# keep the 0.6 source parity). Worlds without the opt-in stay exact.
+	var target: Definition = definition
+	if balance_overrides_enabled:
+		target = BalanceOverrides.minion_definition_for(definition)
+	var unit := spawn_unit(target, team, lane)
 	if unit != null:
 		unit.position += Vector2(
 			spawn_rng.randf_range(-SPAWN_JITTER, SPAWN_JITTER),
@@ -1044,11 +1062,12 @@ func _spawn_production_hero(
 ) -> HeroState:
 	# Layer 9c: every PRODUCTION hero spawn routes through the explicit
 	# rebalance surface (`scripts/data/balance_overrides.gd`, doctrine in
-	# BALANCE_CONTRACT.md). The override table is empty by decision, so this
-	# is an exact no-op today; the combat lab keeps calling `spawn_hero`
-	# directly and stays on the untouched source-parity path.
+	# BALANCE_CONTRACT.md). The table carries the directed entries (S1 starter
+	# catch-up, damage_mult 1.5) and is applied only when the playable match
+	# flow enabled it; the combat lab and parity suites call `spawn_hero`
+	# directly or leave the flag off and stay on the source-parity path.
 	var hero := spawn_hero(definition, team, pos, level)
-	if hero == null or definition == null:
+	if hero == null or definition == null or not balance_overrides_enabled:
 		return hero
 	var hp_mult := BalanceOverrides.hp_multiplier(definition.id)
 	var damage_mult := BalanceOverrides.damage_multiplier(definition.id)
@@ -1517,6 +1536,9 @@ func _boss_basic_attack(target: UnitState, enemies: Array[UnitState]) -> void:
 	boss.basic_attack_seq += 1
 	boss.attack_facing = boss.facing
 	boss.attack_lock_timer = mini(15, maxi(6, int(boss.attack_cooldown / 3)))
+	# Layer 9ar: `base_boss.py:750` - bosses reuse the two hero attack sounds,
+	# melee vs ranged from their attack range (`_suara_serangan`).
+	CombatAudio.play(CombatAudio.attack_kind(boss.attack_range))
 	# Boss.update passes source=self for its primary hit. Preserve the live
 	# attacker ID so hero blind/evasion, reactive damage and item hooks can
 	# resolve the boss; source cleave deliberately omits source.
@@ -2149,6 +2171,11 @@ func _ai_empty_slots() -> int:
 		if slot != null and slot.team == RED and slot.structure_id == -1 and slot.lane in [0, 1, 2]:
 			count += 1
 	return count
+
+
+## Public read of the AI roster for HUD/panel code (layer 9as).
+func ai_roster_heroes() -> Array:
+	return _ai_roster()
 
 
 func _ai_roster() -> Array:
@@ -3234,6 +3261,9 @@ func hero_basic_attack(hero_id: int, target_id: int) -> bool:
 		var landed := _deliver_hit(hero.id, hero.team, target, raw, hero.dmg_school, hero.position)
 		if landed and target.alive:
 			hero.items.on_basic_attack_hit(target.id, raw, _hero_enemy_list(), _item_rng, bus)
+	# Layer 9ar: `_entity.py:4420` plays the basic-attack sound after BOTH
+	# branches (slash for melee, bow/bolt for ranged) through the gate.
+	CombatAudio.play_hero_basic(hero)
 	hero.hp = hero.items.hero_hp
 	return true
 

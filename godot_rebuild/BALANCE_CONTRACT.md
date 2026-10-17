@@ -38,12 +38,12 @@ untuk setiap perubahan angka berikutnya. Dibuka oleh permintaan pengguna
 | boss pref (p90/p10) | 1.49 | >= 1.20 | sehat ("bawa hero sesuai lawan" terasa) |
 | price spread in-band | 1.89x | <= 2.20 | sehat |
 | pool power delta (DPS/EHP) | 1.000 / 1.000 | max 0.12 | redistribusi, bukan buff/nerf global |
-| starter gap | 5.67x | (informasional; 8.51x sebelum pass) | membaik |
+| starter gap | 5.67x (sumber) / **3.97x produksi native** (S1) | <= 4.0x (arahan 2026-10-16) | **tercapai via override 9c** |
 | violations audit | **[]** | kosong | **sehat** |
 
-Sel identity grid (power): MAGIC|CARRY 0.84 (n=11), MAGIC|FIGHTER 0.84 (n=82),
+Sel identity grid (power, sumber): MAGIC|CARRY 0.84 (n=11), MAGIC|FIGHTER 0.84 (n=82),
 MAGIC|TANK 1.02 (n=25), PHYSICAL|CARRY 1.19 (n=10), PHYSICAL|FIGHTER 1.18
-(n=49), PHYSICAL|TANK 1.38 (n=39). Balance pass: 216 hero, hp_mult
+(n=49), PHYSICAL|TANK 1.38 (n=39) — produksi native sesudah S2: **1.25**. Balance pass: 216 hero, hp_mult
 0.7189..1.3868, dmg_mult 0.5851..2.0474; saklar `hero_balance.py`:
 `ENABLE_REBUDGET=True`, `ENABLE_SCHOOL_MOD=False`, `ENABLE_STARTER_CATCHUP=True`.
 
@@ -59,7 +59,8 @@ di atas) dan **mekanisme perubahan angka** (`scripts/data/balance_overrides.gd`)
 
 - Satu-satunya permukaan native tempat deviasi rebalance yang disengaja dari
   katalog paritas-sumber boleh hidup. Tabel produksi `HERO_OVERRIDES`
-  **KOSONG by decision**: audit `--ingame` melaporkan nol pelanggaran di
+  semula **KOSONG by decision** (kini berisi entri arahan 2026-10-16 S1–S3,
+  seksi "Rebalance terarah" di bawah): audit `--ingame` melaporkan nol pelanggaran di
   semua target yang ditegakkan alat; deviasi band prosa (MAGIC|CARRY dan
   MAGIC|FIGHTER power 0.84 — satu tick di bawah lantai prosa 0.85;
   PHYSICAL|TANK 1.38 di atas cap prosa 1.25) adalah trade yang DITERIMA pass
@@ -82,15 +83,52 @@ di atas) dan **mekanisme perubahan angka** (`scripts/data/balance_overrides.gd`)
   tabel kosong — entri pertama harus mengupdate suite + baseline + PETA
   dengan angka sebelum/sesudah secara sengaja.
 
+## Rebalance terarah (arahan pengguna 2026-10-16) — entri override aktif
+
+Fixture 9b `balance_baseline_ingame.json` TIDAK berubah: override native tidak
+terlihat oleh audit sumber. Angka "depois" dihitung dengan rumus audit yang
+sama (`dps = base_damage*60/cd + skill_base*60/skill_cd`) di atas baris
+hero audit, dipaku di suite native + `validate_project.py`.
+
+| Slice | Entri | Antes | Depois | Bukti |
+|---|---|---|---|---|
+| S1 starter catch-up | kaizen/thorne/grimjaw/sylara/vex/zephyr `damage_mult 1.5` | starter avg dps 85.7, gap 5.67x | starter avg dps 122.5, gap **3.97x** (<= 4.0x) | `balance_override_layer_checks.gd`: spawn produksi Kaizen damage 45 -> 68, lab tetap 45 |
+| S2 nerf PHYSICAL\|TANK | 39 hero sel PHYSICAL\|TANK `damage_mult 0.85` | power sel 1.38 (avg dps 646.2, ehp 3069) | power sel **1.25** (avg dps 571.0, ehp tetap); spread 1.47x, corr 0.484, school 1.045/1.094, price 1.85x, pool dps 0.972 — violations tetap [] | suite: spawn produksi Akaroth damage 320 -> 272 |
+| S3 regen Troll produksi | `MINION_OVERRIDES["troll"].regen_per_tick 0.15` (duplikat definisi, hanya `_spawn_match_minion` + opt-in playable) | regen 0.6 HP/tick (36 HP/s) > dps Orc 0.217/tick: duel Troll vs Orc tak selesai | regen **0.15 HP/tick** (9 HP/s) < 0.217: duel selesai; `.tres` + lab tetap 0.6 | suite: wave troll opt-in 100 -> 100.15/tick, lab troll 100 -> 100.6/tick |
+
+Titik aplikasi (revisi S1): tabel hanya diterapkan bila dunia dibuka oleh
+alur match playable — `app.gd` memanggil `PrototypeSession.
+enable_balance_overrides()` (set `Prototype.balance_overrides_enabled = true`)
+sebelum `setup_arena`. Dunia yang dibangun langsung (lab tempur, suite
+paritas-sumber, oracle) membiarkan flag mati sehingga fixture sumber Python
+(mis. `ai_upgrade` damage Kaizen 45) tetap valid; suite override membuktikan
+keduanya (flag mati -> 45, flag hidup -> 68).
+
+Pemilihan S1: multiplier hanya menggerakkan porsi auto-attack (skill tidak
+dikalikan, cermin `HeroState.apply_level_stats`), jadi 1.42 (estimasi linear
+penuh) tidak cukup; sapuan 0.01 memberi 1.45 -> 4.12x, 1.49 -> 4.00x (tepi),
+1.5 -> 3.97x. Dipilih multiplier bulat terkecil yang lolos: **1.5**. HP starter
+tidak disentuh. Damage produksi: kaizen 68, thorne 62, grimjaw 63, sylara 86,
+vex 65, zephyr 51.
+
+Pemilihan S2: rumus power sel audit (`0.8*avg_dps/med_dps +
+0.2*avg_ehp/med_ehp`) dihitung ulang di atas baris hero audit dengan
+multiplier seragam pada sel (damage -> porsi auto-attack, hp -> ehp linear):
+damage_mult 0.90 -> 1.29, 0.88 -> 1.28, 0.86 -> 1.26, **0.85 -> 1.25**;
+hp_mult sendirian butuh 0.5 (corr jatuh ke -0.03); campuran (0.9/0.8,
+0.88/0.9) tidak lebih kecil. Sel lain bergeser <= 0.01 (MAGIC|CARRY 0.84 ->
+0.85). Tabel baseline 9b di atas tetap angka sumber; angka produksi native
+adalah kolom "Depois".
+
 ## Catatan yang tetap berlaku
 
 - **Troll lab** (`COMBAT_CONTRACT.md`): regen 0.6 HP/tick (36 HP/detik) di
   lab duel adalah paritas sumber yang SENGAJA; jangan diubah diam-diam. Duel
-  cepat untuk uji kill pakai Goblin/Orc. Perubahan angka lab hanya lewat
-  doktrin di atas.
+  cepat untuk uji kill pakai Goblin/Orc. Produksi (gelombang match playable)
+  memakai 0.15 lewat `MINION_OVERRIDES` (S3) tanpa menyentuh `.tres`/lab.
 - Rebalance produksi (di luar baseline sehat ini) membutuhkan arahan desain
-  eksplisit pengguna: kandidat yang bisa diukur ulang kapan saja lewat audit
-  yang sama (mis. starter gap, sel grid terpanas, band harga tertentu).
+  eksplisit pengguna; arahan 2026-10-16 (S1 starter gap) sudah terpasang di
+  tabel di atas. Kandidat lain diukur ulang lewat audit yang sama.
 
 ## Regenerasi baseline
 

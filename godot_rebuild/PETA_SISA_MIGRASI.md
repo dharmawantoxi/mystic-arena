@@ -119,7 +119,12 @@ Dibaca hanya untuk memilih slice berikutnya, bukan audit menyeluruh:
 | Kit hero | **222/222 selesai**, 0 pending (PR #292, merge `8119e31`) |
 | item/forge | **Sudah terport** (`scripts/match/forge.gd`, `item_forge_panel.gd`, `forge_scene_checks.gd`) |
 | Katalog level, audio, player command/shop, match pacing | Selesai (PR #318/#323/#324/#325) |
-| `lighting.py` (239 baris) | **Belum terport** — tidak ada padanan di `godot_rebuild/` |
+| `lighting.py` (239 baris) | **Terport (layer 9aq)** — `scripts/ui/sprite_lighting.gd`: matematika mask eksak (gradien kanonik 28x28, rim/terminator/band-2) dipaku oracle `sprite_lighting_source_oracle.py`; adaptor vektor dipakai `prototype_view._draw_lit_polygon` untuk siluet hero & badan boss |
+| `mobile/combat_audio.py` (332 baris) | **Terport (layer 9ar)** — `scripts/audio/combat_audio.gd`: gate SFX tempur (7 jenis, `_KONFIG` volume/jeda, anggaran 4 per frame, 24 kanal tanpa rebut, master*sfx) dipaku oracle `combat_audio_source_oracle.py`; dipanggil di serangan dasar hero, tembakan menara per jalur (biru 1.0/merah 0.8), ayunan minion dan serangan boss; pool 24 `AudioStreamPlayer` di `audio_manager.gd` |
+| `mobile/sidepanel.py` (741 baris) | **Terport (layer 9as)** — `scripts/ui/side_panel_layout.gd` (tata letak murni: aturan lebar layar 2200/120 px, kotak STATUS/HEROES/TACTICAL, hit-test popup) + `side_panel.gd` (Control: latar batu, irama segar 250 ms, sentuhan) dipaku oracle `side_panel_source_oracle.py`; dipasang `prototype_screen._build_side_panel`, `project.godot` stretch aspect `expand` |
+| `splash_screen.py` (371 baris) | **Terport (layer 9at)** — `scripts/ui/splash_timeline.gd` (fade/skip/partikel/gradien/vignette/logo/tata letak murni) + `scenes/splash/splash_screen.gd` (Control, latar dipanggang sekali, tap/klik/tombol skip) dipaku oracle `splash_screen_source_oracle.py`; `app.gd` kini boot ke SPLASH lalu `finished` -> menu; logo `assets/logo.png` disalin dari sumber |
+| Top-up / voucher (`topup_currency.py` 221, `topup_voucher.py` 95, `Menu.topup_*` di `_core.py`, klien `server/app.py`) | **Terport (layer 9au)** — `scripts/match/topup_currency.gd` (deteksi locale -> mata uang, konversi IDR, format harga), `scripts/match/topup_voucher.gd` (format `MA-`, allowlist `voucher_codes.txt`), `scripts/match/topup_flow.gd` (mesin fase select/processing/paying/success/redeem, grant + riwayat + cap 50), `scripts/net/topup_client.gd` (HTTPRequest ke `/api/topup/create|status|qr`, timeout 6 s), `scripts/ui/topup_panel.gd` (dialog modal di atas Hero Shop, keypad voucher, QR); oracle `topup_source_oracle.py` menjalankan modul sumber asli + metode Menu yang dipanen `ast` + `server/app.py` mode MOCK |
+| `LevelIntroScreen.draw()` (`_render.py` 2761-3391) | **Terport (layer 9av)** — `scripts/ui/level_intro_layout.gd` (op list murni: darken, tint tema 33+forest, vignette 60 cincin, pembatas + 3 berlian, kolom level dengan angka 200 px + 6 bayangan, bar kesulitan, koin reward/starting gold, kolom boss dengan pill tag, aura berdenyut, 12 sinar, siluet tubuh/inner/duri, mata bercahaya, nama + 5 bayangan, judul, PREPARE FOR BATTLE + ikon warn, prompt PRESS SPACE berdenyut + panah) dirender `prototype_view._draw_intro_op`; oracle `level_intro_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam |
 | `hero_marker.gd` | Selesai: placeholder 4-6 sisi tetap untuk `grimjaw_checks`, siluet per-hero dipakai `prototype_view.gd:619`; art roster dipaku golden fixture (layer 9aj) |
 
 Catatan: `ui_components/hero_portraits.py` yang di-impor `_core.py:3056`
@@ -509,9 +514,10 @@ panel modal (`hero_shop_panel.gd`, `item_forge_panel.gd`,
 ## Batas scope
 
 - Tidak ada portrait hero lain yang dimulai (hanya Kaizen + Thorne + fallback generik).
-- `lighting.py` tidak diport: ia post-process per-piksel di atas pygame
-  Surface, sementara `godot_rebuild` menggambar vektor. Memaksanya masuk
-  berarti reinterpretasi, bukan port.
+- `lighting.py` semula tidak diport (post-process per-piksel vs vektor).
+  **Dibuka pengguna 2026-10-16 ("migrasi penuh, buka semua pembatas")** →
+  layer 9aq: matematika mask diport eksak, pengecatan vektor sebagai adaptor
+  (lihat seksi "Lighting pass (layer 9aq)" di akhir dokumen).
 - Kelas state di `scripts/ui/` mempertahankan state/getter murni tanpa objek
   Surface/Font pygame, sementara penggambaran vektor dilakukan secara native di
   `PrototypeView` (`scenes/prototype/prototype_view.gd`).
@@ -519,7 +525,7 @@ panel modal (`hero_shop_panel.gd`, `item_forge_panel.gd`,
   usang**: AI terport lintas 9 modul (`ai_build/controller/draft/
   hero_control/items/policy/recruitment/shields/upgrades`, 52 fungsi) dengan
   `ai_controller.tick()` sebagai entry.
-- Top-up flow Python dan voucher allowlist tidak disentuh.
+- Top-up flow Python dan voucher allowlist tidak disentuh (saat itu; kini terport di layer 9au).
 - Tidak ada sistem lain yang diaudit atau diubah.
 
 ## Integrasi penuh AI lawan (penutup "AIPlayer penuh")
@@ -1265,6 +1271,9 @@ gap 5.67x, sel PHYSICAL|TANK 1.38, regen Troll lab).
 
 ## Lapisan override rebalance native, tabel kosong by decision (layer 9c)
 
+> (Catatan 9c-S3: tabel tidak lagi kosong — entri arahan 2026-10-16 S1–S3
+> tercatat di tiga seksi "Rebalance terarah" di akhir dokumen.)
+
 Menutup domain rebalance yang dibuka pengguna: sesudah baseline terukur (9b)
 menunjukkan NOL pelanggaran target yang ditegakkan audit, slice ini membangun
 MEKANISME perubahan angka tanpa mengubah satu angka pun:
@@ -1293,3 +1302,282 @@ Batas slice 9c: NOL perubahan angka gameplay (tabel kosong; wrapper no-op
 terbukti). Sumber Python, `.tres`, fixture 9b, `lighting.py`, art tidak
 disentuh. Entri rebalance pertama di masa depan wajib: reason + regenerate
 baseline + angka sebelum/sesudah di PETA.
+
+## Rebalance terarah S1: starter catch-up produksi (layer 9c, entri pertama)
+
+Arahan pengguna 2026-10-16: starter gap 5.67x -> <= 4.0x lewat entri
+`balance_overrides.gd` untuk enam hero starter (kaizen, thorne, grimjaw,
+sylara, vex, zephyr), `damage_mult` saja.
+
+- Pengukuran (rumus audit `tools/balance_audit.py` starter_gap, dijalankan
+  headless dengan stub pygame): unlock avg dps 486.1; starter avg 85.7 (gap
+  5.67x). Multiplier damage hanya menggerakkan porsi auto-attack (skill
+  tidak ikut, cermin `apply_level_stats`), sehingga estimasi linear 1.42
+  tidak cukup; sapuan 0.01: 1.45 -> 4.12x, 1.49 -> 4.00x (tepi), **1.5 ->
+  3.97x**. Dipilih 1.5 (bulat terkecil yang lolos). Depois: starter avg
+  dps 122.5, gap **3.97x**. Damage produksi: kaizen 45->68, thorne 41->62,
+  grimjaw 42->63, sylara 57->86, vex 43->65, zephyr 34->51; HP tetap.
+- Suite `balance_override_layer_checks.gd`: pin enam entri (mult 1.5, hp
+  1.0, reason berisi "5.67x -> 3.97x"), non-starter tetap 1.0/1.0, dan
+  bukti spawn: `_spawn_production_hero(KAIZEN)` damage 68 vs `spawn_hero`
+  langsung 45 (hp/skill identik, hp penuh).
+- Opt-in per dunia: `Prototype.balance_overrides_enabled` (default false)
+  dinyalakan hanya oleh alur match playable (`app.gd` ->
+  `PrototypeSession.enable_balance_overrides()` sebelum `_ready`/setup_arena).
+  Dunia yang dibangun langsung oleh suite paritas-sumber dan lab tetap
+  memakai stat `.tres` sehingga fixture Python (ai_upgrade dkk.) tidak
+  bergeser; suite override memaku flag mati -> 45 dan flag hidup -> 68.
+- Pin validate: `STARTER_DAMAGE_MULT := 1.5`, enam entri, tepat enam
+  reason S1, flag opt-in + pemanggilan app.gd + method session.
+  BALANCE_CONTRACT.md: tabel "Rebalance terarah" antes/depois.
+
+Batas S1: fixture 9b tidak diubah (override native tidak terlihat audit
+sumber); `.tres`, sumber Python, lab tempur, `lighting.py` tidak disentuh.
+
+## Rebalance terarah S2: nerf sel PHYSICAL|TANK produksi (layer 9c)
+
+Arahan pengguna 2026-10-16: power sel PHYSICAL|TANK 1.38 -> <= 1.25 lewat
+entri override untuk hero-hero sel itu (39 hero: akaroth ... zhyvrek, daftar
+dipaku `PHYSICAL_TANK_IDS` di suite).
+
+- Pengukuran (hemat): baris hero audit `--ingame` diambil headless (stub
+  pygame), sel via `hero_archetypes.get_archetype`, kandidat multiplier
+  diterapkan ke dps/ehp baris sel, lalu power sel + identity spread + corr +
+  school ratio + price spread + pool delta dihitung ulang dengan rumus
+  audit. Hasil: damage_mult 0.90 -> 1.29, 0.88 -> 1.28, 0.86 -> 1.26,
+  **0.85 -> 1.25**; hp_mult sendirian baru 1.27 di 0.5 (corr -0.03);
+  campuran tidak lebih kecil. Dipilih `damage_mult 0.85` seragam (hp tetap).
+- Antes -> depois: power sel 1.38 -> 1.25 (avg dps 646.2 -> 571.0, ehp
+  3069 tetap); identity spread 1.64x -> 1.47x; corr 0.535 -> 0.484; school
+  ratio 1.000/1.001 -> 1.045/1.094; price spread 1.89x -> 1.85x; pool dps
+  0.972 / ehp 1.000; sel lain bergeser <= 0.01. Violations tetap [].
+- Suite `balance_override_layer_checks.gd`: 39 entri (mult 0.85, hp 1.0,
+  reason "1.38 -> 1.25"), tabel = 6 + 39, bukti spawn produksi Akaroth
+  damage 320 -> 272 (hp paritas, hp penuh). Pin validate: konstanta 0.85,
+  S2_REASON, tepat 39 reason S2, lima entri sampel. Kontrak: baris S2 di
+  tabel "Rebalance terarah".
+
+Batas S2: fixture 9b tidak diubah; `.tres`, sumber Python, lab, `lighting.py`
+tidak disentuh.
+
+## Rebalance terarah S3: regen Troll produksi 0.6 -> 0.15/tick (layer 9c)
+
+Arahan pengguna 2026-10-16: turunkan regen Troll HANYA di jalur produksi;
+lab tetap paritas sumber 0.6 (kontrak QA `COMBAT_CONTRACT.md`).
+
+- Permukaan minion baru di `balance_overrides.gd`: `MINION_OVERRIDES
+  {"troll": {"regen_per_tick": 0.15, "reason": ...}}` + reader
+  `minion_definition_for(definition)` yang mengembalikan resource yang SAMA
+  bila tak ada entri, atau DUPLIKAT dengan nilai ditimpa (pola
+  `scaled_minion_definition`; `.tres`/definisi lab tidak pernah dimutasi).
+  `entries_without_reason()` kini memeriksa kedua tabel.
+- Titik aplikasi: `prototype_battle._spawn_match_minion` (gelombang
+  produksi) memakai duplikat itu bila `balance_overrides_enabled` (opt-in
+  alur match playable dari S1); skala tier nexus tetap mengalikan di
+  atasnya. Nilai: 0.15 < dps Orc 13/60 ~ 0.217 per tick sehingga duel bisa
+  selesai (antes 0.6 = 36 HP/s, depois 0.15 = 9 HP/s).
+- Suite `balance_override_layer_checks.gd`: pin entri + reason, orc 13 dmg
+  sebagai batas, `.tres` tetap 0.6, duplikat != resource sumber dengan stat
+  lain utuh, wave troll opt-in regen 100 -> 100.15, tanpa opt-in definisi
+  preload tetap, lab `minion_battle.spawn_unit` regen 100 -> 100.6. Pin
+  validate: entri 0.15, duplicate(), routing di `_spawn_match_minion`,
+  `.tres` 0.6. COMBAT_CONTRACT.md catatan Troll: rebalance produksi
+  terpasang, lab tetap paritas.
+
+Batas S3: fixture 9b, `.tres`, sumber Python, lab, `lighting.py` tidak
+disentuh. S1-S3 menutup arahan rebalance 2026-10-16.
+
+## Lighting pass `lighting.py` (layer 9aq) — pembatas dibuka pengguna
+
+Arahan 2026-10-16: "lakukan migrasi penuh, buka semua pembatas, kecuali
+render hero tetap prosedural". Satu-satunya modul sumber yang tercatat belum
+terport adalah `lighting.py` (pass pencahayaan per-sprite: gradien arah,
+rim light, terminator dua band, semua dari mask alpha, cahaya kiri-atas).
+
+- Oracle baru `tests/sprite_lighting_source_oracle.py`: menjalankan fungsi
+  SUMBER ASLI (`_canonical`, `contour_masks`) di bawah shim pygame
+  dict/set (Surface.set_at/get_at, Mask draw/erase/count) — tanpa pygame,
+  tanpa stub nilai. Fixture `sprite_lighting_source.json`: semua konstanta
+  (LIGHT_DIR (-1,-1), RIM_ADD (30,26,44), SHADE_MUL 168, BAND2_RATIO 0.42
+  → band-2 218, MASK_ALPHA 170, GRAD 205/255/22, 28 langkah, lantai 24
+  piksel), grid kanonik 28x28 (mul + add), dan set piksel rim/shade/
+  outer-rim/band-2 untuk tiga bentuk (persegi 8x8, L, "tiny" 20 piksel →
+  ditolak).
+- Modul native `scripts/ui/sprite_lighting.gd`: matematika mask EKSAK
+  (`gradient_t/mul/add`, `canonical_table`, `rim_shade_cells`,
+  `band2_cells`, `band2_mul`) + adaptor vektor karena Godot menggambar
+  poligon, bukan surface: `point_t` (posisi gradien kontinu di kotak
+  acuan), `lit_color` (mult + sheen, alpha utuh), `rim_color` (ADD),
+  `shade_color` (MULT 168 / 218), `classify_edges` (normal keluar vs arah
+  cahaya, independen winding), `inward_normal`, `should_light` (luas < 24
+  px → datar, cermin `solid.count() < 24`), `circle_points` (badan boss
+  32-gon). Tanpa aset — hero tetap prosedural (ini shading, bukan art).
+- View `prototype_view._draw_lit_polygon`: `draw_polygon` dengan warna per
+  vertex (gradien atas kotak poligon sendiri — jalur hero sumber menerangi
+  crop rapat), garis 1 px band-1 + band-2 di tepi bayangan (offset normal
+  ke dalam 0.5/1.5 px), garis rim 1 px di tepi cahaya. Dipakai untuk siluet
+  hero (`HeroMarker.silhouette`) dan badan boss (menggantikan
+  `draw_circle` datar). Varian `rim_add` per-boss sumber (mis. level2
+  (46,18,16)) tidak ikut: boss Godot adalah badan generik, jadi memakai
+  default RIM_ADD.
+- Suite `tests/sprite_lighting_checks.gd` (run_all.gd): konstanta, 784 sel
+  grid kanonik sel-demi-sel, set piksel tiga bentuk (rim/shade/outer/band-2
+  + penolakan tiny), klasifikasi tepi persegi (atas/kiri rim, kanan/bawah
+  shade, dua winding), normal ke dalam, lantai luas, `point_t`, angka warna
+  (122/127, 80, 130/126/144, 66/85), warna vertex, 32-gon boss, dan wiring
+  view. Pin validate: suite + baris CI oracle + fixture tidak drift +
+  konstanta + wiring view + modul bebas aset.
+
+Catatan paritas visual: hasilnya *setara komposisi* (arah cahaya, kekuatan
+rim/terminator/gradien identik angka) — bukan identik piksel, karena sumber
+bekerja pada bitmap sprite sedangkan Godot pada poligon vektor.
+
+## SFX tempur `mobile/combat_audio.py` (layer 9ar)
+
+Audit lanjutan arahan "migrasi penuh" menemukan berkas suara serangan
+(`hero_melee/hero_ranged/tower_*/minion_hit`) sudah ada di `assets/audio`
+tetapi tidak pernah dimainkan: sumber memainkannya lewat gate
+`mobile/combat_audio.py`, bukan `SoundManager`.
+
+- `scripts/audio/combat_audio.gd`: gate murni + clock-injected (`request()`),
+  konstanta `_KONFIG`, `AMBANG_RANGED=100`, anggaran 4/frame (`new_frame()`
+  dipanggil `minion_battle.step_tick`), statistik `main/tolak_jeda/
+  tolak_anggaran/tolak_channel`, klasifikasi `attack_kind/tower_kind/hero_kind`
+  (`is_melee` menang atas jangkauan, seperti `play_hero_basic`).
+- Titik panggil = titik sumber: `prototype_battle.hero_basic_attack`
+  (`_entity.py:4420`), `siege_battle.fire_projectile` untuk menara
+  (`_entity.py:881`, biru 1.0 / merah 0.8), `minion_battle.apply_hit` cabang
+  minion (`_entity.py:5588`), `prototype_battle._boss_basic_attack`
+  (`base_boss.py:750`).
+- `audio_manager.gd`: pool 24 kanal (`play_combat`, `combat_free_channels`,
+  `combat_global_volume`); tanpa AudioManager (suite headless) wrapper
+  berperilaku seperti cabang `_mati` sumber (tidak memainkan, tidak menghitung).
+- Oracle `tests/combat_audio_source_oracle.py` menjalankan modul sumber ASLI
+  di bawah shim pygame (jam, kanal kosong, volume SoundManager) dan merekam
+  18 keputusan + klasifikasi; `tests/combat_audio_checks.gd` memutarnya ulang.
+- Perbedaan sadar: anggaran direset per tick simulasi (60 Hz = frame sumber),
+  jadi pada kecepatan permainan >1x budget per frame layar ikut berlipat.
+
+## Panel kanan layar lebar `mobile/sidepanel.py` (layer 9as)
+
+Sumber mengumpulkan sisa lebar layar >16:9 (lebar tampilan maks 2200 px,
+panel hanya bila sisa >= 120 px) di kanan arena 1280 px dan mengisinya
+dengan tombol JEDA, kotak STATUS (emas/mode/level/wave), daftar HEROES
+(nama, level, bar HP, titik Q/W/E/R) dan tombol TACTICAL COMMANDS.
+Notifikasi/kill feed sudah dihapus pengguna di sumber (no-op) - tidak diport.
+
+- `scripts/ui/side_panel_layout.gd`: `build(snapshot, panel, measure)`
+  menghasilkan daftar gambar yang sama persis dengan `_gambar_status/_hero/
+  _tactical` (angka, string, warna, hit box, aturan baris 42/38 px, tutup
+  236 px, syarat tombol taktis, warna hold/press), `hit_test` (popup -> hanya
+  JEDA), `display_width`/`panel_rect` dari `platform_utils.create_display`.
+- `scripts/ui/side_panel.gd`: Control di `HUD`, latar bata
+  (`_gambar_panel_samping`), cache 250 ms + segar saat status berubah /
+  animasi tekan, sentuhan: JEDA -> `pause_match`, taktis tekan/lepas ->
+  `_start_panel_tactical`/`_finish_tactical` (sama dengan tombol HUD).
+- `project.godot`: `window/stretch/aspect` `keep` -> `expand`; di 16:9 tidak
+  ada perubahan, di layar lebar area kanan menjadi panel dan kotak taktis
+  melayang disembunyikan (seperti sumber memindahkan panel melayangnya).
+- Oracle `tests/side_panel_source_oracle.py` menjalankan `SidePanel` ASLI di
+  bawah shim pygame perekam (glyph 7 px) untuk 5 skenario + 9 hit-test;
+  `tests/side_panel_checks.gd` memutar ulang; lebar teks nyata disuntik lewat
+  `measure` sehingga posisi rata-kanan/tengah mengikuti font Godot.
+
+## Splash screen `splash_screen.py` (layer 9at)
+
+`main.py` boot ke `STATE_SPLASH`: logo (`assets/logo.png`, dimuat ke kotak
+340x320 lalu tumbuh 85 % -> 100 % dalam 0,9 s per 5 %) atau judul teks
+bercahaya, subjudul, petunjuk "Tap anywhere to skip", 46 partikel di atas
+gradien + vignette yang dipanggang sekali; fade-in 0,4 s, judul mulai 0,5 s
+selama 0,6 s, fade-out 0,45 s terakhir dari 3 s; tap -> `skipped`, selesai
+saat `elapsed` (sejak boot) >= 0,25 s (tap terlambat = potong langsung,
+perilaku sumber dipertahankan).
+
+- `scripts/ui/splash_timeline.gd`: semua angka murni (alpha, done, partikel,
+  48 baris gradien, 70 cincin vignette, skala/tumbuh logo dengan pembulatan
+  half-even Python, cincin glow, `layout()` dengan `measure` font).
+- `scenes/splash/splash_screen.gd` + `SplashScreen.tscn`: `advance(dt)` dengan
+  `min(0.05, delta)`, latar dipanggang ke `ImageTexture` sekali (catatan:
+  `pygame.draw.rect` TIDAK memadukan alpha, jadi cincin vignette terdalam
+  (inset 2, alpha 255) menimpa semuanya - latar sumber efektif hitam dengan
+  bingkai gradien 2 px; dipertahankan demi paritas), glow judul
+  sebagai outline 24/14/8 px (adaptor vektor dari salinan blur sumber).
+- `app/app.gd`: `_install_screen(SPLASH)` saat boot, sinyal `finished` ->
+  `show_menu`; suite runtime `run_all.gd` kini boot ke splash, skip, lalu menu.
+- Oracle `tests/splash_screen_source_oracle.py` menjalankan `SplashScreen` ASLI
+  di bawah shim pygame perekam (18 sampel linimasa, jalur skip, gerak partikel
+  120 frame, tata letak dengan/tanpa logo); `tests/splash_screen_checks.gd`
+  memutar ulang.
+
+## Top-up / voucher `topup_*.py` + `Menu.topup_*` + klien `server/app.py` (layer 9au)
+
+Dialog TOP UP HERO GOLD sumber dibuka dari Hero Shop (`topup_open`): pilih
+paket (`PAKET 50K`: 50.000 gold, Rp 10.000) + metode (GoPay/OVO/DANA/
+ShopeePay/Bank), lalu (a) tanpa `MYSTIC_TOPUP_URL` -> fase `processing`
+simulasi 1,6 s (97 frame akumulasi float) -> `topup_complete`; (b) dengan URL
+-> fase `paying`: POST `/api/topup/create {"pkg"}` -> invoice + GET QR PNG ->
+poll `/api/topup/status/<id>` 60 frame pertama lalu tiap 120 frame (atau
+tombol "I'VE PAID") -> `settled` + `code` -> `_redeem_grant` otomatis;
+`expired`/`cancel` -> pesan gagal; server tak terjangkau -> "Top up server
+tidak terjangkau..." + TRY AGAIN. Fase `redeem`: keypad 3x4 (`vpk_*`), kode
+`MA-` + maks 6 digit (regex 4-8 digit), pesan "Invalid code..." /
+"Code already redeemed." / "Unknown code. Contact admin." (allowlist
+`voucher_codes.txt`, tidak ada file = mode demo terima semua kode valid).
+Grant: `meta_gold` += jumlah, `redeemed_codes` (cap 50), `topup_history`
+(cap 50, tx `MA-` + 10 digit ms epoch, `price_cur` hasil `convert_idr`).
+
+- `scripts/match/topup_currency.gd`: tabel `IDR_PER_UNIT`/simbol/region/
+  bahasa identik, `parse_locale_name`, `currency_for`, `detect_currency`
+  (`OS.get_locale()` + fallback LANG/LC_*), `convert_idr`, `format_price`
+  (pembulatan half-even Python untuk mata uang tanpa desimal, pemisah ribuan
+  `{:,}`, IDR memakai titik), `fmt_idr`.
+- `scripts/match/topup_voucher.gd`: `is_valid_format`, `parse_allowlist`
+  (`CODE` / `CODE=jumlah`, komentar `#`, jumlah non-int dilewati, kosong =
+  null/demo), `load_vouchers` (`res://` lalu `user://`).
+- `scripts/match/topup_flow.gd`: port 1:1 handler klik (`topup_pay`,
+  `topup_paid`, `topup_cancel_pay`, `topup_retry`, `topup_redeem`, `vback`,
+  `vpk_*`, `topup_pkg_*`, `topup_method_*`), `tick()` per frame, mesin server
+  (`on_http_result` dikonsumsi pada tick berikutnya seperti thread sumber),
+  `grant()` bersama. Perbaikan kecil yang disengaja: pembelian simulasi juga
+  menyetel `last_method` (sumber membiarkan "redeem" menempel sehingga layar
+  sukses berikutnya salah judul).
+- `scripts/net/topup_client.gd`: `HTTPRequest` satu per waktu, header JSON
+  untuk POST, HTTP >= 400 dihitung gagal (setara `HTTPError` urllib).
+- `scripts/ui/topup_panel.gd`: dialog 920x580 di atas Hero Shop, lima halaman
+  fase, QR dari bytes PNG, keypad + tombol keyboard (digit/Backspace/Enter/
+  Esc); `meta_hero_shop_panel.gd` mendapat tombol TOP UP (`topup_requested`),
+  `main_menu.gd` menyambungkan flow + klien + panel dan menyimpan profil lewat
+  `SaveSlotStore.save_path`.
+- Oracle `tests/topup_source_oracle.py`: mengeksekusi `topup_currency.py` dan
+  `topup_voucher.py` asli, memanen metode `Menu.topup_*`/`_redeem_*`/
+  `_topup_server_tick` dari `_core.py` dengan `ast` (jam beku, urllib
+  terskrip, SoundManager/SaveManager perekam), serta mengimpor `server/app.py`
+  di bawah shim Flask (SQLite sementara, MOCK) untuk memaku kontrak JSON.
+  Suite `tests/topup_checks.gd` (harga 22 mata uang x 8 nominal, locale,
+  allowlist, keypad, 10 skenario submit, cap, 8 alur server) +
+  `tests/topup_scene_checks.gd` (tombol TOP UP -> dialog -> simulasi
+  -> grant via save callable -> BACK; keypad via tombol).
+
+## Visual `LevelIntroScreen.draw()` (layer 9av)
+
+Sebelumnya hanya state/getter yang terport dan `prototype_view` menggambar
+kartu 640x360 pendekatan. Kini seluruh `draw()` sumber diport sebagai daftar
+op murni (`scripts/ui/level_intro_layout.gd::ops(state, timer, ticks_ms,
+measure, screen)`) yang dipaku per-op oleh oracle (7 frame: dua level,
+timer 0/15/31/45/60, tiga nilai `get_ticks`, kesulitan normal/hard/easy).
+
+- Jalur yang dipilih: `mobile.perf.Quality.cheap_alpha = True` (jalur HP:
+  vignette ter-cache, 6/5 lapis bayangan teks, 12 sinar aura).
+- Metrik font lewat `measure` callable: oracle memakai `int(0.55*size)` px
+  per glyph, view memakai `BossFont.get_string_size`; kode tata letak sama.
+- `prototype_battle.level_intro_state()` kini juga mengekspos `boss_class`,
+  `boss_entrance_color`, `boss_color_dark`, `hp_mult`, `difficulty_id`,
+  `screen_w/h`.
+- Semantik overwrite pygame pada surface SRCALPHA: cakram aura dan glow mata
+  yang digambar besar->kecil saling menimpa, jadi op lingkaran membawa
+  `ring_inner` dan view menggambar annulus (bukan cakram bertumpuk). Poligon
+  inner siluet (alpha/3 di atas tubuh hitam) tetap diblend normal — deviasi
+  kecil yang disadari (sumber memperlihatkan latar lewat area inner).
+- `ui_theme.letter/corner_ticks/draw_icon("warn")` dipanen dari `ui_theme.py`
+  asli di oracle; port GDScript-nya ada di layout yang sama.
+

@@ -49,7 +49,7 @@ Pemeriksa Python `tests/check_source_contract.py` membaca AST data asli dan meng
 8. `Vector2` memakai precision engine; tes integer lane exact, posisi gerak pecahan tidak diklaim bit-identik lintas engine/platform.
 9. Tidak ada kondisi menang/kalah, save, audio atau layanan jaringan.
 
-**Catatan Troll:** regen sumber adalah 0.6 HP/tick (36 HP/detik), bukan 0.6 HP/detik. Duel seimbang Troll bisa berlangsung sangat lama atau tidak menghasilkan kill. Jangan memperbaikinya diam-diam dengan mengubah satuan. Gunakan Goblin/Orc untuk uji kill cepat; rebalance adalah pekerjaan terpisah. (Pembaruan 9b: doktrin dan baseline rebalance kini hidup di `BALANCE_CONTRACT.md`; regen Troll lab tetap paritas sumber yang sengaja.)
+**Catatan Troll:** regen sumber adalah 0.6 HP/tick (36 HP/detik), bukan 0.6 HP/detik. Duel seimbang Troll bisa berlangsung sangat lama atau tidak menghasilkan kill. Jangan memperbaikinya diam-diam dengan mengubah satuan. Gunakan Goblin/Orc untuk uji kill cepat; rebalance adalah pekerjaan terpisah. (Pembaruan 9b: doktrin dan baseline rebalance kini hidup di `BALANCE_CONTRACT.md`; regen Troll lab tetap paritas sumber yang sengaja.) **Pembaruan S3 (2026-10-16): rebalance produksi terpasang** — gelombang match playable (`prototype_battle._spawn_match_minion` dengan `balance_overrides_enabled`) memakai DUPLIKAT definisi Troll dengan regen 0.15 HP/tick dari `balance_overrides.gd::MINION_OVERRIDES` (di bawah dps Orc 13/60 ~ 0.217 sehingga duel selesai); `.tres` dan lab (`minion_battle.spawn_unit` langsung) TETAP 0.6 — paritas QA lab tidak bergeser.
 
 ## Pemisahan kode
 

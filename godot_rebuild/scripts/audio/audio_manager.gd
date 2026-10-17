@@ -26,9 +26,14 @@ const STREAMS := {
 	"nexus_hit": "nexus_hit.wav",
 }
 
+## Layer 9ar: `combat_audio.init()` raises the mixer to 24 channels and
+## `play()` takes an idle one without stealing; the pool mirrors that.
+const COMBAT_CHANNELS := 24
+
 var music: AudioStreamPlayer
 var effects: AudioStreamPlayer
 var ambient: AudioStreamPlayer
+var combat_players: Array[AudioStreamPlayer] = []
 var enabled := true
 var master_volume := DEFAULT_MASTER_VOLUME
 var sfx_volume := DEFAULT_SFX_VOLUME
@@ -51,6 +56,7 @@ func _exit_tree() -> void:
 func shutdown() -> void:
 	enabled = false
 	var players: Array[AudioStreamPlayer] = [music, effects, ambient]
+	players.append_array(combat_players)
 	for player in players:
 		if is_instance_valid(player):
 			player.stop()
@@ -68,6 +74,52 @@ func _stream(key: String) -> AudioStream:
 	if not STREAMS.has(key):
 		return null
 	return load(ROOT + String(STREAMS[key])) as AudioStream
+
+
+## Source `_volume_global`: master*sfx, 0 when sound is disabled.
+func combat_global_volume() -> float:
+	if not enabled:
+		return 0.0
+	return master_volume * sfx_volume
+
+
+## Source `pygame.mixer.find_channel()` availability over the 24 channels.
+func combat_free_channels() -> int:
+	if not enabled:
+		return 0
+	var busy := 0
+	for player in combat_players:
+		if is_instance_valid(player) and player.playing:
+			busy += 1
+	return COMBAT_CHANNELS - busy
+
+
+## Plays one combat file on an idle channel at an absolute linear volume (the
+## gate already folded master*sfx in, like `Sound.set_volume` in the source).
+func play_combat(file_name: String, linear_volume: float) -> bool:
+	if not enabled or file_name.is_empty():
+		return false
+	var player := _idle_combat_player()
+	if player == null:
+		return false
+	var stream := load(ROOT + file_name) as AudioStream
+	if stream == null:
+		return false
+	player.stream = stream
+	_apply_player_volume(player, linear_volume)
+	player.play()
+	return true
+
+
+func _idle_combat_player() -> AudioStreamPlayer:
+	for player in combat_players:
+		if is_instance_valid(player) and not player.playing:
+			return player
+	if combat_players.size() >= COMBAT_CHANNELS:
+		return null
+	var player := _make_player("Combat%d" % combat_players.size())
+	combat_players.append(player)
+	return player
 
 
 func play_music(key: String) -> void:

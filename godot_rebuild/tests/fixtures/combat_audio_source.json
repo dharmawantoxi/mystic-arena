@@ -1,0 +1,464 @@
+{
+  "source": "mobile/combat_audio.py (real module under a scriptable pygame shim)",
+  "kinds": [
+    "hero_melee",
+    "hero_ranged",
+    "tower_archer",
+    "tower_cannon",
+    "tower_ice",
+    "tower_mage",
+    "minion_hit"
+  ],
+  "config": {
+    "hero_melee": [
+      0.78,
+      90,
+      false
+    ],
+    "hero_ranged": [
+      0.72,
+      90,
+      false
+    ],
+    "tower_archer": [
+      0.62,
+      110,
+      false
+    ],
+    "tower_cannon": [
+      0.62,
+      110,
+      false
+    ],
+    "tower_ice": [
+      0.62,
+      110,
+      false
+    ],
+    "tower_mage": [
+      0.62,
+      110,
+      false
+    ],
+    "minion_hit": [
+      0.5,
+      140,
+      false
+    ]
+  },
+  "ranged_threshold": 100,
+  "frame_budget": 4,
+  "mixer_channels": 24,
+  "fallback_volume": 0.6,
+  "bank": {
+    "hero_melee": [
+      "hero_melee.wav"
+    ],
+    "hero_ranged": [
+      "hero_ranged.wav"
+    ],
+    "tower_archer": [
+      "tower_archer.wav"
+    ],
+    "tower_cannon": [
+      "tower_cannon.wav"
+    ],
+    "tower_ice": [
+      "tower_ice.wav"
+    ],
+    "tower_mage": [
+      "tower_mage.wav"
+    ],
+    "minion_hit": [
+      "minion_hit.wav"
+    ]
+  },
+  "attack_kind": {
+    "0": "hero_melee",
+    "40": "hero_melee",
+    "99": "hero_melee",
+    "100": "hero_ranged",
+    "101": "hero_ranged",
+    "250": "hero_ranged"
+  },
+  "attack_kind_none": "hero_melee",
+  "tower_kind": {
+    "archer": "tower_archer",
+    "cannon": "tower_cannon",
+    "ice": "tower_ice",
+    "mage": "tower_mage",
+    "nexus": "tower_archer",
+    "": "tower_archer"
+  },
+  "hero_kinds": [
+    {
+      "case": "flag_melee",
+      "kind": "hero_melee",
+      "played": true
+    },
+    {
+      "case": "flag_ranged",
+      "kind": "hero_ranged",
+      "played": true
+    },
+    {
+      "case": "range_99",
+      "kind": "hero_melee",
+      "played": true
+    },
+    {
+      "case": "range_100",
+      "kind": "hero_ranged",
+      "played": true
+    },
+    {
+      "case": "range_none",
+      "kind": "hero_melee",
+      "played": true
+    }
+  ],
+  "events": [
+    {
+      "ms": 0,
+      "kind": "minion_hit",
+      "volume_mult": 1.0,
+      "free_channels": 24,
+      "new_frame": true,
+      "enabled": true,
+      "master": 0.7,
+      "sfx": 0.6,
+      "ok": true,
+      "volume": 0.21,
+      "stats_delta": {
+        "main": 1,
+        "tolak_jeda": 0,
+        "tolak_anggaran": 0,
+        "tolak_channel": 0
+      },
+      "budget_left": 3
+    },
+    {
+      "ms": 0,
+      "kind": "minion_hit",
+      "volume_mult": 1.0,
+      "free_channels": 24,
+      "new_frame": false,
+      "enabled": true,
+      "master": 0.7,
+      "sfx": 0.6,
+      "ok": false,
+      "volume": null,
+      "stats_delta": {
+        "main": 0,
+        "tolak_jeda": 1,
+        "tolak_anggaran": 0,
+        "tolak_channel": 0
+      },
+      "budget_left": 3
+    },
+    {
+      "ms": 139,
+      "kind": "minion_hit",
+      "volume_mult": 1.0,
+      "free_channels": 24,
+      "new_frame": true,
+      "enabled": true,
+      "master": 0.7,
+      "sfx": 0.6,
+      "ok": false,
+      "volume": null,
+      "stats_delta": {
+        "main": 0,
+        "tolak_jeda": 1,
+        "tolak_anggaran": 0,
+        "tolak_channel": 0
+      },
+      "budget_left": 4
+    },
+    {
+      "ms": 140,
+      "kind": "minion_hit",
+      "volume_mult": 1.0,
+      "free_channels": 24,
+      "new_frame": true,
+      "enabled": true,
+      "master": 0.7,
+      "sfx": 0.6,
+      "ok": true,
+      "volume": 0.21,
+      "stats_delta": {
+        "main": 1,
+        "tolak_jeda": 0,
+        "tolak_anggaran": 0,
+        "tolak_channel": 0
+      },
+      "budget_left": 3
+    },
+    {
+      "ms": 200,
+      "kind": "tower_archer",
+      "volume_mult": 1.0,
+      "free_channels": 24,
+      "new_frame": true,
+      "enabled": true,
+      "master": 0.7,
+      "sfx": 0.6,
+      "ok": true,
+      "volume": 0.26039999999999996,
+      "stats_delta": {
+        "main": 1,
+        "tolak_jeda": 0,
+        "tolak_anggaran": 0,
+        "tolak_channel": 0
+      },
+      "budget_left": 3
+    },
+    {
+      "ms": 200,
+      "kind": "tower_archer",
+      "volume_mult": 0.8,
+      "free_channels": 24,
+      "new_frame": false,
+      "enabled": true,
+      "master": 0.7,
+      "sfx": 0.6,
+      "ok": false,
+      "volume": null,
+      "stats_delta": {
+        "main": 0,
+        "tolak_jeda": 1,
+        "tolak_anggaran": 0,
+        "tolak_channel": 0
+      },
+      "budget_left": 3
+    },
+    {
+      "ms": 200,
+      "kind": "tower_cannon",
+      "volume_mult": 0.8,
+      "free_channels": 24,
+      "new_frame": false,
+      "enabled": true,
+      "master": 0.7,
+      "sfx": 0.6,
+      "ok": true,
+      "volume": 0.20831999999999998,
+      "stats_delta": {
+        "main": 1,
+        "tolak_jeda": 0,
+        "tolak_anggaran": 0,
+        "tolak_channel": 0
+      },
+      "budget_left": 2
+    },
+    {
+      "ms": 200,
+      "kind": "tower_ice",
+      "volume_mult": 1.0,
+      "free_channels": 24,
+      "new_frame": false,
+      "enabled": true,
+      "master": 0.7,
+      "sfx": 0.6,
+      "ok": true,
+      "volume": 0.26039999999999996,
+      "stats_delta": {
+        "main": 1,
+        "tolak_jeda": 0,
+        "tolak_anggaran": 0,
+        "tolak_channel": 0
+      },
+      "budget_left": 1
+    },
+    {
+      "ms": 200,
+      "kind": "tower_mage",
+      "volume_mult": 1.0,
+      "free_channels": 24,
+      "new_frame": false,
+      "enabled": true,
+      "master": 0.7,
+      "sfx": 0.6,
+      "ok": true,
+      "volume": 0.26039999999999996,
+      "stats_delta": {
+        "main": 1,
+        "tolak_jeda": 0,
+        "tolak_anggaran": 0,
+        "tolak_channel": 0
+      },
+      "budget_left": 0
+    },
+    {
+      "ms": 200,
+      "kind": "hero_melee",
+      "volume_mult": 1.0,
+      "free_channels": 24,
+      "new_frame": false,
+      "enabled": true,
+      "master": 0.7,
+      "sfx": 0.6,
+      "ok": false,
+      "volume": null,
+      "stats_delta": {
+        "main": 0,
+        "tolak_jeda": 0,
+        "tolak_anggaran": 1,
+        "tolak_channel": 0
+      },
+      "budget_left": 0
+    },
+    {
+      "ms": 201,
+      "kind": "hero_melee",
+      "volume_mult": 1.0,
+      "free_channels": 24,
+      "new_frame": true,
+      "enabled": true,
+      "master": 0.7,
+      "sfx": 0.6,
+      "ok": true,
+      "volume": 0.3276,
+      "stats_delta": {
+        "main": 1,
+        "tolak_jeda": 0,
+        "tolak_anggaran": 0,
+        "tolak_channel": 0
+      },
+      "budget_left": 3
+    },
+    {
+      "ms": 290,
+      "kind": "hero_melee",
+      "volume_mult": 1.0,
+      "free_channels": 24,
+      "new_frame": true,
+      "enabled": true,
+      "master": 0.7,
+      "sfx": 0.6,
+      "ok": false,
+      "volume": null,
+      "stats_delta": {
+        "main": 0,
+        "tolak_jeda": 1,
+        "tolak_anggaran": 0,
+        "tolak_channel": 0
+      },
+      "budget_left": 4
+    },
+    {
+      "ms": 291,
+      "kind": "hero_melee",
+      "volume_mult": 1.0,
+      "free_channels": 24,
+      "new_frame": true,
+      "enabled": true,
+      "master": 0.7,
+      "sfx": 0.6,
+      "ok": true,
+      "volume": 0.3276,
+      "stats_delta": {
+        "main": 1,
+        "tolak_jeda": 0,
+        "tolak_anggaran": 0,
+        "tolak_channel": 0
+      },
+      "budget_left": 3
+    },
+    {
+      "ms": 400,
+      "kind": "hero_ranged",
+      "volume_mult": 1.0,
+      "free_channels": 0,
+      "new_frame": true,
+      "enabled": true,
+      "master": 0.7,
+      "sfx": 0.6,
+      "ok": false,
+      "volume": null,
+      "stats_delta": {
+        "main": 0,
+        "tolak_jeda": 0,
+        "tolak_anggaran": 0,
+        "tolak_channel": 1
+      },
+      "budget_left": 4
+    },
+    {
+      "ms": 401,
+      "kind": "hero_ranged",
+      "volume_mult": 1.0,
+      "free_channels": 1,
+      "new_frame": true,
+      "enabled": true,
+      "master": 0.7,
+      "sfx": 0.6,
+      "ok": true,
+      "volume": 0.3024,
+      "stats_delta": {
+        "main": 1,
+        "tolak_jeda": 0,
+        "tolak_anggaran": 0,
+        "tolak_channel": 0
+      },
+      "budget_left": 3
+    },
+    {
+      "ms": 500,
+      "kind": "hero_ranged",
+      "volume_mult": 1.0,
+      "free_channels": 24,
+      "new_frame": true,
+      "enabled": false,
+      "master": 0.7,
+      "sfx": 0.6,
+      "ok": true,
+      "volume": 0.0,
+      "stats_delta": {
+        "main": 1,
+        "tolak_jeda": 0,
+        "tolak_anggaran": 0,
+        "tolak_channel": 0
+      },
+      "budget_left": 3
+    },
+    {
+      "ms": 600,
+      "kind": "hero_ranged",
+      "volume_mult": 2.0,
+      "free_channels": 24,
+      "new_frame": true,
+      "enabled": true,
+      "master": 1.0,
+      "sfx": 1.0,
+      "ok": true,
+      "volume": 1.0,
+      "stats_delta": {
+        "main": 1,
+        "tolak_jeda": 0,
+        "tolak_anggaran": 0,
+        "tolak_channel": 0
+      },
+      "budget_left": 3
+    },
+    {
+      "ms": 700,
+      "kind": "unknown_kind",
+      "volume_mult": 1.0,
+      "free_channels": 24,
+      "new_frame": true,
+      "enabled": true,
+      "master": 0.7,
+      "sfx": 0.6,
+      "ok": false,
+      "volume": null,
+      "stats_delta": {
+        "main": 0,
+        "tolak_jeda": 0,
+        "tolak_anggaran": 0,
+        "tolak_channel": 0
+      },
+      "budget_left": 4
+    }
+  ]
+}

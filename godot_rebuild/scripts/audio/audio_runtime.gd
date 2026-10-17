@@ -10,6 +10,11 @@ static func _manager() -> Node:
 	return tree.root.get_node_or_null("AudioManager")
 
 
+## Public handle for callers that need more than `play` (combat pool).
+static func manager() -> Node:
+	return _manager()
+
+
 static func play(key: String) -> void:
 	var manager := _manager()
 	if manager != null and manager.has_method("play"):

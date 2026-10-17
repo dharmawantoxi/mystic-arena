@@ -136,6 +136,12 @@ from item_slow_resist_source_oracle import source_fixture as item_slow_resist_fi
 from item_silence_store_source_oracle import source_fixture as item_silence_store_fixture
 from boss_ai_slow_source_oracle import source_fixture as boss_ai_slow_fixture
 from balance_baseline_source_oracle import balance_baseline as balance_baseline_fixture
+from sprite_lighting_source_oracle import lighting_fixture as sprite_lighting_fixture
+from combat_audio_source_oracle import source_fixture as combat_audio_fixture
+from side_panel_source_oracle import source_fixture as side_panel_fixture
+from splash_screen_source_oracle import source_fixture as splash_screen_fixture
+from topup_source_oracle import source_fixture as topup_fixture
+from level_intro_draw_source_oracle import source_fixture as level_intro_draw_fixture
 from boss_attack_lock_source_oracle import source_fixture as boss_attack_lock_fixture
 from boss_buff_expiry_source_oracle import source_fixture as boss_buff_expiry_fixture
 from boss_buff_scaling_source_oracle import source_fixture as boss_buff_scaling_fixture
@@ -349,12 +355,49 @@ check('const BalanceOverrideLayerChecks = preload("res://tests/balance_override_
 check("BalanceOverrideLayerChecks.new().run(_check)" in ai_tests,
       "Balance override layer suite must run")
 _balance_overrides_text = (ROOT / "scripts/data/balance_overrides.gd").read_text(encoding="utf-8")
-check("const HERO_OVERRIDES: Dictionary = {}" in _balance_overrides_text,
-      "The production rebalance table must stay empty until a measured directive lands")
+check("const STARTER_DAMAGE_MULT := 1.5" in _balance_overrides_text,
+      "The S1 starter catch-up multiplier must stay pinned at 1.5 (gap 5.67x -> 3.97x)")
+for _starter_id in ("kaizen", "thorne", "grimjaw", "sylara", "vex", "zephyr"):
+    check('\t"%s":\n\t{\n\t\t"damage_mult": STARTER_DAMAGE_MULT,' % _starter_id
+          in _balance_overrides_text,
+          "Starter %s must carry the S1 catch-up override entry" % _starter_id)
+check('const S1_REASON := "S1 starter catch-up 2026-10-16: starter gap 5.67x -> 3.97x (target <= 4.0x)"'
+      in _balance_overrides_text,
+      "The S1 reason must record the measured before/after starter gap")
+check(_balance_overrides_text.count('"reason": S1_REASON + "; auto-attack damage ') == 6,
+      "Exactly the six S1 starter entries carry the measured before/after reason")
+check("const PHYSICAL_TANK_DAMAGE_MULT := 0.85" in _balance_overrides_text,
+      "The S2 PHYSICAL|TANK multiplier must stay pinned at 0.85 (cell power 1.38 -> 1.25)")
+check('const S2_REASON := "S2 PHYSICAL|TANK nerf 2026-10-16: cell power 1.38 -> 1.25 (prose cap 1.25)"'
+      in _balance_overrides_text,
+      "The S2 reason must record the measured before/after cell power")
+check(_balance_overrides_text.count('"reason": S2_REASON + "; auto-attack damage ') == 39,
+      "Exactly the 39 PHYSICAL|TANK heroes carry the S2 nerf entry")
+for _tank_id in ("akaroth", "cogsworth", "hollowbane", "sasori", "zhyvrek"):
+    check('\t"%s":\n\t{\n\t\t"damage_mult": PHYSICAL_TANK_DAMAGE_MULT,' % _tank_id
+          in _balance_overrides_text,
+          "PHYSICAL|TANK %s must carry the S2 nerf override entry" % _tank_id)
 _prototype_text = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
 check('const BalanceOverrides = preload("res://scripts/data/balance_overrides.gd")'
       in _prototype_text,
       "Prototype battle must preload the rebalance surface")
+check('"troll":\n\t{\n\t\t"regen_per_tick": 0.15,' in _balance_overrides_text,
+      "The S3 production troll regen override must stay pinned at 0.15 HP/tick")
+check("static func minion_definition_for(definition: MinionDefinition) -> MinionDefinition:"
+      in _balance_overrides_text and "definition.duplicate() as MinionDefinition" in _balance_overrides_text,
+      "The minion override must duplicate the definition, never mutate the .tres")
+check("target = BalanceOverrides.minion_definition_for(definition)" in _prototype_text,
+      "The production wave spawn must route the minion override surface")
+check("regen_per_tick = 0.6" in (ROOT / "data/minions/troll.tres").read_text(encoding="utf-8"),
+      "The troll .tres must keep the 0.6 source regen (lab parity)")
+check("var balance_overrides_enabled := false" in _prototype_text
+      and "or not balance_overrides_enabled:" in _prototype_text,
+      "The rebalance table must be opt-in per world (off for parity suites and the lab)")
+check("session.enable_balance_overrides()" in (ROOT / "app/app.gd").read_text(encoding="utf-8"),
+      "The playable match flow must opt the arena into the rebalance table")
+check("func enable_balance_overrides() -> void:" in
+      (ROOT / "scripts/simulation/prototype_session.gd").read_text(encoding="utf-8"),
+      "PrototypeSession must expose the rebalance opt-in for app.gd")
 check(_prototype_text.count("_spawn_production_hero(") == 5,
       "All four production hero spawns plus the wrapper must route the rebalance surface")
 check('const DebuffPayloadReachChecks = preload("res://tests/debuff_payload_reach_checks.gd")' in ai_tests,
@@ -476,6 +519,195 @@ for key, entry in recruitment["levels"].items():
 check((ROOT / "tests/fixtures/ai_draft_source.json").is_file(), "AI draft needs source fixture")
 workflow = (ROOT.parent / ".github/workflows/godot-rebuild.yml").read_text(encoding="utf-8")
 check("python godot_rebuild/tests/ai_draft_source_oracle.py" in workflow, "CI must detect recruitment data drift")
+# Layer 9aq: lighting.py port (mask math exact, vector adapter in the view).
+check('const SpriteLightingChecks = preload("res://tests/sprite_lighting_checks.gd")' in ai_tests
+      and "SpriteLightingChecks.new().run(_check)" in ai_tests,
+      "9aq sprite lighting suite must be preloaded and run")
+check("python godot_rebuild/tests/sprite_lighting_source_oracle.py" in workflow,
+      "9aq CI must regenerate the sprite lighting fixture from lighting.py")
+check((ROOT / "tests/fixtures/sprite_lighting_source.json").is_file(),
+      "9aq sprite lighting fixture must exist")
+if (ROOT / "tests/fixtures/sprite_lighting_source.json").is_file():
+    check(sprite_lighting_fixture() == json.loads(
+        (ROOT / "tests/fixtures/sprite_lighting_source.json").read_text(encoding="utf-8")),
+          "9aq sprite lighting fixture must not drift from lighting.py")
+_sprite_lighting_text = (ROOT / "scripts/ui/sprite_lighting.gd").read_text(encoding="utf-8")
+check("const LIGHT_DIR := Vector2i(-1, -1)" in _sprite_lighting_text
+      and "const RIM_ADD := Vector3i(30, 26, 44)" in _sprite_lighting_text
+      and "const SHADE_MUL := 168" in _sprite_lighting_text
+      and "const BAND2_RATIO := 0.42" in _sprite_lighting_text
+      and "const GRAD_DARK := 205" in _sprite_lighting_text
+      and "const GRAD_SHEEN := 22" in _sprite_lighting_text
+      and "const MIN_SOLID := 24" in _sprite_lighting_text,
+      "9aq sprite lighting constants must mirror lighting.py")
+check("_draw_lit_polygon(HeroMarker.silhouette(" in view
+      and "_draw_lit_polygon(SpriteLighting.circle_points(point, radius)" in view
+      and 'const SpriteLighting = preload("res://scripts/ui/sprite_lighting.gd")' in view,
+      "9aq the arena view must route hero silhouettes and boss bodies through the lighting pass")
+check("import " not in _sprite_lighting_text and "load(" not in _sprite_lighting_text,
+      "9aq sprite lighting stays asset-free (procedural shading only)")
+# Layer 9ar: mobile/combat_audio.py port (combat SFX gate + attack call sites).
+check('const CombatAudioChecks = preload("res://tests/combat_audio_checks.gd")' in ai_tests
+      and "CombatAudioChecks.new().run(_check)" in ai_tests,
+      "9ar combat audio suite must be preloaded and run")
+check("python godot_rebuild/tests/combat_audio_source_oracle.py" in workflow,
+      "9ar CI must regenerate the combat audio fixture from mobile/combat_audio.py")
+check((ROOT / "tests/fixtures/combat_audio_source.json").is_file(),
+      "9ar combat audio fixture must exist")
+if (ROOT / "tests/fixtures/combat_audio_source.json").is_file():
+    check(combat_audio_fixture() == json.loads(
+        (ROOT / "tests/fixtures/combat_audio_source.json").read_text(encoding="utf-8")),
+          "9ar combat audio fixture must not drift from mobile/combat_audio.py")
+_combat_audio_text = (ROOT / "scripts/audio/combat_audio.gd").read_text(encoding="utf-8")
+check("const RANGED_THRESHOLD := 100.0" in _combat_audio_text
+      and "const FRAME_BUDGET := 4" in _combat_audio_text
+      and "const MIXER_CHANNELS := 24" in _combat_audio_text
+      and "MINION_HIT: [0.50, 140, false]" in _combat_audio_text
+      and "HERO_MELEE: [0.78, 90, false]" in _combat_audio_text,
+      "9ar combat audio gate constants must mirror _KONFIG")
+for _name in ("hero_melee.wav", "hero_ranged.wav", "tower_archer.wav", "tower_cannon.wav",
+              "tower_ice.wav", "tower_mage.wav", "minion_hit.ogg"):
+    check((ROOT / "assets/audio" / _name).is_file(), "9ar combat sound %s must ship" % _name)
+_audio_manager_text = (ROOT / "scripts/audio/audio_manager.gd").read_text(encoding="utf-8")
+check("func play_combat(" in _audio_manager_text
+      and "func combat_free_channels(" in _audio_manager_text
+      and "func combat_global_volume(" in _audio_manager_text
+      and "const COMBAT_CHANNELS := 24" in _audio_manager_text,
+      "9ar AudioManager must expose the 24-channel combat pool")
+_proto_text = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+_minion_text = (ROOT / "scripts/combat/minion_battle.gd").read_text(encoding="utf-8")
+_siege_text = (ROOT / "scripts/combat/siege_battle.gd").read_text(encoding="utf-8")
+check("CombatAudio.play_hero_basic(hero)" in _proto_text
+      and "CombatAudio.play(CombatAudio.attack_kind(boss.attack_range))" in _proto_text,
+      "9ar hero basic attack and boss attack must play through the gate")
+check("CombatAudio.play(CombatAudio.MINION_HIT)" in _minion_text
+      and "CombatAudio.shared().new_frame()" in _minion_text,
+      "9ar minion swing must play through the gate and the budget resets per tick")
+check("CombatAudio.tower_kind(source.settings().tower_path)" in _siege_text
+      and "1.0 if source.team == BLUE else 0.8" in _siege_text,
+      "9ar tower shots must play per path with the blue/red volume split")
+# Layer 9as: mobile/sidepanel.py port (wide-screen right panel).
+check('const SidePanelChecks = preload("res://tests/side_panel_checks.gd")' in ai_tests
+      and "SidePanelChecks.new().run(_check)" in ai_tests,
+      "9as side panel suite must be preloaded and run")
+check("python godot_rebuild/tests/side_panel_source_oracle.py" in workflow,
+      "9as CI must regenerate the side panel fixture from mobile/sidepanel.py")
+check((ROOT / "tests/fixtures/side_panel_source.json").is_file(),
+      "9as side panel fixture must exist")
+if (ROOT / "tests/fixtures/side_panel_source.json").is_file():
+    check(side_panel_fixture() == json.loads(
+        (ROOT / "tests/fixtures/side_panel_source.json").read_text(encoding="utf-8")),
+          "9as side panel fixture must not drift from mobile/sidepanel.py")
+_side_layout_text = (ROOT / "scripts/ui/side_panel_layout.gd").read_text(encoding="utf-8")
+check("const MAX_DISPLAY_WIDTH := 2200" in _side_layout_text
+      and "const MIN_PANEL_WIDTH := 120" in _side_layout_text
+      and "const REFRESH_MS := 250" in _side_layout_text
+      and "const MIN_TAP := 80" in _side_layout_text
+      and "const HERO_BOX_MAX := 236" in _side_layout_text,
+      "9as side panel layout constants must mirror sidepanel.py / platform_utils.py")
+_side_screen_text = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+check("side_panel.pause_requested.connect(pause_match)" in _side_screen_text
+      and "side_panel.tactical_down.connect(_start_panel_tactical)" in _side_screen_text
+      and "side_panel.tactical_up.connect(_finish_tactical)" in _side_screen_text
+      and "%TacticalPanel.visible = not side_panel.is_active()" in _side_screen_text,
+      "9as the match screen must mount the side panel and relocate the tactical box")
+_project_text = (ROOT / "project.godot").read_text(encoding="utf-8")
+check('window/stretch/aspect="expand"' in _project_text,
+      "9as the viewport must expand so wide screens expose the right panel")
+# Layer 9at: splash_screen.py port (boot splash before the menu).
+check('const SplashScreenChecks = preload("res://tests/splash_screen_checks.gd")' in ai_tests
+      and "SplashScreenChecks.new().run(_check)" in ai_tests,
+      "9at splash suite must be preloaded and run")
+check('application boots into the splash' in ai_tests and 'splash skip hands over to the menu' in ai_tests,
+      "9at runtime suite must boot through the splash into the menu")
+check("python godot_rebuild/tests/splash_screen_source_oracle.py" in workflow,
+      "9at CI must regenerate the splash fixture from splash_screen.py")
+check((ROOT / "tests/fixtures/splash_screen_source.json").is_file(),
+      "9at splash fixture must exist")
+if (ROOT / "tests/fixtures/splash_screen_source.json").is_file():
+    check(splash_screen_fixture() == json.loads(
+        (ROOT / "tests/fixtures/splash_screen_source.json").read_text(encoding="utf-8")),
+          "9at splash fixture must not drift from splash_screen.py")
+_splash_timeline_text = (ROOT / "scripts/ui/splash_timeline.gd").read_text(encoding="utf-8")
+check("const DURATION := 3.0" in _splash_timeline_text
+      and "const SKIP_FADE := 0.25" in _splash_timeline_text
+      and "const PARTICLE_COUNT := 46" in _splash_timeline_text
+      and "const LOGO_BOX := Vector2(340.0, 320.0)" in _splash_timeline_text
+      and "const VIGNETTE_MAX := 140" in _splash_timeline_text,
+      "9at splash timeline constants must mirror splash_screen.py")
+
+# Layer 9au: top-up / voucher flow port (topup_currency.py, topup_voucher.py,
+# Menu.topup_* of _core.py, HTTP client for server/app.py).
+check('const TopupChecks = preload("res://tests/topup_checks.gd")' in ai_tests
+      and "TopupChecks.new().run(_check)" in ai_tests,
+      "9au top-up suite must be preloaded and run")
+check('const TopupSceneChecks = preload("res://tests/topup_scene_checks.gd")' in ai_tests
+      and "await TopupSceneChecks.new().run(root.get_tree(), app, _check)" in ai_tests,
+      "9au top-up scene suite must run against the live menu")
+check("python godot_rebuild/tests/topup_source_oracle.py" in workflow,
+      "9au CI must regenerate the top-up fixture from the source modules")
+check((ROOT / "tests/fixtures/topup_source.json").is_file(),
+      "9au top-up fixture must exist")
+if (ROOT / "tests/fixtures/topup_source.json").is_file():
+    check(topup_fixture() == json.loads(
+        (ROOT / "tests/fixtures/topup_source.json").read_text(encoding="utf-8")),
+          "9au top-up fixture must not drift from the source modules")
+_topup_flow_text = (ROOT / "scripts/match/topup_flow.gd").read_text(encoding="utf-8")
+check('{"label": "PAKET 50K", "gold": 50000, "bonus": 0, "price": 10000}' in _topup_flow_text
+      and "const PROCESSING_SECONDS := 1.6" in _topup_flow_text
+      and "const POLL_DELAY_FIRST := 60" in _topup_flow_text
+      and "const POLL_DELAY_REPEAT := 120" in _topup_flow_text
+      and "const HTTP_TIMEOUT := 6.0" in _topup_flow_text
+      and 'const ENV_SERVER_URL := "MYSTIC_TOPUP_URL"' in _topup_flow_text
+      and 'const CREATE_PATH := "/api/topup/create"' in _topup_flow_text,
+      "9au top-up flow constants must mirror _core.py / server/app.py")
+_topup_voucher_text = (ROOT / "scripts/match/topup_voucher.gd").read_text(encoding="utf-8")
+check('const CODE_PREFIX := "MA-"' in _topup_voucher_text
+      and "const MAX_DIGITS := 6" in _topup_voucher_text
+      and 'const CODE_PATTERN := "^MA-(\\\\d{4,8})$"' in _topup_voucher_text,
+      "9au voucher constants must mirror topup_voucher.py")
+_main_menu_text = (ROOT / "scenes/menu/main_menu.gd").read_text(encoding="utf-8")
+check("hero_shop_panel.topup_requested.connect(_open_topup)" in _main_menu_text
+      and "topup_client.configure(topup_flow)" in _main_menu_text
+      and "topup_panel.bind(topup_flow)" in _main_menu_text,
+      "9au menu must wire the hero shop TOP UP button to the dialog, client and flow")
+for _topup_path in ("scripts/match/topup_currency.gd", "scripts/net/topup_client.gd",
+                    "scripts/ui/topup_panel.gd"):
+    check((ROOT / _topup_path).is_file(), f"9au {_topup_path} must exist")
+
+# Layer 9av: LevelIntroScreen.draw() visuals (split screen, boss silhouette,
+# prompt) as a pure op list rendered by the prototype view.
+check('const LevelIntroDrawChecks = preload("res://tests/level_intro_draw_checks.gd")' in ai_tests
+      and "LevelIntroDrawChecks.new().run(_check)" in ai_tests,
+      "9av level intro draw suite must be preloaded and run")
+check("python godot_rebuild/tests/level_intro_draw_source_oracle.py" in workflow,
+      "9av CI must regenerate the level intro draw fixture from _render.py")
+check((ROOT / "tests/fixtures/level_intro_draw_source.json").is_file(),
+      "9av level intro draw fixture must exist")
+if (ROOT / "tests/fixtures/level_intro_draw_source.json").is_file():
+    check(level_intro_draw_fixture() == json.loads(
+        (ROOT / "tests/fixtures/level_intro_draw_source.json").read_text(encoding="utf-8")),
+          "9av level intro draw fixture must not drift from _render.py")
+_level_intro_layout_text = (ROOT / "scripts/ui/level_intro_layout.gd").read_text(encoding="utf-8")
+check("const FADE_IN := 30" in _level_intro_layout_text
+      and '"desert": [100, 60, 20]' in _level_intro_layout_text
+      and 'const WARNING_TEXT := "PREPARE FOR BATTLE"' in _level_intro_layout_text
+      and "func _silhouette(" in _level_intro_layout_text
+      and "func _space_prompt(" in _level_intro_layout_text,
+      "9av level intro layout must mirror LevelIntroScreen.draw()")
+_prototype_view_text = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+check("LevelIntroLayout.ops(" in _prototype_view_text
+      and "func _draw_intro_op(" in _prototype_view_text
+      and "_measure_intro_text" in _prototype_view_text,
+      "9av prototype view must render the level intro from the layout ops")
+check('const SPLASH = preload("res://scenes/splash/SplashScreen.tscn")' in app
+      and "_install_screen(SPLASH)" in app
+      and 'current_screen.connect("finished", show_menu)' in app,
+      "9at the app must boot into the splash and hand over to the menu")
+check((ROOT / "scenes/splash/SplashScreen.tscn").is_file()
+      and (ROOT / "scenes/splash/splash_screen.gd").is_file()
+      and (ROOT / "assets/logo.png").is_file(),
+      "9at splash scene, script and logo must ship")
 check("python godot_rebuild/tests/balance_baseline_source_oracle.py" in workflow,
       "CI must pin the ingame balance baseline")
 
@@ -2981,6 +3213,9 @@ check("Pekerjaan berikutnya (di luar migrasi kit): AIPlayer penuh" not in _hero_
       "9ak HERO_MIGRATION_PROGRESS.md copy-paste message must not list AIPlayer penuh as pending")
 check("Pembaruan 9ak" in _hero_progress_doc and "AIPlayer penuh SUDAH selesai" in _hero_progress_doc,
       "9ak HERO_MIGRATION_PROGRESS.md must carry the update banner and the corrected message")
+check("tabel produksi kosong by decision" not in _hero_progress_doc
+      and "Arahan rebalance 2026-10-16 SUDAH terpasang di tabel itu (PR #333)" in _hero_progress_doc,
+      "9c-S3 HERO_MIGRATION_PROGRESS.md copy-paste message must not claim the override table is empty")
 
 check("efektif tinggal AIPlayer penuh dan art final. (**Koreksi 9ak:**" in _peta_doc
       and "Rekonsiliasi klaim status AI (layer 9ak, doc-only)" in _peta_doc,
