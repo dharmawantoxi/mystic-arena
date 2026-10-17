@@ -4,7 +4,6 @@ extends "res://scripts/combat/siege_battle.gd"
 
 const Upgrades = preload("res://scripts/match/archer_upgrades.gd")
 const AudioRuntime = preload("res://scripts/audio/audio_runtime.gd")
-const CombatAudio = preload("res://scripts/audio/combat_audio.gd")
 const CannonUpgrades = preload("res://scripts/match/cannon_upgrades.gd")
 const IceUpgrades = preload("res://scripts/match/ice_upgrades.gd")
 const MageUpgrades = preload("res://scripts/match/mage_upgrades.gd")

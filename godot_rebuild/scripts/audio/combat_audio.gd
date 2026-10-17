@@ -13,6 +13,8 @@ extends RefCounted
 ## replays the oracle's scripted stream decision-for-decision; `play()` is
 ## the production wrapper that reads the clock and the AudioManager pool.
 
+const AudioRuntime = preload("res://scripts/audio/audio_runtime.gd")
+
 const HERO_MELEE := "hero_melee"
 const HERO_RANGED := "hero_ranged"
 const TOWER_ARCHER := "tower_archer"
@@ -145,8 +147,8 @@ static func play(kind: String, volume_mult: float = 1.0) -> bool:
 	var manager := AudioRuntime.manager()
 	if manager == null or not manager.has_method("play_combat"):
 		return false
-	var gate := shared()
-	var decision := gate.request(
+	var gate: RefCounted = shared()
+	var decision: Dictionary = gate.request(
 		kind,
 		Time.get_ticks_msec(),
 		volume_mult,

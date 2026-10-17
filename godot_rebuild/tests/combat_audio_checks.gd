@@ -151,8 +151,8 @@ func _stream_checks(data: Dictionary, check: Callable) -> void:
 func _isolation_checks(check: Callable) -> void:
 	# Headless runs have no AudioManager: the production wrapper must behave
 	# like the source `_mati` branch (nothing plays, nothing counted).
-	var gate := CombatAudio.shared()
-	var before := gate.stats.duplicate()
+	var gate: RefCounted = CombatAudio.shared()
+	var before: Dictionary = gate.stats.duplicate()
 	check.call(
 		CombatAudio.play(CombatAudio.MINION_HIT) == false,
 		"play() without an AudioManager returns false"
