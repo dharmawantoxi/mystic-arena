@@ -535,7 +535,7 @@ func _server_checks(data: Dictionary, check: Callable) -> void:
 		flow.phase == "select" and flow.pay_state == "idle", "BACK from error returns to select"
 	)
 	parts = _server_flow(
-		_script(
+		_responses(
 			[
 				[true, 200, create],
 				[true, 404, "not found"],
@@ -548,7 +548,7 @@ func _server_checks(data: Dictionary, check: Callable) -> void:
 	_poll_due(flow)
 	_snapshot_matches(flow, data["expired"], parts[2], "server expired", check)
 	parts = _server_flow(
-		_script(
+		_responses(
 			[
 				[true, 200, create],
 				[true, 200, png],
@@ -571,7 +571,7 @@ func _server_checks(data: Dictionary, check: Callable) -> void:
 		flow.poll_next == int(data["poll_error"]["poll_next"]), "poll error reschedules +120"
 	)
 	parts = _server_flow(
-		_script(
+		_responses(
 			[
 				[true, 200, create],
 				[true, 200, png],
@@ -586,7 +586,7 @@ func _server_checks(data: Dictionary, check: Callable) -> void:
 		flow, data["settled_default_gold"], parts[2], "server settled_default_gold", check
 	)
 	parts = _server_flow(
-		_script(
+		_responses(
 			[
 				[true, 200, create],
 				[true, 200, png],
