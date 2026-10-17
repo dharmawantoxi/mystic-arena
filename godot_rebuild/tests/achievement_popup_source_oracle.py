@@ -197,11 +197,13 @@ class _DrawShim:
         if not surface.record:
             return
         values = list(rect)
-        surface.ops.append({
+        operation = {
             "type": "rect", "rect": [values[0], values[1], values[2], values[3]],
             "color": _rgba(color), "width": width,
-            "radius": kwargs.get("border_radius", 0),
-        })
+        }
+        if "border_radius" in kwargs:
+            operation["radius"] = kwargs["border_radius"]
+        surface.ops.append(operation)
 
     @staticmethod
     def line(surface, color, start, end, width=1, *args, **kwargs):

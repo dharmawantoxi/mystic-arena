@@ -186,7 +186,13 @@ func _check_panel_visuals(check: Callable, data: Dictionary) -> void:
 			)
 		if sample_index == 0 and rects.size() == 3:
 			check.call(
-				rects[2]["rect"] == [950, 170, 300, 80] and int(rects[2]["color"][3]) == 94,
+				(
+					int(rects[2]["rect"][0]) == 950
+					and int(rects[2]["rect"][1]) == 170
+					and int(rects[2]["rect"][2]) == 300
+					and int(rects[2]["rect"][3]) == 80
+					and int(rects[2]["color"][3]) == 94
+				),
 				"Achievement gold glow preserves its source bounds and early alpha"
 			)
 		var header: Dictionary = texts[1] if texts.size() > 1 else {}

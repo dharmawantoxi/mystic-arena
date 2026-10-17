@@ -241,8 +241,7 @@
           30,
           255
         ],
-        "width": 0,
-        "radius": 0
+        "width": 0
       },
       {
         "type": "rect",
@@ -258,8 +257,7 @@
           20,
           255
         ],
-        "width": 0,
-        "radius": 0
+        "width": 0
       }
     ],
     "skull": [
@@ -322,8 +320,7 @@
           0,
           255
         ],
-        "width": 0,
-        "radius": 0
+        "width": 0
       },
       {
         "type": "rect",
@@ -339,8 +336,7 @@
           0,
           255
         ],
-        "width": 0,
-        "radius": 0
+        "width": 0
       },
       {
         "type": "rect",
@@ -356,8 +352,7 @@
           220,
           255
         ],
-        "width": 0,
-        "radius": 0
+        "width": 0
       },
       {
         "type": "rect",
@@ -373,8 +368,7 @@
           0,
           255
         ],
-        "width": 0,
-        "radius": 0
+        "width": 0
       },
       {
         "type": "rect",
@@ -390,8 +384,7 @@
           0,
           255
         ],
-        "width": 0,
-        "radius": 0
+        "width": 0
       }
     ],
     "shield": [
