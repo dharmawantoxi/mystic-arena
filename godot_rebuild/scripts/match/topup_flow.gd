@@ -38,13 +38,12 @@ const ENV_SERVER_URL := "MYSTIC_TOPUP_URL"
 const CREATE_PATH := "/api/topup/create"
 const STATUS_PATH := "/api/topup/status/"
 const QR_PATH := "/api/topup/qr/"
-const PNG_MAGIC := PackedByteArray([0x89, 0x50, 0x4E, 0x47])
 const MSG_UNREACHABLE := "Top up server tidak terjangkau.\nPeriksa koneksi lalu coba lagi."
 const MSG_NOT_SETTLED := "Pembayaran tidak selesai.\nSilakan coba lagi."
 const MSG_INVALID := "Invalid code. Format: MA-123456"
 const MSG_ALREADY := "Code already redeemed."
 const MSG_UNKNOWN := "Unknown code. Contact admin."
-const MSG_COLOR := Color8(255, 120, 120)
+const MSG_COLOR := Color(255 / 255.0, 120 / 255.0, 120 / 255.0)
 
 var is_open := false
 var phase := "select"
@@ -78,6 +77,11 @@ var http_busy := false
 var http_purpose := ""
 var _http_result: Array = []
 var _http_done := false
+
+
+## PNG signature prefix (0x89 "PNG"), what the source checks on the QR body.
+static func png_magic() -> PackedByteArray:
+	return PackedByteArray([0x89, 0x50, 0x4E, 0x47])
 
 
 static func default_server_url() -> String:
@@ -399,7 +403,7 @@ func _server_tick() -> void:
 				else:
 					_pay_fail(MSG_UNREACHABLE)
 			"qr":
-				if ok and body.size() >= 4 and body.slice(0, 4) == PNG_MAGIC:
+				if ok and body.size() >= 4 and body.slice(0, 4) == png_magic():
 					qr_bytes = body
 			"poll":
 				var status := String(data.get("status", ""))

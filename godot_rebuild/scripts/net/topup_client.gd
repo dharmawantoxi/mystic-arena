@@ -47,7 +47,9 @@ func send(method: String, path: String, payload: Variant) -> void:
 	if payload != null:
 		headers.append("Content-Type: application/json")
 		body = JSON.stringify(payload)
-	var http_method := HTTPClient.METHOD_POST if method == "POST" else HTTPClient.METHOD_GET
+	var http_method: HTTPClient.Method = HTTPClient.METHOD_GET
+	if method == "POST":
+		http_method = HTTPClient.METHOD_POST
 	_busy = true
 	var error := _request.request(url, headers, http_method, body)
 	if error != OK:

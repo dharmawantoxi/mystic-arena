@@ -18,8 +18,8 @@ const SUBTITLE_DEFAULT := "Top up gold untuk membuka hero di HERO SHOP"
 const KEYPAD: Array[Array] = [
 	["1", "2", "3"], ["4", "5", "6"], ["7", "8", "9"], ["del", "0", "redeem"]
 ]
-const GOLD := Color8(255, 200, 50)
-const MUTED := Color8(170, 180, 200)
+const GOLD := Color(255 / 255.0, 200 / 255.0, 50 / 255.0)
+const MUTED := Color(170 / 255.0, 180 / 255.0, 200 / 255.0)
 
 var flow: TopupFlow
 var _title: Label
@@ -343,18 +343,18 @@ func _build_redeem(parent: Control) -> Control:
 	return page
 
 
-func _label(parent: Control, text: String, size: int, color: Color) -> Label:
+func _label(parent: Control, label_text: String, font_size: int, color: Color) -> Label:
 	var label := Label.new()
-	label.text = text
-	label.add_theme_font_size_override("font_size", size)
+	label.text = label_text
+	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", color)
 	parent.add_child(label)
 	return label
 
 
-func _button(parent: Control, text: String, btn_id: String, min_size: Vector2) -> Button:
+func _button(parent: Control, label_text: String, btn_id: String, min_size: Vector2) -> Button:
 	var button := Button.new()
-	button.text = text
+	button.text = label_text
 	button.name = btn_id
 	button.custom_minimum_size = min_size
 	button.pressed.connect(func() -> void: _press(btn_id))
@@ -368,7 +368,7 @@ func _press(btn_id: String) -> void:
 
 
 ## Dialog-local button lookup (tests + external callers).
-func button(btn_id: String) -> Button:
+func find_button(btn_id: String) -> Button:
 	return find_child(btn_id, true, false) as Button
 
 

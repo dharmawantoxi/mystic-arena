@@ -43,13 +43,13 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	)
 	var gold_before := flow.meta_gold()
 	check.call(
-		panel.button("topup_pay") != null and panel.button("topup_pay").visible,
+		panel.find_button("topup_pay") != null and panel.find_button("topup_pay").visible,
 		"PAY NOW button is live"
 	)
 	check.call(
-		panel.button("topup_pay").text.begins_with("PAY NOW"), "PAY NOW shows the local price"
+		panel.find_button("topup_pay").text.begins_with("PAY NOW"), "PAY NOW shows the local price"
 	)
-	panel.button("topup_pay").pressed.emit()
+	panel.find_button("topup_pay").pressed.emit()
 	check.call(flow.phase == "processing", "PAY NOW starts the simulated payment")
 	for _frame in range(120):
 		await tree.process_frame
@@ -67,19 +67,19 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		saved.size() == 1 and Array(saved[0].get("topup_history", [])).size() >= 1,
 		"grant appends a topup_history entry"
 	)
-	panel.button("topup_back").pressed.emit()
+	panel.find_button("topup_back").pressed.emit()
 	await tree.process_frame
 	check.call(not panel.visible and not flow.is_open, "BACK closes the dialog")
 	# voucher keypad through the panel buttons
 	menu.hero_shop_panel.topup_requested.emit()
-	panel.button("topup_redeem").pressed.emit()
+	panel.find_button("topup_redeem").pressed.emit()
 	for key_name in ["vpk_1", "vpk_2", "vpk_3", "vpk_4", "vpk_5", "vpk_6"]:
-		panel.button(key_name).pressed.emit()
+		panel.find_button(key_name).pressed.emit()
 	check.call(
 		flow.phase == "redeem" and flow.redeem_input == "MA-123456", "keypad buttons type the code"
 	)
-	panel.button("vback").pressed.emit()
-	panel.button("topup_cancel").pressed.emit()
+	panel.find_button("vback").pressed.emit()
+	panel.find_button("topup_cancel").pressed.emit()
 	await tree.process_frame
 	check.call(not panel.visible, "CANCEL closes the dialog")
 	flow.save_callable = original_save

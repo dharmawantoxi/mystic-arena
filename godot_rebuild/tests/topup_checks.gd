@@ -438,7 +438,7 @@ func _server_checks(data: Dictionary, check: Callable) -> void:
 	check.call(
 		is_equal_approx(float(data["http_timeout"]), TopupFlow.HTTP_TIMEOUT), "HTTP timeout 6 s"
 	)
-	var png := TopupFlow.PNG_MAGIC.duplicate()
+	var png := TopupFlow.png_magic()
 	png.append_array("\r\n\u001a\nfakepngbody".to_utf8_buffer())
 	var create := {
 		"id": "mock-abc",
