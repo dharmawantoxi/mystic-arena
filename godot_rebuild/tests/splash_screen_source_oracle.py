@@ -148,7 +148,7 @@ def _frame(splash):
     screen = splash.screen
     screen.log = []
     splash.draw()
-    out = {"elapsed": round(splash.elapsed, 6), "title_alpha": splash.title_alpha,
+    out = {"elapsed": splash.elapsed, "title_alpha": splash.title_alpha,
            "overall_alpha": round(splash._overall_alpha(), 6), "done": splash.done,
            "drawn": bool(screen.log)}
     if not screen.log:
@@ -214,11 +214,11 @@ def source_fixture():
     skip_timeline = []
     frames = 0
     while not skip_splash.done and frames < 100:
-        skip_timeline.append({"elapsed": round(skip_splash.elapsed, 6),
+        skip_timeline.append({"elapsed": skip_splash.elapsed,
                               "overall_alpha": round(skip_splash._overall_alpha(), 6)})
         skip_splash.update(dt)
         frames += 1
-    skip_done = {"frames_after_skip": frames, "elapsed": round(skip_splash.elapsed, 6)}
+    skip_done = {"frames_after_skip": frames, "elapsed": skip_splash.elapsed}
 
     # Logo grow quantisation samples and glow ring alphas at full size.
     grow = []

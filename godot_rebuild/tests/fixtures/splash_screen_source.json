@@ -2087,7 +2087,7 @@
       "drawn": false
     },
     {
-      "elapsed": 0.1,
+      "elapsed": 0.09999999999999999,
       "title_alpha": 0,
       "overall_alpha": 0.25,
       "done": false,
@@ -2707,7 +2707,7 @@
       "lines": []
     },
     {
-      "elapsed": 0.2,
+      "elapsed": 0.19999999999999998,
       "title_alpha": 0,
       "overall_alpha": 0.5,
       "done": false,
@@ -3327,7 +3327,7 @@
       "lines": []
     },
     {
-      "elapsed": 0.4,
+      "elapsed": 0.39999999999999997,
       "title_alpha": 0,
       "overall_alpha": 1.0,
       "done": false,
@@ -3947,7 +3947,7 @@
       "lines": []
     },
     {
-      "elapsed": 0.5,
+      "elapsed": 0.49999999999999994,
       "title_alpha": 0,
       "overall_alpha": 1.0,
       "done": false,
@@ -4567,7 +4567,7 @@
       "lines": []
     },
     {
-      "elapsed": 0.6,
+      "elapsed": 0.6000000000000002,
       "title_alpha": 42,
       "overall_alpha": 1.0,
       "done": false,
@@ -5296,7 +5296,7 @@
       ]
     },
     {
-      "elapsed": 0.9,
+      "elapsed": 0.9000000000000011,
       "title_alpha": 170,
       "overall_alpha": 1.0,
       "done": false,
@@ -6025,7 +6025,7 @@
       ]
     },
     {
-      "elapsed": 1.0,
+      "elapsed": 1.0000000000000013,
       "title_alpha": 212,
       "overall_alpha": 1.0,
       "done": false,
@@ -6754,7 +6754,7 @@
       ]
     },
     {
-      "elapsed": 1.1,
+      "elapsed": 1.100000000000001,
       "title_alpha": 255,
       "overall_alpha": 1.0,
       "done": false,
@@ -7483,7 +7483,7 @@
       ]
     },
     {
-      "elapsed": 2.0,
+      "elapsed": 1.9999999999999978,
       "title_alpha": 255,
       "overall_alpha": 1.0,
       "done": false,
@@ -8212,7 +8212,7 @@
       ]
     },
     {
-      "elapsed": 2.5,
+      "elapsed": 2.499999999999996,
       "title_alpha": 255,
       "overall_alpha": 1.0,
       "done": false,
@@ -8941,7 +8941,7 @@
       ]
     },
     {
-      "elapsed": 2.55,
+      "elapsed": 2.549999999999996,
       "title_alpha": 255,
       "overall_alpha": 1.0,
       "done": false,
@@ -9670,7 +9670,7 @@
       ]
     },
     {
-      "elapsed": 2.666667,
+      "elapsed": 2.666666666666662,
       "title_alpha": 255,
       "overall_alpha": 0.740741,
       "done": false,
@@ -10399,7 +10399,7 @@
       ]
     },
     {
-      "elapsed": 2.833333,
+      "elapsed": 2.833333333333328,
       "title_alpha": 255,
       "overall_alpha": 0.37037,
       "done": false,
@@ -11128,7 +11128,7 @@
       ]
     },
     {
-      "elapsed": 2.9,
+      "elapsed": 2.8999999999999946,
       "title_alpha": 255,
       "overall_alpha": 0.222222,
       "done": false,
@@ -11857,7 +11857,7 @@
       ]
     },
     {
-      "elapsed": 2.916667,
+      "elapsed": 2.916666666666661,
       "title_alpha": 255,
       "overall_alpha": 0.185185,
       "done": false,
@@ -12586,14 +12586,14 @@
       ]
     },
     {
-      "elapsed": 3.0,
+      "elapsed": 2.9999999999999942,
       "title_alpha": 255,
       "overall_alpha": 0.0,
       "done": false,
       "drawn": false
     },
     {
-      "elapsed": 3.016667,
+      "elapsed": 3.016666666666661,
       "title_alpha": 255,
       "overall_alpha": 0.0,
       "done": true,
@@ -12604,16 +12604,16 @@
   "done_frame": 181,
   "skip_timeline": [
     {
-      "elapsed": 1.0,
+      "elapsed": 1.0000000000000013,
       "overall_alpha": 0.0
     }
   ],
   "skip_done": {
     "frames_after_skip": 1,
-    "elapsed": 1.016667
+    "elapsed": 1.016666666666668
   },
   "plain_frame": {
-    "elapsed": 2.0,
+    "elapsed": 1.9999999999999978,
     "title_alpha": 255,
     "overall_alpha": 1.0,
     "done": false,

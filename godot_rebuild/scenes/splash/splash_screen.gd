@@ -47,32 +47,28 @@ func _load_logo() -> void:
 	logo_base = Timeline.logo_scaled_size(Vector2i(texture.get_width(), texture.get_height()))
 
 
-## Gradient rows + vignette rings composited once (`_bg_cache`).
+## Gradient rows + vignette rings composited once (`_bg_cache`). The source
+## vignette overwrites (no blending), so only pixels closer than
+## `vignette_alpha(d) == 0` to an edge keep the gradient; see the timeline.
 func _bake_background() -> ImageTexture:
 	var image := Image.create(WIDTH, HEIGHT, false, Image.FORMAT_RGB8)
 	var rows: Array = Timeline.gradient_rows(WIDTH, HEIGHT)
-	for row_value in rows:
-		var row: Dictionary = row_value
-		image.fill_rect(row["rect"], row["color"])
-	var factors: Array[float] = []
-	for d in range(Timeline.VIGNETTE_MAX + 1):
-		factors.append(Timeline.vignette_factor(d))
+	var step := maxi(1, HEIGHT / Timeline.GRADIENT_STEPS)
 	var edge := Timeline.VIGNETTE_MAX
+	var factors: Array[float] = []
+	for d in range(edge + 1):
+		factors.append(Timeline.vignette_factor(d))
 	for y in range(HEIGHT):
 		var dy := mini(y, HEIGHT - 1 - y)
-		var row_index := mini(y / maxi(1, HEIGHT / Timeline.GRADIENT_STEPS), rows.size() - 1)
-		var base: Color = rows[row_index]["color"]
-		if dy < edge:
-			var factor := factors[dy]
-			image.fill_rect(
-				Rect2i(0, y, WIDTH, 1), Color(base.r * factor, base.g * factor, base.b * factor)
-			)
-		for x in range(edge):
-			var d := mini(dy, x)
-			var factor := factors[d]
-			var shaded := Color(base.r * factor, base.g * factor, base.b * factor)
-			image.set_pixel(x, y, shaded)
-			image.set_pixel(WIDTH - 1 - x, y, shaded)
+		var base: Color = rows[mini(y / step, rows.size() - 1)]["color"]
+		var row_factor := factors[mini(dy, edge)]
+		image.fill_rect(Rect2i(0, y, WIDTH, 1), base * row_factor)
+		for x in range(mini(edge, WIDTH / 2)):
+			var factor := factors[mini(dy, x)]
+			if is_equal_approx(factor, row_factor):
+				continue
+			image.set_pixel(x, y, base * factor)
+			image.set_pixel(WIDTH - 1 - x, y, base * factor)
 	return ImageTexture.create_from_image(image)
 
 

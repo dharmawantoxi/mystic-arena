@@ -108,9 +108,17 @@ func _background_checks(data: Dictionary, check: Callable) -> void:
 			int(got["inset"]) == int(want["inset"]) and int(got["alpha"]) == int(want["alpha"]),
 			"vignette ring %d matches" % index
 		)
+	# pygame.draw.rect overwrites: the inset-2 ring (alpha 255) is the last
+	# one drawn over every pixel at least 2 px from the edge.
 	check.call(
-		is_equal_approx(Timeline.vignette_factor(140), 1.0) and Timeline.vignette_factor(0) < 0.01,
-		"vignette leaves the centre untouched and blackens the edge"
+		(
+			Timeline.vignette_alpha(0) == 0
+			and Timeline.vignette_alpha(1) == 0
+			and Timeline.vignette_alpha(2) == 255
+			and Timeline.vignette_alpha(140) == 255
+			and Timeline.vignette_alpha(360) == 255
+		),
+		"vignette replaces pixels like pygame.draw.rect (2 px gradient border)"
 	)
 
 

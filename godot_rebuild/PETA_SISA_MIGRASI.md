@@ -1495,7 +1495,10 @@ perilaku sumber dipertahankan).
   48 baris gradien, 70 cincin vignette, skala/tumbuh logo dengan pembulatan
   half-even Python, cincin glow, `layout()` dengan `measure` font).
 - `scenes/splash/splash_screen.gd` + `SplashScreen.tscn`: `advance(dt)` dengan
-  `min(0.05, delta)`, latar dipanggang ke `ImageTexture` sekali, glow judul
+  `min(0.05, delta)`, latar dipanggang ke `ImageTexture` sekali (catatan:
+  `pygame.draw.rect` TIDAK memadukan alpha, jadi cincin vignette terdalam
+  (inset 2, alpha 255) menimpa semuanya - latar sumber efektif hitam dengan
+  bingkai gradien 2 px; dipertahankan demi paritas), glow judul
   sebagai outline 24/14/8 px (adaptor vektor dari salinan blur sumber).
 - `app/app.gd`: `_install_screen(SPLASH)` saat boot, sinyal `finished` ->
   `show_menu`; suite runtime `run_all.gd` kini boot ke splash, skip, lalu menu.

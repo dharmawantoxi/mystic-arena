@@ -151,15 +151,23 @@ static func vignette_rings() -> Array:
 	return rings
 
 
-## Darkening factor for a pixel whose distance to the nearest edge is `d`:
-## every ring with inset <= d covers it (sequential alpha-over of black).
-static func vignette_factor(d: int) -> float:
-	var factor := 1.0
+## Alpha of the vignette at a pixel whose distance to the nearest edge is
+## `d`. `pygame.draw.rect` does NOT blend on the SRCALPHA surface: every ring
+## overwrites the pixels it covers, so the last ring drawn over a pixel (the
+## smallest inset <= d, i.e. inset 2 with alpha 255 for any d >= 2) wins.
+## Net effect in the source: the baked backdrop is black except a 2 px
+## gradient border - kept as-is for parity.
+static func vignette_alpha(d: int) -> int:
+	var alpha := 0
 	for ring_value in vignette_rings():
 		var ring: Dictionary = ring_value
 		if int(ring["inset"]) <= d:
-			factor *= 1.0 - float(ring["alpha"]) / 255.0
-	return factor
+			alpha = int(ring["alpha"])
+	return alpha
+
+
+static func vignette_factor(d: int) -> float:
+	return 1.0 - float(vignette_alpha(d)) / 255.0
 
 
 static func logo_scaled_size(image_size: Vector2i) -> Vector2i:

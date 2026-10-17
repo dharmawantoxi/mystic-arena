@@ -391,7 +391,8 @@ func _run() -> void:
 	await _settle()
 	_check(app.current_screen.name == "SplashScreen", "application boots into the splash")
 	app.current_screen.skip()
-	app.current_screen.advance(0.3)
+	for _step in range(10):
+		app.current_screen.advance(0.05)
 	await _settle()
 	_check(app.current_screen.name == "MainMenu", "splash skip hands over to the menu")
 	await AudioSettingsSceneChecks.new().run(root.get_tree(), app, _check)
