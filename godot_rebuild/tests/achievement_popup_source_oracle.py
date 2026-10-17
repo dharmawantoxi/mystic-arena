@@ -49,36 +49,59 @@ UNLOCKS = [
 # --------------------------------------------------------------------------
 # Minimal shims so draw() runs to completion without pygame or a font stack.
 # --------------------------------------------------------------------------
+_RECORD_DRAW = False
+
+
 class _RectShim:
     def __init__(self, *args, **kwargs):
-        self.x = 0
-        self.y = 0
-        self.center = kwargs.get("center", (0, 0))
-        if args and isinstance(args[0], (list, tuple)) and len(args[0]) >= 2:
-            self.x, self.y = args[0][0], args[0][1]
+        values = args[0] if args and isinstance(args[0], (list, tuple)) else args
+        self.x = int(values[0]) if len(values) >= 1 else 0
+        self.y = int(values[1]) if len(values) >= 2 else 0
+        self.width = int(values[2]) if len(values) >= 4 else 0
+        self.height = int(values[3]) if len(values) >= 4 else 0
+        self.center = kwargs.get("center", (self.x + self.width // 2, self.y + self.height // 2))
+        self.right = self.x + self.width
+        self.bottom = self.y + self.height
 
 
 class _SurfaceShim:
     def __init__(self, *args, **kwargs):
         self.size = args[0] if args and isinstance(args[0], (list, tuple)) else (0, 0)
+        self.width = int(self.size[0]) if len(self.size) >= 2 else 0
+        self.height = int(self.size[1]) if len(self.size) >= 2 else 0
         self.ops = []
         self.text = None
         self.font_size = 0
+        self.style = ""
         self.color = None
+        self.alpha = 255
+        self.record = bool(kwargs.get("record", _RECORD_DRAW))
 
-    def set_alpha(self, *args, **kwargs):
-        pass
+    def set_alpha(self, alpha, *args, **kwargs):
+        self.alpha = alpha
+
+    def get_width(self):
+        return self.width
+
+    def get_height(self):
+        return self.height
 
     def get_rect(self, **kwargs):
-        return _RectShim(center=kwargs.get("center", (0, 0)))
+        return _RectShim((0, 0, self.width, self.height), center=kwargs.get("center", (0, 0)))
 
     def blit(self, source, dest, *args, **kwargs):
         if isinstance(dest, _RectShim):
-            dx, dy = dest.center[0], dest.center[1]
+            dx, dy = dest.x, dest.y
+            center = [dest.center[0], dest.center[1]]
+            use_center = True
         elif isinstance(dest, (list, tuple)):
             dx, dy = dest[0], dest[1]
+            center = None
+            use_center = False
         else:
-            dx, dy = 0, 0
+            dx, dy, center, use_center = 0, 0, None, False
+        if not self.record:
+            return
         for operation in source.ops:
             shifted = dict(operation)
             kind = shifted["type"]
@@ -89,53 +112,101 @@ class _SurfaceShim:
                 shifted["rect"] = [bounds[0] + dx, bounds[1] + dy, bounds[2], bounds[3]]
             elif kind == "polygon":
                 shifted["points"] = [[point[0] + dx, point[1] + dy] for point in shifted["points"]]
+            elif kind == "line":
+                shifted["points"] = [[point[0] + dx, point[1] + dy] for point in shifted["points"]]
             elif kind == "text":
-                shifted["center"] = [shifted["center"][0] + dx, shifted["center"][1] + dy]
+                key = "center" if "center" in shifted else "position"
+                shifted[key] = [shifted[key][0] + dx, shifted[key][1] + dy]
             self.ops.append(shifted)
         if source.text is not None:
-            self.ops.append({
-                "type": "text", "text": source.text, "center": [dx, dy],
-                "size": source.font_size, "color": _rgba(source.color),
-            })
+            operation = {
+                "type": "text", "text": source.text, "size": source.font_size,
+                "color": _rgba(source.color),
+            }
+            if use_center:
+                operation["center"] = center
+            else:
+                operation["position"] = [dx, dy]
+                operation["alpha"] = source.alpha
+                operation["style"] = source.style
+            self.ops.append(operation)
+
 
 
 class _FontShim:
-    def __init__(self, size=0, *args, **kwargs):
-        self.size = size
+    def __init__(self, size=0, style="body_semibold", *args, **kwargs):
+        self.font_size = size
+        self.style = style
+
+    def size_text(self, text):
+        return (int(len(text) * self.font_size * 0.55), self.font_size)
+
+    def size(self, text):
+        return self.size_text(text)
 
     def render(self, text, antialias=True, color=None, *args, **kwargs):
-        surface = _SurfaceShim()
+        width, height = self.size_text(text)
+        surface = _SurfaceShim((width, height))
         surface.text = text
-        surface.font_size = self.size
+        surface.font_size = self.font_size
+        surface.style = self.style
         surface.color = color
         return surface
 
 
 class _ThemeShim:
-    def corner_ticks(self, *args, **kwargs):
-        pass
+    def corner_ticks(self, surface, rect, color, length=11, width=2, inset=2):
+        anchors = [
+            (rect.x + inset, rect.y + inset, 1, 1),
+            (rect.right - inset, rect.y + inset, -1, 1),
+            (rect.x + inset, rect.bottom - inset, 1, -1),
+            (rect.right - inset, rect.bottom - inset, -1, -1),
+        ]
+        if surface.record:
+            for x, y, dx, dy in anchors:
+                surface.ops.append({
+                    "type": "line", "points": [[x, y], [x + dx * length, y]],
+                    "color": _rgba(color), "width": width,
+                })
+                surface.ops.append({
+                    "type": "line", "points": [[x, y], [x, y + dy * length]],
+                    "color": _rgba(color), "width": width,
+                })
 
     def gradient_text(self, *args, **kwargs):
         return _SurfaceShim()
 
     def letter(self, text):
-        return text
+        return " ".join(list(text))
 
     def fit_ellipsis(self, font, text, max_w):
-        return text
+        if font.size(text)[0] <= max_w:
+            return text
+        suffix = "…"
+        while len(text) > 1:
+            candidate = text[:-1]
+            if font.size(candidate + suffix)[0] <= max_w:
+                return candidate + suffix
+            text = candidate
+        return suffix
 
 
 class _DrawShim:
     @staticmethod
     def rect(surface, color, rect, width=0, *args, **kwargs):
+        if not surface.record:
+            return
         values = list(rect)
         surface.ops.append({
             "type": "rect", "rect": [values[0], values[1], values[2], values[3]],
             "color": _rgba(color), "width": width,
+            "radius": kwargs.get("border_radius", 0),
         })
 
     @staticmethod
     def line(surface, color, start, end, width=1, *args, **kwargs):
+        if not surface.record:
+            return
         surface.ops.append({
             "type": "line", "points": [list(start), list(end)],
             "color": _rgba(color), "width": width,
@@ -143,6 +214,8 @@ class _DrawShim:
 
     @staticmethod
     def circle(surface, color, center, radius, width=0, *args, **kwargs):
+        if not surface.record:
+            return
         surface.ops.append({
             "type": "circle", "center": list(center), "radius": radius,
             "color": _rgba(color), "width": width,
@@ -150,6 +223,8 @@ class _DrawShim:
 
     @staticmethod
     def polygon(surface, color, points, width=0, *args, **kwargs):
+        if not surface.record:
+            return
         surface.ops.append({
             "type": "polygon", "points": [list(point) for point in points],
             "color": _rgba(color), "width": width,
@@ -163,11 +238,23 @@ def _rgba(color):
     return values if len(values) == 4 else values + [255]
 
 
+class _ImageShim:
+    @staticmethod
+    def tobytes(surface, pixel_format):
+        # Barlow has a real ellipsis glyph; the sentinel is intentionally absent.
+        if surface.text == "￀":
+            return b"missing-glyph"
+        if surface.text == "…":
+            return b"rendered-ellipsis-glyph"
+        return str(surface.text).encode("utf-8")
+
+
 class _PygameShim:
     SRCALPHA = 1
     Surface = _SurfaceShim
     Rect = _RectShim
     draw = _DrawShim
+    image = _ImageShim
 
 
 def _slice(lines, start_pred, end_pred):
@@ -241,6 +328,20 @@ def _trace_draw(item, lines):
     return captured
 
 
+def _capture_panel_visual(cls, timer, title="Champion", description="Victory earned"):
+    global _RECORD_DRAW
+    popup = cls()
+    popup.current = {"title": title, "description": description, "icon_type": "gold"}
+    popup.timer = timer
+    _RECORD_DRAW = True
+    try:
+        surface = _SurfaceShim((1280, 720), record=True)
+        popup.draw(surface, SCREEN_W, SCREEN_H)
+    finally:
+        _RECORD_DRAW = False
+    return {"timer": timer, "ops": surface.ops}
+
+
 def source_fixture():
     namespace, class_block = _load_class()
     cls = namespace["AchievementPopup"]
@@ -273,17 +374,31 @@ def source_fixture():
             ]
         )
 
+    global _RECORD_DRAW
     icons = {}
-    for icon_type in ["star", "sword", "skull", "shield", "gold", "unknown"]:
-        surface = _SurfaceShim((280, 60))
-        popup._draw_icon(surface, 15, 30, icon_type, 117)
-        icons[icon_type] = surface.ops
+    _RECORD_DRAW = True
+    try:
+        for icon_type in ["star", "sword", "skull", "shield", "gold", "unknown"]:
+            surface = _SurfaceShim((280, 60), record=True)
+            popup._draw_icon(surface, 15, 30, icon_type, 117)
+            icons[icon_type] = surface.ops
+    finally:
+        _RECORD_DRAW = False
+    panel_visuals = [
+        _capture_panel_visual(cls, 160),
+        _capture_panel_visual(cls, 126),
+        _capture_panel_visual(
+            cls, 126, "Champion of the Eternal Mystic Arena",
+            "A legendary victory awarded for mastering the ancient battlefield",
+        ),
+    ]
 
     return {
         "source": "_render.py::AchievementPopup",
         "duration": popup.duration,
         "unlocks": [list(entry) for entry in UNLOCKS],
         "icons": icons,
+        "panel_visuals": panel_visuals,
         "steps": steps,
     }
 

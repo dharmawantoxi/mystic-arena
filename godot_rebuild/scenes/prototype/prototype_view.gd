@@ -410,45 +410,115 @@ func _draw_achievement_popup(world: Prototype) -> void:
 	var popup = world.effects.achievement
 	if popup == null or not popup.is_showing():
 		return
-	var alpha := clampf(float(popup.get_alpha()) / 255.0, 0.0, 1.0)
-	if alpha <= 0.0:
+	var alpha: int = clampi(int(popup.get_alpha()), 0, 255)
+	if alpha <= 0:
 		return
 	var rect := Rect2(
 		Vector2(float(popup.panel_x(1280)), float(popup.panel_y())),
 		Vector2(float(popup.PANEL_W), float(popup.PANEL_H))
 	)
-	var glow_raw: int = int(popup.get_glow_alpha())
-	if glow_raw > 0:
-		var glow_alpha: float = clampf(float(glow_raw) / 255.0, 0.0, 1.0)
-		draw_rect(rect.grow(4.0), Color(1.0, 0.88, 0.45, glow_alpha), false, 3.0)
-	draw_rect(rect, Color(0.06, 0.09, 0.14, 0.90 * alpha))
-	draw_rect(rect, Color(0.96, 0.83, 0.57, alpha), false, 2.0)
+	for row in range(int(rect.size.y)):
+		var grad := 20 + int(float(row) * 0.3)
+		var ink := Color8(grad, grad, floori(float(grad) / 2.0), alpha)
+		draw_line(
+			Vector2(rect.position.x, rect.position.y + row),
+			Vector2(rect.end.x, rect.position.y + row),
+			ink,
+			1.0,
+			true
+		)
+	_draw_achievement_outline(rect, 6.0, Color8(255, 220, 50, alpha), 3.0)
+	_draw_achievement_outline(rect.grow(-2.0), 5.0, Color8(255, 250, 180, alpha), 1.0)
+	if alpha > 60:
+		_draw_achievement_ticks(rect, Color8(255, 220, 50, 255))
 	var icon_type := String(popup.current.get("icon_type", "star"))
 	var icon_center := rect.position + Vector2(15.0, 30.0)
-	var icon_ops: Array = popup.icon_ops(icon_type, icon_center, int(popup.get_alpha()))
+	var icon_ops: Array = popup.icon_ops(icon_type, icon_center, alpha)
 	_draw_achievement_icon(icon_ops)
 	var title := String(popup.current.get("title", ""))
 	var desc := String(popup.current.get("description", ""))
+	var text_x := rect.position.x + 55.0
+	var text_width := rect.size.x - 65.0
+	_draw_achievement_label(
+		"A C H I E V E M E N T",
+		text_x,
+		rect.position.y + 7.0,
+		16,
+		Color8(255, 220, 50, alpha),
+		text_width
+	)
 	if not title.is_empty():
-		draw_string(
-			BossFont,
-			rect.position + Vector2(14.0, 26.0),
-			title,
-			HORIZONTAL_ALIGNMENT_LEFT,
-			rect.size.x - 28.0,
-			16,
-			Color(1.0, 0.88, 0.45, alpha)
+		_draw_achievement_label(
+			title, text_x, rect.position.y + 24.0, 22, Color8(255, 255, 255, alpha), text_width
 		)
 	if not desc.is_empty():
-		draw_string(
-			BossFont,
-			rect.position + Vector2(14.0, 46.0),
-			desc,
-			HORIZONTAL_ALIGNMENT_LEFT,
-			rect.size.x - 28.0,
-			13,
-			Color(0.85, 0.90, 0.95, alpha)
+		_draw_achievement_label(
+			desc, text_x, rect.position.y + 45.0, 17, Color8(205, 210, 225, alpha), text_width
 		)
+	var glow_raw: int = int(popup.get_glow_alpha())
+	if glow_raw > 0:
+		var glow_rect := Rect2(rect.position - Vector2(10.0, 10.0), rect.size + Vector2(20.0, 20.0))
+		var glow_points := _achievement_rounded_points(glow_rect, 10.0)
+		draw_colored_polygon(glow_points, Color8(255, 220, 50, clampi(glow_raw, 0, 255)))
+
+
+func _achievement_rounded_points(rect: Rect2, radius: float) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	var centers := [
+		Vector2(rect.position.x + radius, rect.position.y + radius),
+		Vector2(rect.end.x - radius, rect.position.y + radius),
+		Vector2(rect.end.x - radius, rect.end.y - radius),
+		Vector2(rect.position.x + radius, rect.end.y - radius),
+	]
+	var starts := [180.0, 270.0, 0.0, 90.0]
+	for corner in range(4):
+		for sample in range(5):
+			var angle := deg_to_rad(float(starts[corner]) + float(sample) * 22.5)
+			points.append(centers[corner] + Vector2(cos(angle), sin(angle)) * radius)
+	return points
+
+
+func _draw_achievement_outline(rect: Rect2, radius: float, ink: Color, width: float) -> void:
+	var points := _achievement_rounded_points(rect, radius)
+	points.append(points[0])
+	draw_polyline(points, ink, width, true)
+
+
+func _draw_achievement_ticks(rect: Rect2, ink: Color) -> void:
+	var anchors := [
+		Vector2(rect.position.x + 4.0, rect.position.y + 4.0),
+		Vector2(rect.end.x - 4.0, rect.position.y + 4.0),
+		Vector2(rect.position.x + 4.0, rect.end.y - 4.0),
+		Vector2(rect.end.x - 4.0, rect.end.y - 4.0),
+	]
+	for index in range(4):
+		var anchor: Vector2 = anchors[index]
+		var x_dir := 1.0 if index == 0 or index == 2 else -1.0
+		var y_dir := 1.0 if index < 2 else -1.0
+		draw_line(anchor, anchor + Vector2(x_dir * 10.0, 0.0), ink, 2.0, true)
+		draw_line(anchor, anchor + Vector2(0.0, y_dir * 10.0), ink, 2.0, true)
+
+
+func _draw_achievement_label(
+	text: String, x: float, top: float, size: int, ink: Color, max_width: float
+) -> void:
+	var font := BossFont
+	var shown := _fit_achievement_label(text, size, max_width)
+	var ascent := font.get_ascent(size)
+	draw_string(font, Vector2(x, top + ascent), shown, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size, ink)
+
+
+func _fit_achievement_label(text: String, size: int, max_width: float) -> String:
+	var font := BossFont
+	if font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size).x <= max_width:
+		return text
+	var clipped := text
+	while clipped.length() > 1:
+		clipped = clipped.substr(0, clipped.length() - 1)
+		var candidate := clipped + "…"
+		if font.get_string_size(candidate, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size).x <= max_width:
+			return candidate
+	return "…"
 
 
 func _draw_achievement_icon(ops: Array) -> void:

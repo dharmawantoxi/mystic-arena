@@ -1,7 +1,19 @@
 # Peta Sisa Migrasi — status singkat
 
-Dokumen ini hanya mencatat **slice portrait Hero Shop** yang dikerjakan pada
-branch `arena/2aa50b3c-mystic-arena`. Bukan audit sistem lain.
+Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
+
+## Status terkini — branch `arena/2467bf39-mystic-arena`
+
+- 9aw WaveAnnouncer + panah PathPreview, 9ax ikon AchievementPopup, 9ay
+  HitParticle, dan 9az FloatingText sudah selesai.
+- 9ba melengkapi panel AchievementPopup di luar ikon: gradien gelap-emas,
+  dua border membulat, corner ticks, header ber-letter-spacing, fit ellipsis,
+  dan gold glow awal slot. Oracle menjalankan `AchievementPopup.draw()` asli
+  di bawah pygame shim perekam; fixture mengunci fase fade/hold, geometri,
+  opacity, dan teks terpotong. Pemeriksaan native dan validator menutup replay.
+- PR #334 tetap terbuka dan belum di-merge.
+
+## Catatan historis portrait Hero Shop
 
 ## Catatan penting tentang handoff sebelumnya
 
@@ -274,6 +286,20 @@ membaca `x_offset` / `alpha` / `glow_alpha` langsung dari frame.
 - Oracle menjalankan 760 tick dengan 4 unlock (tick 0/10/20/190): tick 10 dan
   20 mengantre di belakang popup yang sedang tayang (antrean memuncak di 2),
   lalu popup berganti tepat di tick 180/360/540 dan antrean habis di tick 720.
+
+## Slice 9ba — AchievementPopup (panel)
+
+Panel selain ikon kini digambar oleh `PrototypeView`: 60 baris gradien dark-gold,
+outline emas membulat (radius 6 dan 5), corner ticks saat alpha > 60, label
+header dengan letter spacing, title/description yang di-fit dengan ellipsis,
+dan glow rounded berwarna emas pada 30% awal slot. Warna dan alpha mengikuti
+sumber tanpa mengubah ikon 9ax atau state/replay dari popup.
+
+`achievement_popup_source_oracle.py` merekam operasi dari `draw()` asli pada
+fase fade-in dan hold, serta teks panjang untuk memastikan fallback ellipsis.
+`achievement_popup_checks.gd` membandingkan geometri, warna, opacity, label,
+glow, dan ukuran hasil clipping; validator mem-pin wiring renderer/fixture,
+dan workflow tetap menjalankan source oracle sebelum Godot suite.
 
 ### Jebakan GDScript yang ditemukan di slice ini
 

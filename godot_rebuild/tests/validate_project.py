@@ -3327,6 +3327,23 @@ check(set(_achievement_fixture.get("icons", {})) == {"star", "sword", "skull", "
 check("achievement_popup_source_oracle.py" in workflow,
       "9ax source icon oracle must remain in CI")
 
+# ── AchievementPopup panel visual presentation ──
+_achievement_panel_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_achievement_panel_checks = (ROOT / "tests/achievement_popup_checks.gd").read_text(encoding="utf-8")
+_achievement_panel_samples = _achievement_fixture.get("panel_visuals", [])
+check("_draw_achievement_outline(rect, 6.0" in _achievement_panel_view
+      and "_draw_achievement_ticks(rect" in _achievement_panel_view
+      and "_fit_achievement_label" in _achievement_panel_view,
+      "Achievement popup panel renderer must keep rounded gold borders, corner ticks, and text clipping")
+check("_check_panel_visuals(check, data)" in _achievement_panel_checks
+      and "AchievementPopupChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"),
+      "Achievement popup panel oracle checks must be registered in the native suite")
+check(len(_achievement_panel_samples) == 3
+      and all(len(sample.get("ops", [])) >= 79 for sample in _achievement_panel_samples),
+      "Achievement popup fixture must pin fade, held, glow, and clipped-text panel draws")
+check("achievement_popup_source_oracle.py" in workflow,
+      "Achievement popup panel source oracle must remain in CI")
+
 # ── Layer 9ay: HitParticle pre-rendered spark visual ──
 _hit_particle_script = (ROOT / "scripts/ui/hit_particle.gd").read_text(encoding="utf-8")
 _hit_particle_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")

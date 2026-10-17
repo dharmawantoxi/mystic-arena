@@ -9,6 +9,7 @@ const AchievementPopup = preload("res://scripts/ui/achievement_popup.gd")
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd")
 const PrototypeView = preload("res://scenes/prototype/prototype_view.gd")
+const PopupFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
 const FIXTURE := "res://tests/fixtures/achievement_popup_source.json"
 
 const SHOWING := 0
@@ -37,6 +38,7 @@ func run(check: Callable) -> void:
 	_check_layout(check, popup)
 	_check_defaults(check, popup)
 	_check_icons(check, popup, data)
+	_check_panel_visuals(check, data)
 	_check_replay(check, popup, data)
 	_check_view_wiring(check)
 
@@ -106,6 +108,141 @@ func _check_icons(check: Callable, popup, data: Dictionary) -> void:
 			check.call(false, "Achievement %s icon geometry drifted from source" % icon_type)
 			return
 	check.call(true, "Achievement icons replay all source draw primitives")
+
+
+func _check_panel_visuals(check: Callable, data: Dictionary) -> void:
+	var samples: Array = data.get("panel_visuals", [])
+	check.call(
+		samples.size() == 3, "Achievement panel oracle pins fade-in, held, and clipped-text draws"
+	)
+	if samples.size() != 3:
+		return
+	var fade: Dictionary = samples[0]
+	var held: Dictionary = samples[1]
+	for sample_index in range(2):
+		var sample: Dictionary = samples[sample_index]
+		var ops: Array = sample.get("ops", [])
+		var lines := _ops_of_type(ops, "line")
+		var rects := _ops_of_type(ops, "rect")
+		var circles := _ops_of_type(ops, "circle")
+		var texts := _ops_of_type(ops, "text")
+		var expected_alpha: int = 188 if sample_index == 0 else 255
+		var expected_x: int = 960 if sample_index == 0 else 980
+		check.call(
+			lines.size() == 68, "Achievement panel draws 60 gradient rows and eight corner ticks"
+		)
+		check.call(
+			rects.size() == (3 if sample_index == 0 else 2),
+			"Achievement panel keeps its two rounded gold borders and timed glow"
+		)
+		check.call(
+			circles.size() == 5, "Achievement panel preserves its badge and gold icon circles"
+		)
+		check.call(
+			texts.size() == 4,
+			"Achievement panel renders its icon, letter-spaced header, title, and description"
+		)
+		if lines.size() >= 68:
+			var top_line: Dictionary = lines[0]
+			var middle_gradient: Dictionary = lines[29]
+			var bottom_gradient: Dictionary = lines[59]
+			var first_tick: Dictionary = lines[60]
+			check.call(
+				(
+					int(top_line["points"][0][0]) == expected_x
+					and int(top_line["points"][0][1]) == 180
+					and int(top_line["color"][3]) == expected_alpha
+				),
+				"Achievement gradient begins at source panel position with source opacity"
+			)
+			check.call(
+				(
+					int(middle_gradient["color"][0]) == 28
+					and int(middle_gradient["color"][2]) == 14
+					and int(middle_gradient["color"][3]) == expected_alpha
+				),
+				"Achievement gradient follows the source per-row dark-gold interpolation"
+			)
+			check.call(
+				(
+					int(bottom_gradient["color"][0]) == 37
+					and int(bottom_gradient["color"][2]) == 18
+					and int(bottom_gradient["color"][3]) == expected_alpha
+				),
+				"Achievement gradient reaches the source dark-gold endpoint"
+			)
+			check.call(
+				(
+					int(first_tick["points"][0][0]) == expected_x + 4
+					and int(first_tick["points"][0][1]) == 184
+					and int(first_tick["width"]) == 2
+				),
+				"Achievement gold corner ticks preserve their inset and stroke"
+			)
+		if rects.size() >= 2:
+			check.call(
+				int(rects[0]["radius"]) == 6 and int(rects[1]["radius"]) == 5,
+				"Achievement panel keeps rounded outer and inner gold borders"
+			)
+		if sample_index == 0 and rects.size() == 3:
+			check.call(
+				rects[2]["rect"] == [950, 170, 300, 80] and int(rects[2]["color"][3]) == 94,
+				"Achievement gold glow preserves its source bounds and early alpha"
+			)
+		var header: Dictionary = texts[1] if texts.size() > 1 else {}
+		check.call(
+			String(header.get("text", "")) == "A C H I E V E M E N T",
+			"Achievement header retains ui_theme letter spacing"
+		)
+	var clipped_ops: Array = samples[2].get("ops", [])
+	var clipped_texts := _ops_of_type(clipped_ops, "text")
+	check.call(
+		(
+			clipped_texts.size() == 4
+			and String(clipped_texts[2].get("text", "")) == "Champion of the …"
+			and String(clipped_texts[3].get("text", "")) == "A legendary victory a…"
+		),
+		"Achievement source oracle pins ellipsis truncation for long title and description"
+	)
+	var view := PrototypeView.new()
+	var clipped_title: String = view.call(
+		"_fit_achievement_label", "Champion of the Eternal Mystic Arena", 22, 213.0
+	)
+	var clipped_desc: String = view.call(
+		"_fit_achievement_label",
+		"A legendary victory awarded for mastering the ancient battlefield",
+		17,
+		213.0
+	)
+	check.call(
+		(
+			clipped_title.ends_with("…")
+			and clipped_desc.ends_with("…")
+			and (
+				PopupFont.get_string_size(clipped_title, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 22).x
+				<= 213.0
+			)
+			and (
+				PopupFont.get_string_size(clipped_desc, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 17).x
+				<= 213.0
+			)
+		),
+		"Achievement label port clips long text to the available width"
+	)
+	view.free()
+	check.call(
+		fade.get("timer") == 160 and held.get("timer") == 126,
+		"Achievement panel oracle samples cover fade-in and held phases"
+	)
+
+
+func _ops_of_type(ops: Array, kind: String) -> Array:
+	var found := []
+	for value in ops:
+		var op: Dictionary = value
+		if String(op.get("type", "")) == kind:
+			found.append(op)
+	return found
 
 
 func _values_match(actual: Variant, expected: Variant) -> bool:
