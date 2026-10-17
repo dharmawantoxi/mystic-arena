@@ -3327,6 +3327,27 @@ check(set(_achievement_fixture.get("icons", {})) == {"star", "sword", "skull", "
 check("achievement_popup_source_oracle.py" in workflow,
       "9ax source icon oracle must remain in CI")
 
+# ── Layer 9ay: HitParticle pre-rendered spark visual ──
+_hit_particle_script = (ROOT / "scripts/ui/hit_particle.gd").read_text(encoding="utf-8")
+_hit_particle_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_hit_particle_checks = (ROOT / "tests/hit_particle_checks.gd").read_text(encoding="utf-8")
+_hit_particle_fixture = json.loads(
+    (ROOT / "tests/fixtures/hit_particle_source.json").read_text(encoding="utf-8")
+)
+check("func core_radius()" in _hit_particle_script
+      and "particle.core_radius()" in _hit_particle_view,
+      "9ay HitParticle must render the lifetime-scaled inner sprite circle")
+check("Color(1.0, 1.0, 1.0, p_alpha)" in _hit_particle_view,
+      "9ay HitParticle's white source sprite core must remain visible")
+check("_check_sprite(entry, check)" in _hit_particle_checks
+      and "HitParticleChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"),
+      "9ay source sprite geometry must be checked in the native suite")
+check(all(len(case.get("sprite", {}).get("circles", [])) == 2
+          for case in _hit_particle_fixture.get("cases", [])),
+      "9ay HitParticle oracle must capture both original source sprite circles")
+check("hit_particle_source_oracle.py" in workflow,
+      "9ay HitParticle source oracle must remain in CI")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

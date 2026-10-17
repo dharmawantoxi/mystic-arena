@@ -35,6 +35,10 @@ func _replay(entry: Dictionary, check: Callable) -> void:
 	check.call(
 		is_equal_approx(item.gravity, float(entry["gravity"])), "Gravity matches source: %s" % label
 	)
+	_check_sprite(entry, check)
+	var sprite: Dictionary = entry["sprite"]
+	var source_core: Dictionary = sprite["circles"][1]
+	var base_size := maxi(1, int(config["size"]))
 	var steps: Array = entry["steps"]
 	for index in range(steps.size()):
 		item.update()
@@ -58,6 +62,47 @@ func _replay(entry: Dictionary, check: Callable) -> void:
 		check.call(
 			item.current_size() == int(expected[7]), "Size matches step %d: %s" % [index, label]
 		)
+		var expected_core := (
+			float(source_core["radius"]) * float(item.current_size()) / float(base_size)
+		)
+		check.call(
+			is_equal_approx(item.core_radius(), expected_core),
+			"White sprite core scales with life at step %d: %s" % [index, label]
+		)
+
+
+func _check_sprite(entry: Dictionary, check: Callable) -> void:
+	var config: Dictionary = entry["config"]
+	var sprite: Dictionary = entry["sprite"]
+	var base_size := maxi(1, int(config["size"]))
+	var circle_size := base_size * 3
+	var center := int(circle_size / 2)
+	var circles: Array = sprite["circles"]
+	var tint: Array = config["color"]
+	check.call(
+		sprite["size"] == [circle_size, circle_size], "Pre-render sprite bounds match source"
+	)
+	check.call(circles.size() == 2, "Source sprite contains both colored and white circles")
+	if circles.size() != 2:
+		return
+	var outer: Dictionary = circles[0]
+	var inner: Dictionary = circles[1]
+	check.call(
+		(
+			outer["center"] == [center, center]
+			and int(outer["radius"]) == base_size
+			and outer["color"] == [tint[0], tint[1], tint[2], 255]
+		),
+		"Colored outer sprite circle matches source"
+	)
+	check.call(
+		(
+			inner["center"] == [center, center]
+			and int(inner["radius"]) == maxi(1, int(base_size / 2))
+			and inner["color"] == [255, 255, 255, 255]
+		),
+		"White inner sprite circle matches source"
+	)
 
 
 ## The fixture pins a seeded draw, so cover the cone itself separately.

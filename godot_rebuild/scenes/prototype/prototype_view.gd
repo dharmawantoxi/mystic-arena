@@ -175,7 +175,9 @@ func _draw_world_effects(world: Prototype) -> void:
 		var p_alpha := clampf(float(particle.alpha()) / 255.0, 0.0, 1.0)
 		var p_size := float(particle.current_size())
 		if p_size > 0.0 and p_alpha > 0.0:
-			draw_circle(Vector2(particle.x, particle.y), p_size, Color(particle.color, p_alpha))
+			var particle_center := Vector2(int(particle.x), int(particle.y))
+			draw_circle(particle_center, p_size, Color(particle.color, p_alpha))
+			draw_circle(particle_center, particle.core_radius(), Color(1.0, 1.0, 1.0, p_alpha))
 	for item in world.effects.floating_texts:
 		if not item.alive or String(item.text).is_empty():
 			continue

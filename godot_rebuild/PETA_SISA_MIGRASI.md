@@ -127,6 +127,7 @@ Dibaca hanya untuk memilih slice berikutnya, bukan audit menyeluruh:
 | `LevelIntroScreen.draw()` (`_render.py` 2761-3391) | **Terport (layer 9av)** — `scripts/ui/level_intro_layout.gd` (op list murni: darken, tint tema 33+forest, vignette 60 cincin, pembatas + 3 berlian, kolom level dengan angka 200 px + 6 bayangan, bar kesulitan, koin reward/starting gold, kolom boss dengan pill tag, aura berdenyut, 12 sinar, siluet tubuh/inner/duri, mata bercahaya, nama + 5 bayangan, judul, PREPARE FOR BATTLE + ikon warn, prompt PRESS SPACE berdenyut + panah) dirender `prototype_view._draw_intro_op`; oracle `level_intro_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam |
 | WaveAnnouncer + PathPreview visual (`_render.py`) | **Terport (layer 9aw)** — banner lengkap: gradien 80 strip, border emas ganda, 40 diagonal, corner ticks, judul berbayang + subtitle; panah lane segitiga kini memakai geometri hasil gambar sumber (termasuk pembulatan floor Python). Oracle `wave_announcer_source_oracle.py` memaku kotak visual; `path_preview_source_oracle.py` memaku semua vertex panah dan fase animasi. Tetap prosedural, tanpa aset hero final. |
 | AchievementPopup ikon (`_render.py::AchievementPopup._draw_icon`) | **Terport (layer 9ax)** — ikon star/sword/skull/shield/gold berikut lencana lingkaran/warna alpha dan fallback; oracle menjalankan method sumber dan membandingkan primitive fixture lewat `AchievementPopupChecks`. |
+| HitParticle sprite (`_render.py::HitParticle`) | **Visual dilengkapi (layer 9ay)** — mempertahankan gerak/umur yang sudah terport, menggambar ulang lingkaran warna + inti putih dari sprite sumber dengan ukuran mengikuti lifetime; oracle merekam primitive `pygame.draw.circle` asli dan suite memaku warna, radius, pusat, serta skala inti. |
 | `hero_marker.gd` | Selesai: placeholder 4-6 sisi tetap untuk `grimjaw_checks`, siluet per-hero dipakai `prototype_view.gd:619`; art roster dipaku golden fixture (layer 9aj) |
 
 Catatan: `ui_components/hero_portraits.py` yang di-impor `_core.py:3056`
@@ -378,26 +379,21 @@ background/border, dan rect bar HP datang dari sumber.
 - Pemanggil yang membuat banner dari `Boss` hidup (`_core.py` di dua tempat)
   belum ada di Godot; saat ini banner hanya bisa dibuat dari fixture/test.
 
-## Slice berikutnya: efek `_render.py` — FloatingText lalu HitParticle
+## Slice 9ay: HitParticle sprite
 
-Dua kelas efek murni-state yang paling mudah dikunci, dikerjakan berurutan
-dengan pola oracle yang sama.
+Logika gerak/umur HitParticle, suite replay dan oracle state sudah ada. Slice
+9ay menutup detail visual yang tertinggal: sprite pygame sumber menggambar
+lingkaran berwarna lalu inti putih, tetapi renderer Godot hanya menggambar
+lingkaran luar. `prototype_view` kini menggambar ulang kedua lapisan sebagai
+geometri vektor; radius inti mengecil sesuai skala sprite/lifetime.
 
-### HitParticle (spark saat kena hit)
+Oracle mengeksekusi constructor sumber dan merekam ukuran sprite serta kedua
+panggilan `pygame.draw.circle`; kasus tanpa velocity tetap merekam hasil
+`random.uniform` seed sehingga replay state tidak berubah.
 
-Diport dari `_render.py::HitParticle`: `x += vx`, `y += vy`, `vy += gravity`
-(0.15), `vx *= 0.95`, countdown lifetime, lalu turunan `alpha_ratio =
-lifetime / max_lifetime` untuk alpha dan ukuran.
-
-Oracle mengeksekusi kelas aslinya **termasuk pre-render sprite pygame**
-(`pygame.Surface` + `pygame.draw.circle`) — berjalan headless, jadi seluruh
-badan sumber ikut dieksekusi apa adanya. Kasus tanpa velocity memakai
-`random.uniform`, jadi diseed dan nilai awalnya direkam agar suite native
-bisa me-replay lintasan yang sama.
-
-- `tests/hit_particle_source_oracle.py` → `tests/fixtures/hit_particle_source.json`
+- `tests/hit_particle_source_oracle.py` → fixture state + primitive sprite
 - `scripts/ui/hit_particle.gd` + `tests/hit_particle_checks.gd`
-- Terdaftar di `run_all.gd` dan di `godot-rebuild.yml`.
+- Suite sudah terdaftar di `run_all.gd`; oracle sudah terdaftar di workflow CI.
 
 ## Slice berikutnya: FloatingText / damage number
 
