@@ -252,7 +252,8 @@ func _draw_wave_announcer(world: Prototype) -> void:
 	if alpha_i <= 0:
 		return
 	var alpha := clampf(float(alpha_i) / 255.0, 0.0, 1.0)
-	var rect: Rect2 = announcer.visual_rect(int(size.x), int(size.y))
+	var viewport_size: Vector2 = get_viewport_rect().size
+	var rect: Rect2 = announcer.visual_rect(int(viewport_size.x), int(viewport_size.y))
 	var center_x := rect.get_center().x
 	var center_y := rect.get_center().y
 	for row in range(80):
@@ -273,7 +274,7 @@ func _draw_wave_announcer(world: Prototype) -> void:
 		)
 	if alpha_i > 60:
 		_draw_gold_corner_ticks(rect, alpha)
-	var title := announcer.title()
+	var title: String = announcer.title()
 	var title_y := center_y + 8.0
 	draw_string(
 		BossFont,
