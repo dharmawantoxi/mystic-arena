@@ -141,10 +141,12 @@ func _snapshot_checks(name: String, expected: Dictionary, panel: Rect2i, check: 
 			bool(got["visible"]) == bool(want["visible"]),
 			tag + "button %s visibility matches" % key
 		)
-		check.call(
-			got["hit_rect"] == _rect(want["hit_rect"]), tag + "button %s hit box matches" % key
-		)
+		# Hidden tactical buttons keep whatever stale rect the previous frame
+		# left in the source dict; only drawn buttons have a meaningful box.
 		if bool(want["visible"]):
+			check.call(
+				got["hit_rect"] == _rect(want["hit_rect"]), tag + "button %s hit box matches" % key
+			)
 			check.call(got["rect"] == _rect(want["rect"]), tag + "button %s rect matches" % key)
 
 
