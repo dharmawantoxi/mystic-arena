@@ -381,6 +381,10 @@ func _draw_achievement_popup(world: Prototype) -> void:
 		draw_rect(rect.grow(4.0), Color(1.0, 0.88, 0.45, glow_alpha), false, 3.0)
 	draw_rect(rect, Color(0.06, 0.09, 0.14, 0.90 * alpha))
 	draw_rect(rect, Color(0.96, 0.83, 0.57, alpha), false, 2.0)
+	var icon_type := String(popup.current.get("icon_type", "star"))
+	var icon_center := rect.position + Vector2(15.0, 30.0)
+	var icon_ops: Array = popup.icon_ops(icon_type, icon_center, int(popup.get_alpha()))
+	_draw_achievement_icon(icon_ops)
 	var title := String(popup.current.get("title", ""))
 	var desc := String(popup.current.get("description", ""))
 	if not title.is_empty():
@@ -403,6 +407,57 @@ func _draw_achievement_popup(world: Prototype) -> void:
 			13,
 			Color(0.85, 0.90, 0.95, alpha)
 		)
+
+
+func _draw_achievement_icon(ops: Array) -> void:
+	for value in ops:
+		var op: Dictionary = value
+		var color_values: Array = op.get("color", [255, 255, 255, 255])
+		var ink := Color8(
+			int(color_values[0]), int(color_values[1]), int(color_values[2]), int(color_values[3])
+		)
+		match String(op.get("type", "")):
+			"circle":
+				var center_values: Array = op["center"]
+				var center := Vector2(float(center_values[0]), float(center_values[1]))
+				var radius := float(op["radius"])
+				var circle_width := int(op["width"])
+				if circle_width == 0:
+					draw_circle(center, radius, ink)
+				else:
+					draw_arc(center, radius, 0.0, TAU, 36, ink, float(circle_width), true)
+			"rect":
+				var bounds: Array = op["rect"]
+				draw_rect(
+					Rect2(
+						Vector2(float(bounds[0]), float(bounds[1])),
+						Vector2(float(bounds[2]), float(bounds[3]))
+					),
+					ink
+				)
+			"polygon":
+				var raw_points: Array = op["points"]
+				var points := PackedVector2Array()
+				for point_value in raw_points:
+					var point: Array = point_value
+					points.append(Vector2(float(point[0]), float(point[1])))
+				var polygon_width := int(op["width"])
+				if polygon_width == 0:
+					draw_colored_polygon(points, ink)
+				else:
+					points.append(points[0])
+					draw_polyline(points, ink, float(polygon_width), true)
+			"text":
+				var text_center: Array = op["center"]
+				draw_string(
+					BossFont,
+					Vector2(float(text_center[0]) - 10.0, float(text_center[1]) + 7.0),
+					String(op["text"]),
+					HORIZONTAL_ALIGNMENT_CENTER,
+					20.0,
+					int(op["size"]),
+					ink
+				)
 
 
 func _draw_boss_intro(world: Prototype) -> void:

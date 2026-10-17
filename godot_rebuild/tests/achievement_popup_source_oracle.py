@@ -50,33 +50,65 @@ UNLOCKS = [
 # Minimal shims so draw() runs to completion without pygame or a font stack.
 # --------------------------------------------------------------------------
 class _RectShim:
-    x = 0
-    y = 0
-
     def __init__(self, *args, **kwargs):
-        pass
+        self.x = 0
+        self.y = 0
+        self.center = kwargs.get("center", (0, 0))
+        if args and isinstance(args[0], (list, tuple)) and len(args[0]) >= 2:
+            self.x, self.y = args[0][0], args[0][1]
 
 
 class _SurfaceShim:
     def __init__(self, *args, **kwargs):
-        pass
+        self.size = args[0] if args and isinstance(args[0], (list, tuple)) else (0, 0)
+        self.ops = []
+        self.text = None
+        self.font_size = 0
+        self.color = None
 
     def set_alpha(self, *args, **kwargs):
         pass
 
     def get_rect(self, **kwargs):
-        return _RectShim()
+        return _RectShim(center=kwargs.get("center", (0, 0)))
 
-    def blit(self, *args, **kwargs):
-        pass
+    def blit(self, source, dest, *args, **kwargs):
+        if isinstance(dest, _RectShim):
+            dx, dy = dest.center[0], dest.center[1]
+        elif isinstance(dest, (list, tuple)):
+            dx, dy = dest[0], dest[1]
+        else:
+            dx, dy = 0, 0
+        for operation in source.ops:
+            shifted = dict(operation)
+            kind = shifted["type"]
+            if kind == "circle":
+                shifted["center"] = [shifted["center"][0] + dx, shifted["center"][1] + dy]
+            elif kind == "rect":
+                bounds = shifted["rect"]
+                shifted["rect"] = [bounds[0] + dx, bounds[1] + dy, bounds[2], bounds[3]]
+            elif kind == "polygon":
+                shifted["points"] = [[point[0] + dx, point[1] + dy] for point in shifted["points"]]
+            elif kind == "text":
+                shifted["center"] = [shifted["center"][0] + dx, shifted["center"][1] + dy]
+            self.ops.append(shifted)
+        if source.text is not None:
+            self.ops.append({
+                "type": "text", "text": source.text, "center": [dx, dy],
+                "size": source.font_size, "color": _rgba(source.color),
+            })
 
 
 class _FontShim:
-    def __init__(self, *args, **kwargs):
-        pass
+    def __init__(self, size=0, *args, **kwargs):
+        self.size = size
 
-    def render(self, *args, **kwargs):
-        return _SurfaceShim()
+    def render(self, text, antialias=True, color=None, *args, **kwargs):
+        surface = _SurfaceShim()
+        surface.text = text
+        surface.font_size = self.size
+        surface.color = color
+        return surface
 
 
 class _ThemeShim:
@@ -95,20 +127,40 @@ class _ThemeShim:
 
 class _DrawShim:
     @staticmethod
-    def rect(*args, **kwargs):
-        pass
+    def rect(surface, color, rect, width=0, *args, **kwargs):
+        values = list(rect)
+        surface.ops.append({
+            "type": "rect", "rect": [values[0], values[1], values[2], values[3]],
+            "color": _rgba(color), "width": width,
+        })
 
     @staticmethod
-    def line(*args, **kwargs):
-        pass
+    def line(surface, color, start, end, width=1, *args, **kwargs):
+        surface.ops.append({
+            "type": "line", "points": [list(start), list(end)],
+            "color": _rgba(color), "width": width,
+        })
 
     @staticmethod
-    def circle(*args, **kwargs):
-        pass
+    def circle(surface, color, center, radius, width=0, *args, **kwargs):
+        surface.ops.append({
+            "type": "circle", "center": list(center), "radius": radius,
+            "color": _rgba(color), "width": width,
+        })
 
     @staticmethod
-    def polygon(*args, **kwargs):
-        pass
+    def polygon(surface, color, points, width=0, *args, **kwargs):
+        surface.ops.append({
+            "type": "polygon", "points": [list(point) for point in points],
+            "color": _rgba(color), "width": width,
+        })
+
+
+def _rgba(color):
+    if color is None:
+        return [255, 255, 255, 255]
+    values = list(color)
+    return values if len(values) == 4 else values + [255]
 
 
 class _PygameShim:
@@ -221,10 +273,17 @@ def source_fixture():
             ]
         )
 
+    icons = {}
+    for icon_type in ["star", "sword", "skull", "shield", "gold", "unknown"]:
+        surface = _SurfaceShim((280, 60))
+        popup._draw_icon(surface, 15, 30, icon_type, 117)
+        icons[icon_type] = surface.ops
+
     return {
         "source": "_render.py::AchievementPopup",
         "duration": popup.duration,
         "unlocks": [list(entry) for entry in UNLOCKS],
+        "icons": icons,
         "steps": steps,
     }
 

@@ -126,6 +126,7 @@ Dibaca hanya untuk memilih slice berikutnya, bukan audit menyeluruh:
 | Top-up / voucher (`topup_currency.py` 221, `topup_voucher.py` 95, `Menu.topup_*` di `_core.py`, klien `server/app.py`) | **Terport (layer 9au)** — `scripts/match/topup_currency.gd` (deteksi locale -> mata uang, konversi IDR, format harga), `scripts/match/topup_voucher.gd` (format `MA-`, allowlist `voucher_codes.txt`), `scripts/match/topup_flow.gd` (mesin fase select/processing/paying/success/redeem, grant + riwayat + cap 50), `scripts/net/topup_client.gd` (HTTPRequest ke `/api/topup/create|status|qr`, timeout 6 s), `scripts/ui/topup_panel.gd` (dialog modal di atas Hero Shop, keypad voucher, QR); oracle `topup_source_oracle.py` menjalankan modul sumber asli + metode Menu yang dipanen `ast` + `server/app.py` mode MOCK |
 | `LevelIntroScreen.draw()` (`_render.py` 2761-3391) | **Terport (layer 9av)** — `scripts/ui/level_intro_layout.gd` (op list murni: darken, tint tema 33+forest, vignette 60 cincin, pembatas + 3 berlian, kolom level dengan angka 200 px + 6 bayangan, bar kesulitan, koin reward/starting gold, kolom boss dengan pill tag, aura berdenyut, 12 sinar, siluet tubuh/inner/duri, mata bercahaya, nama + 5 bayangan, judul, PREPARE FOR BATTLE + ikon warn, prompt PRESS SPACE berdenyut + panah) dirender `prototype_view._draw_intro_op`; oracle `level_intro_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam |
 | WaveAnnouncer + PathPreview visual (`_render.py`) | **Terport (layer 9aw)** — banner lengkap: gradien 80 strip, border emas ganda, 40 diagonal, corner ticks, judul berbayang + subtitle; panah lane segitiga kini memakai geometri hasil gambar sumber (termasuk pembulatan floor Python). Oracle `wave_announcer_source_oracle.py` memaku kotak visual; `path_preview_source_oracle.py` memaku semua vertex panah dan fase animasi. Tetap prosedural, tanpa aset hero final. |
+| AchievementPopup ikon (`_render.py::AchievementPopup._draw_icon`) | **Terport (layer 9ax)** — ikon star/sword/skull/shield/gold berikut lencana lingkaran/warna alpha dan fallback; oracle menjalankan method sumber dan membandingkan primitive fixture lewat `AchievementPopupChecks`. |
 | `hero_marker.gd` | Selesai: placeholder 4-6 sisi tetap untuk `grimjaw_checks`, siluet per-hero dipakai `prototype_view.gd:619`; art roster dipaku golden fixture (layer 9aj) |
 
 Catatan: `ui_components/hero_portraits.py` yang di-impor `_core.py:3056`
@@ -245,10 +246,10 @@ berarti oracle tetap jalan tanpa pygame (CI tidak punya pygame).
 - `_ease_out_back` sengaja diduplikasi dari `popup_animation.gd` agar tiap
   port berdiri sendiri; keduanya dikunci oleh oracle-nya masing-masing.
 
-## Slice berikutnya: 9ax — AchievementPopup (ikon)
+## Slice 9ax — AchievementPopup (ikon)
 
-Lapisan visual utama WaveAnnouncer + PathPreview selesai pada 9aw.
-Slice 9ax berikutnya melengkapi ikon achievement di popup.
+Lapisan visual utama WaveAnnouncer + PathPreview selesai pada 9aw. Slice 9ax
+melengkapi ikon achievement untuk star, sword, skull, shield, gold, dan fallback.
 
 ## AchievementPopup
 
@@ -263,7 +264,11 @@ membaca `x_offset` / `alpha` / `glow_alpha` langsung dari frame.
   (progress < 0.15, `_ease_out_back` — yang sedikit **overshoot** melewati 0,
   jadi offset bisa negatif), hold sampai 0.85, lalu slide-out.
   `get_glow_alpha()` mengikuti 30% awal slot dan mengembalikan `-1` (`NO_GLOW`)
-  saat sumbernya tidak menggambar glow sama sekali.
+  saat sumbernya tidak menggambar glow sama sekali. `icon_ops()` memaparkan
+  geometri sumber untuk star/sword/skull/shield/gold; renderer menggambar semua
+  primitives dan fallback tetap memakai lencana lingkaran.
+- Oracle menjalankan draw icon asli dan fixture mengunci warna, titik, ukuran,
+  stroke, lingkaran, serta simbol `$` untuk semua tipe dan fallback.
 - Oracle menjalankan 760 tick dengan 4 unlock (tick 0/10/20/190): tick 10 dan
   20 mengantre di belakang popup yang sedang tayang (antrean memuncak di 2),
   lalu popup berganti tepat di tick 180/360/540 dan antrean habis di tick 720.

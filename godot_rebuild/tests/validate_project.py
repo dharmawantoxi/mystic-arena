@@ -3311,6 +3311,22 @@ check(all(len(arrow) >= 4 and len(arrow[3]) == 3
 check("path_preview_source_oracle.py" in workflow and "wave_announcer_source_oracle.py" in workflow,
       "9aw source oracles must remain in CI")
 
+# ── Layer 9ax: AchievementPopup icon primitives ──
+_achievement_script = (ROOT / "scripts/ui/achievement_popup.gd").read_text(encoding="utf-8")
+_achievement_checks = (ROOT / "tests/achievement_popup_checks.gd").read_text(encoding="utf-8")
+_achievement_fixture = json.loads(
+    (ROOT / "tests/fixtures/achievement_popup_source.json").read_text(encoding="utf-8")
+)
+check("func icon_ops(" in _achievement_script and "_draw_achievement_icon(icon_ops)" in _wave_view,
+      "9ax achievement icons must be exposed from the port and rendered in PrototypeView")
+check("_check_icons(check, popup, data)" in _achievement_checks
+      and "AchievementPopupChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"),
+      "9ax icon oracle checks must be registered in the native suite")
+check(set(_achievement_fixture.get("icons", {})) == {"star", "sword", "skull", "shield", "gold", "unknown"},
+      "9ax fixture must pin all five source icons and the unknown-type fallback")
+check("achievement_popup_source_oracle.py" in workflow,
+      "9ax source icon oracle must remain in CI")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

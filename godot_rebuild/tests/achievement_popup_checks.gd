@@ -36,6 +36,7 @@ func run(check: Callable) -> void:
 	)
 	_check_layout(check, popup)
 	_check_defaults(check, popup)
+	_check_icons(check, popup, data)
 	_check_replay(check, popup, data)
 	_check_view_wiring(check)
 
@@ -86,6 +87,53 @@ func _check_defaults(check: Callable, popup) -> void:
 	check.call(String(entry["icon_type"]) == "star", "unlock() defaults the icon to star")
 	check.call(String(entry["title"]) == "Solo", "unlock() stores the title")
 	popup.queue.clear()
+
+
+func _check_icons(check: Callable, popup, data: Dictionary) -> void:
+	var icon_fixture: Dictionary = data.get("icons", {})
+	var icon_types := ["star", "sword", "skull", "shield", "gold", "unknown"]
+	check.call(
+		icon_fixture.size() == icon_types.size(),
+		"Oracle pins all achievement icon types and fallback"
+	)
+	for icon_type_value in icon_types:
+		var icon_type: String = icon_type_value
+		if not icon_fixture.has(icon_type):
+			check.call(false, "Achievement icon oracle is missing %s" % icon_type)
+			return
+		var actual_ops: Array = popup.icon_ops(icon_type, Vector2(15.0, 30.0), 117)
+		if not _values_match(actual_ops, icon_fixture[icon_type]):
+			check.call(false, "Achievement %s icon geometry drifted from source" % icon_type)
+			return
+	check.call(true, "Achievement icons replay all source draw primitives")
+
+
+func _values_match(actual: Variant, expected: Variant) -> bool:
+	if typeof(actual) in [TYPE_INT, TYPE_FLOAT] and typeof(expected) in [TYPE_INT, TYPE_FLOAT]:
+		return is_equal_approx(float(actual), float(expected))
+	if actual is Array and expected is Array:
+		return _arrays_match(actual, expected)
+	if actual is Dictionary and expected is Dictionary:
+		return _dictionaries_match(actual, expected)
+	return actual == expected
+
+
+func _arrays_match(actual: Array, expected: Array) -> bool:
+	if actual.size() != expected.size():
+		return false
+	for index in range(actual.size()):
+		if not _values_match(actual[index], expected[index]):
+			return false
+	return true
+
+
+func _dictionaries_match(actual: Dictionary, expected: Dictionary) -> bool:
+	if actual.size() != expected.size():
+		return false
+	for key in expected:
+		if not actual.has(key) or not _values_match(actual[key], expected[key]):
+			return false
+	return true
 
 
 func _check_replay(check: Callable, popup, data: Dictionary) -> void:
