@@ -181,18 +181,58 @@ func _draw_world_effects(world: Prototype) -> void:
 	for item in world.effects.floating_texts:
 		if not item.alive or String(item.text).is_empty():
 			continue
-		var t_alpha := clampf(float(item.alpha()) / 255.0, 0.0, 1.0)
-		var f_size := maxi(8, int(round(float(item.font_size) * float(item.scale))))
-		if t_alpha > 0.0:
+		var draw_state: Dictionary = item.presentation_state()
+		if draw_state.is_empty():
+			continue
+		var center_values: Array = draw_state["center"]
+		var shadow_values: Array = draw_state["shadow_center"]
+		var center := Vector2(float(center_values[0]), float(center_values[1]))
+		var shadow_center := Vector2(float(shadow_values[0]), float(shadow_values[1]))
+		var text_value: String = String(draw_state["text"])
+		var font_size: int = int(draw_state["font_size"])
+		var text_metrics: Vector2 = BossFont.get_string_size(
+			text_value, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size
+		)
+		var baseline_offset := (
+			(BossFont.get_ascent(font_size) - BossFont.get_descent(font_size)) * 0.5
+		)
+		var shadow_color_values: Array = draw_state["shadow_color"]
+		var shadow_color := Color8(
+			int(shadow_color_values[0]),
+			int(shadow_color_values[1]),
+			int(shadow_color_values[2]),
+			int(draw_state["shadow_alpha"])
+		)
+		draw_string(
+			BossFont,
+			Vector2(shadow_center.x - text_metrics.x * 0.5, shadow_center.y + baseline_offset),
+			text_value,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1.0,
+			font_size,
+			shadow_color
+		)
+		var text_alpha := float(draw_state["alpha"]) / 255.0
+		var text_color := Color(item.color, text_alpha)
+		if bool(item.critical):
 			draw_string(
 				BossFont,
-				Vector2(float(item.x) - 80.0, float(item.y)),
-				String(item.text),
-				HORIZONTAL_ALIGNMENT_CENTER,
-				160.0,
-				f_size,
-				Color(item.color, t_alpha)
+				Vector2(center.x - text_metrics.x * 0.5 + 0.35, center.y + baseline_offset),
+				text_value,
+				HORIZONTAL_ALIGNMENT_LEFT,
+				-1.0,
+				font_size,
+				text_color
 			)
+		draw_string(
+			BossFont,
+			Vector2(center.x - text_metrics.x * 0.5, center.y + baseline_offset),
+			text_value,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1.0,
+			font_size,
+			text_color
+		)
 
 
 func _draw_boss_death_sequence(world: Prototype) -> void:

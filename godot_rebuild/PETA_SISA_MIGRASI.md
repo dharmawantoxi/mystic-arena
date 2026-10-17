@@ -128,6 +128,7 @@ Dibaca hanya untuk memilih slice berikutnya, bukan audit menyeluruh:
 | WaveAnnouncer + PathPreview visual (`_render.py`) | **Terport (layer 9aw)** — banner lengkap: gradien 80 strip, border emas ganda, 40 diagonal, corner ticks, judul berbayang + subtitle; panah lane segitiga kini memakai geometri hasil gambar sumber (termasuk pembulatan floor Python). Oracle `wave_announcer_source_oracle.py` memaku kotak visual; `path_preview_source_oracle.py` memaku semua vertex panah dan fase animasi. Tetap prosedural, tanpa aset hero final. |
 | AchievementPopup ikon (`_render.py::AchievementPopup._draw_icon`) | **Terport (layer 9ax)** — ikon star/sword/skull/shield/gold berikut lencana lingkaran/warna alpha dan fallback; oracle menjalankan method sumber dan membandingkan primitive fixture lewat `AchievementPopupChecks`. |
 | HitParticle sprite (`_render.py::HitParticle`) | **Visual dilengkapi (layer 9ay)** — mempertahankan gerak/umur yang sudah terport, menggambar ulang lingkaran warna + inti putih dari sprite sumber dengan ukuran mengikuti lifetime; oracle merekam primitive `pygame.draw.circle` asli dan suite memaku warna, radius, pusat, serta skala inti. |
+| FloatingText presentation (`_render.py::FloatingText.draw`) | **Visual dilengkapi** — renderer memakai anchor integer dan font size ter-clamp dari sumber, teks ber-shadow ber-offset (1,2), warna alpha dan body style normal/critical; oracle menjalankan `draw()` cached-surface path dengan fake font/surface perekam dan fixture mengunci kedua blit. |
 | `hero_marker.gd` | Selesai: placeholder 4-6 sisi tetap untuk `grimjaw_checks`, siluet per-hero dipakai `prototype_view.gd:619`; art roster dipaku golden fixture (layer 9aj) |
 
 Catatan: `ui_components/hero_portraits.py` yang di-impor `_core.py:3056`
@@ -395,27 +396,22 @@ panggilan `pygame.draw.circle`; kasus tanpa velocity tetap merekam hasil
 - `scripts/ui/hit_particle.gd` + `tests/hit_particle_checks.gd`
 - Suite sudah terdaftar di `run_all.gd`; oracle sudah terdaftar di workflow CI.
 
-## Slice berikutnya: FloatingText / damage number
+## FloatingText / damage number
 
-`godot_rebuild` belum punya runtime floating text — `floating_text` hanya
-muncul di `boss_kill_credit_source.json`, tidak ada kelasnya.
+Logika gerak/drift/lifetime FloatingText dan suite state sudah ada. Slice visual
+ini melengkapi gap renderer: sumber mem-blit shadow gelap di offset `(1,2)` lalu
+teks berwarna di pusat integer, mengatur alpha terpisah (`min(220, alpha)` untuk
+shadow), serta mengecilkan cached font ke ukuran clamp 8–64. Renderer Godot kini
+menggambar pasangan teks tersebut memakai font size, anchor, warna, dan alpha
+yang diungkap `presentation_state()`; critical diberi penebalan visual ringan.
 
-Diport dari `_render.py::FloatingText`: gerak + drift, decay `velocity_y`
-0.95, animasi scale (lerp 0.3 lalu susut 0.99), countdown lifetime, dan
-kurva alpha `min(1, lifetime / (max_lifetime * 0.5))`.
+Oracle tidak mengimpor `_render` karena circular import. Ia mengeksekusi kelas
+asli dengan fake font/surface dan menjalankan `draw()` cached-surface path,
+kemudian merekam pasangan blit di sampel normal, critical, dan heal.
 
-**Oracle sumber tidak memakai `import _render`** — modul itu saat ini gagal
-diimpor karena circular import yang sudah ada (`cannot import name
-'MapRenderer' from partially initialized module '_render'`). Karena Python
-asal read-only, oracle mengeksekusi blok `class FloatingText` **langsung dari
-berkas sumber** dengan `get_font` distub, jadi angka di fixture tetap
-berasal dari algoritma sumber yang sebenarnya.
-
-- `tests/floating_text_source_oracle.py` → `tests/fixtures/floating_text_source.json`
-- `scripts/ui/floating_text.gd` + `tests/floating_text_checks.gd` (replay fixture)
-- Terdaftar di `run_all.gd`, dan oracle-nya dijalankan CI lewat
-  `godot-rebuild.yml` (sebelum tes Godot, jadi drift sumber maupun drift port
-  sama-sama menggagalkan CI).
+- `tests/floating_text_source_oracle.py` → fixture motion + draw samples
+- `scripts/ui/floating_text.gd` + `tests/floating_text_checks.gd`
+- Suite/oracle telah terdaftar di `run_all.gd` / workflow CI.
 
 ## SpriteCache (state + getter, bukan drawing pygame)
 

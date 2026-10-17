@@ -40,6 +40,10 @@ func _replay(entry: Dictionary, check: Callable) -> void:
 	check.call(
 		is_equal_approx(item.x_drift, float(entry["x_drift"])), "Drift is pinned: %s" % label
 	)
+	var draw_by_tick := {}
+	for sample_value in entry["draw_samples"]:
+		var sample: Dictionary = sample_value
+		draw_by_tick[int(sample["tick"])] = sample["blits"]
 	var steps: Array = entry["steps"]
 	for index in range(steps.size()):
 		item.update()
@@ -60,6 +64,43 @@ func _replay(entry: Dictionary, check: Callable) -> void:
 			item.alive == (int(expected[5]) == 1), "Alive matches step %d: %s" % [index, label]
 		)
 		check.call(item.alpha() == int(expected[6]), "Alpha matches step %d: %s" % [index, label])
+		if draw_by_tick.has(index) and not _visual_matches(item, draw_by_tick[index]):
+			check.call(false, "Source draw commands differ at tick %d: %s" % [index, label])
+			return
+
+
+func _visual_matches(item, expected_blits: Array) -> bool:
+	var state: Dictionary = item.presentation_state()
+	if expected_blits.is_empty():
+		return state.is_empty()
+	if expected_blits.size() != 2 or state.is_empty():
+		return false
+	var shadow: Dictionary = expected_blits[0]
+	var foreground: Dictionary = expected_blits[1]
+	var center: Array = state["center"]
+	var shadow_center: Array = state["shadow_center"]
+	return (
+		int(state["font_size"]) == int(foreground["font_size"])
+		and int(state["alpha"]) == int(foreground["alpha"])
+		and int(state["shadow_alpha"]) == int(shadow["alpha"])
+		and int(center[0]) == int(foreground["center"][0])
+		and int(center[1]) == int(foreground["center"][1])
+		and int(shadow_center[0]) == int(shadow["center"][0])
+		and int(shadow_center[1]) == int(shadow["center"][1])
+		and String(state["text"]) == String(foreground["text"])
+		and String(state["style"]) == String(foreground["style"])
+		and _int_arrays_match(state["color"], foreground["color"])
+		and _int_arrays_match(state["shadow_color"], shadow["color"])
+	)
+
+
+func _int_arrays_match(actual: Array, expected: Array) -> bool:
+	if actual.size() != expected.size():
+		return false
+	for index in range(actual.size()):
+		if int(actual[index]) != int(expected[index]):
+			return false
+	return true
 
 
 ## Behaviour the fixture cannot cover because the source draws it from `random`.

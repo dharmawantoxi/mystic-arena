@@ -3348,6 +3348,29 @@ check(all(len(case.get("sprite", {}).get("circles", [])) == 2
 check("hit_particle_source_oracle.py" in workflow,
       "9ay HitParticle source oracle must remain in CI")
 
+# ── FloatingText source draw presentation ──
+_floating_script = (ROOT / "scripts/ui/floating_text.gd").read_text(encoding="utf-8")
+_floating_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_floating_checks = (ROOT / "tests/floating_text_checks.gd").read_text(encoding="utf-8")
+_floating_fixture = json.loads(
+    (ROOT / "tests/fixtures/floating_text_source.json").read_text(encoding="utf-8")
+)
+check("func presentation_state()" in _floating_script
+      and "item.presentation_state()" in _floating_view,
+      "FloatingText renderer must consume its source-equivalent presentation state")
+check('"shadow_center": [int(x) + 1, int(y) + 2]' in _floating_script
+      and "draw_string(" in _floating_view
+      and "shadow_color" in _floating_view,
+      "FloatingText must preserve source shadow offset, font and alpha layers")
+check("_visual_matches(item, draw_by_tick[index])" in _floating_checks
+      and "FloatingTextChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"),
+      "FloatingText source draw samples must replay in the native suite")
+check(all(len(case.get("draw_samples", [])) == 7
+          for case in _floating_fixture.get("cases", [])),
+      "FloatingText source oracle must pin normal, critical and heal draw samples")
+check("floating_text_source_oracle.py" in workflow,
+      "FloatingText draw oracle must remain in CI")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")
