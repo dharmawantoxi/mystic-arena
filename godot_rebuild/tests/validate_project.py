@@ -3957,6 +3957,117 @@ check("_check_files(check, manifest)" in _art_checks
       and "_check_view_wiring(check)" in _art_checks,
       "9bj map art suite must check files, loaded textures and the view wiring")
 
+# ── Layer 9bk: baked minion sprites (bake/bake_minion_atlas.py) ──
+_mn_path = ROOT / "data/art/minions.json"
+_mn_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+_mn_entity = (ROOT.parent / "_entity.py").read_text(encoding="utf-8")
+_mn_bundle = (ROOT.parent / "minions/_bundle.py").read_text(encoding="utf-8")
+_mn_bake = (ROOT / "bake/bake_minion_atlas.py").read_text(encoding="utf-8")
+_mn_art = (ROOT / "scripts/ui/minion_art.gd").read_text(encoding="utf-8")
+_mn_anim = (ROOT / "scripts/ui/minion_anim.gd").read_text(encoding="utf-8")
+_mn_view = (ROOT / "scenes/combat/minion_view.gd").read_text(encoding="utf-8")
+_mn_state = (ROOT / "scripts/combat/unit_state.gd").read_text(encoding="utf-8")
+_mn_battle = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+_mn_checks = (ROOT / "tests/minion_art_checks.gd").read_text(encoding="utf-8")
+check('const MinionArtChecks = preload("res://tests/minion_art_checks.gd")' in ai_tests
+      and "MinionArtChecks.new().run(_check)" in ai_tests,
+      "9bk minion art suite must be preloaded and run in the native suite")
+check("      - 'minions/_bundle.py'" in workflow and workflow.count("minions/_bundle.py") == 2,
+      "9bk CI must run when the source minion art changes (push and pull_request)")
+check(_mn_path.is_file(), "9bk minion atlas manifest must exist")
+if _mn_path.is_file():
+    _mn = json.loads(_mn_path.read_text(encoding="utf-8"))
+    _mn_block = re.search(r"^MINION_TYPES = \{\n(.*?)^\}", _mn_core, re.S | re.M)
+    _mn_source_types = re.findall(r'^    "(\w+)": \{', _mn_block.group(1), re.M)
+    check(_mn["types"] == _mn_source_types == ["goblin", "orc", "troll", "undead", "dark_rider"],
+          "9bk baked types must be the source MINION_TYPES")
+    check(_mn["teams"] == ["blue", "red"] and _mn["levels"] == [1, 2, 3, 4, 5]
+          and len(_mn["atlases"]) == 50,
+          "9bk one atlas per type x team x nexus level")
+    check(_mn["states"] == {"atk": 13, "walk": 8, "idle": 4}
+          and f"self.attack_anim_max = {_mn['attack_anim_max']}" in _mn_entity
+          and _mn["attack_anim_max"] == 24,
+          "9bk pose counts and attack_anim_max must match the source")
+    check(len(_mn["key_cases"]) >= 90
+          and {row[4] for row in _mn["key_cases"]} == {"atk", "walk", "idle"},
+          "9bk the manifest must carry the source pose keys")
+    _mn_poses = [f"{kind}{i}" for kind, n in (("atk", 13), ("walk", 8), ("idle", 4))
+                 for i in range(n)]
+    for _name, _entry in sorted(_mn["atlases"].items()):
+        _png = ROOT / "assets/art/minions" / f"{_name}.png"
+        check(_png.is_file(), f"9bk atlas PNG must ship: {_name}")
+        if not _png.is_file():
+            continue
+        _raw = _png.read_bytes()
+        _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+        check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _entry["size"]
+              and (_depth, _color) == (8, 6),
+              f"9bk atlas must be an RGBA8 PNG of its manifest size: {_name}")
+        check(len(_raw) == _entry["bytes"] and hashlib.sha256(_raw).hexdigest() == _entry["sha256"],
+              f"9bk atlas must match its manifest hash: {_name}")
+        _rows = _entry["frames"]
+        check(sorted(_rows) == sorted(f"{pose}:{d}" for pose in _mn_poses for d in (1, -1)),
+              f"9bk atlas must hold every pose in both directions: {_name}")
+        check(all(w > 0 and h > 0 and x >= 0 and y >= 0 and x + w <= _entry["size"][0]
+                  and y + h <= _entry["size"][1] and 0 <= ax <= w and 0 <= ay <= h
+                  for x, y, w, h, ax, ay in _rows.values()),
+              f"9bk every frame must lie inside its atlas with its anchor in the crop: {_name}")
+for _fragment in (
+    "state = ('atk', atk // 2)",
+    "state = ('walk', int(getattr(minion, 'walk_cycle', 0) * 2) % 8)",
+    "state = ('idle', int(getattr(minion, 'anim_time', 0) * 0.05) % 4)",
+    "1 if getattr(minion, 'direction', 1) >= 0 else -1",
+    "_CANVAS_W = 120",
+    "if getattr(minion, \"team\", \"blue\") == \"red\":",
+):
+    check(_fragment in _mn_bundle, f"9bk the source sprite cache must still key on {_fragment!r}")
+for _fragment in ("self.walk_cycle += 0.25", "self.hurt_flash_timer = 8",
+                  "self.attack_anim_timer = self.attack_anim_max", "self.anim_time += 1"):
+    check(_fragment in _mn_entity, f"9bk the source minion clock must still read {_fragment!r}")
+check("minion.attack_anim_timer = min(24, 2 * index + 1)" in _mn_bake
+      and "minion.walk_cycle = index / 2.0" in _mn_bake
+      and "minion.anim_time = 20 * index" in _mn_bake
+      and "minion.draw(pygame.Surface" in _mn_bake
+      and "bundle._minion_cache_key(minion)" in _mn_bake
+      and "cache.get_cached_sprite_cropped(key" in _mn_bake,
+      "9bk the bake must drive the real Minion.draw and read the sprite cache")
+for _fragment in ("bg_color = (12, 22, 44)", "border_color = (90, 165, 255)",
+                  "bg_color = (44, 12, 10)", "border_color = (255, 95, 85)",
+                  "col = (70, 200, 80)", "col = (225, 190, 60)", "col = (215, 60, 55)",
+                  "if hp_ratio > 0.6:", "elif hp_ratio > 0.3:", "bar_h = 4",
+                  "fill = int(w * hp_ratio)", "bar_w = radius * 2 + 6", "by = y - radius - 18"):
+    check(_fragment in _mn_bundle, f"9bk the source minion HP bar must still read {_fragment!r}")
+for _fragment in ("Color8(12, 22, 44)", "Color8(90, 165, 255)", "Color8(44, 12, 10)",
+                  "Color8(255, 95, 85)", "Color8(70, 200, 80)", "Color8(225, 190, 60)",
+                  "Color8(215, 60, 55)", "ratio <= 0.3", "ratio <= 0.6",
+                  "var width := radius * 2 + 6", "int(point.y) - radius - 18",
+                  "Color8(150, 220, 255, 80)", "Color8(200, 240, 255)"):
+    check(_fragment in _mn_view, f"9bk the view must paint the source minion bars: {_fragment!r}")
+check("(150, 220, 255, 80)" in _mn_entity and "(200, 240, 255)" in _mn_entity
+      and "angle = self.anim_time * 0.1 + i * 2" in _mn_entity,
+      "9bk the source slow aura must still read as the view paints it")
+check("var nexus_level := 1" in _mn_state and "unit.nexus_level = current" in _mn_battle,
+      "9bk spawned minions must carry their nexus tier for the sprite pick")
+check("static func pose_key(" in _mn_anim and "attack >> 1" in _mn_anim
+      and "int(walk_cycle * 2.0) % WALK_POSES" in _mn_anim
+      and "int(float(anim_time) * 0.05) % IDLE_POSES" in _mn_anim
+      and "WALK_STEP := 0.25" in _mn_anim and "HURT_FLASH_TICKS := 8" in _mn_anim
+      and "ATTACK_ANIM_MAX := 24" in _mn_anim,
+      "9bk the pose picker must mirror the source cache key and clocks")
+check("ResourceLoader.exists(atlas_path(name))" in _mn_art
+      and "static func frame(" in _mn_art and "\"anchor\"" in _mn_art,
+      "9bk the loader must tolerate an atlas that is not imported")
+check("func _draw_minion_sprite(" in _mn_view and "MinionArt.frame(" in _mn_view
+      and "minion_anim.observe(unit, session.world.tick_count)" in _mn_view
+      and "draw_texture_rect_region(" in _mn_view and "return false" in _mn_view
+      and "if not unit.is_hero and _draw_minion_sprite(unit):" in _mn_view
+      and "minion_anim.prune(session.world.units)" in _mn_view,
+      "9bk the view must draw the baked sprite and fall back to the circle")
+check("_check_atlases(check, manifest)" in _mn_checks and "_check_key_cases(check, manifest)" in _mn_checks
+      and "_check_clocks(check)" in _mn_checks and "_check_spawn_level(check)" in _mn_checks
+      and "_check_view_wiring(check)" in _mn_checks,
+      "9bk minion art suite must check atlases, pose keys, clocks, spawn tier and wiring")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

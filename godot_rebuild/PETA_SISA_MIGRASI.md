@@ -89,8 +89,12 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
   sha256). Layer 9bj membake dekorasi + bangunan toko tiap tema (54 PNG, ~1 MB) dan
   menggambarnya antara lane dan tembok tepi (`MapArt`, hook `_draw_map_decor`). Rincian di
   bagian "Slice 9bj" paling bawah.
-- Urutan bake berikutnya (user: "semuanya"): minion (5 tipe x 5 level x biru/merah), menara +
-  kastil + slot bangun, HUD/menu, lalu hero dan boss. Sisanya di luar bake: `DynamicRenderer`
+- 9bk membake sprite minion (5 tipe x 5 level nexus x biru/merah, 50 atlas, 2,7 MB, 2500
+  frame) dan menggambarnya di `MinionView._draw_unit` lengkap dengan bar HP dan aura slow
+  sumber; lingkaran lama jadi cadangan bila atlas belum diimpor. Rincian di bagian "Slice
+  9bk" paling bawah.
+- Urutan bake berikutnya (user: "semuanya"): menara + kastil + slot bangun, HUD/menu, lalu
+  hero dan boss. Sisanya di luar bake: `DynamicRenderer`
   (partikel, kabut, obor, air bergerak) dan `tactical_commands.draw_world/draw_ui`.
   Keputusan user: combo counter dan kill feed tetap tampil di Godot (walau tidak digambar
   pygame).
@@ -2111,3 +2115,51 @@ Batas yang diketahui:
 - Belum ada animasi peta (`DynamicRenderer`: partikel, kabut, obor, kilau toko, air).
 - Painter di view tidak dieksekusi suite headless; hanya pemuatan tekstur dan urutan hook
   yang diuji CI. Tampilan akhir harus dilihat di Godot.
+
+## Slice 9bk — bake sprite minion (layer 9bk)
+
+Latar: di Godot minion adalah lingkaran + garis arah + bar HP. Sumbernya
+(`minions/_bundle.py`, 417 KB) menggambar tubuh tiap minion sekali per kunci cache
+`(tipe, tim, level nexus, pose, arah, hurt, bleed, death charge, regen, slow)` lalu mem-blit
+hasil yang sudah di-crop; bar HP, garis tebasan, dan aura slow digambar langsung.
+
+- `bake/bake_minion_atlas.py` menjalankan `Minion.draw` ASLI (lewat sprite cache game) untuk
+  tiap pose yang dicapai game lalu membaca sprite ter-crop + anchor dari cache. Pose wakil
+  mengikuti urutan kena-pertama di game: serang `k` = `attack_anim_timer` `min(24, 2k + 1)`
+  (kunci `atk // 2`, 13 pose), jalan `k` = `walk_cycle` `k / 2` (kunci `int(2 * wc) % 8`, 8
+  pose), diam `k` = `anim_time` `20k` (kunci `int(0.05 * t) % 4`, 4 pose), tiap pose untuk dua
+  arah (sprite kiri bukan cermin sprite kanan: hanya 61-88% piksel sama, jadi keduanya
+  dibake). Tim merah ikut pewarnaan ulang sumber (`R*1.35+B*0.25, G*0.55, B*0.55`) karena
+  yang dibaca adalah isi cache. Kilat hurt (+90 kecerahan) tidak dibake supaya sheet tetap
+  50 frame; Godot memakai modulate 1,6 selama 8 tick.
+- 50 sheet `assets/art/minions/<tipe>_<tim>_<level>.png` (10 kolom, sel seragam per sheet,
+  RGBA8) + `data/art/minions.json` (ukuran, byte, sha256, tabel frame `[x, y, w, h, ax, ay]`,
+  dan 96 baris `key_cases` hasil `_minion_cache_key` ASLI). Dua run penuh menghasilkan PNG
+  yang identik.
+- `UnitState.nexus_level` (metadata presentasi, tidak dibaca aturan apa pun) diisi
+  `PrototypeBattle.spawn_unit` dari tier nexus tim saat spawn, seperti `Minion.nexus_level`.
+- `scripts/ui/minion_anim.gd` membangun ulang jam animasi sumber di sisi view tanpa menulis
+  ke unit: `anim_time` +1 per tick, `walk_cycle` +0,25 per tick saat bergerak (> 0,1 px/tick),
+  ayunan 24 tick dimulai saat `cooldown_ticks` naik, flash hurt 8 tick saat HP turun.
+  `pose_key` meniru kunci cache sumber dan diuji terhadap `key_cases`.
+- `scripts/ui/minion_art.gd` memuat atlas (hanya bila `ResourceLoader.exists`) dan
+  mengembalikan `{texture, src, anchor}`; `MinionView._draw_unit` mem-blit di
+  `int(x) - ax, int(y) - ay` lalu menggambar aura slow dan bar HP seperti
+  `minions/_bundle.py` (4 px, latar/border menurut tim, isi hijau/kuning/merah di 0,6/0,3).
+- `tests/minion_art_checks.gd`: 50 atlas ada dan terdekode, 50 frame per sheet berada di
+  dalam gambar dengan anchor di dalam crop, frame goblin/rider termuat sebagai tekstur
+  (menguji impor di CI), `pose_key` identik dengan 96 kunci sumber, simulasi jam
+  (diam -> jalan -> serang -> hurt -> prune), tier spawn, dan urutan pemanggilan di view.
+  `validate_project.py` memin header/hash/isi tiap sheet, jenis minion dari `_core.py`,
+  serta potongan sumber yang diandalkan bake dan view (kunci cache, jam `Minion`, konstanta
+  bar HP dan aura slow). Workflow kini juga dipicu perubahan `minions/_bundle.py`.
+
+Batas yang diketahui:
+
+- Belum ada: animasi kematian minion (`Minion._draw_death_animation`), garis tebasan
+  (`slash_effects`), ikon debuff menara (`_draw_tower_debuff_fx`), serta kunci bleed / death
+  charge / regen yang belum dimodelkan simulasi Godot.
+- Pose serang dipicu dari kenaikan `cooldown_ticks`; urutan pasti tick tebasan sumber belum
+  dicocokkan kerangka per kerangka.
+- Painter tidak dieksekusi suite headless; hanya pemuatan atlas, pemilihan pose, dan
+  urutan pemanggilan yang diuji CI.
