@@ -115,6 +115,7 @@ jobs:
           python godot_rebuild/tests/popup_animation_source_oracle.py
           python godot_rebuild/tests/screen_shake_source_oracle.py
           python godot_rebuild/tests/kill_feed_source_oracle.py
+          python godot_rebuild/tests/kill_feed_draw_source_oracle.py
           python godot_rebuild/tests/combo_counter_source_oracle.py
           python godot_rebuild/tests/wave_announcer_source_oracle.py
           python godot_rebuild/tests/path_preview_source_oracle.py

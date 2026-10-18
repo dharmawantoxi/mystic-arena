@@ -2,16 +2,24 @@
 
 Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
 
-## Status terkini — branch `arena/2467bf39-mystic-arena`
+## Status terkini — branch `arena/799d0e95-mystic-arena`
 
-- 9aw WaveAnnouncer + panah PathPreview, 9ax ikon AchievementPopup, 9ay
-  HitParticle, dan 9az FloatingText sudah selesai.
-- 9ba melengkapi panel AchievementPopup di luar ikon: gradien gelap-emas,
-  dua border membulat, corner ticks, header ber-letter-spacing, fit ellipsis,
-  dan gold glow awal slot. Oracle menjalankan `AchievementPopup.draw()` asli
-  di bawah pygame shim perekam; fixture mengunci fase fade/hold, geometri,
-  opacity, dan teks terpotong. Pemeriksaan native dan validator menutup replay.
-- PR #334 tetap terbuka dan belum di-merge.
+- PR #334 sudah di-merge (`a134020`). 9aw WaveAnnouncer + PathPreview, 9ax ikon
+  AchievementPopup, 9ay HitParticle, 9az FloatingText, dan 9ba panel
+  AchievementPopup sudah ada di `main`.
+- 9bb melengkapi visual `KillFeed.draw()`: kotak latar hitam, border membulat
+  warna tim, fade-in/hold/fade-out, slide-in 100 px, dan teks 22 px rata kanan
+  di (layar-20, 250). Oracle `kill_feed_draw_source_oracle.py` menjalankan
+  `draw()` asli di bawah shim pygame perekam (31 frame, 192 op);
+  `kill_feed_draw_checks.gd` mereplay fixture lewat layout murni dan lewat state
+  `KillFeed` produksi. Rincian ada di bagian "Slice 9bb" paling bawah.
+- Kandidat visual berikutnya yang terbukti belum source-backed:
+  `ComboCounter.draw()` (renderer sekarang menggambar teks "N HIT COMBO"
+  karangan di (1020, 160); sumber menggambar `xN` 48 px berbayang, label tier,
+  dan bar timer di (layar-100, 100)), lalu `BossIntroCinematic.draw()` (banner
+  dan siluet; bagian BossIntroCinematic di bawah mencatat siluetnya belum
+  diport). Entri "siluet hero arena" di bawah bersifat historis: sudah selesai
+  (layer 9aj, `hero_marker.gd`).
 
 ## Catatan historis portrait Hero Shop
 
@@ -141,6 +149,7 @@ Dibaca hanya untuk memilih slice berikutnya, bukan audit menyeluruh:
 | AchievementPopup ikon (`_render.py::AchievementPopup._draw_icon`) | **Terport (layer 9ax)** — ikon star/sword/skull/shield/gold berikut lencana lingkaran/warna alpha dan fallback; oracle menjalankan method sumber dan membandingkan primitive fixture lewat `AchievementPopupChecks`. |
 | HitParticle sprite (`_render.py::HitParticle`) | **Visual dilengkapi (layer 9ay)** — mempertahankan gerak/umur yang sudah terport, menggambar ulang lingkaran warna + inti putih dari sprite sumber dengan ukuran mengikuti lifetime; oracle merekam primitive `pygame.draw.circle` asli dan suite memaku warna, radius, pusat, serta skala inti. |
 | FloatingText presentation (`_render.py::FloatingText.draw`) | **Visual dilengkapi** — renderer memakai anchor integer dan font size ter-clamp dari sumber, teks ber-shadow ber-offset (1,2), warna alpha dan body style normal/critical; oracle menjalankan `draw()` cached-surface path dengan fake font/surface perekam dan fixture mengunci kedua blit. |
+| KillFeed draw (`_render.py::KillFeed.draw`) | **Terport (layer 9bb)** — `scripts/ui/kill_feed_layout.gd::ops(entries, screen_w, measure)`: alpha fade-in 15 tick / hold / fade-out 45 tick, slide-in 100 px, kotak latar `inflate(12, 4)` hitam alpha/2, border membulat r=3 warna tim alpha/2, teks 22 px rata kanan di (layar-20, 250+int(y_offset)); dirender `prototype_view._draw_kill_feed`; oracle `kill_feed_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam (31 frame, 192 op). `ComboCounter.draw()` masih pendekatan. |
 | `hero_marker.gd` | Selesai: placeholder 4-6 sisi tetap untuk `grimjaw_checks`, siluet per-hero dipakai `prototype_view.gd:619`; art roster dipaku golden fixture (layer 9aj) |
 
 Catatan: `ui_components/hero_portraits.py` yang di-impor `_core.py:3056`
@@ -157,6 +166,9 @@ dokumen ini; sisa sebenarnya hanya art final, dan `lighting.py` tetap di luar
 scope.)
 
 ## Slice berikutnya: siluet hero arena (art)
+
+> **Historis.** Rencana ini sudah mendarat dan dikoreksi di layer 9aj (lihat
+> "Siluet hero arena — selesai" di bawah); bukan kandidat slice berikutnya.
 
 `hero_marker.gd` menggambar semua 222 hero sebagai poligon 4–6 sisi dengan warna
 turunan hash, jadi Kaizen dan Thorne tidak bisa dibedakan di arena.
@@ -207,6 +219,9 @@ jalur itu keputusan terpisah yang perlu Anda setujui.
 
 Dua mesin state deterministik dari `_render.py`, diport dengan pola yang sama
 (oracle sumber → fixture JSON → suite Godot yang memutar ulang fixture).
+
+> Hanya state. Visual `KillFeed.draw()` ditutup di layer 9bb (bagian "Slice 9bb"
+> paling bawah); visual `ComboCounter.draw()` belum diport.
 
 - `scripts/ui/kill_feed.gd` — `add_kill(killer, victim, team)` menyusun
   `"Kaizen >> Grimjaw"` (biru) atau `"<<"` (merah), mendorong `target_y` tiap
@@ -1607,3 +1622,47 @@ timer 0/15/31/45/60, tiga nilai `get_ticks`, kesulitan normal/hard/easy).
 - `ui_theme.letter/corner_ticks/draw_icon("warn")` dipanen dari `ui_theme.py`
   asli di oracle; port GDScript-nya ada di layout yang sama.
 
+
+## Slice 9bb — visual `KillFeed.draw()` (layer 9bb)
+
+Sebelumnya hanya state `KillFeed` yang terport; `prototype_view` menggambar
+teks 14 px rata kanan karangan di (980, 96+y) tanpa kotak dan dengan fade
+berbeda dari sumber. Kini seluruh `draw()` sumber diport sebagai daftar op
+murni, `scripts/ui/kill_feed_layout.gd::ops(entries, screen_w, measure)`, tiga
+op per entri (kotak latar, border, teks) dalam urutan sumber:
+
+- Alpha: fade-in 15 tick pertama (`int(255 * (max-lifetime)/15)`), hold 255,
+  fade-out 45 tick terakhir (`int(255 * lifetime/45)`). Entri baru
+  (`lifetime == max`) beralpha 0 sehingga **tidak digambar** sampai `update()`
+  pertama. Slide-in `int((1 - progress) * 100)` px dari kanan pada 15 tick yang
+  sama.
+- Jangkar: `topright = (screen_w - 20 + slide_x, 250 + int(y_offset))`, font
+  22 px `body_medium`. Kotak latar = `text_rect.inflate(12, 4)` (6 px kiri/kanan,
+  2 px atas/bawah) hitam alpha//2; border 1 px membulat r=3 warna tim alpha//2;
+  teks warna tim dengan alpha penuh.
+- Oracle `kill_feed_draw_source_oracle.py` memanen `class KillFeed` dengan
+  `ast` dan menjalankan `draw()` asli di bawah shim pygame perekam (font
+  `int(0.55*size)` px per glyph, tinggi = size). State entri berasal dari
+  `add_kill`/`update` asli (lima skenario: satu kill biru dari fade-in sampai
+  habis, satu kill merah, tumpukan enam kill dengan cap 5 entri, kill yang baru
+  ditambah sebelum `update()`, nama panjang). Fixture
+  `kill_feed_draw_source.json` = 31 frame, 192 op; validator meregenerasinya
+  dari `_render.py` dan membandingkan.
+- `kill_feed_draw_checks.gd` memeriksa tabel fase alpha/slide, mereplay setiap
+  frame dari state terekam, mereplay semua frame lewat `KillFeed` produksi
+  (jalur `Color` -> RGB dan pemotongan `int(y_offset)` bit-demi-bit), dan
+  memeriksa wiring `PrototypeView.kill_feed_draw_ops` dengan metrik font nyata.
+
+Temuan yang ikut dipertahankan karena itu perilaku sumber: `y_offset` mendekati
+`target_y` dari bawah dan tidak pernah mencapainya dalam umur entri
+(79.99999999999997 di tick 170), jadi `int()` memarkir baris tertumpuk satu
+piksel lebih tinggi. Jarak tumpukan 20 px lebih kecil dari tinggi kotak (teks
+22 px + 4), sehingga kotak entri bertumpuk; font dinaikkan 16 -> 22 di sumber
+tanpa menaikkan langkah tumpukan.
+
+Divergensi yang disadari: `Barlow-Medium.ttf` (gaya `body_medium`) tidak ada di
+`assets/fonts` Godot, jadi view memakai Barlow SemiBold dan mengukur teks dengan
+metrik Godot (lebar kotak bisa beda beberapa piksel dari pygame; oracle memaku
+tata letak, bukan metrik). Border adalah polyline anti-alias yang ditarik
+setengah lebar goresan ke dalam (pygame menggores di dalam rect), bukan outline
+piksel-presisi. `ComboCounter.draw()` tidak disentuh.

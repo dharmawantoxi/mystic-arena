@@ -10,11 +10,13 @@ const PathPreview = preload("res://scripts/ui/path_preview.gd")
 const SpriteLighting = preload("res://scripts/ui/sprite_lighting.gd")
 const BossFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
 const LevelIntroLayout = preload("res://scripts/ui/level_intro_layout.gd")
+const KillFeedLayout = preload("res://scripts/ui/kill_feed_layout.gd")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
 const WallTiles = preload("res://scripts/ui/wall_tiles.gd")
 const TerrainTiles = preload("res://scripts/ui/terrain_tiles.gd")
+const KILL_FEED_SCREEN_W := 1280
 var cached_river_theme := ""
 
 
@@ -382,28 +384,39 @@ func _draw_combo_counter(world: Prototype) -> void:
 	)
 
 
-func _draw_kill_feed(world: Prototype) -> void:
+## Layer 9bb: the ops `KillFeed.draw()` paints this frame, measured with the
+## real font (the oracle uses a 0.55*size fake; the layout code is shared).
+func kill_feed_draw_ops(world: Prototype) -> Array:
 	var feed = world.effects.kill_feed
-	if feed == null or feed.entries.is_empty():
+	if feed == null:
+		return []
+	return KillFeedLayout.ops(feed.entries, KILL_FEED_SCREEN_W, _measure_kill_feed_text)
+
+
+func _draw_kill_feed(world: Prototype) -> void:
+	for op in kill_feed_draw_ops(world):
+		_draw_kill_feed_op(op)
+
+
+func _measure_kill_feed_text(text: String, font_size: int) -> Vector2i:
+	var measured := BossFont.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+	return Vector2i(ceili(measured.x), ceili(BossFont.get_height(font_size)))
+
+
+## Backing box and text reuse the level-intro op painter; the border is a
+## rounded outline. pygame strokes a border INSIDE its rect while Godot centres
+## the stroke on the path, so the path is pulled in by half the stroke width.
+func _draw_kill_feed_op(op: Dictionary) -> void:
+	if String(op.get("kind", "")) != "rect":
+		_draw_intro_op(op)
 		return
-	for entry_value in feed.entries:
-		var entry: Dictionary = entry_value
-		var life: int = int(entry.get("lifetime", 0))
-		var max_life: int = maxi(1, int(entry.get("max_lifetime", 180)))
-		if life <= 0:
-			continue
-		var alpha: float = clampf(float(life) / (float(max_life) * 0.35), 0.0, 1.0)
-		var y_pos: float = 96.0 + float(entry.get("y_offset", 0.0))
-		var tint: Color = entry.get("color", Color.WHITE) as Color
-		draw_string(
-			BossFont,
-			Vector2(980.0, y_pos),
-			String(entry.get("text", "")),
-			HORIZONTAL_ALIGNMENT_RIGHT,
-			270.0,
-			14,
-			Color(tint, alpha)
-		)
+	var box: Array = op["rect"]
+	var rect := Rect2(float(box[0]), float(box[1]), float(box[2]), float(box[3]))
+	var width := float(op["width"])
+	var inset := width * 0.5
+	_draw_achievement_outline(
+		rect.grow(-inset), float(op["radius"]) - inset, _intro_color(op), width
+	)
 
 
 func _draw_achievement_popup(world: Prototype) -> void:

@@ -3388,6 +3388,56 @@ check(all(len(case.get("draw_samples", [])) == 7
 check("floating_text_source_oracle.py" in workflow,
       "FloatingText draw oracle must remain in CI")
 
+# ── Layer 9bb: KillFeed.draw() visuals as a pure op list ──
+from kill_feed_draw_source_oracle import source_fixture as kill_feed_draw_fixture
+_kill_feed_draw_path = ROOT / "tests/fixtures/kill_feed_draw_source.json"
+_kill_feed_layout = (ROOT / "scripts/ui/kill_feed_layout.gd").read_text(encoding="utf-8")
+_kill_feed_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_kill_feed_draw_checks = (ROOT / "tests/kill_feed_draw_checks.gd").read_text(encoding="utf-8")
+check('const KillFeedDrawChecks = preload("res://tests/kill_feed_draw_checks.gd")' in ai_tests
+      and "KillFeedDrawChecks.new().run(_check)" in ai_tests,
+      "9bb kill feed draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/kill_feed_draw_source_oracle.py" in workflow,
+      "9bb CI must run the KillFeed.draw() source oracle")
+check(_kill_feed_draw_path.is_file(), "9bb kill feed draw fixture must exist")
+if _kill_feed_draw_path.is_file():
+    _kill_feed_draw_frames = json.loads(_kill_feed_draw_path.read_text(encoding="utf-8"))
+    check(kill_feed_draw_fixture() == _kill_feed_draw_frames,
+          "9bb kill feed draw fixture must not drift from _render.py")
+    _kill_feed_frames = _kill_feed_draw_frames["frames"]
+    check(len(_kill_feed_frames) == 31
+          and sum(len(frame["ops"]) for frame in _kill_feed_frames) == 192
+          and all([op["kind"] for op in frame["ops"]]
+                  == ["fill", "rect", "text"] * (len(frame["ops"]) // 3)
+                  for frame in _kill_feed_frames),
+          "9bb oracle must pin 31 frames of fill+border+text triples")
+    check(any(frame["phase"] == "pre" and not frame["ops"] and frame["entries"]
+              for frame in _kill_feed_frames)
+          and {op["mult"] for frame in _kill_feed_frames for op in frame["ops"]
+               if op["kind"] == "text"} >= {5, 34, 136, 238, 249, 255},
+          "9bb oracle must cover the transparent fresh kill plus fade-in, hold and fade-out")
+    check(max(len(frame["entries"]) for frame in _kill_feed_frames) == 5
+          and {entry["color"][0] for frame in _kill_feed_frames for entry in frame["entries"]}
+          == {100, 255},
+          "9bb oracle must cover the 5 entry cap and both team colours")
+check("static func fade_alpha(" in _kill_feed_layout
+      and "static func slide_x(" in _kill_feed_layout
+      and "const BASE_Y := 250" in _kill_feed_layout
+      and 'const FONT_STYLE := "body_medium"' in _kill_feed_layout
+      and "const BOX_INSET_X := 6" in _kill_feed_layout,
+      "9bb kill feed layout must mirror KillFeed.draw()")
+check("KillFeedLayout.ops(" in _kill_feed_view
+      and "func kill_feed_draw_ops(" in _kill_feed_view
+      and "func _draw_kill_feed_op(" in _kill_feed_view
+      and "rect.grow(-inset)" in _kill_feed_view,
+      "9bb PrototypeView must paint the kill feed from the source op list")
+check("Vector2(980.0, y_pos)" not in _kill_feed_view,
+      "9bb the invented 14 px right-aligned kill feed text must not return")
+check("_check_recorded_frames(check, data, screen)" in _kill_feed_draw_checks
+      and "_check_production_replay(check, data, screen)" in _kill_feed_draw_checks
+      and "_check_view_wiring(check)" in _kill_feed_draw_checks,
+      "9bb kill feed draw suite must replay recorded and production frames plus the view")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")
