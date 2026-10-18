@@ -33,7 +33,9 @@ func run(check: Callable) -> void:
 
 
 func _check_palette(check: Callable) -> void:
-	var constants: Dictionary = UI_THEME.get_script_constant_map()
+	# `get_script_constant_map` is an instance method of Script, not a static of the class.
+	var script: Script = UI_THEME
+	var constants: Dictionary = script.get_script_constant_map()
 	var wrong: Array = []
 	for key in PALETTE_PINS:
 		var want := UiSkin.palette(PALETTE_PINS[key])
