@@ -70,3 +70,10 @@ func alpha() -> int:
 
 func current_size() -> int:
 	return maxi(1, int(float(size) * alpha_ratio()))
+
+
+## Radius of the source's pre-rendered white inner spark after scale-to-life.
+func core_radius() -> float:
+	var base := maxi(1, int(size))
+	var source_radius := maxi(1, int(base / 2))
+	return float(source_radius) * float(current_size()) / float(base)

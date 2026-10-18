@@ -90,3 +90,22 @@ func alpha_ratio() -> float:
 
 func alpha() -> int:
 	return int(255.0 * alpha_ratio())
+
+
+## Source-equivalent anchors and cached-font scale used by the native renderer.
+func presentation_state() -> Dictionary:
+	var alpha_value := alpha()
+	if not alive or alpha_value <= 0:
+		return {}
+	var current_font_size := clampi(int(float(font_size) * scale), 8, 64)
+	return {
+		"center": [int(x), int(y)],
+		"shadow_center": [int(x) + 1, int(y) + 2],
+		"font_size": current_font_size,
+		"alpha": alpha_value,
+		"shadow_alpha": mini(220, alpha_value),
+		"text": text,
+		"color": [roundi(color.r * 255.0), roundi(color.g * 255.0), roundi(color.b * 255.0)],
+		"shadow_color": [8, 8, 14],
+		"style": "body_bold" if critical else "body_semibold",
+	}

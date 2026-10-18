@@ -1,7 +1,19 @@
 # Peta Sisa Migrasi — status singkat
 
-Dokumen ini hanya mencatat **slice portrait Hero Shop** yang dikerjakan pada
-branch `arena/2aa50b3c-mystic-arena`. Bukan audit sistem lain.
+Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
+
+## Status terkini — branch `arena/2467bf39-mystic-arena`
+
+- 9aw WaveAnnouncer + panah PathPreview, 9ax ikon AchievementPopup, 9ay
+  HitParticle, dan 9az FloatingText sudah selesai.
+- 9ba melengkapi panel AchievementPopup di luar ikon: gradien gelap-emas,
+  dua border membulat, corner ticks, header ber-letter-spacing, fit ellipsis,
+  dan gold glow awal slot. Oracle menjalankan `AchievementPopup.draw()` asli
+  di bawah pygame shim perekam; fixture mengunci fase fade/hold, geometri,
+  opacity, dan teks terpotong. Pemeriksaan native dan validator menutup replay.
+- PR #334 tetap terbuka dan belum di-merge.
+
+## Catatan historis portrait Hero Shop
 
 ## Catatan penting tentang handoff sebelumnya
 
@@ -125,6 +137,10 @@ Dibaca hanya untuk memilih slice berikutnya, bukan audit menyeluruh:
 | `splash_screen.py` (371 baris) | **Terport (layer 9at)** — `scripts/ui/splash_timeline.gd` (fade/skip/partikel/gradien/vignette/logo/tata letak murni) + `scenes/splash/splash_screen.gd` (Control, latar dipanggang sekali, tap/klik/tombol skip) dipaku oracle `splash_screen_source_oracle.py`; `app.gd` kini boot ke SPLASH lalu `finished` -> menu; logo `assets/logo.png` disalin dari sumber |
 | Top-up / voucher (`topup_currency.py` 221, `topup_voucher.py` 95, `Menu.topup_*` di `_core.py`, klien `server/app.py`) | **Terport (layer 9au)** — `scripts/match/topup_currency.gd` (deteksi locale -> mata uang, konversi IDR, format harga), `scripts/match/topup_voucher.gd` (format `MA-`, allowlist `voucher_codes.txt`), `scripts/match/topup_flow.gd` (mesin fase select/processing/paying/success/redeem, grant + riwayat + cap 50), `scripts/net/topup_client.gd` (HTTPRequest ke `/api/topup/create|status|qr`, timeout 6 s), `scripts/ui/topup_panel.gd` (dialog modal di atas Hero Shop, keypad voucher, QR); oracle `topup_source_oracle.py` menjalankan modul sumber asli + metode Menu yang dipanen `ast` + `server/app.py` mode MOCK |
 | `LevelIntroScreen.draw()` (`_render.py` 2761-3391) | **Terport (layer 9av)** — `scripts/ui/level_intro_layout.gd` (op list murni: darken, tint tema 33+forest, vignette 60 cincin, pembatas + 3 berlian, kolom level dengan angka 200 px + 6 bayangan, bar kesulitan, koin reward/starting gold, kolom boss dengan pill tag, aura berdenyut, 12 sinar, siluet tubuh/inner/duri, mata bercahaya, nama + 5 bayangan, judul, PREPARE FOR BATTLE + ikon warn, prompt PRESS SPACE berdenyut + panah) dirender `prototype_view._draw_intro_op`; oracle `level_intro_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam |
+| WaveAnnouncer + PathPreview visual (`_render.py`) | **Terport (layer 9aw)** — banner lengkap: gradien 80 strip, border emas ganda, 40 diagonal, corner ticks, judul berbayang + subtitle; panah lane segitiga kini memakai geometri hasil gambar sumber (termasuk pembulatan floor Python). Oracle `wave_announcer_source_oracle.py` memaku kotak visual; `path_preview_source_oracle.py` memaku semua vertex panah dan fase animasi. Tetap prosedural, tanpa aset hero final. |
+| AchievementPopup ikon (`_render.py::AchievementPopup._draw_icon`) | **Terport (layer 9ax)** — ikon star/sword/skull/shield/gold berikut lencana lingkaran/warna alpha dan fallback; oracle menjalankan method sumber dan membandingkan primitive fixture lewat `AchievementPopupChecks`. |
+| HitParticle sprite (`_render.py::HitParticle`) | **Visual dilengkapi (layer 9ay)** — mempertahankan gerak/umur yang sudah terport, menggambar ulang lingkaran warna + inti putih dari sprite sumber dengan ukuran mengikuti lifetime; oracle merekam primitive `pygame.draw.circle` asli dan suite memaku warna, radius, pusat, serta skala inti. |
+| FloatingText presentation (`_render.py::FloatingText.draw`) | **Visual dilengkapi** — renderer memakai anchor integer dan font size ter-clamp dari sumber, teks ber-shadow ber-offset (1,2), warna alpha dan body style normal/critical; oracle menjalankan `draw()` cached-surface path dengan fake font/surface perekam dan fixture mengunci kedua blit. |
 | `hero_marker.gd` | Selesai: placeholder 4-6 sisi tetap untuk `grimjaw_checks`, siluet per-hero dipakai `prototype_view.gd:619`; art roster dipaku golden fixture (layer 9aj) |
 
 Catatan: `ui_components/hero_portraits.py` yang di-impor `_core.py:3056`
@@ -238,14 +254,16 @@ berarti oracle tetap jalan tanpa pygame (CI tidak punya pygame).
 
 ### Yang sengaja tidak diport
 
-- **Geometri segitiga panah** `PathPreview`. Titik-titiknya adalah offset di
-  sekitar pusat surface blit 20×20 milik pygame; renderer Godot harus
-  memusatkannya ulang. Yang diport hanya keputusan waktu/warna/ukuran yang
-  dibutuhkan renderer.
-- Isi visual `WaveAnnouncer`: gradasi latar, border emas, garis diagonal,
-  `corner_ticks`, dan blit teks — semuanya menggambar pygame, bukan state.
+- Seluruh visual utama WaveAnnouncer kini digambar oleh renderer Godot;
+  geometri panah PathPreview dipusatkan ulang dari surface 20×20 pygame ke
+  koordinat dunia.
 - `_ease_out_back` sengaja diduplikasi dari `popup_animation.gd` agar tiap
   port berdiri sendiri; keduanya dikunci oleh oracle-nya masing-masing.
+
+## Slice 9ax — AchievementPopup (ikon)
+
+Lapisan visual utama WaveAnnouncer + PathPreview selesai pada 9aw. Slice 9ax
+melengkapi ikon achievement untuk star, sword, skull, shield, gold, dan fallback.
 
 ## AchievementPopup
 
@@ -260,10 +278,28 @@ membaca `x_offset` / `alpha` / `glow_alpha` langsung dari frame.
   (progress < 0.15, `_ease_out_back` — yang sedikit **overshoot** melewati 0,
   jadi offset bisa negatif), hold sampai 0.85, lalu slide-out.
   `get_glow_alpha()` mengikuti 30% awal slot dan mengembalikan `-1` (`NO_GLOW`)
-  saat sumbernya tidak menggambar glow sama sekali.
+  saat sumbernya tidak menggambar glow sama sekali. `icon_ops()` memaparkan
+  geometri sumber untuk star/sword/skull/shield/gold; renderer menggambar semua
+  primitives dan fallback tetap memakai lencana lingkaran.
+- Oracle menjalankan draw icon asli dan fixture mengunci warna, titik, ukuran,
+  stroke, lingkaran, serta simbol `$` untuk semua tipe dan fallback.
 - Oracle menjalankan 760 tick dengan 4 unlock (tick 0/10/20/190): tick 10 dan
   20 mengantre di belakang popup yang sedang tayang (antrean memuncak di 2),
   lalu popup berganti tepat di tick 180/360/540 dan antrean habis di tick 720.
+
+## Slice 9ba — AchievementPopup (panel)
+
+Panel selain ikon kini digambar oleh `PrototypeView`: 60 baris gradien dark-gold,
+outline emas membulat (radius 6 dan 5), corner ticks saat alpha > 60, label
+header dengan letter spacing, title/description yang di-fit dengan ellipsis,
+dan glow rounded berwarna emas pada 30% awal slot. Warna dan alpha mengikuti
+sumber tanpa mengubah ikon 9ax atau state/replay dari popup.
+
+`achievement_popup_source_oracle.py` merekam operasi dari `draw()` asli pada
+fase fade-in dan hold, serta teks panjang untuk memastikan fallback ellipsis.
+`achievement_popup_checks.gd` membandingkan geometri, warna, opacity, label,
+glow, dan ukuran hasil clipping; validator mem-pin wiring renderer/fixture,
+dan workflow tetap menjalankan source oracle sebelum Godot suite.
 
 ### Jebakan GDScript yang ditemukan di slice ini
 
@@ -370,48 +406,38 @@ background/border, dan rect bar HP datang dari sumber.
 - Pemanggil yang membuat banner dari `Boss` hidup (`_core.py` di dua tempat)
   belum ada di Godot; saat ini banner hanya bisa dibuat dari fixture/test.
 
-## Slice berikutnya: efek `_render.py` — FloatingText lalu HitParticle
+## Slice 9ay: HitParticle sprite
 
-Dua kelas efek murni-state yang paling mudah dikunci, dikerjakan berurutan
-dengan pola oracle yang sama.
+Logika gerak/umur HitParticle, suite replay dan oracle state sudah ada. Slice
+9ay menutup detail visual yang tertinggal: sprite pygame sumber menggambar
+lingkaran berwarna lalu inti putih, tetapi renderer Godot hanya menggambar
+lingkaran luar. `prototype_view` kini menggambar ulang kedua lapisan sebagai
+geometri vektor; radius inti mengecil sesuai skala sprite/lifetime.
 
-### HitParticle (spark saat kena hit)
+Oracle mengeksekusi constructor sumber dan merekam ukuran sprite serta kedua
+panggilan `pygame.draw.circle`; kasus tanpa velocity tetap merekam hasil
+`random.uniform` seed sehingga replay state tidak berubah.
 
-Diport dari `_render.py::HitParticle`: `x += vx`, `y += vy`, `vy += gravity`
-(0.15), `vx *= 0.95`, countdown lifetime, lalu turunan `alpha_ratio =
-lifetime / max_lifetime` untuk alpha dan ukuran.
-
-Oracle mengeksekusi kelas aslinya **termasuk pre-render sprite pygame**
-(`pygame.Surface` + `pygame.draw.circle`) — berjalan headless, jadi seluruh
-badan sumber ikut dieksekusi apa adanya. Kasus tanpa velocity memakai
-`random.uniform`, jadi diseed dan nilai awalnya direkam agar suite native
-bisa me-replay lintasan yang sama.
-
-- `tests/hit_particle_source_oracle.py` → `tests/fixtures/hit_particle_source.json`
+- `tests/hit_particle_source_oracle.py` → fixture state + primitive sprite
 - `scripts/ui/hit_particle.gd` + `tests/hit_particle_checks.gd`
-- Terdaftar di `run_all.gd` dan di `godot-rebuild.yml`.
+- Suite sudah terdaftar di `run_all.gd`; oracle sudah terdaftar di workflow CI.
 
-## Slice berikutnya: FloatingText / damage number
+## FloatingText / damage number
 
-`godot_rebuild` belum punya runtime floating text — `floating_text` hanya
-muncul di `boss_kill_credit_source.json`, tidak ada kelasnya.
+Logika gerak/drift/lifetime FloatingText dan suite state sudah ada. Slice visual
+ini melengkapi gap renderer: sumber mem-blit shadow gelap di offset `(1,2)` lalu
+teks berwarna di pusat integer, mengatur alpha terpisah (`min(220, alpha)` untuk
+shadow), serta mengecilkan cached font ke ukuran clamp 8–64. Renderer Godot kini
+menggambar pasangan teks tersebut memakai font size, anchor, warna, dan alpha
+yang diungkap `presentation_state()`; critical diberi penebalan visual ringan.
 
-Diport dari `_render.py::FloatingText`: gerak + drift, decay `velocity_y`
-0.95, animasi scale (lerp 0.3 lalu susut 0.99), countdown lifetime, dan
-kurva alpha `min(1, lifetime / (max_lifetime * 0.5))`.
+Oracle tidak mengimpor `_render` karena circular import. Ia mengeksekusi kelas
+asli dengan fake font/surface dan menjalankan `draw()` cached-surface path,
+kemudian merekam pasangan blit di sampel normal, critical, dan heal.
 
-**Oracle sumber tidak memakai `import _render`** — modul itu saat ini gagal
-diimpor karena circular import yang sudah ada (`cannot import name
-'MapRenderer' from partially initialized module '_render'`). Karena Python
-asal read-only, oracle mengeksekusi blok `class FloatingText` **langsung dari
-berkas sumber** dengan `get_font` distub, jadi angka di fixture tetap
-berasal dari algoritma sumber yang sebenarnya.
-
-- `tests/floating_text_source_oracle.py` → `tests/fixtures/floating_text_source.json`
-- `scripts/ui/floating_text.gd` + `tests/floating_text_checks.gd` (replay fixture)
-- Terdaftar di `run_all.gd`, dan oracle-nya dijalankan CI lewat
-  `godot-rebuild.yml` (sebelum tes Godot, jadi drift sumber maupun drift port
-  sama-sama menggagalkan CI).
+- `tests/floating_text_source_oracle.py` → fixture motion + draw samples
+- `scripts/ui/floating_text.gd` + `tests/floating_text_checks.gd`
+- Suite/oracle telah terdaftar di `run_all.gd` / workflow CI.
 
 ## SpriteCache (state + getter, bukan drawing pygame)
 

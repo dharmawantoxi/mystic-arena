@@ -3290,6 +3290,104 @@ if _intro_fixture_path.is_file():
     ), "9al passive text keeps the source format on the full path")
 
 
+# ── Layer 9aw: complete wave banner and path arrow geometry ──
+_wave_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_path_script = (ROOT / "scripts/ui/path_preview.gd").read_text(encoding="utf-8")
+_wave_script = (ROOT / "scripts/ui/wave_announcer.gd").read_text(encoding="utf-8")
+_wave_fixture = json.loads((ROOT / "tests/fixtures/wave_announcer_source.json").read_text(encoding="utf-8"))
+_path_fixture = json.loads((ROOT / "tests/fixtures/path_preview_source.json").read_text(encoding="utf-8"))
+check("visual_rect(screen_w: int, screen_h: int)" in _wave_script,
+      "9aw wave banner must expose source-derived draw bounds")
+check("for row in range(80)" in _wave_view and "_draw_gold_corner_ticks" in _wave_view
+      and "E N E M I E S   I N C O M I N G" in _wave_view,
+      "9aw WaveAnnouncer must render gradient, gold corner detail, and subtitle")
+check("arrow_points(" in _path_script and "draw_colored_polygon(points" in _wave_view,
+      "9aw PathPreview must render source-geometry arrow polygons")
+check(_wave_fixture.get("visual_sample", {}).get("center_box", [])[2:4] == [400, 80],
+      "9aw source fixture must pin the banner's 400x80 visual box")
+check(all(len(arrow) >= 4 and len(arrow[3]) == 3
+          for sample in _path_fixture.get("samples", []) for arrow in sample.get("arrows", [])),
+      "9aw PathPreview oracle must pin all three world-space vertices per arrow")
+check("path_preview_source_oracle.py" in workflow and "wave_announcer_source_oracle.py" in workflow,
+      "9aw source oracles must remain in CI")
+
+# ── Layer 9ax: AchievementPopup icon primitives ──
+_achievement_script = (ROOT / "scripts/ui/achievement_popup.gd").read_text(encoding="utf-8")
+_achievement_checks = (ROOT / "tests/achievement_popup_checks.gd").read_text(encoding="utf-8")
+_achievement_fixture = json.loads(
+    (ROOT / "tests/fixtures/achievement_popup_source.json").read_text(encoding="utf-8")
+)
+check("func icon_ops(" in _achievement_script and "_draw_achievement_icon(icon_ops)" in _wave_view,
+      "9ax achievement icons must be exposed from the port and rendered in PrototypeView")
+check("_check_icons(check, popup, data)" in _achievement_checks
+      and "AchievementPopupChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"),
+      "9ax icon oracle checks must be registered in the native suite")
+check(set(_achievement_fixture.get("icons", {})) == {"star", "sword", "skull", "shield", "gold", "unknown"},
+      "9ax fixture must pin all five source icons and the unknown-type fallback")
+check("achievement_popup_source_oracle.py" in workflow,
+      "9ax source icon oracle must remain in CI")
+
+# ── AchievementPopup panel visual presentation ──
+_achievement_panel_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_achievement_panel_checks = (ROOT / "tests/achievement_popup_checks.gd").read_text(encoding="utf-8")
+_achievement_panel_samples = _achievement_fixture.get("panel_visuals", [])
+check("_draw_achievement_outline(rect, 6.0" in _achievement_panel_view
+      and "_draw_achievement_ticks(rect" in _achievement_panel_view
+      and "_fit_achievement_label" in _achievement_panel_view,
+      "Achievement popup panel renderer must keep rounded gold borders, corner ticks, and text clipping")
+check("_check_panel_visuals(check, data)" in _achievement_panel_checks
+      and "AchievementPopupChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"),
+      "Achievement popup panel oracle checks must be registered in the native suite")
+check(len(_achievement_panel_samples) == 3
+      and all(len(sample.get("ops", [])) >= 79 for sample in _achievement_panel_samples),
+      "Achievement popup fixture must pin fade, held, glow, and clipped-text panel draws")
+check("achievement_popup_source_oracle.py" in workflow,
+      "Achievement popup panel source oracle must remain in CI")
+
+# ── Layer 9ay: HitParticle pre-rendered spark visual ──
+_hit_particle_script = (ROOT / "scripts/ui/hit_particle.gd").read_text(encoding="utf-8")
+_hit_particle_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_hit_particle_checks = (ROOT / "tests/hit_particle_checks.gd").read_text(encoding="utf-8")
+_hit_particle_fixture = json.loads(
+    (ROOT / "tests/fixtures/hit_particle_source.json").read_text(encoding="utf-8")
+)
+check("func core_radius()" in _hit_particle_script
+      and "particle.core_radius()" in _hit_particle_view,
+      "9ay HitParticle must render the lifetime-scaled inner sprite circle")
+check("Color(1.0, 1.0, 1.0, p_alpha)" in _hit_particle_view,
+      "9ay HitParticle's white source sprite core must remain visible")
+check("_check_sprite(entry, check)" in _hit_particle_checks
+      and "HitParticleChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"),
+      "9ay source sprite geometry must be checked in the native suite")
+check(all(len(case.get("sprite", {}).get("circles", [])) == 2
+          for case in _hit_particle_fixture.get("cases", [])),
+      "9ay HitParticle oracle must capture both original source sprite circles")
+check("hit_particle_source_oracle.py" in workflow,
+      "9ay HitParticle source oracle must remain in CI")
+
+# ── FloatingText source draw presentation ──
+_floating_script = (ROOT / "scripts/ui/floating_text.gd").read_text(encoding="utf-8")
+_floating_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_floating_checks = (ROOT / "tests/floating_text_checks.gd").read_text(encoding="utf-8")
+_floating_fixture = json.loads(
+    (ROOT / "tests/fixtures/floating_text_source.json").read_text(encoding="utf-8")
+)
+check("func presentation_state()" in _floating_script
+      and "item.presentation_state()" in _floating_view,
+      "FloatingText renderer must consume its source-equivalent presentation state")
+check('"shadow_center": [int(x) + 1, int(y) + 2]' in _floating_script
+      and "draw_string(" in _floating_view
+      and "shadow_color" in _floating_view,
+      "FloatingText must preserve source shadow offset, font and alpha layers")
+check("_visual_matches(item, draw_by_tick[index])" in _floating_checks
+      and "FloatingTextChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"),
+      "FloatingText source draw samples must replay in the native suite")
+check(all(len(case.get("draw_samples", [])) == 7
+          for case in _floating_fixture.get("cases", [])),
+      "FloatingText source oracle must pin normal, critical and heal draw samples")
+check("floating_text_source_oracle.py" in workflow,
+      "FloatingText draw oracle must remain in CI")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

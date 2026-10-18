@@ -6,6 +6,7 @@ const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd"
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const BossState = preload("res://scripts/match/boss_state.gd")
 const HeroMarker = preload("res://scripts/ui/hero_marker.gd")
+const PathPreview = preload("res://scripts/ui/path_preview.gd")
 const SpriteLighting = preload("res://scripts/ui/sprite_lighting.gd")
 const BossFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
 const LevelIntroLayout = preload("res://scripts/ui/level_intro_layout.gd")
@@ -127,18 +128,26 @@ func _draw_path_preview(world: Prototype) -> void:
 		return
 	for lane_value in preview.paths:
 		var lane: Array = lane_value
-		for index in range(lane.size()):
+		if lane.size() < 2:
+			continue
+		for index in range(0, lane.size() - 1, 8):
 			var raw: Variant = lane[index]
-			var pt := (
-				Vector2(float((raw as Array)[0]), float((raw as Array)[1]))
-				if raw is Array
-				else (raw as Vector2)
-			)
+			var point := _path_point(raw)
+			var next_point := Vector2(point.x + 1.0, point.y)
+			if index + 4 < lane.size():
+				next_point = _path_point(lane[index + 4])
 			var pulse: int = preview.pulse_index(index, float(world.tick_count))
-			var radius := float(preview.arrow_size(pulse))
-			var alpha := clampf(float(preview.arrow_alpha(base_alpha, pulse)) / 255.0, 0.0, 1.0)
-			if radius > 0.0 and alpha > 0.0:
-				draw_circle(pt, radius, Color(1.0, 0.86, 0.39, alpha))
+			var size: int = preview.arrow_size(pulse)
+			var alpha: int = preview.arrow_alpha(base_alpha, pulse)
+			var points := PathPreview.arrow_points(point, next_point, size)
+			draw_colored_polygon(points, Color8(255, 100, 100, alpha))
+
+
+func _path_point(raw: Variant) -> Vector2:
+	if raw is Array:
+		var pair: Array = raw
+		return Vector2(float(pair[0]), float(pair[1]))
+	return raw as Vector2
 
 
 func _draw_world_effects(world: Prototype) -> void:
@@ -166,22 +175,64 @@ func _draw_world_effects(world: Prototype) -> void:
 		var p_alpha := clampf(float(particle.alpha()) / 255.0, 0.0, 1.0)
 		var p_size := float(particle.current_size())
 		if p_size > 0.0 and p_alpha > 0.0:
-			draw_circle(Vector2(particle.x, particle.y), p_size, Color(particle.color, p_alpha))
+			var particle_center := Vector2(int(particle.x), int(particle.y))
+			draw_circle(particle_center, p_size, Color(particle.color, p_alpha))
+			draw_circle(particle_center, particle.core_radius(), Color(1.0, 1.0, 1.0, p_alpha))
 	for item in world.effects.floating_texts:
 		if not item.alive or String(item.text).is_empty():
 			continue
-		var t_alpha := clampf(float(item.alpha()) / 255.0, 0.0, 1.0)
-		var f_size := maxi(8, int(round(float(item.font_size) * float(item.scale))))
-		if t_alpha > 0.0:
+		var draw_state: Dictionary = item.presentation_state()
+		if draw_state.is_empty():
+			continue
+		var center_values: Array = draw_state["center"]
+		var shadow_values: Array = draw_state["shadow_center"]
+		var center := Vector2(float(center_values[0]), float(center_values[1]))
+		var shadow_center := Vector2(float(shadow_values[0]), float(shadow_values[1]))
+		var text_value: String = String(draw_state["text"])
+		var font_size: int = int(draw_state["font_size"])
+		var text_metrics: Vector2 = BossFont.get_string_size(
+			text_value, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size
+		)
+		var baseline_offset := (
+			(BossFont.get_ascent(font_size) - BossFont.get_descent(font_size)) * 0.5
+		)
+		var shadow_color_values: Array = draw_state["shadow_color"]
+		var shadow_color := Color8(
+			int(shadow_color_values[0]),
+			int(shadow_color_values[1]),
+			int(shadow_color_values[2]),
+			int(draw_state["shadow_alpha"])
+		)
+		draw_string(
+			BossFont,
+			Vector2(shadow_center.x - text_metrics.x * 0.5, shadow_center.y + baseline_offset),
+			text_value,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1.0,
+			font_size,
+			shadow_color
+		)
+		var text_alpha := float(draw_state["alpha"]) / 255.0
+		var text_color := Color(item.color, text_alpha)
+		if bool(item.critical):
 			draw_string(
 				BossFont,
-				Vector2(float(item.x) - 80.0, float(item.y)),
-				String(item.text),
-				HORIZONTAL_ALIGNMENT_CENTER,
-				160.0,
-				f_size,
-				Color(item.color, t_alpha)
+				Vector2(center.x - text_metrics.x * 0.5 + 0.35, center.y + baseline_offset),
+				text_value,
+				HORIZONTAL_ALIGNMENT_LEFT,
+				-1.0,
+				font_size,
+				text_color
 			)
+		draw_string(
+			BossFont,
+			Vector2(center.x - text_metrics.x * 0.5, center.y + baseline_offset),
+			text_value,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1.0,
+			font_size,
+			text_color
+		)
 
 
 func _draw_boss_death_sequence(world: Prototype) -> void:
@@ -239,22 +290,75 @@ func _draw_wave_announcer(world: Prototype) -> void:
 	var announcer = world.effects.wave_announcer
 	if announcer == null or not announcer.active:
 		return
-	var alpha := clampf(float(announcer.get_alpha()) / 255.0, 0.0, 1.0)
-	if alpha <= 0.0:
+	var alpha_i: int = announcer.get_alpha()
+	if alpha_i <= 0:
 		return
-	var offset_x := float(announcer.get_offset_x(1280))
-	var rect := Rect2(Vector2(440.0 + offset_x, 150.0), Vector2(400.0, 64.0))
-	draw_rect(rect, Color(0.05, 0.08, 0.12, 0.82 * alpha))
-	draw_rect(rect, Color(0.96, 0.83, 0.57, alpha), false, 2.0)
+	var alpha := clampf(float(alpha_i) / 255.0, 0.0, 1.0)
+	var viewport_size: Vector2 = get_viewport_rect().size
+	var rect: Rect2 = announcer.visual_rect(int(viewport_size.x), int(viewport_size.y))
+	var center_x := rect.get_center().x
+	var center_y := rect.get_center().y
+	for row in range(80):
+		var grad_alpha := int(float(alpha_i) * (1.0 - absf(float(row) - 40.0) / 40.0 * 0.3))
+		draw_rect(
+			Rect2(rect.position + Vector2(0.0, float(row)), Vector2(400.0, 1.0)),
+			Color8(16, 20, 40, grad_alpha)
+		)
+	draw_rect(rect, Color8(255, 220, 50, alpha_i), false, 3.0)
+	draw_rect(rect.grow(-2.0), Color8(255, 250, 180, alpha_i), false, 1.0)
+	for stripe in range(0, 400, 10):
+		draw_line(
+			rect.position + Vector2(float(stripe), 0.0),
+			rect.position + Vector2(float(stripe + 10), 80.0),
+			Color8(255, 220, 50, alpha_i / 4),
+			1.0,
+			true
+		)
+	if alpha_i > 60:
+		_draw_gold_corner_ticks(rect, alpha)
+	var title: String = announcer.title()
+	var title_y := center_y + 8.0
 	draw_string(
 		BossFont,
-		Vector2(rect.position.x, rect.position.y + 42.0),
-		announcer.title(),
+		Vector2(rect.position.x + 2.0, title_y + 2.0),
+		title,
 		HORIZONTAL_ALIGNMENT_CENTER,
 		rect.size.x,
-		30,
-		Color(0.96, 0.83, 0.57, alpha)
+		46,
+		Color(0.03, 0.03, 0.06, minf(200.0 / 255.0, alpha))
 	)
+	draw_string(
+		BossFont,
+		Vector2(rect.position.x, title_y),
+		title,
+		HORIZONTAL_ALIGNMENT_CENTER,
+		rect.size.x,
+		46,
+		Color(1.0, 0.88, 0.52, alpha)
+	)
+	draw_string(
+		BossFont,
+		Vector2(rect.position.x, center_y + 31.0),
+		"E N E M I E S   I N C O M I N G",
+		HORIZONTAL_ALIGNMENT_CENTER,
+		rect.size.x,
+		22,
+		Color(0.78, 0.78, 0.86, alpha)
+	)
+
+
+func _draw_gold_corner_ticks(rect: Rect2, alpha: float) -> void:
+	var left := rect.position.x + 5.0
+	var right := rect.end.x - 5.0
+	var top := rect.position.y + 5.0
+	var bottom := rect.end.y - 5.0
+	var ink := Color(1.0, 0.86, 0.47, alpha)
+	for x_sign in [-1.0, 1.0]:
+		for y_sign in [-1.0, 1.0]:
+			var x := left if x_sign < 0.0 else right
+			var y := top if y_sign < 0.0 else bottom
+			draw_line(Vector2(x, y), Vector2(x - x_sign * 12.0, y), ink, 2.0, true)
+			draw_line(Vector2(x, y), Vector2(x, y - y_sign * 12.0), ink, 2.0, true)
 
 
 func _draw_combo_counter(world: Prototype) -> void:
@@ -306,41 +410,166 @@ func _draw_achievement_popup(world: Prototype) -> void:
 	var popup = world.effects.achievement
 	if popup == null or not popup.is_showing():
 		return
-	var alpha := clampf(float(popup.get_alpha()) / 255.0, 0.0, 1.0)
-	if alpha <= 0.0:
+	var alpha: int = clampi(int(popup.get_alpha()), 0, 255)
+	if alpha <= 0:
 		return
 	var rect := Rect2(
 		Vector2(float(popup.panel_x(1280)), float(popup.panel_y())),
 		Vector2(float(popup.PANEL_W), float(popup.PANEL_H))
 	)
-	var glow_raw: int = int(popup.get_glow_alpha())
-	if glow_raw > 0:
-		var glow_alpha: float = clampf(float(glow_raw) / 255.0, 0.0, 1.0)
-		draw_rect(rect.grow(4.0), Color(1.0, 0.88, 0.45, glow_alpha), false, 3.0)
-	draw_rect(rect, Color(0.06, 0.09, 0.14, 0.90 * alpha))
-	draw_rect(rect, Color(0.96, 0.83, 0.57, alpha), false, 2.0)
+	for row in range(int(rect.size.y)):
+		var grad := 20 + int(float(row) * 0.3)
+		var ink := Color8(grad, grad, floori(float(grad) / 2.0), alpha)
+		draw_line(
+			Vector2(rect.position.x, rect.position.y + row),
+			Vector2(rect.end.x, rect.position.y + row),
+			ink,
+			1.0,
+			true
+		)
+	_draw_achievement_outline(rect, 6.0, Color8(255, 220, 50, alpha), 3.0)
+	_draw_achievement_outline(rect.grow(-2.0), 5.0, Color8(255, 250, 180, alpha), 1.0)
+	if alpha > 60:
+		_draw_achievement_ticks(rect, Color8(255, 220, 50, 255))
+	var icon_type := String(popup.current.get("icon_type", "star"))
+	var icon_center := rect.position + Vector2(15.0, 30.0)
+	var icon_ops: Array = popup.icon_ops(icon_type, icon_center, alpha)
+	_draw_achievement_icon(icon_ops)
 	var title := String(popup.current.get("title", ""))
 	var desc := String(popup.current.get("description", ""))
+	var text_x := rect.position.x + 55.0
+	var text_width := rect.size.x - 65.0
+	_draw_achievement_label(
+		"A C H I E V E M E N T",
+		text_x,
+		rect.position.y + 7.0,
+		16,
+		Color8(255, 220, 50, alpha),
+		text_width
+	)
 	if not title.is_empty():
-		draw_string(
-			BossFont,
-			rect.position + Vector2(14.0, 26.0),
-			title,
-			HORIZONTAL_ALIGNMENT_LEFT,
-			rect.size.x - 28.0,
-			16,
-			Color(1.0, 0.88, 0.45, alpha)
+		_draw_achievement_label(
+			title, text_x, rect.position.y + 24.0, 22, Color8(255, 255, 255, alpha), text_width
 		)
 	if not desc.is_empty():
-		draw_string(
-			BossFont,
-			rect.position + Vector2(14.0, 46.0),
-			desc,
-			HORIZONTAL_ALIGNMENT_LEFT,
-			rect.size.x - 28.0,
-			13,
-			Color(0.85, 0.90, 0.95, alpha)
+		_draw_achievement_label(
+			desc, text_x, rect.position.y + 45.0, 17, Color8(205, 210, 225, alpha), text_width
 		)
+	var glow_raw: int = int(popup.get_glow_alpha())
+	if glow_raw > 0:
+		var glow_rect := Rect2(rect.position - Vector2(10.0, 10.0), rect.size + Vector2(20.0, 20.0))
+		var glow_points := _achievement_rounded_points(glow_rect, 10.0)
+		draw_colored_polygon(glow_points, Color8(255, 220, 50, clampi(glow_raw, 0, 255)))
+
+
+func _achievement_rounded_points(rect: Rect2, radius: float) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	var centers := [
+		Vector2(rect.position.x + radius, rect.position.y + radius),
+		Vector2(rect.end.x - radius, rect.position.y + radius),
+		Vector2(rect.end.x - radius, rect.end.y - radius),
+		Vector2(rect.position.x + radius, rect.end.y - radius),
+	]
+	var starts := [180.0, 270.0, 0.0, 90.0]
+	for corner in range(4):
+		for sample in range(5):
+			var angle := deg_to_rad(float(starts[corner]) + float(sample) * 22.5)
+			points.append(centers[corner] + Vector2(cos(angle), sin(angle)) * radius)
+	return points
+
+
+func _draw_achievement_outline(rect: Rect2, radius: float, ink: Color, width: float) -> void:
+	var points := _achievement_rounded_points(rect, radius)
+	points.append(points[0])
+	draw_polyline(points, ink, width, true)
+
+
+func _draw_achievement_ticks(rect: Rect2, ink: Color) -> void:
+	var anchors := [
+		Vector2(rect.position.x + 4.0, rect.position.y + 4.0),
+		Vector2(rect.end.x - 4.0, rect.position.y + 4.0),
+		Vector2(rect.position.x + 4.0, rect.end.y - 4.0),
+		Vector2(rect.end.x - 4.0, rect.end.y - 4.0),
+	]
+	for index in range(4):
+		var anchor: Vector2 = anchors[index]
+		var x_dir := 1.0 if index == 0 or index == 2 else -1.0
+		var y_dir := 1.0 if index < 2 else -1.0
+		draw_line(anchor, anchor + Vector2(x_dir * 10.0, 0.0), ink, 2.0, true)
+		draw_line(anchor, anchor + Vector2(0.0, y_dir * 10.0), ink, 2.0, true)
+
+
+func _draw_achievement_label(
+	text: String, x: float, top: float, size: int, ink: Color, max_width: float
+) -> void:
+	var font := BossFont
+	var shown := _fit_achievement_label(text, size, max_width)
+	var ascent := font.get_ascent(size)
+	draw_string(font, Vector2(x, top + ascent), shown, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size, ink)
+
+
+func _fit_achievement_label(text: String, size: int, max_width: float) -> String:
+	var font := BossFont
+	if font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size).x <= max_width:
+		return text
+	var clipped := text
+	while clipped.length() > 1:
+		clipped = clipped.substr(0, clipped.length() - 1)
+		var candidate := clipped + "…"
+		if font.get_string_size(candidate, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size).x <= max_width:
+			return candidate
+	return "…"
+
+
+func _draw_achievement_icon(ops: Array) -> void:
+	for value in ops:
+		var op: Dictionary = value
+		var color_values: Array = op.get("color", [255, 255, 255, 255])
+		var ink := Color8(
+			int(color_values[0]), int(color_values[1]), int(color_values[2]), int(color_values[3])
+		)
+		match String(op.get("type", "")):
+			"circle":
+				var center_values: Array = op["center"]
+				var center := Vector2(float(center_values[0]), float(center_values[1]))
+				var radius := float(op["radius"])
+				var circle_width := int(op["width"])
+				if circle_width == 0:
+					draw_circle(center, radius, ink)
+				else:
+					draw_arc(center, radius, 0.0, TAU, 36, ink, float(circle_width), true)
+			"rect":
+				var bounds: Array = op["rect"]
+				draw_rect(
+					Rect2(
+						Vector2(float(bounds[0]), float(bounds[1])),
+						Vector2(float(bounds[2]), float(bounds[3]))
+					),
+					ink
+				)
+			"polygon":
+				var raw_points: Array = op["points"]
+				var points := PackedVector2Array()
+				for point_value in raw_points:
+					var point: Array = point_value
+					points.append(Vector2(float(point[0]), float(point[1])))
+				var polygon_width := int(op["width"])
+				if polygon_width == 0:
+					draw_colored_polygon(points, ink)
+				else:
+					points.append(points[0])
+					draw_polyline(points, ink, float(polygon_width), true)
+			"text":
+				var text_center: Array = op["center"]
+				draw_string(
+					BossFont,
+					Vector2(float(text_center[0]) - 10.0, float(text_center[1]) + 7.0),
+					String(op["text"]),
+					HORIZONTAL_ALIGNMENT_CENTER,
+					20.0,
+					int(op["size"]),
+					ink
+				)
 
 
 func _draw_boss_intro(world: Prototype) -> void:

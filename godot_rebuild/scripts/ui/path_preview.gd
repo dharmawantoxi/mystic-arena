@@ -6,9 +6,9 @@ extends RefCounted
 ## source computes inside `draw()`, and the dash helpers reproduce the moving
 ## dash phase and the per-arrow pulse that picks a size and an alpha.
 ##
-## Left unported: the arrow triangle points. They are offsets around the centre
-## of a 20x20 pygame blit surface, so a Godot renderer would re-centre them
-## anyway; everything the renderer needs to *decide* colour and size is here.
+## `arrow_points()` translates the source's triangle offsets out of its 20x20
+## pygame surface and back into world coordinates, preserving Python floor
+## division for negative half-vectors.
 
 const DURATION := 120
 const FADE_IN := 20
@@ -67,3 +67,30 @@ static func arrow_size(pulse: int) -> int:
 
 static func arrow_alpha(base_alpha: int, pulse: int) -> int:
 	return base_alpha if pulse == 0 else base_alpha / 2
+
+
+## Reproduces source points after `blit(arrow_surf, (int(x)-10, int(y)-10))`.
+static func arrow_points(
+	point: Vector2, next_point: Vector2, arrow_size_value: int
+) -> PackedVector2Array:
+	var direction := next_point - point
+	var distance := direction.length()
+	if distance == 0.0:
+		distance = 1.0
+		direction = Vector2.ZERO
+	else:
+		direction /= distance
+	var cos_a := direction.x
+	var sin_a := direction.y
+	var half := float(arrow_size_value)
+	var nose := Vector2(10 + int(cos_a * half), 10 + int(sin_a * half))
+	var left := Vector2(
+		10 + int(floor(-cos_a * half / 2.0) - floor(sin_a * half / 2.0)),
+		10 + int(floor(-sin_a * half / 2.0) + floor(cos_a * half / 2.0))
+	)
+	var right := Vector2(
+		10 + int(floor(-cos_a * half / 2.0) + floor(sin_a * half / 2.0)),
+		10 + int(floor(-sin_a * half / 2.0) - floor(cos_a * half / 2.0))
+	)
+	var blit_origin := Vector2(int(point.x) - 10, int(point.y) - 10)
+	return PackedVector2Array([blit_origin + nose, blit_origin + left, blit_origin + right])

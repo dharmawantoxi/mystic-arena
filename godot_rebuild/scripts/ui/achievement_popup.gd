@@ -8,10 +8,9 @@ extends RefCounted
 ## `_ease_out_back`, which overshoots slightly past 0), hold to 0.85, then
 ## slide back out. A short glow rides the first 30% of the slot.
 ##
-## Left unported: the panel gradient, gold border, `corner_ticks`, the
-## per-`icon_type` icon geometry, and the text/ellipsis rendering — all pygame
-## drawing rather than state. `get_glow_alpha()` returns -1 for "no glow",
-## matching the source's `if progress < 0.3` guard.
+## The full per-type achievement icon is exposed by `icon_ops()` so the native
+## renderer and the source oracle share a geometry contract. Remaining panel
+## typography/layout details are handled by PrototypeView.
 
 const DURATION := 180
 const SLIDE_IN_END := 0.15
@@ -92,6 +91,97 @@ func panel_x(screen_w: int) -> int:
 
 func panel_y() -> int:
 	return PANEL_TOP
+
+
+func icon_ops(icon_type: String, center: Vector2, alpha: int) -> Array:
+	var ops: Array = []
+	_icon_circle(ops, center, 16.0, [60, 40, 10, alpha], 0)
+	_icon_circle(ops, center, 16.0, [255, 220, 50, alpha], 2)
+	if icon_type == "star":
+		var points: Array = []
+		for index in range(10):
+			var angle := float(index) * PI / 5.0 - PI / 2.0
+			var radius := 8.0 if index % 2 == 0 else 4.0
+			points.append([center.x + cos(angle) * radius, center.y + sin(angle) * radius])
+		_icon_polygon(ops, points, [255, 220, 50, 255], 0)
+		_icon_polygon(ops, points, [255, 250, 180, 255], 1)
+	elif icon_type == "sword":
+		_icon_polygon(
+			ops,
+			[
+				[center.x, center.y - 10.0],
+				[center.x + 3.0, center.y - 7.0],
+				[center.x + 3.0, center.y + 5.0],
+				[center.x - 3.0, center.y + 5.0],
+				[center.x - 3.0, center.y - 7.0],
+			],
+			[200, 200, 220, 255],
+			0
+		)
+		_icon_rect(ops, [center.x - 5.0, center.y + 5.0, 10.0, 3.0], [100, 60, 30, 255])
+		_icon_rect(ops, [center.x - 2.0, center.y + 8.0, 4.0, 4.0], [60, 40, 20, 255])
+	elif icon_type == "skull":
+		_icon_circle(ops, center + Vector2(0.0, -2.0), 8.0, [240, 240, 220, 255], 0)
+		_icon_rect(ops, [center.x - 3.0, center.y - 4.0, 2.0, 2.0], [0, 0, 0, 255])
+		_icon_rect(ops, [center.x + 1.0, center.y - 4.0, 2.0, 2.0], [0, 0, 0, 255])
+		_icon_rect(ops, [center.x - 4.0, center.y + 4.0, 8.0, 4.0], [240, 240, 220, 255])
+		_icon_rect(ops, [center.x - 2.0, center.y + 5.0, 1.0, 3.0], [0, 0, 0, 255])
+		_icon_rect(ops, [center.x + 1.0, center.y + 5.0, 1.0, 3.0], [0, 0, 0, 255])
+	elif icon_type == "shield":
+		var shield := _shield_points(center)
+		_icon_polygon(ops, shield, [100, 200, 255, 255], 0)
+		_icon_polygon(ops, shield, [255, 255, 255, 255], 2)
+	elif icon_type == "gold":
+		_icon_circle(ops, center, 10.0, [200, 150, 20, 255], 0)
+		_icon_circle(ops, center, 9.0, [255, 220, 50, 255], 0)
+		_icon_circle(ops, center + Vector2(-2.0, -2.0), 4.0, [255, 250, 180, 255], 0)
+		(
+			ops
+			. append(
+				{
+					"type": "text",
+					"text": "$",
+					"center": [center.x, center.y],
+					"size": 20,
+					"color": [100, 60, 10, 255],
+				}
+			)
+		)
+	return ops
+
+
+func _shield_points(center: Vector2) -> Array:
+	return [
+		[center.x, center.y - 8.0],
+		[center.x + 7.0, center.y - 5.0],
+		[center.x + 7.0, center.y + 3.0],
+		[center.x, center.y + 8.0],
+		[center.x - 7.0, center.y + 3.0],
+		[center.x - 7.0, center.y - 5.0],
+	]
+
+
+func _icon_circle(ops: Array, center: Vector2, radius: float, color: Array, width: int) -> void:
+	(
+		ops
+		. append(
+			{
+				"type": "circle",
+				"center": [center.x, center.y],
+				"radius": radius,
+				"color": color,
+				"width": width,
+			}
+		)
+	)
+
+
+func _icon_rect(ops: Array, rect: Array, color: Array) -> void:
+	ops.append({"type": "rect", "rect": rect, "color": color, "width": 0})
+
+
+func _icon_polygon(ops: Array, points: Array, color: Array, width: int) -> void:
+	ops.append({"type": "polygon", "points": points, "color": color, "width": width})
 
 
 static func _ease_out_back(t: float) -> float:
