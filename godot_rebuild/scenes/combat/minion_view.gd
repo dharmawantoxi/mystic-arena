@@ -76,6 +76,7 @@ func _draw() -> void:
 				edge = terrain_palette["path_stone_3"]
 			draw_polyline(path, stone, 32, true)
 			draw_polyline(path, edge, 1.5, true)
+	_draw_map_decor()
 	if wall_texture != null:
 		draw_texture(wall_texture, Vector2.ZERO)
 	_draw_map_overlay()
@@ -86,6 +87,12 @@ func _draw() -> void:
 	for event in session.world.recent_events:
 		if event.kind == "hit" and session.world.tick_count - int(event.tick) < 8:
 			draw_line(event["from"], event["to"], Color("e7c98a"), 2, true)
+
+
+## Hook for the source's decoration and shop layers (map layers 4-5): painted over
+## the lanes and under the border wall, like `MapRenderer._render_static_map`.
+func _draw_map_decor() -> void:
+	pass
 
 
 ## Hook for the layer the source paints over the finished map, under the units

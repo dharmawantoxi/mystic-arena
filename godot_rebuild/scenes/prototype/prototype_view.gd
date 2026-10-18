@@ -18,6 +18,7 @@ const BossDeathSequenceLayout = preload("res://scripts/ui/boss_death_sequence_la
 const HitParticleLayout = preload("res://scripts/ui/hit_particle_layout.gd")
 const DeathExplosionLayout = preload("res://scripts/ui/death_explosion_layout.gd")
 const MapTintLayout = preload("res://scripts/ui/map_tint_layout.gd")
+const MapArt = preload("res://scripts/ui/map_art.gd")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
@@ -97,6 +98,13 @@ func _draw() -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	for layer in OVERLAY_ORDER:
 		_draw_overlay_layer(String(layer), world)
+
+
+## Layer 9bj: the baked decorations and shop buildings of the current theme.
+func _draw_map_decor() -> void:
+	var overlay := MapArt.overlay_texture(cached_river_theme)
+	if overlay != null:
+		draw_texture(overlay, Vector2.ZERO)
 
 
 ## Layer 9bh: the ambient tint `MapRenderer.draw()` lays over the map, under the

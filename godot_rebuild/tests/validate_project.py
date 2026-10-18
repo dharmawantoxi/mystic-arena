@@ -3891,6 +3891,72 @@ check("_check_overlays(check, data, view.overlay_paint_order())" in _order_check
       and "_check_world(check, data, view.world_layer_order())" in _order_checks,
       "9bi draw order suite must read the view's order back")
 
+# ── Layer 9bj: baked map decorations + shop buildings (bake/bake_map_overlay.py) ──
+import hashlib
+import struct
+
+_art_manifest_path = ROOT / "data/art/map_overlay.json"
+_art_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_art_base = (ROOT / "scenes/combat/minion_view.gd").read_text(encoding="utf-8")
+_art_loader = (ROOT / "scripts/ui/map_art.gd").read_text(encoding="utf-8")
+_art_checks = (ROOT / "tests/map_art_checks.gd").read_text(encoding="utf-8")
+_art_render = (ROOT.parent / "_render.py").read_text(encoding="utf-8")
+_art_bake = (ROOT / "bake/bake_map_overlay.py").read_text(encoding="utf-8")
+_art_env = (ROOT / "bake/pygame_env.py").read_text(encoding="utf-8")
+check('const MapArtChecks = preload("res://tests/map_art_checks.gd")' in ai_tests
+      and "MapArtChecks.new().run(_check)" in ai_tests,
+      "9bj map art suite must be preloaded and run in the native suite")
+check(_art_manifest_path.is_file(), "9bj map overlay manifest must exist")
+if _art_manifest_path.is_file():
+    _art = json.loads(_art_manifest_path.read_text(encoding="utf-8"))
+    _art_palette = json.loads((ROOT / "data/levels/theme_palette.json").read_text(encoding="utf-8"))
+    _art_levels = {
+        json.loads(path.read_text(encoding="utf-8")).get("map_theme")
+        for path in (ROOT / "data/levels").glob("level_*.json")
+    }
+    check(sorted(_art["themes"]) == sorted(_art_palette) and len(_art["themes"]) == 54,
+          "9bj one overlay per palette theme (54)")
+    check(_art_levels <= set(_art["themes"]) and len(_art_levels) == 54,
+          "9bj every level's map_theme must have a baked overlay")
+    check(_art["generator"] == "godot_rebuild/bake/bake_map_overlay.py"
+          and "layers 4-5" in _art["layers"],
+          "9bj manifest must name its generator and the source layers")
+    for _theme, _entry in sorted(_art["themes"].items()):
+        _png = ROOT / "assets/art/map" / f"{_theme}.png"
+        check(_png.is_file(), f"9bj overlay PNG must ship: {_theme}")
+        if not _png.is_file():
+            continue
+        _raw = _png.read_bytes()
+        _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+        check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _entry["size"] == [1280, 720]
+              and (_depth, _color) == (8, 6),
+              f"9bj overlay must be a 1280x720 RGBA8 PNG: {_theme}")
+        check(len(_raw) == _entry["bytes"] and hashlib.sha256(_raw).hexdigest() == _entry["sha256"],
+              f"9bj overlay must match its manifest hash: {_theme}")
+        check(_entry["covered_pixels"] >= 10000, f"9bj overlay must hold real decorations: {_theme}")
+check(_art_render.index("DecorationRenderer.draw_all(surf, self)")
+      < _art_render.index("ShopRenderer.draw(surf, self.radiant_shop_pos")
+      < _art_render.index("StaticRenderer.draw_border_wall(surf"),
+      "9bj the source paints decorations, then shops, then the border wall")
+check("DecorationRenderer.draw_all(full, mr)" in _art_bake
+      and "ShopRenderer.draw(full, mr.radiant_shop_pos, mr.dire_shop_pos)" in _art_bake
+      and "assert (composite == full_rgb).all()" in _art_bake,
+      "9bj the bake must run source layers 4-5 and prove overlay + base == source")
+check("storage_paths._PROJECT_ROOT = tempfile.mkdtemp" in _art_env,
+      "9bj bake scripts must keep the game's save folder out of the repo")
+check("MapArt.overlay_texture(cached_river_theme)" in _art_view
+      and "func _draw_map_decor(" in _art_view and "func _draw_map_decor(" in _art_base
+      and _art_base.index("draw_texture(lane_texture") < _art_base.index("_draw_map_decor()")
+      < _art_base.index("draw_texture(wall_texture"),
+      "9bj the view must paint the overlay after the lanes and before the border wall")
+check("ResourceLoader.exists(overlay_path(theme))" in _art_loader
+      and "static func overlay_texture(" in _art_loader,
+      "9bj the loader must tolerate a theme that is not imported")
+check("_check_files(check, manifest)" in _art_checks
+      and "_check_textures(check)" in _art_checks
+      and "_check_view_wiring(check)" in _art_checks,
+      "9bj map art suite must check files, loaded textures and the view wiring")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

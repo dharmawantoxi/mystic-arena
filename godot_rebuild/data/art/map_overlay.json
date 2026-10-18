@@ -1,0 +1,331 @@
+{
+ "generator": "godot_rebuild/bake/bake_map_overlay.py",
+ "layers": "MapRenderer._render_static_map layers 4-5",
+ "pygame": "2.6.1",
+ "themes": {
+  "abyss": {
+   "bytes": 18988,
+   "covered_pixels": 33590,
+   "sha256": "3614bc51f2389d40b2e35d505a50bd0f3c6b211ff3bf229bc0ad92b11c8e818a",
+   "size": [1280,720]
+  },
+  "abyssal": {
+   "bytes": 14560,
+   "covered_pixels": 21048,
+   "sha256": "cd89320ebfe468ba806da3a738a9b36c48b49a13fa84b2af174593b16d020503",
+   "size": [1280,720]
+  },
+  "abysstide": {
+   "bytes": 19332,
+   "covered_pixels": 35124,
+   "sha256": "6383c9075d874821361bf5ca380d51f4cdb5adc93511d0a474c15007f0c45071",
+   "size": [1280,720]
+  },
+  "astral": {
+   "bytes": 18945,
+   "covered_pixels": 34901,
+   "sha256": "989b775ba740b8c6e4e763b354b942d2eaff53e39199c7c5ee43c00b2f59a292",
+   "size": [1280,720]
+  },
+  "celestialpeaks": {
+   "bytes": 17198,
+   "covered_pixels": 32739,
+   "sha256": "277ca48c0b366b1eb52941fc34ae44dcdd7527a912ba41984733f8cf5659015b",
+   "size": [1280,720]
+  },
+  "cosmic": {
+   "bytes": 12249,
+   "covered_pixels": 20640,
+   "sha256": "242ca54cad786b770c4a96c2784f85cc0823366e97c9bf978c8b368e10bf587c",
+   "size": [1280,720]
+  },
+  "crimson": {
+   "bytes": 17738,
+   "covered_pixels": 33167,
+   "sha256": "a34f3d05a37244508aab45ef8f3e651eeea49827fdfdf53d4f7c4731e244ff4f",
+   "size": [1280,720]
+  },
+  "crimsondevourer": {
+   "bytes": 19231,
+   "covered_pixels": 33847,
+   "sha256": "007231811c6f2675d9225637f4caf99f428fefed6373735818eb3cc1515b984b",
+   "size": [1280,720]
+  },
+  "crimsonmatriarch": {
+   "bytes": 18059,
+   "covered_pixels": 33301,
+   "sha256": "5418283baf0552aac98470be05125d550624a5b1dc76aff375deed789410e5ee",
+   "size": [1280,720]
+  },
+  "croweye": {
+   "bytes": 19261,
+   "covered_pixels": 33849,
+   "sha256": "c292b3092b9b19792dba7a62dd2b27d47d0758655ae81f386488071c1a25a3ba",
+   "size": [1280,720]
+  },
+  "crystalstorm": {
+   "bytes": 20767,
+   "covered_pixels": 36423,
+   "sha256": "be123d12648384d1fd50e4631fcb28629582aed9f8e3b532ce77e9419381b101",
+   "size": [1280,720]
+  },
+  "desert": {
+   "bytes": 24577,
+   "covered_pixels": 33702,
+   "sha256": "4eb376a75db21459f16ddce7aa12c1039172b0f840f2e11898c3e3aca7e3739e",
+   "size": [1280,720]
+  },
+  "earthborn": {
+   "bytes": 15606,
+   "covered_pixels": 30888,
+   "sha256": "6a98a2733dacc9997d7dcd8c2587c1d429622ea3e6f5ce086fe436c7d4b8cbca",
+   "size": [1280,720]
+  },
+  "eldritch": {
+   "bytes": 12656,
+   "covered_pixels": 20863,
+   "sha256": "69117ba5eded6c80c1428d3b3d77c6d233d85ae796aba6f5bdaf0fa9e4367702",
+   "size": [1280,720]
+  },
+  "elementweave": {
+   "bytes": 18926,
+   "covered_pixels": 34901,
+   "sha256": "d9edb39fa523a49d274c2277bc9d50cbf6b801d9438445cff4aa11736dc860b8",
+   "size": [1280,720]
+  },
+  "emberlion": {
+   "bytes": 19018,
+   "covered_pixels": 33568,
+   "sha256": "7962c6ce36a9344e04aa97287c5ef44cbbe840c5b78b9600ded8f5671362b181",
+   "size": [1280,720]
+  },
+  "emberweaver": {
+   "bytes": 19219,
+   "covered_pixels": 33847,
+   "sha256": "a1f6d56a3b351bb5793fd52c525ca68397a22160678666e29027e79052650b3a",
+   "size": [1280,720]
+  },
+  "empyrean": {
+   "bytes": 18234,
+   "covered_pixels": 34366,
+   "sha256": "164abae79855089cc31cca0c6123b93dc0ef0541f57f46009e1c053e984ef6d3",
+   "size": [1280,720]
+  },
+  "eternalflame": {
+   "bytes": 18156,
+   "covered_pixels": 33084,
+   "sha256": "8f3cc50f9ec3097e914b78067c4e8250c0d16973b7104bd2510d1b6cae9cdebb",
+   "size": [1280,720]
+  },
+  "eternalwarlord": {
+   "bytes": 19279,
+   "covered_pixels": 33848,
+   "sha256": "31a09f06fa1a94c5f5e437ca74e48a17c3869944ca8ca551906246fd5dfe5130",
+   "size": [1280,720]
+  },
+  "explosiveart": {
+   "bytes": 19735,
+   "covered_pixels": 33356,
+   "sha256": "df70ecc075c8f8b1ad2c5f38dc47383cf7b145f47f6fc4b037fa031d50edf74d",
+   "size": [1280,720]
+  },
+  "forest": {
+   "bytes": 32395,
+   "covered_pixels": 49163,
+   "sha256": "1b2381050fc4b6558a03c55ae62ac0944460129865e5a166422d7211e9cfbf82",
+   "size": [1280,720]
+  },
+  "frostveil": {
+   "bytes": 24648,
+   "covered_pixels": 38762,
+   "sha256": "4865560b28427af89400097e51dbc571e74c692945c477794510b109929d366c",
+   "size": [1280,720]
+  },
+  "haunted": {
+   "bytes": 23157,
+   "covered_pixels": 30296,
+   "sha256": "320995597b9250837d1c6ab652322190649d45d131bd1fd12d28119915c9f8ff",
+   "size": [1280,720]
+  },
+  "heartbane": {
+   "bytes": 19257,
+   "covered_pixels": 33842,
+   "sha256": "f7885ff7b7547f0b82bb3ca4c4c4dfda5e9af986abf54b21598614ce86d4f28c",
+   "size": [1280,720]
+  },
+  "hexbound": {
+   "bytes": 18041,
+   "covered_pixels": 32769,
+   "sha256": "85f104d51a9f2683454036f81d0b0864f4108858fc6fabc5d70535543210f014",
+   "size": [1280,720]
+  },
+  "hollowbane": {
+   "bytes": 22237,
+   "covered_pixels": 37601,
+   "sha256": "02c5bd10116d41217d2bdb5818c0ecbe203b00f78cc310619b67ead6243b4713",
+   "size": [1280,720]
+  },
+  "ice": {
+   "bytes": 23490,
+   "covered_pixels": 31353,
+   "sha256": "c9fb83b85d59ca9e635d8e8d4477c0753dcde64abbcd6d95ad08a3e89a55938a",
+   "size": [1280,720]
+  },
+  "lunarherald": {
+   "bytes": 20748,
+   "covered_pixels": 36396,
+   "sha256": "55a490f29c6ead2e3c865b4c3b1f2ebf7ff1f5ea7a0daca2e500519ef54da18d",
+   "size": [1280,720]
+  },
+  "moonborn": {
+   "bytes": 22245,
+   "covered_pixels": 37604,
+   "sha256": "b9ad1ade2c9f7cbc55c4b94e52a77bf045f3d8402b0a4ceb29ec521fef791499",
+   "size": [1280,720]
+  },
+  "moonfang": {
+   "bytes": 20810,
+   "covered_pixels": 36400,
+   "sha256": "c67555324ffe60aad172800a7e5b746a64b33734addb2b9b1bc3607715070e19",
+   "size": [1280,720]
+  },
+  "moonreaper": {
+   "bytes": 20816,
+   "covered_pixels": 36400,
+   "sha256": "be752bbe647955c8f1466b56f5b463ecbc234819749494f2634b91334d318088",
+   "size": [1280,720]
+  },
+  "nethervenom": {
+   "bytes": 17958,
+   "covered_pixels": 32763,
+   "sha256": "3ebac444824c9ab720084f0dc583a84ea00cc93eb806679d9a9727d06fa92b6f",
+   "size": [1280,720]
+  },
+  "ocean": {
+   "bytes": 18676,
+   "covered_pixels": 24221,
+   "sha256": "081e7a424f52771c068b9ecfc23dd9c0de03d69bec41fa53d60c64dca1595028",
+   "size": [1280,720]
+  },
+  "outlaw": {
+   "bytes": 18844,
+   "covered_pixels": 32167,
+   "sha256": "c61ac911dc069968499bf114e7c23cfac04bbf17049a6f4232c157cdbd7118d0",
+   "size": [1280,720]
+  },
+  "primordial": {
+   "bytes": 15413,
+   "covered_pixels": 30736,
+   "sha256": "26cc0f154ded283784a2e8082be1c51f06461d6645dc0ea3a2b505def5dc78cb",
+   "size": [1280,720]
+  },
+  "radiant": {
+   "bytes": 10835,
+   "covered_pixels": 16812,
+   "sha256": "ebafdc32af7029b0e8a7885625a03ed1ccfc8011f2e631946046b428754828f7",
+   "size": [1280,720]
+  },
+  "royal": {
+   "bytes": 12233,
+   "covered_pixels": 20640,
+   "sha256": "c12ef1f57dbd0f25a6a9fc61c1deb103943b726e96331c179f44530cbfeb0ea2",
+   "size": [1280,720]
+  },
+  "sanctum": {
+   "bytes": 12213,
+   "covered_pixels": 20640,
+   "sha256": "468efb640669a1d2d9c05c3ccb10ab1992bbe2252088373a38578083b4d5e2bb",
+   "size": [1280,720]
+  },
+  "sandshadow": {
+   "bytes": 22243,
+   "covered_pixels": 34050,
+   "sha256": "ce40d4bfa00f96c062e560f2867a27a25eb8db9818ee8d434b41efed004e85a8",
+   "size": [1280,720]
+  },
+  "sawmill": {
+   "bytes": 16454,
+   "covered_pixels": 32103,
+   "sha256": "d4678d6ae21e362968fc351cec2672fd76d29360ca7f8873c62b31696d6a430d",
+   "size": [1280,720]
+  },
+  "shadowchain": {
+   "bytes": 18025,
+   "covered_pixels": 32768,
+   "sha256": "74d66506f6487190871267b987cc0555c5ee119c2344bee696a4a24ffc488c6d",
+   "size": [1280,720]
+  },
+  "skyfury": {
+   "bytes": 20963,
+   "covered_pixels": 36554,
+   "sha256": "6d9b19259e3938256a536d343c5b513a57f31f63e9cde2b088c8f9dc781461c3",
+   "size": [1280,720]
+  },
+  "solaris": {
+   "bytes": 23680,
+   "covered_pixels": 34710,
+   "sha256": "ef1106fc8f67b1cf097483dff1d9234ff0356379c62f5888cbe7340979027bc2",
+   "size": [1280,720]
+  },
+  "soulforged": {
+   "bytes": 20847,
+   "covered_pixels": 36388,
+   "sha256": "a54c9141db639fc4d6b1507d7cafefa0395451c746c79e6d90e738e6a0cce6e7",
+   "size": [1280,720]
+  },
+  "spectral": {
+   "bytes": 21100,
+   "covered_pixels": 36660,
+   "sha256": "7edebfb63e916e0e86004f1d776329aea31d9ba34a08e9a073259efd80201c19",
+   "size": [1280,720]
+  },
+  "sundered": {
+   "bytes": 18043,
+   "covered_pixels": 33308,
+   "sha256": "9a898388d7f3576eca746aba29faebd2104f68806a72be23dbf1685382d9fa99",
+   "size": [1280,720]
+  },
+  "sunfist": {
+   "bytes": 18462,
+   "covered_pixels": 34518,
+   "sha256": "3329e7edb9630441ab5cb68e844c0bc48c1cb58b5558b2043364a4be591167c5",
+   "size": [1280,720]
+  },
+  "tempest": {
+   "bytes": 20159,
+   "covered_pixels": 36058,
+   "sha256": "018642306730e539f76b459b0408808ee547a14c8e5e57e83d53ecfdc06eecaf",
+   "size": [1280,720]
+  },
+  "violet": {
+   "bytes": 12281,
+   "covered_pixels": 20640,
+   "sha256": "18bfeb5b71ab8a9cabbaa308be0e9b801f9c8d88e27c31a1e412329dca30f83b",
+   "size": [1280,720]
+  },
+  "voidbound": {
+   "bytes": 17749,
+   "covered_pixels": 32653,
+   "sha256": "7682b30070677d4c9490ad316512a401f288240e54d77c859cf627aa76bc5c58",
+   "size": [1280,720]
+  },
+  "voidwing": {
+   "bytes": 17730,
+   "covered_pixels": 32648,
+   "sha256": "59f6c0833290299195c1bfc152e20389d5d1de55f725590df655940f54737854",
+   "size": [1280,720]
+  },
+  "volcanic": {
+   "bytes": 20329,
+   "covered_pixels": 32671,
+   "sha256": "2c06edc67e8e1cff0a4b1358cd0b92bfe7e3ac04a068dca8117d8c9f8a202ff7",
+   "size": [1280,720]
+  },
+  "warshade": {
+   "bytes": 19846,
+   "covered_pixels": 36227,
+   "sha256": "ec2eeab2b5e09c62d235b121e365aa102a6b9d578542bac56e2bfb0e9c51b8be",
+   "size": [1280,720]
+  }
+ }
+}

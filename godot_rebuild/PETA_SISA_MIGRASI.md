@@ -81,13 +81,19 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
   langsung dari `_core.py` / `_render.py` dengan `ast`; `prototype_view` kini melukis
   dari konstanta `OVERLAY_ORDER` / `WORLD_LAYER_ORDER` yang dibaca balik
   `draw_order_checks.gd`. Rincian ada di bagian "Slice 9bi" paling bawah.
-- Kandidat visual berikutnya: audit `_render.py` setelah 9bi tidak menemukan lagi
-  `draw()` hidup yang belum diport. Sisa celah ada di luar `_render.py`:
-  `map_components/` (`DynamicRenderer` animasi peta, `DecorationRenderer`,
-  `ShopRenderer`; besar, perlu dipecah) dan `tactical_commands.py` (`draw_world` /
-  `draw_ui`). Temuan penting: `ComboCounter.draw()` dan `KillFeed.draw()` (9bb/9bc)
-  tidak pernah dipanggil sumber; lihat "Catatan 9bi" di bawah. Entri "siluet hero
-  arena" di bawah bersifat historis: sudah selesai (layer 9aj, `hero_marker.gd`).
+- 9bj mengubah arah migrasi visual (keputusan user: "bake PNG dari pygame"). Tampilan Godot
+  masih jauh dari pygame karena art dunia (peta, unit, menara, hero, boss) masih placeholder;
+  slice overlay 9bb-9bi tidak mengubahnya. Kode art pygame dijalankan headless (`pygame`,
+  `numpy`, `Pillow`) oleh skrip di `godot_rebuild/bake/`, hasilnya PNG di
+  `godot_rebuild/assets/art/` dengan manifes `godot_rebuild/data/art/*.json` (ukuran, byte,
+  sha256). Layer 9bj membake dekorasi + bangunan toko tiap tema (54 PNG, ~1 MB) dan
+  menggambarnya antara lane dan tembok tepi (`MapArt`, hook `_draw_map_decor`). Rincian di
+  bagian "Slice 9bj" paling bawah.
+- Urutan bake berikutnya (user: "semuanya"): minion (5 tipe x 5 level x biru/merah), menara +
+  kastil + slot bangun, HUD/menu, lalu hero dan boss. Sisanya di luar bake: `DynamicRenderer`
+  (partikel, kabut, obor, air bergerak) dan `tactical_commands.draw_world/draw_ui`.
+  Keputusan user: combo counter dan kill feed tetap tampil di Godot (walau tidak digambar
+  pygame).
 
 ## Catatan historis portrait Hero Shop
 
@@ -2059,4 +2065,49 @@ Jadi di game Python asli combo counter dan kill feed TIDAK PERNAH tampil. Layer
 9bb/9bc memport `draw()` keduanya dengan setia dan `prototype_view` sudah lebih dulu
 melukis keduanya, sehingga Godot menampilkan overlay yang tidak ada di sumber.
 Menyembunyikannya (hapus `combo_counter` dan `kill_feed` dari `OVERLAY_ORDER`) adalah
-keputusan produk yang belum diambil; slice ini tidak mengubah visibilitasnya.
+keputusan produk. Keputusan user (sesi 9bj): biarkan tampil; `OVERLAY_ORDER` tidak berubah.
+
+## Slice 9bj — bake dekorasi dan toko peta (layer 9bj)
+
+Latar: Godot memakai tile native untuk lapisan 1-3 (terrain, sungai, lane) dan 6 (tembok tepi)
+`MapRenderer._render_static_map`, tetapi lapisan 4 (`DecorationRenderer.draw_all`: pohon, batu,
+nisan, bendera, kristal, semak) dan 5 (`ShopRenderer.draw`: bangunan Hero Shop dan Item Forge)
+belum pernah digambar. Kode keduanya besar (`map_components/_bundle.py` 315 KB), jadi dibake,
+bukan diport tangan.
+
+- `bake/pygame_env.py`: boot pygame headless (driver SDL dummy), mengalihkan folder save game
+  ke folder sementara supaya repo tidak tercemar, dan menulis PNG + manifes secara
+  deterministik (`Pillow`, `optimize`, tanpa metadata).
+- `bake/bake_map_overlay.py`: untuk tiap dari 54 tema membangun `MapRenderer` asli, merender
+  lapisan 1-3 (alas) lalu menyalinnya dan menjalankan lapisan 4-5 asli di atasnya. Piksel yang
+  warnanya berubah disimpan opak, sisanya transparan; skrip membuktikan `overlay + alas ==
+  hasil sumber` (`assert`). Sumber mengacak ulang `random` dari entropi setelah membangun tata
+  letak, sehingga detail tiap panggilan gambar berbeda antar-run; skrip menanam seed per
+  lapisan (`{tema}:base|decorations|shops`) dan dua run penuh menghasilkan 54 PNG yang identik.
+- `data/art/map_overlay.json`: generator, versi pygame, dan per tema `size`, `bytes`, `sha256`,
+  `covered_pixels`. `assets/art/map/<tema>.png`: 1280x720 RGBA8. Seluruh 54 `map_theme` di
+  `data/levels/level_*.json` punya overlay.
+- `scripts/ui/map_art.gd` (`MapArt`): membaca manifes, memuat tekstur lewat `load()` hanya bila
+  `ResourceLoader.exists` (tema yang belum diimpor tidak merusak gambar), dan men-cache per tema.
+- `minion_view.gd` mendapat hook kosong `_draw_map_decor()` di antara tekstur lane dan tekstur
+  tembok (urutan sumber: dekorasi, toko, tembok); `prototype_view.gd` menggambar overlay tema
+  aktif di sana, sebelum tint 9bh dan sebelum unit.
+- `tests/map_art_checks.gd` (terdaftar di `run_all.gd`): manifes = tema palet (54), tiap PNG
+  ada dan terdekode 1280x720, `covered_pixels` >= 10000, tekstur forest/haunted/volcanic
+  termuat lewat `load()` (ini menguji impor Godot di CI), cache, dan urutan hook.
+  `validate_project.py` menambah pin statis: header PNG (RGBA8 1280x720), sha256 + byte tiap
+  file, tema level = tema palet = tema manifes, urutan sumber dekorasi < toko < tembok, isi
+  skrip bake, dan wiring view. Tidak ada oracle Python baru di workflow karena membake butuh
+  pygame; integritas dijaga hash di manifes dan dijalankan validator di CI.
+
+Cara membake ulang: `python godot_rebuild/bake/bake_map_overlay.py` (butuh `pygame`, `numpy`,
+`Pillow`), lalu commit PNG dan manifes yang berubah.
+
+Batas yang diketahui:
+
+- Alas Godot (tile native dengan RNG visual tetap) bukan salinan piksel alas pygame; overlay
+  menyalin warna akhir sumber di tiap piksel yang disentuh lapisan 4-5, termasuk bayangan
+  yang di sumber transparan. Selisih hanya terlihat pada tepi bayangan.
+- Belum ada animasi peta (`DynamicRenderer`: partikel, kabut, obor, kilau toko, air).
+- Painter di view tidak dieksekusi suite headless; hanya pemuatan tekstur dan urutan hook
+  yang diuji CI. Tampilan akhir harus dilihat di Godot.
