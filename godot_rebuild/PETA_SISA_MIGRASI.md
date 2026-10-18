@@ -2,16 +2,123 @@
 
 Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
 
-## Status terkini — branch `arena/2467bf39-mystic-arena`
+## Status terkini — branch `arena/799d0e95-mystic-arena`
 
-- 9aw WaveAnnouncer + panah PathPreview, 9ax ikon AchievementPopup, 9ay
-  HitParticle, dan 9az FloatingText sudah selesai.
-- 9ba melengkapi panel AchievementPopup di luar ikon: gradien gelap-emas,
-  dua border membulat, corner ticks, header ber-letter-spacing, fit ellipsis,
-  dan gold glow awal slot. Oracle menjalankan `AchievementPopup.draw()` asli
-  di bawah pygame shim perekam; fixture mengunci fase fade/hold, geometri,
-  opacity, dan teks terpotong. Pemeriksaan native dan validator menutup replay.
-- PR #334 tetap terbuka dan belum di-merge.
+- PR #334 sudah di-merge (`a134020`). 9aw WaveAnnouncer + PathPreview, 9ax ikon
+  AchievementPopup, 9ay HitParticle, 9az FloatingText, dan 9ba panel
+  AchievementPopup sudah ada di `main`.
+- 9bb melengkapi visual `KillFeed.draw()`: kotak latar hitam, border membulat
+  warna tim, fade-in/hold/fade-out, slide-in 100 px, dan teks 22 px rata kanan
+  di (layar-20, 250). Oracle `kill_feed_draw_source_oracle.py` menjalankan
+  `draw()` asli di bawah shim pygame perekam (31 frame, 192 op);
+  `kill_feed_draw_checks.gd` mereplay fixture lewat layout murni dan lewat state
+  `KillFeed` produksi. Rincian ada di bagian "Slice 9bb" paling bawah.
+- 9bc melengkapi visual `ComboCounter.draw()`: bar timer 80x4, teks `xN` 48 px
+  berbayang (cincin 8 arah atau satu bayangan (2, 2) menurut `cheap_alpha`)
+  di (layar-100, 100), label tier dari 5 kill, dan lerp flash ke putih.
+  Oracle `combo_counter_draw_source_oracle.py` menjalankan `draw()` asli di
+  bawah shim pygame perekam (52 frame, 426 op); `combo_counter_draw_checks.gd`
+  mereplay fixture lewat layout murni dan lewat state `ComboCounter` produksi.
+  Rincian ada di bagian "Slice 9bc" paling bawah.
+- 9bd melengkapi visual `BossIntroCinematic.draw()`: banner 600x92 membulat
+  (latar `(10, 10, 18)` pada `210*alpha/255`, border 2 px `entrance_color`),
+  corner ticks emas hanya di atas alpha 60, teks tag / nama 46 px / judul
+  ber-kutip dengan alpha fade, dan bar HP membulat 150x12. Bar HP digambar
+  langsung ke layar sehingga **tidak ikut fade** (kuirk sumber yang
+  dipertahankan). Oracle `boss_intro_draw_source_oracle.py` menjalankan `draw()`
+  asli plus `ui_theme.corner_ticks` asli di bawah shim pygame perekam (22 frame,
+  279 op); `boss_intro_draw_checks.gd` mereplay fixture lewat layout murni, lewat
+  state `BossIntroCinematic` produksi, dan lewat `PrototypeView`. Rincian ada di
+  bagian "Slice 9bd" paling bawah.
+- 9be melengkapi visual `BossDeathAnimation._draw_celebration()` (true boss):
+  overlay `darken` hingga 180, tint emas `(80, 60, 20, 40)`, `BOSS DEFEATED!`
+  66 px dengan enam salinan bayangan yang memantul, nama 46 px berbayang, judul
+  ber-kutip, hadiah emas dengan ikon koin, `HERO UNLOCKED!` dengan dua bintang
+  vektor, enam percikan berputar, dan hint skip berdenyut. Oracle
+  `boss_celebration_draw_source_oracle.py` menjalankan `draw()` asli di bawah
+  shim pygame perekam bersama (`tests/draw_recorder.py`; 20 frame, 547 op);
+  `boss_celebration_draw_checks.gd` mereplay fixture dari state terekam, dari
+  `BossDeathAnimation` produksi, dan lewat `PrototypeView`. Rincian ada di bagian
+  "Slice 9be" paling bawah.
+- 9bf melengkapi visual `BossDeathAnimation._draw_death_sequence()`: kilat putih
+  aditif 15 tick, gelombang ledakan (cincin 3 px konsentris + inti setengah alpha,
+  bergeser 2 px dari boss), badan dua warna yang memudar, fragmen persegi
+  berotasi dengan tepi 1 px, dan partikel jiwa naik dengan glow radial. Seluruh
+  `boss_death.draw()` kini digambar PALING AKHIR di screen space (setelah level
+  intro dan tanpa goncangan), seperti `_core.py`. Oracle
+  `boss_death_sequence_draw_source_oracle.py` menjalankan `draw()` asli dengan
+  fragmen/partikel acak ber-seed lalu menyimpan spesifikasinya agar Godot
+  mereplay lewat `configure(...)` (12 frame, 2299 op); `boss_death_sequence_draw_checks.gd`
+  mereplay lewat state produksi dan `PrototypeView`. Rincian ada di bagian
+  "Slice 9bf" paling bawah.
+- 9bg melengkapi visual `DeathExplosion.draw()` dan `HitParticle.draw()`: kilat
+  pusat berupa dua cakram di satu surface SRCALPHA (inti putih `size // 2`
+  MENIMPA cakram pucat `size`) pada anchor `int(x), int(y)`, dan tiap percikan
+  berupa sprite (cakram warna + inti putih yang menimpa tengahnya) yang diskalakan
+  ke `max(1, int(size * rasio))` dan di-blit dengan alpha `int(255 * rasio)`.
+  Percikan ledakan dan partikel dunia kini memakai satu layout
+  (`hit_particle_layout.gd`). Oracle `death_explosion_draw_source_oracle.py`
+  menjalankan `DeathExplosion` dan `HitParticle` asli di bawah shim bersama
+  (`transform.scale` dimodelkan di geometri lingkaran; 25 frame, 582 op);
+  `death_explosion_draw_checks.gd` mereplay lewat state produksi dan
+  `PrototypeView`. Rincian ada di bagian "Slice 9bg" paling bawah.
+- 9bh melengkapi langkah terakhir `MapRenderer.draw()`: tint ambient per tema
+  (53 dari 54 tema; forest tidak punya) yang menutup seluruh peta di bawah
+  unit. Sebelumnya `theme["ambient_tint"]` selalu `null` di Godot dan tidak ada
+  yang menggambarnya. Dengan `Quality.cheap_alpha` tint di-blit apa adanya
+  (alpha 12-22); tanpa itu layar dikalikan `255 - (255 - c) * a / 255`.
+  Oracle `map_tint_draw_source_oracle.py` menjalankan `MapRenderer.draw` asli di
+  bawah shim bersama dengan tint tiap tema dibaca dari literal tema asli
+  `map_components/_bundle.py` (54 tema x 2 jalur = 108 frame, 106 op);
+  `map_tint_draw_checks.gd` mereplay tabel dan frame lewat layout murni dan
+  `PrototypeView`. Rincian ada di bagian "Slice 9bh" paling bawah.
+- 9bi memin urutan gambar dari sumber: `Game.draw` melukis banner boss SEBELUM
+  `effects.draw_ui` (wave announcer, lalu achievement), lalu level intro, dan
+  `boss_death.draw` paling akhir; `EffectManager.draw` melukis path preview, ledakan,
+  partikel, lalu teks melayang, dan `tactical.draw_world` sesudahnya. Sebelumnya
+  Godot melukis banner boss DI ATAS announcer dan achievement, dan efek taktis di
+  bawah path preview. Oracle `draw_order_source_oracle.py` membaca urutan itu
+  langsung dari `_core.py` / `_render.py` dengan `ast`; `prototype_view` kini melukis
+  dari konstanta `OVERLAY_ORDER` / `WORLD_LAYER_ORDER` yang dibaca balik
+  `draw_order_checks.gd`. Rincian ada di bagian "Slice 9bi" paling bawah.
+- 9bj mengubah arah migrasi visual (keputusan user: "bake PNG dari pygame"). Tampilan Godot
+  masih jauh dari pygame karena art dunia (peta, unit, menara, hero, boss) masih placeholder;
+  slice overlay 9bb-9bi tidak mengubahnya. Kode art pygame dijalankan headless (`pygame`,
+  `numpy`, `Pillow`) oleh skrip di `godot_rebuild/bake/`, hasilnya PNG di
+  `godot_rebuild/assets/art/` dengan manifes `godot_rebuild/data/art/*.json` (ukuran, byte,
+  sha256). Layer 9bj membake dekorasi + bangunan toko tiap tema (54 PNG, ~1 MB) dan
+  menggambarnya antara lane dan tembok tepi (`MapArt`, hook `_draw_map_decor`). Rincian di
+  bagian "Slice 9bj" paling bawah.
+- 9bk membake sprite minion (5 tipe x 5 level nexus x biru/merah, 50 atlas, 2,7 MB, 2500
+  frame) dan menggambarnya di `MinionView._draw_unit` lengkap dengan bar HP dan aura slow
+  sumber; lingkaran lama jadi cadangan bila atlas belum diimpor. Rincian di bagian "Slice
+  9bk" paling bawah.
+- 9bl membake sprite menara (Archer/Cannon/Ice/Mage x biru/merah x level), kastil nexus
+  level 1-5 (lima frame api obor) dan lencana perisai, lalu menggambarnya di `SiegeView`
+  dengan bar HP/perisai, lencana level, dan label perisai kastil seperti sumber. Struktur
+  kini dilukis SEBELUM unit (seperti `Game.draw`). Rincian di bagian "Slice 9bl".
+- 9bm membake penanda slot bangun (lima frame glow biru + satu merah, `BuildSlots` asli) dan
+  menggambarnya di bawah menara, seperti `Game.draw`. Rincian di bagian "Slice 9bm".
+- 9bn menambah suite scene `painter_scene_checks.gd` yang menjalankan `_draw` view prototipe
+  sungguhan di CI (penghitung `draw_count`) dengan semua tipe minion, menara tiap jalur,
+  seleksi, slow, hurt, dan tembakan. Rincian di bagian "Slice 9bn".
+- 9bo membake badan hero untuk tujuh hero berkit native (Kaizen, Thorne, Grimjaw, Sylara,
+  Vex, Zephyr, Alchemist; biru + merah; 8 fase diam, 8 fase jalan, pose serang, dua arah;
+  14 atlas, 5,5 MB) dan menggambarnya dengan overlay `Hero.draw` (bar HP 45x6, papan nama
+  dan bintang level, bayangan, cincin seleksi, strip cooldown). Hero lain tetap memakai
+  penanda siluet. Rincian di bagian "Slice 9bo".
+- 9bp membake peluru menara (panah 16 arah per tim, bola meriam, kristal es, bolt mage; satu
+  sheet 6 KB) dan menggambarnya di `SiegeView` menggantikan titik 4 px. Peluru hero
+  (`world.hero_projectiles`) belum. Rincian di bagian "Slice 9bp".
+- 9bq membake badan 216 boss (pose diam fase 0, dua arah; satu PNG per boss, 2,6 MB) dan
+  menggambarnya menggantikan lingkaran bermahkota, dengan bayangan, bar HP, dan papan nama di atas
+  puncak sprite (`BOSS_LABEL_TOP`). Rincian di bagian "Slice 9bq".
+- Urutan bake berikutnya (user: "semuanya"): skin HUD/menu (9br: tema, 9bs: latar menu utama;
+  HUD dan arena layar penuh belum), peluru hero, pose jalan/serang boss.
+  Sisanya di luar bake: `DynamicRenderer`
+  (partikel, kabut, obor, air bergerak) dan `tactical_commands.draw_world/draw_ui`.
+  Keputusan user: combo counter dan kill feed tetap tampil di Godot (walau tidak digambar
+  pygame).
 
 ## Catatan historis portrait Hero Shop
 
@@ -139,8 +246,16 @@ Dibaca hanya untuk memilih slice berikutnya, bukan audit menyeluruh:
 | `LevelIntroScreen.draw()` (`_render.py` 2761-3391) | **Terport (layer 9av)** — `scripts/ui/level_intro_layout.gd` (op list murni: darken, tint tema 33+forest, vignette 60 cincin, pembatas + 3 berlian, kolom level dengan angka 200 px + 6 bayangan, bar kesulitan, koin reward/starting gold, kolom boss dengan pill tag, aura berdenyut, 12 sinar, siluet tubuh/inner/duri, mata bercahaya, nama + 5 bayangan, judul, PREPARE FOR BATTLE + ikon warn, prompt PRESS SPACE berdenyut + panah) dirender `prototype_view._draw_intro_op`; oracle `level_intro_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam |
 | WaveAnnouncer + PathPreview visual (`_render.py`) | **Terport (layer 9aw)** — banner lengkap: gradien 80 strip, border emas ganda, 40 diagonal, corner ticks, judul berbayang + subtitle; panah lane segitiga kini memakai geometri hasil gambar sumber (termasuk pembulatan floor Python). Oracle `wave_announcer_source_oracle.py` memaku kotak visual; `path_preview_source_oracle.py` memaku semua vertex panah dan fase animasi. Tetap prosedural, tanpa aset hero final. |
 | AchievementPopup ikon (`_render.py::AchievementPopup._draw_icon`) | **Terport (layer 9ax)** — ikon star/sword/skull/shield/gold berikut lencana lingkaran/warna alpha dan fallback; oracle menjalankan method sumber dan membandingkan primitive fixture lewat `AchievementPopupChecks`. |
-| HitParticle sprite (`_render.py::HitParticle`) | **Visual dilengkapi (layer 9ay)** — mempertahankan gerak/umur yang sudah terport, menggambar ulang lingkaran warna + inti putih dari sprite sumber dengan ukuran mengikuti lifetime; oracle merekam primitive `pygame.draw.circle` asli dan suite memaku warna, radius, pusat, serta skala inti. |
+| HitParticle sprite (`_render.py::HitParticle`) | **Visual dilengkapi (layer 9ay); digambar dari daftar op sumber sejak layer 9bg (`hit_particle_layout.gd`)** — mempertahankan gerak/umur yang sudah terport, menggambar ulang lingkaran warna + inti putih dari sprite sumber dengan ukuran mengikuti lifetime; oracle merekam primitive `pygame.draw.circle` asli dan suite memaku warna, radius, pusat, serta skala inti. |
 | FloatingText presentation (`_render.py::FloatingText.draw`) | **Visual dilengkapi** — renderer memakai anchor integer dan font size ter-clamp dari sumber, teks ber-shadow ber-offset (1,2), warna alpha dan body style normal/critical; oracle menjalankan `draw()` cached-surface path dengan fake font/surface perekam dan fixture mengunci kedua blit. |
+| KillFeed draw (`_render.py::KillFeed.draw`) | **Terport (layer 9bb)** — `scripts/ui/kill_feed_layout.gd::ops(entries, screen_w, measure)`: alpha fade-in 15 tick / hold / fade-out 45 tick, slide-in 100 px, kotak latar `inflate(12, 4)` hitam alpha/2, border membulat r=3 warna tim alpha/2, teks 22 px rata kanan di (layar-20, 250+int(y_offset)); dirender `prototype_view._draw_kill_feed`; oracle `kill_feed_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam (31 frame, 192 op). |
+| ComboCounter draw (`_render.py::ComboCounter.draw`) | **Terport (layer 9bc)** — `scripts/ui/combo_counter_layout.gd::ops(state, screen_w, measure, cheap_alpha)`: bar timer 80x4 di (layar-140..-60, 140) dari 2 kill, teks `xN` `int(48*display_scale)` px berpusat di (layar-100, 100) dengan bayangan 8 arah (`cheap_alpha`) atau (2, 2), label tier 24 px di (layar-100, 70) dari 5 kill, warna tier 5/10/15/20 dan lerp flash `color_flash/20` ke putih; dirender `prototype_view._draw_combo_counter`; oracle `combo_counter_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam (52 frame, 426 op). |
+| BossIntroCinematic draw (`_render.py::BossIntroCinematic.draw`) | **Terport (layer 9bd)** — `scripts/ui/boss_intro_layout.gd::ops(intro)`: banner 600x92 (maks `layar-40`) membulat r=10 dengan latar `(10, 10, 18)` alpha `210*alpha/255` dan border 2 px `entrance_color`, 8 garis corner ticks emas `(255, 220, 120)` panjang 12 inset 5 hanya bila alpha > 60, teks tag 24 px / nama 46 px (`title`) / judul ber-kutip 24 px pada `(banner_x + 14, banner_y + 8/26/64)` dengan alpha fade, bar HP 150x12 r=5 (track `(40, 8, 12)`, isi `entrance_color`, outline putih 1 px) yang TIDAK ikut fade; dirender `prototype_view._draw_boss_intro` lewat `_draw_banner_op`; oracle `boss_intro_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam (22 frame, 279 op). |
+| BossDeathAnimation celebration (`_render.py::BossDeathAnimation._draw_celebration`) | **Terport (layer 9be)** — `scripts/ui/boss_celebration_layout.gd::ops(anim, ticks, measure, cheap_alpha)`: `darken` 180 (fade-in <15 %, fade-out >85 %), tint `(80, 60, 20, 40)` sampai 85 %, `BOSS DEFEATED!` 66 px `title` (emas, 6 bayangan hitam alpha maks 80 atau 1 tanpa `cheap_alpha`) memantul 60 px sampai 30 %, nama 46 px `entrance_color` + bayangan (+2, +2), judul ber-kutip 32 px, hadiah `+ N GOLD` + koin (r=10) + `HERO UNLOCKED!` + 2 bintang `draw_icon("star", s=0.5)` setelah 30 %, 6 percikan setelah 40 %, hint `[SPACE] to continue` setelah 50 %; dirender `prototype_view._draw_boss_celebration`; oracle `boss_celebration_draw_source_oracle.py` (20 frame, 547 op). |
+| BossDeathAnimation death sequence (`_render.py::BossDeathAnimation._draw_death_sequence`) | **Terport (layer 9bf)** — `scripts/ui/boss_death_sequence_layout.gd::ops(anim)`: `flash` aditif `int(200*(1-t/15))`, per gelombang cincin lebar 3 `range(r, r-20, -3)` alpha `alpha*r/radius` + inti `max(1, r-15)` alpha/2 di (boss+2, boss+2), badan `boss_color` + inti `entrance_color` alpha/2 selama progress <0.5, fragmen persegi berotasi + tepi 1 px `entrance_color` sampai alpha <10, partikel jiwa glow `size+2..1` + inti putih; petunjuk painter `covered` / `ring_inner` untuk timpa-piksel SRCALPHA; dirender `prototype_view._draw_boss_death_animation` (paling akhir, screen space); oracle `boss_death_sequence_draw_source_oracle.py` (12 frame, 2299 op). |
+| DeathExplosion + HitParticle draw (`_render.py::DeathExplosion.draw`, `HitParticle.draw`) | **Terport (layer 9bg)** — `scripts/ui/death_explosion_layout.gd::ops(explosion)` + `scripts/ui/hit_particle_layout.gd::ops(particle)`: kilat = cakram `(255, 255, 200, int(200*i))` radius `int(20*i)` + inti putih `(255, 255, 255, int(255*i))` radius `size // 2` di `int(x), int(y)` selama 8 tick (`i = timer/8`); percikan = cakram warna radius `base` + inti putih `max(1, base // 2)` diskalakan `current_size / base`, alpha permukaan `int(255 * lifetime / max_lifetime)`, di `int(x) - current_size*3//2`; petunjuk painter `ring_inner` / `covered` untuk timpa-piksel; dirender `prototype_view._draw_world_effects` lewat `_draw_death_op`; oracle `death_explosion_draw_source_oracle.py` (25 frame, 582 op). |
+| MapRenderer ambient tint (`_render.py::MapRenderer.draw`) | **Terport (layer 9bh)** — `scripts/ui/map_tint_layout.gd::ops(theme, screen, cheap_alpha)` + tabel `TINTS` (54 tema, forest `null`): satu `fill` seukuran peta `(r, g, b, a)` (`cheap_alpha`) atau perkalian `255 - (255 - c) * a / 255` (`BLEND_RGB_MULT`); dirender `prototype_view._draw_map_overlay`, hook baru di `minion_view.gd` tepat setelah lapisan peta dan sebelum markas/unit; oracle `map_tint_draw_source_oracle.py` (108 frame, 106 op). Lapisan peta dinamis (`DynamicRenderer`), dekorasi, dan toko tetap belum diport. |
+| Urutan gambar (`_core.py::Game.draw`, `_render.py::EffectManager.draw/draw_ui`) | **Terport (layer 9bi)** — `prototype_view.gd`: `WORLD_LAYER_ORDER` (path preview, efek, tactical) dan `OVERLAY_ORDER` (banner boss, announcer, [combo, kill feed], achievement, level intro, boss death) sebagai satu-satunya sumber urutan di `_draw()`; oracle `draw_order_source_oracle.py` membaca urutan dengan `ast`. |
 | `hero_marker.gd` | Selesai: placeholder 4-6 sisi tetap untuk `grimjaw_checks`, siluet per-hero dipakai `prototype_view.gd:619`; art roster dipaku golden fixture (layer 9aj) |
 
 Catatan: `ui_components/hero_portraits.py` yang di-impor `_core.py:3056`
@@ -157,6 +272,9 @@ dokumen ini; sisa sebenarnya hanya art final, dan `lighting.py` tetap di luar
 scope.)
 
 ## Slice berikutnya: siluet hero arena (art)
+
+> **Historis.** Rencana ini sudah mendarat dan dikoreksi di layer 9aj (lihat
+> "Siluet hero arena — selesai" di bawah); bukan kandidat slice berikutnya.
 
 `hero_marker.gd` menggambar semua 222 hero sebagai poligon 4–6 sisi dengan warna
 turunan hash, jadi Kaizen dan Thorne tidak bisa dibedakan di arena.
@@ -207,6 +325,10 @@ jalur itu keputusan terpisah yang perlu Anda setujui.
 
 Dua mesin state deterministik dari `_render.py`, diport dengan pola yang sama
 (oracle sumber → fixture JSON → suite Godot yang memutar ulang fixture).
+
+> Hanya state. Visual `KillFeed.draw()` ditutup di layer 9bb dan visual
+> `ComboCounter.draw()` di layer 9bc (bagian "Slice 9bb" / "Slice 9bc" paling
+> bawah).
 
 - `scripts/ui/kill_feed.gd` — `add_kill(killer, victim, team)` menyusun
   `"Kaizen >> Grimjaw"` (biru) atau `"<<"` (merah), mendorong `target_y` tiap
@@ -373,7 +495,11 @@ bar kesulitan, dan teks gold/passive/boss-tag ada di dalam `draw()` dan
   teks "PREPARE FOR BATTLE") tidak diport; teks peringatannya hanya
   tersedia lewat `get_warning_text()`.
 
-## BossIntroCinematic (state + getter, bukan draw)
+## BossIntroCinematic (state + getter; draw ditutup di layer 9bd)
+
+> Bagian ini mencatat state dan getter (layer lama). Visual `draw()` ditutup
+> di layer 9bd (bagian "Slice 9bd" paling bawah); daftar "Yang sengaja tidak
+> diport" di bawah sudah dikoreksi.
 
 Banner nama boss di atas layar (`_render.py::BossIntroCinematic`). Tidak
 memause gameplay. Diport **hanya state dan getter**, dengan oracle yang sama
@@ -396,11 +522,11 @@ background/border, dan rect bar HP datang dari sumber.
 
 ### Yang sengaja tidak diport
 
-- Pixel drawing: sudut emas (`corner_ticks`), background rounded-rect, dan
-  pengisian bar HP. Semuanya dipetakan ke angka di atas, tapi tidak digambar.
+- ~~Pixel drawing~~ (sudut emas `corner_ticks`, background rounded-rect, pengisian
+  bar HP): kini digambar, layer 9bd.
 - Siluet boss, aura, dan sinar (`_draw_boss_silhouette`, `_draw_true_boss_silhouette`,
-  `_draw_mini_boss_silhouette`) — ia dipanggil dari draw dan bergantung pada
-  pulse `pygame.time.get_ticks()`. Belum ada port visualnya.
+  `_draw_mini_boss_silhouette`): **koreksi 9bd** — tidak pernah dipanggil dari
+  `draw()` (kode mati seperti tiga helper di bawahnya), jadi bukan gap migrasi.
 - `_draw_boss_text`, `_draw_hp_preview`, dan `_draw_skip_hint` tidak pernah
   dipanggil dari `draw()` (kode mati di sumber), jadi tidak diport.
 - Pemanggil yang membuat banner dari `Boss` hidup (`_core.py` di dua tempat)
@@ -523,12 +649,13 @@ panel modal (`hero_shop_panel.gd`, `item_forge_panel.gd`,
   `effects.get_shake_offset()` dan dipakai oleh `PrototypeView._draw()`.
 - **Rendering `PrototypeView` (`scenes/prototype/prototype_view.gd`)** —
   menggambar world effects (`_draw_path_preview`, `_draw_world_effects` termasuk
-  `DeathExplosion` dan `_draw_boss_death_sequence`) serta screen overlays
-  (`_draw_wave_announcer`, `_draw_combo_counter`, `_draw_kill_feed`,
-  `_draw_achievement_popup` dengan glow awal slot, `_draw_boss_intro` dengan
-  subtitle & border alpha, `_draw_boss_celebration` dengan backdrop/reward/hint,
-  dan `_draw_level_intro` dengan theme tint, difficulty bars, gold/passive,
-  boss preview), serta memaparkan `overlay_draw_summary()`.
+  `DeathExplosion`) serta screen overlays (`_draw_wave_announcer`,
+  `_draw_combo_counter`, `_draw_kill_feed`, `_draw_achievement_popup` dengan glow
+  awal slot, `_draw_boss_intro` dengan subtitle & border alpha, dan
+  `_draw_level_intro` dengan theme tint, difficulty bars, gold/passive, boss
+  preview). `_draw_boss_death_animation` (fase kematian 9bf lalu perayaan 9be)
+  dipanggil paling akhir di screen space. `overlay_draw_summary()` memaparkan
+  ringkasan state-nya.
 - **Scene & Runtime Checks** — diuji di `effect_manager_checks.gd`,
   `map_renderer_checks.gd`, `sprite_cache_checks.gd`, `render_cache_checks.gd`,
   `level_intro_screen_checks.gd`, `boss_intro_cinematic_checks.gd`,
@@ -1607,3 +1734,725 @@ timer 0/15/31/45/60, tiga nilai `get_ticks`, kesulitan normal/hard/easy).
 - `ui_theme.letter/corner_ticks/draw_icon("warn")` dipanen dari `ui_theme.py`
   asli di oracle; port GDScript-nya ada di layout yang sama.
 
+
+## Slice 9bb — visual `KillFeed.draw()` (layer 9bb)
+
+Sebelumnya hanya state `KillFeed` yang terport; `prototype_view` menggambar
+teks 14 px rata kanan karangan di (980, 96+y) tanpa kotak dan dengan fade
+berbeda dari sumber. Kini seluruh `draw()` sumber diport sebagai daftar op
+murni, `scripts/ui/kill_feed_layout.gd::ops(entries, screen_w, measure)`, tiga
+op per entri (kotak latar, border, teks) dalam urutan sumber:
+
+- Alpha: fade-in 15 tick pertama (`int(255 * (max-lifetime)/15)`), hold 255,
+  fade-out 45 tick terakhir (`int(255 * lifetime/45)`). Entri baru
+  (`lifetime == max`) beralpha 0 sehingga **tidak digambar** sampai `update()`
+  pertama. Slide-in `int((1 - progress) * 100)` px dari kanan pada 15 tick yang
+  sama.
+- Jangkar: `topright = (screen_w - 20 + slide_x, 250 + int(y_offset))`, font
+  22 px `body_medium`. Kotak latar = `text_rect.inflate(12, 4)` (6 px kiri/kanan,
+  2 px atas/bawah) hitam alpha//2; border 1 px membulat r=3 warna tim alpha//2;
+  teks warna tim dengan alpha penuh.
+- Oracle `kill_feed_draw_source_oracle.py` memanen `class KillFeed` dengan
+  `ast` dan menjalankan `draw()` asli di bawah shim pygame perekam (font
+  `int(0.55*size)` px per glyph, tinggi = size). State entri berasal dari
+  `add_kill`/`update` asli (lima skenario: satu kill biru dari fade-in sampai
+  habis, satu kill merah, tumpukan enam kill dengan cap 5 entri, kill yang baru
+  ditambah sebelum `update()`, nama panjang). Fixture
+  `kill_feed_draw_source.json` = 31 frame, 192 op; validator meregenerasinya
+  dari `_render.py` dan membandingkan.
+- `kill_feed_draw_checks.gd` memeriksa tabel fase alpha/slide, mereplay setiap
+  frame dari state terekam, mereplay semua frame lewat `KillFeed` produksi
+  (jalur `Color` -> RGB dan pemotongan `int(y_offset)` bit-demi-bit), dan
+  memeriksa wiring `PrototypeView.kill_feed_draw_ops` dengan metrik font nyata.
+
+Temuan yang ikut dipertahankan karena itu perilaku sumber: `y_offset` mendekati
+`target_y` dari bawah dan tidak pernah mencapainya dalam umur entri
+(79.99999999999997 di tick 170), jadi `int()` memarkir baris tertumpuk satu
+piksel lebih tinggi. Jarak tumpukan 20 px lebih kecil dari tinggi kotak (teks
+22 px + 4), sehingga kotak entri bertumpuk; font dinaikkan 16 -> 22 di sumber
+tanpa menaikkan langkah tumpukan.
+
+Divergensi yang disadari: `Barlow-Medium.ttf` (gaya `body_medium`) tidak ada di
+`assets/fonts` Godot, jadi view memakai Barlow SemiBold dan mengukur teks dengan
+metrik Godot (lebar kotak bisa beda beberapa piksel dari pygame; oracle memaku
+tata letak, bukan metrik). Border adalah polyline anti-alias yang ditarik
+setengah lebar goresan ke dalam (pygame menggores di dalam rect), bukan outline
+piksel-presisi. `ComboCounter.draw()` menyusul di layer 9bc.
+
+## Slice 9bc — visual `ComboCounter.draw()` (layer 9bc)
+
+Sebelumnya hanya state `ComboCounter` yang terport; `prototype_view` menggambar
+teks "N HIT COMBO" karangan di (1020, 160) tanpa bar timer, bayangan, atau
+label tier. Kini seluruh `draw()` sumber diport sebagai daftar op murni,
+`scripts/ui/combo_counter_layout.gd::ops(state, screen_w, measure, cheap_alpha)`
+(`state_of(counter)` mengambil lima field yang dibaca `draw()`):
+
+- Jangkar: `cx = screen_w - 100`, `cy = 100`. Bar timer 80x4 di
+  `(cx - 40, cy + 40)` hanya dari 2 kill (latar `(40, 40, 40)`, isi warna tier
+  `int(80 * timer / max_timer)`). Teks `x{count}` berpusat di (cx, cy) pada
+  `int(48 * display_scale)` px, **dilewati bila < 8 px — setelah bar digambar**.
+  Label tier 24 px berpusat di (cx, cy - 30) dengan bayangan (+1, +1), dari
+  5 kill. Tier `>=`: 5 hijau KILLING SPREE!, 10 kuning RAMPAGE!, 15 oranye
+  UNSTOPPABLE!, 20 merah GODLIKE!, selain itu putih COMBO. Flash: tiap kanal
+  `int(c + (255 - c) * color_flash / 20)`; bar tetap memakai warna tier.
+- Bayangan `x{count}`: `cheap_alpha` true = cincin 8 arah (urutan dx lalu dy,
+  tanpa (0, 0)), false = satu bayangan (2, 2). Port menerima flag itu; view
+  memakai default sumber (`Quality.cheap_alpha = True`, sama seperti 9av).
+- Oracle `combo_counter_draw_source_oracle.py` memanen `class ComboCounter`
+  dengan `ast` dan menjalankan `draw()` asli di bawah shim pygame perekam (font
+  `int(0.55*size)` px per glyph, tinggi = size). `draw()` meng-import
+  `mobile.perf.Quality` saat dipanggil, jadi oracle memasang stub `mobile.perf`
+  selama berjalan (dipulihkan sesudahnya) dan sengaja **tidak** menyediakan
+  `mobile.sidepanel`: `add_kill()` menelan ImportError itu seperti di game tanpa
+  panel samping Python. State berasal dari `add_kill`/`update` asli: pendakian
+  22 kill tiap 2 tick (semua batas tier, hold dengan bar menyusut, kedaluwarsa
+  dan fade-out), tiga frame sebelum `update()` (flash penuh), empat frame
+  dengan bayangan tunggal, serta dua kill dalam satu tick. Fixture
+  `combo_counter_draw_source.json` = 52 frame, 426 op; validator
+  meregenerasinya dari `_render.py` dan membandingkan.
+- `combo_counter_draw_checks.gd` memeriksa tangga tier dan lerp flash, mereplay
+  setiap frame dari state terekam, mereplay semua frame lewat `ComboCounter`
+  produksi, dan memeriksa wiring `PrototypeView.combo_counter_draw_ops` dengan
+  metrik font nyata. `prototype_view` juga memakai `HUD_SCREEN_W` dan
+  `_measure_hud_text` bersama dengan kill feed (nama generik dari 9bb).
+
+Perilaku sumber yang ikut dipertahankan: satu kill saja sudah menggambar `x1`
+(penjaga awal hanya memeriksa `display_scale`, bukan `count`); setelah jendela
+120 tick habis `count` menjadi 0 tetapi skala masih meluruh, jadi `x0` putih
+ikut tergambar sampai skalanya turun di bawah 8 px (frame 161-172 di fixture);
+dan dua kill dalam satu frame menggambar bar timer tanpa teks pada frame
+sebelum `update()` pertama.
+
+Divergensi yang disadari: `Barlow-Bold.ttf` (`body_bold`) dan `Barlow-Regular.ttf`
+(`body`) tidak dipakai view; semua teks HUD memakai Barlow SemiBold dan metrik
+Godot (posisi pusat bisa beda beberapa piksel dari pygame; oracle memaku tata
+letak, bukan metrik). Stub `mobile.perf` hanya menyediakan `Quality`; hook
+sidepanel (`beri_tahu_global`) tetap tidak diport (lihat bagian KillFeed +
+ComboCounter).
+
+## Slice 9bd — visual `BossIntroCinematic.draw()` (layer 9bd)
+
+Sebelumnya hanya state dan getter `BossIntroCinematic` yang terport;
+`prototype_view` menggambar rect bersudut siku dengan header karangan
+`TAG · NAMA` 20 px, subjudul 14 px tanpa kutip, tanpa corner ticks, dan bar HP
+persegi yang ikut memudar. Kini seluruh `draw()` sumber diport sebagai daftar op
+murni, `scripts/ui/boss_intro_layout.gd::ops(intro)`. Layout memakai getter yang
+sudah terverifikasi oracle state (`get_alpha`, `get_banner_x`, `get_banner_width`,
+`get_background_alpha`, `get_hp_bar_rect`, `get_hp_fill_width`, `get_tag`), jadi
+kurva fade, slide, dan bar tidak diduplikasi:
+
+- Banner `(banner_x, 12, min(600, layar-40), 92)`: latar `(10, 10, 18)` pada
+  `int(210*alpha/255)` dan border 2 px `(*entrance_color, alpha)`, keduanya
+  `border_radius=10`. Corner ticks `ui_theme.corner_ticks((255, 220, 120),
+  length=12, width=2, inset=5)` — 8 garis, **opaque** (tanpa alpha) dan hanya
+  bila `alpha > 60`. Teks di `(banner_x + 14, 12 + 8/26/64)`: tag 24 px
+  `body_medium` (TRUE BOSS merah / MINI BOSS kuning), nama 46 px `title` warna
+  `entrance_color`, `"judul"` 24 px `(215, 215, 235)`; ketiganya `set_alpha(alpha)`.
+- Bar HP `(banner_x + w - 166, 52, 150, 12)` r=5: track `(40, 8, 12)`, isi
+  `entrance_color` selebar `int(150 * elapsed / 85)` (tidak digambar bila 0), outline
+  putih 1 px. Digambar langsung ke layar, jadi **tidak memudar**: track dan outline
+  sudah terlihat penuh pada frame alpha 0 dan tetap penuh sampai intro berakhir
+  (kuirk sumber, dipin oracle dan validator).
+- Oracle `boss_intro_draw_source_oracle.py` memanen `class BossIntroCinematic`
+  dari `_render.py` dan fungsi `corner_ticks` dari `ui_theme.py` dengan `ast`,
+  lalu menjalankan `draw()` asli di bawah shim pygame perekam. Boss berasal dari
+  `bosses/boss_data.py` asli (`abaddon` true, `drakar` mini). `update()` asli
+  mencoba `from _system import SoundManager`; oracle memasang stub `_system` tanpa
+  `SoundManager` selama berjalan (dipulihkan sesudahnya) sehingga ImportError itu
+  ditelan seperti di game tanpa pygame. Skenario: timeline true boss (tick 0, 1-4,
+  8, 12, 18, 40, 70, 81, 90, 95, 96, 99, 100: batas alpha 60 di fade-in dan
+  fade-out, selesai slide, awal fade-out, bar penuh, intro berakhir), mini boss
+  (tag lain, warna lain), dan layar sempit 480 px (banner 440). Fixture
+  `boss_intro_draw_source.json` = 22 frame, 279 op; teks direkam tanpa metrik font
+  karena `draw()` tidak pernah mengukur teks.
+- `boss_intro_draw_checks.gd` mereplay setiap frame dari state terekam, dari
+  `BossIntroCinematic` produksi yang di-tick dengan `update()`, dan lewat
+  `PrototypeView.boss_intro_draw_ops` (harus sama persis dengan fixture karena
+  tidak ada metrik font); ditambah pin kuirk (bar HP opaque, intro selesai dan
+  intro yang di-skip tidak menggambar apa pun). `prototype_view` melukis op lewat
+  `_draw_banner_op`: rect membulat penuh = polygon terisi (radius dijepit ke sisi
+  terpendek seperti pygame dan jatuh ke rect biasa untuk sliver < 2 px), rect
+  membulat bergaris = outline inset milik kill feed, garis dan teks lewat painter
+  level intro.
+
+Divergensi yang disadari: nama 46 px (`title_font`, Cinzel) dan tag/judul
+(`body_medium`) memakai Barlow SemiBold di view (hanya `style` yang dicatat);
+polygon membulat tidak anti-alias seperti `draw.rect` pygame tetapi memakai 5
+sampel per sudut, bukan algoritma pygame, sehingga tepi bisa beda sub-piksel;
+pygame menimpa piksel di surface SRCALPHA sedangkan Godot memadukan border di atas
+latar, jadi border semi-transparan sedikit lebih gelap saat fade. Suara
+`nexus_hit` tetap diurus `step_boss_intro()` (tidak berubah).
+
+## Slice 9be — visual `BossDeathAnimation._draw_celebration()` (layer 9be)
+
+Sebelumnya `prototype_view` menggambar overlay datar `(0.02, 0.03, 0.06)` dan teks
+karangan `NAMA DEFEATED!` 32 px, judul 18 px, `+N GOLD REWARD` dan hint
+`PRESS SPACE OR ESC TO CONTINUE`. Kini seluruh `_draw_celebration()` sumber
+diport sebagai daftar op murni, `scripts/ui/boss_celebration_layout.gd::ops(anim,
+ticks, measure, cheap_alpha)`. Layout memakai `get_celebration_visual_state()`
+(overlay, bounce, hadiah, hint sudah dipin oracle state), jadi kurva tidak
+diduplikasi:
+
+- `darken` (alpha 0 = tanpa op) lalu tint `(80, 60, 20, 40)` seukuran layar
+  selama `progress < 0.85`. `cx = layar_w // 2`, `cy = layar_h // 2 - 50`.
+- `BOSS DEFEATED!` 66 px `title`: bayangan hitam di offset 6..1 (`cheap_alpha`)
+  atau satu di 3, `set_alpha(min(alpha, 80))`, berpusat di `(cx + o, cy - 40 +
+  drop + o)`; lalu teks emas `(255, 220, 100)`. Nama 46 px `entrance_color` di
+  `cy + 30 + drop` (bayangan hitam `alpha // 2` di +2, +2 digambar lebih dulu),
+  judul ber-kutip 32 px `body_semibold` `(200, 200, 220)` di `cy + 75 + drop`.
+  `drop` = `int((1 - eased) * 60)` selama bounce 30 % pertama.
+- Hadiah (setelah 30 %): koin `(255, 200, 50)` r=10 + garis tepi `(200, 150, 30)`
+  lebar 2 di kiri teks (digambar opaque, tanpa alpha), `$` 22 px `body_bold`, teks
+  `+ N GOLD` 32 px, lalu `HERO UNLOCKED!` (`ui_theme.letter`, 24 px) dengan dua
+  bintang `ui_theme.draw_icon("star", s=0.5)`: 4 garis lebar 2 sepanjang ±4 px +
+  titik r=1.5, warna `255/180/220 * alpha / 255`. **Kuirk sumber**: baris
+  `HERO UNLOCKED!` muncul untuk SETIAP boss true, bukan hanya yang membuka hero.
+- Percikan (setelah 40 %): 6 pasang lingkaran emas `int(4 * pulse)` dan putih
+  `int(2 * pulse)` di elips 220 x 60 yang berputar dengan `get_ticks()`; hint
+  `[SPACE] to continue` 24 px (setelah 50 %) dengan alpha `int(180 * pulse)`.
+- `tests/draw_recorder.py` adalah shim pygame perekam bersama untuk oracle 9be-9bi
+  (Rect/Surface/Text/Font/Draw, `mobile.perf` darken/flash/Quality, `installed()`
+  yang memulihkan `sys.modules`). Oracle memanen `BossDeathAnimation` dan
+  `_skip_button_label` dari `_render.py` serta `letter` dan `draw_icon` dari
+  `ui_theme.py`; bos berasal dari `bosses/boss_data.py` asli (`abaddon`,
+  `alchemist` di layar 960x540). Teks diukur `int(size * 0.55)` px per huruf; view
+  memberi metrik Barlow nyata ke layout yang sama.
+- `boss_celebration_draw_checks.gd` mereplay 20 frame dari state terekam, dari
+  `BossDeathAnimation` produksi (death phase 90 tick lalu `update()`), dan lewat
+  `PrototypeView.boss_celebration_draw_ops`; ditambah pin tahap (tint berakhir 85 %,
+  hadiah 30 %, percikan 40 %, hint 50 %, `cheap_alpha` tunggal).
+
+Divergensi yang disadari: nama dan judul (`title_font`, Cinzel; `body_*`) memakai
+Barlow SemiBold di view; sudut lingkaran koin tidak anti-alias pygame. Kilat
+putih fase kematian masih versi lama (slice berikutnya).
+
+## Slice 9bf — visual `BossDeathAnimation._draw_death_sequence()` (layer 9bf)
+
+Sebelumnya `prototype_view` menggambar kilat putih alpha-blend, satu busur per
+gelombang, satu lingkaran untuk badan, lingkaran polos untuk fragmen dan partikel,
+semuanya di dalam `_draw_world_effects` (world space, ikut goncangan, di bawah HUD).
+Kini seluruh `_draw_death_sequence()` sumber diport sebagai daftar op murni,
+`scripts/ui/boss_death_sequence_layout.gd::ops(anim)`. Layout memakai
+`get_death_visual_state()` (flash, gelombang, dissolve sudah dipin oracle state)
+dan membaca fragmen / partikel dari state produksi:
+
+- Kilat: `mobile.perf.flash` = `fill` aditif `(a, a, a)` layar penuh, `a =
+  int(200 * (1 - elapsed / 15))`. Godot memakai alpha-blend putih sebagai
+  pendekatan (aditif murni butuh material `CanvasItemMaterial` terpisah).
+- Gelombang: surface 4 px lebih besar dari radius di-blit di `(boss - radius)`
+  sedangkan pusat lingkaran di `(radius + 2)`, jadi seluruh gelombang bergeser (+2, +2).
+  Cincin lebar 3 untuk `r in range(radius, max(0, radius - 20), -3)` dengan alpha
+  `int(alpha * r / radius)`, lalu cakram inti `max(1, radius - 15)` alpha/2 yang
+  MENIMPA cincin di dalamnya (pygame tidak memadukan di surface SRCALPHA); layout
+  menandai cincin yang tertutup dengan `covered`.
+- Badan (progress <0.5): lingkaran `boss_color` alpha `int(255 * (1 - 2p))` dan inti
+  `entrance_color` alpha/2 jari-jari `size // 2` yang menimpa tengahnya (`ring_inner`).
+- Fragmen: persegi `±size` diputar `rotation`, isi `color` + tepi 1 px
+  `entrance_color` pada alpha `int(255 * life / max_life)`, dilewati bila `life <=
+  0` atau alpha <10 (tick 58+ dari 60). Partikel jiwa: cakram glow `size+2 .. 1`
+  (alpha `int(alpha * (1 - r / (size + 2)))`, tiap cakram menimpa yang lebih besar
+  sehingga jadi cincin 1 px lewat `ring_inner`) dan inti putih r=1, alpha puncak
+  `int(200 * life / max_life)`, dilewati di bawah 10.
+- Oracle memanen `class BossDeathAnimation` dan menjalankan `draw()` asli di bawah
+  `tests/draw_recorder.py`. Fragmen dan partikel acak: tiap skenario menyetel
+  `random.seed(1107)` dan menyimpan dict yang dibuat; `boss_death_animation.gd::configure`
+  menerimanya sebagai `particle_specs` / `rising_specs`, sehingga checks mereplay
+  frame tanpa bergantung RNG. Skenario: true boss (tick 0, 7, 15, 25, 44, 45, 57, 60,
+  89: awal/akhir kilat, tiga gelombang, badan hilang di progress 0.5, fragmen
+  habis) dan mini boss (2, 30, 58). Fixture 12 frame, 2299 op.
+- `boss_death_sequence_draw_checks.gd` mereplay setiap frame dari
+  `BossDeathAnimation` produksi yang di-tick (posisi fragmen/partikel dihitung
+  `update()`), ditambah pin tahap (kilat, jumlah cincin 4/14/7/0, 50 / 30 polygon,
+  batas badan), petunjuk timpa-piksel, dan `PrototypeView.boss_death_draw_ops`.
+- Urutan gambar: `_core.py` memanggil `boss_death.draw(self.screen)` sebagai
+  pemanggilan TERAKHIR (setelah `level_intro.draw`) di layar tanpa goncangan.
+  `_draw_boss_death_animation` kini dipanggil paling akhir di `_draw()`, memuat
+  fase kematian lalu perayaan 9be; `_draw_boss_death_sequence` lama dan
+  `_draw_boss_celebration` dihapus.
+
+Divergensi yang disadari: kilat aditif = alpha-blend; `covered` / `ring_inner`
+meniru timpa-piksel dengan `draw_arc` 1 px, bukan rasterisasi pygame; lingkaran
+tidak anti-alias seperti pygame; tepi fragmen digambar sebagai polyline tertutup
+di atas isian (tepi pygame menimpa piksel).
+
+## Slice 9bg — visual `DeathExplosion.draw()` + `HitParticle.draw()` (layer 9bg)
+
+Sebelumnya `prototype_view` menggambar kilat ledakan sebagai dua `draw_circle`
+berpadu (radius inti `size * 0.5` tanpa pembulatan, pusat float), percikan ledakan
+sebagai satu lingkaran tanpa inti putih di pusat float, dan percikan dunia lewat
+`core_radius()` (9ay) dengan inti yang berpadu di atas cakram. Kini kedua `draw()`
+sumber diport sebagai daftar op murni:
+
+- `scripts/ui/death_explosion_layout.gd::ops(explosion)`: bila `flash_timer > 0`
+  dan `size = int(20 * timer / 8) > 0`, dua cakram berpusat `int(x), int(y)`:
+  `(255, 255, 200, int(200 * i))` radius `size` lalu `(255, 255, 255, int(255 * i))`
+  radius `size // 2` (menimpa, bukan memadu). Lalu tiap percikan lewat
+  `hit_particle_layout.gd`.
+- `scripts/ui/hit_particle_layout.gd::ops(particle)`: sprite sumber digambar sekali
+  di constructor (cakram warna radius `base = max(1, int(size))`, inti putih
+  `max(1, base // 2)`) dan di setiap frame diskalakan ke `current_size =
+  max(1, int(size * rasio))` lalu di-blit di `(int(x) - current_size*3//2, int(y) -
+  current_size*3//2)` dengan `set_alpha(int(255 * rasio))`. Layout menghitung pusat
+  dan radius terskala (`half * factor + offset`, `base * factor`, `core * factor`);
+  `ring_inner` menjadikan cakram warna sebagai cincin di sekeliling inti, dan
+  `covered` menandai cakram yang sepenuhnya tertutup inti (`size` 1).
+- `tests/draw_recorder.py` kini memodelkan `pygame.transform.scale` pada geometri
+  lingkaran sprite (pusat dan radius dikali faktor). Oracle memanen `HitParticle` dan
+  `DeathExplosion` asli, menyetel `random.seed` per ledakan dan menyimpan
+  percikan yang dibuat (`particle_specs` untuk `death_explosion.gd::configure`).
+  Skenario: ledakan red small (8 percikan), blue medium (15), blue large (25) dengan
+  anchor pecahan (120.5, 80.25) dan (640.9, 360) dan frame di tick 0-34, plus empat
+  `HitParticle` mandiri (size 1, 2, 3, 6; satu mati sebelum tick 9). Fixture 25
+  frame, 582 op.
+- `death_explosion_draw_checks.gd` mereplay setiap frame dari `DeathExplosion` dan
+  `HitParticle` produksi yang di-tick, plus pin kilat (radius/alpha per tick,
+  anchor terpotong), petunjuk timpa-piksel, sprite terskala, dan
+  `PrototypeView.death_explosion_draw_ops` / `hit_particle_draw_ops`.
+- `prototype_view._draw_world_effects` kini melukis ledakan lalu partikel dunia lewat
+  `_draw_death_op`; dua pin lama 9ay (`particle.core_radius()` di view dan
+  `Color(1.0, 1.0, 1.0, p_alpha)`) diganti pin yang setara untuk layout
+  (`float(core) * factor`, inti putih `[255, 255, 255, 255]`). `core_radius()` tetap
+  ada di state port dan masih dipin `hit_particle_checks.gd`.
+
+Divergensi yang disadari: pygame menskalakan piksel sprite (nearest neighbour)
+sedangkan Godot menggambar lingkaran bergeometri terskala, sehingga tepi bisa beda
+sub-piksel; lingkaran tidak anti-alias seperti pygame.
+
+## Slice 9bh — tint ambient `MapRenderer.draw()` (layer 9bh)
+
+Sumber menutup `MapRenderer.draw()` dengan tint ambient tema (`theme.get
+("ambient_tint")`) di atas peta statis + dinamis, di bawah bangunan, menara, minion,
+hero, boss, dan efek (`_core.py` memanggil `map_renderer.draw` sebelum semuanya).
+Port state `MapRenderer` hanya menyimpan `ambient_tint`; `prototype_battle.gd` mengisinya
+`null` dan `prototype_view` tidak menggambar apa pun, jadi 53 tema kehilangan semburat
+warna petanya. Kini langkah itu diport sebagai daftar op murni,
+`scripts/ui/map_tint_layout.gd::ops(theme, screen, cheap_alpha)`:
+
+- `Quality.cheap_alpha` (default PC): surface SRCALPHA seukuran layar diisi
+  `(r, g, b, a)` tema lalu di-blit: satu op `fill` `[0, 0, 1280, 720]`, `blend` 0.
+  Tanpa `cheap_alpha`: `fill` `(int(255 - (255 - r) * a / 255), ...)` dengan
+  `BLEND_RGB_MULT` (blend 3). Tema tanpa tint (forest, atau nama tak dikenal yang jatuh
+  ke forest lewat `get_theme`) tidak menggambar apa pun.
+- Tabel `TINTS` (54 tema) memuat nilai dari literal tema asli `map_components/
+  _bundle.py`; oracle membacanya dengan `ast` (`THEMES` + tiap `*_THEME`), karena
+  modul itu tidak bisa diimpor tanpa pygame. Validator membandingkan baris
+  `TINTS` di GDScript dengan fixture, sehingga tabel tidak bisa menyimpang diam-diam.
+- Oracle memanen `MapRenderer.draw` asli dan menjalankannya di instance tanpa
+  `__init__` (peta statis dan renderer dinamis berupa stand-in kosong) di bawah
+  `tests/draw_recorder.py`. Fixture: 54 tema x {cheap_alpha, perkalian} = 108 frame,
+  106 op (forest tanpa op).
+- `minion_view.gd` mendapat hook `_draw_map_overlay()` (kosong) yang dipanggil tepat
+  setelah tekstur dinding dan sebelum `_draw_base`; `prototype_view.gd` meng-override-nya
+  untuk melukis tint lewat painter level intro (`fill`). Tint ikut transform goncangan
+  seperti seluruh peta di sumber (surface dunia di-shake utuh).
+- `map_tint_draw_checks.gd` mereplay tabel dan 108 frame lewat layout murni, memeriksa
+  kuirk (blend 0 vs 3, forest, tema tak dikenal, ukuran layar), dan lewat
+  `PrototypeView.map_tint_draw_ops` dengan `level_config["map_theme"]`.
+
+Divergensi yang disadari: Godot hanya memakai jalur `cheap_alpha` (alpha blend);
+jalur perkalian di-pin di layout dan oracle tetapi tidak dilukis. Lapisan dinamis
+`DynamicRenderer` (animasi air, obor, dll.) dan renderer dekorasi/toko masih belum
+diport, jadi tint menutup peta yang belum memuat lapisan itu.
+
+## Slice 9bi — urutan gambar overlay dan lapisan dunia (layer 9bi)
+
+Layer 9bb-9bh memport tampilan tiap overlay; slice ini memin POSISI-nya di tumpukan,
+dibaca dari sumber tanpa menjalankan apa pun (`draw_order_source_oracle.py`):
+
+- `_core.py::Game.draw`: `map_renderer.draw` < `effects.draw` < `tactical.draw_world`
+  (lapisan dunia, ikut goncangan) < `boss_intro.draw` < `effects.draw_ui` <
+  `level_intro.draw` < `boss_death.draw` (lapisan UI, tanpa goncangan). Komentar sumber
+  menyatakan banner boss sengaja digambar sebelum `effects.draw_ui` agar wave
+  announcer tidak pernah tertutup, dan `boss_death.draw` adalah panggilan paling akhir.
+- `EffectManager.draw`: `path_preview`, `explosions`, `particles`, `floating_texts`;
+  `draw_ui`: `wave_announcer`, `achievement` (loop `for e in self.explosions` diselesaikan
+  ke nama daftarnya).
+- `prototype_view.gd` sebelumnya memanggil `_draw_wave_announcer`, `_draw_combo_counter`,
+  `_draw_kill_feed`, `_draw_achievement_popup`, `_draw_boss_intro`, `_draw_level_intro`
+  berurutan: banner boss menimpa announcer dan popup achievement (kebalikan sumber), dan
+  `_draw_tactical` dilukis sebelum path preview dan efek. Kini `_draw()` mengiterasi
+  `WORLD_LAYER_ORDER` dan `OVERLAY_ORDER` lewat `_draw_world_layer` / `_draw_overlay_layer`.
+  Combo counter dan kill feed tidak pernah digambar sumber (lihat catatan di bawah),
+  jadi mereka tetap di slot lama di antara announcer dan achievement.
+- `draw_order_checks.gd` membaca balik `overlay_paint_order()` / `world_layer_order()` dan
+  membandingkannya dengan urutan sumber (`effects_ui` diperluas jadi daftar `draw_ui`).
+  Validator menambah pin statis: isi konstanta di view, urutan blok ledakan < partikel <
+  teks di `_draw_world_effects`, dan fixture tidak menyimpang dari sumber.
+
+## Catatan 9bi — `KillFeed.draw()` dan `ComboCounter.draw()` tidak dipanggil sumber
+
+Audit saat mengerjakan 9bi (grep seluruh `*.py` di luar `godot_rebuild/`):
+`EffectManager.draw_ui` hanya menggambar `wave_announcer` dan `achievement`
+(komentar sumber: "NOTIFIKASI DIHAPUS (request user)"), `register_kill` langsung
+`return`, dan tidak ada pemanggil `combo_counter.draw(`, `kill_feed.draw(` maupun
+`kill_feed.add_kill(`; `_core.py` hanya memanggil `combo_counter.add_kill()` (state).
+Jadi di game Python asli combo counter dan kill feed TIDAK PERNAH tampil. Layer
+9bb/9bc memport `draw()` keduanya dengan setia dan `prototype_view` sudah lebih dulu
+melukis keduanya, sehingga Godot menampilkan overlay yang tidak ada di sumber.
+Menyembunyikannya (hapus `combo_counter` dan `kill_feed` dari `OVERLAY_ORDER`) adalah
+keputusan produk. Keputusan user (sesi 9bj): biarkan tampil; `OVERLAY_ORDER` tidak berubah.
+
+## Slice 9bj — bake dekorasi dan toko peta (layer 9bj)
+
+Latar: Godot memakai tile native untuk lapisan 1-3 (terrain, sungai, lane) dan 6 (tembok tepi)
+`MapRenderer._render_static_map`, tetapi lapisan 4 (`DecorationRenderer.draw_all`: pohon, batu,
+nisan, bendera, kristal, semak) dan 5 (`ShopRenderer.draw`: bangunan Hero Shop dan Item Forge)
+belum pernah digambar. Kode keduanya besar (`map_components/_bundle.py` 315 KB), jadi dibake,
+bukan diport tangan.
+
+- `bake/pygame_env.py`: boot pygame headless (driver SDL dummy), mengalihkan folder save game
+  ke folder sementara supaya repo tidak tercemar, dan menulis PNG + manifes secara
+  deterministik (`Pillow`, `optimize`, tanpa metadata).
+- `bake/bake_map_overlay.py`: untuk tiap dari 54 tema membangun `MapRenderer` asli, merender
+  lapisan 1-3 (alas) lalu menyalinnya dan menjalankan lapisan 4-5 asli di atasnya. Piksel yang
+  warnanya berubah disimpan opak, sisanya transparan; skrip membuktikan `overlay + alas ==
+  hasil sumber` (`assert`). Sumber mengacak ulang `random` dari entropi setelah membangun tata
+  letak, sehingga detail tiap panggilan gambar berbeda antar-run; skrip menanam seed per
+  lapisan (`{tema}:base|decorations|shops`) dan dua run penuh menghasilkan 54 PNG yang identik.
+- `data/art/map_overlay.json`: generator, versi pygame, dan per tema `size`, `bytes`, `sha256`,
+  `covered_pixels`. `assets/art/map/<tema>.png`: 1280x720 RGBA8. Seluruh 54 `map_theme` di
+  `data/levels/level_*.json` punya overlay.
+- `scripts/ui/map_art.gd` (`MapArt`): membaca manifes, memuat tekstur lewat `load()` hanya bila
+  `ResourceLoader.exists` (tema yang belum diimpor tidak merusak gambar), dan men-cache per tema.
+- `minion_view.gd` mendapat hook kosong `_draw_map_decor()` di antara tekstur lane dan tekstur
+  tembok (urutan sumber: dekorasi, toko, tembok); `prototype_view.gd` menggambar overlay tema
+  aktif di sana, sebelum tint 9bh dan sebelum unit.
+- `tests/map_art_checks.gd` (terdaftar di `run_all.gd`): manifes = tema palet (54), tiap PNG
+  ada dan terdekode 1280x720, `covered_pixels` >= 10000, tekstur forest/haunted/volcanic
+  termuat lewat `load()` (ini menguji impor Godot di CI), cache, dan urutan hook.
+  `validate_project.py` menambah pin statis: header PNG (RGBA8 1280x720), sha256 + byte tiap
+  file, tema level = tema palet = tema manifes, urutan sumber dekorasi < toko < tembok, isi
+  skrip bake, dan wiring view. Tidak ada oracle Python baru di workflow karena membake butuh
+  pygame; integritas dijaga hash di manifes dan dijalankan validator di CI.
+
+Cara membake ulang: `python godot_rebuild/bake/bake_map_overlay.py` (butuh `pygame`, `numpy`,
+`Pillow`), lalu commit PNG dan manifes yang berubah.
+
+Batas yang diketahui:
+
+- Alas Godot (tile native dengan RNG visual tetap) bukan salinan piksel alas pygame; overlay
+  menyalin warna akhir sumber di tiap piksel yang disentuh lapisan 4-5, termasuk bayangan
+  yang di sumber transparan. Selisih hanya terlihat pada tepi bayangan.
+- Belum ada animasi peta (`DynamicRenderer`: partikel, kabut, obor, kilau toko, air).
+- Painter di view tidak dieksekusi suite headless; hanya pemuatan tekstur dan urutan hook
+  yang diuji CI. Tampilan akhir harus dilihat di Godot.
+
+## Slice 9bk — bake sprite minion (layer 9bk)
+
+Latar: di Godot minion adalah lingkaran + garis arah + bar HP. Sumbernya
+(`minions/_bundle.py`, 417 KB) menggambar tubuh tiap minion sekali per kunci cache
+`(tipe, tim, level nexus, pose, arah, hurt, bleed, death charge, regen, slow)` lalu mem-blit
+hasil yang sudah di-crop; bar HP, garis tebasan, dan aura slow digambar langsung.
+
+- `bake/bake_minion_atlas.py` menjalankan `Minion.draw` ASLI (lewat sprite cache game) untuk
+  tiap pose yang dicapai game lalu membaca sprite ter-crop + anchor dari cache. Pose wakil
+  mengikuti urutan kena-pertama di game: serang `k` = `attack_anim_timer` `min(24, 2k + 1)`
+  (kunci `atk // 2`, 13 pose), jalan `k` = `walk_cycle` `k / 2` (kunci `int(2 * wc) % 8`, 8
+  pose), diam `k` = `anim_time` `20k` (kunci `int(0.05 * t) % 4`, 4 pose), tiap pose untuk dua
+  arah (sprite kiri bukan cermin sprite kanan: hanya 61-88% piksel sama, jadi keduanya
+  dibake). Tim merah ikut pewarnaan ulang sumber (`R*1.35+B*0.25, G*0.55, B*0.55`) karena
+  yang dibaca adalah isi cache. Kilat hurt (+90 kecerahan) tidak dibake supaya sheet tetap
+  50 frame; Godot memakai modulate 1,6 selama 8 tick.
+- 50 sheet `assets/art/minions/<tipe>_<tim>_<level>.png` (10 kolom, sel seragam per sheet,
+  RGBA8) + `data/art/minions.json` (ukuran, byte, sha256, tabel frame `[x, y, w, h, ax, ay]`,
+  dan 96 baris `key_cases` hasil `_minion_cache_key` ASLI). Dua run penuh menghasilkan PNG
+  yang identik.
+- `UnitState.nexus_level` (metadata presentasi, tidak dibaca aturan apa pun) diisi
+  `PrototypeBattle.spawn_unit` dari tier nexus tim saat spawn, seperti `Minion.nexus_level`.
+- `scripts/ui/minion_anim.gd` membangun ulang jam animasi sumber di sisi view tanpa menulis
+  ke unit: `anim_time` +1 per tick, `walk_cycle` +0,25 per tick saat bergerak (> 0,1 px/tick),
+  ayunan 24 tick dimulai saat `cooldown_ticks` naik, flash hurt 8 tick saat HP turun.
+  `pose_key` meniru kunci cache sumber dan diuji terhadap `key_cases`.
+- `scripts/ui/minion_art.gd` memuat atlas (hanya bila `ResourceLoader.exists`) dan
+  mengembalikan `{texture, src, anchor}`; `MinionView._draw_unit` mem-blit di
+  `int(x) - ax, int(y) - ay` lalu menggambar aura slow dan bar HP seperti
+  `minions/_bundle.py` (4 px, latar/border menurut tim, isi hijau/kuning/merah di 0,6/0,3).
+- `tests/minion_art_checks.gd`: 50 atlas ada dan terdekode, 50 frame per sheet berada di
+  dalam gambar dengan anchor di dalam crop, frame goblin/rider termuat sebagai tekstur
+  (menguji impor di CI), `pose_key` identik dengan 96 kunci sumber, simulasi jam
+  (diam -> jalan -> serang -> hurt -> prune), tier spawn, dan urutan pemanggilan di view.
+  `validate_project.py` memin header/hash/isi tiap sheet, jenis minion dari `_core.py`,
+  serta potongan sumber yang diandalkan bake dan view (kunci cache, jam `Minion`, konstanta
+  bar HP dan aura slow). Workflow kini juga dipicu perubahan `minions/_bundle.py`.
+
+Batas yang diketahui:
+
+- Belum ada: animasi kematian minion (`Minion._draw_death_animation`), garis tebasan
+  (`slash_effects`), ikon debuff menara (`_draw_tower_debuff_fx`), serta kunci bleed / death
+  charge / regen yang belum dimodelkan simulasi Godot.
+- Pose serang dipicu dari kenaikan `cooldown_ticks`; urutan pasti tick tebasan sumber belum
+  dicocokkan kerangka per kerangka.
+- Painter tidak dieksekusi suite headless; hanya pemuatan atlas, pemilihan pose, dan
+  urutan pemanggilan yang diuji CI.
+
+## Slice 9bl — bake menara, kastil, dan lencana perisai (layer 9bl)
+
+Latar: di Godot menara dan nexus adalah kotak dengan tiga kotak kecil dan titik level.
+Sumbernya menggambar badan menara dari `towers/_bundle.py` (299 KB) lewat cache
+`("tw", tipe, tim, level, hadap, flash // 3)`, kastil dari kanvas 180x160 yang diskalakan 0,85
+(api obor gerbang berkedip dari level 4), dan lencana perisai lewat cache
+`(ukuran, warna, bucket rasio, bright)`.
+
+- `bake/bake_structure_atlas.py` menjalankan `Tower._draw_tower_body`, `_render_castle_full` +
+  `_render_dynamic_effects` + `smoothscale`, dan `_build_armor_crest` ASLI. Timer wakil
+  mengikuti urutan kena-pertama di game: `shoot_flash_timer` 0/5/8/10 untuk `shoot_b`
+  0/1/2/3 (turun dari 8, atau 10 untuk Cannon), `timer` kastil 0/3/5/8/10 untuk kedipan api
+  `int((timer * 0.4) % 5)` 0..4.
+- 42 sheet menara (`tower_<jalur>_<tim>_<level>.png`, 8 frame: hadap kiri/kanan x 4 flash),
+  10 sheet kastil (`castle_<tim>_<level>.png`, 5 frame 153x136) dan `crests.png` (88 frame:
+  ukuran 14/18 x tim x 11 bucket x bright), total ±1,2 MB. `data/art/structures.json` menyimpan
+  ukuran, byte, sha256, tabel frame, timer wakil, blit kastil (`x - 76, y - 101`), dan offset
+  bar HP per jalur/level (`get_*_top_y(0, 0, level)` ASLI).
+- `scripts/ui/structure_art.gd` memuat sheet (hanya bila `ResourceLoader.exists`);
+  `scripts/ui/structure_anim.gd` membangun ulang `shoot_flash_timer` dari kenaikan
+  `cooldown_ticks` (8 tick, 10 untuk Cannon) dan kedipan api dari `tick`.
+- `SiegeView._draw_structure` kini: sprite bake, lalu bagian hidup sumber (`Tower.draw`: lencana
+  perisai di (x+26, y-28-level), bar perisai di atas bar HP 44x5 pada `top_y - 14`, kilau
+  setengah tinggi, lencana level berborder kuning, tanda plus regen; `Castle.draw`: lencana
+  18 di atas sprite, bar perisai 60x6 membulat di `y - 80` dan label `SHIELD n%`). Bila
+  sheet belum diimpor, kotak lama tetap tergambar.
+- Struktur dilukis lewat hook `_draw_structures()` di `MinionView` (setelah dasar, SEBELUM
+  unit), meniru `Game.draw` yang menggambar kastil dan menara sebelum minion dan hero.
+- `tests/structure_art_checks.gd`: 42+10+1 sheet ada dan terdekode, frame di dalam sheet,
+  tiap dari 26 definisi struktur punya art untuk kedua tim, tabel offset dan bucket lencana,
+  jam flash/kedipan (termasuk kecocokan dengan timer wakil bake), dan urutan pemanggilan.
+  `validate_project.py` memin header/hash tiap sheet, cakupan definisi `data/structures`, serta
+  potongan sumber yang diandalkan bake dan view (kunci cache, skala dan blit kastil, konstanta
+  bar, warna perisai, posisi lencana, label).
+
+Batas yang diketahui:
+
+- Belum ada: kilat moncong Archer, kilat upgrade, lingkaran jangkauan versi sumber (Godot
+  tetap memakai busur jangkauan miliknya), peluru `Bullet.draw` (anak panah HD) dan aura sihir
+  kastil level 6 (nexus Godot berhenti di level 5).
+- Hanya frame pertama tiap kunci cache yang dibake, seperti game; sprite menara yang berubah
+  menurut sudut bidik di luar kunci (hadap kiri/kanan) tidak dicakup.
+- Painter tidak dieksekusi suite headless; hanya pemuatan sheet, cakupan definisi, jam, dan
+  urutan pemanggilan yang diuji CI.
+
+## Slice 9bm — bake penanda slot bangun (layer 9bm)
+
+Latar: slot bangun kosong di Godot berupa cincin dan tanda silang tipis. Sumbernya
+(`ui_components/_bundle.py::BuildSlots.draw`) mem-blit satu surface 40x38 ter-cache per slot di
+`(x - 20, y - 17)`: slot biru (platform batu, plus bersinar, label biaya "100G") dalam lima
+varian denyut `pk = int(round(sin(animation_time * 0.08) * 2))` = -2..2 dan satu slot merah
+statis. Label "100G" di sumber memang terpotong tinggi surface (hanya garis emas tipis yang
+terlihat di bawah platform); itu ikut terbake apa adanya.
+
+- `bake/bake_slot_atlas.py` memanggil `_render_blue_slot_surface(pk)` dan
+  `_render_red_slot_surface()` ASLI dari `Game.ui.build_slots_component`, menyimpan
+  `assets/art/slots/slots.png` (240x38, 6 frame, 1,6 KB) dan `data/art/slots.json` dengan
+  tabel frame, versi pygame, dan 56 baris `pulse_cases` (rumus sumber untuk deretan waktu).
+- `scripts/ui/slot_art.gd`: `pulse(tick)` meniru rumus sumber (jam = tick), memuat sheet hanya
+  bila `ResourceLoader.exists`. `PrototypeView._draw_structures()` melukis slot kosong LEBIH
+  DULU lalu menara (`super._draw_structures()`), karena `Game.draw` memanggil
+  `draw_build_slots` sebelum menara. Pratinjau pilihan slot (cakram dan busur jangkauan
+  Archer) tetap milik rebuild; bila sheet belum diimpor, penanda lama
+  (`_draw_slot_outline`) tetap tergambar.
+- `tests/slot_art_checks.gd`: sheet ada dan terdekode 240x38, enam frame di dalam sheet dengan
+  anchor (20, 17), `pulse` identik dengan 56 jawaban sumber dan mencapai kelima ukuran glow,
+  frame biru/merah termuat sebagai tekstur, dan urutan slot-di-bawah-menara. Validator memin
+  header/hash sheet, potongan sumber (`BuildSlots`), urutan `draw_build_slots` < menara di
+  `_core.py`, dan isi view. Workflow kini juga dipicu perubahan `ui_components/_bundle.py`.
+
+Batas yang diketahui: denyut memakai `tick_count` sebagai `animation_time`; slot yang
+terisi tidak digambar (seperti sumber); tombol bangun dan popup biaya tetap UI Godot.
+
+## Slice 9bn — painter dijalankan sungguhan di CI (layer 9bn)
+
+Sebelumnya painter `_draw_*` di `PrototypeView` hanya di-parse oleh CI. `CanvasItem.queue_redraw`
+menunda `_draw` ke akhir frame (bukan lewat renderer), sehingga frame yang ditunggu suite scene
+seharusnya sudah menggambar view; belum ada bukti dan keadaan yang digambar sangat sedikit.
+`tests/painter_scene_checks.gd` (di-await dari `run_all.gd` setelah suite scene lain):
+
+- membuktikan `_draw` berjalan di scene `PrototypeMatch` headless lewat `PrototypeView.draw_count`;
+- mengisi match dengan lima tipe minion di kedua tim, empat menara biru (tiga di-upgrade ke
+  Cannon/Ice/Mage), menara dan slot terseleksi, minion yang diperlambat dan terluka, serta
+  menara yang menembak, lalu menjalankan 16 frame (6 tick per frame);
+- memastikan jam animasi minion dan struktur terisi. Setiap `SCRIPT ERROR` di painter manapun
+  (termasuk layer 9be-9bi) membuat langkah native gagal karena workflow men-grep log-nya.
+
+Batas: renderer dummy tidak merasterisasi, jadi hasil gambar tetap tidak terlihat; hanya
+kesalahan skrip (tipe, null, argumen) yang tertangkap.
+
+## Slice 9bo — bake badan hero kit native (layer 9bo)
+
+Latar: hero di Godot adalah lingkaran tim + poligon dari hash id. Sumbernya
+(`heroes/__init__.py::render_hero`) men-cache satu badan ter-crop per kunci
+`(tipe, tim, level, hadap, idle | serang, fase | timer // 3, bergerak)`, sedangkan
+`Hero.draw` menggambar bar HP, papan nama, cincin, dan bayangan di sekelilingnya.
+
+- Level tidak mengubah badan (piksel identik di level 1, 3, 8, 15), jadi level 1 mewakili semua.
+- `bake/bake_hero_atlas.py` menjalankan `Hero.draw` ASLI lewat tiga lini masa dari cache kosong
+  untuk tiap hadap dan tim, lalu mengambil sprite pertama yang diterima tiap kunci: (A) diam,
+  `pulse` +0,1 per tick selama 40 tick; (B) berjalan 2 px per frame (renderer hanya sadar
+  gerak dari perubahan posisi di dalam renderer, saat cache MISS, sehingga kunci 'bergerak'
+  baru terisi di putaran kedua); (C) satu serangan dari diam, `attack_timer` dari cooldown
+  efektif sampai 1. Anggaran render per frame (`_HERO_RENDER_LEFT`) diisi ulang tiap frame
+  seperti game, dan kunci dihitung SEBELUM renderer jalan. Pose skill (`active_skill`) belum
+  dibake.
+- Tujuh hero yang punya kit native di Godot: kaizen, thorne, grimjaw, sylara, vex, zephyr,
+  alchemist (14 atlas, 5,5 MB, deterministik). Alchemist tidak punya pose jalan (rendererya
+  tidak pernah melapor "bergerak"), jadi Godot menampilkan pose diam saat ia berjalan.
+  `data/art/heroes.json` memuat nama, radius, `top_offset` label, cooldown, tabel frame, dan
+  241 baris `key_cases` hasil `_hero_cache_key` ASLI.
+- `scripts/ui/hero_anim.gd`: `pulse` +0,1 per tick, "bergerak" = |dx| + |dy| > 0,3 per tick,
+  `pose_key` meniru kunci sumber (timer asli `HeroState.attack_timer`, kuantum 3 dari preset
+  PC `atk_quant_floor`). `scripts/ui/hero_art.gd` memuat atlas dan menolak diam-diam bila belum
+  diimpor; timer serang di luar jangkauan memakai pose serang terakhir.
+- `scripts/ui/hero_painter.gd` melukis seperti `Hero.draw`: elips kuning dan cakram jangkauan
+  saat terseleksi, bayangan hitam penuh (alpha `(0, 0, 0, 100)` dibuang pygame pada layar
+  tanpa alpha), sprite di `int(x) - ax, int(y) - ay`, bar HP 45x6 (hijau/kuning/merah
+  di 0,5/0,25, border putih) di `y - max(radius, top_offset) - 6`, papan nama hitam 3 px di
+  atasnya dengan nama 14 px dan sampai lima bintang (atau satu bintang dan `xN` setelah level
+  5), dan strip skill di bawah kaki. `PrototypeView._draw_unit` mencobanya lebih dulu dan
+  memakai penanda lama bila hero tidak dibake.
+- `tests/hero_art_checks.gd`: 14 atlas ada dan terdekode, tiap pose punya frame dalam gambar,
+  `pose_key` identik dengan 241 kunci sumber, simulasi jam (diam, jalan, serang, prune), dan
+  urutan pemanggilan. Suite painter 9bn kini juga memastikan jam hero terisi (Kaizen
+  menggambar di match bawaan). Workflow dipicu perubahan `heroes/__init__.py` dan
+  `heroes/_bundle.py`.
+
+Batas yang diketahui: pose skill, efek hidup hero (`_live_fx_*`), indikator HEAL, dan 215 hero
+lain belum dibake; warna cakram jangkauan memakai warna tim, bukan `hero.color`; Godot
+menghitung `eff_attack_cd` sendiri, sehingga timer di atas cooldown yang dibake memakai pose
+serang terakhir.
+
+## Slice 9bp — bake peluru menara (layer 9bp)
+
+Latar: `SiegeView` menggambar setiap `ProjectileState` sebagai lingkaran 4 px. Sumbernya
+(`_entity.py::_get_bullet_sprite`, dipakai `Bullet.draw`) men-cache satu sprite per kunci
+`(bullet_type, team, angle_k)` dan mem-blit-nya di `(int(x - ax), int(y - ay))`.
+
+- Hanya panah (`normal`) yang bergantung arah: 16 bucket `angle_k = (int(ang / (2 pi) * 16) +
+  16) % 16` dari `atan2` ke target (target mati atau hilang = 0). Bola meriam, kristal es, dan
+  bolt mage statis. Bucket 8 hanya tercapai oleh bearing tepat pi (target lurus ke kiri di baris
+  yang sama), jadi sheet tetap memuatnya.
+- `bake/bake_bullet_atlas.py` memanggil `_get_bullet_sprite` ASLI untuk 16 bucket x 2 tim
+  panah plus tiga bolt x 2 tim: 38 frame, satu sheet 200x125 (6 KB), deterministik (dua run
+  identik). `data/art/bullets.json` memuat tabel frame dan 66 `angle_cases` (bearing hasil
+  `atan2` yang dilihat fungsi sumber -> bucket pilihannya).
+- `scripts/ui/bullet_art.gd` memilih bucket dengan rumus yang sama dan menolak diam-diam bila
+  sheet belum diimpor. `ProjectileState.kind` (`normal`/`cannon`/`ice`/`mage`) setara
+  `bullet_type`; kind tak dikenal jatuh ke titik lama seperti `else` pada sumber.
+- `SiegeView._draw_shot`: panah menghadap `(target - peluru).angle()` (= `atan2(dy, dx)` sumber);
+  bolt tidak peduli arah. Peluru digambar setelah unit (sumber menggambarnya di dalam
+  `Tower.draw`, sebelum minion); selisih urutan ini diterima karena peluru hanya hidup
+  beberapa tick.
+- `tests/bullet_art_checks.gd`: 38 frame di dalam gambar, bucket 66 kasus sumber, empat arah
+  sumbu (0, 4, 8, 12), kind tak dikenal, dan pengabelan view. Suite painter 9bn kini memasukkan
+  satu peluru tiap kind ke dalam penerbangan sehingga `_draw_shot` jalan di CI.
+
+Batas yang diketahui: peluru hero (`world.hero_projectiles`; panah Sylara, bola, bolt, petir)
+masih titik; jejak hit/impact tetap efek lama.
+
+## Slice 9bq — bake badan boss (layer 9bq)
+
+Latar: `PrototypeView._draw_boss` menggambar lingkaran bermahkota untuk ke-216 boss. Sumbernya
+(`bosses/base_boss.py::Boss.draw`) menggambar aura, bayangan, badan dari
+`heroes.render_boss` (sprite ber-cache per `_boss_cache_key`), lalu bar HP dan papan nama di
+atas puncak sprite.
+
+- `bake/bake_boss_atlas.py` menjalankan `heroes._boss_render_sprite_fast` ASLI untuk pose diam
+  fase 0 (`key[8] == "idle"`, `key[9] == 0`, tidak bergerak) pada tiap boss di `BOSS_INDEX`, untuk
+  `direction` -1 dan +1, dan menyimpan satu PNG per boss (dua crop bersebelahan, jarak 2 px):
+  216 file, 2,6 MB, deterministik (dua run identik). Renderer memperbesar kanvasnya bertahap dan
+  mengembalikan `None` sampai muat (game menggambar jalur langsung pada frame itu); bake cukup
+  bertanya lagi (maks 12 kali; thalgryn dan xaerissa butuh putaran kedua).
+- `data/art/bosses.json`: tabel frame + jangkar tiap boss, `radius`, `class`, `label_top`
+  (`BOSS_LABEL_TOP.get(boss_type, radius)`), dan `facing_cases` dari `_boss_cache_key` ASLI
+  (direction -3, -1, 0, 1, 2, 7). Roster, radius, dan kelas dicocokkan dengan
+  `data/bosses/boss_stats.json` di CI dan validator.
+- `scripts/ui/boss_art.gd`: `facing(direction) = 1 if direction > 0 else -1` (aturan
+  `int(direction or -1) >= 0`), `label_top = max(BOSS_LABEL_TOP, radius)`, memuat sheet dan
+  menolak diam-diam bila belum diimpor. `PrototypeView._draw_boss_sprite` menggambar bayangan
+  hitam penuh `(x - (2r + 10 jika true) // 2, y + r - 5, ..., 12)` (alpha `(0, 0, 0, 120)`
+  dibuang pygame di layar tanpa alpha) lalu badan di `(int(x) - ax, int(y) - ay)`; luka
+  menaikkan kecerahan (modulate 1,6) seperti minion. Bar HP 60x8 (true: 70x10) kini di
+  `y - head_top - 6 - bar_h`. Lingkaran bermahkota lama tetap sebagai cadangan
+  (`_draw_boss_plain`).
+- `tests/boss_art_checks.gd`: 216 sheet terdekode dengan ukuran manifest, crop dan jangkar di
+  dalam gambar, roster/radius/kelas cocok dengan tabel Godot, aturan arah identik dengan kunci
+  sumber, dan pengabelan view. Suite painter 9bn kini memunculkan boss sejati (`abaddon`),
+  memutar arahnya tiap frame, mengedipkan luka, dan membuatnya mengamuk di paruh akhir sehingga
+  `boss_sprite_draws > 0` terbukti di CI. Workflow dipicu perubahan `bosses/**`.
+
+Koreksi (CI 9bq): registry native tidak pernah memegang boss (`active_boss` hanya ada di
+`_by_id`), sehingga `_draw_unit` tidak pernah mencapai `_draw_boss` dan boss tidak tergambar
+sama sekali di view match, juga sebelum slice ini. `PrototypeView._draw()` kini menggambar
+`world.active_boss` yang hidup sendiri, sesudah hero dan panah mereka (urutan `Game.draw`:
+"DRAW BOSS (di luar hero loop!)") dan sebelum presentasi kematian. Cek painter
+`boss_sprite_draws > 0` yang menangkapnya.
+
+Batas yang diketahui: pose jalan, serang, skill, dan kilat luka bawaan sumber, 7+ fase idle,
+aura hidup (`_LIVE_FX_HEROES`), serta aura enrage/ability ber-cache masih pendekatan Godot
+(busur) atau kosong; boss `entrance` tetap gambar lama.
+
+## Slice 9br — skin UI dari `ui_theme.py` (layer 9br)
+
+Latar: semua layar memakai satu `Theme` yang dibangun kode (`RebuildTheme.create_theme()`, dipasang
+di `app.gd` dan tiap layar). Palet dan bentuknya (teal gelap, kotak 10 px) tidak ada di pygame,
+yang memakai `ui_theme.py`: panel kaca gelap (gradasi, border emas, sudut emas, bayangan) dan
+tombol pil berwarna.
+
+- `bake/bake_ui_theme.py` memanggil `ui_theme.panel()` dan `ui_theme.pill()` ASLI pada kanvas
+  transparan. `panels.png` (160x80) berisi dua panel 80x80 (`panel_bold` = panggilan dialog
+  `border_w=2`, `panel` = bawaan; rect 72x72 di (4, 4) sehingga bayangan 4 px ada di tepi kanvas).
+  `pills.png` (432x144) berisi 8 jenis pil x normal/hover (dengan glow radial)/disabled, kanvas
+  54x48, rect 24x24 di (15, 12). Hasil deterministik (dua run identik), 7,7 KB. `draw_text`
+  dimatikan saat bake karena teks digambar Godot.
+- `data/art/ui_theme.json`: palet (semua konstanta warna modul, 32), frame, margin nine-patch
+  (panel 20 px; pil 23x20), `expand` (bayangan 4 px; glow 15x12) dan tabel warna pil yang dibaca dari
+  literal `colors` di sumber `pill()` (fill atas/bawah, tepi, teks).
+- `scripts/ui/ui_skin.gd`: memotong `StyleBoxTexture` (`region_rect`, margin, expand) dari sheet
+  menurut frame manifest; mengembalikan null bila sheet belum diimpor.
+- `rebuild_theme.gd`: konstanta palet kini nilai `ui_theme.py` (INK = TEXT_WHITE, MUTED = TEXT_DIM,
+  GOLD, CYAN; `TEAL` tetap sebagai nama lama = CYAN). Button: normal = pil `neutral`, hover = pil
+  `neutral` hover, pressed = pil `gold` hover, disabled = pil `locked` disabled; teks
+  `TEXT_BODY`/`GOLD_TEXT`/`TEXT_FAINT`. `PanelContainer` = panel dialog. Variasi tipe
+  `GoldButton`, `SuccessButton`, `DangerButton`, `CyanButton`, `VioletButton` (jenis pil sumber).
+  ProgressBar (track `hp_bar`), scrollbar (track dan jempol emas `scroll_indicator`) dan
+  PopupMenu (panel + hover) memakai warna sumber. `create_theme(false)` memaksa fallback datar
+  dengan warna yang sama (juga yang tampil bila sheet belum diimpor). Baris Hero Shop memakai warna
+  kartu level sumber (`OPEN_*`, `LOCKED_*`). Warna kosong atau nama tak dikenal tampil magenta.
+- `project.godot`: warna clear = `BG_DEEP` (9, 12, 26).
+- `tests/ui_skin_checks.gd`: konstanta tema = konstanta `ui_theme.py` dari manifest, sheet terdekode
+  dengan ukuran manifest, 24 frame pil + 2 panel di dalam sheet, piksel kunci (tengah buram, cincin
+  bayangan tembus, sudut kanvas pil transparan), Button/Panel/variasi memakai frame yang benar
+  dengan margin hasil bake, fallback datar, dan warna baris Hero Shop. Validator memeriksa palet
+  manifest = setiap konstanta di `ui_theme.py`, hash PNG, tabel warna pil, tiap `Color8` tema
+  bertanda nama sumber, dan fragmen sumber. Workflow dipicu perubahan `ui_theme.py`.
+
+Divergensi yang diterima: glow hover di-bake untuk satu ukuran lalu diregang (sumber menggambarnya
+elips sesuai ukuran tombol); bayangan panel sumber berupa cincin 4 px alpha 110 bersudut siku;
+tombol menu utama (`button()` dengan aksen kiri dan ikon), toggle, slider dan tab belum diport; font
+tetap Barlow Regular 20 dan SemiBold untuk tombol (sumber: Barlow Bold berspasi huruf).
+
+## Slice 9bs — latar menu utama dan warna scene (layer 9bs)
+
+Latar: menu utama Godot memakai lukisan buatan sendiri (`menu_backdrop.gd`, "bukan port"), sedangkan
+pygame menampilkan satu surface 1280x720 hasil `Menu._build_main_background` (langit malam, nebula,
+170 bintang, bulan besar, cincin rune, dua lapis gunung, tiga lane bercahaya, dua portal, kristal rune,
+grid dan vignette). Kabut dan partikel animasi di atasnya belum diport.
+
+- `bake/bake_menu_background.py` menjalankan `Menu._build_main_background` ASLI pada `Menu` hidup dan
+  menulis `assets/art/menu/main_background.png` (1280x720, 107 KB, deterministik: dua run identik).
+  `data/art/menu.json` memuat ukuran, hash, dan sembilan piksel kunci seperti yang dipegang surface
+  sumber (`probes`), sehingga Godot di-pin ke sumber, bukan ke salinan.
+- `menu_backdrop.gd`: menggambar PNG itu menutupi jendela (`cover_rect`: skala seragam, di tengah;
+  jendela lebih lebar atau tinggi dipotong, tidak diregang). Lukisan lama tetap sebagai cadangan
+  (`_draw_fallback`) bila sheet belum diimpor. `background_draws` membuktikan jalur baked jalan.
+- `rebuild_theme.title()`: judul layar = emas badan `outline_text` (tengah gradasi `GOLD_BRIGHT` ->
+  (196, 138, 40) = (225, 185, 99)) dengan outline gelap (8, 9, 18) selebar 2 px.
+- Scene: literal teal lama diganti warna `ui_theme.py` (label redup = `TEXT_DIM`, hitungan emas =
+  `GOLD`, eyebrow menu = `CYAN`) dan peredup jeda = (10, 10, 20, 200) seperti `_draw_pause_background`
+  (8 + 1 + 1 + 4 literal di `MinionArena`, `Match`, `MainMenu`, `PrototypeMatch`, `SiegeArena`).
+- `tests/menu_art_checks.gd`: sheet terdekode 1280x720, setiap piksel kunci sama dengan surface
+  sumber, `cover_rect` untuk jendela 16:9, lebar, tinggi dan acak selalu menutup, dan tak ada scene yang
+  masih memakai literal lama. `run_all.gd` membuktikan menu sungguhan menggambar jalur baked
+  (`Backdrop.background_draws > 0`). Validator memeriksa hash PNG, fragmen `_build_main_background`,
+  bake, backdrop, warna judul (dari `outline_text`) dan hitungan warna scene.
+
+Belum: arena layar penuh dan HUD ringkas. Arena tetap 0,7 di dalam bingkai HUD karena skala 1,0
+menaruh TopBar, BottomBar dan TacticalPanel (yang tombolnya ditekan tes lewat event mouse sungguhan)
+di atas lane; perubahan itu perlu desain ulang HUD dan tidak bisa diverifikasi tanpa engine lokal.

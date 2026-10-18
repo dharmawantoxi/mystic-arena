@@ -15,6 +15,9 @@ var alive := true
 var is_hero := false
 var facing := 1.0
 var ai_level := 1
+# Source `Minion.nexus_level`: the owner's nexus tier at spawn. Presentation only: it
+# picks the baked sprite (`minions/_bundle.py` keys its cache on it), never a rule.
+var nexus_level := 1
 var burn_dps := 0.0
 var burn_timer := 0
 var burn_accum := 0.0

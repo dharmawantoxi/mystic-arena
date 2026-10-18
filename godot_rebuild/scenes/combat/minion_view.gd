@@ -4,6 +4,11 @@ extends Node2D
 const Session = preload("res://scripts/simulation/combat_session.gd")
 const UnitState = preload("res://scripts/combat/unit_state.gd")
 const Layout = preload("res://scripts/data/lane_layout.gd")
+const MinionArt = preload("res://scripts/ui/minion_art.gd")
+const MinionAnim = preload("res://scripts/ui/minion_anim.gd")
+# Source `apply_hurt_flash` lifts every channel by 90 for 8 ticks; a multiply is the
+# closest a baked sprite can get.
+const HURT_TINT := Color(1.6, 1.6, 1.6)
 var session: Session
 # Empty in the laboratory/siege. Prototype supplies source terrain colors.
 var terrain_palette: Dictionary = {}
@@ -12,6 +17,7 @@ var river_texture: Texture2D
 var lane_texture: Texture2D
 var wall_texture: Texture2D
 var terrain_texture: Texture2D
+var minion_anim := MinionAnim.new()
 
 
 func _ready() -> void:
@@ -76,10 +82,14 @@ func _draw() -> void:
 				edge = terrain_palette["path_stone_3"]
 			draw_polyline(path, stone, 32, true)
 			draw_polyline(path, edge, 1.5, true)
+	_draw_map_decor()
 	if wall_texture != null:
 		draw_texture(wall_texture, Vector2.ZERO)
+	_draw_map_overlay()
 	_draw_base(Layout.BLUE_BASE, Color("73cbbb"))
 	_draw_base(Layout.RED_BASE, Color("d78579"))
+	_draw_structures()
+	minion_anim.prune(session.world.units)
 	for unit in session.world.units:
 		_draw_unit(unit)
 	for event in session.world.recent_events:
@@ -87,7 +97,27 @@ func _draw() -> void:
 			draw_line(event["from"], event["to"], Color("e7c98a"), 2, true)
 
 
+## Hook for the towers and castles: `Game.draw` paints them before the minions and
+## heroes, so units walk over them.
+func _draw_structures() -> void:
+	pass
+
+
+## Hook for the source's decoration and shop layers (map layers 4-5): painted over
+## the lanes and under the border wall, like `MapRenderer._render_static_map`.
+func _draw_map_decor() -> void:
+	pass
+
+
+## Hook for the layer the source paints over the finished map, under the units
+## (the prototype draws its ambient tint here).
+func _draw_map_overlay() -> void:
+	pass
+
+
 func _draw_unit(unit: UnitState) -> void:
+	if not unit.is_hero and _draw_minion_sprite(unit):
+		return
 	var point := unit.position
 	var radius := unit.definition.radius_px
 	var color := Color("73cbbb") if unit.team == 0 else Color("d78579")
@@ -105,3 +135,60 @@ func _draw_unit(unit: UnitState) -> void:
 func _draw_base(point: Vector2, color: Color) -> void:
 	draw_arc(point, 30, 0, TAU, 40, color, 2, true)
 	draw_rect(Rect2(point - Vector2(14, 16), Vector2(28, 32)), color.darkened(0.4))
+
+
+## Layer 9bk: the baked source sprite for a minion, with the live parts the source draws
+## outside its sprite cache (slow aura, HP bar). False when the art is unavailable, so
+## the plain circle above still draws.
+func _draw_minion_sprite(unit: UnitState) -> bool:
+	var clocks := minion_anim.observe(unit, session.world.tick_count)
+	var pose := MinionAnim.pose_key(
+		int(clocks["attack"]), bool(clocks["moving"]), float(clocks["walk"]), int(clocks["anim"])
+	)
+	var art := MinionArt.frame(unit.definition.id, unit.team, unit.nexus_level, pose, unit.facing)
+	if art.is_empty():
+		return false
+	var point := Vector2(int(unit.position.x), int(unit.position.y))
+	var radius := int(unit.definition.radius_px)
+	if unit.id == session.selected_id:
+		draw_arc(point, radius + 9, 0, TAU, 32, Color("f4d491"), 2, true)
+	if unit.slow_timer > 0:
+		_draw_minion_slow(point, radius, int(clocks["anim"]))
+	var src: Rect2 = art["src"]
+	var tint := HURT_TINT if int(clocks["hurt"]) > 0 else Color.WHITE
+	var corner := point - (art["anchor"] as Vector2)
+	draw_texture_rect_region(art["texture"] as Texture2D, Rect2(corner, src.size), src, tint)
+	_draw_minion_hp_bar(unit, point)
+	return true
+
+
+## `minions/_bundle.py::draw_hp_bar`: 4 px bar, team-coloured back and border, fill by tier.
+func _draw_minion_hp_bar(unit: UnitState, point: Vector2) -> void:
+	var radius := int(unit.definition.radius_px)
+	var width := radius * 2 + 6
+	var left := int(point.x) - (width >> 1)
+	var top := int(point.y) - radius - 18
+	var ratio := clampf(unit.hp / maxf(1.0, float(unit.definition.max_hp)), 0.0, 1.0)
+	var blue := unit.team == 0
+	var back := Color8(12, 22, 44) if blue else Color8(44, 12, 10)
+	var edge := Color8(90, 165, 255) if blue else Color8(255, 95, 85)
+	draw_rect(Rect2(left, top, width, 4), back)
+	var fill := int(float(width) * ratio)
+	if fill > 0:
+		var ink := Color8(70, 200, 80)
+		if ratio <= 0.3:
+			ink = Color8(215, 60, 55)
+		elif ratio <= 0.6:
+			ink = Color8(225, 190, 60)
+		draw_rect(Rect2(left, top, fill, 4), ink)
+	draw_rect(Rect2(left + 0.5, top + 0.5, width - 1, 3), edge, false, 1.0)
+
+
+## `minions/_bundle.py::draw_slow_effect` as `Minion.draw` inlines it: a pale disc and
+## three ice specks orbiting the body.
+func _draw_minion_slow(point: Vector2, radius: int, anim: int) -> void:
+	draw_circle(point, radius + 2, Color8(150, 220, 255, 80))
+	for index in range(3):
+		var angle := float(anim) * 0.1 + float(index) * 2.0
+		var offset := Vector2(int(cos(angle) * (radius + 3)), int(sin(angle) * (radius + 3)))
+		draw_rect(Rect2(point + offset, Vector2(2, 2)), Color8(200, 240, 255))

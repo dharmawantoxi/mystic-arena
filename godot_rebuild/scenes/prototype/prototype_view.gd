@@ -10,15 +10,51 @@ const PathPreview = preload("res://scripts/ui/path_preview.gd")
 const SpriteLighting = preload("res://scripts/ui/sprite_lighting.gd")
 const BossFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
 const LevelIntroLayout = preload("res://scripts/ui/level_intro_layout.gd")
+const KillFeedLayout = preload("res://scripts/ui/kill_feed_layout.gd")
+const ComboCounterLayout = preload("res://scripts/ui/combo_counter_layout.gd")
+const BossIntroLayout = preload("res://scripts/ui/boss_intro_layout.gd")
+const BossCelebrationLayout = preload("res://scripts/ui/boss_celebration_layout.gd")
+const BossDeathSequenceLayout = preload("res://scripts/ui/boss_death_sequence_layout.gd")
+const HitParticleLayout = preload("res://scripts/ui/hit_particle_layout.gd")
+const DeathExplosionLayout = preload("res://scripts/ui/death_explosion_layout.gd")
+const MapTintLayout = preload("res://scripts/ui/map_tint_layout.gd")
+const MapArt = preload("res://scripts/ui/map_art.gd")
+const SlotArt = preload("res://scripts/ui/slot_art.gd")
+const HeroArt = preload("res://scripts/ui/hero_art.gd")
+const HeroAnim = preload("res://scripts/ui/hero_anim.gd")
+const HeroPainter = preload("res://scripts/ui/hero_painter.gd")
+const BossArt = preload("res://scripts/ui/boss_art.gd")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
 const WallTiles = preload("res://scripts/ui/wall_tiles.gd")
 const TerrainTiles = preload("res://scripts/ui/terrain_tiles.gd")
+const HUD_SCREEN_W := 1280
+## Layer 9bi: paint order of the world-space layers (`EffectManager.draw` = path
+## preview then the effects, then `tactical.draw_world`) and of the screen overlays
+## (`Game.draw`: boss intro, then `effects.draw_ui` = wave announcer and achievement,
+## level intro, and the boss death animation last). The combo counter and kill feed
+## are never drawn by the source; they keep their slot between announcer and popup.
+const WORLD_LAYER_ORDER := ["path_preview", "effects", "tactical"]
+const OVERLAY_ORDER := [
+	"boss_intro",
+	"wave_announcer",
+	"combo_counter",
+	"kill_feed",
+	"achievement",
+	"level_intro",
+	"boss_death",
+]
 var cached_river_theme := ""
+## Counts real `_draw` calls so the headless scene suite can prove the painters run.
+var draw_count := 0
+var hero_anim := HeroAnim.new()
+## Baked boss bodies drawn so far; the painter suite proves the sprite path runs.
+var boss_sprite_draws := 0
 
 
 func _draw() -> void:
+	draw_count += 1
 	if session == null:
 		super._draw()
 		return
@@ -39,8 +75,38 @@ func _draw() -> void:
 	for arrow in world.hero_projectiles:
 		var ink := Color("73cbbb") if arrow.team == 0 else Color("d78579")
 		draw_circle(arrow.position, 3, ink)
+	# `Game.draw` paints the boss after every hero ("di luar hero loop"). The registry never
+	# holds the boss (`active_boss` only lives in `_by_id`), so `_draw_unit` cannot reach it.
+	var live_boss: BossState = world.active_boss
+	if live_boss != null and live_boss.alive:
+		_draw_boss(live_boss)
 	for snapshot in world.boss_death_presentations:
 		_draw_boss_death(snapshot)
+	for layer in WORLD_LAYER_ORDER:
+		_draw_world_layer(String(layer), world)
+	var hero := world.get_unit(match_session.selected_id) as HeroState
+	if hero != null and hero.team == world.BLUE and hero.has_destination:
+		var mark := hero.destination
+		var color := Color("f4d491")
+		draw_arc(mark, 8, 0, TAU, 20, color, 1.5, true)
+		draw_line(mark - Vector2(5, 5), mark + Vector2(5, 5), color, 1.5, true)
+		draw_line(mark + Vector2(-5, 5), mark + Vector2(5, -5), color, 1.5, true)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	for layer in OVERLAY_ORDER:
+		_draw_overlay_layer(String(layer), world)
+
+
+## Layer 9bm: `Game.draw` paints the build slots right after the map and BEFORE the towers
+## and units. The marker is the baked source sprite (`SlotArt`); the selection preview
+## (range disc and arc) is the rebuild's own and stays.
+func _draw_structures() -> void:
+	hero_anim.prune(session.world.units)
+	_draw_build_slots(session.world as Prototype)
+	super._draw_structures()
+
+
+func _draw_build_slots(world: Prototype) -> void:
+	var match_session := session as PrototypeSession
 	for slot in world.slots:
 		if slot.structure_id != -1:
 			continue
@@ -58,27 +124,75 @@ func _draw() -> void:
 				1.5,
 				true
 			)
-		draw_arc(slot.position, 19, 0, TAU, 36, Color(color, 0.95 if selected else 0.5), 2, true)
-		draw_line(slot.position - Vector2(6, 0), slot.position + Vector2(6, 0), color, 2, true)
-		draw_line(slot.position - Vector2(0, 6), slot.position + Vector2(0, 6), color, 2, true)
-	_draw_tactical(world)
-	_draw_path_preview(world)
-	_draw_world_effects(world)
-	var hero := world.get_unit(match_session.selected_id) as HeroState
-	if hero != null and hero.team == world.BLUE and hero.has_destination:
-		var mark := hero.destination
-		var color := Color("f4d491")
-		draw_arc(mark, 8, 0, TAU, 20, color, 1.5, true)
-		draw_line(mark - Vector2(5, 5), mark + Vector2(5, 5), color, 1.5, true)
-		draw_line(mark + Vector2(-5, 5), mark + Vector2(5, -5), color, 1.5, true)
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	_draw_wave_announcer(world)
-	_draw_combo_counter(world)
-	_draw_kill_feed(world)
-	_draw_achievement_popup(world)
-	_draw_boss_intro(world)
-	_draw_boss_celebration(world)
-	_draw_level_intro(world)
+		var art := SlotArt.frame(slot.team, world.tick_count)
+		if art.is_empty():
+			_draw_slot_outline(slot.position, color, selected)
+			continue
+		var src: Rect2 = art["src"]
+		var corner := slot.position - (art["anchor"] as Vector2)
+		corner = Vector2(int(corner.x), int(corner.y))
+		draw_texture_rect_region(art["texture"] as Texture2D, Rect2(corner, src.size), src)
+
+
+## The rebuild's plain marker, used only while the baked sheet is unavailable.
+func _draw_slot_outline(point: Vector2, color: Color, selected: bool) -> void:
+	draw_arc(point, 19, 0, TAU, 36, Color(color, 0.95 if selected else 0.5), 2, true)
+	draw_line(point - Vector2(6, 0), point + Vector2(6, 0), color, 2, true)
+	draw_line(point - Vector2(0, 6), point + Vector2(0, 6), color, 2, true)
+
+
+## Layer 9bj: the baked decorations and shop buildings of the current theme.
+func _draw_map_decor() -> void:
+	var overlay := MapArt.overlay_texture(cached_river_theme)
+	if overlay != null:
+		draw_texture(overlay, Vector2.ZERO)
+
+
+## Layer 9bh: the ambient tint `MapRenderer.draw()` lays over the map, under the
+## units. The base view calls this hook right after the cached map layers.
+func _draw_map_overlay() -> void:
+	for op in map_tint_draw_ops(session.world as Prototype):
+		_draw_intro_op(op)
+
+
+func map_tint_draw_ops(world: Prototype) -> Array:
+	return MapTintLayout.ops(String(world.level_config.get("map_theme", "forest")))
+
+
+func world_layer_order() -> Array:
+	return WORLD_LAYER_ORDER.duplicate()
+
+
+func overlay_paint_order() -> Array:
+	return OVERLAY_ORDER.duplicate()
+
+
+func _draw_world_layer(layer: String, world: Prototype) -> void:
+	match layer:
+		"path_preview":
+			_draw_path_preview(world)
+		"effects":
+			_draw_world_effects(world)
+		"tactical":
+			_draw_tactical(world)
+
+
+func _draw_overlay_layer(layer: String, world: Prototype) -> void:
+	match layer:
+		"boss_intro":
+			_draw_boss_intro(world)
+		"wave_announcer":
+			_draw_wave_announcer(world)
+		"combo_counter":
+			_draw_combo_counter(world)
+		"kill_feed":
+			_draw_kill_feed(world)
+		"achievement":
+			_draw_achievement_popup(world)
+		"level_intro":
+			_draw_level_intro(world)
+		"boss_death":
+			_draw_boss_death_animation(world)
 
 
 func overlay_draw_summary() -> Dictionary:
@@ -152,32 +266,11 @@ func _path_point(raw: Variant) -> Vector2:
 
 func _draw_world_effects(world: Prototype) -> void:
 	for explosion in world.effects.explosions:
-		if not explosion.is_alive():
-			continue
-		var flash: Dictionary = explosion.get_flash_state()
-		var f_size: float = float(flash.get("size", 0))
-		var f_intensity: float = clampf(float(flash.get("intensity", 0.0)), 0.0, 1.0)
-		var center := Vector2(float(explosion.x), float(explosion.y))
-		if f_size > 0.0 and f_intensity > 0.0:
-			draw_circle(center, f_size, Color(1.0, 1.0, 0.78, 0.78 * f_intensity))
-			draw_circle(center, f_size * 0.5, Color(1.0, 1.0, 1.0, f_intensity))
-		for spark in explosion.particles:
-			if not spark.alive:
-				continue
-			var s_alpha: float = clampf(float(spark.alpha()) / 255.0, 0.0, 1.0)
-			var s_size: float = float(spark.current_size())
-			if s_size > 0.0 and s_alpha > 0.0:
-				draw_circle(Vector2(spark.x, spark.y), s_size, Color(spark.color, s_alpha))
-	_draw_boss_death_sequence(world)
+		for op in DeathExplosionLayout.ops(explosion):
+			_draw_death_op(op)
 	for particle in world.effects.particles:
-		if not particle.alive:
-			continue
-		var p_alpha := clampf(float(particle.alpha()) / 255.0, 0.0, 1.0)
-		var p_size := float(particle.current_size())
-		if p_size > 0.0 and p_alpha > 0.0:
-			var particle_center := Vector2(int(particle.x), int(particle.y))
-			draw_circle(particle_center, p_size, Color(particle.color, p_alpha))
-			draw_circle(particle_center, particle.core_radius(), Color(1.0, 1.0, 1.0, p_alpha))
+		for op in HitParticleLayout.ops(particle):
+			_draw_death_op(op)
 	for item in world.effects.floating_texts:
 		if not item.alive or String(item.text).is_empty():
 			continue
@@ -232,57 +325,6 @@ func _draw_world_effects(world: Prototype) -> void:
 			-1.0,
 			font_size,
 			text_color
-		)
-
-
-func _draw_boss_death_sequence(world: Prototype) -> void:
-	if world.boss_death == null or not world.boss_death.is_death_active():
-		return
-	var anim = world.boss_death
-	var center := Vector2(float(anim.boss_x), float(anim.boss_y))
-	var visual: Dictionary = anim.get_death_visual_state()
-	for wave_value in visual.get("waves", []):
-		var wave: Dictionary = wave_value
-		var w_radius: float = float(wave.get("radius", 0))
-		var w_alpha: float = clampf(float(wave.get("alpha", 0)) / 255.0, 0.0, 1.0)
-		var w_rgb: Array = wave.get("color", [255, 220, 150])
-		if w_radius > 0.0 and w_alpha > 0.0 and w_rgb.size() >= 3:
-			var w_col: Color = Color8(int(w_rgb[0]), int(w_rgb[1]), int(w_rgb[2]))
-			draw_arc(center, w_radius, 0.0, TAU, 48, Color(w_col, w_alpha), 3.0, true)
-	if bool(visual.get("body_visible", false)):
-		var d_size: float = float(visual.get("dissolve_size", 0))
-		var d_alpha: float = clampf(float(visual.get("dissolve_alpha", 0)) / 255.0, 0.0, 1.0)
-		var b_rgb: Array = anim.boss_color
-		if d_size > 0.0 and d_alpha > 0.0 and b_rgb.size() >= 3:
-			var b_col: Color = Color8(int(b_rgb[0]), int(b_rgb[1]), int(b_rgb[2]))
-			draw_circle(center, d_size, Color(b_col, d_alpha))
-	for fragment_value in anim.fragments:
-		var frag: Dictionary = fragment_value
-		var f_life: int = int(frag.get("life", 0))
-		var f_max: int = maxi(1, int(frag.get("max_life", 60)))
-		if f_life <= 0:
-			continue
-		var f_alpha: float = clampf(float(f_life) / float(f_max), 0.0, 1.0)
-		var f_rgb: Array = frag.get("color", [180, 90, 80])
-		var f_col: Color = Color8(int(f_rgb[0]), int(f_rgb[1]), int(f_rgb[2]))
-		draw_circle(
-			Vector2(float(frag.get("x", 0.0)), float(frag.get("y", 0.0))),
-			float(frag.get("size", 4)),
-			Color(f_col, f_alpha)
-		)
-	for rising_value in anim.rising_particles:
-		var rising: Dictionary = rising_value
-		var r_life: int = int(rising.get("life", 0))
-		var r_max: int = maxi(1, int(rising.get("max_life", 100)))
-		if r_life <= 0:
-			continue
-		var r_alpha: float = clampf(float(r_life) / float(r_max), 0.0, 1.0)
-		var r_rgb: Array = rising.get("color", [255, 220, 150])
-		var r_col: Color = Color8(int(r_rgb[0]), int(r_rgb[1]), int(r_rgb[2]))
-		draw_circle(
-			Vector2(float(rising.get("x", 0.0)), float(rising.get("y", 0.0))),
-			float(rising.get("size", 3)),
-			Color(r_col, r_alpha)
 		)
 
 
@@ -361,49 +403,54 @@ func _draw_gold_corner_ticks(rect: Rect2, alpha: float) -> void:
 			draw_line(Vector2(x, y), Vector2(x, y - y_sign * 12.0), ink, 2.0, true)
 
 
+## Layer 9bc: the ops `ComboCounter.draw()` paints this frame, measured with the
+## real font (the oracle uses a 0.55*size fake; the layout code is shared).
+func combo_counter_draw_ops(world: Prototype) -> Array:
+	var counter = world.effects.combo_counter
+	if counter == null:
+		return []
+	var state := ComboCounterLayout.state_of(counter)
+	return ComboCounterLayout.ops(state, HUD_SCREEN_W, _measure_hud_text)
+
+
 func _draw_combo_counter(world: Prototype) -> void:
-	var combo = world.effects.combo_counter
-	if combo == null or combo.display_scale <= 0.0:
-		return
-	var shown_count: int = combo.count if combo.count > 0 else combo.last_combo
-	if shown_count < 2:
-		return
-	var alpha := clampf(float(combo.display_scale), 0.0, 1.0)
-	var ink := Color.WHITE if combo.color_flash > 0 else Color(1.0, 0.82, 0.31)
-	var font_size := maxi(12, int(round(22.0 * clampf(float(combo.display_scale), 0.5, 1.5))))
-	draw_string(
-		BossFont,
-		Vector2(1020.0, 160.0),
-		"%d HIT COMBO" % shown_count,
-		HORIZONTAL_ALIGNMENT_RIGHT,
-		220.0,
-		font_size,
-		Color(ink, alpha)
-	)
+	for op in combo_counter_draw_ops(world):
+		_draw_intro_op(op)
+
+
+## Layer 9bb: the ops `KillFeed.draw()` paints this frame, measured with the
+## real font (the oracle uses a 0.55*size fake; the layout code is shared).
+func kill_feed_draw_ops(world: Prototype) -> Array:
+	var feed = world.effects.kill_feed
+	if feed == null:
+		return []
+	return KillFeedLayout.ops(feed.entries, HUD_SCREEN_W, _measure_hud_text)
 
 
 func _draw_kill_feed(world: Prototype) -> void:
-	var feed = world.effects.kill_feed
-	if feed == null or feed.entries.is_empty():
+	for op in kill_feed_draw_ops(world):
+		_draw_kill_feed_op(op)
+
+
+func _measure_hud_text(text: String, font_size: int) -> Vector2i:
+	var measured := BossFont.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+	return Vector2i(ceili(measured.x), ceili(BossFont.get_height(font_size)))
+
+
+## Backing box and text reuse the level-intro op painter; the border is a
+## rounded outline. pygame strokes a border INSIDE its rect while Godot centres
+## the stroke on the path, so the path is pulled in by half the stroke width.
+func _draw_kill_feed_op(op: Dictionary) -> void:
+	if String(op.get("kind", "")) != "rect":
+		_draw_intro_op(op)
 		return
-	for entry_value in feed.entries:
-		var entry: Dictionary = entry_value
-		var life: int = int(entry.get("lifetime", 0))
-		var max_life: int = maxi(1, int(entry.get("max_lifetime", 180)))
-		if life <= 0:
-			continue
-		var alpha: float = clampf(float(life) / (float(max_life) * 0.35), 0.0, 1.0)
-		var y_pos: float = 96.0 + float(entry.get("y_offset", 0.0))
-		var tint: Color = entry.get("color", Color.WHITE) as Color
-		draw_string(
-			BossFont,
-			Vector2(980.0, y_pos),
-			String(entry.get("text", "")),
-			HORIZONTAL_ALIGNMENT_RIGHT,
-			270.0,
-			14,
-			Color(tint, alpha)
-		)
+	var box: Array = op["rect"]
+	var rect := Rect2(float(box[0]), float(box[1]), float(box[2]), float(box[3]))
+	var width := float(op["width"])
+	var inset := width * 0.5
+	_draw_achievement_outline(
+		rect.grow(-inset), float(op["radius"]) - inset, _intro_color(op), width
+	)
 
 
 func _draw_achievement_popup(world: Prototype) -> void:
@@ -572,127 +619,119 @@ func _draw_achievement_icon(ops: Array) -> void:
 				)
 
 
+## Layer 9bd: the ops `BossIntroCinematic.draw()` paints this frame. The source
+## blits its text at fixed offsets, so the layout needs no font metrics.
+func boss_intro_draw_ops(world: Prototype) -> Array:
+	var intro = world.boss_intro
+	if intro == null:
+		return []
+	return BossIntroLayout.ops(intro)
+
+
 func _draw_boss_intro(world: Prototype) -> void:
-	var intro := world.boss_intro_state()
-	if not bool(intro.get("active", false)):
-		return
-	var alpha := clampf(float(intro.get("alpha", 0)) / 255.0, 0.0, 1.0)
-	var bg_alpha := clampf(float(intro.get("background_alpha", 0)) / 255.0, 0.0, 1.0)
-	var border_alpha: float = clampf(float(intro.get("border_alpha", 0)) / 255.0, 0.0, 1.0)
-	if alpha <= 0.0:
-		return
-	var rect := Rect2(
-		Vector2(float(intro.get("banner_x", 340)), float(intro.get("banner_y", 12))),
-		Vector2(float(intro.get("banner_width", 600)), 92.0)
-	)
-	var border_rgb: Array = intro.get("entrance_color", [150, 100, 200])
-	var border_col := Color8(int(border_rgb[0]), int(border_rgb[1]), int(border_rgb[2]))
-	draw_rect(rect, Color(0.04, 0.05, 0.08, bg_alpha))
-	if border_alpha > 0.0:
-		draw_rect(rect, Color(border_col, border_alpha), false, 2.0)
-	var tag: Dictionary = intro.get("tag", {})
-	var header := "%s · %s" % [String(tag.get("text", "BOSS")), String(intro.get("boss_name", ""))]
-	draw_string(
-		BossFont,
-		rect.position + Vector2(18.0, 34.0),
-		header,
-		HORIZONTAL_ALIGNMENT_LEFT,
-		rect.size.x - 200.0,
-		20,
-		Color(border_col, alpha)
-	)
-	var subtitle: String = String(intro.get("boss_title", ""))
-	if not subtitle.is_empty():
-		draw_string(
-			BossFont,
-			rect.position + Vector2(18.0, 56.0),
-			subtitle,
-			HORIZONTAL_ALIGNMENT_LEFT,
-			rect.size.x - 200.0,
-			14,
-			Color(0.84, 0.88, 0.94, alpha)
-		)
-	var bar: Array = intro.get("hp_bar_rect", [0, 0, 150, 12])
-	var bar_rect := Rect2(
-		Vector2(float(bar[0]), float(bar[1])), Vector2(float(bar[2]), float(bar[3]))
-	)
-	draw_rect(bar_rect, Color(0.15, 0.05, 0.05, alpha))
-	var fill_w := float(intro.get("hp_fill_width", 0))
-	if fill_w > 0.0:
-		draw_rect(
-			Rect2(bar_rect.position, Vector2(fill_w, bar_rect.size.y)),
-			Color(0.90, 0.25, 0.25, alpha)
-		)
+	for op in boss_intro_draw_ops(world):
+		_draw_banner_op(op)
 
 
-func _draw_boss_celebration(world: Prototype) -> void:
-	var death := world.boss_death_state()
-	if bool(death.get("death_active", false)):
-		var d_visual: Dictionary = death.get("death_visual", {})
-		if bool(d_visual.get("flash_visible", false)):
-			var flash_alpha: float = clampf(float(d_visual.get("flash_alpha", 0)) / 255.0, 0.0, 1.0)
-			if flash_alpha > 0.0:
-				draw_rect(
-					Rect2(Vector2.ZERO, Vector2(1280.0, 720.0)), Color(1.0, 1.0, 1.0, flash_alpha)
-				)
-	if not bool(death.get("celebration_active", false)):
+## Banner and HP bar ops: a rounded rect with width 0 is a filled polygon, a
+## stroked one reuses the kill-feed inset outline, and lines, text and square
+## rects go through the level-intro painter.
+func _draw_banner_op(op: Dictionary) -> void:
+	var is_rect := String(op.get("kind", "")) == "rect"
+	if not is_rect or int(op.get("radius", 0)) <= 0:
+		_draw_intro_op(op)
+	elif int(op.get("width", 0)) > 0:
+		_draw_kill_feed_op(op)
+	else:
+		_fill_rounded_op(op)
+
+
+func _fill_rounded_op(op: Dictionary) -> void:
+	var color := _intro_color(op)
+	if color.a <= 0.0:
 		return
-	var visual: Dictionary = death.get("celebration_visual", {})
-	if not bool(visual.get("visible", false)):
+	var box: Array = op["rect"]
+	var rect := Rect2(float(box[0]), float(box[1]), float(box[2]), float(box[3]))
+	# pygame clamps the radius to the shorter side. Keep the arcs from meeting so
+	# the polygon stays simple, and fall back to a plain rect for slivers.
+	var radius := minf(float(op["radius"]), (minf(rect.size.x, rect.size.y) - 1.0) * 0.5)
+	if radius < 1.0:
+		draw_rect(rect, color)
 		return
-	var overlay_alpha: float = clampf(float(visual.get("overlay_alpha", 0)) / 255.0, 0.0, 1.0)
-	if overlay_alpha > 0.0:
-		draw_rect(
-			Rect2(Vector2.ZERO, Vector2(1280.0, 720.0)), Color(0.02, 0.03, 0.06, overlay_alpha)
-		)
-	var text_alpha: float = clampf(float(visual.get("text_alpha", 0)) / 255.0, 0.0, 1.0)
-	if text_alpha <= 0.0:
+	draw_colored_polygon(_achievement_rounded_points(rect, radius), color)
+
+
+## `boss_death.draw()` runs LAST in the source, in screen space (after the shake
+## and above every HUD layer): the death phase, then the celebration.
+func _draw_boss_death_animation(world: Prototype) -> void:
+	for op in boss_death_draw_ops(world):
+		_draw_death_op(op)
+	for op in boss_celebration_draw_ops(world):
+		_draw_intro_op(op)
+
+
+## Layer 9bg: ops of one explosion (flash discs, then its sparks) / one spark.
+func death_explosion_draw_ops(explosion) -> Array:
+	return DeathExplosionLayout.ops(explosion)
+
+
+func hit_particle_draw_ops(particle) -> Array:
+	return HitParticleLayout.ops(particle)
+
+
+## Layer 9bf: the `_draw_death_sequence()` op list.
+func boss_death_draw_ops(world: Prototype) -> Array:
+	var anim = world.boss_death
+	if anim == null:
+		return []
+	return BossDeathSequenceLayout.ops(anim)
+
+
+## Death sequence ops. `flash` is additive in the source; it is approximated with
+## an alpha blend. A ring wider than its radius is a filled disc in pygame, a
+## `covered` ring or disc is hidden by a later one, and a polygon with a width is
+## the 1 px edge of the fragment.
+func _draw_death_op(op: Dictionary) -> void:
+	var kind := String(op.get("kind", ""))
+	if kind == "flash":
+		var alpha := clampf(float(op.get("alpha", 0)) / 255.0, 0.0, 1.0)
+		draw_rect(Rect2(Vector2.ZERO, Vector2(1280.0, 720.0)), Color(1.0, 1.0, 1.0, alpha))
+	elif kind == "polygon" and int(op.get("width", 0)) > 0:
+		_draw_polygon_edge(op)
+	elif kind == "circle" and bool(op.get("covered", false)):
 		return
-	var offset_y: float = float(visual.get("text_offset_y", 0))
-	draw_string(
-		BossFont,
-		Vector2(240.0, 260.0 + offset_y),
-		"%s DEFEATED!" % String(death.get("boss_name", "BOSS")).to_upper(),
-		HORIZONTAL_ALIGNMENT_CENTER,
-		800.0,
-		32,
-		Color(1.0, 0.86, 0.38, text_alpha)
-	)
-	var boss_title: String = String(death.get("boss_title", ""))
-	if not boss_title.is_empty():
-		draw_string(
-			BossFont,
-			Vector2(240.0, 294.0 + offset_y),
-			boss_title,
-			HORIZONTAL_ALIGNMENT_CENTER,
-			800.0,
-			18,
-			Color(0.85, 0.90, 0.96, text_alpha)
-		)
-	if bool(visual.get("reward_visible", false)):
-		var reward_alpha: float = clampf(float(visual.get("reward_alpha", 0)) / 255.0, 0.0, 1.0)
-		if reward_alpha > 0.0:
-			draw_string(
-				BossFont,
-				Vector2(240.0, 340.0),
-				"+%d GOLD REWARD" % int(death.get("gold_reward", 0)),
-				HORIZONTAL_ALIGNMENT_CENTER,
-				800.0,
-				22,
-				Color(1.0, 0.88, 0.35, reward_alpha)
-			)
-	if bool(visual.get("hint_visible", false)):
-		var hint_alpha: float = clampf(float(visual.get("hint_alpha", 0)) / 255.0, 0.0, 1.0)
-		if hint_alpha > 0.0:
-			draw_string(
-				BossFont,
-				Vector2(240.0, 420.0),
-				"PRESS SPACE OR ESC TO CONTINUE",
-				HORIZONTAL_ALIGNMENT_CENTER,
-				800.0,
-				16,
-				Color(0.82, 0.88, 0.94, hint_alpha)
-			)
+	elif kind == "circle" and int(op.get("width", 0)) > int(op.get("radius", 0)):
+		var filled: Dictionary = op.duplicate()
+		filled["width"] = 0
+		_draw_intro_op(filled)
+	else:
+		_draw_intro_op(op)
+
+
+func _draw_polygon_edge(op: Dictionary) -> void:
+	var color := _intro_color(op)
+	var points := PackedVector2Array()
+	for point in op.get("points", []):
+		points.append(Vector2(float(point[0]), float(point[1])))
+	if color.a <= 0.0 or points.size() < 3:
+		return
+	points.append(points[0])
+	draw_polyline(points, color, float(op.get("width", 1)))
+
+
+## Layer 9be: the `_draw_celebration()` op list. `ticks` defaults to the engine
+## clock and `measure` to the real HUD font; the checks pass the oracle's.
+func boss_celebration_draw_ops(
+	world: Prototype, ticks: int = -1, measure: Callable = Callable()
+) -> Array:
+	var anim = world.boss_death
+	if anim == null:
+		return []
+	var clock: int = ticks if ticks >= 0 else Time.get_ticks_msec()
+	var metrics: Callable = _measure_intro_text
+	if measure.is_valid():
+		metrics = measure
+	return BossCelebrationLayout.ops(anim, clock, metrics)
 
 
 func _draw_level_intro(world: Prototype) -> void:
@@ -829,6 +868,8 @@ func _draw_unit(unit: UnitState) -> void:
 		super._draw_unit(unit)
 		return
 	var hero := unit as HeroState
+	if _draw_hero_sprite(hero):
+		return
 	var point := hero.position
 	var radius := hero.settings().radius_px
 	var team_color := Color("73cbbb") if hero.team == 0 else Color("d78579")
@@ -844,6 +885,19 @@ func _draw_unit(unit: UnitState) -> void:
 	var health := float(hero.hp) / maxf(1.0, hero.max_hp)
 	draw_rect(Rect2(point + Vector2(-17, -radius - 14), Vector2(34, 4)), Color("071518"))
 	draw_rect(Rect2(point + Vector2(-17, -radius - 14), Vector2(34 * health, 4)), team_color)
+
+
+## Layer 9bo: the baked source body of a kit hero with the live parts `Hero.draw` paints
+## around it. False when the hero is not baked or its sheet is not imported, so the marker
+## above still draws.
+func _draw_hero_sprite(hero: HeroState) -> bool:
+	var clocks := hero_anim.observe(hero, session.world.tick_count)
+	var pose := HeroAnim.pose_key(hero.attack_timer, bool(clocks["moving"]), float(clocks["pulse"]))
+	var art := HeroArt.frame(hero.definition.id, hero.team, pose, hero.facing)
+	if art.is_empty():
+		return false
+	HeroPainter.paint(self, hero, art, hero.id == session.selected_id)
+	return true
 
 
 ## Layer 9aq: `lighting.py` pass on a vector body - directional gradient over
@@ -895,8 +949,49 @@ func _draw_boss(boss: BossState) -> void:
 		var true_pulse := sin(boss.pulse) * 0.3 + 0.7
 		draw_arc(point, radius + 15.0, 0, TAU, 48, Color(boss.color, 0.28 * true_pulse), 4, true)
 
-	# Shadow and generic body are the Godot presentation fallback for all 216
-	# source boss IDs; gameplay and the source entrance/enrage states stay shared.
+	var bar_width := 70.0 if is_true else 60.0
+	var bar_height := 10.0 if is_true else 8.0
+	var bar_top := point.y - radius - 16.0
+	var art := BossArt.frame(boss.boss_type, boss.direction)
+	if art.is_empty():
+		_draw_boss_plain(boss)
+	else:
+		_draw_boss_sprite(boss, art)
+		# `Boss.draw`: the bar sits 6 px above the sprite top (`BOSS_LABEL_TOP`).
+		var head_top := float(BossArt.label_top(boss.boss_type, int(radius)))
+		bar_top = point.y - head_top - 6.0 - bar_height
+	var bar_position := Vector2(point.x - bar_width * 0.5, bar_top)
+	var health := clampf(float(boss.hp) / maxf(1.0, float(boss.max_hp)), 0.0, 1.0)
+	draw_rect(Rect2(bar_position, Vector2(bar_width, bar_height)), Color("280000"))
+	var health_color := Color("64dc64") if health > 0.5 else Color("f0dc3c")
+	if health <= 0.25:
+		health_color = Color("f03c3c")
+	draw_rect(Rect2(bar_position, Vector2(bar_width * health, bar_height)), health_color)
+	var border := (
+		Color("ff3c3c") if boss.is_enraged else (Color("ff6464") if is_true else Color("ffc832"))
+	)
+	draw_rect(Rect2(bar_position, Vector2(bar_width, bar_height)), border, false, 1.0)
+	var prefix := "TRUE BOSS" if is_true else "BOSS"
+	var tag := " [ENRAGED]" if is_true else " [FRENZY]"
+	var suffix := tag if boss.is_enraged else ""
+	var label := "%s: %s%s" % [prefix, boss.display_name, suffix]
+	draw_string(
+		BossFont,
+		Vector2(point.x - 190.0, bar_position.y - 3.0),
+		label,
+		HORIZONTAL_ALIGNMENT_CENTER,
+		380.0,
+		18 if is_true else 16,
+		border
+	)
+
+
+## The Godot fallback body for a boss whose sheet is not baked or not imported.
+func _draw_boss_plain(boss: BossState) -> void:
+	var point := boss.position
+	var radius := boss.radius
+	var is_true := boss.boss_class == "true"
+	# Gameplay and the source entrance/enrage states stay shared with the baked body.
 	draw_circle(point + Vector2(0, radius + 3), radius + 3, Color("071518", 0.65))
 	var body_color := Color.WHITE if boss.hurt_flash_timer > 0 else boss.color
 	_draw_lit_polygon(SpriteLighting.circle_points(point, radius), body_color)
@@ -925,32 +1020,22 @@ func _draw_boss(boss: BossState) -> void:
 		draw_circle(eye, 2, eye_color)
 	draw_line(point, point + Vector2(boss.direction * (radius + 8.0), 0), eye_color, 3, true)
 
-	var bar_width := 70.0 if is_true else 60.0
-	var bar_height := 10.0 if is_true else 8.0
-	var bar_position := point + Vector2(-bar_width * 0.5, -radius - 16.0)
-	var health := clampf(float(boss.hp) / maxf(1.0, float(boss.max_hp)), 0.0, 1.0)
-	draw_rect(Rect2(bar_position, Vector2(bar_width, bar_height)), Color("280000"))
-	var health_color := Color("64dc64") if health > 0.5 else Color("f0dc3c")
-	if health <= 0.25:
-		health_color = Color("f03c3c")
-	draw_rect(Rect2(bar_position, Vector2(bar_width * health, bar_height)), health_color)
-	var border := (
-		Color("ff3c3c") if boss.is_enraged else (Color("ff6464") if is_true else Color("ffc832"))
-	)
-	draw_rect(Rect2(bar_position, Vector2(bar_width, bar_height)), border, false, 1.0)
-	var prefix := "TRUE BOSS" if is_true else "BOSS"
-	var tag := " [ENRAGED]" if is_true else " [FRENZY]"
-	var suffix := tag if boss.is_enraged else ""
-	var label := "%s: %s%s" % [prefix, boss.display_name, suffix]
-	draw_string(
-		BossFont,
-		Vector2(point.x - 190.0, bar_position.y - 3.0),
-		label,
-		HORIZONTAL_ALIGNMENT_CENTER,
-		380.0,
-		18 if is_true else 16,
-		border
-	)
+
+## Layer 9bq: `Boss.draw` after the auras - the solid ground shadow, then the baked body at
+## `(int(x) - ax, int(y) - ay)`. A fresh hit brightens the body like the minion sprites.
+func _draw_boss_sprite(boss: BossState, art: Dictionary) -> void:
+	boss_sprite_draws += 1
+	var x := int(boss.position.x)
+	var y := int(boss.position.y)
+	var radius := int(boss.radius)
+	var shadow_width := radius * 2 + (10 if boss.boss_class == "true" else 0)
+	var shadow := Rect2(x - (shadow_width >> 1), y + radius - 5, shadow_width, 12)
+	draw_colored_polygon(HeroPainter.ellipse(shadow), HeroPainter.SHADOW)
+	var src: Rect2 = art["src"]
+	var anchor: Vector2 = art["anchor"]
+	var tint := Color(1.6, 1.6, 1.6) if boss.hurt_flash_timer > 0 else Color.WHITE
+	var corner := Vector2(x, y) - anchor
+	draw_texture_rect_region(art["texture"] as Texture2D, Rect2(corner, src.size), src, tint)
 
 
 func _draw_boss_entrance(boss: BossState) -> void:

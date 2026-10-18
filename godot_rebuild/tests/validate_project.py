@@ -3351,11 +3351,14 @@ _hit_particle_checks = (ROOT / "tests/hit_particle_checks.gd").read_text(encodin
 _hit_particle_fixture = json.loads(
     (ROOT / "tests/fixtures/hit_particle_source.json").read_text(encoding="utf-8")
 )
+_hit_particle_layout = (ROOT / "scripts/ui/hit_particle_layout.gd").read_text(encoding="utf-8")
 check("func core_radius()" in _hit_particle_script
-      and "particle.core_radius()" in _hit_particle_view,
-      "9ay HitParticle must render the lifetime-scaled inner sprite circle")
-check("Color(1.0, 1.0, 1.0, p_alpha)" in _hit_particle_view,
-      "9ay HitParticle's white source sprite core must remain visible")
+      and "HitParticleLayout.ops(" in _hit_particle_view
+      and "float(core) * factor" in _hit_particle_layout,
+      "9ay HitParticle must render the lifetime-scaled inner sprite circle (9bg: via the layout)")
+check('"color": [255, 255, 255, 255]' in _hit_particle_layout
+      and "particle.core_radius()" not in _hit_particle_view,
+      "9ay HitParticle's white source sprite core must remain visible (9bg: layout op)")
 check("_check_sprite(entry, check)" in _hit_particle_checks
       and "HitParticleChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"),
       "9ay source sprite geometry must be checked in the native suite")
@@ -3387,6 +3390,1382 @@ check(all(len(case.get("draw_samples", [])) == 7
       "FloatingText source oracle must pin normal, critical and heal draw samples")
 check("floating_text_source_oracle.py" in workflow,
       "FloatingText draw oracle must remain in CI")
+
+# ── Layer 9bb: KillFeed.draw() visuals as a pure op list ──
+from kill_feed_draw_source_oracle import source_fixture as kill_feed_draw_fixture
+_kill_feed_draw_path = ROOT / "tests/fixtures/kill_feed_draw_source.json"
+_kill_feed_layout = (ROOT / "scripts/ui/kill_feed_layout.gd").read_text(encoding="utf-8")
+_kill_feed_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_kill_feed_draw_checks = (ROOT / "tests/kill_feed_draw_checks.gd").read_text(encoding="utf-8")
+check('const KillFeedDrawChecks = preload("res://tests/kill_feed_draw_checks.gd")' in ai_tests
+      and "KillFeedDrawChecks.new().run(_check)" in ai_tests,
+      "9bb kill feed draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/kill_feed_draw_source_oracle.py" in workflow,
+      "9bb CI must run the KillFeed.draw() source oracle")
+check(_kill_feed_draw_path.is_file(), "9bb kill feed draw fixture must exist")
+if _kill_feed_draw_path.is_file():
+    _kill_feed_draw_frames = json.loads(_kill_feed_draw_path.read_text(encoding="utf-8"))
+    check(kill_feed_draw_fixture() == _kill_feed_draw_frames,
+          "9bb kill feed draw fixture must not drift from _render.py")
+    _kill_feed_frames = _kill_feed_draw_frames["frames"]
+    check(len(_kill_feed_frames) == 31
+          and sum(len(frame["ops"]) for frame in _kill_feed_frames) == 192
+          and all([op["kind"] for op in frame["ops"]]
+                  == ["fill", "rect", "text"] * (len(frame["ops"]) // 3)
+                  for frame in _kill_feed_frames),
+          "9bb oracle must pin 31 frames of fill+border+text triples")
+    check(any(frame["phase"] == "pre" and not frame["ops"] and frame["entries"]
+              for frame in _kill_feed_frames)
+          and {op["mult"] for frame in _kill_feed_frames for op in frame["ops"]
+               if op["kind"] == "text"} >= {5, 34, 136, 238, 249, 255},
+          "9bb oracle must cover the transparent fresh kill plus fade-in, hold and fade-out")
+    check(max(len(frame["entries"]) for frame in _kill_feed_frames) == 5
+          and {entry["color"][0] for frame in _kill_feed_frames for entry in frame["entries"]}
+          == {100, 255},
+          "9bb oracle must cover the 5 entry cap and both team colours")
+check("static func fade_alpha(" in _kill_feed_layout
+      and "static func slide_x(" in _kill_feed_layout
+      and "const BASE_Y := 250" in _kill_feed_layout
+      and 'const FONT_STYLE := "body_medium"' in _kill_feed_layout
+      and "const BOX_INSET_X := 6" in _kill_feed_layout,
+      "9bb kill feed layout must mirror KillFeed.draw()")
+check("KillFeedLayout.ops(" in _kill_feed_view
+      and "func kill_feed_draw_ops(" in _kill_feed_view
+      and "func _draw_kill_feed_op(" in _kill_feed_view
+      and "rect.grow(-inset)" in _kill_feed_view,
+      "9bb PrototypeView must paint the kill feed from the source op list")
+check("Vector2(980.0, y_pos)" not in _kill_feed_view,
+      "9bb the invented 14 px right-aligned kill feed text must not return")
+check("_check_recorded_frames(check, data, screen)" in _kill_feed_draw_checks
+      and "_check_production_replay(check, data, screen)" in _kill_feed_draw_checks
+      and "_check_view_wiring(check)" in _kill_feed_draw_checks,
+      "9bb kill feed draw suite must replay recorded and production frames plus the view")
+
+# ── Layer 9bc: ComboCounter.draw() visuals as a pure op list ──
+from combo_counter_draw_source_oracle import source_fixture as combo_counter_draw_fixture
+_combo_draw_path = ROOT / "tests/fixtures/combo_counter_draw_source.json"
+_combo_layout = (ROOT / "scripts/ui/combo_counter_layout.gd").read_text(encoding="utf-8")
+_combo_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_combo_draw_checks = (ROOT / "tests/combo_counter_draw_checks.gd").read_text(encoding="utf-8")
+check('const ComboCounterDrawChecks = preload("res://tests/combo_counter_draw_checks.gd")' in ai_tests
+      and "ComboCounterDrawChecks.new().run(_check)" in ai_tests,
+      "9bc combo counter draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/combo_counter_draw_source_oracle.py" in workflow,
+      "9bc CI must run the ComboCounter.draw() source oracle")
+check(_combo_draw_path.is_file(), "9bc combo counter draw fixture must exist")
+if _combo_draw_path.is_file():
+    _combo_draw = json.loads(_combo_draw_path.read_text(encoding="utf-8"))
+    check(combo_counter_draw_fixture() == _combo_draw,
+          "9bc combo counter draw fixture must not drift from _render.py")
+    _combo_frames = _combo_draw["frames"]
+    _combo_texts = [(frame, op) for frame in _combo_frames for op in frame["ops"]
+                    if op["kind"] == "text"]
+    check(len(_combo_frames) == 52 and sum(len(frame["ops"]) for frame in _combo_frames) == 426,
+          "9bc oracle must pin 52 frames and 426 recorded draw ops")
+    check({op["text"] for _, op in _combo_texts if op["style"] == "body"}
+          == {"KILLING SPREE!", "RAMPAGE!", "UNSTOPPABLE!", "GODLIKE!"},
+          "9bc oracle must cover all four tier labels")
+    check(any(frame["state"]["count"] == 1 and frame["ops"]
+              and all(op["kind"] == "text" for op in frame["ops"]) for frame in _combo_frames)
+          and any(frame["state"]["count"] == 0 and any(op["text"] == "x0" for op in frame["ops"]
+                                                       if op["kind"] == "text")
+                  for frame in _combo_frames),
+          "9bc oracle must pin the x1 pop without a bar and the x0 fade-out quirks")
+    check(any(frame["label"] == "double_kill" and frame["phase"] == "pre"
+              and [op["kind"] for op in frame["ops"]] == ["rect", "rect"]
+              for frame in _combo_frames),
+          "9bc oracle must pin the timer bar drawn before the sub 8 px count text is skipped")
+    check(sum(1 for frame in _combo_frames if not frame["cheap_alpha"]) == 5
+          and all(len([op for op in frame["ops"] if op["kind"] == "text"
+                       and op["style"] == "body_bold" and op["color"][:3] == [0, 0, 0]])
+                  == (8 if frame["cheap_alpha"] else 1)
+                  for frame in _combo_frames
+                  if any(op["kind"] == "text" for op in frame["ops"])),
+          "9bc oracle must pin the 8-way and the single (2, 2) count shadow")
+check("static func tier(" in _combo_layout
+      and "static func flash_color(" in _combo_layout
+      and "const RIGHT_INSET := 100" in _combo_layout
+      and "const CENTER_Y := 100" in _combo_layout
+      and "const BAR_WIDTH := 80" in _combo_layout
+      and 'const COUNT_STYLE := "body_bold"' in _combo_layout,
+      "9bc combo counter layout must mirror ComboCounter.draw()")
+check("ComboCounterLayout.ops(" in _combo_view
+      and "func combo_counter_draw_ops(" in _combo_view,
+      "9bc PrototypeView must paint the combo counter from the source op list")
+check("HIT COMBO" not in _combo_view,
+      "9bc the invented HIT COMBO text must not return")
+check("_check_recorded_frames(check, data, screen)" in _combo_draw_checks
+      and "_check_production_replay(check, data, screen)" in _combo_draw_checks
+      and "_check_view_wiring(check)" in _combo_draw_checks,
+      "9bc combo draw suite must replay recorded and production frames plus the view")
+
+# ── Layer 9bd: BossIntroCinematic.draw() visuals as a pure op list ──
+from boss_intro_draw_source_oracle import source_fixture as boss_intro_draw_fixture
+_boss_draw_path = ROOT / "tests/fixtures/boss_intro_draw_source.json"
+_boss_layout = (ROOT / "scripts/ui/boss_intro_layout.gd").read_text(encoding="utf-8")
+_boss_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_boss_draw_checks = (ROOT / "tests/boss_intro_draw_checks.gd").read_text(encoding="utf-8")
+check('const BossIntroDrawChecks = preload("res://tests/boss_intro_draw_checks.gd")' in ai_tests
+      and "BossIntroDrawChecks.new().run(_check)" in ai_tests,
+      "9bd boss intro draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/boss_intro_draw_source_oracle.py" in workflow,
+      "9bd CI must run the BossIntroCinematic.draw() source oracle")
+check(_boss_draw_path.is_file(), "9bd boss intro draw fixture must exist")
+if _boss_draw_path.is_file():
+    _boss_draw = json.loads(_boss_draw_path.read_text(encoding="utf-8"))
+    check(boss_intro_draw_fixture() == _boss_draw,
+          "9bd boss intro draw fixture must not drift from _render.py")
+    _boss_frames = _boss_draw["frames"]
+    _boss_drawn = [frame for frame in _boss_frames if frame["ops"]]
+    check(len(_boss_frames) == 22 and sum(len(frame["ops"]) for frame in _boss_frames) == 279,
+          "9bd oracle must pin 22 frames and 279 recorded draw ops")
+    check(all(len([op for op in frame["ops"] if op["kind"] == "line"])
+              == (8 if frame["ops"][1]["color"][3] > 60 else 0) for frame in _boss_drawn),
+          "9bd oracle must pin the eight gold corner ticks only above alpha 60")
+    check(all(frame["ops"][-1]["color"] == [255, 255, 255, 255] and frame["ops"][-1]["width"] == 1
+              and frame["ops"][-1]["radius"] == 5 and frame["ops"][-1]["mult"] == 255
+              for frame in _boss_drawn)
+          and any(frame["ops"][0]["color"][3] == 0 and frame["ops"][-1]["color"][3] == 255
+                  for frame in _boss_drawn),
+          "9bd oracle must pin the HP bar staying opaque while the banner fades")
+    check(any(not frame["state"]["active"] and frame["ops"] == [] for frame in _boss_frames)
+          and any(frame["label"] == "narrow" and frame["ops"][0]["rect"][2] == 440
+                  for frame in _boss_drawn),
+          "9bd oracle must pin the finished intro and the narrow-screen banner clamp")
+    _boss_texts = [op for frame in _boss_drawn for op in frame["ops"] if op["kind"] == "text"]
+    check({op["text"] for op in _boss_texts} >= {"TRUE BOSS", "MINI BOSS"}
+          and any(op["style"] == "title" and op["size"] == 46 for op in _boss_texts)
+          and any(op["text"].startswith('"') and op["text"].endswith('"') for op in _boss_texts),
+          "9bd oracle must pin both tags, the 46 px title-font name and the quoted title")
+check("static func ops(" in _boss_layout
+      and "const TICK_MIN_ALPHA := 60" in _boss_layout
+      and "const BANNER_RADIUS := 10" in _boss_layout
+      and 'const NAME_STYLE := "title"' in _boss_layout
+      and "func _corner_ticks(" in _boss_layout,
+      "9bd boss intro layout must mirror BossIntroCinematic.draw()")
+check("BossIntroLayout.ops(" in _boss_view
+      and "func boss_intro_draw_ops(" in _boss_view
+      and "func _draw_banner_op(" in _boss_view,
+      "9bd PrototypeView must paint the boss intro from the source op list")
+check("%s · %s" not in _boss_view,
+      "9bd the invented TAG - NAME header must not return")
+check("_check_recorded_frames(check, data)" in _boss_draw_checks
+      and "_check_production_replay(check, data)" in _boss_draw_checks
+      and "_check_quirks(check, data)" in _boss_draw_checks
+      and "_check_view_wiring(check, data)" in _boss_draw_checks,
+      "9bd boss intro draw suite must replay recorded and production frames plus the view")
+
+# ── Layer 9be: BossDeathAnimation._draw_celebration() visuals as a pure op list ──
+from boss_celebration_draw_source_oracle import source_fixture as boss_celebration_fixture
+_cele_path = ROOT / "tests/fixtures/boss_celebration_draw_source.json"
+_cele_layout = (ROOT / "scripts/ui/boss_celebration_layout.gd").read_text(encoding="utf-8")
+_cele_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_cele_checks = (ROOT / "tests/boss_celebration_draw_checks.gd").read_text(encoding="utf-8")
+check('const BossCelebrationDrawChecks = preload("res://tests/boss_celebration_draw_checks.gd")'
+      in ai_tests and "BossCelebrationDrawChecks.new().run(_check)" in ai_tests,
+      "9be boss celebration draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/boss_celebration_draw_source_oracle.py" in workflow,
+      "9be CI must run the BossDeathAnimation._draw_celebration() source oracle")
+check(_cele_path.is_file(), "9be boss celebration draw fixture must exist")
+if _cele_path.is_file():
+    _cele = json.loads(_cele_path.read_text(encoding="utf-8"))
+    check(boss_celebration_fixture() == _cele,
+          "9be boss celebration draw fixture must not drift from _render.py")
+    _cele_frames = _cele["frames"]
+    check(len(_cele_frames) == 20 and sum(len(frame["ops"]) for frame in _cele_frames) == 547,
+          "9be oracle must pin 20 frames and 547 recorded draw ops")
+
+    def _cele_texts(frame, text):
+        return [op for op in frame["ops"] if op["kind"] == "text" and op["text"] == text]
+
+    check(all(len(_cele_texts(frame, "BOSS DEFEATED!")) == (7 if frame["cheap_alpha"] else 2)
+              and _cele_texts(frame, "BOSS DEFEATED!")[-1]["color"] == [255, 220, 100, 255]
+              and _cele_texts(frame, "BOSS DEFEATED!")[-1]["size"] == 66
+              and _cele_texts(frame, "BOSS DEFEATED!")[-1]["style"] == "title"
+              for frame in _cele_frames),
+          "9be oracle must pin the 66 px gold title with six shadows (one without cheap_alpha)")
+    _cele_abaddon = {frame["tick"]: frame for frame in _cele_frames
+                     if frame["label"] == "abaddon"}
+    check(all(any(op["kind"] == "fill" and op["color"] == [80, 60, 20, 40]
+                  for op in frame["ops"]) == (tick < 102)
+              for tick, frame in _cele_abaddon.items())
+          and all(any(op["kind"] == "darken" for op in frame["ops"]) == (tick > 0)
+                  and (tick == 0 or frame["ops"][0]["alpha"] <= 180)
+                  for tick, frame in _cele_abaddon.items()),
+          "9be oracle must pin the gold tint ending at 85 % and the darken fade")
+    check(all(bool(_cele_texts(frame, "+ 1500 GOLD")) == (tick >= 37)
+              and bool(_cele_texts(frame, "H E R O   U N L O C K E D !")) == (tick >= 37)
+              and (sum(op["kind"] == "circle" for op in frame["ops"]) == (16 if tick >= 49
+                   else 4 if tick >= 37 else 0))
+              and bool(_cele_texts(frame, "[SPACE] to continue")) == (tick >= 61)
+              for tick, frame in _cele_abaddon.items() if tick != 40),
+          "9be oracle must pin reward after 30 %, sparkles after 40 %, hint after 50 %")
+    check(all(sum(op["kind"] == "line" for op in frame["ops"]) == 8
+              for tick, frame in _cele_abaddon.items() if tick >= 37)
+          and any(op["kind"] == "circle" and op["radius"] == 1.5
+                  for frame in _cele_frames for op in frame["ops"]),
+          "9be oracle must pin the two four-line vector stars with 1.5 px centres")
+    check(_cele_texts(_cele_abaddon[49], '"Lord of Avernus"')[0]["size"] == 32
+          and _cele_texts(_cele_abaddon[49], "Abaddon")[-1]["color"] == [100, 220, 240, 255]
+          and _cele_texts(_cele_abaddon[49], "Abaddon")[0]["color"] == [0, 0, 0, 255]
+          and any(frame["label"] == "alchemist_small" and frame["ops"][1]["rect"] == [0, 0, 960, 540]
+                  for frame in _cele_frames),
+          "9be oracle must pin the boss name in its entrance colour, the quoted title and a small screen")
+check("static func ops(" in _cele_layout
+      and "const TINT_RGBA := [80, 60, 20, 40]" in _cele_layout
+      and "func _headline(" in _cele_layout
+      and "func _star(" in _cele_layout
+      and "func _sparkles(" in _cele_layout
+      and "LevelIntro.letter(" in _cele_layout,
+      "9be boss celebration layout must mirror _draw_celebration()")
+check("BossCelebrationLayout.ops(" in _cele_view
+      and "func boss_celebration_draw_ops(" in _cele_view,
+      "9be PrototypeView must paint the celebration from the source op list")
+check("%s DEFEATED!" not in _cele_view and "GOLD REWARD" not in _cele_view
+      and "PRESS SPACE OR ESC" not in _cele_view,
+      "9be the invented celebration text must not return")
+check("_check_recorded_frames(check, data)" in _cele_checks
+      and "_check_production_replay(check, data)" in _cele_checks
+      and "_check_stages(check, data)" in _cele_checks
+      and "_check_view_wiring(check, data)" in _cele_checks,
+      "9be celebration draw suite must replay recorded and production frames plus the view")
+
+# ── Layer 9bf: BossDeathAnimation._draw_death_sequence() visuals as a pure op list ──
+from boss_death_sequence_draw_source_oracle import source_fixture as boss_death_sequence_fixture
+_seq_path = ROOT / "tests/fixtures/boss_death_sequence_draw_source.json"
+_seq_layout = (ROOT / "scripts/ui/boss_death_sequence_layout.gd").read_text(encoding="utf-8")
+_seq_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_seq_checks = (ROOT / "tests/boss_death_sequence_draw_checks.gd").read_text(encoding="utf-8")
+_seq_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+check('const BossDeathSequenceDrawChecks = preload("res://tests/boss_death_sequence_draw_checks.gd")'
+      in ai_tests and "BossDeathSequenceDrawChecks.new().run(_check)" in ai_tests,
+      "9bf boss death sequence draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/boss_death_sequence_draw_source_oracle.py" in workflow,
+      "9bf CI must run the BossDeathAnimation._draw_death_sequence() source oracle")
+check(_seq_path.is_file(), "9bf boss death sequence draw fixture must exist")
+if _seq_path.is_file():
+    _seq = json.loads(_seq_path.read_text(encoding="utf-8"))
+    check(boss_death_sequence_fixture() == _seq,
+          "9bf boss death sequence draw fixture must not drift from _render.py")
+    _seq_frames = _seq["frames"]
+    check(len(_seq_frames) == 12 and sum(len(frame["ops"]) for frame in _seq_frames) == 2299,
+          "9bf oracle must pin 12 frames and 2299 recorded draw ops")
+    check(all((frame["ops"][0]["kind"] == "flash") == (frame["tick"] < 15)
+              and (frame["tick"] >= 15
+                   or frame["ops"][0]["alpha"] == int(200 * (1 - frame["tick"] / 15)))
+              for frame in _seq_frames),
+          "9bf oracle must pin the additive flash fading over the first 15 ticks")
+    _seq_rings = [op for frame in _seq_frames for op in frame["ops"]
+                  if op["kind"] == "circle" and op["width"] == 3]
+    check(_seq_rings and all(op["center"] == [642, 362] for op in _seq_rings),
+          "9bf oracle must pin the waves sitting 2 px off the boss")
+    _seq_shards = {(frame["label"], frame["tick"]): sum(op["kind"] == "polygon"
+                                                         for op in frame["ops"])
+                   for frame in _seq_frames}
+    check(all(_seq_shards[("abaddon_true", tick)] == 50 for tick in (0, 7, 15, 25, 44, 45, 57))
+          and _seq_shards[("abaddon_true", 60)] == 0 and _seq_shards[("abaddon_true", 89)] == 0
+          and _seq_shards[("drakar_mini", 2)] == 30 and _seq_shards[("drakar_mini", 30)] == 30
+          and _seq_shards[("drakar_mini", 58)] == 0,
+          "9bf oracle must pin 25 / 15 fragments (fill + edge) until their alpha drops below 10")
+    check(all(sum(op["kind"] == "polygon" and op["width"] == 1 for op in frame["ops"])
+              == sum(op["kind"] == "polygon" and op["width"] == 0 for op in frame["ops"])
+              for frame in _seq_frames),
+          "9bf oracle must pin one 1 px edge polygon per filled fragment")
+    check(any(op["kind"] == "circle" and op["width"] == 0 and op["radius"] == 1
+              and op["color"][:3] == [255, 255, 255]
+              for frame in _seq_frames for op in frame["ops"])
+          and any(op["kind"] == "circle" and op["width"] == 0 and op["color"][3] == 0
+                  for frame in _seq_frames for op in frame["ops"]),
+          "9bf oracle must pin the white 1 px core and the alpha-0 outer glow disc")
+    check(all(len(_seq["scenarios"][i]["fragments"]) == (25, 15)[i]
+              and len(_seq["scenarios"][i]["rising"]) == (30, 15)[i] for i in range(2)),
+          "9bf oracle must store the seeded fragment / rising particle replay specs")
+check("static func ops(" in _seq_layout
+      and "const RING_WIDTH := 3" in _seq_layout
+      and "func _wave(" in _seq_layout
+      and "func _fragment(" in _seq_layout
+      and "func _rising(" in _seq_layout
+      and '"covered"' in _seq_layout and '"ring_inner"' in _seq_layout,
+      "9bf boss death sequence layout must mirror _draw_death_sequence()")
+check("BossDeathSequenceLayout.ops(" in _seq_view
+      and "func boss_death_draw_ops(" in _seq_view
+      and "func _draw_death_op(" in _seq_view
+      and "func _draw_polygon_edge(" in _seq_view
+      and "func _draw_boss_death_animation(" in _seq_view
+      and "_draw_boss_death_sequence(" not in _seq_view,
+      "9bf PrototypeView must paint the death sequence from the source op list")
+check('"boss_death":\n\t\t\t_draw_boss_death_animation(world)' in _seq_view
+      and _seq_core.index("self.level_intro.draw(self.screen)")
+      < _seq_core.index("self.boss_death.draw(self.screen)"),
+      "9bf boss_death.draw() runs after the level intro in the source; the view dispatches it "
+      "as the last overlay (order pinned by 9bi)")
+check("_check_production_replay(check, data)" in _seq_checks
+      and "_check_stages(check, data)" in _seq_checks
+      and "_check_overwrite_hints(check, data)" in _seq_checks
+      and "_check_view_wiring(check, data)" in _seq_checks,
+      "9bf death sequence draw suite must replay production frames plus the view")
+
+# ── Layer 9bg: DeathExplosion.draw() + HitParticle.draw() visuals as pure op lists ──
+from death_explosion_draw_source_oracle import source_fixture as death_explosion_draw_fixture
+_burst_path = ROOT / "tests/fixtures/death_explosion_draw_source.json"
+_burst_layout = (ROOT / "scripts/ui/death_explosion_layout.gd").read_text(encoding="utf-8")
+_spark_layout = (ROOT / "scripts/ui/hit_particle_layout.gd").read_text(encoding="utf-8")
+_burst_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_burst_checks = (ROOT / "tests/death_explosion_draw_checks.gd").read_text(encoding="utf-8")
+check('const DeathExplosionDrawChecks = preload("res://tests/death_explosion_draw_checks.gd")'
+      in ai_tests and "DeathExplosionDrawChecks.new().run(_check)" in ai_tests,
+      "9bg death explosion draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/death_explosion_draw_source_oracle.py" in workflow,
+      "9bg CI must run the DeathExplosion.draw() / HitParticle.draw() source oracle")
+check(_burst_path.is_file(), "9bg death explosion draw fixture must exist")
+if _burst_path.is_file():
+    _burst = json.loads(_burst_path.read_text(encoding="utf-8"))
+    check(death_explosion_draw_fixture() == _burst,
+          "9bg death explosion draw fixture must not drift from _render.py")
+    _burst_frames = _burst["frames"]
+    check(len(_burst_frames) == 25 and sum(len(frame["ops"]) for frame in _burst_frames) == 582,
+          "9bg oracle must pin 25 frames and 582 recorded draw ops")
+    _burst_flashes = [frame for frame in _burst_frames
+                      if frame["label"] != "sparks" and frame["state"]["flash_timer"] > 0]
+    check(len(_burst_flashes) == 10
+          and all(frame["ops"][0]["color"]
+                  == [255, 255, 200, int(200 * frame["state"]["flash_timer"] / 8)]
+                  and frame["ops"][0]["radius"] == int(20 * frame["state"]["flash_timer"] / 8)
+                  and frame["ops"][1]["color"]
+                  == [255, 255, 255, int(255 * frame["state"]["flash_timer"] / 8)]
+                  and frame["ops"][1]["radius"] == frame["ops"][0]["radius"] // 2
+                  for frame in _burst_flashes),
+          "9bg oracle must pin the two flash discs shrinking and fading over 8 ticks")
+    check(all(frame["ops"][0]["center"] == [int(scenario["x"]), int(scenario["y"])]
+              for frame in _burst_flashes for scenario in _burst["scenarios"]
+              if scenario["label"] == frame["label"]),
+          "9bg oracle must pin the int() anchor of the flash (fractional x / y truncated)")
+    _burst_sparks = [op for frame in _burst_frames
+                     for op in frame["ops"][(2 if frame in _burst_flashes else 0):]]
+    check(len(_burst_sparks) % 2 == 0
+          and all(_burst_sparks[i]["center"] == _burst_sparks[i + 1]["center"]
+                  and _burst_sparks[i + 1]["color"] == [255, 255, 255, 255]
+                  and _burst_sparks[i]["mult"] == _burst_sparks[i + 1]["mult"]
+                  for i in range(0, len(_burst_sparks), 2)),
+          "9bg oracle must pin each spark as a colour disc plus a white core at one anchor")
+    check(any(isinstance(op["center"][0], float) and op["radius"] < 1
+              for frame in _burst_frames if frame["label"] == "sparks" for op in frame["ops"]),
+          "9bg oracle must pin a scaled sprite (fractional centre, sub-pixel core)")
+    check(_burst["scenarios"][3]["kind"] == "sparks"
+          and sum(frame["state"].get("alive", [True]).count(False) for frame in _burst_frames
+                  if frame["label"] == "sparks") == 1
+          and len(_burst["scenarios"][0]["particles"]) == 8
+          and len(_burst["scenarios"][1]["particles"]) == 15
+          and len(_burst["scenarios"][2]["particles"]) == 25,
+          "9bg oracle must store the seeded spark specs (8 / 15 / 25) and a dead standalone spark")
+check("static func ops(" in _burst_layout
+      and "HitParticleLayout.ops(" in _burst_layout
+      and "const FLASH_PEAK_ALPHA := 200.0" in _burst_layout
+      and '"ring_inner"' in _burst_layout
+      and "static func ops(" in _spark_layout
+      and "float(half) * factor" in _spark_layout
+      and '"covered": core >= base' in _spark_layout,
+      "9bg explosion and spark layouts must mirror DeathExplosion.draw() / HitParticle.draw()")
+check("DeathExplosionLayout.ops(" in _burst_view
+      and "HitParticleLayout.ops(" in _burst_view
+      and "func death_explosion_draw_ops(" in _burst_view
+      and "func hit_particle_draw_ops(" in _burst_view
+      and "f_intensity" not in _burst_view and "spark.current_size()" not in _burst_view,
+      "9bg PrototypeView must paint explosions and sparks from the source op lists")
+check("_check_production_replay(check, data)" in _burst_checks
+      and "_check_flash(check, data)" in _burst_checks
+      and "_check_sparks(check, data)" in _burst_checks
+      and "_check_view_wiring(check, data)" in _burst_checks,
+      "9bg death explosion draw suite must replay production frames plus the view")
+
+# ── Layer 9bh: MapRenderer.draw() ambient tint as a pure op list ──
+from map_tint_draw_source_oracle import source_fixture as map_tint_draw_fixture
+_tint_path = ROOT / "tests/fixtures/map_tint_draw_source.json"
+_tint_layout = (ROOT / "scripts/ui/map_tint_layout.gd").read_text(encoding="utf-8")
+_tint_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_tint_base = (ROOT / "scenes/combat/minion_view.gd").read_text(encoding="utf-8")
+_tint_checks = (ROOT / "tests/map_tint_draw_checks.gd").read_text(encoding="utf-8")
+_tint_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+check('const MapTintDrawChecks = preload("res://tests/map_tint_draw_checks.gd")' in ai_tests
+      and "MapTintDrawChecks.new().run(_check)" in ai_tests,
+      "9bh map tint draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/map_tint_draw_source_oracle.py" in workflow,
+      "9bh CI must run the MapRenderer.draw() ambient tint source oracle")
+check(_tint_path.is_file(), "9bh map tint draw fixture must exist")
+if _tint_path.is_file():
+    _tint = json.loads(_tint_path.read_text(encoding="utf-8"))
+    check(map_tint_draw_fixture() == _tint,
+          "9bh map tint draw fixture must not drift from _render.py / map_components")
+    check(len(_tint["tints"]) == 54 and len(_tint["frames"]) == 108
+          and sum(len(frame["ops"]) for frame in _tint["frames"]) == 106,
+          "9bh oracle must pin 54 themes, 108 frames and 106 recorded draw ops")
+    _tint_rows = {name: None if value == "null" else json.loads(value)
+                  for name, value in re.findall(r'^\t"(\w+)": (null|\[[^\]]*\]),$',
+                                                _tint_layout, re.M)}
+    check(_tint_rows == _tint["tints"],
+          "9bh map_tint_layout.gd TINTS must equal the source theme tints")
+    check(_tint["tints"]["forest"] is None
+          and sum(value is not None for value in _tint["tints"].values()) == 53
+          and all(len(value) == 4 for value in _tint["tints"].values() if value is not None),
+          "9bh oracle must pin forest without tint and 53 RGBA theme tints")
+    check(all(frame["ops"] == [] for frame in _tint["frames"] if _tint["tints"][frame["theme"]] is None)
+          and all(frame["ops"] == [{"kind": "fill", "rect": [0, 0, 1280, 720],
+                                    "color": _tint["tints"][frame["theme"]], "mult": 255,
+                                    "blend": 0}]
+                  for frame in _tint["frames"]
+                  if frame["cheap_alpha"] and _tint["tints"][frame["theme"]] is not None),
+          "9bh oracle must pin the screen-sized alpha blit of the theme tint")
+    check(all(len(frame["ops"]) == 1 and frame["ops"][0]["blend"] == 3
+              and frame["ops"][0]["color"][3] == 255
+              and all(a >= b for a, b in zip([255, 255, 255],
+                                              frame["ops"][0]["color"][:3]))
+              for frame in _tint["frames"]
+              if not frame["cheap_alpha"] and _tint["tints"][frame["theme"]] is not None),
+          "9bh oracle must pin the BLEND_RGB_MULT path of the non-cheap tint")
+check("static func ops(" in _tint_layout
+      and "static func tint_for(" in _tint_layout
+      and "const BLEND_RGB_MULT := 3" in _tint_layout
+      and "const TINTS := {" in _tint_layout,
+      "9bh map tint layout must mirror MapRenderer.draw()'s tint step")
+check("MapTintLayout.ops(" in _tint_view
+      and "func map_tint_draw_ops(" in _tint_view
+      and "func _draw_map_overlay(" in _tint_view
+      and "func _draw_map_overlay(" in _tint_base
+      and _tint_base.index("draw_texture(wall_texture")
+      < _tint_base.index("_draw_map_overlay()")
+      < _tint_base.index("_draw_base(Layout.BLUE_BASE"),
+      "9bh the tint must be painted right after the map layers and before the units")
+check(_tint_core.index("self.map_renderer.draw(draw_target") < _tint_core.index("h.draw(draw_target)"),
+      "9bh the source draws the map (and its tint) before the heroes")
+check("_check_table(check, data)" in _tint_checks
+      and "_check_frames(check, data)" in _tint_checks
+      and "_check_quirks(check, data)" in _tint_checks
+      and "_check_view_wiring(check)" in _tint_checks,
+      "9bh map tint draw suite must replay every theme frame plus the view")
+
+# ── Layer 9bi: paint order of the world layers and screen overlays ──
+from draw_order_source_oracle import source_fixture as draw_order_fixture
+_order_path = ROOT / "tests/fixtures/draw_order_source.json"
+_order_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_order_checks = (ROOT / "tests/draw_order_checks.gd").read_text(encoding="utf-8")
+check('const DrawOrderChecks = preload("res://tests/draw_order_checks.gd")' in ai_tests
+      and "DrawOrderChecks.new().run(_check)" in ai_tests,
+      "9bi draw order suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/draw_order_source_oracle.py" in workflow,
+      "9bi CI must run the draw order source oracle")
+check(_order_path.is_file(), "9bi draw order fixture must exist")
+if _order_path.is_file():
+    _order = json.loads(_order_path.read_text(encoding="utf-8"))
+    check(draw_order_fixture() == _order, "9bi draw order fixture must not drift from the source")
+    check(_order["game_draw"] == ["map", "effects", "tactical_world", "boss_intro", "effects_ui",
+                                  "level_intro", "boss_death"]
+          and _order["effects_draw"] == ["path_preview", "explosions", "particles",
+                                         "floating_texts"]
+          and _order["effects_draw_ui"] == ["wave_announcer", "achievement"],
+          "9bi oracle must pin Game.draw and EffectManager.draw / draw_ui order")
+    _order_live = ["boss_intro", *_order["effects_draw_ui"], "level_intro", "boss_death"]
+    _order_block = re.search(r"const OVERLAY_ORDER := \[(.*?)\]", _order_view, re.S)
+    _order_view_layers = re.findall(r'"(\w+)"', _order_block.group(1)) if _order_block else []
+    check([name for name in _order_view_layers if name in _order_live] == _order_live
+          and _order_view_layers[-1] == "boss_death"
+          and _order_view_layers.index("boss_intro") < _order_view_layers.index("wave_announcer"),
+          "9bi OVERLAY_ORDER must follow the source stack (banner < announcer < achievement < "
+          "level intro < boss death)")
+    check(re.search(r'const WORLD_LAYER_ORDER := \["path_preview", "effects", "tactical"\]',
+                    _order_view) is not None,
+          "9bi WORLD_LAYER_ORDER must be path preview, effects, then tactical world")
+_order_effects = _order_view[_order_view.index("func _draw_world_effects("):]
+check(_order_effects.index("DeathExplosionLayout.ops(")
+      < _order_effects.index("HitParticleLayout.ops(")
+      < _order_effects.index("world.effects.floating_texts"),
+      "9bi world effects must paint explosions, particles, then floating texts")
+check("for layer in OVERLAY_ORDER:" in _order_view
+      and "for layer in WORLD_LAYER_ORDER:" in _order_view
+      and "func _draw_overlay_layer(" in _order_view
+      and "func _draw_world_layer(" in _order_view
+      and "func overlay_paint_order(" in _order_view
+      and "func world_layer_order(" in _order_view
+      and "\t_draw_wave_announcer(world)\n\t_draw_combo_counter(world)\n" not in _order_view,
+      "9bi PrototypeView must paint from the order constants, not a fixed call list")
+check("_check_overlays(check, data, view.overlay_paint_order())" in _order_checks
+      and "_check_world(check, data, view.world_layer_order())" in _order_checks,
+      "9bi draw order suite must read the view's order back")
+
+# ── Layer 9bj: baked map decorations + shop buildings (bake/bake_map_overlay.py) ──
+import hashlib
+import math
+import struct
+
+_art_manifest_path = ROOT / "data/art/map_overlay.json"
+_art_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_art_base = (ROOT / "scenes/combat/minion_view.gd").read_text(encoding="utf-8")
+_art_loader = (ROOT / "scripts/ui/map_art.gd").read_text(encoding="utf-8")
+_art_checks = (ROOT / "tests/map_art_checks.gd").read_text(encoding="utf-8")
+_art_render = (ROOT.parent / "_render.py").read_text(encoding="utf-8")
+_art_bake = (ROOT / "bake/bake_map_overlay.py").read_text(encoding="utf-8")
+_art_env = (ROOT / "bake/pygame_env.py").read_text(encoding="utf-8")
+check('const MapArtChecks = preload("res://tests/map_art_checks.gd")' in ai_tests
+      and "MapArtChecks.new().run(_check)" in ai_tests,
+      "9bj map art suite must be preloaded and run in the native suite")
+check(_art_manifest_path.is_file(), "9bj map overlay manifest must exist")
+if _art_manifest_path.is_file():
+    _art = json.loads(_art_manifest_path.read_text(encoding="utf-8"))
+    _art_palette = json.loads((ROOT / "data/levels/theme_palette.json").read_text(encoding="utf-8"))
+    _art_levels = {
+        json.loads(path.read_text(encoding="utf-8")).get("map_theme")
+        for path in (ROOT / "data/levels").glob("level_*.json")
+    }
+    check(sorted(_art["themes"]) == sorted(_art_palette) and len(_art["themes"]) == 54,
+          "9bj one overlay per palette theme (54)")
+    check(_art_levels <= set(_art["themes"]) and len(_art_levels) == 54,
+          "9bj every level's map_theme must have a baked overlay")
+    check(_art["generator"] == "godot_rebuild/bake/bake_map_overlay.py"
+          and "layers 4-5" in _art["layers"],
+          "9bj manifest must name its generator and the source layers")
+    for _theme, _entry in sorted(_art["themes"].items()):
+        _png = ROOT / "assets/art/map" / f"{_theme}.png"
+        check(_png.is_file(), f"9bj overlay PNG must ship: {_theme}")
+        if not _png.is_file():
+            continue
+        _raw = _png.read_bytes()
+        _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+        check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _entry["size"] == [1280, 720]
+              and (_depth, _color) == (8, 6),
+              f"9bj overlay must be a 1280x720 RGBA8 PNG: {_theme}")
+        check(len(_raw) == _entry["bytes"] and hashlib.sha256(_raw).hexdigest() == _entry["sha256"],
+              f"9bj overlay must match its manifest hash: {_theme}")
+        check(_entry["covered_pixels"] >= 10000, f"9bj overlay must hold real decorations: {_theme}")
+check(_art_render.index("DecorationRenderer.draw_all(surf, self)")
+      < _art_render.index("ShopRenderer.draw(surf, self.radiant_shop_pos")
+      < _art_render.index("StaticRenderer.draw_border_wall(surf"),
+      "9bj the source paints decorations, then shops, then the border wall")
+check("DecorationRenderer.draw_all(full, mr)" in _art_bake
+      and "ShopRenderer.draw(full, mr.radiant_shop_pos, mr.dire_shop_pos)" in _art_bake
+      and "assert (composite == full_rgb).all()" in _art_bake,
+      "9bj the bake must run source layers 4-5 and prove overlay + base == source")
+check("storage_paths._PROJECT_ROOT = tempfile.mkdtemp" in _art_env,
+      "9bj bake scripts must keep the game's save folder out of the repo")
+check("MapArt.overlay_texture(cached_river_theme)" in _art_view
+      and "func _draw_map_decor(" in _art_view and "func _draw_map_decor(" in _art_base
+      and _art_base.index("draw_texture(lane_texture") < _art_base.index("_draw_map_decor()")
+      < _art_base.index("draw_texture(wall_texture"),
+      "9bj the view must paint the overlay after the lanes and before the border wall")
+check("ResourceLoader.exists(overlay_path(theme))" in _art_loader
+      and "static func overlay_texture(" in _art_loader,
+      "9bj the loader must tolerate a theme that is not imported")
+check("_check_files(check, manifest)" in _art_checks
+      and "_check_textures(check)" in _art_checks
+      and "_check_view_wiring(check)" in _art_checks,
+      "9bj map art suite must check files, loaded textures and the view wiring")
+
+# ── Layer 9bk: baked minion sprites (bake/bake_minion_atlas.py) ──
+_mn_path = ROOT / "data/art/minions.json"
+_mn_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+_mn_entity = (ROOT.parent / "_entity.py").read_text(encoding="utf-8")
+_mn_bundle = (ROOT.parent / "minions/_bundle.py").read_text(encoding="utf-8")
+_mn_bake = (ROOT / "bake/bake_minion_atlas.py").read_text(encoding="utf-8")
+_mn_art = (ROOT / "scripts/ui/minion_art.gd").read_text(encoding="utf-8")
+_mn_anim = (ROOT / "scripts/ui/minion_anim.gd").read_text(encoding="utf-8")
+_mn_view = (ROOT / "scenes/combat/minion_view.gd").read_text(encoding="utf-8")
+_mn_state = (ROOT / "scripts/combat/unit_state.gd").read_text(encoding="utf-8")
+_mn_battle = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+_mn_checks = (ROOT / "tests/minion_art_checks.gd").read_text(encoding="utf-8")
+check('const MinionArtChecks = preload("res://tests/minion_art_checks.gd")' in ai_tests
+      and "MinionArtChecks.new().run(_check)" in ai_tests,
+      "9bk minion art suite must be preloaded and run in the native suite")
+check("      - 'minions/_bundle.py'" in workflow and workflow.count("minions/_bundle.py") == 2,
+      "9bk CI must run when the source minion art changes (push and pull_request)")
+check(_mn_path.is_file(), "9bk minion atlas manifest must exist")
+if _mn_path.is_file():
+    _mn = json.loads(_mn_path.read_text(encoding="utf-8"))
+    _mn_block = re.search(r"^MINION_TYPES = \{\n(.*?)^\}", _mn_core, re.S | re.M)
+    _mn_source_types = re.findall(r'^    "(\w+)": \{', _mn_block.group(1), re.M)
+    check(_mn["types"] == _mn_source_types == ["goblin", "orc", "troll", "undead", "dark_rider"],
+          "9bk baked types must be the source MINION_TYPES")
+    check(_mn["teams"] == ["blue", "red"] and _mn["levels"] == [1, 2, 3, 4, 5]
+          and len(_mn["atlases"]) == 50,
+          "9bk one atlas per type x team x nexus level")
+    check(_mn["states"] == {"atk": 13, "walk": 8, "idle": 4}
+          and f"self.attack_anim_max = {_mn['attack_anim_max']}" in _mn_entity
+          and _mn["attack_anim_max"] == 24,
+          "9bk pose counts and attack_anim_max must match the source")
+    check(len(_mn["key_cases"]) >= 90
+          and {row[4] for row in _mn["key_cases"]} == {"atk", "walk", "idle"},
+          "9bk the manifest must carry the source pose keys")
+    _mn_poses = [f"{kind}{i}" for kind, n in (("atk", 13), ("walk", 8), ("idle", 4))
+                 for i in range(n)]
+    for _name, _entry in sorted(_mn["atlases"].items()):
+        _png = ROOT / "assets/art/minions" / f"{_name}.png"
+        check(_png.is_file(), f"9bk atlas PNG must ship: {_name}")
+        if not _png.is_file():
+            continue
+        _raw = _png.read_bytes()
+        _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+        check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _entry["size"]
+              and (_depth, _color) == (8, 6),
+              f"9bk atlas must be an RGBA8 PNG of its manifest size: {_name}")
+        check(len(_raw) == _entry["bytes"] and hashlib.sha256(_raw).hexdigest() == _entry["sha256"],
+              f"9bk atlas must match its manifest hash: {_name}")
+        _rows = _entry["frames"]
+        check(sorted(_rows) == sorted(f"{pose}:{d}" for pose in _mn_poses for d in (1, -1)),
+              f"9bk atlas must hold every pose in both directions: {_name}")
+        check(all(w > 0 and h > 0 and x >= 0 and y >= 0 and x + w <= _entry["size"][0]
+                  and y + h <= _entry["size"][1] and 0 <= ax <= w and 0 <= ay <= h
+                  for x, y, w, h, ax, ay in _rows.values()),
+              f"9bk every frame must lie inside its atlas with its anchor in the crop: {_name}")
+for _fragment in (
+    "state = ('atk', atk // 2)",
+    "state = ('walk', int(getattr(minion, 'walk_cycle', 0) * 2) % 8)",
+    "state = ('idle', int(getattr(minion, 'anim_time', 0) * 0.05) % 4)",
+    "1 if getattr(minion, 'direction', 1) >= 0 else -1",
+    "_CANVAS_W = 120",
+    "if getattr(minion, \"team\", \"blue\") == \"red\":",
+):
+    check(_fragment in _mn_bundle, f"9bk the source sprite cache must still key on {_fragment!r}")
+for _fragment in ("self.walk_cycle += 0.25", "self.hurt_flash_timer = 8",
+                  "self.attack_anim_timer = self.attack_anim_max", "self.anim_time += 1"):
+    check(_fragment in _mn_entity, f"9bk the source minion clock must still read {_fragment!r}")
+check("minion.attack_anim_timer = min(24, 2 * index + 1)" in _mn_bake
+      and "minion.walk_cycle = index / 2.0" in _mn_bake
+      and "minion.anim_time = 20 * index" in _mn_bake
+      and "minion.draw(pygame.Surface" in _mn_bake
+      and "bundle._minion_cache_key(minion)" in _mn_bake
+      and "cache.get_cached_sprite_cropped(key" in _mn_bake,
+      "9bk the bake must drive the real Minion.draw and read the sprite cache")
+for _fragment in ("bg_color = (12, 22, 44)", "border_color = (90, 165, 255)",
+                  "bg_color = (44, 12, 10)", "border_color = (255, 95, 85)",
+                  "col = (70, 200, 80)", "col = (225, 190, 60)", "col = (215, 60, 55)",
+                  "if hp_ratio > 0.6:", "elif hp_ratio > 0.3:", "bar_h = 4",
+                  "fill = int(w * hp_ratio)", "bar_w = radius * 2 + 6", "by = y - radius - 18"):
+    check(_fragment in _mn_bundle, f"9bk the source minion HP bar must still read {_fragment!r}")
+for _fragment in ("Color8(12, 22, 44)", "Color8(90, 165, 255)", "Color8(44, 12, 10)",
+                  "Color8(255, 95, 85)", "Color8(70, 200, 80)", "Color8(225, 190, 60)",
+                  "Color8(215, 60, 55)", "ratio <= 0.3", "ratio <= 0.6",
+                  "var width := radius * 2 + 6", "int(point.y) - radius - 18",
+                  "Color8(150, 220, 255, 80)", "Color8(200, 240, 255)"):
+    check(_fragment in _mn_view, f"9bk the view must paint the source minion bars: {_fragment!r}")
+check("(150, 220, 255, 80)" in _mn_entity and "(200, 240, 255)" in _mn_entity
+      and "angle = self.anim_time * 0.1 + i * 2" in _mn_entity,
+      "9bk the source slow aura must still read as the view paints it")
+check("var nexus_level := 1" in _mn_state and "unit.nexus_level = current" in _mn_battle,
+      "9bk spawned minions must carry their nexus tier for the sprite pick")
+check("static func pose_key(" in _mn_anim and "attack >> 1" in _mn_anim
+      and "int(walk_cycle * 2.0) % WALK_POSES" in _mn_anim
+      and "int(float(anim_time) * 0.05) % IDLE_POSES" in _mn_anim
+      and "WALK_STEP := 0.25" in _mn_anim and "HURT_FLASH_TICKS := 8" in _mn_anim
+      and "ATTACK_ANIM_MAX := 24" in _mn_anim,
+      "9bk the pose picker must mirror the source cache key and clocks")
+check("ResourceLoader.exists(atlas_path(name))" in _mn_art
+      and "static func frame(" in _mn_art and "\"anchor\"" in _mn_art,
+      "9bk the loader must tolerate an atlas that is not imported")
+check("func _draw_minion_sprite(" in _mn_view and "MinionArt.frame(" in _mn_view
+      and "minion_anim.observe(unit, session.world.tick_count)" in _mn_view
+      and "draw_texture_rect_region(" in _mn_view and "return false" in _mn_view
+      and "if not unit.is_hero and _draw_minion_sprite(unit):" in _mn_view
+      and "minion_anim.prune(session.world.units)" in _mn_view,
+      "9bk the view must draw the baked sprite and fall back to the circle")
+check("_check_atlases(check, manifest)" in _mn_checks and "_check_key_cases(check, manifest)" in _mn_checks
+      and "_check_clocks(check)" in _mn_checks and "_check_spawn_level(check)" in _mn_checks
+      and "_check_view_wiring(check)" in _mn_checks,
+      "9bk minion art suite must check atlases, pose keys, clocks, spawn tier and wiring")
+
+# ── Layer 9bl: baked tower, castle and armor-crest sprites (bake/bake_structure_atlas.py) ──
+_st_path = ROOT / "data/art/structures.json"
+_st_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+_st_entity = (ROOT.parent / "_entity.py").read_text(encoding="utf-8")
+_st_bake = (ROOT / "bake/bake_structure_atlas.py").read_text(encoding="utf-8")
+_st_art = (ROOT / "scripts/ui/structure_art.gd").read_text(encoding="utf-8")
+_st_anim = (ROOT / "scripts/ui/structure_anim.gd").read_text(encoding="utf-8")
+_st_siege = (ROOT / "scenes/siege/siege_view.gd").read_text(encoding="utf-8")
+_st_base = (ROOT / "scenes/combat/minion_view.gd").read_text(encoding="utf-8")
+_st_checks = (ROOT / "tests/structure_art_checks.gd").read_text(encoding="utf-8")
+check('const StructureArtChecks = preload("res://tests/structure_art_checks.gd")' in ai_tests
+      and "StructureArtChecks.new().run(_check)" in ai_tests,
+      "9bl structure art suite must be preloaded and run in the native suite")
+check(_st_path.is_file(), "9bl structure atlas manifest must exist")
+if _st_path.is_file():
+    _st = json.loads(_st_path.read_text(encoding="utf-8"))
+    check(_st["tower_types"] == ["archer", "cannon", "ice", "mage"]
+          and _st["shoot_timers"] == [0, 5, 8, 10]
+          and _st["castle"] == {"levels": [1, 2, 3, 4, 5], "timers": [0, 3, 5, 8, 10],
+                                "scale": 0.85, "size": [153, 136], "anchor": [76, 101]},
+          "9bl manifest must carry the tower paths, the representative timers and the castle blit")
+    check({kind: len(levels) for kind, levels in _st["tower_levels"].items()}
+          == {"archer": 6, "cannon": 5, "ice": 5, "mage": 5}
+          and len(_st["towers"]) == 42 and len(_st["castles"]) == 10
+          and len(_st["crests"]["frames"]) == 88,
+          "9bl one sheet per tower path x team x level, per castle team x level, plus crests")
+    _st_sheets = {f"tower_{n}": e for n, e in _st["towers"].items()}
+    _st_sheets.update({f"castle_{n}": e for n, e in _st["castles"].items()})
+    _st_sheets["crests"] = _st["crests"]
+    for _stem, _entry in sorted(_st_sheets.items()):
+        _png = ROOT / "assets/art/structures" / f"{_stem}.png"
+        check(_png.is_file(), f"9bl structure sheet must ship: {_stem}")
+        if not _png.is_file():
+            continue
+        _raw = _png.read_bytes()
+        _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+        check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _entry["size"]
+              and (_depth, _color) == (8, 6),
+              f"9bl sheet must be an RGBA8 PNG of its manifest size: {_stem}")
+        check(len(_raw) == _entry["bytes"] and hashlib.sha256(_raw).hexdigest() == _entry["sha256"],
+              f"9bl sheet must match its manifest hash: {_stem}")
+        check(all(w > 0 and h > 0 and x >= 0 and y >= 0 and x + w <= _entry["size"][0]
+                  and y + h <= _entry["size"][1] and 0 <= ax <= w and 0 <= ay <= h
+                  for x, y, w, h, ax, ay in _entry["frames"].values()),
+              f"9bl every frame must lie inside its sheet: {_stem}")
+        _want = 88 if _stem == "crests" else (5 if _stem.startswith("castle_") else 8)
+        check(len(_entry["frames"]) == _want, f"9bl sheet must hold {_want} frames: {_stem}")
+    for _team in ("blue", "red"):
+        for _tres in sorted((ROOT / "data/structures").glob("*.tres")):
+            _text = _tres.read_text(encoding="utf-8")
+            _kind = re.search(r'structure_kind = "(\w+)"', _text)
+            _path = re.search(r'tower_path = "(\w+)"', _text)
+            _level_match = re.search(r"^level = (\d+)", _text, re.M)
+            _level = int(_level_match.group(1)) if _level_match else 1  # default is omitted
+            if _kind and _kind.group(1) == "nexus":
+                check(f"{_team}_{_level}" in _st["castles"],
+                      f"9bl every nexus level needs a castle sheet: {_tres.name} {_team}")
+            else:
+                _name = f"{_path.group(1) if _path else 'archer'}_{_team}_{_level}"
+                check(_name in _st["towers"], f"9bl every tower level needs a sheet: {_name}")
+    check(set(_st["tower_top_y"]) == {"archer", "cannon", "ice", "mage"}
+          and all(len(v) == len(_st["tower_levels"][k]) for k, v in _st["tower_top_y"].items()),
+          "9bl every tower level must carry its bar offset")
+for _fragment in (
+    'key = ("tw", self.tower_type, self.team, self.level,',
+    "shoot_b = self.shoot_flash_timer // 3",
+    "face = 1 if (self.target is not None",
+    "cw, ch = 180, 160",
+    "SCALE = 0.85",
+    "final_x = int(self.x - new_w // 2)",
+    "final_y = int(self.y - new_h + 35)",
+    "scaled = pygame.transform.smoothscale(canvas, (new_w, new_h))",
+    "flicker = int((timer * 0.4 + offset) % 5)",
+    "crest_x = x + 26",
+    "crest_y = y - 28 - self.level",
+    "crest_size = 14",
+    "crest_size = 18",
+    "ratio_b = min(10, max(0, int(fill_ratio * 10 + 0.5)))",
+    "bar_w = 44",
+    "bar_h = 5",
+    "by = self._top_fn(self.x, self.y, self.level) - 14",
+    "by = y - 26",
+    "shield_bar_y = by - bar_h - 2",
+    "(30, 30, 50)",
+    "(40, 0, 0)",
+    "shine_h = max(1, bar_h // 2)",
+    "bar_w = 60",
+    "bar_h = 6",
+    "by = int(self.y - 80)",
+    'f"SHIELD {int(ratio*100)}%"',
+    "bob = int(math.sin(self.pulse * 1.2) * 2)",
+    "self.pulse += 0.05",
+    "self.shoot_flash_timer = 10",
+    "self.shoot_flash_timer = 8",
+):
+    check(_fragment in _st_entity, f"9bl the source tower/castle code must still read {_fragment!r}")
+check("TOWER_SHIELD_REGEN_DELAY = 180" in _st_core
+      and "SHIELD_COLOR_BLUE = (100, 180, 255)" in _st_core
+      and "SHIELD_COLOR_RED = (255, 100, 100)" in _st_core
+      and "CASTLE_SHIELD_COLOR_BLUE = (100, 200, 255)" in _st_core
+      and "CASTLE_SHIELD_COLOR_RED = (255, 120, 120)" in _st_core,
+      "9bl the source shield colours and regen delay must still read as the view paints them")
+check("tower._draw_tower_body(" in _st_bake and "entity._render_castle_full(" in _st_bake
+      and "entity._render_dynamic_effects(" in _st_bake
+      and "pygame.transform.smoothscale(frame, (new_w, new_h))" in _st_bake
+      and "entity._build_armor_crest(" in _st_bake
+      and 'key = ("tw", tower_type, team, level, face, timer // 3)' in _st_bake
+      and "SHOOT_TIMERS = (0, 5, 8, 10)" in _st_bake
+      and "CASTLE_TIMERS = (0, 3, 5, 8, 10)" in _st_bake,
+      "9bl the bake must drive the real tower, castle and crest code at the source timers")
+for _fragment in (
+    "const TOWER_BAR_WIDTH := 44", "const TOWER_BAR_HEIGHT := 5",
+    "Color(100 / 255.0, 180 / 255.0, 255 / 255.0)", "Color(255 / 255.0, 100 / 255.0, 100 / 255.0)",
+    "Color(100 / 255.0, 200 / 255.0, 255 / 255.0)", "Color(255 / 255.0, 120 / 255.0, 120 / 255.0)",
+    "Color(30 / 255.0, 30 / 255.0, 50 / 255.0)", "Color(40 / 255.0, 0 / 255.0, 0 / 255.0)",
+    "Color(50 / 255.0, 200 / 255.0, 50 / 255.0)", "Color(220 / 255.0, 50 / 255.0, 50 / 255.0)",
+    "Vector2(x + 26, y - 28 - data.level)", "crest_frame(14,", "crest_frame(18,",
+    "- TOWER_BAR_HEIGHT - 2", "tower_top_y(data.tower_path, data.level) - 14",
+    "hp_ratio <= 0.3", "hp_ratio <= 0.6", "maxi(1, TOWER_BAR_HEIGHT >> 1)",
+    "int(structure.position.y) - 80", "int(structure.position.x) - 30",
+    '"SHIELD %d%%" % int(ratio * 100.0)', "float(session.world.tick_count) * 0.05 * 1.2",
+    "structure.no_damage_ticks >= data.shield_regen_delay_ticks",
+    "func _draw_pill(", "func _draw_regen_plus(", "func _draw_level_badge(",
+):
+    check(_fragment in _st_siege, f"9bl the siege view must paint the source bars: {_fragment!r}")
+check("if not _draw_structure_art(structure):" in _st_siege
+      and _st_siege.index("if not _draw_structure_art(structure):")
+      < _st_siege.index("_draw_structure_plain(structure)\n\n\n## Layer 9bl")
+      and "func _draw_structures() -> void:" in _st_siege
+      and "func _draw_structures() -> void:" in _st_base
+      and _st_base.index("_draw_base(Layout.RED_BASE") < _st_base.index("\t_draw_structures()\n")
+      < _st_base.index("minion_anim.prune(session.world.units)"),
+      "9bl structures must paint before the units, with the plain boxes as the fallback")
+check("ResourceLoader.exists(sheet_path(stem))" in _st_art and "static func tower_frame(" in _st_art
+      and "static func castle_frame(" in _st_art and "static func crest_frame(" in _st_art
+      and "DEFAULT_TOP_Y := -26" in _st_art,
+      "9bl the loader must tolerate a sheet that is not imported")
+check("floori(float(flash) / 3.0)" in _st_anim and "int(float(tick) * 0.4) % FLICKER_STEPS" in _st_anim
+      and "FLASH_TICKS := 8" in _st_anim and "CANNON_FLASH_TICKS := 10" in _st_anim,
+      "9bl the clocks must mirror the source flash timers and flame flicker")
+check("_check_sheets(check, manifest)" in _st_checks and "_check_definitions(check)" in _st_checks
+      and "_check_clocks(check, manifest)" in _st_checks and "_check_view_wiring(check)" in _st_checks,
+      "9bl structure art suite must check sheets, definitions, clocks and wiring")
+
+# ── Layer 9bm: baked build-slot markers (bake/bake_slot_atlas.py) ──
+_sl_path = ROOT / "data/art/slots.json"
+_sl_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+_sl_ui = (ROOT.parent / "ui_components/_bundle.py").read_text(encoding="utf-8")
+_sl_bake = (ROOT / "bake/bake_slot_atlas.py").read_text(encoding="utf-8")
+_sl_art = (ROOT / "scripts/ui/slot_art.gd").read_text(encoding="utf-8")
+_sl_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_sl_checks = (ROOT / "tests/slot_art_checks.gd").read_text(encoding="utf-8")
+check('const SlotArtChecks = preload("res://tests/slot_art_checks.gd")' in ai_tests
+      and "SlotArtChecks.new().run(_check)" in ai_tests,
+      "9bm slot art suite must be preloaded and run in the native suite")
+check(workflow.count("      - 'ui_components/_bundle.py'") == 2,
+      "9bm CI must run when the source slot art changes (push and pull_request)")
+check(_sl_path.is_file(), "9bm slot manifest must exist")
+if _sl_path.is_file():
+    _sl = json.loads(_sl_path.read_text(encoding="utf-8"))
+    _sl_sheet = _sl["sheet"]
+    _sl_png = ROOT / "assets/art/slots/slots.png"
+    check(_sl_png.is_file(), "9bm slot sheet must ship")
+    if _sl_png.is_file():
+        _raw = _sl_png.read_bytes()
+        _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+        check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _sl_sheet["size"] == [240, 38]
+              and (_depth, _color) == (8, 6),
+              "9bm slot sheet must be a 240x38 RGBA8 PNG")
+        check(len(_raw) == _sl_sheet["bytes"] and hashlib.sha256(_raw).hexdigest() == _sl_sheet["sha256"],
+              "9bm slot sheet must match its manifest hash")
+    check(sorted(_sl_sheet["frames"]) == sorted(["red"] + [f"blue:{k}" for k in range(-2, 3)])
+          and all(row[2:] == [40, 38, 20, 17] for row in _sl_sheet["frames"].values()),
+          "9bm five blue pulse frames and one red frame, all 40x38 anchored at (20, 17)")
+    check(_sl["pulses"] == [-2, -1, 0, 1, 2] and len(_sl["pulse_cases"]) >= 50
+          and {row[1] for row in _sl["pulse_cases"]} == {-2, -1, 0, 1, 2},
+          "9bm the manifest must carry the source pulse answers across every glow size")
+for _fragment in (
+    "pulse = math.sin(g.animation_time * 0.08) * 2",
+    "pk = int(round(pulse))",
+    "surface.blit(bslot, (sx - 20, sy - 17))",
+    "surface.blit(rsurf, (sx - 20, sy - 17))",
+    "s = pygame.Surface((40, 38), pygame.SRCALPHA)",
+    "15 + pk",
+    "plus_size = 8 + pk",
+):
+    check(_fragment in _sl_ui, f"9bm the source slot code must still read {_fragment!r}")
+_sl_draw = _sl_core[_sl_core.index("self.ui.draw_build_slots(draw_target)"):]
+check(_sl_draw.index("for b in self.bases:") < _sl_draw.index("for t in self.towers:\n            t.draw(draw_target)")
+      < _sl_draw.index("for m in self.minions:"),
+      "9bm the source paints the build slots, then the castles, the towers and the minions")
+check("component._render_blue_slot_surface(pulse)" in _sl_bake
+      and "component._render_red_slot_surface()" in _sl_bake
+      and "game.ui.build_slots_component" in _sl_bake
+      and "PULSES = (-2, -1, 0, 1, 2)" in _sl_bake
+      and "int(round(math.sin(tick * 0.08) * 2))" in _sl_bake,
+      "9bm the bake must render the real slot surfaces and record the source pulse formula")
+check("PULSE_SPEED := 0.08" in _sl_art and "roundi(sin(float(tick) * PULSE_SPEED) * 2.0)" in _sl_art
+      and "ResourceLoader.exists(SHEET)" in _sl_art,
+      "9bm the loader must mirror the source pulse and tolerate a missing import")
+check("SlotArt.frame(slot.team, world.tick_count)" in _sl_view
+      and "func _draw_build_slots(" in _sl_view and "func _draw_slot_outline(" in _sl_view
+      and _sl_view.count("for slot in world.slots:") == 1
+      and _sl_view.index("func _draw_structures() -> void:") < _sl_view.index("_draw_build_slots(session.world")
+      < _sl_view.index("super._draw_structures()"),
+      "9bm the view must paint the slot art from the structure layer, below the towers")
+check("_check_pulse(check, manifest)" in _sl_checks and "_check_frames(check)" in _sl_checks
+      and "_check_view_wiring(check)" in _sl_checks,
+      "9bm slot art suite must check the pulse, the frames and the wiring")
+
+# ── Layer 9bn: the painters run for real in the headless scene suite ──
+_pt_checks = (ROOT / "tests/painter_scene_checks.gd").read_text(encoding="utf-8")
+_pt_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+check('const PainterSceneChecks = preload("res://tests/painter_scene_checks.gd")' in ai_tests
+      and "await PainterSceneChecks.new().run(root.get_tree(), app, _check)" in ai_tests
+      and "painter scene restores the menu" in ai_tests,
+      "9bn the painter scene suite must be preloaded, awaited and followed by the menu check")
+check("var draw_count := 0" in _pt_view and "\tdraw_count += 1\n\tif session == null:" in _pt_view,
+      "9bn PrototypeView must count real _draw calls")
+check("view.draw_count > first_draw" in _pt_checks and "world.step_tick()" in _pt_checks
+      and "world.build_tower(0, slot.id, \"archer\")" in _pt_checks
+      and "world.upgrade_tower(tower.id, 1, PATHS[index])" in _pt_checks
+      and "view.minion_anim.tracked() > 0" in _pt_checks
+      and "view.structure_anim.tracked() > 0" in _pt_checks
+      and 'const TYPES := ["goblin", "orc", "troll", "undead", "dark_rider"]' in _pt_checks
+      and "unit.slow_timer = 60" in _pt_checks and "tower.cooldown_ticks" in _pt_checks,
+      "9bn the painter suite must prove _draw ran and exercise every minion type, towers, slow and fire")
+
+# ── Layer 9bo: baked hero bodies (bake/bake_hero_atlas.py) ──
+_hr_path = ROOT / "data/art/heroes.json"
+_hr_pkg = (ROOT.parent / "heroes/__init__.py").read_text(encoding="utf-8")
+_hr_entity = (ROOT.parent / "_entity.py").read_text(encoding="utf-8")
+_hr_perf = (ROOT.parent / "mobile/perf.py").read_text(encoding="utf-8")
+_hr_bake = (ROOT / "bake/bake_hero_atlas.py").read_text(encoding="utf-8")
+_hr_art = (ROOT / "scripts/ui/hero_art.gd").read_text(encoding="utf-8")
+_hr_anim = (ROOT / "scripts/ui/hero_anim.gd").read_text(encoding="utf-8")
+_hr_painter = (ROOT / "scripts/ui/hero_painter.gd").read_text(encoding="utf-8")
+_hr_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_hr_checks = (ROOT / "tests/hero_art_checks.gd").read_text(encoding="utf-8")
+check('const HeroArtChecks = preload("res://tests/hero_art_checks.gd")' in ai_tests
+      and "HeroArtChecks.new().run(_check)" in ai_tests,
+      "9bo hero art suite must be preloaded and run in the native suite")
+check(workflow.count("      - 'heroes/__init__.py'") == 2 and workflow.count("      - 'heroes/_bundle.py'") == 2,
+      "9bo CI must run when the source hero renderers change (push and pull_request)")
+check(_hr_path.is_file(), "9bo hero atlas manifest must exist")
+if _hr_path.is_file():
+    _hr = json.loads(_hr_path.read_text(encoding="utf-8"))
+    _hr_heroes = ["kaizen", "thorne", "grimjaw", "sylara", "vex", "zephyr", "alchemist"]
+    check(_hr["heroes"] == _hr_heroes and _hr["teams"] == ["blue", "red"]
+          and len(_hr["atlases"]) == 14 and sorted(_hr["meta"]) == sorted(_hr_heroes)
+          and _hr["phases"] == 8 and _hr["atk_quant"] == 3,
+          "9bo one atlas per kit hero x team, with the source phase count and attack quantum")
+    check(len(_hr["key_cases"]) >= 200 and {row[3] for row in _hr["key_cases"]} == {"atk", "walk", "idle"},
+          "9bo the manifest must carry the source pose keys")
+    for _hero in _hr_heroes:
+        _facts = _hr["meta"][_hero]
+        check((ROOT / "data/heroes" / f"{_hero}.tres").is_file()
+              and _facts["radius"] == 16 and 40 <= _facts["top_offset"] <= 50 and _facts["cooldown"] > 0
+              and _facts["name"],
+              f"9bo source facts and a Godot definition must exist for {_hero}")
+        for _team in ("blue", "red"):
+            _name = f"{_hero}_{_team}"
+            _entry = _hr["atlases"][_name]
+            _png = ROOT / "assets/art/heroes" / f"{_name}.png"
+            check(_png.is_file(), f"9bo hero atlas must ship: {_name}")
+            if not _png.is_file():
+                continue
+            _raw = _png.read_bytes()
+            _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+            check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _entry["size"]
+                  and (_depth, _color) == (8, 6),
+                  f"9bo atlas must be an RGBA8 PNG of its manifest size: {_name}")
+            check(len(_raw) == _entry["bytes"] and hashlib.sha256(_raw).hexdigest() == _entry["sha256"],
+                  f"9bo atlas must match its manifest hash: {_name}")
+            _poses = [f"idle{n}" for n in range(8)]
+            if _facts["walk_poses"]:
+                _poses += [f"walk{n}" for n in range(8)]
+            _poses += [f"atk{k}" for k in range(_facts["cooldown"] // 3 + 1)]
+            _rows = _entry["frames"]
+            check(sorted(_rows) == sorted(f"{pose}:{d}" for pose in _poses for d in (1, -1)),
+                  f"9bo atlas must hold every pose in both directions: {_name}")
+            check(all(w > 0 and h > 0 and x >= 0 and y >= 0 and x + w <= _entry["size"][0]
+                      and y + h <= _entry["size"][1] and 0 <= ax <= w and 0 <= ay <= h
+                      for x, y, w, h, ax, ay in _rows.values()),
+                  f"9bo every frame must lie inside its atlas with its anchor in the crop: {_name}")
+for _fragment in (
+    "phase = int(getattr(hero, 'pulse', 0.0) * 2.0) % HERO_ANIM_PHASES",
+    "timer // (_atk_quant() * _q)",
+    "return (hero_type, team, level, facing, 'idle', phase,",
+    "bool(getattr(hero, '_moving_cached', False)))",
+    "_HERO_RENDER_LEFT[0] = int(getattr(_Qb, \"max_hero_render\", 6))",
+):
+    check(_fragment in _hr_pkg, f"9bo the source hero cache must still key on {_fragment!r}")
+check("HERO_ANIM_PHASES = 8" in _hr_pkg and "self.atk_quant_floor = 6 if low else (4 if med else 3)" in _hr_perf,
+      "9bo the PC quality preset must still give 8 idle phases and an attack quantum of 3")
+for _fragment in (
+    "self.pulse += 0.1", "self.attack_timer = _eff_cd",
+    "pygame.draw.ellipse(surface, (0, 0, 0, 100),", "(x - self.radius, y + self.radius - 4,",
+    "self.radius * 2, 8))", "(x - self.radius - 3,", "y + self.radius - 6,", "(self.radius + 3) * 2, 10), 2)",
+    "r_color = (*self.color, 30)", "border_c = (*self.color, 100)",
+    "label_anchor = y - max(self.radius, sprite_top) - 6",
+    "bar_w = 45", "bar_h = 6", "by = label_anchor", "pygame.draw.rect(surface, (40, 0, 0), (bx, by, bar_w, bar_h))",
+    "hp_color = GREEN if hp_ratio > 0.5 else (", "YELLOW if hp_ratio > 0.25 else RED)",
+    "pygame.draw.rect(surface, WHITE, (bx, by, bar_w, bar_h), 1)",
+    "badge_top = by - badge.get_height() - 3",
+    "star_w = (self.level * 10) if self.level <= 5 else 18", "bw = max(name_lbl.get_width(), star_w) + 8",
+    "nh = name_lbl.get_height() + 4", "bh = 12 + nh", "sx = bw // 2 - (self.level - 1) * 5 + i * 10",
+    "(sx, sy - 3), (sx + 2, sy),", "total_w = 9 + lvl_txt.get_width()",
+    "y + self.radius + 8", "int(45 * cd_ratio)", "self.name = ",
+):
+    check(_fragment in _hr_entity, f"9bo the source hero overlay must still read {_fragment!r}")
+check("DARK_GRAY  = (60,  60,  70 )" in (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+      and "ORANGE     = (255, 140, 0  )" in (ROOT.parent / "_core.py").read_text(encoding="utf-8"),
+      "9bo the source cooldown-strip colours must still read as the painter draws them")
+check("_detect_moving" in (ROOT.parent / "heroes/_bundle.py").read_text(encoding="utf-8")
+      and "hero._moving_cached = moving" in (ROOT.parent / "heroes/_bundle.py").read_text(encoding="utf-8")
+      and "dx + dy > 0.3" in (ROOT.parent / "heroes/_bundle.py").read_text(encoding="utf-8"),
+      "9bo the source renderers must still detect movement as |dx| + |dy| > 0.3")
+check("heroes_mod._reset_hero_render_budget()" in _hr_bake and "hero.draw(surface)" in _hr_bake
+      and "heroes_mod._hero_cache_key(hero_type, hero)" in _hr_bake
+      and "hero.x = 400.0 + step * 2.0" in _hr_bake
+      and "hero.attack_timer = cooldown" in _hr_bake and "IDLE_STEPS = 40" in _hr_bake,
+      "9bo the bake must drive the real Hero.draw through still, walking and attacking timelines")
+check("static func resolve(" in _hr_art and "ResourceLoader.exists(atlas_path(name))" in _hr_art
+      and "pose.begins_with(\"walk\")" in _hr_art and "pose.begins_with(\"atk\")" in _hr_art,
+      "9bo the loader must fall back to idle / the last attack pose and tolerate a missing import")
+check("floori(float(attack_timer) / float(ATK_QUANT))" in _hr_anim
+      and "int(pulse * 2.0) % PHASES" in _hr_anim and "PULSE_STEP := 0.1" in _hr_anim
+      and "MOVE_EPSILON := 0.3" in _hr_anim and "PHASES := 8" in _hr_anim,
+      "9bo the pose picker must mirror the source cache key and clocks")
+for _fragment in (
+    "const BAR_WIDTH := 45", "const BAR_HEIGHT := 6",
+    "Color(50 / 255.0, 200 / 255.0, 50 / 255.0)", "Color(255 / 255.0, 220 / 255.0, 0 / 255.0)",
+    "Color(220 / 255.0, 50 / 255.0, 50 / 255.0)", "Color(255 / 255.0, 140 / 255.0, 0 / 255.0)",
+    "Color(60 / 255.0, 60 / 255.0, 70 / 255.0)", "Color(40 / 255.0, 0 / 255.0, 0 / 255.0)",
+    "Rect2(point.x - radius, point.y + radius - 4, radius * 2, 8)",
+    "Rect2(point.x - radius - 3, point.y + radius - 6, (radius + 3) * 2, 10)",
+    "const SHADOW := Color(0, 0, 0)", "_ellipse(shadow), SHADOW)", "Color(ink, 30.0 / 255.0)", "Color(ink, 100.0 / 255.0)",
+    "maxi(radius, int(facts.get(\"top_offset\", radius))) - 6", "bar_top - height - 3",
+    "level * 10 if level <= 5 else 18", "maxi(int(name_size.x), star_width) + 8",
+    "int(name_size.y) + 4", "12 + name_height", "(level - 1) * 5 + index * 10",
+    "var total := 9 + int(label_width)", "int(point.y) + radius + 8",
+    "ratio > 0.5 else (YELLOW if ratio > 0.25 else RED)", "int(float(BAR_WIDTH) * ratio)",
+):
+    check(_fragment in _hr_painter, f"9bo the painter must draw the source hero overlay: {_fragment!r}")
+check("if _draw_hero_sprite(hero):" in _hr_view and "func _draw_hero_sprite(" in _hr_view
+      and "HeroPainter.paint(self, hero, art, hero.id == session.selected_id)" in _hr_view
+      and "hero_anim.prune(session.world.units)" in _hr_view
+      and _hr_view.index("if _draw_hero_sprite(hero):") < _hr_view.index("HeroMarker.silhouette(point, radius"),
+      "9bo the view must draw the baked hero first and keep the marker as the fallback")
+check("_check_atlases(check)" in _hr_checks and "_check_key_cases(check, manifest)" in _hr_checks
+      and "_check_clocks(check)" in _hr_checks and "_check_view_wiring(check)" in _hr_checks,
+      "9bo hero art suite must check atlases, pose keys, clocks and wiring")
+
+# ── Layer 9bp: baked tower bullets (bake/bake_bullet_atlas.py) ──
+_bl_path = ROOT / "data/art/bullets.json"
+_bl_entity = (ROOT.parent / "_entity.py").read_text(encoding="utf-8")
+_bl_bake = (ROOT / "bake/bake_bullet_atlas.py").read_text(encoding="utf-8")
+_bl_art = (ROOT / "scripts/ui/bullet_art.gd").read_text(encoding="utf-8")
+_bl_view = (ROOT / "scenes/siege/siege_view.gd").read_text(encoding="utf-8")
+_bl_painter = (ROOT / "tests/painter_scene_checks.gd").read_text(encoding="utf-8")
+check('const BulletArtChecks = preload("res://tests/bullet_art_checks.gd")' in ai_tests
+      and "BulletArtChecks.new().run(_check)" in ai_tests,
+      "9bp bullet art suite must be preloaded and run in the native suite")
+check(_bl_path.is_file(), "9bp bullet atlas manifest must exist")
+if _bl_path.is_file():
+    _bl = json.loads(_bl_path.read_text(encoding="utf-8"))
+    _bl_sheet = _bl["sheet"]
+    _bl_png = ROOT / "assets/art/bullets/bullets.png"
+    check(_bl_png.is_file(), "9bp bullet sheet must ship")
+    if _bl_png.is_file():
+        _raw = _bl_png.read_bytes()
+        _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+        check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _bl_sheet["size"]
+              and (_depth, _color) == (8, 6),
+              "9bp bullet sheet must be an RGBA8 PNG of its manifest size")
+        check(len(_raw) == _bl_sheet["bytes"] and hashlib.sha256(_raw).hexdigest() == _bl_sheet["sha256"],
+              "9bp bullet sheet must match its manifest hash")
+    _bl_keys = sorted(
+        [f"normal:{team}:{n}" for team in ("blue", "red") for n in range(16)]
+        + [f"{kind}:{team}" for team in ("blue", "red") for kind in ("cannon", "ice", "mage")])
+    check(sorted(_bl_sheet["frames"]) == _bl_keys and _bl["buckets"] == 16
+          and _bl["types"] == ["normal", "cannon", "ice", "mage"],
+          "9bp the sheet must hold 16 arrows and three bolts per team")
+    check(all(w > 0 and h > 0 and x >= 0 and y >= 0 and x + w <= _bl_sheet["size"][0]
+              and y + h <= _bl_sheet["size"][1] and 0 <= ax <= w and 0 <= ay <= h
+              for x, y, w, h, ax, ay in _bl_sheet["frames"].values()),
+          "9bp every bullet frame must lie inside the sheet with its anchor in the crop")
+    _bl_cases = _bl["angle_cases"]
+    check(len(_bl_cases) >= 60 and {row[1] for row in _bl_cases} == set(range(16))
+          and all((int(a / (2 * math.pi) * 16) + 16) % 16 == k for a, k in _bl_cases),
+          "9bp the recorded bearings must reach all 16 buckets under the source formula")
+for _fragment in (
+    "angle_k = (int(ang / (math.pi * 2) * 16) + 16) % 16",
+    "key = (bullet.bullet_type, bullet.team, angle_k)",
+    "canvas = pygame.Surface((48, 48), pygame.SRCALPHA)", "cx = cy = 24",
+    "pygame.draw.circle(canvas, (60, 60, 60), (cx, cy), 6)",
+    "pygame.draw.circle(canvas, (255, 255, 200), (cx + 3, cy - 3), 1)",
+    "pygame.draw.polygon(canvas, (150, 220, 255), [",
+    "(cx, cy - 5), (cx + 3, cy), (cx, cy + 5), (cx - 3, cy)])",
+    "color = (180, 80, 220)", "alpha = 200 - r * 20",
+    "rect = canvas.get_bounding_rect(min_alpha=8)",
+    "(int(self.x - ent[1]), int(self.y - ent[2])))",
+    "shaft_dark = (85, 55, 25)", "shaft_dark = (60, 30, 15)",
+):
+    check(_fragment in _bl_entity, f"9bp the source bullet sprite must still read {_fragment!r}")
+check("entity._get_bullet_sprite(bullet)" in _bl_bake and "entity._BULLET_SPRITE_CACHE.clear()" in _bl_bake
+      and "entity._DummyBulletTarget" in _bl_bake and "BUCKETS = 16" in _bl_bake,
+      "9bp the bake must run the real _get_bullet_sprite for every bucket")
+check("(int(bearing / TAU * float(BUCKETS)) + BUCKETS) % BUCKETS" in _bl_art
+      and "ResourceLoader.exists(SHEET)" in _bl_art and 'if kind == "normal":' in _bl_art,
+      "9bp the loader must mirror the bucket formula and tolerate a missing import")
+check("BulletArt.frame(shot.kind, shot.team, bearing)" in _bl_view
+      and "bearing = (target.position - shot.position).angle()" in _bl_view
+      and "Vector2(int(shot.position.x - anchor.x), int(shot.position.y - anchor.y))" in _bl_view
+      and "draw_circle(shot.position, 4, color)" in _bl_view,
+      "9bp the siege view must blit the baked bullet at the source point with the dot as fallback")
+check("SHOT_KINDS := [" in _bl_painter and "world.projectiles.append(shot)" in _bl_painter,
+      "9bp the painter suite must put one shot of each kind in flight")
+
+# ── Layer 9bq: baked boss bodies (bake/bake_boss_atlas.py) ──
+_bs_path = ROOT / "data/art/bosses.json"
+_bs_stats = json.loads((ROOT / "data/bosses/boss_stats.json").read_text(encoding="utf-8"))["bosses"]
+_bs_boss = (ROOT.parent / "bosses/base_boss.py").read_text(encoding="utf-8")
+_bs_pkg = (ROOT.parent / "heroes/__init__.py").read_text(encoding="utf-8")
+_bs_bake = (ROOT / "bake/bake_boss_atlas.py").read_text(encoding="utf-8")
+_bs_art = (ROOT / "scripts/ui/boss_art.gd").read_text(encoding="utf-8")
+_bs_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_bs_painter = (ROOT / "tests/painter_scene_checks.gd").read_text(encoding="utf-8")
+check('const BossArtChecks = preload("res://tests/boss_art_checks.gd")' in ai_tests
+      and "BossArtChecks.new().run(_check)" in ai_tests,
+      "9bq boss art suite must be preloaded and run in the native suite")
+check(workflow.count("      - 'bosses/**'") == 2,
+      "9bq CI must run when the source boss renderers change (push and pull_request)")
+check(_bs_path.is_file(), "9bq boss atlas manifest must exist")
+if _bs_path.is_file():
+    _bs = json.loads(_bs_path.read_text(encoding="utf-8"))
+    check(sorted(_bs["bosses"]) == sorted(_bs_stats) and len(_bs["bosses"]) == 216 and _bs["facings"] == [-1, 1],
+          "9bq one sheet per boss in the Godot boss table, both facings")
+    check(all((1 if d > 0 else -1) == f for d, f in _bs["facing_cases"]) and len(_bs["facing_cases"]) >= 5,
+          "9bq the recorded facings must follow the source key rule")
+    for _boss_id, _entry in sorted(_bs["bosses"].items()):
+        _facts = _bs_stats[_boss_id]
+        check(_entry["radius"] == _facts["radius"] and _entry["class"] == _facts["boss_class"]
+              and 0 < _entry["label_top"] < 400,
+              f"9bq baked radius, class and label top must match the Godot table: {_boss_id}")
+        _png = ROOT / "assets/art/bosses" / f"{_boss_id}.png"
+        check(_png.is_file(), f"9bq boss sheet must ship: {_boss_id}")
+        if not _png.is_file():
+            continue
+        _raw = _png.read_bytes()
+        _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+        check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _entry["size"]
+              and (_depth, _color) == (8, 6),
+              f"9bq boss sheet must be an RGBA8 PNG of its manifest size: {_boss_id}")
+        check(len(_raw) == _entry["bytes"] and hashlib.sha256(_raw).hexdigest() == _entry["sha256"],
+              f"9bq boss sheet must match its manifest hash: {_boss_id}")
+        check(sorted(_entry["frames"]) == ["-1", "1"]
+              and all(w > 0 and h > 0 and x >= 0 and y >= 0 and x + w <= _entry["size"][0]
+                      and y + h <= _entry["size"][1] and 0 <= ax <= w and 0 <= ay <= h
+                      for x, y, w, h, ax, ay in _entry["frames"].values()),
+              f"9bq both facings must lie inside the sheet with the anchor in the crop: {_boss_id}")
+for _fragment in (
+    "head_top = max(int(BOSS_LABEL_TOP.get(self.boss_type, r)), r)",
+    "bar_w = 70 if is_true else 60", "bar_h = 10 if is_true else 8", "by = y - head_top - 6 - bar_h",
+    "shadow_w = r * 2 + (10 if is_true else 0)", "pygame.draw.ellipse(surface, (0, 0, 0, 120),",
+    "(x - shadow_w // 2, y + r - 5, shadow_w, 12))", "_draw_fn = _get_boss_draw_func(self.boss_type)",
+    "border_c = (255, 60, 60) if self.is_enraged else ((255, 100, 100) if is_true else (255, 200, 50))",
+):
+    check(_fragment in _bs_boss, f"9bq the source boss overlay must still read {_fragment!r}")
+for _fragment in (
+    'facing = 1 if int(getattr(boss, "direction", -1) or -1) >= 0 else -1',
+    'phase = int(getattr(boss, "pulse", 0.0) * 2.0) % BOSS_ANIM_PHASES',
+    'return head + ("idle", phase, moving, ability, proj)',
+    'head = (boss_type, "B", klass, team, facing, hurt, rage, alive)',
+    "def _boss_render_sprite_fast(boss_type, boss, draw_fn, kind):",
+    "box = canvas.get_bounding_rect(min_alpha=8)",
+):
+    check(_fragment in _bs_pkg, f"9bq the source boss cache must still read {_fragment!r}")
+check("heroes_mod._boss_render_sprite_fast(boss_type, boss, draw_fn, \"idle\")" in _bs_bake
+      and "heroes_mod._boss_cache_key(boss_type, boss)" in _bs_bake
+      and 'assert key[8] == "idle" and key[9] == 0 and not key[10], key' in _bs_bake
+      and "MAX_TRIES = 12" in _bs_bake and "BOSS_LABEL_TOP.get(boss_type, probe.radius)" in _bs_bake,
+      "9bq the bake must run the real boss sprite renderer for the standing pose of every boss")
+check("return 1 if direction > 0 else -1" in _bs_art and "ResourceLoader.exists(path_for(boss_type))" in _bs_art
+      and "maxi(int(row.get(\"label_top\", radius)), radius)" in _bs_art,
+      "9bq the loader must mirror the facing and label rules and tolerate a missing import")
+check("var art := BossArt.frame(boss.boss_type, boss.direction)" in _bs_view
+      and "bar_top = point.y - head_top - 6.0 - bar_height" in _bs_view
+      and "var shadow := Rect2(x - (shadow_width >> 1), y + radius - 5, shadow_width, 12)" in _bs_view
+      and "var shadow_width := radius * 2 + (10 if boss.boss_class == \"true\" else 0)" in _bs_view
+      and "draw_colored_polygon(HeroPainter.ellipse(shadow), HeroPainter.SHADOW)" in _bs_view
+      and "Rect2(corner, src.size), src, tint)" in _bs_view and "func _draw_boss_plain(" in _bs_view,
+      "9bq the match view must draw the baked boss with the source shadow, bar anchor and the plain fallback")
+check("_seed_boss(world)" in _bs_painter
+      and "world._spawn_boss(BOSS_TYPE)" in _bs_painter and "view.boss_sprite_draws > 0" in _bs_painter,
+      "9bq the painter suite must spawn a boss and prove the sprite path ran")
+
+# ── Layer 9br: UI skin from ui_theme.py (bake/bake_ui_theme.py) ──
+_ui_path = ROOT / "data/art/ui_theme.json"
+_ui_src = (ROOT.parent / "ui_theme.py").read_text(encoding="utf-8")
+_ui_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+_ui_bake = (ROOT / "bake/bake_ui_theme.py").read_text(encoding="utf-8")
+_ui_skin = (ROOT / "scripts/ui/ui_skin.gd").read_text(encoding="utf-8")
+_ui_theme = (ROOT / "scripts/ui/rebuild_theme.gd").read_text(encoding="utf-8")
+_ui_card = (ROOT / "scripts/ui/hero_shop_card.gd").read_text(encoding="utf-8")
+_ui_project = (ROOT / "project.godot").read_text(encoding="utf-8")
+check('const UiSkinChecks = preload("res://tests/ui_skin_checks.gd")' in ai_tests
+      and "UiSkinChecks.new().run(_check)" in ai_tests,
+      "9br UI skin suite must be preloaded and run in the native suite")
+check(_ui_path.is_file(), "9br UI skin manifest must exist")
+_ui_palette_src = {
+    name: [int(r), int(g), int(b)]
+    for name, r, g, b in re.findall(r"^([A-Z_]+)\s*=\s*\((\d+),\s*(\d+),\s*(\d+)\)", _ui_src, re.M)}
+if _ui_path.is_file():
+    _ui = json.loads(_ui_path.read_text(encoding="utf-8"))
+    check(_ui["palette"] == _ui_palette_src and len(_ui_palette_src) >= 30,
+          "9br the recorded palette must equal every colour constant of ui_theme.py")
+    for _sheet_name, _png_name in (("panels", "panels.png"), ("pills", "pills.png")):
+        _sheet = _ui[_sheet_name]
+        _png = ROOT / "assets/art/ui" / _png_name
+        check(_png.is_file(), f"9br {_png_name} must ship")
+        if _png.is_file():
+            _raw = _png.read_bytes()
+            _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+            check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _sheet["size"]
+                  and (_depth, _color) == (8, 6),
+                  f"9br {_png_name} must be an RGBA8 PNG of its manifest size")
+            check(len(_raw) == _sheet["bytes"] and hashlib.sha256(_raw).hexdigest() == _sheet["sha256"],
+                  f"9br {_png_name} must match its manifest hash")
+        check(all(w > 0 and h > 0 and x >= 0 and y >= 0 and x + w <= _sheet["size"][0]
+                  and y + h <= _sheet["size"][1] for x, y, w, h in _sheet["frames"].values()),
+              f"9br every {_sheet_name} frame must lie inside its sheet")
+    _ui_kinds = ["gold", "success", "danger", "locked", "owned", "neutral", "violet", "cyan"]
+    check(sorted(_ui["panels"]["frames"]) == ["panel", "panel_bold"]
+          and _ui["panels"]["rect"] == [4, 4, 72, 72] and _ui["panels"]["margin"] == 20
+          and _ui["panels"]["expand"] == 4,
+          "9br the panel sheet must hold the dialog and default panels on a 4 px shadow canvas")
+    check(_ui["pills"]["kinds"] == _ui_kinds and _ui["pills"]["states"] == ["normal", "hover", "disabled"]
+          and sorted(_ui["pills"]["frames"])
+          == sorted(f"{kind}:{state}" for kind in _ui_kinds for state in ("normal", "hover", "disabled"))
+          and _ui["pills"]["rect"] == [15, 12, 24, 24] and _ui["pills"]["margin"] == [23, 20]
+          and _ui["pills"]["expand"] == [15, 12],
+          "9br the pill sheet must hold every source kind in normal, hover and disabled state")
+    check(_ui["pills"]["colors"]["neutral"]
+          == {"top": [52, 58, 84], "bottom": [30, 35, 56], "edge": _ui_palette_src["SLATE"],
+              "text": _ui_palette_src["TEXT_BODY"]}
+          and _ui["pills"]["colors"]["gold"]["text"] == _ui_palette_src["GOLD_TEXT"]
+          and _ui["pills"]["colors"]["locked"]["edge"] == _ui_palette_src["SLATE"],
+          "9br the pill colour table must be the one read from pill()")
+    _ui_consts = {
+        name: ([int(r), int(g), int(b)], source)
+        for name, r, g, b, source in re.findall(
+            r"^const (\w+) := Color8\((\d+), (\d+), (\d+)\)\s*#\s*(\w+)", _ui_theme, re.M)}
+    _ui_pins = {"INK": "TEXT_WHITE", "BODY": "TEXT_BODY", "MUTED": "TEXT_DIM", "FAINT": "TEXT_FAINT",
+                "GOLD": "GOLD", "GOLD_TEXT": "GOLD_TEXT", "CYAN": "CYAN", "EDGE_GOLD": "EDGE_GOLD",
+                "PANEL_FILL": "PANEL_FILL"}
+    check(all(name in _ui_consts and _ui_consts[name][1] == source
+              and _ui_consts[name][0] == _ui_palette_src[source] for name, source in _ui_pins.items()),
+          "9br every palette constant of the theme must carry the value of its ui_theme.py name")
+    check(_ui_consts["HOVER_FILL"][0] == [44, 52, 86] and "top = (44, 52, 86) if hover else (34, 41, 70)" in _ui_src
+          and _ui_consts["TRACK"][0] == [16, 18, 30] and "pygame.draw.rect(screen, (16, 18, 30), r," in _ui_src
+          and _ui_consts["TRACK_LINE"][0] == [86, 92, 120] and "pygame.draw.rect(screen, (86, 92, 120), r, 1," in _ui_src
+          and _ui_consts["SCROLL_TRACK"][0] == [28, 32, 52]
+          and "pygame.draw.rect(screen, (28, 32, 52), track, border_radius=3)" in _ui_src
+          and "GOLD_BRIGHT,\n                               (196, 138, 40), radius=3)" in _ui_src,
+          "9br the bar, popup and scrollbar colours must be the literals the source draws with")
+    check("Color8(225, 185, 99)" in _ui_theme and "Color8(255, 233, 158)" in _ui_theme
+          and _ui_palette_src["GOLD_BRIGHT"] == [255, 233, 158]
+          and [(a + b) // 2 for a, b in zip(_ui_palette_src["GOLD_BRIGHT"], [196, 138, 40])] == [225, 185, 99],
+          "9br the scroll thumb colours must be the GOLD_BRIGHT and mid gradient of scroll_indicator")
+    _ui_clear = re.search(r"default_clear_color=Color\(([\d.]+), ([\d.]+), ([\d.]+), 1\)", _ui_project)
+    check(_ui_clear is not None and all(
+        abs(float(got) - want / 255) < 0.001
+        for got, want in zip(_ui_clear.groups(), _ui_palette_src["BG_DEEP"])),
+        "9br the window clear colour must be the BG_DEEP of ui_theme.py")
+for _fragment in (
+    "pygame.draw.rect(screen, border, r, border_w, border_radius=12)",
+    "sh = _shadow(r.w, r.h, radius=12)", "screen.blit(sh, (r.x - 4, r.y - 4))",
+    "corner_ticks(screen, r, GOLD)",
+    "def corner_ticks(screen, rect, color, length=11, width=2, inset=2):",
+    "pygame.draw.rect(screen, edge, r, 2 if enabled else 1, border_radius=7)",
+    "screen.blit(_radial(r.w + 30, r.h + 24, edge, 66),", "(r.x - 15, r.y - 12))",
+    "top = tuple(min(255, c + 18) for c in top)", "bot = tuple(min(255, c + 14) for c in bot)",
+    '"neutral": ((52, 58, 84), (30, 35, 56), SLATE, TEXT_BODY),',
+    '"gold":    ((86, 66, 22), (52, 40, 14), GOLD, GOLD_TEXT),',
+    "screen.blit(_vgrad(r.w, r.h, top, bot, radius=7), (r.x, r.y))",
+    "surf = pygame.transform.smoothscale(small, (w, h))",
+):
+    check(_fragment in _ui_src, f"9br the source UI skin must still read {_fragment!r}")
+check("border=ui_theme.EDGE_GOLD, border_w=2)" in _ui_core,
+      "9br the dialog panel the bake mirrors (border_w=2) must still be what the settings menu calls")
+check("ui_theme.panel(canvas, PANEL_RECT, **kwargs)" in _ui_bake and "ui_theme.pill(" in _ui_bake
+      and "assert ui_theme.cheap_alpha()" in _ui_bake and "def _pill_table(" in _ui_bake
+      and "ui_theme.draw_text = lambda" in _ui_bake,
+      "9br the bake must run the real panel() and pill() on transparent canvases")
+check("ResourceLoader.exists(PANELS)" in _ui_skin and "ResourceLoader.exists(PILLS)" in _ui_skin
+      and "box.region_rect = Rect2(" in _ui_skin and "box.texture_margin_left = margin.x" in _ui_skin
+      and "box.expand_margin_left = expand.x" in _ui_skin and "return NO_COLOR" in _ui_skin,
+      "9br the skin loader must cut nine-patches by manifest frame and tolerate a missing import")
+check("pill_style(\"gold\", \"hover\", use_skin)" in _ui_theme
+      and "pill_style(\"locked\", \"disabled\", use_skin)" in _ui_theme
+      and "result.set_type_variation(variation, \"Button\")" in _ui_theme
+      and "skin = UiSkin.panel_box(\"panel_bold\", PANEL_PAD)" in _ui_theme
+      and "static func create_theme(use_skin: bool = true) -> Theme:" in _ui_theme,
+      "9br the theme must map the pill states, variations and dialog panel with a flat fallback")
+check('UiSkin.palette("OPEN_BG_TOP")' in _ui_card and 'UiSkin.palette("LOCKED_EDGE")' in _ui_card
+      and "162d34" not in _ui_card,
+      "9br hero shop rows must use the source card colours instead of the old teal literals")
+
+# ── Layer 9bq follow-up: the match view paints the live boss itself ──
+_bf_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+check("var live_boss: BossState = world.active_boss" in _bf_view
+      and "if live_boss != null and live_boss.alive:\n\t\t_draw_boss(live_boss)" in _bf_view,
+      "9bq the match view must paint the live boss: the unit registry never holds it")
+check(_bf_view.index("draw_circle(arrow.position, 3, ink)") < _bf_view.index("_draw_boss(live_boss)")
+      < _bf_view.index("_draw_boss_death(snapshot)"),
+      "9bq the boss is drawn after the heroes and their arrows and before the death presentations")
+
+# ── Layer 9bs: baked main-menu background + recoloured scenes (bake/bake_menu_background.py) ──
+_mn_path = ROOT / "data/art/menu.json"
+_mn_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+_mn_ui = (ROOT.parent / "ui_theme.py").read_text(encoding="utf-8")
+_mn_bake = (ROOT / "bake/bake_menu_background.py").read_text(encoding="utf-8")
+_mn_back = (ROOT / "scripts/ui/menu_backdrop.gd").read_text(encoding="utf-8")
+_mn_theme = (ROOT / "scripts/ui/rebuild_theme.gd").read_text(encoding="utf-8")
+check('const MenuArtChecks = preload("res://tests/menu_art_checks.gd")' in ai_tests
+      and "MenuArtChecks.new().run(_check)" in ai_tests,
+      "9bs menu art suite must be preloaded and run in the native suite")
+check('var backdrop = app.current_screen.get_node("Backdrop")' in ai_tests
+      and "backdrop.background_draws > 0" in ai_tests,
+      "9bs the real main menu must prove it drew the baked background")
+check(_mn_path.is_file(), "9bs menu background manifest must exist")
+if _mn_path.is_file():
+    _mn = json.loads(_mn_path.read_text(encoding="utf-8"))
+    _mn_bg = _mn["background"]
+    _mn_png = ROOT / "assets/art/menu/main_background.png"
+    check(_mn_png.is_file(), "9bs menu background must ship")
+    if _mn_png.is_file():
+        _raw = _mn_png.read_bytes()
+        _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+        check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _mn_bg["size"] == [1280, 720]
+              and (_depth, _color) == (8, 6),
+              "9bs the menu background must be a 1280x720 RGBA8 PNG")
+        check(len(_raw) == _mn_bg["bytes"] and hashlib.sha256(_raw).hexdigest() == _mn_bg["sha256"],
+              "9bs the menu background must match its manifest hash")
+    check(len(_mn["probes"]) >= 8 and all(0 <= x < 1280 and 0 <= y < 720 and len(rgb) == 3
+                                          and all(0 <= c <= 255 for c in rgb)
+                                          for x, y, *rgb in _mn["probes"]),
+          "9bs the recorded source pixels must lie inside the frame")
+for _fragment in (
+    "def _build_main_background(self):", "rng = random.Random(2026)", "bg = pygame.Surface((W, H))",
+    "for _ in range(170):",
+    "moon_x, moon_y, moon_r = int(W * 0.22), int(H * 0.16), 48",
+    "pygame.draw.circle(bg, (238, 230, 250), (moon_x, moon_y), moon_r)",
+    "_mountains((11, 13, 28), 7, int(H * 0.74), 62, 46)",
+    "_mountains((6, 8, 21), 21, int(H * 0.83), 44, 34)",
+    "self._draw_portal(bg, 120, 612, (150, 130, 255), (95, 150, 255))",
+    "self._draw_portal(bg, 1135, 168, (255, 205, 120), (255, 150, 90))",
+):
+    check(_fragment in _mn_core, f"9bs the source menu background must still read {_fragment!r}")
+check("menu = core.Menu(screen)" in _mn_bake and "menu._build_main_background()" in _mn_bake
+      and 'pygame.image.tostring(surface, "RGB")' in _mn_bake and "surface.get_at((x, y))" in _mn_bake,
+      "9bs the bake must run the real Menu._build_main_background and record source pixels")
+check("ResourceLoader.exists(BACKGROUND)" in _mn_back
+      and "draw_texture_rect(baked, cover_rect(size), false)" in _mn_back
+      and "static func cover_rect(window: Vector2) -> Rect2:" in _mn_back
+      and "var factor := maxf(window.x / SOURCE_SIZE.x, window.y / SOURCE_SIZE.y)" in _mn_back
+      and "background_draws += 1" in _mn_back and "func _draw_fallback() -> void:" in _mn_back,
+      "9bs the backdrop must cover the window with the baked frame and keep the old art as fallback")
+_mn_bright = [255, 233, 158]
+check("def outline_text(screen, font, text, color, center, outline=(8, 9, 18)," in _mn_ui
+      and "body = gradient_text(font, text, GOLD_BRIGHT, (196, 138, 40))" in _mn_ui
+      and "const TITLE_OUTLINE := Color8(8, 9, 18)" in _mn_theme
+      and "const GOLD_MID := Color8(225, 185, 99)" in _mn_theme
+      and [(a + b) >> 1 for a, b in zip(_mn_bright, [196, 138, 40])] == [225, 185, 99]
+      and 'label.add_theme_color_override("font_color", GOLD_MID)' in _mn_theme
+      and 'label.add_theme_constant_override("outline_size", 2)' in _mn_theme,
+      "9bs screen titles must be the outline_text gold (gradient mid) with its 2 px dark outline")
+_mn_old = ("Color(0.59, 0.67, 0.66, 1)", "Color(0.68, 0.78, 0.75, 1)", "Color(0.55, 0.64, 0.63, 1)",
+           "Color(0.47, 0.85, 0.76, 1)", "Color(0.83, 0.72, 0.46, 1)", "Color(0.015, 0.03, 0.04, 0.88)")
+_mn_scenes = "\n".join(path.read_text(encoding="utf-8") for path in sorted((ROOT / "scenes").rglob("*.tscn")))
+check(not any(literal in _mn_scenes for literal in _mn_old),
+      "9bs no scene may keep the old teal text and dim literals")
+
+
+def _mn_colour(name):
+    r, g, b = _ui_palette_src[name]
+    parts = [f"{channel / 255:.4f}".rstrip("0").rstrip(".") for channel in (r, g, b)]
+    return f"Color({', '.join(parts)}, 1)"
+
+
+check(_mn_scenes.count(_mn_colour("TEXT_DIM")) == 8 and _mn_scenes.count(_mn_colour("GOLD")) == 1
+      and _mn_scenes.count(_mn_colour("CYAN")) == 1
+      and _mn_scenes.count("Color(0.0392, 0.0392, 0.0784, 0.7843)") == 4
+      and "overlay.fill((10, 10, 20, 200))" in _mn_core,
+      "9bs the scenes must use the ui_theme.py muted, gold, cyan and the (10, 10, 20, 200) pause dim")
 
 for error in errors:
     print("FAIL:", error, file=sys.stderr)

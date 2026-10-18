@@ -738,6 +738,7 @@ func spawn_unit(definition: Definition, team: int, lane: int) -> UnitState:
 	var unit := super.spawn_unit(target, team, lane)
 	if unit != null:
 		unit.ai_level = 1 if current <= 1 else NexusUpgrades.MINION_AI[current - 1]
+		unit.nexus_level = current
 	return unit
 
 

@@ -1,0 +1,2602 @@
+{
+ "bosses": {
+  "abaddon": {
+   "bytes": 27714,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,208,208,104,104],
+    "1": [210,0,208,208,104,104]
+   },
+   "label_top": 63,
+   "radius": 42,
+   "sha256": "b07343035333ab0e006f061ae25db2940758e9df57a788daf55bf9b3db5da5b4",
+   "size": [418,208]
+  },
+  "aelyrion": {
+   "bytes": 10446,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,198,99,99],
+    "1": [200,0,198,198,99,99]
+   },
+   "label_top": 58,
+   "radius": 32,
+   "sha256": "65f1785b65ff16450785e96fe56cbc53d4185dbdbaa849962b393e9c4dd40236",
+   "size": [398,198]
+  },
+  "aeralith": {
+   "bytes": 29933,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,257,234,117,129],
+    "1": [259,0,257,234,140,129]
+   },
+   "label_top": 69,
+   "radius": 30,
+   "sha256": "5f8d7921298d8a15251bdd88e3cd326eb432fc5c6f52aed19d051fcaf8a31f3a",
+   "size": [516,234]
+  },
+  "akahime": {
+   "bytes": 8596,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,188,99,94],
+    "1": [200,0,198,188,99,94]
+   },
+   "label_top": 53,
+   "radius": 32,
+   "sha256": "9a6cf7230314f63665a40f91a9a7dad920a604cdc3c915b1968143959f372a0e",
+   "size": [398,188]
+  },
+  "akaroth": {
+   "bytes": 9715,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,188,99,94],
+    "1": [200,0,198,188,99,94]
+   },
+   "label_top": 55,
+   "radius": 36,
+   "sha256": "dc4b460a50c11b2c14c9b73f266eb22f5c43d4972f6638e773e023fa32a8aeca",
+   "size": [398,188]
+  },
+  "akashari": {
+   "bytes": 9168,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,168,168,84,84],
+    "1": [170,0,168,168,84,84]
+   },
+   "label_top": 59,
+   "radius": 38,
+   "sha256": "dcdb93936b3621626f653fe0b3c000104537caed2f0ce8aba9bd1c4d27dbe1d7",
+   "size": [338,168]
+  },
+  "akirakumo": {
+   "bytes": 12614,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,218,198,109,99],
+    "1": [220,0,218,198,109,99]
+   },
+   "label_top": 78,
+   "radius": 94,
+   "sha256": "e88fceb538d390a38173411cca052b349320eb7d7389b0e7250d4e807bc53290",
+   "size": [438,198]
+  },
+  "akiraze": {
+   "bytes": 10337,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,198,109,99],
+    "1": [220,0,218,198,109,99]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "4b81dbea33d93a61d4588e05a9c9804790a837565580dabd326935667b8bbed7",
+   "size": [438,198]
+  },
+  "alchemist": {
+   "bytes": 31759,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,200,219,100,119],
+    "1": [202,0,200,219,100,119]
+   },
+   "label_top": 112,
+   "radius": 45,
+   "sha256": "51d37ff134379c937ce3a65f09fdc53be310f07ca9a09d2865d5dd15489dc118",
+   "size": [402,219]
+  },
+  "ancient_apparition": {
+   "bytes": 9642,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,192,192,96,96],
+    "1": [194,0,192,192,96,96]
+   },
+   "label_top": 61,
+   "radius": 40,
+   "sha256": "8c428976f00db10591818b5899be62e3b18308cc77218d3a4c390c1d306924bb",
+   "size": [386,192]
+  },
+  "astraelion": {
+   "bytes": 11290,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,198,99,99],
+    "1": [200,0,198,198,99,99]
+   },
+   "label_top": 53,
+   "radius": 32,
+   "sha256": "1e6fe5738779c8e1f3c82a6049c3b527a4d7af364f9b71c7eef8aefb5b41e1b1",
+   "size": [398,198]
+  },
+  "aurelian": {
+   "bytes": 7933,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,178,99,89],
+    "1": [200,0,198,178,99,89]
+   },
+   "label_top": 60,
+   "radius": 40,
+   "sha256": "1a8bfccb3ab7d1fe6be19eda870802e6e39fd08d76632f04822b6e4140849399",
+   "size": [398,178]
+  },
+  "aurelion": {
+   "bytes": 17445,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,252,252,126,126],
+    "1": [254,0,252,252,126,126]
+   },
+   "label_top": 83,
+   "radius": 62,
+   "sha256": "653f247f60349fa996398c8603cdb2145801b2ea696a8ad6442fac11d161a131",
+   "size": [506,252]
+  },
+  "aurelix": {
+   "bytes": 11776,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,198,104,99],
+    "1": [210,0,208,198,104,99]
+   },
+   "label_top": 57,
+   "radius": 32,
+   "sha256": "f8ba02a21caa854fc3a5909a3b1dbda86feddb08b6b1110c6c897f133cbfc95c",
+   "size": [418,198]
+  },
+  "aurelyssa": {
+   "bytes": 8774,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,188,178,94,89],
+    "1": [190,0,188,178,94,89]
+   },
+   "label_top": 51,
+   "radius": 30,
+   "sha256": "b7ccc39151441e4e65d340983417e920d2df365bfca6dec29b1bae868605b88b",
+   "size": [378,178]
+  },
+  "aurethzar": {
+   "bytes": 20545,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,258,258,129,129],
+    "1": [260,0,258,258,129,129]
+   },
+   "label_top": 71,
+   "radius": 48,
+   "sha256": "38f7ffda9cdcaccf185064c534540eb18d2167d52d346a9b3d1bd8e704c3432c",
+   "size": [518,258]
+  },
+  "aurex": {
+   "bytes": 6599,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,182,157,91,76],
+    "1": [184,0,182,157,91,76]
+   },
+   "label_top": 57,
+   "radius": 36,
+   "sha256": "597bd7992ffd595643de5bde08ac706583be12f975a60f5a9cf8d9e3eb8bc7c7",
+   "size": [366,157]
+  },
+  "auroth": {
+   "bytes": 10581,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,208,104,104],
+    "1": [210,0,208,208,104,104]
+   },
+   "label_top": 42,
+   "radius": 38,
+   "sha256": "a504f1b2d163c17156a4067085947eefa5f8ca0420fb0cec18aa854c0d8bdeed",
+   "size": [418,208]
+  },
+  "azkharion": {
+   "bytes": 14111,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,228,228,114,114],
+    "1": [230,0,228,228,114,114]
+   },
+   "label_top": 55,
+   "radius": 36,
+   "sha256": "0e23a371e98b16a7b63bb297af5439ad538fd578cfcf4820fe6b7e92bcec312e",
+   "size": [458,228]
+  },
+  "azureth": {
+   "bytes": 9132,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,188,99,94],
+    "1": [200,0,198,188,99,94]
+   },
+   "label_top": 53,
+   "radius": 32,
+   "sha256": "085e2696d1e47186eb7e71f502ffd9673309e12605f44d6871ae90dd5c4272fd",
+   "size": [398,188]
+  },
+  "bhorgathul": {
+   "bytes": 10162,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,208,104,104],
+    "1": [210,0,208,208,104,104]
+   },
+   "label_top": 58,
+   "radius": 38,
+   "sha256": "6edea90e7f433c655163bebe85e4c4c4314064ccc4ae7478768492c3e2b8f9f7",
+   "size": [418,208]
+  },
+  "broggmar": {
+   "bytes": 11466,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,208,104,104],
+    "1": [210,0,208,208,104,104]
+   },
+   "label_top": 60,
+   "radius": 42,
+   "sha256": "f4f6faa6a478540b552529ad19db1f6243506151d1174c1ab2cfe90f613d65e7",
+   "size": [418,208]
+  },
+  "brumhar": {
+   "bytes": 10829,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,240,208,124,104],
+    "1": [242,0,240,208,124,104]
+   },
+   "label_top": 60,
+   "radius": 42,
+   "sha256": "9b67e55e3acdd710ea37550582a1421882af46b676f7171aa4dd96cce95811c7",
+   "size": [482,208]
+  },
+  "celwynn": {
+   "bytes": 10000,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,198,99,99],
+    "1": [200,0,198,198,99,99]
+   },
+   "label_top": 55,
+   "radius": 32,
+   "sha256": "5c33ed853f56e62458bdf2a1ee288a5c902e56fbd3e857f181807a4fe5a124ea",
+   "size": [398,198]
+  },
+  "cogsworth": {
+   "bytes": 10473,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,218,194,109,97],
+    "1": [220,0,218,194,109,97]
+   },
+   "label_top": 72,
+   "radius": 90,
+   "sha256": "85f9db287a093cce47f9bdce385a6bd1085ed974174d6fd975eb0dee622d8576",
+   "size": [438,194]
+  },
+  "cryssalia": {
+   "bytes": 13176,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,238,238,119,119],
+    "1": [240,0,238,238,119,119]
+   },
+   "label_top": 73,
+   "radius": 34,
+   "sha256": "f7fd177e2d00c2a3f2e035142fd16d87a6b553e436864edae1e66e00a60c0028",
+   "size": [478,238]
+  },
+  "deidara": {
+   "bytes": 7797,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,188,169,94,84],
+    "1": [190,0,188,169,94,84]
+   },
+   "label_top": 72,
+   "radius": 86,
+   "sha256": "e122ab78422a2e63f2f109f1fe680175845c31793ca282a4df8debdfaee01380",
+   "size": [378,169]
+  },
+  "dorakai": {
+   "bytes": 9332,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,198,99,99],
+    "1": [200,0,198,198,99,99]
+   },
+   "label_top": 60,
+   "radius": 38,
+   "sha256": "5129ee8225daeba3c2c5d0f2f45359fb22603f9e5eb92aed85ca58548ed800d8",
+   "size": [398,198]
+  },
+  "drakar": {
+   "bytes": 11076,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,222,210,111,102],
+    "1": [224,0,222,210,111,102]
+   },
+   "label_top": 53,
+   "radius": 32,
+   "sha256": "af7f9d84f7039e25ffd32b9f33d47da7570782b3e1114fea34cc8aebefb848e3",
+   "size": [446,210]
+  },
+  "drav": {
+   "bytes": 11758,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 57,
+   "radius": 32,
+   "sha256": "f142022caf302718c5a6394a3d840afef45fd68d79df26e3daa81924a5905275",
+   "size": [438,218]
+  },
+  "emberwick": {
+   "bytes": 11237,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,228,198,114,99],
+    "1": [230,0,228,198,114,99]
+   },
+   "label_top": 58,
+   "radius": 36,
+   "sha256": "3ee8d503fee64be1a222393bb9c6a7f578d645d6342c2b4c84724c577b8ac855",
+   "size": [458,198]
+  },
+  "garumenshi": {
+   "bytes": 3285,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,168,130,84,50],
+    "1": [170,0,168,130,84,50]
+   },
+   "label_top": 62,
+   "radius": 42,
+   "sha256": "909abf0b6c6e300188b0d35aea8d0217ee0bbae7622378682b1a2afd94a1d971",
+   "size": [338,130]
+  },
+  "ghrakmaal": {
+   "bytes": 11346,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,228,228,114,114],
+    "1": [230,0,228,228,114,114]
+   },
+   "label_top": 62,
+   "radius": 40,
+   "sha256": "8d3e1509de2458c8159a036c02e4026dfd3599ea62d4977c0081a92c10dda878",
+   "size": [458,228]
+  },
+  "gorath": {
+   "bytes": 24515,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,168,168,84,84],
+    "1": [170,0,168,168,84,84]
+   },
+   "label_top": 57,
+   "radius": 36,
+   "sha256": "c2abeb954c2f96ef57df11965e4649d6d6ec0a74b7bb8495658c31ce803c9081",
+   "size": [338,168]
+  },
+  "gornak": {
+   "bytes": 15252,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,154,163,91,77],
+    "1": [156,0,153,163,63,77]
+   },
+   "label_top": 57,
+   "radius": 30,
+   "sha256": "383bd104f422af329b670e65c5f62f8df227dac7adec5ca8cecedd44aec9b8b6",
+   "size": [309,163]
+  },
+  "gravefang": {
+   "bytes": 6646,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,176,195,88,104],
+    "1": [178,0,176,195,88,104]
+   },
+   "label_top": 106,
+   "radius": 38,
+   "sha256": "e1e3b60742537a0b8494e55f3d89cb8a8888dc909947403589e6ad66636d9ffb",
+   "size": [354,195]
+  },
+  "gravewake": {
+   "bytes": 13579,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,208,104,104],
+    "1": [210,0,208,208,104,104]
+   },
+   "label_top": 61,
+   "radius": 40,
+   "sha256": "aeba1f4dd60b0bc47fe63f8a8fbc0b393777e49c7b6cb506f36ebe08815acdc0",
+   "size": [418,208]
+  },
+  "grimjack": {
+   "bytes": 10029,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,188,104,94],
+    "1": [210,0,208,188,104,94]
+   },
+   "label_top": 55,
+   "radius": 30,
+   "sha256": "7da04e32f6a18e850a67992a7083abcff5ae5dc29be790ed6e875bb781dcec4d",
+   "size": [418,188]
+  },
+  "grimkor": {
+   "bytes": 9443,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,208,178,104,89],
+    "1": [210,0,208,178,104,89]
+   },
+   "label_top": 75,
+   "radius": 86,
+   "sha256": "de74df88d2f568c042a02b5f90cdb087304d4a87b5a51d479f1366f6e1233e67",
+   "size": [418,178]
+  },
+  "grimstalker": {
+   "bytes": 10796,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,198,99,99],
+    "1": [200,0,198,198,99,99]
+   },
+   "label_top": 55,
+   "radius": 30,
+   "sha256": "a0804fd4bbf3674cd866d5a88395a2cbcf975165bb14af2773af0f848eaf4770",
+   "size": [398,198]
+  },
+  "grondarthul": {
+   "bytes": 11030,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,208,104,104],
+    "1": [210,0,208,208,104,104]
+   },
+   "label_top": 62,
+   "radius": 44,
+   "sha256": "5d1c22719c3aa039d7596e5493942f67a88a0e7df00bd29e2890cdf1ab520b7f",
+   "size": [418,208]
+  },
+  "grondmauris": {
+   "bytes": 10840,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,228,218,114,109],
+    "1": [230,0,228,218,114,109]
+   },
+   "label_top": 85,
+   "radius": 84,
+   "sha256": "547369ebd6f700f7e05da8d14a57e09a4ffeefc12399134365240af0c6f389d2",
+   "size": [458,218]
+  },
+  "hitokage": {
+   "bytes": 8667,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,198,99,99],
+    "1": [200,0,198,198,99,99]
+   },
+   "label_top": 58,
+   "radius": 36,
+   "sha256": "ff44ac640f910d983ad5d296af12623cfc9de3b0dd3c46884e0e503365e67b90",
+   "size": [398,198]
+  },
+  "hollowbane": {
+   "bytes": 7987,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,188,188,94,94],
+    "1": [190,0,188,188,94,94]
+   },
+   "label_top": 78,
+   "radius": 92,
+   "sha256": "424b73a7b2d8164cf0bae5744da2b86bb3fca174a4be4f1589a752c2e757a31c",
+   "size": [378,188]
+  },
+  "ignakhor": {
+   "bytes": 11921,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,228,228,114,114],
+    "1": [230,0,228,228,114,114]
+   },
+   "label_top": 60,
+   "radius": 36,
+   "sha256": "4cbc55c34279bbe13ec2a405726a0b29da5286e0a28cb725172b0e21eb0b5572",
+   "size": [458,228]
+  },
+  "ignirus": {
+   "bytes": 9582,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,208,104,104],
+    "1": [210,0,208,208,104,104]
+   },
+   "label_top": 53,
+   "radius": 32,
+   "sha256": "e424742018500a001f93fb83719364fe0c31bcfb391e2a9ecb6499cb0b32950d",
+   "size": [418,208]
+  },
+  "ignis_drachorn": {
+   "bytes": 14217,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,146,177,84,92],
+    "1": [148,0,146,177,84,92]
+   },
+   "label_top": 68,
+   "radius": 45,
+   "sha256": "4c664faf3134801d52bc7ae073e91d01d0f4ea2575a8f55a111cecd183b8e991",
+   "size": [294,177]
+  },
+  "infrakzaar": {
+   "bytes": 9470,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "38f2df02d1cf665b6c585dfbe451babfd0f4d10039a0c2542a6a52b0c21045c8",
+   "size": [438,218]
+  },
+  "kaedrin": {
+   "bytes": 10455,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,198,109,99],
+    "1": [220,0,218,198,109,99]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "d75f8046c8e28b2d81d783437b0127b09464fe7dbc62b95ac2c2fecb4bb74b68",
+   "size": [438,198]
+  },
+  "kaeldris": {
+   "bytes": 12575,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,198,104,99],
+    "1": [210,0,208,198,104,99]
+   },
+   "label_top": 73,
+   "radius": 34,
+   "sha256": "45a963b6e3a88a022d918f905d5b9f0646fe3d8c67bfe04bc63d36fd330cdf43",
+   "size": [418,198]
+  },
+  "kaelthar": {
+   "bytes": 13091,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 53,
+   "radius": 32,
+   "sha256": "2b2b38cd46761fbb716b865e32abaaddfb56afe5ca136a69e94132b0dd1485a0",
+   "size": [438,218]
+  },
+  "kaelthorn": {
+   "bytes": 9777,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,188,188,94,94],
+    "1": [190,0,188,188,94,94]
+   },
+   "label_top": 35,
+   "radius": 34,
+   "sha256": "a5fd1f4739775e2b9f8a9940a4d997a86fe4751bdf0617a170f2208635115108",
+   "size": [378,188]
+  },
+  "kaelthys": {
+   "bytes": 8022,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,188,166,94,79],
+    "1": [190,0,188,166,94,79]
+   },
+   "label_top": 58,
+   "radius": 36,
+   "sha256": "03e6253652517d2359be01e50d4ffd76e56f81c4a3144ea3628938040379cfeb",
+   "size": [378,166]
+  },
+  "kaelvyrn": {
+   "bytes": 9547,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,188,178,94,89],
+    "1": [190,0,188,178,94,89]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "0bf72bd0c1ccaf366d0f7cc2b3bf496948b423389d69da2f66dcfafd2b954a59",
+   "size": [378,178]
+  },
+  "kaerinya": {
+   "bytes": 11097,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 70,
+   "radius": 80,
+   "sha256": "f2bee0cf083ddea94b459223db904392340456c96ee0142a2c39b093c26c4214",
+   "size": [438,218]
+  },
+  "kaerissa": {
+   "bytes": 10586,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 55,
+   "radius": 32,
+   "sha256": "8ada2d012c28c912628cdc049f61db7c32ce9002a2d92fb7f56ec131845a5476",
+   "size": [438,218]
+  },
+  "kaervosth": {
+   "bytes": 10664,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,170,104,79],
+    "1": [210,0,208,170,104,79]
+   },
+   "label_top": 60,
+   "radius": 34,
+   "sha256": "288dbf77f65430b2277008bb4e85b643b3098d7ef6e65a1b6acb9c7ffa6a3cbd",
+   "size": [418,170]
+  },
+  "kagetsuka": {
+   "bytes": 11372,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 72,
+   "radius": 86,
+   "sha256": "17dc23021657fd2eb35c8d23f67fd29118dd0fbbce50b53c1038ed1cd2420e44",
+   "size": [438,218]
+  },
+  "kaineroth": {
+   "bytes": 10993,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,229,231,120,122],
+    "1": [231,0,229,231,120,122]
+   },
+   "label_top": 72,
+   "radius": 84,
+   "sha256": "b88fdce9a510a4f7fa21d58f0f80807aa449346b50596aab054cbd63f5e2ca4d",
+   "size": [460,231]
+  },
+  "kairenji": {
+   "bytes": 10410,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,178,99,89],
+    "1": [200,0,198,178,99,89]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "b39f376d4a3359cc9b04e6662e391b9674649e4fe7be6249fc9fa4d337f72588",
+   "size": [398,178]
+  },
+  "kaithros": {
+   "bytes": 10855,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,198,198,99,99],
+    "1": [200,0,198,198,99,99]
+   },
+   "label_top": 75,
+   "radius": 90,
+   "sha256": "5f5c00574abdda5dcfe2ac1a0776b61fd47b0c2f289c4361535a1331da8c5177",
+   "size": [398,198]
+  },
+  "kaizoku_raijin": {
+   "bytes": 11111,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 58,
+   "radius": 36,
+   "sha256": "2a74e22bfa0d2b2f186b3191980e184c8da461f55dfba2953d278c80cef67ed9",
+   "size": [438,218]
+  },
+  "kaoruken": {
+   "bytes": 9724,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,188,104,94],
+    "1": [210,0,208,188,104,94]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "af1c24f52698554aac41987ea7f10f38b13a272bf72846976dd1d9dfab7bcdb3",
+   "size": [418,188]
+  },
+  "karzhul": {
+   "bytes": 12845,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,188,104,94],
+    "1": [210,0,208,188,104,94]
+   },
+   "label_top": 60,
+   "radius": 40,
+   "sha256": "10c6510a46e24f2501f790567e5d2b5558f2c99ca0847890bd3720bbdc0419ea",
+   "size": [418,188]
+  },
+  "kassadin": {
+   "bytes": 10644,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "5fcf2935e06915a25d53291603a5071de2b02cad3f3b950e0b355053e3c46cc7",
+   "size": [438,218]
+  },
+  "kazreth": {
+   "bytes": 17245,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,228,228,114,114],
+    "1": [230,0,228,228,114,114]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "d1237a23918f05927dc61bb5b6514c7e7cc31b99ba6b6fcbd307c9429bf66014",
+   "size": [458,228]
+  },
+  "kazuren": {
+   "bytes": 3694,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,178,132,89,51],
+    "1": [180,0,178,132,89,51]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "6d71b1aa045c0458abd55badd8347cbf3d976bc6d6977074bad6a9ab53501237",
+   "size": [358,132]
+  },
+  "kazureth": {
+   "bytes": 10271,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,208,104,104],
+    "1": [210,0,208,208,104,104]
+   },
+   "label_top": 52,
+   "radius": 34,
+   "sha256": "fbb9dfa15dd8fd9d84d4f0db36f41d41295503fa01aada3a16a16371ee151cb9",
+   "size": [418,208]
+  },
+  "kenshiro": {
+   "bytes": 11233,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,204,204,102,102],
+    "1": [206,0,204,204,102,102]
+   },
+   "label_top": 53,
+   "radius": 32,
+   "sha256": "688a650719a17bbf5b0d4f03b4a12dfaeeb9ecd76f4f5f5d149fb2ae3af79553",
+   "size": [410,204]
+  },
+  "khalros": {
+   "bytes": 33925,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,204,189,102,91],
+    "1": [206,0,204,189,102,91]
+   },
+   "label_top": 72,
+   "radius": 36,
+   "sha256": "ab2cebc866a2238e83d15405477489937d74af36892c76330bcefe1f602d6523",
+   "size": [410,189]
+  },
+  "khalzaredh": {
+   "bytes": 10668,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,188,99,94],
+    "1": [200,0,198,188,99,94]
+   },
+   "label_top": 57,
+   "radius": 32,
+   "sha256": "16daa42de6492989c300fe47a880e5d5e9cfbf4909a7fe0b9cf573a5eb521c1e",
+   "size": [398,188]
+  },
+  "khazan": {
+   "bytes": 10028,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,184,184,92,92],
+    "1": [186,0,184,184,92,92]
+   },
+   "label_top": 34,
+   "radius": 34,
+   "sha256": "99c37154611ac645c831038e02d67f686b44e8326e76eb1621f5ae211298cf8d",
+   "size": [370,184]
+  },
+  "korokai": {
+   "bytes": 9384,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,188,99,94],
+    "1": [200,0,198,188,99,94]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "6e9294d60258b082066b20e5f1847a702c633ff78e40e6495db687139ebd3252",
+   "size": [398,188]
+  },
+  "krobellus": {
+   "bytes": 6168,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,200,184,100,78],
+    "1": [202,0,200,184,100,78]
+   },
+   "label_top": 62,
+   "radius": 44,
+   "sha256": "aff5b0cf23303727d9b8dd2fa0e79bc986e2290e7f4f19945f21c7d990a47c34",
+   "size": [402,184]
+  },
+  "krognarr": {
+   "bytes": 10964,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 59,
+   "radius": 38,
+   "sha256": "fb36f1b3f64de1f33017d165b96c786a55f5ee2646f943c0ce5a37f6006d3de8",
+   "size": [438,218]
+  },
+  "kryvoxar": {
+   "bytes": 10128,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,198,99,99],
+    "1": [200,0,198,198,99,99]
+   },
+   "label_top": 62,
+   "radius": 30,
+   "sha256": "8dd69084a23d9c6f20a150e61c689fc91423a87ec517d43bf79b876ae1251dbf",
+   "size": [398,198]
+  },
+  "kunkka": {
+   "bytes": 8204,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,168,156,84,76],
+    "1": [170,0,168,156,84,76]
+   },
+   "label_top": 47,
+   "radius": 45,
+   "sha256": "b11127407e12c0cb1adff69c3b015624b63e1461c96013f9d3fe3e35b6f6bb60",
+   "size": [338,156]
+  },
+  "kurogari": {
+   "bytes": 10086,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,188,182,94,91],
+    "1": [190,0,188,182,94,91]
+   },
+   "label_top": 55,
+   "radius": 30,
+   "sha256": "ce926e8e5165b766c1264cabe42ecd9e8873a14468a869d5308a22d45ad3b359",
+   "size": [378,182]
+  },
+  "kyrenzai": {
+   "bytes": 14550,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,228,228,114,114],
+    "1": [230,0,228,228,114,114]
+   },
+   "label_top": 70,
+   "radius": 82,
+   "sha256": "244a98d5c9c54682924042310db9fa734121690e57885bf25f5b6b46e59461a4",
+   "size": [458,228]
+  },
+  "kyumirra": {
+   "bytes": 12136,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 50,
+   "radius": 30,
+   "sha256": "5ad2f32ba5bca4c20801655961924c2703fbc5a2b878e8a37d6d83a3857717d3",
+   "size": [438,218]
+  },
+  "leoric": {
+   "bytes": 10865,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,208,104,104],
+    "1": [210,0,208,208,104,104]
+   },
+   "label_top": 35,
+   "radius": 40,
+   "sha256": "b6a7b7938ef411a0a8847ede7667c43210a5e4fb7c41106f61af207745311984",
+   "size": [418,208]
+  },
+  "luminar": {
+   "bytes": 11773,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,208,109,104],
+    "1": [220,0,218,208,109,104]
+   },
+   "label_top": 60,
+   "radius": 36,
+   "sha256": "1e40a97fc62315034c2399a2976c533ea92c399eaaece7bb201955ac84b4ccf3",
+   "size": [438,208]
+  },
+  "lyrenya": {
+   "bytes": 10544,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,208,109,104],
+    "1": [220,0,218,208,109,104]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "da786bbc005e241c10e6a0dc2521b6442bcbedcb1446cea9943a3eb6fe343d5d",
+   "size": [438,208]
+  },
+  "lyrienne": {
+   "bytes": 10657,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,208,104,104],
+    "1": [210,0,208,208,104,104]
+   },
+   "label_top": 56,
+   "radius": 30,
+   "sha256": "28cb716e8d841e539ce6a1730c6faa5938ac89d35e95930981717cc98d103c20",
+   "size": [418,208]
+  },
+  "lyssarethys": {
+   "bytes": 11282,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 78,
+   "radius": 80,
+   "sha256": "85aae312f9d66c431d915a53d6409f61b602e2af1b902e15e6500955d0981b3f",
+   "size": [438,218]
+  },
+  "malzareth": {
+   "bytes": 9082,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,168,168,84,84],
+    "1": [170,0,168,168,84,84]
+   },
+   "label_top": 46,
+   "radius": 40,
+   "sha256": "f4e5fed976081634aeb356af4f7f66692457db4c0410d878de56be4814eb4d02",
+   "size": [338,168]
+  },
+  "malzeroth": {
+   "bytes": 7786,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,198,178,99,89],
+    "1": [200,0,198,178,99,89]
+   },
+   "label_top": 72,
+   "radius": 78,
+   "sha256": "4fbda40d87be44e429dda33dc041bf0a430d9b3b133632abf9525245c19cdf1b",
+   "size": [398,178]
+  },
+  "molgravar": {
+   "bytes": 13213,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,238,238,119,119],
+    "1": [240,0,238,238,119,119]
+   },
+   "label_top": 90,
+   "radius": 72,
+   "sha256": "cdadd7edd5ff031817a97d2240768c64a2c77b658725bc9d10f8d1b1c8fd268c",
+   "size": [478,238]
+  },
+  "morgath": {
+   "bytes": 18805,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,176,169,88,85],
+    "1": [178,0,176,169,88,85]
+   },
+   "label_top": 51,
+   "radius": 30,
+   "sha256": "a0b551db1b29efd9f2468feed1c995bc17de8d85df6671e4c60951d90bfc15a5",
+   "size": [354,169]
+  },
+  "morkhaera": {
+   "bytes": 14244,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,238,238,119,119],
+    "1": [240,0,238,238,119,119]
+   },
+   "label_top": 58,
+   "radius": 34,
+   "sha256": "60a488d002f7e6ff5e42e9ebd43c0610dc405609e692a26544958c74a7db5462",
+   "size": [478,238]
+  },
+  "morkhelvis": {
+   "bytes": 10903,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,208,104,110],
+    "1": [210,0,208,208,104,110]
+   },
+   "label_top": 60,
+   "radius": 40,
+   "sha256": "f37e2d12435321823b39171ed8fb6c27f4bd9f325f5a8f95cc1b0bc9749d8e5c",
+   "size": [418,208]
+  },
+  "morthraxis": {
+   "bytes": 9879,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 87,
+   "radius": 66,
+   "sha256": "e93f4f8edfd8ea7fbb07ac407f5f041c4c2dbfbc6a4100bd772c702703438dcd",
+   "size": [438,218]
+  },
+  "morthyrax": {
+   "bytes": 12300,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,228,228,114,114],
+    "1": [230,0,228,228,114,114]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "6465be7d894d9ef0cc079737ce78ad3c51b7a5f4f689d2ac5fde3aa59b083806",
+   "size": [458,228]
+  },
+  "morvaenthir": {
+   "bytes": 10629,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,198,99,99],
+    "1": [200,0,198,198,99,99]
+   },
+   "label_top": 73,
+   "radius": 34,
+   "sha256": "782d146478e8feb68899619f193b11a5f2fca07e9cbe0928a899131d7f7f05d8",
+   "size": [398,198]
+  },
+  "morvaeth": {
+   "bytes": 11120,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,198,104,99],
+    "1": [210,0,208,198,104,99]
+   },
+   "label_top": 58,
+   "radius": 32,
+   "sha256": "84a1ec3aba23536f32b8fa8da71e396cd63eea6dd266bee585257b503e5c8751",
+   "size": [418,198]
+  },
+  "morvaeth2": {
+   "bytes": 15787,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,228,228,114,114],
+    "1": [230,0,228,228,114,114]
+   },
+   "label_top": 58,
+   "radius": 36,
+   "sha256": "134dc55d2adb263a8560d9c36091ab35d3e9e9fca5547e8d89a93fb6b3b7b50f",
+   "size": [458,228]
+  },
+  "morvakhul": {
+   "bytes": 11397,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,182,109,89],
+    "1": [220,0,218,182,109,89]
+   },
+   "label_top": 58,
+   "radius": 36,
+   "sha256": "1dce1e490e2e328976e219637533e0ea83be9c8bf768b5733e48e1aadcc08e8c",
+   "size": [438,182]
+  },
+  "morvath": {
+   "bytes": 9007,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,178,99,89],
+    "1": [200,0,198,178,99,89]
+   },
+   "label_top": 62,
+   "radius": 44,
+   "sha256": "7692bee551b4c37a8e022e78b0a5b3010a8d6790f25da71e1c7c51a3fbac974c",
+   "size": [398,178]
+  },
+  "morvein": {
+   "bytes": 11468,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,208,109,104],
+    "1": [220,0,218,208,109,104]
+   },
+   "label_top": 31,
+   "radius": 34,
+   "sha256": "9447f9e9969399e5f31f6a513f27a0a08b4da72256310b926b291ef76e8e9399",
+   "size": [438,208]
+  },
+  "morvekhar": {
+   "bytes": 12287,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 57,
+   "radius": 34,
+   "sha256": "8bdee9b879f31e584dd9cf36cc267f72f0b87be46122e3b19985d8a53e6933a4",
+   "size": [438,218]
+  },
+  "morvyssk": {
+   "bytes": 8818,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,198,104,99],
+    "1": [210,0,208,198,104,99]
+   },
+   "label_top": 46,
+   "radius": 36,
+   "sha256": "0ca3e3bfe26d4854e45c38e88bde9f7706f5d559f9064d38f175679ec329b05f",
+   "size": [418,198]
+  },
+  "naraka": {
+   "bytes": 15698,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,248,248,124,124],
+    "1": [250,0,248,248,124,124]
+   },
+   "label_top": 67,
+   "radius": 46,
+   "sha256": "95679a31b7070451138f8dfc2c8a7a29c1c1a88240678f208ddc14f978ab984f",
+   "size": [498,248]
+  },
+  "nazulmor": {
+   "bytes": 14316,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,228,228,114,114],
+    "1": [230,0,228,228,114,114]
+   },
+   "label_top": 73,
+   "radius": 52,
+   "sha256": "e4e1444be643ddf066478b39a7d1b9801ae135e02e951a0010ea1d01e00ee684",
+   "size": [458,228]
+  },
+  "nexthyrius": {
+   "bytes": 15543,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,258,258,129,129],
+    "1": [260,0,258,258,129,129]
+   },
+   "label_top": 85,
+   "radius": 68,
+   "sha256": "e40eba0d43ccdb2760f1082bb1172643aaaeabe0027cbc4e027b6ac69820994a",
+   "size": [518,258]
+  },
+  "nixweaver": {
+   "bytes": 7482,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,178,164,89,82],
+    "1": [180,0,178,164,89,82]
+   },
+   "label_top": 55,
+   "radius": 32,
+   "sha256": "d924683c69d2d0e4405e5b652dec1a877949ec73843c834ff27da38c64c7620a",
+   "size": [358,164]
+  },
+  "nyrellieth": {
+   "bytes": 13205,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,238,238,119,119],
+    "1": [240,0,238,238,119,119]
+   },
+   "label_top": 82,
+   "radius": 74,
+   "sha256": "3cb8522f5a8712b2fa9b6729014297e9270916879e82e44faeef186e5371fc43",
+   "size": [478,238]
+  },
+  "nyrethzalv": {
+   "bytes": 14122,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,238,238,119,119],
+    "1": [240,0,238,238,119,119]
+   },
+   "label_top": 78,
+   "radius": 76,
+   "sha256": "e125338781ac395025010dd42b848368fa4996bc598aebc48a8d17a41cd46f50",
+   "size": [478,238]
+  },
+  "nyxallaria": {
+   "bytes": 12610,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "fa9094b99661781e1983e2a4b0a820cb902fef8fe2deeb33e2e0f5d6c9fbe90e",
+   "size": [438,218]
+  },
+  "nyxara": {
+   "bytes": 5454,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,164,191,82,104],
+    "1": [166,0,164,191,82,104]
+   },
+   "label_top": 98,
+   "radius": 34,
+   "sha256": "d7f2463c937412be4655d872e60ab53d38e929fcad6bba0690824b0accdf11e4",
+   "size": [330,191]
+  },
+  "nyxarath": {
+   "bytes": 8315,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,168,168,84,84],
+    "1": [170,0,168,168,84,84]
+   },
+   "label_top": 66,
+   "radius": 45,
+   "sha256": "0afdbdfd6c4f4a0e487758da9d167a7142c3230db9990e6dedb3c74500ce0f79",
+   "size": [338,168]
+  },
+  "nyxareth": {
+   "bytes": 15033,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,252,252,126,126],
+    "1": [254,0,252,252,126,126]
+   },
+   "label_top": 81,
+   "radius": 60,
+   "sha256": "a151acb3c26901dfebb5969a5d74e93a6b2056888cb59f7f901e1ccb09a1f812",
+   "size": [506,252]
+  },
+  "nyxareva": {
+   "bytes": 9901,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,198,99,99],
+    "1": [200,0,198,198,99,99]
+   },
+   "label_top": 53,
+   "radius": 32,
+   "sha256": "e584e0420126316cd5893b10cbc5419e8a268a423d1b54c3d66111c443ae79a4",
+   "size": [398,198]
+  },
+  "nyxariel": {
+   "bytes": 10816,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,198,99,99],
+    "1": [200,0,198,198,99,99]
+   },
+   "label_top": 45,
+   "radius": 32,
+   "sha256": "e11b68617c7de271ee154d04272a43593d1c5e6d95b961478845a955f3505b53",
+   "size": [398,198]
+  },
+  "nyxaris": {
+   "bytes": 13791,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,198,178,99,89],
+    "1": [200,0,198,178,99,89]
+   },
+   "label_top": 75,
+   "radius": 92,
+   "sha256": "b532ee9801bb131a43d5e817eb3c62ff0a44b3ffb99bf4faba316a17d39534ce",
+   "size": [398,178]
+  },
+  "nyxaroth": {
+   "bytes": 11055,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,198,104,99],
+    "1": [210,0,208,198,104,99]
+   },
+   "label_top": 62,
+   "radius": 30,
+   "sha256": "faad21796b4fb8bfdc3e69be6bbea524df1ba2696eb9e8500a08c4813df1367d",
+   "size": [418,198]
+  },
+  "nyxharr": {
+   "bytes": 16122,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,254,254,127,127],
+    "1": [256,0,254,254,127,127]
+   },
+   "label_top": 90,
+   "radius": 80,
+   "sha256": "6dcaa0e2e265635ad5875ef502ec132202cfe7008629184ca47c325956d7388a",
+   "size": [510,254]
+  },
+  "nyxraal": {
+   "bytes": 14596,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,228,228,114,114],
+    "1": [230,0,228,228,114,114]
+   },
+   "label_top": 58,
+   "radius": 36,
+   "sha256": "7fb7465500943b22e46d1050bb5113e6a6fd274d94c2ebc017124a07d833dd8c",
+   "size": [458,228]
+  },
+  "nyxthrael": {
+   "bytes": 9902,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,198,99,99],
+    "1": [200,0,198,198,99,99]
+   },
+   "label_top": 38,
+   "radius": 36,
+   "sha256": "a8c40ccaebd6c51fdc550dce8a446a55ca492c4d696c76b0d20616e31a0d6227",
+   "size": [398,198]
+  },
+  "nyzrak": {
+   "bytes": 6040,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,222,216,92,128],
+    "1": [224,0,224,216,130,128]
+   },
+   "label_top": 77,
+   "radius": 38,
+   "sha256": "b65703f76cc07f15043a780046b3611e0ec3fdf985c53aa676d2e43fb8c42804",
+   "size": [448,216]
+  },
+  "obanai": {
+   "bytes": 2650,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,128,143,64,59],
+    "1": [130,0,128,143,64,59]
+   },
+   "label_top": 58,
+   "radius": 36,
+   "sha256": "c039ab8211ff9ef9d5c628002605f0a4408faac58be963981c95c1aaab020aa3",
+   "size": [258,143]
+  },
+  "okeanora": {
+   "bytes": 18977,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,238,238,119,119],
+    "1": [240,0,238,238,119,119]
+   },
+   "label_top": 90,
+   "radius": 72,
+   "sha256": "49f219740c8912490a8b71fd44d5e9470784af950905fd68ad048e83fe831675",
+   "size": [478,238]
+  },
+  "pyraena": {
+   "bytes": 9499,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,198,198,99,99],
+    "1": [200,0,198,198,99,99]
+   },
+   "label_top": 75,
+   "radius": 88,
+   "sha256": "e364d7dada3d208ac6836c4afc2dd89a495822f5cf8a4d86499425b07b177aa0",
+   "size": [398,198]
+  },
+  "pyraethis": {
+   "bytes": 12179,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,238,238,119,119],
+    "1": [240,0,238,238,119,119]
+   },
+   "label_top": 77,
+   "radius": 56,
+   "sha256": "85d9f1e5d418d1ed4f4d9a92e6c8b9df53a7b5ad04c8c025c0c6c7fc5551c668",
+   "size": [478,238]
+  },
+  "pyraklos": {
+   "bytes": 11740,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,209,198,105,99],
+    "1": [211,0,209,198,105,99]
+   },
+   "label_top": 57,
+   "radius": 36,
+   "sha256": "785d6248b911cd1da051825d405294870a4b25dbc8bcdf78545af82d9da62c04",
+   "size": [420,198]
+  },
+  "pyrenth": {
+   "bytes": 25446,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,232,232,116,116],
+    "1": [234,0,232,232,116,116]
+   },
+   "label_top": 79,
+   "radius": 40,
+   "sha256": "04dd05075fb006a6b07f7f4dbf831fb55d0b4d7513f436607864d1feac169efb",
+   "size": [466,232]
+  },
+  "pyrhaan": {
+   "bytes": 9150,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,188,99,94],
+    "1": [200,0,198,188,99,94]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "c4f722fe0ea533ee0b37516e8659913622c1801aea3e13b5500af84f006bbbd9",
+   "size": [398,188]
+  },
+  "rakzhan": {
+   "bytes": 8904,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,198,104,99],
+    "1": [210,0,208,198,104,99]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "6d5b317ff2a060d593fa57642c7be4faa313b140b653c3315910d094c9a68a78",
+   "size": [418,198]
+  },
+  "ravokkar": {
+   "bytes": 15606,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,254,254,127,127],
+    "1": [256,0,254,254,127,127]
+   },
+   "label_top": 82,
+   "radius": 78,
+   "sha256": "22293903fc990af05c8c2749890f64b6139478eba7e79f8344576e5af67f22f4",
+   "size": [510,254]
+  },
+  "raz": {
+   "bytes": 10713,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,204,204,102,102],
+    "1": [206,0,204,204,102,102]
+   },
+   "label_top": 51,
+   "radius": 30,
+   "sha256": "b2acd48adf0b7b4a643df7544d2844f68ecb35103a2dcf70e8401624423f7b0d",
+   "size": [410,204]
+  },
+  "razak": {
+   "bytes": 19124,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,192,192,96,96],
+    "1": [194,0,192,192,96,96]
+   },
+   "label_top": 73,
+   "radius": 34,
+   "sha256": "12db11fd7342c7ef6a3ddb220443777146bdd859a69f079654825771681e79d8",
+   "size": [386,192]
+  },
+  "rynvara": {
+   "bytes": 10255,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,198,99,99],
+    "1": [200,0,198,198,99,99]
+   },
+   "label_top": 55,
+   "radius": 36,
+   "sha256": "1effd95ff72ae7ce32491f4266a8407e7e210a28a150c14758cdd59e732f43e6",
+   "size": [398,198]
+  },
+  "sanguire": {
+   "bytes": 8076,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,188,188,94,94],
+    "1": [190,0,188,188,94,94]
+   },
+   "label_top": 60,
+   "radius": 36,
+   "sha256": "37598a4af0a4f7990f863bc92a9da9997e17354f88106ca78cdab7902e38085a",
+   "size": [378,188]
+  },
+  "sanguiveth": {
+   "bytes": 11608,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,208,104,104],
+    "1": [210,0,208,208,104,104]
+   },
+   "label_top": 55,
+   "radius": 36,
+   "sha256": "c4b693722623cc3152d99016c2f6c2f6d8cd900c46d7604e7d4258f49af2a15b",
+   "size": [418,208]
+  },
+  "sasori": {
+   "bytes": 11138,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 55,
+   "radius": 38,
+   "sha256": "2171e55d37fa1e079ccb5a161415e2d461cc0e74a7d3fa0e6e25df4ebe4ed389",
+   "size": [438,218]
+  },
+  "seiryukong": {
+   "bytes": 13349,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,238,238,119,119],
+    "1": [240,0,238,238,119,119]
+   },
+   "label_top": 100,
+   "radius": 60,
+   "sha256": "9e4b2d1779b2c3a7e6ee9dbff649b495a453aa9b775d43b4b0f27f423587bc08",
+   "size": [478,238]
+  },
+  "selunara": {
+   "bytes": 10935,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,198,109,99],
+    "1": [220,0,218,198,109,99]
+   },
+   "label_top": 55,
+   "radius": 32,
+   "sha256": "a3971c4bdb18119d5e97ce5f27ce2ad41d894272406baf669efd5dfaa8c6ee6b",
+   "size": [438,198]
+  },
+  "seraphienne": {
+   "bytes": 19094,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,258,258,129,129],
+    "1": [260,0,258,258,129,129]
+   },
+   "label_top": 92,
+   "radius": 70,
+   "sha256": "062c9d42fb2e3dcac325d42a1386667d2f6963007c5fac24c2484b502013615f",
+   "size": [518,258]
+  },
+  "sethrakhar": {
+   "bytes": 14417,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,228,228,114,114],
+    "1": [230,0,228,228,114,114]
+   },
+   "label_top": 62,
+   "radius": 38,
+   "sha256": "35cb5b78770cd86622bc87e78bb469189b7f84fa3c7b1b3364ad9ecc1cb3c23a",
+   "size": [458,228]
+  },
+  "shimorakh": {
+   "bytes": 8027,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,188,99,94],
+    "1": [200,0,198,188,99,94]
+   },
+   "label_top": 58,
+   "radius": 38,
+   "sha256": "f974e0344621eac9f2da1098dceef294c73d0f1476ce4ae62182e4f8c6d54d0e",
+   "size": [398,188]
+  },
+  "shirotaka": {
+   "bytes": 10131,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,208,104,104],
+    "1": [210,0,208,208,104,104]
+   },
+   "label_top": 35,
+   "radius": 34,
+   "sha256": "b929a552e224cc36909eae4c5296d7d00195db9852a0c0cc945dd65dcfb3bcc0",
+   "size": [418,208]
+  },
+  "sirakzan": {
+   "bytes": 9660,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,198,104,99],
+    "1": [210,0,208,198,104,99]
+   },
+   "label_top": 55,
+   "radius": 32,
+   "sha256": "6267f5f4b1da45404a59d6f75a4d44d78e89aa936e49f48f5f8417c32690958d",
+   "size": [418,198]
+  },
+  "solara": {
+   "bytes": 8750,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,188,99,94],
+    "1": [200,0,198,188,99,94]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "0ee8792b6643ab1cb686ec748154fae843880b9071d7bb59f967b1f4328d065d",
+   "size": [398,188]
+  },
+  "solareth": {
+   "bytes": 19436,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,242,238,123,119],
+    "1": [244,0,242,238,123,119]
+   },
+   "label_top": 88,
+   "radius": 72,
+   "sha256": "b2324c3a99611a9169bdbe7bc2fb170f11b068a368c99539f27fd39dd6f7c6c7",
+   "size": [486,238]
+  },
+  "solvanth": {
+   "bytes": 15666,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,228,228,114,114],
+    "1": [230,0,228,228,114,114]
+   },
+   "label_top": 50,
+   "radius": 40,
+   "sha256": "512e509aab5acb4768540755444080064fd2d173737c6d23437c2db6ad06d7ad",
+   "size": [458,228]
+  },
+  "solvarin": {
+   "bytes": 14692,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,228,228,114,114],
+    "1": [230,0,228,228,114,114]
+   },
+   "label_top": 75,
+   "radius": 54,
+   "sha256": "3a68d7d03e085118fd4b3142d77b53cb2589371d7fa13ffb0a2b4e90f13cef09",
+   "size": [458,228]
+  },
+  "sunakage": {
+   "bytes": 10484,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,198,198,99,99],
+    "1": [200,0,198,198,99,99]
+   },
+   "label_top": 75,
+   "radius": 88,
+   "sha256": "65632d7a208185a19eaeff5dc10be9e7ccaf8875e30893902846f43bea486978",
+   "size": [398,198]
+  },
+  "sylvantheros": {
+   "bytes": 9017,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,188,188,94,94],
+    "1": [190,0,188,188,94,94]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "fcb60eec16a60b344c109717ea52253c58c094a2b3d012e728afaa43393b9784",
+   "size": [378,188]
+  },
+  "syrentha": {
+   "bytes": 13126,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,192,192,96,96],
+    "1": [194,0,192,192,96,96]
+   },
+   "label_top": 59,
+   "radius": 38,
+   "sha256": "aa7caa092e7b3c8e4a49485bc6ca2bd1c1efda16c1d28f9c200d1e4fae879f0f",
+   "size": [386,192]
+  },
+  "syrindra": {
+   "bytes": 10850,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 60,
+   "radius": 34,
+   "sha256": "5f0139f4a423f4837b685f24b82ba8d44056a3adf9e39d6d3837c41daf1530ae",
+   "size": [438,218]
+  },
+  "thalakryon": {
+   "bytes": 13438,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 71,
+   "radius": 50,
+   "sha256": "737e33631dcd2fb0d1b4f64c7636bf1b695a512956bdb6256b238d9865c98495",
+   "size": [438,218]
+  },
+  "thalgryn": {
+   "bytes": 4667,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,150,191,80,160],
+    "1": [152,0,150,191,80,160]
+   },
+   "label_top": 50,
+   "radius": 38,
+   "sha256": "145e152cf729e9301100124fa482b5e75baf429d3723a1d8f1a454375ef668c7",
+   "size": [302,191]
+  },
+  "thalryndel": {
+   "bytes": 9007,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,218,218,109,117],
+    "1": [220,0,218,218,109,117]
+   },
+   "label_top": 72,
+   "radius": 84,
+   "sha256": "db329a839692a97dc8ab7091c4c86e676589df78dca25527d883f7341eed53d7",
+   "size": [438,218]
+  },
+  "thargoroth": {
+   "bytes": 14773,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,248,248,124,124],
+    "1": [250,0,248,248,124,124]
+   },
+   "label_top": 62,
+   "radius": 44,
+   "sha256": "492f4f62cec740ef776e8857e94bdb5666fd4c8b497bbb45898c56e8ae7ee8b2",
+   "size": [498,248]
+  },
+  "thoraz": {
+   "bytes": 9273,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,188,99,94],
+    "1": [200,0,198,188,99,94]
+   },
+   "label_top": 62,
+   "radius": 44,
+   "sha256": "0bfc61736bd164184899d73e5c2f965ccf7afa3ca1752ebbed15a1247d201b9a",
+   "size": [398,188]
+  },
+  "thorgaruk": {
+   "bytes": 14339,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,228,228,114,114],
+    "1": [230,0,228,228,114,114]
+   },
+   "label_top": 60,
+   "radius": 40,
+   "sha256": "c239752cedbe6f50e13b14a4a9a9dbe55a8aac460aa7bd5e9e3fedd02b29dec3",
+   "size": [458,228]
+  },
+  "thornvaegrim": {
+   "bytes": 11401,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,208,104,104],
+    "1": [210,0,208,208,104,104]
+   },
+   "label_top": 31,
+   "radius": 42,
+   "sha256": "be0b2819baa2ce2f48e45929de8affc4832f2c70210f15f274a775526ea1ecaf",
+   "size": [418,208]
+  },
+  "thorvak": {
+   "bytes": 11270,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,208,104,104],
+    "1": [210,0,208,208,104,104]
+   },
+   "label_top": 47,
+   "radius": 40,
+   "sha256": "9a8f4ec2e273de25723d3feda74c125169016a36e7f6309f6a55ecb981bede6b",
+   "size": [418,208]
+  },
+  "thorvin": {
+   "bytes": 10187,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,198,99,99],
+    "1": [200,0,198,198,99,99]
+   },
+   "label_top": 55,
+   "radius": 38,
+   "sha256": "a67f569f7ecd7f995a99eaba0efca416ac30ff5da757c113fb34ba47fd568b7d",
+   "size": [398,198]
+  },
+  "tsukiyora": {
+   "bytes": 9873,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,228,228,114,114],
+    "1": [230,0,228,228,114,114]
+   },
+   "label_top": 78,
+   "radius": 96,
+   "sha256": "334e7529a7841c14c08d413540c920c99eff95f644f8c58f41a5dbeb14fe0756",
+   "size": [458,228]
+  },
+  "urgharun": {
+   "bytes": 10108,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,208,104,104],
+    "1": [210,0,208,208,104,104]
+   },
+   "label_top": 58,
+   "radius": 36,
+   "sha256": "1103ce22cb3ce1d5bf945e853f075e62c6e67b50af8f29e0d49b29ef0b14cf69",
+   "size": [418,208]
+  },
+  "ursath": {
+   "bytes": 15256,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,228,228,114,114],
+    "1": [230,0,228,228,114,114]
+   },
+   "label_top": 58,
+   "radius": 36,
+   "sha256": "08179e048c4c00d40c4fece3aabf608cda0666542ff50c51a2b8f5c01b0f8b23",
+   "size": [458,228]
+  },
+  "vaelindra": {
+   "bytes": 16995,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,238,238,119,119],
+    "1": [240,0,238,238,119,119]
+   },
+   "label_top": 85,
+   "radius": 64,
+   "sha256": "5f2257521f008992b43be0e84ed228f404d9e0035ce0e4b40f668753729a3e76",
+   "size": [478,238]
+  },
+  "vaelkorr": {
+   "bytes": 8324,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,188,171,94,84],
+    "1": [190,0,188,171,94,84]
+   },
+   "label_top": 60,
+   "radius": 36,
+   "sha256": "b3b8342d7936dc0889732275cd0bf748361c3473c20f2676d1c23a3388933561",
+   "size": [378,171]
+  },
+  "vaelmyrra": {
+   "bytes": 13781,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,238,238,119,119],
+    "1": [240,0,238,238,119,119]
+   },
+   "label_top": 82,
+   "radius": 74,
+   "sha256": "d9421a9afb902e55973bae9bfdfbf265dc1473c52bbfe3519f9daa15cb64e84f",
+   "size": [478,238]
+  },
+  "vaerith": {
+   "bytes": 11267,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,178,178,89,89],
+    "1": [180,0,178,178,89,89]
+   },
+   "label_top": 23,
+   "radius": 40,
+   "sha256": "b95e5bd9bcbcb6f86c005907b5c221cb270cb421e63776317c840758436596ce",
+   "size": [358,178]
+  },
+  "valekris": {
+   "bytes": 12907,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 58,
+   "radius": 34,
+   "sha256": "3ee197e0e6db74254da727d677a48004fe21d9331d382057ed36789e0a0fd771",
+   "size": [438,218]
+  },
+  "valthar": {
+   "bytes": 10258,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 58,
+   "radius": 34,
+   "sha256": "b375f740152422f278fcfaec8705330da2ec9dfd8b2387e62913b1506cab3a28",
+   "size": [438,218]
+  },
+  "vardrok": {
+   "bytes": 11203,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,228,208,114,104],
+    "1": [230,0,228,208,114,104]
+   },
+   "label_top": 60,
+   "radius": 42,
+   "sha256": "7d1f1608fffca91f751836ef38c35a1a73979b982079396e1b270ca8970c78b4",
+   "size": [458,208]
+  },
+  "vargrath": {
+   "bytes": 12766,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,208,104,104],
+    "1": [210,0,208,208,104,104]
+   },
+   "label_top": 48,
+   "radius": 36,
+   "sha256": "db935fe00717a6b6c35000d10118f09efb4c4f95ade48e4d052138f6d320bdd7",
+   "size": [418,208]
+  },
+  "vargroth": {
+   "bytes": 11127,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,208,104,104],
+    "1": [210,0,208,208,104,104]
+   },
+   "label_top": 58,
+   "radius": 32,
+   "sha256": "dd12448ac7b150874309b10d49949c396abeff0ba95185ce55e8b73ae57bcc5a",
+   "size": [418,208]
+  },
+  "varkul": {
+   "bytes": 14196,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,172,172,86,86],
+    "1": [174,0,172,172,86,86]
+   },
+   "label_top": 60,
+   "radius": 35,
+   "sha256": "03cf87b08c4852da55227d7efa8e6c5012c02997fe5ea5128442f6bc59381bb5",
+   "size": [346,172]
+  },
+  "varkuthar": {
+   "bytes": 13343,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,228,228,114,114],
+    "1": [230,0,228,228,114,114]
+   },
+   "label_top": 58,
+   "radius": 36,
+   "sha256": "c89f4052a26ed3f50814b4062c646f86e5db11a850afcb1cd5dc0f39d96ce0c8",
+   "size": [458,228]
+  },
+  "velmyrth": {
+   "bytes": 10719,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,188,99,94],
+    "1": [200,0,198,188,99,94]
+   },
+   "label_top": 51,
+   "radius": 30,
+   "sha256": "ffdcfff514260744d4a219a1961339567075e7b87fa7f82e47d9ed1e5adc9e8a",
+   "size": [398,188]
+  },
+  "verdanix": {
+   "bytes": 9727,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,198,99,99],
+    "1": [200,0,198,198,99,99]
+   },
+   "label_top": 58,
+   "radius": 36,
+   "sha256": "882e1c8e6cfcf9df6613c9453ccb1b7c95fba87b4723be412c6ead710413eef2",
+   "size": [398,198]
+  },
+  "veshtrax": {
+   "bytes": 10889,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,208,104,104],
+    "1": [210,0,208,208,104,104]
+   },
+   "label_top": 60,
+   "radius": 32,
+   "sha256": "e5c77326d2b03bbe694f18943d2aa83e4c3f8d12e5af1b2a92584ce605e214bd",
+   "size": [418,208]
+  },
+  "vessyra": {
+   "bytes": 12194,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 58,
+   "radius": 34,
+   "sha256": "2b930521ee1351ba22ac4ef500b045a4ff211e1b2e0b90e1c00a66fa082cbde4",
+   "size": [438,218]
+  },
+  "vhaerinth": {
+   "bytes": 14670,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,228,228,114,114],
+    "1": [230,0,228,228,114,114]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "344f5591051cda39964bbed1150e04e1e13b0aa72c16d70a7e80dfcafe2f2da8",
+   "size": [458,228]
+  },
+  "vhaerith": {
+   "bytes": 12648,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,208,104,104],
+    "1": [210,0,208,208,104,104]
+   },
+   "label_top": 58,
+   "radius": 36,
+   "sha256": "9c59c2d460565904639e213d4411b782be2ad0981b7ce45fcba6ef6b85e443c6",
+   "size": [418,208]
+  },
+  "vhalzun": {
+   "bytes": 5084,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,180,187,96,101],
+    "1": [182,0,180,187,96,101]
+   },
+   "label_top": 77,
+   "radius": 38,
+   "sha256": "f0584254035540f1895cf4f656d418315d8d1285f05fa491f7ddebd4413d6a70",
+   "size": [362,187]
+  },
+  "vhorethzir": {
+   "bytes": 13666,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 67,
+   "radius": 46,
+   "sha256": "0de3a948df27c13a70f9fad92c6ec32d749992bd70b97cbb98e1724ea6e05930",
+   "size": [438,218]
+  },
+  "vhyssarion": {
+   "bytes": 8557,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,172,172,86,86],
+    "1": [174,0,172,172,86,86]
+   },
+   "label_top": 47,
+   "radius": 38,
+   "sha256": "6e0a4c4cd8ef9391f8722d2c0dc1b166fe879a50b377c3897303d9e9981a778f",
+   "size": [346,172]
+  },
+  "vokrahn": {
+   "bytes": 24910,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,212,212,106,106],
+    "1": [214,0,212,212,106,106]
+   },
+   "label_top": 84,
+   "radius": 40,
+   "sha256": "f4695897987700fa0b894a4b0bbbbe61d2492a9ddbbd7f1d8d6750bfd9b2cc11",
+   "size": [426,212]
+  },
+  "vorenmarr": {
+   "bytes": 7905,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,168,168,84,84],
+    "1": [170,0,168,168,84,84]
+   },
+   "label_top": 61,
+   "radius": 40,
+   "sha256": "7854849c6a9cce8e8b78432dc643d871adf0ff5f9379f65a2a399286a19087ef",
+   "size": [338,168]
+  },
+  "vorgath": {
+   "bytes": 10610,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,198,99,99],
+    "1": [200,0,198,198,99,99]
+   },
+   "label_top": 61,
+   "radius": 32,
+   "sha256": "a92ebb157c106641a6fd0cf2c22821675faf791f052b7052dfc5dcc1ac6dda62",
+   "size": [398,198]
+  },
+  "vorthakul": {
+   "bytes": 11785,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,218,109,117],
+    "1": [220,0,218,218,109,117]
+   },
+   "label_top": 58,
+   "radius": 36,
+   "sha256": "d5f1dde5256b290d221df5827d4908d38f00f2add8763a12ed80ff9f8db9b57c",
+   "size": [438,218]
+  },
+  "vraskhan": {
+   "bytes": 13188,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 55,
+   "radius": 30,
+   "sha256": "952a8ddbb915612f3bf0f91d51e97b93b7a53a7aab5cd8c1d669738c616184e1",
+   "size": [438,218]
+  },
+  "vulkareth": {
+   "bytes": 11246,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,198,180,99,87],
+    "1": [200,0,198,180,99,87]
+   },
+   "label_top": 62,
+   "radius": 36,
+   "sha256": "034b9506d85305367955ef1c6a075b8c1a3fabfe69b738d296a2f9969b44be5e",
+   "size": [398,180]
+  },
+  "vyraeth": {
+   "bytes": 12393,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,228,228,114,114],
+    "1": [230,0,228,228,114,114]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "30d873413b73269ea6f4a400a30bfcb6fce26d16c7441c55594003021468a1e8",
+   "size": [458,228]
+  },
+  "wiro": {
+   "bytes": 12549,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,204,204,102,102],
+    "1": [206,0,204,204,102,102]
+   },
+   "label_top": 51,
+   "radius": 30,
+   "sha256": "29ef56fd88931742dbc55381423545d8e179fe46b9c2b793f0443f86eae64baf",
+   "size": [410,204]
+  },
+  "xaelmoran": {
+   "bytes": 9119,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,208,208,104,114],
+    "1": [210,0,208,208,104,114]
+   },
+   "label_top": 75,
+   "radius": 82,
+   "sha256": "0474cfac43983d34e5cc167fb7c6aa978b33bcf60dabcf2e1fa8e086413ce11e",
+   "size": [418,208]
+  },
+  "xaerissa": {
+   "bytes": 17661,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,309,229,154,114],
+    "1": [311,0,309,229,154,114]
+   },
+   "label_top": 60,
+   "radius": 32,
+   "sha256": "95d5121b6588eb810a98d25cb57dea7b5afbaa75cf6193ca995a4aa3a559f493",
+   "size": [620,229]
+  },
+  "xareth": {
+   "bytes": 11048,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,208,104,104],
+    "1": [210,0,208,208,104,104]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "06e454db787eae19bfa7fdb89961b78d142ae0633479df6f40d4dbb5918d6ceb",
+   "size": [418,208]
+  },
+  "xarnathul": {
+   "bytes": 13260,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "d3ab7417fb11e9e097953ca341dced24df43f7c5de16f20edcccdeb926fff143",
+   "size": [438,218]
+  },
+  "xarnthuul": {
+   "bytes": 11588,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,228,228,114,114],
+    "1": [230,0,228,228,114,114]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "a3b7a16c952f290f6387f15f86f7163f5e975766083be02a25accf894655a759",
+   "size": [458,228]
+  },
+  "xelnarath": {
+   "bytes": 16623,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,228,228,114,114],
+    "1": [230,0,228,228,114,114]
+   },
+   "label_top": 72,
+   "radius": 82,
+   "sha256": "4ba64f951ae543736c1123046f022458be99c5dba39cb78035b992967751e966",
+   "size": [458,228]
+  },
+  "xerakhotep": {
+   "bytes": 13510,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 58,
+   "radius": 32,
+   "sha256": "cad658552890286e2bf8d42c5674566b225c1779fe6b516da2cd5f9831e11937",
+   "size": [438,218]
+  },
+  "xerakkuth": {
+   "bytes": 14009,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,228,208,114,104],
+    "1": [230,0,228,208,114,104]
+   },
+   "label_top": 58,
+   "radius": 38,
+   "sha256": "db199b12cc9f3531e91f8cd2d527ade8f618b154ba5d597e86745a8815044559",
+   "size": [458,208]
+  },
+  "xerathis": {
+   "bytes": 12545,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,172,181,86,95],
+    "1": [174,0,172,181,86,95]
+   },
+   "label_top": 59,
+   "radius": 34,
+   "sha256": "0bf0d587ab8f362664b3ecc96d65f9d7dfb9ba0f86912cf3ae204f9bab7b78de",
+   "size": [346,181]
+  },
+  "xharokh": {
+   "bytes": 14679,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,228,228,114,114],
+    "1": [230,0,228,228,114,114]
+   },
+   "label_top": 58,
+   "radius": 36,
+   "sha256": "e8d6cef09c97b92eadc18978e13c99bfc3b2bc92e7629fda89f42c25d5ddc142",
+   "size": [458,228]
+  },
+  "xirthalis": {
+   "bytes": 7339,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,158,158,79,79],
+    "1": [160,0,158,158,79,79]
+   },
+   "label_top": 26,
+   "radius": 34,
+   "sha256": "8c46a63a5893d48562272f8e80dea4382e4d0d23f3c4739ee279e960324b4212",
+   "size": [318,158]
+  },
+  "xyrael": {
+   "bytes": 11860,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,208,104,104],
+    "1": [210,0,208,208,104,104]
+   },
+   "label_top": 53,
+   "radius": 32,
+   "sha256": "cca2e7097a9a983c26e351a7ed698270c33c95b57fb2266d9db73601cf7c7be9",
+   "size": [418,208]
+  },
+  "yamako": {
+   "bytes": 12770,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,238,238,119,119],
+    "1": [240,0,238,238,119,119]
+   },
+   "label_top": 65,
+   "radius": 58,
+   "sha256": "38478c4aba547f2df6a8e463e7bc52fa9e26405ffe24766f7037018254716086",
+   "size": [478,238]
+  },
+  "yhoranth": {
+   "bytes": 10097,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,208,104,104],
+    "1": [210,0,208,208,104,104]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "c23790ad786f491b6ae7a6b2fbfc0fcfca6da5a1ea1bcba579e675ac977cdad2",
+   "size": [418,208]
+  },
+  "yomigetsu": {
+   "bytes": 12388,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 75,
+   "radius": 92,
+   "sha256": "87bda342d4012803582d6fc792816e79a5a032789e3d5f83bbc8ff3686a57478",
+   "size": [438,218]
+  },
+  "zahkareth": {
+   "bytes": 14345,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,228,228,114,114],
+    "1": [230,0,228,228,114,114]
+   },
+   "label_top": 58,
+   "radius": 36,
+   "sha256": "9f60629f730c4cdb757a6bf65313a7606c44b12aea09e5f5a9f20a599a1d1fc4",
+   "size": [458,228]
+  },
+  "zarethyr": {
+   "bytes": 11768,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,228,208,114,104],
+    "1": [230,0,228,208,114,104]
+   },
+   "label_top": 72,
+   "radius": 74,
+   "sha256": "beb85194df8ac0960793f6dafce25a1bb8a36dfdfb30de91152d6c1b05969f77",
+   "size": [458,208]
+  },
+  "zhaeris": {
+   "bytes": 10262,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,188,178,94,89],
+    "1": [190,0,188,178,94,89]
+   },
+   "label_top": 55,
+   "radius": 32,
+   "sha256": "96fe08e5fdf4f6750fea1f605b91d1e43f446218bed318c3701073a8ba48e465",
+   "size": [378,178]
+  },
+  "zharakzuul": {
+   "bytes": 13666,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,248,248,124,124],
+    "1": [250,0,248,248,124,124]
+   },
+   "label_top": 78,
+   "radius": 80,
+   "sha256": "6107837589560ee52c1cce7bd7c70621a354eb0747050150533b48781b4e8302",
+   "size": [498,248]
+  },
+  "zharok": {
+   "bytes": 17626,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,136,178,68,72],
+    "1": [138,0,136,178,68,72]
+   },
+   "label_top": 59,
+   "radius": 34,
+   "sha256": "a192ea95e3f7921438e2faca0001cc816b8727c4ada3bc555655c5d96af178ab",
+   "size": [274,178]
+  },
+  "zhyrakaan": {
+   "bytes": 10302,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 60,
+   "radius": 36,
+   "sha256": "bcfbe8fea1dfedce329aa4857cabee0dddaf496b8ccceff9cd7fc62166e3c5d6",
+   "size": [438,218]
+  },
+  "zhyvrek": {
+   "bytes": 14023,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,228,228,114,114],
+    "1": [230,0,228,228,114,114]
+   },
+   "label_top": 55,
+   "radius": 32,
+   "sha256": "5a315dec847dc49220731f9fae5cd6e29ba506297c952b6e1ca9207763e1d99d",
+   "size": [458,228]
+  },
+  "zorashi": {
+   "bytes": 11381,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,208,109,104],
+    "1": [220,0,218,208,109,104]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "de5be237ee86605365c178a6dfd506549e63ac5b29bac8b7ae5739d68b78d669",
+   "size": [438,208]
+  },
+  "zorathiel": {
+   "bytes": 11551,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 55,
+   "radius": 34,
+   "sha256": "ae10f04c5713e751750f6dbcc9959720f6f41802f788790fbdf93e6edae39aff",
+   "size": [438,218]
+  },
+  "zorothrax": {
+   "bytes": 10613,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,218,218,109,109],
+    "1": [220,0,218,218,109,109]
+   },
+   "label_top": 58,
+   "radius": 36,
+   "sha256": "c1a3753cfe652fd0cb3a51130f4e46f37a8eb892d185e394710b522db1d6b9c9",
+   "size": [438,218]
+  },
+  "zulkhaven": {
+   "bytes": 10274,
+   "class": "mini",
+   "frames": {
+    "-1": [0,0,208,208,104,104],
+    "1": [210,0,208,208,104,104]
+   },
+   "label_top": 60,
+   "radius": 42,
+   "sha256": "72743a75e0344d0461738d677063afa9372d6e07c4d0794b51cc0e1a7e10ef7d",
+   "size": [418,208]
+  },
+  "zyvareth": {
+   "bytes": 13285,
+   "class": "true",
+   "frames": {
+    "-1": [0,0,238,228,119,114],
+    "1": [240,0,238,228,119,114]
+   },
+   "label_top": 78,
+   "radius": 86,
+   "sha256": "42929066782e87bc255f1861b7bbd42e4268d17e7888ddf25b6ec82176283f9c",
+   "size": [478,228]
+  }
+ },
+ "facing_cases": [[-3,-1],[-1,-1],[0,-1],[1,1],[2,1],[7,1]],
+ "facings": [-1,1],
+ "generator": "godot_rebuild/bake/bake_boss_atlas.py",
+ "pose": "idle phase 0",
+ "pygame": "2.6.1",
+ "source": "bosses/base_boss.py Boss.draw via heroes._boss_render_sprite_fast"
+}
