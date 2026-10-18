@@ -113,8 +113,8 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
 - 9bq membake badan 216 boss (pose diam fase 0, dua arah; satu PNG per boss, 2,6 MB) dan
   menggambarnya menggantikan lingkaran bermahkota, dengan bayangan, bar HP, dan papan nama di atas
   puncak sprite (`BOSS_LABEL_TOP`). Rincian di bagian "Slice 9bq".
-- Urutan bake berikutnya (user: "semuanya"): skin HUD/menu (9br: tema; menu dan arena layar penuh
-  menyusul), peluru hero, pose jalan/serang boss.
+- Urutan bake berikutnya (user: "semuanya"): skin HUD/menu (9br: tema, 9bs: latar menu utama;
+  HUD dan arena layar penuh belum), peluru hero, pose jalan/serang boss.
   Sisanya di luar bake: `DynamicRenderer`
   (partikel, kabut, obor, air bergerak) dan `tactical_commands.draw_world/draw_ui`.
   Keputusan user: combo counter dan kill feed tetap tampil di Godot (walau tidak digambar
@@ -2427,3 +2427,32 @@ Divergensi yang diterima: glow hover di-bake untuk satu ukuran lalu diregang (su
 elips sesuai ukuran tombol); bayangan panel sumber berupa cincin 4 px alpha 110 bersudut siku;
 tombol menu utama (`button()` dengan aksen kiri dan ikon), toggle, slider dan tab belum diport; font
 tetap Barlow Regular 20 dan SemiBold untuk tombol (sumber: Barlow Bold berspasi huruf).
+
+## Slice 9bs — latar menu utama dan warna scene (layer 9bs)
+
+Latar: menu utama Godot memakai lukisan buatan sendiri (`menu_backdrop.gd`, "bukan port"), sedangkan
+pygame menampilkan satu surface 1280x720 hasil `Menu._build_main_background` (langit malam, nebula,
+170 bintang, bulan besar, cincin rune, dua lapis gunung, tiga lane bercahaya, dua portal, kristal rune,
+grid dan vignette). Kabut dan partikel animasi di atasnya belum diport.
+
+- `bake/bake_menu_background.py` menjalankan `Menu._build_main_background` ASLI pada `Menu` hidup dan
+  menulis `assets/art/menu/main_background.png` (1280x720, 107 KB, deterministik: dua run identik).
+  `data/art/menu.json` memuat ukuran, hash, dan sembilan piksel kunci seperti yang dipegang surface
+  sumber (`probes`), sehingga Godot di-pin ke sumber, bukan ke salinan.
+- `menu_backdrop.gd`: menggambar PNG itu menutupi jendela (`cover_rect`: skala seragam, di tengah;
+  jendela lebih lebar atau tinggi dipotong, tidak diregang). Lukisan lama tetap sebagai cadangan
+  (`_draw_fallback`) bila sheet belum diimpor. `background_draws` membuktikan jalur baked jalan.
+- `rebuild_theme.title()`: judul layar = emas badan `outline_text` (tengah gradasi `GOLD_BRIGHT` ->
+  (196, 138, 40) = (225, 185, 99)) dengan outline gelap (8, 9, 18) selebar 2 px.
+- Scene: literal teal lama diganti warna `ui_theme.py` (label redup = `TEXT_DIM`, hitungan emas =
+  `GOLD`, eyebrow menu = `CYAN`) dan peredup jeda = (10, 10, 20, 200) seperti `_draw_pause_background`
+  (8 + 1 + 1 + 4 literal di `MinionArena`, `Match`, `MainMenu`, `PrototypeMatch`, `SiegeArena`).
+- `tests/menu_art_checks.gd`: sheet terdekode 1280x720, setiap piksel kunci sama dengan surface
+  sumber, `cover_rect` untuk jendela 16:9, lebar, tinggi dan acak selalu menutup, dan tak ada scene yang
+  masih memakai literal lama. `run_all.gd` membuktikan menu sungguhan menggambar jalur baked
+  (`Backdrop.background_draws > 0`). Validator memeriksa hash PNG, fragmen `_build_main_background`,
+  bake, backdrop, warna judul (dari `outline_text`) dan hitungan warna scene.
+
+Belum: arena layar penuh dan HUD ringkas. Arena tetap 0,7 di dalam bingkai HUD karena skala 1,0
+menaruh TopBar, BottomBar dan TacticalPanel (yang tombolnya ditekan tes lewat event mouse sungguhan)
+di atas lane; perubahan itu perlu desain ulang HUD dan tidak bisa diverifikasi tanpa engine lokal.

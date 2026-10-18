@@ -14,6 +14,7 @@ const MUTED := Color8(132, 142, 170)  # TEXT_DIM
 const FAINT := Color8(96, 106, 136)  # TEXT_FAINT
 const GOLD := Color8(255, 205, 85)  # GOLD
 const GOLD_TEXT := Color8(255, 220, 110)  # GOLD_TEXT
+const GOLD_BRIGHT := Color8(255, 233, 158)  # GOLD_BRIGHT
 const CYAN := Color8(110, 195, 255)  # CYAN
 const TEAL := CYAN  # the older name: callers use it as the hover accent
 const EDGE_GOLD := Color8(176, 144, 82)  # EDGE_GOLD
@@ -22,6 +23,8 @@ const TRACK := Color8(16, 18, 30)  # hp_bar track
 const TRACK_LINE := Color8(86, 92, 120)  # hp_bar border
 const SCROLL_TRACK := Color8(28, 32, 52)  # scroll_indicator track
 const HOVER_FILL := Color8(44, 52, 86)  # button() hover fill
+const GOLD_MID := Color8(225, 185, 99)  # mid of GOLD_BRIGHT -> (196, 138, 40)
+const TITLE_OUTLINE := Color8(8, 9, 18)  # outline_text outline
 const BUTTON_PAD := Vector2(14, 8)
 const PANEL_PAD := Vector2(22, 14)
 const PILL_RADIUS := 7
@@ -100,9 +103,13 @@ static func pill_style(kind: String, state: String, use_skin: bool = true) -> St
 	return box
 
 
+## `ui_theme.outline_text`: the gold gradient body (its mid colour here) inside a 2 px dark outline.
 static func title(label: Label, font_size: int = 42) -> void:
 	label.add_theme_font_override("font", TITLE_FONT)
 	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", GOLD_MID)
+	label.add_theme_color_override("font_outline_color", TITLE_OUTLINE)
+	label.add_theme_constant_override("outline_size", 2)
 
 
 static func muted(label: Label) -> void:
@@ -150,8 +157,8 @@ static func _style_bars(result: Theme) -> void:
 	lane.set_corner_radius_all(3)
 	for bar in ["VScrollBar", "HScrollBar"]:
 		result.set_stylebox("scroll", bar, lane)
-		result.set_stylebox("grabber", bar, _grabber(Color8(225, 185, 99)))
-		result.set_stylebox("grabber_highlight", bar, _grabber(Color8(255, 233, 158)))
+		result.set_stylebox("grabber", bar, _grabber(GOLD_MID))
+		result.set_stylebox("grabber_highlight", bar, _grabber(GOLD_BRIGHT))
 		result.set_stylebox("grabber_pressed", bar, _grabber(GOLD))
 
 

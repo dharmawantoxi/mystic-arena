@@ -51,7 +51,7 @@ text = "Pertandingan awal"
 [node name="Description" type="Label" parent="HUD/TopBar/Row/Names"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 15
-theme_override_colors/font_color = Color(0.59, 0.67, 0.66, 1)
+theme_override_colors/font_color = Color(0.5176, 0.5569, 0.6667, 1)
 text = "Lv.1 · normal · lawan AI · progres pengembangan terpisah"
 clip_text = true
 
@@ -61,7 +61,7 @@ layout_mode = 2
 [node name="GoldLabel" type="Label" parent="HUD/TopBar/Row/Counters"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.83, 0.72, 0.46, 1)
+theme_override_colors/font_color = Color(1, 0.8039, 0.3333, 1)
 text = "GOLD 1000 G"
 
 [node name="TickLabel" type="Label" parent="HUD/TopBar/Row/Counters"]
@@ -308,7 +308,7 @@ text = "Klik minion untuk inspeksi"
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 15
-theme_override_colors/font_color = Color(0.59, 0.67, 0.66, 1)
+theme_override_colors/font_color = Color(0.5176, 0.5569, 0.6667, 1)
 text = "Pilih slot biru, lalu bangun salah satu dari empat tower (100 G)."
 
 [node name="PauseOverlay" type="ColorRect" parent="HUD"]
@@ -319,7 +319,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.015, 0.03, 0.04, 0.88)
+color = Color(0.0392, 0.0392, 0.0784, 0.7843)
 
 [node name="Center" type="CenterContainer" parent="HUD/PauseOverlay"]
 layout_mode = 1

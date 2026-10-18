@@ -29,6 +29,7 @@ func run(check: Callable) -> void:
 	_check_panel(check, manifest)
 	_check_variations(check, manifest)
 	_check_fallback(check)
+	_check_title(check)
 	_check_users(check)
 
 
@@ -217,3 +218,18 @@ func _check_users(check: Callable) -> void:
 	var locked_ok := locked != null and locked.bg_color == UiSkin.palette("LOCKED_BG_TOP")
 	check.call(locked_ok, "A locked row uses the locked card colours")
 	card.free()
+
+
+func _check_title(check: Callable) -> void:
+	var label := Label.new()
+	UI_THEME.title(label, 42)
+	var body := label.get_theme_color("font_color")
+	check.call(body == UI_THEME.GOLD_MID, "Screen titles are the gold body of outline_text")
+	var bright := UiSkin.palette("GOLD_BRIGHT")
+	var mid := UI_THEME.GOLD_MID
+	var middle := mid.r8 == (bright.r8 + 196) >> 1 and mid.g8 == (bright.g8 + 138) >> 1
+	check.call(middle and mid.b8 == (bright.b8 + 40) >> 1, "which is the middle of its gradient")
+	var outline := label.get_theme_color("font_outline_color")
+	check.call(outline == UI_THEME.TITLE_OUTLINE, "inside the dark outline of the source")
+	check.call(label.get_theme_constant("outline_size") == 2, "two pixels wide (the source width)")
+	label.free()

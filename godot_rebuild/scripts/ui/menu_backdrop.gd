@@ -1,5 +1,26 @@
 extends Control
-## New, deterministic decorative artwork. Not a port of a gameplay map.
+## Layer 9bs: the main menu draws the baked source background (`Menu._build_main_background`,
+## `bake/bake_menu_background.py`), scaled to cover the window. While that sheet is not imported
+## the older decorative artwork in `_draw_fallback` (new, deterministic, not a port) still draws.
+
+const BACKGROUND := "res://assets/art/menu/main_background.png"
+const SOURCE_SIZE := Vector2(1280, 720)
+static var _texture: Texture2D = null
+var background_draws := 0
+
+
+static func texture() -> Texture2D:
+	if _texture == null and ResourceLoader.exists(BACKGROUND):
+		_texture = load(BACKGROUND) as Texture2D
+	return _texture
+
+
+## Where the baked 1280x720 frame lands in a window of `window` size: uniform scale, centred,
+## so a wider or taller window crops the frame instead of stretching it.
+static func cover_rect(window: Vector2) -> Rect2:
+	var factor := maxf(window.x / SOURCE_SIZE.x, window.y / SOURCE_SIZE.y)
+	var scaled := SOURCE_SIZE * factor
+	return Rect2((window - scaled) * 0.5, scaled)
 
 
 func _ready() -> void:
@@ -8,6 +29,15 @@ func _ready() -> void:
 
 
 func _draw() -> void:
+	var baked := texture()
+	if baked != null:
+		draw_texture_rect(baked, cover_rect(size), false)
+		background_draws += 1
+		return
+	_draw_fallback()
+
+
+func _draw_fallback() -> void:
 	var scale_factor := size / Vector2(1280, 720)
 	draw_set_transform(Vector2.ZERO, 0.0, scale_factor)
 	draw_rect(Rect2(0, 0, 1280, 720), Color("0b171e"))

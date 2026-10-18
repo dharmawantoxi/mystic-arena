@@ -4688,6 +4688,85 @@ check(_bf_view.index("draw_circle(arrow.position, 3, ink)") < _bf_view.index("_d
       < _bf_view.index("_draw_boss_death(snapshot)"),
       "9bq the boss is drawn after the heroes and their arrows and before the death presentations")
 
+# ── Layer 9bs: baked main-menu background + recoloured scenes (bake/bake_menu_background.py) ──
+_mn_path = ROOT / "data/art/menu.json"
+_mn_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+_mn_ui = (ROOT.parent / "ui_theme.py").read_text(encoding="utf-8")
+_mn_bake = (ROOT / "bake/bake_menu_background.py").read_text(encoding="utf-8")
+_mn_back = (ROOT / "scripts/ui/menu_backdrop.gd").read_text(encoding="utf-8")
+_mn_theme = (ROOT / "scripts/ui/rebuild_theme.gd").read_text(encoding="utf-8")
+check('const MenuArtChecks = preload("res://tests/menu_art_checks.gd")' in ai_tests
+      and "MenuArtChecks.new().run(_check)" in ai_tests,
+      "9bs menu art suite must be preloaded and run in the native suite")
+check('var backdrop = app.current_screen.get_node("Backdrop")' in ai_tests
+      and "backdrop.background_draws > 0" in ai_tests,
+      "9bs the real main menu must prove it drew the baked background")
+check(_mn_path.is_file(), "9bs menu background manifest must exist")
+if _mn_path.is_file():
+    _mn = json.loads(_mn_path.read_text(encoding="utf-8"))
+    _mn_bg = _mn["background"]
+    _mn_png = ROOT / "assets/art/menu/main_background.png"
+    check(_mn_png.is_file(), "9bs menu background must ship")
+    if _mn_png.is_file():
+        _raw = _mn_png.read_bytes()
+        _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+        check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _mn_bg["size"] == [1280, 720]
+              and (_depth, _color) == (8, 6),
+              "9bs the menu background must be a 1280x720 RGBA8 PNG")
+        check(len(_raw) == _mn_bg["bytes"] and hashlib.sha256(_raw).hexdigest() == _mn_bg["sha256"],
+              "9bs the menu background must match its manifest hash")
+    check(len(_mn["probes"]) >= 8 and all(0 <= x < 1280 and 0 <= y < 720 and len(rgb) == 3
+                                          and all(0 <= c <= 255 for c in rgb)
+                                          for x, y, *rgb in _mn["probes"]),
+          "9bs the recorded source pixels must lie inside the frame")
+for _fragment in (
+    "def _build_main_background(self):", "rng = random.Random(2026)", "bg = pygame.Surface((W, H))",
+    "for _ in range(170):",
+    "moon_x, moon_y, moon_r = int(W * 0.22), int(H * 0.16), 48",
+    "pygame.draw.circle(bg, (238, 230, 250), (moon_x, moon_y), moon_r)",
+    "_mountains((11, 13, 28), 7, int(H * 0.74), 62, 46)",
+    "_mountains((6, 8, 21), 21, int(H * 0.83), 44, 34)",
+    "self._draw_portal(bg, 120, 612, (150, 130, 255), (95, 150, 255))",
+    "self._draw_portal(bg, 1135, 168, (255, 205, 120), (255, 150, 90))",
+):
+    check(_fragment in _mn_core, f"9bs the source menu background must still read {_fragment!r}")
+check("menu = core.Menu(screen)" in _mn_bake and "menu._build_main_background()" in _mn_bake
+      and 'pygame.image.tostring(surface, "RGB")' in _mn_bake and "surface.get_at((x, y))" in _mn_bake,
+      "9bs the bake must run the real Menu._build_main_background and record source pixels")
+check("ResourceLoader.exists(BACKGROUND)" in _mn_back
+      and "draw_texture_rect(baked, cover_rect(size), false)" in _mn_back
+      and "static func cover_rect(window: Vector2) -> Rect2:" in _mn_back
+      and "var factor := maxf(window.x / SOURCE_SIZE.x, window.y / SOURCE_SIZE.y)" in _mn_back
+      and "background_draws += 1" in _mn_back and "func _draw_fallback() -> void:" in _mn_back,
+      "9bs the backdrop must cover the window with the baked frame and keep the old art as fallback")
+_mn_bright = [255, 233, 158]
+check("def outline_text(screen, font, text, color, center, outline=(8, 9, 18)," in _mn_ui
+      and "body = gradient_text(font, text, GOLD_BRIGHT, (196, 138, 40))" in _mn_ui
+      and "const TITLE_OUTLINE := Color8(8, 9, 18)" in _mn_theme
+      and "const GOLD_MID := Color8(225, 185, 99)" in _mn_theme
+      and [(a + b) >> 1 for a, b in zip(_mn_bright, [196, 138, 40])] == [225, 185, 99]
+      and 'label.add_theme_color_override("font_color", GOLD_MID)' in _mn_theme
+      and 'label.add_theme_constant_override("outline_size", 2)' in _mn_theme,
+      "9bs screen titles must be the outline_text gold (gradient mid) with its 2 px dark outline")
+_mn_old = ("Color(0.59, 0.67, 0.66, 1)", "Color(0.68, 0.78, 0.75, 1)", "Color(0.55, 0.64, 0.63, 1)",
+           "Color(0.47, 0.85, 0.76, 1)", "Color(0.83, 0.72, 0.46, 1)", "Color(0.015, 0.03, 0.04, 0.88)")
+_mn_scenes = "\n".join(path.read_text(encoding="utf-8") for path in sorted((ROOT / "scenes").rglob("*.tscn")))
+check(not any(literal in _mn_scenes for literal in _mn_old),
+      "9bs no scene may keep the old teal text and dim literals")
+
+
+def _mn_colour(name):
+    r, g, b = _ui_palette_src[name]
+    parts = [f"{channel / 255:.4f}".rstrip("0").rstrip(".") for channel in (r, g, b)]
+    return f"Color({', '.join(parts)}, 1)"
+
+
+check(_mn_scenes.count(_mn_colour("TEXT_DIM")) == 8 and _mn_scenes.count(_mn_colour("GOLD")) == 1
+      and _mn_scenes.count(_mn_colour("CYAN")) == 1
+      and _mn_scenes.count("Color(0.0392, 0.0392, 0.0784, 0.7843)") == 4
+      and "overlay.fill((10, 10, 20, 200))" in _mn_core,
+      "9bs the scenes must use the ui_theme.py muted, gold, cyan and the (10, 10, 20, 200) pause dim")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")
