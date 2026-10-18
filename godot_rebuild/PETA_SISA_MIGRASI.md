@@ -110,7 +110,10 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
 - 9bp membake peluru menara (panah 16 arah per tim, bola meriam, kristal es, bolt mage; satu
   sheet 6 KB) dan menggambarnya di `SiegeView` menggantikan titik 4 px. Peluru hero
   (`world.hero_projectiles`) belum. Rincian di bagian "Slice 9bp".
-- Urutan bake berikutnya (user: "semuanya"): HUD/menu, boss, peluru hero.
+- 9bq membake badan 216 boss (pose diam fase 0, dua arah; satu PNG per boss, 2,6 MB) dan
+  menggambarnya menggantikan lingkaran bermahkota, dengan bayangan, bar HP, dan papan nama di atas
+  puncak sprite (`BOSS_LABEL_TOP`). Rincian di bagian "Slice 9bq".
+- Urutan bake berikutnya (user: "semuanya"): HUD/menu, peluru hero, pose jalan/serang boss.
   Sisanya di luar bake: `DynamicRenderer`
   (partikel, kabut, obor, air bergerak) dan `tactical_commands.draw_world/draw_ui`.
   Keputusan user: combo counter dan kill feed tetap tampil di Godot (walau tidak digambar
@@ -2341,3 +2344,38 @@ Latar: `SiegeView` menggambar setiap `ProjectileState` sebagai lingkaran 4 px. S
 
 Batas yang diketahui: peluru hero (`world.hero_projectiles`; panah Sylara, bola, bolt, petir)
 masih titik; jejak hit/impact tetap efek lama.
+
+## Slice 9bq — bake badan boss (layer 9bq)
+
+Latar: `PrototypeView._draw_boss` menggambar lingkaran bermahkota untuk ke-216 boss. Sumbernya
+(`bosses/base_boss.py::Boss.draw`) menggambar aura, bayangan, badan dari
+`heroes.render_boss` (sprite ber-cache per `_boss_cache_key`), lalu bar HP dan papan nama di
+atas puncak sprite.
+
+- `bake/bake_boss_atlas.py` menjalankan `heroes._boss_render_sprite_fast` ASLI untuk pose diam
+  fase 0 (`key[8] == "idle"`, `key[9] == 0`, tidak bergerak) pada tiap boss di `BOSS_INDEX`, untuk
+  `direction` -1 dan +1, dan menyimpan satu PNG per boss (dua crop bersebelahan, jarak 2 px):
+  216 file, 2,6 MB, deterministik (dua run identik). Renderer memperbesar kanvasnya bertahap dan
+  mengembalikan `None` sampai muat (game menggambar jalur langsung pada frame itu); bake cukup
+  bertanya lagi (maks 12 kali; thalgryn dan xaerissa butuh putaran kedua).
+- `data/art/bosses.json`: tabel frame + jangkar tiap boss, `radius`, `class`, `label_top`
+  (`BOSS_LABEL_TOP.get(boss_type, radius)`), dan `facing_cases` dari `_boss_cache_key` ASLI
+  (direction -3, -1, 0, 1, 2, 7). Roster, radius, dan kelas dicocokkan dengan
+  `data/bosses/boss_stats.json` di CI dan validator.
+- `scripts/ui/boss_art.gd`: `facing(direction) = 1 if direction > 0 else -1` (aturan
+  `int(direction or -1) >= 0`), `label_top = max(BOSS_LABEL_TOP, radius)`, memuat sheet dan
+  menolak diam-diam bila belum diimpor. `PrototypeView._draw_boss_sprite` menggambar bayangan
+  hitam penuh `(x - (2r + 10 jika true) // 2, y + r - 5, ..., 12)` (alpha `(0, 0, 0, 120)`
+  dibuang pygame di layar tanpa alpha) lalu badan di `(int(x) - ax, int(y) - ay)`; luka
+  menaikkan kecerahan (modulate 1,6) seperti minion. Bar HP 60x8 (true: 70x10) kini di
+  `y - head_top - 6 - bar_h`. Lingkaran bermahkota lama tetap sebagai cadangan
+  (`_draw_boss_plain`).
+- `tests/boss_art_checks.gd`: 216 sheet terdekode dengan ukuran manifest, crop dan jangkar di
+  dalam gambar, roster/radius/kelas cocok dengan tabel Godot, aturan arah identik dengan kunci
+  sumber, dan pengabelan view. Suite painter 9bn kini memunculkan boss sejati (`abaddon`),
+  memutar arahnya tiap frame, mengedipkan luka, dan membuatnya mengamuk di paruh akhir sehingga
+  `boss_sprite_draws > 0` terbukti di CI. Workflow dipicu perubahan `bosses/**`.
+
+Batas yang diketahui: pose jalan, serang, skill, dan kilat luka bawaan sumber, 7+ fase idle,
+aura hidup (`_LIVE_FX_HEROES`), serta aura enrage/ability ber-cache masih pendekatan Godot
+(busur) atau kosong; boss `entrance` tetap gambar lama.

@@ -4489,6 +4489,84 @@ check("BulletArt.frame(shot.kind, shot.team, bearing)" in _bl_view
 check("SHOT_KINDS := [" in _bl_painter and "world.projectiles.append(shot)" in _bl_painter,
       "9bp the painter suite must put one shot of each kind in flight")
 
+# ── Layer 9bq: baked boss bodies (bake/bake_boss_atlas.py) ──
+_bs_path = ROOT / "data/art/bosses.json"
+_bs_stats = json.loads((ROOT / "data/bosses/boss_stats.json").read_text(encoding="utf-8"))["bosses"]
+_bs_boss = (ROOT.parent / "bosses/base_boss.py").read_text(encoding="utf-8")
+_bs_pkg = (ROOT.parent / "heroes/__init__.py").read_text(encoding="utf-8")
+_bs_bake = (ROOT / "bake/bake_boss_atlas.py").read_text(encoding="utf-8")
+_bs_art = (ROOT / "scripts/ui/boss_art.gd").read_text(encoding="utf-8")
+_bs_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_bs_painter = (ROOT / "tests/painter_scene_checks.gd").read_text(encoding="utf-8")
+check('const BossArtChecks = preload("res://tests/boss_art_checks.gd")' in ai_tests
+      and "BossArtChecks.new().run(_check)" in ai_tests,
+      "9bq boss art suite must be preloaded and run in the native suite")
+check(workflow.count("      - 'bosses/**'") == 2,
+      "9bq CI must run when the source boss renderers change (push and pull_request)")
+check(_bs_path.is_file(), "9bq boss atlas manifest must exist")
+if _bs_path.is_file():
+    _bs = json.loads(_bs_path.read_text(encoding="utf-8"))
+    check(sorted(_bs["bosses"]) == sorted(_bs_stats) and len(_bs["bosses"]) == 216 and _bs["facings"] == [-1, 1],
+          "9bq one sheet per boss in the Godot boss table, both facings")
+    check(all((1 if d > 0 else -1) == f for d, f in _bs["facing_cases"]) and len(_bs["facing_cases"]) >= 5,
+          "9bq the recorded facings must follow the source key rule")
+    for _boss_id, _entry in sorted(_bs["bosses"].items()):
+        _facts = _bs_stats[_boss_id]
+        check(_entry["radius"] == _facts["radius"] and _entry["class"] == _facts["boss_class"]
+              and 0 < _entry["label_top"] < 400,
+              f"9bq baked radius, class and label top must match the Godot table: {_boss_id}")
+        _png = ROOT / "assets/art/bosses" / f"{_boss_id}.png"
+        check(_png.is_file(), f"9bq boss sheet must ship: {_boss_id}")
+        if not _png.is_file():
+            continue
+        _raw = _png.read_bytes()
+        _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+        check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _entry["size"]
+              and (_depth, _color) == (8, 6),
+              f"9bq boss sheet must be an RGBA8 PNG of its manifest size: {_boss_id}")
+        check(len(_raw) == _entry["bytes"] and hashlib.sha256(_raw).hexdigest() == _entry["sha256"],
+              f"9bq boss sheet must match its manifest hash: {_boss_id}")
+        check(sorted(_entry["frames"]) == ["-1", "1"]
+              and all(w > 0 and h > 0 and x >= 0 and y >= 0 and x + w <= _entry["size"][0]
+                      and y + h <= _entry["size"][1] and 0 <= ax <= w and 0 <= ay <= h
+                      for x, y, w, h, ax, ay in _entry["frames"].values()),
+              f"9bq both facings must lie inside the sheet with the anchor in the crop: {_boss_id}")
+for _fragment in (
+    "head_top = max(int(BOSS_LABEL_TOP.get(self.boss_type, r)), r)",
+    "bar_w = 70 if is_true else 60", "bar_h = 10 if is_true else 8", "by = y - head_top - 6 - bar_h",
+    "shadow_w = r * 2 + (10 if is_true else 0)", "pygame.draw.ellipse(surface, (0, 0, 0, 120),",
+    "(x - shadow_w // 2, y + r - 5, shadow_w, 12))", "_draw_fn = _get_boss_draw_func(self.boss_type)",
+    "border_c = (255, 60, 60) if self.is_enraged else ((255, 100, 100) if is_true else (255, 200, 50))",
+):
+    check(_fragment in _bs_boss, f"9bq the source boss overlay must still read {_fragment!r}")
+for _fragment in (
+    'facing = 1 if int(getattr(boss, "direction", -1) or -1) >= 0 else -1',
+    'phase = int(getattr(boss, "pulse", 0.0) * 2.0) % BOSS_ANIM_PHASES',
+    'return head + ("idle", phase, moving, ability, proj)',
+    'head = (boss_type, "B", klass, team, facing, hurt, rage, alive)',
+    "def _boss_render_sprite_fast(boss_type, boss, draw_fn, kind):",
+    "box = canvas.get_bounding_rect(min_alpha=8)",
+):
+    check(_fragment in _bs_pkg, f"9bq the source boss cache must still read {_fragment!r}")
+check("heroes_mod._boss_render_sprite_fast(boss_type, boss, draw_fn, \"idle\")" in _bs_bake
+      and "heroes_mod._boss_cache_key(boss_type, boss)" in _bs_bake
+      and 'assert key[8] == "idle" and key[9] == 0 and not key[10], key' in _bs_bake
+      and "MAX_TRIES = 12" in _bs_bake and "BOSS_LABEL_TOP.get(boss_type, probe.radius)" in _bs_bake,
+      "9bq the bake must run the real boss sprite renderer for the standing pose of every boss")
+check("return 1 if direction > 0 else -1" in _bs_art and "ResourceLoader.exists(path_for(boss_type))" in _bs_art
+      and "maxi(int(row.get(\"label_top\", radius)), radius)" in _bs_art,
+      "9bq the loader must mirror the facing and label rules and tolerate a missing import")
+check("var art := BossArt.frame(boss.boss_type, boss.direction)" in _bs_view
+      and "bar_top = point.y - head_top - 6.0 - bar_height" in _bs_view
+      and "var shadow := Rect2(x - (shadow_width >> 1), y + radius - 5, shadow_width, 12)" in _bs_view
+      and "var shadow_width := radius * 2 + (10 if boss.boss_class == \"true\" else 0)" in _bs_view
+      and "draw_colored_polygon(HeroPainter.ellipse(shadow), HeroPainter.SHADOW)" in _bs_view
+      and "Rect2(corner, src.size), src, tint)" in _bs_view and "func _draw_boss_plain(" in _bs_view,
+      "9bq the match view must draw the baked boss with the source shadow, bar anchor and the plain fallback")
+check("_seed_boss(world)" in _bs_painter
+      and "world._spawn_boss(BOSS_TYPE)" in _bs_painter and "view.boss_sprite_draws > 0" in _bs_painter,
+      "9bq the painter suite must spawn a boss and prove the sprite path ran")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

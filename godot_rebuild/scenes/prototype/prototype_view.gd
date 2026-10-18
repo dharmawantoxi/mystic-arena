@@ -23,6 +23,7 @@ const SlotArt = preload("res://scripts/ui/slot_art.gd")
 const HeroArt = preload("res://scripts/ui/hero_art.gd")
 const HeroAnim = preload("res://scripts/ui/hero_anim.gd")
 const HeroPainter = preload("res://scripts/ui/hero_painter.gd")
+const BossArt = preload("res://scripts/ui/boss_art.gd")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
@@ -48,6 +49,8 @@ var cached_river_theme := ""
 ## Counts real `_draw` calls so the headless scene suite can prove the painters run.
 var draw_count := 0
 var hero_anim := HeroAnim.new()
+## Baked boss bodies drawn so far; the painter suite proves the sprite path runs.
+var boss_sprite_draws := 0
 
 
 func _draw() -> void:
@@ -941,8 +944,49 @@ func _draw_boss(boss: BossState) -> void:
 		var true_pulse := sin(boss.pulse) * 0.3 + 0.7
 		draw_arc(point, radius + 15.0, 0, TAU, 48, Color(boss.color, 0.28 * true_pulse), 4, true)
 
-	# Shadow and generic body are the Godot presentation fallback for all 216
-	# source boss IDs; gameplay and the source entrance/enrage states stay shared.
+	var bar_width := 70.0 if is_true else 60.0
+	var bar_height := 10.0 if is_true else 8.0
+	var bar_top := point.y - radius - 16.0
+	var art := BossArt.frame(boss.boss_type, boss.direction)
+	if art.is_empty():
+		_draw_boss_plain(boss)
+	else:
+		_draw_boss_sprite(boss, art)
+		# `Boss.draw`: the bar sits 6 px above the sprite top (`BOSS_LABEL_TOP`).
+		var head_top := float(BossArt.label_top(boss.boss_type, int(radius)))
+		bar_top = point.y - head_top - 6.0 - bar_height
+	var bar_position := Vector2(point.x - bar_width * 0.5, bar_top)
+	var health := clampf(float(boss.hp) / maxf(1.0, float(boss.max_hp)), 0.0, 1.0)
+	draw_rect(Rect2(bar_position, Vector2(bar_width, bar_height)), Color("280000"))
+	var health_color := Color("64dc64") if health > 0.5 else Color("f0dc3c")
+	if health <= 0.25:
+		health_color = Color("f03c3c")
+	draw_rect(Rect2(bar_position, Vector2(bar_width * health, bar_height)), health_color)
+	var border := (
+		Color("ff3c3c") if boss.is_enraged else (Color("ff6464") if is_true else Color("ffc832"))
+	)
+	draw_rect(Rect2(bar_position, Vector2(bar_width, bar_height)), border, false, 1.0)
+	var prefix := "TRUE BOSS" if is_true else "BOSS"
+	var tag := " [ENRAGED]" if is_true else " [FRENZY]"
+	var suffix := tag if boss.is_enraged else ""
+	var label := "%s: %s%s" % [prefix, boss.display_name, suffix]
+	draw_string(
+		BossFont,
+		Vector2(point.x - 190.0, bar_position.y - 3.0),
+		label,
+		HORIZONTAL_ALIGNMENT_CENTER,
+		380.0,
+		18 if is_true else 16,
+		border
+	)
+
+
+## The Godot fallback body for a boss whose sheet is not baked or not imported.
+func _draw_boss_plain(boss: BossState) -> void:
+	var point := boss.position
+	var radius := boss.radius
+	var is_true := boss.boss_class == "true"
+	# Gameplay and the source entrance/enrage states stay shared with the baked body.
 	draw_circle(point + Vector2(0, radius + 3), radius + 3, Color("071518", 0.65))
 	var body_color := Color.WHITE if boss.hurt_flash_timer > 0 else boss.color
 	_draw_lit_polygon(SpriteLighting.circle_points(point, radius), body_color)
@@ -971,32 +1015,22 @@ func _draw_boss(boss: BossState) -> void:
 		draw_circle(eye, 2, eye_color)
 	draw_line(point, point + Vector2(boss.direction * (radius + 8.0), 0), eye_color, 3, true)
 
-	var bar_width := 70.0 if is_true else 60.0
-	var bar_height := 10.0 if is_true else 8.0
-	var bar_position := point + Vector2(-bar_width * 0.5, -radius - 16.0)
-	var health := clampf(float(boss.hp) / maxf(1.0, float(boss.max_hp)), 0.0, 1.0)
-	draw_rect(Rect2(bar_position, Vector2(bar_width, bar_height)), Color("280000"))
-	var health_color := Color("64dc64") if health > 0.5 else Color("f0dc3c")
-	if health <= 0.25:
-		health_color = Color("f03c3c")
-	draw_rect(Rect2(bar_position, Vector2(bar_width * health, bar_height)), health_color)
-	var border := (
-		Color("ff3c3c") if boss.is_enraged else (Color("ff6464") if is_true else Color("ffc832"))
-	)
-	draw_rect(Rect2(bar_position, Vector2(bar_width, bar_height)), border, false, 1.0)
-	var prefix := "TRUE BOSS" if is_true else "BOSS"
-	var tag := " [ENRAGED]" if is_true else " [FRENZY]"
-	var suffix := tag if boss.is_enraged else ""
-	var label := "%s: %s%s" % [prefix, boss.display_name, suffix]
-	draw_string(
-		BossFont,
-		Vector2(point.x - 190.0, bar_position.y - 3.0),
-		label,
-		HORIZONTAL_ALIGNMENT_CENTER,
-		380.0,
-		18 if is_true else 16,
-		border
-	)
+
+## Layer 9bq: `Boss.draw` after the auras - the solid ground shadow, then the baked body at
+## `(int(x) - ax, int(y) - ay)`. A fresh hit brightens the body like the minion sprites.
+func _draw_boss_sprite(boss: BossState, art: Dictionary) -> void:
+	boss_sprite_draws += 1
+	var x := int(boss.position.x)
+	var y := int(boss.position.y)
+	var radius := int(boss.radius)
+	var shadow_width := radius * 2 + (10 if boss.boss_class == "true" else 0)
+	var shadow := Rect2(x - (shadow_width >> 1), y + radius - 5, shadow_width, 12)
+	draw_colored_polygon(HeroPainter.ellipse(shadow), HeroPainter.SHADOW)
+	var src: Rect2 = art["src"]
+	var anchor: Vector2 = art["anchor"]
+	var tint := Color(1.6, 1.6, 1.6) if boss.hurt_flash_timer > 0 else Color.WHITE
+	var corner := Vector2(x, y) - anchor
+	draw_texture_rect_region(art["texture"] as Texture2D, Rect2(corner, src.size), src, tint)
 
 
 func _draw_boss_entrance(boss: BossState) -> void:

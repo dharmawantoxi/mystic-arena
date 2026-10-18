@@ -10,6 +10,7 @@ extends RefCounted
 const Projectile = preload("res://scripts/combat/projectile_state.gd")
 const MINIONS := "res://data/minions/"
 const SHOT_KINDS := ["normal", "cannon", "ice", "mage"]
+const BOSS_TYPE := "abaddon"
 const TYPES := ["goblin", "orc", "troll", "undead", "dark_rider"]
 const PATHS := ["cannon", "ice", "mage"]
 const FRAMES := 16
@@ -39,6 +40,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		session.selected_id = towers[0].id
 	session.selected_slot_id = _free_slot(world)
 	_seed_shots(world, towers)
+	var boss = _seed_boss(world)
 	var hero = null
 	if not world.player_hero_ids.is_empty():
 		hero = world.get_unit(int(world.player_hero_ids[0]))
@@ -49,6 +51,8 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		_poke(world, towers, frame)
 		if hero != null:
 			_poke_hero(session, hero, towers, frame)
+		if boss != null:
+			_poke_boss(boss, frame)
 		await tree.process_frame
 	check.call(
 		view.draw_count >= drawn_before + (FRAMES >> 1),
@@ -57,6 +61,10 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	check.call(view.minion_anim.tracked() > 0, "Minion clocks were tracked while drawing")
 	check.call(view.structure_anim.tracked() > 0, "Structure clocks were tracked while drawing")
 	check.call(view.hero_anim.tracked() > 0, "Hero clocks were tracked while drawing")
+	if boss != null:
+		check.call(view.boss_sprite_draws > 0, "The baked boss body was drawn")
+	else:
+		check.call(false, "The suite could not spawn a boss to draw")
 	app.show_menu()
 	await _settle(tree)
 
@@ -98,6 +106,22 @@ func _seed_shots(world, towers: Array) -> void:
 		shot.kind = SHOT_KINDS[index]
 		shot.position = target.position + Vector2(-170.0 - 25.0 * index, -90.0 + 60.0 * index)
 		world.projectiles.append(shot)
+
+
+## A true boss past its entrance, so its baked body, bar and name plate draw.
+func _seed_boss(world):
+	var boss = world._spawn_boss(BOSS_TYPE)
+	if boss != null:
+		boss.entrance_timer = 0
+	return boss
+
+
+## Turn the boss each frame, flash it, and enrage it halfway so both facings, the hurt tint
+## and the enrage label draw.
+func _poke_boss(boss, frame: int) -> void:
+	boss.direction = 1 if frame % 2 == 0 else -1
+	boss.hurt_flash_timer = 4 if frame % 3 == 0 else 0
+	boss.is_enraged = frame >= (FRAMES >> 1)
 
 
 func _towers(world) -> Array:

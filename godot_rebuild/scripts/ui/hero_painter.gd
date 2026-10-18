@@ -70,6 +70,11 @@ static func _paint_selection(
 	canvas.draw_polyline(points, YELLOW, 2.0, true)
 
 
+## The polygon `pygame.draw.ellipse` fills inside `rect`; the boss shadow shares it.
+static func ellipse(rect: Rect2) -> PackedVector2Array:
+	return _ellipse(rect)
+
+
 static func _ellipse(rect: Rect2) -> PackedVector2Array:
 	var points := PackedVector2Array()
 	var center := rect.get_center()
