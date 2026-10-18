@@ -3496,6 +3496,62 @@ check("_check_recorded_frames(check, data, screen)" in _combo_draw_checks
       and "_check_view_wiring(check)" in _combo_draw_checks,
       "9bc combo draw suite must replay recorded and production frames plus the view")
 
+# ── Layer 9bd: BossIntroCinematic.draw() visuals as a pure op list ──
+from boss_intro_draw_source_oracle import source_fixture as boss_intro_draw_fixture
+_boss_draw_path = ROOT / "tests/fixtures/boss_intro_draw_source.json"
+_boss_layout = (ROOT / "scripts/ui/boss_intro_layout.gd").read_text(encoding="utf-8")
+_boss_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_boss_draw_checks = (ROOT / "tests/boss_intro_draw_checks.gd").read_text(encoding="utf-8")
+check('const BossIntroDrawChecks = preload("res://tests/boss_intro_draw_checks.gd")' in ai_tests
+      and "BossIntroDrawChecks.new().run(_check)" in ai_tests,
+      "9bd boss intro draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/boss_intro_draw_source_oracle.py" in workflow,
+      "9bd CI must run the BossIntroCinematic.draw() source oracle")
+check(_boss_draw_path.is_file(), "9bd boss intro draw fixture must exist")
+if _boss_draw_path.is_file():
+    _boss_draw = json.loads(_boss_draw_path.read_text(encoding="utf-8"))
+    check(boss_intro_draw_fixture() == _boss_draw,
+          "9bd boss intro draw fixture must not drift from _render.py")
+    _boss_frames = _boss_draw["frames"]
+    _boss_drawn = [frame for frame in _boss_frames if frame["ops"]]
+    check(len(_boss_frames) == 22 and sum(len(frame["ops"]) for frame in _boss_frames) == 279,
+          "9bd oracle must pin 22 frames and 279 recorded draw ops")
+    check(all(len([op for op in frame["ops"] if op["kind"] == "line"])
+              == (8 if frame["ops"][1]["color"][3] > 60 else 0) for frame in _boss_drawn),
+          "9bd oracle must pin the eight gold corner ticks only above alpha 60")
+    check(all(frame["ops"][-1]["color"] == [255, 255, 255, 255] and frame["ops"][-1]["width"] == 1
+              and frame["ops"][-1]["radius"] == 5 and frame["ops"][-1]["mult"] == 255
+              for frame in _boss_drawn)
+          and any(frame["ops"][0]["color"][3] == 0 and frame["ops"][-1]["color"][3] == 255
+                  for frame in _boss_drawn),
+          "9bd oracle must pin the HP bar staying opaque while the banner fades")
+    check(any(not frame["state"]["active"] and frame["ops"] == [] for frame in _boss_frames)
+          and any(frame["label"] == "narrow" and frame["ops"][0]["rect"][2] == 440
+                  for frame in _boss_drawn),
+          "9bd oracle must pin the finished intro and the narrow-screen banner clamp")
+    _boss_texts = [op for frame in _boss_drawn for op in frame["ops"] if op["kind"] == "text"]
+    check({op["text"] for op in _boss_texts} >= {"TRUE BOSS", "MINI BOSS"}
+          and any(op["style"] == "title" and op["size"] == 46 for op in _boss_texts)
+          and any(op["text"].startswith('"') and op["text"].endswith('"') for op in _boss_texts),
+          "9bd oracle must pin both tags, the 46 px title-font name and the quoted title")
+check("static func ops(" in _boss_layout
+      and "const TICK_MIN_ALPHA := 60" in _boss_layout
+      and "const BANNER_RADIUS := 10" in _boss_layout
+      and 'const NAME_STYLE := "title"' in _boss_layout
+      and "func _corner_ticks(" in _boss_layout,
+      "9bd boss intro layout must mirror BossIntroCinematic.draw()")
+check("BossIntroLayout.ops(" in _boss_view
+      and "func boss_intro_draw_ops(" in _boss_view
+      and "func _draw_banner_op(" in _boss_view,
+      "9bd PrototypeView must paint the boss intro from the source op list")
+check("%s · %s" not in _boss_view,
+      "9bd the invented TAG - NAME header must not return")
+check("_check_recorded_frames(check, data)" in _boss_draw_checks
+      and "_check_production_replay(check, data)" in _boss_draw_checks
+      and "_check_quirks(check, data)" in _boss_draw_checks
+      and "_check_view_wiring(check, data)" in _boss_draw_checks,
+      "9bd boss intro draw suite must replay recorded and production frames plus the view")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

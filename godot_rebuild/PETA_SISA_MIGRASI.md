@@ -20,15 +20,24 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
   bawah shim pygame perekam (52 frame, 426 op); `combo_counter_draw_checks.gd`
   mereplay fixture lewat layout murni dan lewat state `ComboCounter` produksi.
   Rincian ada di bagian "Slice 9bc" paling bawah.
+- 9bd melengkapi visual `BossIntroCinematic.draw()`: banner 600x92 membulat
+  (latar `(10, 10, 18)` pada `210*alpha/255`, border 2 px `entrance_color`),
+  corner ticks emas hanya di atas alpha 60, teks tag / nama 46 px / judul
+  ber-kutip dengan alpha fade, dan bar HP membulat 150x12. Bar HP digambar
+  langsung ke layar sehingga **tidak ikut fade** (kuirk sumber yang
+  dipertahankan). Oracle `boss_intro_draw_source_oracle.py` menjalankan `draw()`
+  asli plus `ui_theme.corner_ticks` asli di bawah shim pygame perekam (22 frame,
+  279 op); `boss_intro_draw_checks.gd` mereplay fixture lewat layout murni, lewat
+  state `BossIntroCinematic` produksi, dan lewat `PrototypeView`. Rincian ada di
+  bagian "Slice 9bd" paling bawah.
 - Kandidat visual berikutnya yang terbukti belum source-backed:
-  `BossIntroCinematic.draw()`. Hanya banner kompak yang benar-benar digambar
-  sumber (latar membulat + border `entrance_color`, corner ticks, tag, nama,
-  judul ber-kutip, bar HP membulat); `_draw_boss_silhouette` dan dua turunannya
-  tidak dipanggil dari `draw()` (kode mati, sama seperti `_draw_boss_text`,
-  `_draw_hp_preview`, `_draw_skip_hint`), jadi catatan lama "siluet belum diport"
-  di bagian BossIntroCinematic bukan gap. Renderer sekarang menggambar header
-  karangan `TAG · NAMA` pada rect bersudut siku. Entri "siluet hero arena" di
-  bawah bersifat historis: sudah selesai (layer 9aj, `hero_marker.gd`).
+  `BossDeathAnimation._draw_celebration()` (true boss saja). Renderer sekarang
+  menggambar overlay datar dan teks karangan `NAMA DEFEATED!` 32 px; sumber
+  menggambar `darken` 180, tint emas `(80, 60, 20, 40)`, `BOSS DEFEATED!` 66 px
+  berbayang yang memantul, nama 46 px, judul ber-kutip, hadiah, dan hint.
+  `_draw_death_sequence()` (flash, fragmen, partikel naik; ~150 baris) lebih
+  besar, jadi kerjakan terpisah sesudahnya. Entri "siluet hero arena" di bawah
+  bersifat historis: sudah selesai (layer 9aj, `hero_marker.gd`).
 
 ## Catatan historis portrait Hero Shop
 
@@ -160,6 +169,7 @@ Dibaca hanya untuk memilih slice berikutnya, bukan audit menyeluruh:
 | FloatingText presentation (`_render.py::FloatingText.draw`) | **Visual dilengkapi** — renderer memakai anchor integer dan font size ter-clamp dari sumber, teks ber-shadow ber-offset (1,2), warna alpha dan body style normal/critical; oracle menjalankan `draw()` cached-surface path dengan fake font/surface perekam dan fixture mengunci kedua blit. |
 | KillFeed draw (`_render.py::KillFeed.draw`) | **Terport (layer 9bb)** — `scripts/ui/kill_feed_layout.gd::ops(entries, screen_w, measure)`: alpha fade-in 15 tick / hold / fade-out 45 tick, slide-in 100 px, kotak latar `inflate(12, 4)` hitam alpha/2, border membulat r=3 warna tim alpha/2, teks 22 px rata kanan di (layar-20, 250+int(y_offset)); dirender `prototype_view._draw_kill_feed`; oracle `kill_feed_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam (31 frame, 192 op). |
 | ComboCounter draw (`_render.py::ComboCounter.draw`) | **Terport (layer 9bc)** — `scripts/ui/combo_counter_layout.gd::ops(state, screen_w, measure, cheap_alpha)`: bar timer 80x4 di (layar-140..-60, 140) dari 2 kill, teks `xN` `int(48*display_scale)` px berpusat di (layar-100, 100) dengan bayangan 8 arah (`cheap_alpha`) atau (2, 2), label tier 24 px di (layar-100, 70) dari 5 kill, warna tier 5/10/15/20 dan lerp flash `color_flash/20` ke putih; dirender `prototype_view._draw_combo_counter`; oracle `combo_counter_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam (52 frame, 426 op). |
+| BossIntroCinematic draw (`_render.py::BossIntroCinematic.draw`) | **Terport (layer 9bd)** — `scripts/ui/boss_intro_layout.gd::ops(intro)`: banner 600x92 (maks `layar-40`) membulat r=10 dengan latar `(10, 10, 18)` alpha `210*alpha/255` dan border 2 px `entrance_color`, 8 garis corner ticks emas `(255, 220, 120)` panjang 12 inset 5 hanya bila alpha > 60, teks tag 24 px / nama 46 px (`title`) / judul ber-kutip 24 px pada `(banner_x + 14, banner_y + 8/26/64)` dengan alpha fade, bar HP 150x12 r=5 (track `(40, 8, 12)`, isi `entrance_color`, outline putih 1 px) yang TIDAK ikut fade; dirender `prototype_view._draw_boss_intro` lewat `_draw_banner_op`; oracle `boss_intro_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam (22 frame, 279 op). |
 | `hero_marker.gd` | Selesai: placeholder 4-6 sisi tetap untuk `grimjaw_checks`, siluet per-hero dipakai `prototype_view.gd:619`; art roster dipaku golden fixture (layer 9aj) |
 
 Catatan: `ui_components/hero_portraits.py` yang di-impor `_core.py:3056`
@@ -399,7 +409,11 @@ bar kesulitan, dan teks gold/passive/boss-tag ada di dalam `draw()` dan
   teks "PREPARE FOR BATTLE") tidak diport; teks peringatannya hanya
   tersedia lewat `get_warning_text()`.
 
-## BossIntroCinematic (state + getter, bukan draw)
+## BossIntroCinematic (state + getter; draw ditutup di layer 9bd)
+
+> Bagian ini mencatat state dan getter (layer lama). Visual `draw()` ditutup
+> di layer 9bd (bagian "Slice 9bd" paling bawah); daftar "Yang sengaja tidak
+> diport" di bawah sudah dikoreksi.
 
 Banner nama boss di atas layar (`_render.py::BossIntroCinematic`). Tidak
 memause gameplay. Diport **hanya state dan getter**, dengan oracle yang sama
@@ -422,11 +436,11 @@ background/border, dan rect bar HP datang dari sumber.
 
 ### Yang sengaja tidak diport
 
-- Pixel drawing: sudut emas (`corner_ticks`), background rounded-rect, dan
-  pengisian bar HP. Semuanya dipetakan ke angka di atas, tapi tidak digambar.
+- ~~Pixel drawing~~ (sudut emas `corner_ticks`, background rounded-rect, pengisian
+  bar HP): kini digambar, layer 9bd.
 - Siluet boss, aura, dan sinar (`_draw_boss_silhouette`, `_draw_true_boss_silhouette`,
-  `_draw_mini_boss_silhouette`) — ia dipanggil dari draw dan bergantung pada
-  pulse `pygame.time.get_ticks()`. Belum ada port visualnya.
+  `_draw_mini_boss_silhouette`): **koreksi 9bd** — tidak pernah dipanggil dari
+  `draw()` (kode mati seperti tiga helper di bawahnya), jadi bukan gap migrasi.
 - `_draw_boss_text`, `_draw_hp_preview`, dan `_draw_skip_hint` tidak pernah
   dipanggil dari `draw()` (kode mati di sumber), jadi tidak diport.
 - Pemanggil yang membuat banner dari `Boss` hidup (`_core.py` di dua tempat)
@@ -1728,3 +1742,56 @@ Godot (posisi pusat bisa beda beberapa piksel dari pygame; oracle memaku tata
 letak, bukan metrik). Stub `mobile.perf` hanya menyediakan `Quality`; hook
 sidepanel (`beri_tahu_global`) tetap tidak diport (lihat bagian KillFeed +
 ComboCounter).
+
+## Slice 9bd — visual `BossIntroCinematic.draw()` (layer 9bd)
+
+Sebelumnya hanya state dan getter `BossIntroCinematic` yang terport;
+`prototype_view` menggambar rect bersudut siku dengan header karangan
+`TAG · NAMA` 20 px, subjudul 14 px tanpa kutip, tanpa corner ticks, dan bar HP
+persegi yang ikut memudar. Kini seluruh `draw()` sumber diport sebagai daftar op
+murni, `scripts/ui/boss_intro_layout.gd::ops(intro)`. Layout memakai getter yang
+sudah terverifikasi oracle state (`get_alpha`, `get_banner_x`, `get_banner_width`,
+`get_background_alpha`, `get_hp_bar_rect`, `get_hp_fill_width`, `get_tag`), jadi
+kurva fade, slide, dan bar tidak diduplikasi:
+
+- Banner `(banner_x, 12, min(600, layar-40), 92)`: latar `(10, 10, 18)` pada
+  `int(210*alpha/255)` dan border 2 px `(*entrance_color, alpha)`, keduanya
+  `border_radius=10`. Corner ticks `ui_theme.corner_ticks((255, 220, 120),
+  length=12, width=2, inset=5)` — 8 garis, **opaque** (tanpa alpha) dan hanya
+  bila `alpha > 60`. Teks di `(banner_x + 14, 12 + 8/26/64)`: tag 24 px
+  `body_medium` (TRUE BOSS merah / MINI BOSS kuning), nama 46 px `title` warna
+  `entrance_color`, `"judul"` 24 px `(215, 215, 235)`; ketiganya `set_alpha(alpha)`.
+- Bar HP `(banner_x + w - 166, 52, 150, 12)` r=5: track `(40, 8, 12)`, isi
+  `entrance_color` selebar `int(150 * elapsed / 85)` (tidak digambar bila 0), outline
+  putih 1 px. Digambar langsung ke layar, jadi **tidak memudar**: track dan outline
+  sudah terlihat penuh pada frame alpha 0 dan tetap penuh sampai intro berakhir
+  (kuirk sumber, dipin oracle dan validator).
+- Oracle `boss_intro_draw_source_oracle.py` memanen `class BossIntroCinematic`
+  dari `_render.py` dan fungsi `corner_ticks` dari `ui_theme.py` dengan `ast`,
+  lalu menjalankan `draw()` asli di bawah shim pygame perekam. Boss berasal dari
+  `bosses/boss_data.py` asli (`abaddon` true, `drakar` mini). `update()` asli
+  mencoba `from _system import SoundManager`; oracle memasang stub `_system` tanpa
+  `SoundManager` selama berjalan (dipulihkan sesudahnya) sehingga ImportError itu
+  ditelan seperti di game tanpa pygame. Skenario: timeline true boss (tick 0, 1-4,
+  8, 12, 18, 40, 70, 81, 90, 95, 96, 99, 100: batas alpha 60 di fade-in dan
+  fade-out, selesai slide, awal fade-out, bar penuh, intro berakhir), mini boss
+  (tag lain, warna lain), dan layar sempit 480 px (banner 440). Fixture
+  `boss_intro_draw_source.json` = 22 frame, 279 op; teks direkam tanpa metrik font
+  karena `draw()` tidak pernah mengukur teks.
+- `boss_intro_draw_checks.gd` mereplay setiap frame dari state terekam, dari
+  `BossIntroCinematic` produksi yang di-tick dengan `update()`, dan lewat
+  `PrototypeView.boss_intro_draw_ops` (harus sama persis dengan fixture karena
+  tidak ada metrik font); ditambah pin kuirk (bar HP opaque, intro selesai dan
+  intro yang di-skip tidak menggambar apa pun). `prototype_view` melukis op lewat
+  `_draw_banner_op`: rect membulat penuh = polygon terisi (radius dijepit ke sisi
+  terpendek seperti pygame dan jatuh ke rect biasa untuk sliver < 2 px), rect
+  membulat bergaris = outline inset milik kill feed, garis dan teks lewat painter
+  level intro.
+
+Divergensi yang disadari: nama 46 px (`title_font`, Cinzel) dan tag/judul
+(`body_medium`) memakai Barlow SemiBold di view (hanya `style` yang dicatat);
+polygon membulat tidak anti-alias seperti `draw.rect` pygame tetapi memakai 5
+sampel per sudut, bukan algoritma pygame, sehingga tepi bisa beda sub-piksel;
+pygame menimpa piksel di surface SRCALPHA sedangkan Godot memadukan border di atas
+latar, jadi border semi-transparan sedikit lebih gelap saat fade. Suara
+`nexus_hit` tetap diurus `step_boss_intro()` (tidak berubah).

@@ -12,6 +12,7 @@ const BossFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
 const LevelIntroLayout = preload("res://scripts/ui/level_intro_layout.gd")
 const KillFeedLayout = preload("res://scripts/ui/kill_feed_layout.gd")
 const ComboCounterLayout = preload("res://scripts/ui/combo_counter_layout.gd")
+const BossIntroLayout = preload("res://scripts/ui/boss_intro_layout.gd")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
@@ -580,57 +581,46 @@ func _draw_achievement_icon(ops: Array) -> void:
 				)
 
 
+## Layer 9bd: the ops `BossIntroCinematic.draw()` paints this frame. The source
+## blits its text at fixed offsets, so the layout needs no font metrics.
+func boss_intro_draw_ops(world: Prototype) -> Array:
+	var intro = world.boss_intro
+	if intro == null:
+		return []
+	return BossIntroLayout.ops(intro)
+
+
 func _draw_boss_intro(world: Prototype) -> void:
-	var intro := world.boss_intro_state()
-	if not bool(intro.get("active", false)):
+	for op in boss_intro_draw_ops(world):
+		_draw_banner_op(op)
+
+
+## Banner and HP bar ops: a rounded rect with width 0 is a filled polygon, a
+## stroked one reuses the kill-feed inset outline, and lines, text and square
+## rects go through the level-intro painter.
+func _draw_banner_op(op: Dictionary) -> void:
+	var is_rect := String(op.get("kind", "")) == "rect"
+	if not is_rect or int(op.get("radius", 0)) <= 0:
+		_draw_intro_op(op)
+	elif int(op.get("width", 0)) > 0:
+		_draw_kill_feed_op(op)
+	else:
+		_fill_rounded_op(op)
+
+
+func _fill_rounded_op(op: Dictionary) -> void:
+	var color := _intro_color(op)
+	if color.a <= 0.0:
 		return
-	var alpha := clampf(float(intro.get("alpha", 0)) / 255.0, 0.0, 1.0)
-	var bg_alpha := clampf(float(intro.get("background_alpha", 0)) / 255.0, 0.0, 1.0)
-	var border_alpha: float = clampf(float(intro.get("border_alpha", 0)) / 255.0, 0.0, 1.0)
-	if alpha <= 0.0:
+	var box: Array = op["rect"]
+	var rect := Rect2(float(box[0]), float(box[1]), float(box[2]), float(box[3]))
+	# pygame clamps the radius to the shorter side. Keep the arcs from meeting so
+	# the polygon stays simple, and fall back to a plain rect for slivers.
+	var radius := minf(float(op["radius"]), (minf(rect.size.x, rect.size.y) - 1.0) * 0.5)
+	if radius < 1.0:
+		draw_rect(rect, color)
 		return
-	var rect := Rect2(
-		Vector2(float(intro.get("banner_x", 340)), float(intro.get("banner_y", 12))),
-		Vector2(float(intro.get("banner_width", 600)), 92.0)
-	)
-	var border_rgb: Array = intro.get("entrance_color", [150, 100, 200])
-	var border_col := Color8(int(border_rgb[0]), int(border_rgb[1]), int(border_rgb[2]))
-	draw_rect(rect, Color(0.04, 0.05, 0.08, bg_alpha))
-	if border_alpha > 0.0:
-		draw_rect(rect, Color(border_col, border_alpha), false, 2.0)
-	var tag: Dictionary = intro.get("tag", {})
-	var header := "%s · %s" % [String(tag.get("text", "BOSS")), String(intro.get("boss_name", ""))]
-	draw_string(
-		BossFont,
-		rect.position + Vector2(18.0, 34.0),
-		header,
-		HORIZONTAL_ALIGNMENT_LEFT,
-		rect.size.x - 200.0,
-		20,
-		Color(border_col, alpha)
-	)
-	var subtitle: String = String(intro.get("boss_title", ""))
-	if not subtitle.is_empty():
-		draw_string(
-			BossFont,
-			rect.position + Vector2(18.0, 56.0),
-			subtitle,
-			HORIZONTAL_ALIGNMENT_LEFT,
-			rect.size.x - 200.0,
-			14,
-			Color(0.84, 0.88, 0.94, alpha)
-		)
-	var bar: Array = intro.get("hp_bar_rect", [0, 0, 150, 12])
-	var bar_rect := Rect2(
-		Vector2(float(bar[0]), float(bar[1])), Vector2(float(bar[2]), float(bar[3]))
-	)
-	draw_rect(bar_rect, Color(0.15, 0.05, 0.05, alpha))
-	var fill_w := float(intro.get("hp_fill_width", 0))
-	if fill_w > 0.0:
-		draw_rect(
-			Rect2(bar_rect.position, Vector2(fill_w, bar_rect.size.y)),
-			Color(0.90, 0.25, 0.25, alpha)
-		)
+	draw_colored_polygon(_achievement_rounded_points(rect, radius), color)
 
 
 func _draw_boss_celebration(world: Prototype) -> void:
