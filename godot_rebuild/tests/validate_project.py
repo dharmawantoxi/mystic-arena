@@ -4068,6 +4068,150 @@ check("_check_atlases(check, manifest)" in _mn_checks and "_check_key_cases(chec
       and "_check_view_wiring(check)" in _mn_checks,
       "9bk minion art suite must check atlases, pose keys, clocks, spawn tier and wiring")
 
+# ── Layer 9bl: baked tower, castle and armor-crest sprites (bake/bake_structure_atlas.py) ──
+_st_path = ROOT / "data/art/structures.json"
+_st_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+_st_entity = (ROOT.parent / "_entity.py").read_text(encoding="utf-8")
+_st_bake = (ROOT / "bake/bake_structure_atlas.py").read_text(encoding="utf-8")
+_st_art = (ROOT / "scripts/ui/structure_art.gd").read_text(encoding="utf-8")
+_st_anim = (ROOT / "scripts/ui/structure_anim.gd").read_text(encoding="utf-8")
+_st_siege = (ROOT / "scenes/siege/siege_view.gd").read_text(encoding="utf-8")
+_st_base = (ROOT / "scenes/combat/minion_view.gd").read_text(encoding="utf-8")
+_st_checks = (ROOT / "tests/structure_art_checks.gd").read_text(encoding="utf-8")
+check('const StructureArtChecks = preload("res://tests/structure_art_checks.gd")' in ai_tests
+      and "StructureArtChecks.new().run(_check)" in ai_tests,
+      "9bl structure art suite must be preloaded and run in the native suite")
+check(_st_path.is_file(), "9bl structure atlas manifest must exist")
+if _st_path.is_file():
+    _st = json.loads(_st_path.read_text(encoding="utf-8"))
+    check(_st["tower_types"] == ["archer", "cannon", "ice", "mage"]
+          and _st["shoot_timers"] == [0, 5, 8, 10]
+          and _st["castle"] == {"levels": [1, 2, 3, 4, 5], "timers": [0, 3, 5, 8, 10],
+                                "scale": 0.85, "size": [153, 136], "anchor": [76, 101]},
+          "9bl manifest must carry the tower paths, the representative timers and the castle blit")
+    check({kind: len(levels) for kind, levels in _st["tower_levels"].items()}
+          == {"archer": 6, "cannon": 5, "ice": 5, "mage": 5}
+          and len(_st["towers"]) == 42 and len(_st["castles"]) == 10
+          and len(_st["crests"]["frames"]) == 88,
+          "9bl one sheet per tower path x team x level, per castle team x level, plus crests")
+    _st_sheets = {f"tower_{n}": e for n, e in _st["towers"].items()}
+    _st_sheets.update({f"castle_{n}": e for n, e in _st["castles"].items()})
+    _st_sheets["crests"] = _st["crests"]
+    for _stem, _entry in sorted(_st_sheets.items()):
+        _png = ROOT / "assets/art/structures" / f"{_stem}.png"
+        check(_png.is_file(), f"9bl structure sheet must ship: {_stem}")
+        if not _png.is_file():
+            continue
+        _raw = _png.read_bytes()
+        _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+        check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _entry["size"]
+              and (_depth, _color) == (8, 6),
+              f"9bl sheet must be an RGBA8 PNG of its manifest size: {_stem}")
+        check(len(_raw) == _entry["bytes"] and hashlib.sha256(_raw).hexdigest() == _entry["sha256"],
+              f"9bl sheet must match its manifest hash: {_stem}")
+        check(all(w > 0 and h > 0 and x >= 0 and y >= 0 and x + w <= _entry["size"][0]
+                  and y + h <= _entry["size"][1] and 0 <= ax <= w and 0 <= ay <= h
+                  for x, y, w, h, ax, ay in _entry["frames"].values()),
+              f"9bl every frame must lie inside its sheet: {_stem}")
+        _want = 88 if _stem == "crests" else (5 if _stem.startswith("castle_") else 8)
+        check(len(_entry["frames"]) == _want, f"9bl sheet must hold {_want} frames: {_stem}")
+    for _team in ("blue", "red"):
+        for _tres in sorted((ROOT / "data/structures").glob("*.tres")):
+            _text = _tres.read_text(encoding="utf-8")
+            _kind = re.search(r'structure_kind = "(\w+)"', _text)
+            _path = re.search(r'tower_path = "(\w+)"', _text)
+            _level_match = re.search(r"^level = (\d+)", _text, re.M)
+            _level = int(_level_match.group(1)) if _level_match else 1  # default is omitted
+            if _kind and _kind.group(1) == "nexus":
+                check(f"{_team}_{_level}" in _st["castles"],
+                      f"9bl every nexus level needs a castle sheet: {_tres.name} {_team}")
+            else:
+                _name = f"{_path.group(1) if _path else 'archer'}_{_team}_{_level}"
+                check(_name in _st["towers"], f"9bl every tower level needs a sheet: {_name}")
+    check(set(_st["tower_top_y"]) == {"archer", "cannon", "ice", "mage"}
+          and all(len(v) == len(_st["tower_levels"][k]) for k, v in _st["tower_top_y"].items()),
+          "9bl every tower level must carry its bar offset")
+for _fragment in (
+    'key = ("tw", self.tower_type, self.team, self.level,',
+    "shoot_b = self.shoot_flash_timer // 3",
+    "face = 1 if (self.target is not None",
+    "cw, ch = 180, 160",
+    "SCALE = 0.85",
+    "final_x = int(self.x - new_w // 2)",
+    "final_y = int(self.y - new_h + 35)",
+    "scaled = pygame.transform.smoothscale(canvas, (new_w, new_h))",
+    "flicker = int((timer * 0.4 + offset) % 5)",
+    "crest_x = x + 26",
+    "crest_y = y - 28 - self.level",
+    "crest_size = 14",
+    "crest_size = 18",
+    "ratio_b = min(10, max(0, int(fill_ratio * 10 + 0.5)))",
+    "bar_w = 44",
+    "bar_h = 5",
+    "by = self._top_fn(self.x, self.y, self.level) - 14",
+    "by = y - 26",
+    "shield_bar_y = by - bar_h - 2",
+    "(30, 30, 50)",
+    "(40, 0, 0)",
+    "shine_h = max(1, bar_h // 2)",
+    "bar_w = 60",
+    "bar_h = 6",
+    "by = int(self.y - 80)",
+    'f"SHIELD {int(ratio*100)}%"',
+    "bob = int(math.sin(self.pulse * 1.2) * 2)",
+    "self.pulse += 0.05",
+    "self.shoot_flash_timer = 10",
+    "self.shoot_flash_timer = 8",
+):
+    check(_fragment in _st_entity, f"9bl the source tower/castle code must still read {_fragment!r}")
+check("TOWER_SHIELD_REGEN_DELAY = 180" in _st_core
+      and "SHIELD_COLOR_BLUE = (100, 180, 255)" in _st_core
+      and "SHIELD_COLOR_RED = (255, 100, 100)" in _st_core
+      and "CASTLE_SHIELD_COLOR_BLUE = (100, 200, 255)" in _st_core
+      and "CASTLE_SHIELD_COLOR_RED = (255, 120, 120)" in _st_core,
+      "9bl the source shield colours and regen delay must still read as the view paints them")
+check("tower._draw_tower_body(" in _st_bake and "entity._render_castle_full(" in _st_bake
+      and "entity._render_dynamic_effects(" in _st_bake
+      and "pygame.transform.smoothscale(frame, (new_w, new_h))" in _st_bake
+      and "entity._build_armor_crest(" in _st_bake
+      and 'key = ("tw", tower_type, team, level, face, timer // 3)' in _st_bake
+      and "SHOOT_TIMERS = (0, 5, 8, 10)" in _st_bake
+      and "CASTLE_TIMERS = (0, 3, 5, 8, 10)" in _st_bake,
+      "9bl the bake must drive the real tower, castle and crest code at the source timers")
+for _fragment in (
+    "const TOWER_BAR_WIDTH := 44", "const TOWER_BAR_HEIGHT := 5",
+    "Color(100 / 255.0, 180 / 255.0, 255 / 255.0)", "Color(255 / 255.0, 100 / 255.0, 100 / 255.0)",
+    "Color(100 / 255.0, 200 / 255.0, 255 / 255.0)", "Color(255 / 255.0, 120 / 255.0, 120 / 255.0)",
+    "Color(30 / 255.0, 30 / 255.0, 50 / 255.0)", "Color(40 / 255.0, 0 / 255.0, 0 / 255.0)",
+    "Color(50 / 255.0, 200 / 255.0, 50 / 255.0)", "Color(220 / 255.0, 50 / 255.0, 50 / 255.0)",
+    "Vector2(x + 26, y - 28 - data.level)", "crest_frame(14,", "crest_frame(18,",
+    "- TOWER_BAR_HEIGHT - 2", "tower_top_y(data.tower_path, data.level) - 14",
+    "hp_ratio <= 0.3", "hp_ratio <= 0.6", "maxi(1, TOWER_BAR_HEIGHT >> 1)",
+    "int(structure.position.y) - 80", "int(structure.position.x) - 30",
+    '"SHIELD %d%%" % int(ratio * 100.0)', "float(session.world.tick_count) * 0.05 * 1.2",
+    "structure.no_damage_ticks >= data.shield_regen_delay_ticks",
+    "func _draw_pill(", "func _draw_regen_plus(", "func _draw_level_badge(",
+):
+    check(_fragment in _st_siege, f"9bl the siege view must paint the source bars: {_fragment!r}")
+check("if not _draw_structure_art(structure):" in _st_siege
+      and _st_siege.index("if not _draw_structure_art(structure):")
+      < _st_siege.index("_draw_structure_plain(structure)\n\n\n## Layer 9bl")
+      and "func _draw_structures() -> void:" in _st_siege
+      and "func _draw_structures() -> void:" in _st_base
+      and _st_base.index("_draw_base(Layout.RED_BASE") < _st_base.index("\t_draw_structures()\n")
+      < _st_base.index("minion_anim.prune(session.world.units)"),
+      "9bl structures must paint before the units, with the plain boxes as the fallback")
+check("ResourceLoader.exists(sheet_path(stem))" in _st_art and "static func tower_frame(" in _st_art
+      and "static func castle_frame(" in _st_art and "static func crest_frame(" in _st_art
+      and "DEFAULT_TOP_Y := -26" in _st_art,
+      "9bl the loader must tolerate a sheet that is not imported")
+check("floori(float(flash) / 3.0)" in _st_anim and "int(float(tick) * 0.4) % FLICKER_STEPS" in _st_anim
+      and "FLASH_TICKS := 8" in _st_anim and "CANNON_FLASH_TICKS := 10" in _st_anim,
+      "9bl the clocks must mirror the source flash timers and flame flicker")
+check("_check_sheets(check, manifest)" in _st_checks and "_check_definitions(check)" in _st_checks
+      and "_check_clocks(check, manifest)" in _st_checks and "_check_view_wiring(check)" in _st_checks,
+      "9bl structure art suite must check sheets, definitions, clocks and wiring")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

@@ -93,8 +93,12 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
   frame) dan menggambarnya di `MinionView._draw_unit` lengkap dengan bar HP dan aura slow
   sumber; lingkaran lama jadi cadangan bila atlas belum diimpor. Rincian di bagian "Slice
   9bk" paling bawah.
-- Urutan bake berikutnya (user: "semuanya"): menara + kastil + slot bangun, HUD/menu, lalu
-  hero dan boss. Sisanya di luar bake: `DynamicRenderer`
+- 9bl membake sprite menara (Archer/Cannon/Ice/Mage x biru/merah x level), kastil nexus
+  level 1-5 (lima frame api obor) dan lencana perisai, lalu menggambarnya di `SiegeView`
+  dengan bar HP/perisai, lencana level, dan label perisai kastil seperti sumber. Struktur
+  kini dilukis SEBELUM unit (seperti `Game.draw`). Rincian di bagian "Slice 9bl".
+- Urutan bake berikutnya (user: "semuanya"): slot bangun, HUD/menu, lalu hero dan boss.
+  Sisanya di luar bake: `DynamicRenderer`
   (partikel, kabut, obor, air bergerak) dan `tactical_commands.draw_world/draw_ui`.
   Keputusan user: combo counter dan kill feed tetap tampil di Godot (walau tidak digambar
   pygame).
@@ -2162,4 +2166,49 @@ Batas yang diketahui:
 - Pose serang dipicu dari kenaikan `cooldown_ticks`; urutan pasti tick tebasan sumber belum
   dicocokkan kerangka per kerangka.
 - Painter tidak dieksekusi suite headless; hanya pemuatan atlas, pemilihan pose, dan
+  urutan pemanggilan yang diuji CI.
+
+## Slice 9bl — bake menara, kastil, dan lencana perisai (layer 9bl)
+
+Latar: di Godot menara dan nexus adalah kotak dengan tiga kotak kecil dan titik level.
+Sumbernya menggambar badan menara dari `towers/_bundle.py` (299 KB) lewat cache
+`("tw", tipe, tim, level, hadap, flash // 3)`, kastil dari kanvas 180x160 yang diskalakan 0,85
+(api obor gerbang berkedip dari level 4), dan lencana perisai lewat cache
+`(ukuran, warna, bucket rasio, bright)`.
+
+- `bake/bake_structure_atlas.py` menjalankan `Tower._draw_tower_body`, `_render_castle_full` +
+  `_render_dynamic_effects` + `smoothscale`, dan `_build_armor_crest` ASLI. Timer wakil
+  mengikuti urutan kena-pertama di game: `shoot_flash_timer` 0/5/8/10 untuk `shoot_b`
+  0/1/2/3 (turun dari 8, atau 10 untuk Cannon), `timer` kastil 0/3/5/8/10 untuk kedipan api
+  `int((timer * 0.4) % 5)` 0..4.
+- 42 sheet menara (`tower_<jalur>_<tim>_<level>.png`, 8 frame: hadap kiri/kanan x 4 flash),
+  10 sheet kastil (`castle_<tim>_<level>.png`, 5 frame 153x136) dan `crests.png` (88 frame:
+  ukuran 14/18 x tim x 11 bucket x bright), total ±1,2 MB. `data/art/structures.json` menyimpan
+  ukuran, byte, sha256, tabel frame, timer wakil, blit kastil (`x - 76, y - 101`), dan offset
+  bar HP per jalur/level (`get_*_top_y(0, 0, level)` ASLI).
+- `scripts/ui/structure_art.gd` memuat sheet (hanya bila `ResourceLoader.exists`);
+  `scripts/ui/structure_anim.gd` membangun ulang `shoot_flash_timer` dari kenaikan
+  `cooldown_ticks` (8 tick, 10 untuk Cannon) dan kedipan api dari `tick`.
+- `SiegeView._draw_structure` kini: sprite bake, lalu bagian hidup sumber (`Tower.draw`: lencana
+  perisai di (x+26, y-28-level), bar perisai di atas bar HP 44x5 pada `top_y - 14`, kilau
+  setengah tinggi, lencana level berborder kuning, tanda plus regen; `Castle.draw`: lencana
+  18 di atas sprite, bar perisai 60x6 membulat di `y - 80` dan label `SHIELD n%`). Bila
+  sheet belum diimpor, kotak lama tetap tergambar.
+- Struktur dilukis lewat hook `_draw_structures()` di `MinionView` (setelah dasar, SEBELUM
+  unit), meniru `Game.draw` yang menggambar kastil dan menara sebelum minion dan hero.
+- `tests/structure_art_checks.gd`: 42+10+1 sheet ada dan terdekode, frame di dalam sheet,
+  tiap dari 26 definisi struktur punya art untuk kedua tim, tabel offset dan bucket lencana,
+  jam flash/kedipan (termasuk kecocokan dengan timer wakil bake), dan urutan pemanggilan.
+  `validate_project.py` memin header/hash tiap sheet, cakupan definisi `data/structures`, serta
+  potongan sumber yang diandalkan bake dan view (kunci cache, skala dan blit kastil, konstanta
+  bar, warna perisai, posisi lencana, label).
+
+Batas yang diketahui:
+
+- Belum ada: kilat moncong Archer, kilat upgrade, lingkaran jangkauan versi sumber (Godot
+  tetap memakai busur jangkauan miliknya), peluru `Bullet.draw` (anak panah HD) dan aura sihir
+  kastil level 6 (nexus Godot berhenti di level 5).
+- Hanya frame pertama tiap kunci cache yang dibake, seperti game; sprite menara yang berubah
+  menurut sudut bidik di luar kunci (hadap kiri/kanan) tidak dicakup.
+- Painter tidak dieksekusi suite headless; hanya pemuatan sheet, cakupan definisi, jam, dan
   urutan pemanggilan yang diuji CI.

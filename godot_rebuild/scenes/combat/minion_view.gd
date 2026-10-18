@@ -88,12 +88,19 @@ func _draw() -> void:
 	_draw_map_overlay()
 	_draw_base(Layout.BLUE_BASE, Color("73cbbb"))
 	_draw_base(Layout.RED_BASE, Color("d78579"))
+	_draw_structures()
 	minion_anim.prune(session.world.units)
 	for unit in session.world.units:
 		_draw_unit(unit)
 	for event in session.world.recent_events:
 		if event.kind == "hit" and session.world.tick_count - int(event.tick) < 8:
 			draw_line(event["from"], event["to"], Color("e7c98a"), 2, true)
+
+
+## Hook for the towers and castles: `Game.draw` paints them before the minions and
+## heroes, so units walk over them.
+func _draw_structures() -> void:
+	pass
 
 
 ## Hook for the source's decoration and shop layers (map layers 4-5): painted over
