@@ -3552,6 +3552,81 @@ check("_check_recorded_frames(check, data)" in _boss_draw_checks
       and "_check_view_wiring(check, data)" in _boss_draw_checks,
       "9bd boss intro draw suite must replay recorded and production frames plus the view")
 
+# ── Layer 9be: BossDeathAnimation._draw_celebration() visuals as a pure op list ──
+from boss_celebration_draw_source_oracle import source_fixture as boss_celebration_fixture
+_cele_path = ROOT / "tests/fixtures/boss_celebration_draw_source.json"
+_cele_layout = (ROOT / "scripts/ui/boss_celebration_layout.gd").read_text(encoding="utf-8")
+_cele_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_cele_checks = (ROOT / "tests/boss_celebration_draw_checks.gd").read_text(encoding="utf-8")
+check('const BossCelebrationDrawChecks = preload("res://tests/boss_celebration_draw_checks.gd")'
+      in ai_tests and "BossCelebrationDrawChecks.new().run(_check)" in ai_tests,
+      "9be boss celebration draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/boss_celebration_draw_source_oracle.py" in workflow,
+      "9be CI must run the BossDeathAnimation._draw_celebration() source oracle")
+check(_cele_path.is_file(), "9be boss celebration draw fixture must exist")
+if _cele_path.is_file():
+    _cele = json.loads(_cele_path.read_text(encoding="utf-8"))
+    check(boss_celebration_fixture() == _cele,
+          "9be boss celebration draw fixture must not drift from _render.py")
+    _cele_frames = _cele["frames"]
+    check(len(_cele_frames) == 20 and sum(len(frame["ops"]) for frame in _cele_frames) == 547,
+          "9be oracle must pin 20 frames and 547 recorded draw ops")
+
+    def _cele_texts(frame, text):
+        return [op for op in frame["ops"] if op["kind"] == "text" and op["text"] == text]
+
+    check(all(len(_cele_texts(frame, "BOSS DEFEATED!")) == (7 if frame["cheap_alpha"] else 2)
+              and _cele_texts(frame, "BOSS DEFEATED!")[-1]["color"] == [255, 220, 100, 255]
+              and _cele_texts(frame, "BOSS DEFEATED!")[-1]["size"] == 66
+              and _cele_texts(frame, "BOSS DEFEATED!")[-1]["style"] == "title"
+              for frame in _cele_frames),
+          "9be oracle must pin the 66 px gold title with six shadows (one without cheap_alpha)")
+    _cele_abaddon = {frame["tick"]: frame for frame in _cele_frames
+                     if frame["label"] == "abaddon"}
+    check(all(any(op["kind"] == "fill" and op["color"] == [80, 60, 20, 40]
+                  for op in frame["ops"]) == (tick < 102)
+              for tick, frame in _cele_abaddon.items())
+          and all(any(op["kind"] == "darken" for op in frame["ops"]) == (tick > 0)
+                  and (tick == 0 or frame["ops"][0]["alpha"] <= 180)
+                  for tick, frame in _cele_abaddon.items()),
+          "9be oracle must pin the gold tint ending at 85 % and the darken fade")
+    check(all(bool(_cele_texts(frame, "+ 1500 GOLD")) == (tick >= 37)
+              and bool(_cele_texts(frame, "H E R O   U N L O C K E D !")) == (tick >= 37)
+              and (sum(op["kind"] == "circle" for op in frame["ops"]) == (16 if tick >= 49
+                   else 4 if tick >= 37 else 0))
+              and bool(_cele_texts(frame, "[SPACE] to continue")) == (tick >= 61)
+              for tick, frame in _cele_abaddon.items() if tick != 40),
+          "9be oracle must pin reward after 30 %, sparkles after 40 %, hint after 50 %")
+    check(all(sum(op["kind"] == "line" for op in frame["ops"]) == 8
+              for tick, frame in _cele_abaddon.items() if tick >= 37)
+          and any(op["kind"] == "circle" and op["radius"] == 1.5
+                  for frame in _cele_frames for op in frame["ops"]),
+          "9be oracle must pin the two four-line vector stars with 1.5 px centres")
+    check(_cele_texts(_cele_abaddon[49], '"Lord of Avernus"')[0]["size"] == 32
+          and _cele_texts(_cele_abaddon[49], "Abaddon")[-1]["color"] == [100, 220, 240, 255]
+          and _cele_texts(_cele_abaddon[49], "Abaddon")[0]["color"] == [0, 0, 0, 255]
+          and any(frame["label"] == "alchemist_small" and frame["ops"][1]["rect"] == [0, 0, 960, 540]
+                  for frame in _cele_frames),
+          "9be oracle must pin the boss name in its entrance colour, the quoted title and a small screen")
+check("static func ops(" in _cele_layout
+      and "const TINT_RGBA := [80, 60, 20, 40]" in _cele_layout
+      and "func _headline(" in _cele_layout
+      and "func _star(" in _cele_layout
+      and "func _sparkles(" in _cele_layout
+      and "LevelIntro.letter(" in _cele_layout,
+      "9be boss celebration layout must mirror _draw_celebration()")
+check("BossCelebrationLayout.ops(" in _cele_view
+      and "func boss_celebration_draw_ops(" in _cele_view,
+      "9be PrototypeView must paint the celebration from the source op list")
+check("%s DEFEATED!" not in _cele_view and "GOLD REWARD" not in _cele_view
+      and "PRESS SPACE OR ESC" not in _cele_view,
+      "9be the invented celebration text must not return")
+check("_check_recorded_frames(check, data)" in _cele_checks
+      and "_check_production_replay(check, data)" in _cele_checks
+      and "_check_stages(check, data)" in _cele_checks
+      and "_check_view_wiring(check, data)" in _cele_checks,
+      "9be celebration draw suite must replay recorded and production frames plus the view")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

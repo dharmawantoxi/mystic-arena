@@ -13,6 +13,7 @@ const LevelIntroLayout = preload("res://scripts/ui/level_intro_layout.gd")
 const KillFeedLayout = preload("res://scripts/ui/kill_feed_layout.gd")
 const ComboCounterLayout = preload("res://scripts/ui/combo_counter_layout.gd")
 const BossIntroLayout = preload("res://scripts/ui/boss_intro_layout.gd")
+const BossCelebrationLayout = preload("res://scripts/ui/boss_celebration_layout.gd")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
@@ -633,64 +634,23 @@ func _draw_boss_celebration(world: Prototype) -> void:
 				draw_rect(
 					Rect2(Vector2.ZERO, Vector2(1280.0, 720.0)), Color(1.0, 1.0, 1.0, flash_alpha)
 				)
-	if not bool(death.get("celebration_active", false)):
-		return
-	var visual: Dictionary = death.get("celebration_visual", {})
-	if not bool(visual.get("visible", false)):
-		return
-	var overlay_alpha: float = clampf(float(visual.get("overlay_alpha", 0)) / 255.0, 0.0, 1.0)
-	if overlay_alpha > 0.0:
-		draw_rect(
-			Rect2(Vector2.ZERO, Vector2(1280.0, 720.0)), Color(0.02, 0.03, 0.06, overlay_alpha)
-		)
-	var text_alpha: float = clampf(float(visual.get("text_alpha", 0)) / 255.0, 0.0, 1.0)
-	if text_alpha <= 0.0:
-		return
-	var offset_y: float = float(visual.get("text_offset_y", 0))
-	draw_string(
-		BossFont,
-		Vector2(240.0, 260.0 + offset_y),
-		"%s DEFEATED!" % String(death.get("boss_name", "BOSS")).to_upper(),
-		HORIZONTAL_ALIGNMENT_CENTER,
-		800.0,
-		32,
-		Color(1.0, 0.86, 0.38, text_alpha)
-	)
-	var boss_title: String = String(death.get("boss_title", ""))
-	if not boss_title.is_empty():
-		draw_string(
-			BossFont,
-			Vector2(240.0, 294.0 + offset_y),
-			boss_title,
-			HORIZONTAL_ALIGNMENT_CENTER,
-			800.0,
-			18,
-			Color(0.85, 0.90, 0.96, text_alpha)
-		)
-	if bool(visual.get("reward_visible", false)):
-		var reward_alpha: float = clampf(float(visual.get("reward_alpha", 0)) / 255.0, 0.0, 1.0)
-		if reward_alpha > 0.0:
-			draw_string(
-				BossFont,
-				Vector2(240.0, 340.0),
-				"+%d GOLD REWARD" % int(death.get("gold_reward", 0)),
-				HORIZONTAL_ALIGNMENT_CENTER,
-				800.0,
-				22,
-				Color(1.0, 0.88, 0.35, reward_alpha)
-			)
-	if bool(visual.get("hint_visible", false)):
-		var hint_alpha: float = clampf(float(visual.get("hint_alpha", 0)) / 255.0, 0.0, 1.0)
-		if hint_alpha > 0.0:
-			draw_string(
-				BossFont,
-				Vector2(240.0, 420.0),
-				"PRESS SPACE OR ESC TO CONTINUE",
-				HORIZONTAL_ALIGNMENT_CENTER,
-				800.0,
-				16,
-				Color(0.82, 0.88, 0.94, hint_alpha)
-			)
+	for op in boss_celebration_draw_ops(world):
+		_draw_intro_op(op)
+
+
+## Layer 9be: the `_draw_celebration()` op list. `ticks` defaults to the engine
+## clock and `measure` to the real HUD font; the checks pass the oracle's.
+func boss_celebration_draw_ops(
+	world: Prototype, ticks: int = -1, measure: Callable = Callable()
+) -> Array:
+	var anim = world.boss_death
+	if anim == null:
+		return []
+	var clock: int = ticks if ticks >= 0 else Time.get_ticks_msec()
+	var metrics: Callable = _measure_intro_text
+	if measure.is_valid():
+		metrics = measure
+	return BossCelebrationLayout.ops(anim, clock, metrics)
 
 
 func _draw_level_intro(world: Prototype) -> void:

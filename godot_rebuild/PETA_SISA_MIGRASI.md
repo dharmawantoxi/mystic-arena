@@ -30,6 +30,16 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
   279 op); `boss_intro_draw_checks.gd` mereplay fixture lewat layout murni, lewat
   state `BossIntroCinematic` produksi, dan lewat `PrototypeView`. Rincian ada di
   bagian "Slice 9bd" paling bawah.
+- 9be melengkapi visual `BossDeathAnimation._draw_celebration()` (true boss):
+  overlay `darken` hingga 180, tint emas `(80, 60, 20, 40)`, `BOSS DEFEATED!`
+  66 px dengan enam salinan bayangan yang memantul, nama 46 px berbayang, judul
+  ber-kutip, hadiah emas dengan ikon koin, `HERO UNLOCKED!` dengan dua bintang
+  vektor, enam percikan berputar, dan hint skip berdenyut. Oracle
+  `boss_celebration_draw_source_oracle.py` menjalankan `draw()` asli di bawah
+  shim pygame perekam bersama (`tests/draw_recorder.py`; 20 frame, 547 op);
+  `boss_celebration_draw_checks.gd` mereplay fixture dari state terekam, dari
+  `BossDeathAnimation` produksi, dan lewat `PrototypeView`. Rincian ada di bagian
+  "Slice 9be" paling bawah.
 - Kandidat visual berikutnya yang terbukti belum source-backed:
   `BossDeathAnimation._draw_celebration()` (true boss saja). Renderer sekarang
   menggambar overlay datar dan teks karangan `NAMA DEFEATED!` 32 px; sumber
@@ -170,6 +180,7 @@ Dibaca hanya untuk memilih slice berikutnya, bukan audit menyeluruh:
 | KillFeed draw (`_render.py::KillFeed.draw`) | **Terport (layer 9bb)** — `scripts/ui/kill_feed_layout.gd::ops(entries, screen_w, measure)`: alpha fade-in 15 tick / hold / fade-out 45 tick, slide-in 100 px, kotak latar `inflate(12, 4)` hitam alpha/2, border membulat r=3 warna tim alpha/2, teks 22 px rata kanan di (layar-20, 250+int(y_offset)); dirender `prototype_view._draw_kill_feed`; oracle `kill_feed_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam (31 frame, 192 op). |
 | ComboCounter draw (`_render.py::ComboCounter.draw`) | **Terport (layer 9bc)** — `scripts/ui/combo_counter_layout.gd::ops(state, screen_w, measure, cheap_alpha)`: bar timer 80x4 di (layar-140..-60, 140) dari 2 kill, teks `xN` `int(48*display_scale)` px berpusat di (layar-100, 100) dengan bayangan 8 arah (`cheap_alpha`) atau (2, 2), label tier 24 px di (layar-100, 70) dari 5 kill, warna tier 5/10/15/20 dan lerp flash `color_flash/20` ke putih; dirender `prototype_view._draw_combo_counter`; oracle `combo_counter_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam (52 frame, 426 op). |
 | BossIntroCinematic draw (`_render.py::BossIntroCinematic.draw`) | **Terport (layer 9bd)** — `scripts/ui/boss_intro_layout.gd::ops(intro)`: banner 600x92 (maks `layar-40`) membulat r=10 dengan latar `(10, 10, 18)` alpha `210*alpha/255` dan border 2 px `entrance_color`, 8 garis corner ticks emas `(255, 220, 120)` panjang 12 inset 5 hanya bila alpha > 60, teks tag 24 px / nama 46 px (`title`) / judul ber-kutip 24 px pada `(banner_x + 14, banner_y + 8/26/64)` dengan alpha fade, bar HP 150x12 r=5 (track `(40, 8, 12)`, isi `entrance_color`, outline putih 1 px) yang TIDAK ikut fade; dirender `prototype_view._draw_boss_intro` lewat `_draw_banner_op`; oracle `boss_intro_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam (22 frame, 279 op). |
+| BossDeathAnimation celebration (`_render.py::BossDeathAnimation._draw_celebration`) | **Terport (layer 9be)** — `scripts/ui/boss_celebration_layout.gd::ops(anim, ticks, measure, cheap_alpha)`: `darken` 180 (fade-in <15 %, fade-out >85 %), tint `(80, 60, 20, 40)` sampai 85 %, `BOSS DEFEATED!` 66 px `title` (emas, 6 bayangan hitam alpha maks 80 atau 1 tanpa `cheap_alpha`) memantul 60 px sampai 30 %, nama 46 px `entrance_color` + bayangan (+2, +2), judul ber-kutip 32 px, hadiah `+ N GOLD` + koin (r=10) + `HERO UNLOCKED!` + 2 bintang `draw_icon("star", s=0.5)` setelah 30 %, 6 percikan setelah 40 %, hint `[SPACE] to continue` setelah 50 %; dirender `prototype_view._draw_boss_celebration`; oracle `boss_celebration_draw_source_oracle.py` (20 frame, 547 op). |
 | `hero_marker.gd` | Selesai: placeholder 4-6 sisi tetap untuk `grimjaw_checks`, siluet per-hero dipakai `prototype_view.gd:619`; art roster dipaku golden fixture (layer 9aj) |
 
 Catatan: `ui_components/hero_portraits.py` yang di-impor `_core.py:3056`
@@ -1795,3 +1806,46 @@ sampel per sudut, bukan algoritma pygame, sehingga tepi bisa beda sub-piksel;
 pygame menimpa piksel di surface SRCALPHA sedangkan Godot memadukan border di atas
 latar, jadi border semi-transparan sedikit lebih gelap saat fade. Suara
 `nexus_hit` tetap diurus `step_boss_intro()` (tidak berubah).
+
+## Slice 9be — visual `BossDeathAnimation._draw_celebration()` (layer 9be)
+
+Sebelumnya `prototype_view` menggambar overlay datar `(0.02, 0.03, 0.06)` dan teks
+karangan `NAMA DEFEATED!` 32 px, judul 18 px, `+N GOLD REWARD` dan hint
+`PRESS SPACE OR ESC TO CONTINUE`. Kini seluruh `_draw_celebration()` sumber
+diport sebagai daftar op murni, `scripts/ui/boss_celebration_layout.gd::ops(anim,
+ticks, measure, cheap_alpha)`. Layout memakai `get_celebration_visual_state()`
+(overlay, bounce, hadiah, hint sudah dipin oracle state), jadi kurva tidak
+diduplikasi:
+
+- `darken` (alpha 0 = tanpa op) lalu tint `(80, 60, 20, 40)` seukuran layar
+  selama `progress < 0.85`. `cx = layar_w // 2`, `cy = layar_h // 2 - 50`.
+- `BOSS DEFEATED!` 66 px `title`: bayangan hitam di offset 6..1 (`cheap_alpha`)
+  atau satu di 3, `set_alpha(min(alpha, 80))`, berpusat di `(cx + o, cy - 40 +
+  drop + o)`; lalu teks emas `(255, 220, 100)`. Nama 46 px `entrance_color` di
+  `cy + 30 + drop` (bayangan hitam `alpha // 2` di +2, +2 digambar lebih dulu),
+  judul ber-kutip 32 px `body_semibold` `(200, 200, 220)` di `cy + 75 + drop`.
+  `drop` = `int((1 - eased) * 60)` selama bounce 30 % pertama.
+- Hadiah (setelah 30 %): koin `(255, 200, 50)` r=10 + garis tepi `(200, 150, 30)`
+  lebar 2 di kiri teks (digambar opaque, tanpa alpha), `$` 22 px `body_bold`, teks
+  `+ N GOLD` 32 px, lalu `HERO UNLOCKED!` (`ui_theme.letter`, 24 px) dengan dua
+  bintang `ui_theme.draw_icon("star", s=0.5)`: 4 garis lebar 2 sepanjang ±4 px +
+  titik r=1.5, warna `255/180/220 * alpha / 255`. **Kuirk sumber**: baris
+  `HERO UNLOCKED!` muncul untuk SETIAP boss true, bukan hanya yang membuka hero.
+- Percikan (setelah 40 %): 6 pasang lingkaran emas `int(4 * pulse)` dan putih
+  `int(2 * pulse)` di elips 220 x 60 yang berputar dengan `get_ticks()`; hint
+  `[SPACE] to continue` 24 px (setelah 50 %) dengan alpha `int(180 * pulse)`.
+- `tests/draw_recorder.py` adalah shim pygame perekam bersama untuk oracle 9be-9bi
+  (Rect/Surface/Text/Font/Draw, `mobile.perf` darken/flash/Quality, `installed()`
+  yang memulihkan `sys.modules`). Oracle memanen `BossDeathAnimation` dan
+  `_skip_button_label` dari `_render.py` serta `letter` dan `draw_icon` dari
+  `ui_theme.py`; bos berasal dari `bosses/boss_data.py` asli (`abaddon`,
+  `alchemist` di layar 960x540). Teks diukur `int(size * 0.55)` px per huruf; view
+  memberi metrik Barlow nyata ke layout yang sama.
+- `boss_celebration_draw_checks.gd` mereplay 20 frame dari state terekam, dari
+  `BossDeathAnimation` produksi (death phase 90 tick lalu `update()`), dan lewat
+  `PrototypeView.boss_celebration_draw_ops`; ditambah pin tahap (tint berakhir 85 %,
+  hadiah 30 %, percikan 40 %, hint 50 %, `cheap_alpha` tunggal).
+
+Divergensi yang disadari: nama dan judul (`title_font`, Cinzel; `body_*`) memakai
+Barlow SemiBold di view; sudut lingkaran koin tidak anti-alias pygame. Kilat
+putih fase kematian masih versi lama (slice berikutnya).
