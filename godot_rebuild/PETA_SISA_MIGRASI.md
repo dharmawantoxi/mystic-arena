@@ -102,7 +102,12 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
 - 9bn menambah suite scene `painter_scene_checks.gd` yang menjalankan `_draw` view prototipe
   sungguhan di CI (penghitung `draw_count`) dengan semua tipe minion, menara tiap jalur,
   seleksi, slow, hurt, dan tembakan. Rincian di bagian "Slice 9bn".
-- Urutan bake berikutnya (user: "semuanya"): HUD/menu, lalu hero dan boss.
+- 9bo membake badan hero untuk tujuh hero berkit native (Kaizen, Thorne, Grimjaw, Sylara,
+  Vex, Zephyr, Alchemist; biru + merah; 8 fase diam, 8 fase jalan, pose serang, dua arah;
+  14 atlas, 5,5 MB) dan menggambarnya dengan overlay `Hero.draw` (bar HP 45x6, papan nama
+  dan bintang level, bayangan, cincin seleksi, strip cooldown). Hero lain tetap memakai
+  penanda siluet. Rincian di bagian "Slice 9bo".
+- Urutan bake berikutnya (user: "semuanya"): HUD/menu, boss, proyektil.
   Sisanya di luar bake: `DynamicRenderer`
   (partikel, kabut, obor, air bergerak) dan `tactical_commands.draw_world/draw_ui`.
   Keputusan user: combo counter dan kill feed tetap tampil di Godot (walau tidak digambar
@@ -2262,3 +2267,45 @@ seharusnya sudah menggambar view; belum ada bukti dan keadaan yang digambar sang
 
 Batas: renderer dummy tidak merasterisasi, jadi hasil gambar tetap tidak terlihat; hanya
 kesalahan skrip (tipe, null, argumen) yang tertangkap.
+
+## Slice 9bo — bake badan hero kit native (layer 9bo)
+
+Latar: hero di Godot adalah lingkaran tim + poligon dari hash id. Sumbernya
+(`heroes/__init__.py::render_hero`) men-cache satu badan ter-crop per kunci
+`(tipe, tim, level, hadap, idle | serang, fase | timer // 3, bergerak)`, sedangkan
+`Hero.draw` menggambar bar HP, papan nama, cincin, dan bayangan di sekelilingnya.
+
+- Level tidak mengubah badan (piksel identik di level 1, 3, 8, 15), jadi level 1 mewakili semua.
+- `bake/bake_hero_atlas.py` menjalankan `Hero.draw` ASLI lewat tiga lini masa dari cache kosong
+  untuk tiap hadap dan tim, lalu mengambil sprite pertama yang diterima tiap kunci: (A) diam,
+  `pulse` +0,1 per tick selama 40 tick; (B) berjalan 2 px per frame (renderer hanya sadar
+  gerak dari perubahan posisi di dalam renderer, saat cache MISS, sehingga kunci 'bergerak'
+  baru terisi di putaran kedua); (C) satu serangan dari diam, `attack_timer` dari cooldown
+  efektif sampai 1. Anggaran render per frame (`_HERO_RENDER_LEFT`) diisi ulang tiap frame
+  seperti game, dan kunci dihitung SEBELUM renderer jalan. Pose skill (`active_skill`) belum
+  dibake.
+- Tujuh hero yang punya kit native di Godot: kaizen, thorne, grimjaw, sylara, vex, zephyr,
+  alchemist (14 atlas, 5,5 MB, deterministik). Alchemist tidak punya pose jalan (rendererya
+  tidak pernah melapor "bergerak"), jadi Godot menampilkan pose diam saat ia berjalan.
+  `data/art/heroes.json` memuat nama, radius, `top_offset` label, cooldown, tabel frame, dan
+  241 baris `key_cases` hasil `_hero_cache_key` ASLI.
+- `scripts/ui/hero_anim.gd`: `pulse` +0,1 per tick, "bergerak" = |dx| + |dy| > 0,3 per tick,
+  `pose_key` meniru kunci sumber (timer asli `HeroState.attack_timer`, kuantum 3 dari preset
+  PC `atk_quant_floor`). `scripts/ui/hero_art.gd` memuat atlas dan menolak diam-diam bila belum
+  diimpor; timer serang di luar jangkauan memakai pose serang terakhir.
+- `scripts/ui/hero_painter.gd` melukis seperti `Hero.draw`: elips kuning dan cakram jangkauan
+  saat terseleksi, bayangan, sprite di `int(x) - ax, int(y) - ay`, bar HP 45x6 (hijau/kuning/merah
+  di 0,5/0,25, border putih) di `y - max(radius, top_offset) - 6`, papan nama hitam 3 px di
+  atasnya dengan nama 14 px dan sampai lima bintang (atau satu bintang dan `xN` setelah level
+  5), dan strip skill di bawah kaki. `PrototypeView._draw_unit` mencobanya lebih dulu dan
+  memakai penanda lama bila hero tidak dibake.
+- `tests/hero_art_checks.gd`: 14 atlas ada dan terdekode, tiap pose punya frame dalam gambar,
+  `pose_key` identik dengan 241 kunci sumber, simulasi jam (diam, jalan, serang, prune), dan
+  urutan pemanggilan. Suite painter 9bn kini juga memastikan jam hero terisi (Kaizen
+  menggambar di match bawaan). Workflow dipicu perubahan `heroes/__init__.py` dan
+  `heroes/_bundle.py`.
+
+Batas yang diketahui: pose skill, efek hidup hero (`_live_fx_*`), indikator HEAL, dan 215 hero
+lain belum dibake; warna cakram jangkauan memakai warna tim, bukan `hero.color`; Godot
+menghitung `eff_attack_cd` sendiri, sehingga timer di atas cooldown yang dibake memakai pose
+serang terakhir.

@@ -4296,6 +4296,132 @@ check("view.draw_count > first_draw" in _pt_checks and "world.step_tick()" in _p
       and "unit.slow_timer = 60" in _pt_checks and "tower.cooldown_ticks" in _pt_checks,
       "9bn the painter suite must prove _draw ran and exercise every minion type, towers, slow and fire")
 
+# ── Layer 9bo: baked hero bodies (bake/bake_hero_atlas.py) ──
+_hr_path = ROOT / "data/art/heroes.json"
+_hr_pkg = (ROOT.parent / "heroes/__init__.py").read_text(encoding="utf-8")
+_hr_entity = (ROOT.parent / "_entity.py").read_text(encoding="utf-8")
+_hr_perf = (ROOT.parent / "mobile/perf.py").read_text(encoding="utf-8")
+_hr_bake = (ROOT / "bake/bake_hero_atlas.py").read_text(encoding="utf-8")
+_hr_art = (ROOT / "scripts/ui/hero_art.gd").read_text(encoding="utf-8")
+_hr_anim = (ROOT / "scripts/ui/hero_anim.gd").read_text(encoding="utf-8")
+_hr_painter = (ROOT / "scripts/ui/hero_painter.gd").read_text(encoding="utf-8")
+_hr_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_hr_checks = (ROOT / "tests/hero_art_checks.gd").read_text(encoding="utf-8")
+check('const HeroArtChecks = preload("res://tests/hero_art_checks.gd")' in ai_tests
+      and "HeroArtChecks.new().run(_check)" in ai_tests,
+      "9bo hero art suite must be preloaded and run in the native suite")
+check(workflow.count("      - 'heroes/__init__.py'") == 2 and workflow.count("      - 'heroes/_bundle.py'") == 2,
+      "9bo CI must run when the source hero renderers change (push and pull_request)")
+check(_hr_path.is_file(), "9bo hero atlas manifest must exist")
+if _hr_path.is_file():
+    _hr = json.loads(_hr_path.read_text(encoding="utf-8"))
+    _hr_heroes = ["kaizen", "thorne", "grimjaw", "sylara", "vex", "zephyr", "alchemist"]
+    check(_hr["heroes"] == _hr_heroes and _hr["teams"] == ["blue", "red"]
+          and len(_hr["atlases"]) == 14 and sorted(_hr["meta"]) == sorted(_hr_heroes)
+          and _hr["phases"] == 8 and _hr["atk_quant"] == 3,
+          "9bo one atlas per kit hero x team, with the source phase count and attack quantum")
+    check(len(_hr["key_cases"]) >= 200 and {row[3] for row in _hr["key_cases"]} == {"atk", "walk", "idle"},
+          "9bo the manifest must carry the source pose keys")
+    for _hero in _hr_heroes:
+        _facts = _hr["meta"][_hero]
+        check((ROOT / "data/heroes" / f"{_hero}.tres").is_file()
+              and _facts["radius"] == 16 and 40 <= _facts["top_offset"] <= 50 and _facts["cooldown"] > 0
+              and _facts["name"],
+              f"9bo source facts and a Godot definition must exist for {_hero}")
+        for _team in ("blue", "red"):
+            _name = f"{_hero}_{_team}"
+            _entry = _hr["atlases"][_name]
+            _png = ROOT / "assets/art/heroes" / f"{_name}.png"
+            check(_png.is_file(), f"9bo hero atlas must ship: {_name}")
+            if not _png.is_file():
+                continue
+            _raw = _png.read_bytes()
+            _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+            check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _entry["size"]
+                  and (_depth, _color) == (8, 6),
+                  f"9bo atlas must be an RGBA8 PNG of its manifest size: {_name}")
+            check(len(_raw) == _entry["bytes"] and hashlib.sha256(_raw).hexdigest() == _entry["sha256"],
+                  f"9bo atlas must match its manifest hash: {_name}")
+            _poses = [f"idle{n}" for n in range(8)]
+            if _facts["walk_poses"]:
+                _poses += [f"walk{n}" for n in range(8)]
+            _poses += [f"atk{k}" for k in range(_facts["cooldown"] // 3 + 1)]
+            _rows = _entry["frames"]
+            check(sorted(_rows) == sorted(f"{pose}:{d}" for pose in _poses for d in (1, -1)),
+                  f"9bo atlas must hold every pose in both directions: {_name}")
+            check(all(w > 0 and h > 0 and x >= 0 and y >= 0 and x + w <= _entry["size"][0]
+                      and y + h <= _entry["size"][1] and 0 <= ax <= w and 0 <= ay <= h
+                      for x, y, w, h, ax, ay in _rows.values()),
+                  f"9bo every frame must lie inside its atlas with its anchor in the crop: {_name}")
+for _fragment in (
+    "phase = int(getattr(hero, 'pulse', 0.0) * 2.0) % HERO_ANIM_PHASES",
+    "timer // (_atk_quant() * _q)",
+    "return (hero_type, team, level, facing, 'idle', phase,",
+    "bool(getattr(hero, '_moving_cached', False)))",
+    "_HERO_RENDER_LEFT[0] = int(getattr(_Qb, \"max_hero_render\", 6))",
+):
+    check(_fragment in _hr_pkg, f"9bo the source hero cache must still key on {_fragment!r}")
+check("HERO_ANIM_PHASES = 8" in _hr_pkg and "self.atk_quant_floor = 6 if low else (4 if med else 3)" in _hr_perf,
+      "9bo the PC quality preset must still give 8 idle phases and an attack quantum of 3")
+for _fragment in (
+    "self.pulse += 0.1", "self.attack_timer = _eff_cd",
+    "pygame.draw.ellipse(surface, (0, 0, 0, 100),", "(x - self.radius, y + self.radius - 4,",
+    "self.radius * 2, 8))", "(x - self.radius - 3,", "y + self.radius - 6,", "(self.radius + 3) * 2, 10), 2)",
+    "r_color = (*self.color, 30)", "border_c = (*self.color, 100)",
+    "label_anchor = y - max(self.radius, sprite_top) - 6",
+    "bar_w = 45", "bar_h = 6", "by = label_anchor", "pygame.draw.rect(surface, (40, 0, 0), (bx, by, bar_w, bar_h))",
+    "hp_color = GREEN if hp_ratio > 0.5 else (", "YELLOW if hp_ratio > 0.25 else RED)",
+    "pygame.draw.rect(surface, WHITE, (bx, by, bar_w, bar_h), 1)",
+    "badge_top = by - badge.get_height() - 3",
+    "star_w = (self.level * 10) if self.level <= 5 else 18", "bw = max(name_lbl.get_width(), star_w) + 8",
+    "nh = name_lbl.get_height() + 4", "bh = 12 + nh", "sx = bw // 2 - (self.level - 1) * 5 + i * 10",
+    "(sx, sy - 3), (sx + 2, sy),", "total_w = 9 + lvl_txt.get_width()",
+    "y + self.radius + 8", "int(45 * cd_ratio)", "self.name = ",
+):
+    check(_fragment in _hr_entity, f"9bo the source hero overlay must still read {_fragment!r}")
+check("DARK_GRAY  = (60,  60,  70 )" in (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+      and "ORANGE     = (255, 140, 0  )" in (ROOT.parent / "_core.py").read_text(encoding="utf-8"),
+      "9bo the source cooldown-strip colours must still read as the painter draws them")
+check("_detect_moving" in (ROOT.parent / "heroes/_bundle.py").read_text(encoding="utf-8")
+      and "hero._moving_cached = moving" in (ROOT.parent / "heroes/_bundle.py").read_text(encoding="utf-8")
+      and "dx + dy > 0.3" in (ROOT.parent / "heroes/_bundle.py").read_text(encoding="utf-8"),
+      "9bo the source renderers must still detect movement as |dx| + |dy| > 0.3")
+check("heroes_mod._reset_hero_render_budget()" in _hr_bake and "hero.draw(surface)" in _hr_bake
+      and "heroes_mod._hero_cache_key(hero_type, hero)" in _hr_bake
+      and "hero.x = 400.0 + step * 2.0" in _hr_bake
+      and "hero.attack_timer = cooldown" in _hr_bake and "IDLE_STEPS = 40" in _hr_bake,
+      "9bo the bake must drive the real Hero.draw through still, walking and attacking timelines")
+check("static func resolve(" in _hr_art and "ResourceLoader.exists(atlas_path(name))" in _hr_art
+      and "pose.begins_with(\"walk\")" in _hr_art and "pose.begins_with(\"atk\")" in _hr_art,
+      "9bo the loader must fall back to idle / the last attack pose and tolerate a missing import")
+check("floori(float(attack_timer) / float(ATK_QUANT))" in _hr_anim
+      and "int(pulse * 2.0) % PHASES" in _hr_anim and "PULSE_STEP := 0.1" in _hr_anim
+      and "MOVE_EPSILON := 0.3" in _hr_anim and "PHASES := 8" in _hr_anim,
+      "9bo the pose picker must mirror the source cache key and clocks")
+for _fragment in (
+    "const BAR_WIDTH := 45", "const BAR_HEIGHT := 6",
+    "Color(50 / 255.0, 200 / 255.0, 50 / 255.0)", "Color(255 / 255.0, 220 / 255.0, 0 / 255.0)",
+    "Color(220 / 255.0, 50 / 255.0, 50 / 255.0)", "Color(255 / 255.0, 140 / 255.0, 0 / 255.0)",
+    "Color(60 / 255.0, 60 / 255.0, 70 / 255.0)", "Color(40 / 255.0, 0 / 255.0, 0 / 255.0)",
+    "Rect2(point.x - radius, point.y + radius - 4, radius * 2, 8)",
+    "Rect2(point.x - radius - 3, point.y + radius - 6, (radius + 3) * 2, 10)",
+    "Color(0, 0, 0, 100.0 / 255.0)", "Color(ink, 30.0 / 255.0)", "Color(ink, 100.0 / 255.0)",
+    "maxi(radius, int(facts.get(\"top_offset\", radius))) - 6", "bar_top - height - 3",
+    "level * 10 if level <= 5 else 18", "maxi(int(name_size.x), star_width) + 8",
+    "int(name_size.y) + 4", "12 + name_height", "(level - 1) * 5 + index * 10",
+    "var total := 9 + int(label_width)", "int(point.y) + radius + 8",
+    "ratio > 0.5 else (YELLOW if ratio > 0.25 else RED)", "int(float(BAR_WIDTH) * ratio)",
+):
+    check(_fragment in _hr_painter, f"9bo the painter must draw the source hero overlay: {_fragment!r}")
+check("if _draw_hero_sprite(hero):" in _hr_view and "func _draw_hero_sprite(" in _hr_view
+      and "HeroPainter.paint(self, hero, art, hero.id == session.selected_id)" in _hr_view
+      and "hero_anim.prune(session.world.units)" in _hr_view
+      and _hr_view.index("if _draw_hero_sprite(hero):") < _hr_view.index("HeroMarker.silhouette(point, radius"),
+      "9bo the view must draw the baked hero first and keep the marker as the fallback")
+check("_check_atlases(check)" in _hr_checks and "_check_key_cases(check, manifest)" in _hr_checks
+      and "_check_clocks(check)" in _hr_checks and "_check_view_wiring(check)" in _hr_checks,
+      "9bo hero art suite must check atlases, pose keys, clocks and wiring")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

@@ -36,11 +36,16 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	if not towers.is_empty():
 		session.selected_id = towers[0].id
 	session.selected_slot_id = _free_slot(world)
+	var hero = null
+	if not world.player_hero_ids.is_empty():
+		hero = world.get_unit(int(world.player_hero_ids[0]))
 	var drawn_before: int = view.draw_count
 	for frame in range(FRAMES):
 		for _tick in range(TICKS_PER_FRAME):
 			world.step_tick()
 		_poke(world, towers, frame)
+		if hero != null:
+			_poke_hero(session, hero, towers, frame)
 		await tree.process_frame
 	check.call(
 		view.draw_count >= drawn_before + (FRAMES >> 1),
@@ -48,6 +53,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	)
 	check.call(view.minion_anim.tracked() > 0, "Minion clocks were tracked while drawing")
 	check.call(view.structure_anim.tracked() > 0, "Structure clocks were tracked while drawing")
+	check.call(view.hero_anim.tracked() > 0, "Hero clocks were tracked while drawing")
 	app.show_menu()
 	await _settle(tree)
 
@@ -93,6 +99,14 @@ func _poke(world, towers: Array, frame: int) -> void:
 			unit.cooldown_ticks = 0 if frame % 3 == 0 else 20
 	for tower in towers:
 		tower.cooldown_ticks = 0 if frame % 4 == 0 else 30
+
+
+## Select the hero on odd frames (ring and range disc), swing it, and pass level 5 halfway so
+## both badge layouts (stars, then `x7`) draw.
+func _poke_hero(session, hero, towers: Array, frame: int) -> void:
+	session.selected_id = hero.id if frame % 2 == 1 or towers.is_empty() else towers[0].id
+	hero.level = 7 if frame >= (FRAMES >> 1) else 1
+	hero.attack_timer = 14 if frame % 3 == 0 else hero.attack_timer
 
 
 func _settle(tree: SceneTree) -> void:

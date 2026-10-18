@@ -20,6 +20,9 @@ const DeathExplosionLayout = preload("res://scripts/ui/death_explosion_layout.gd
 const MapTintLayout = preload("res://scripts/ui/map_tint_layout.gd")
 const MapArt = preload("res://scripts/ui/map_art.gd")
 const SlotArt = preload("res://scripts/ui/slot_art.gd")
+const HeroArt = preload("res://scripts/ui/hero_art.gd")
+const HeroAnim = preload("res://scripts/ui/hero_anim.gd")
+const HeroPainter = preload("res://scripts/ui/hero_painter.gd")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
@@ -44,6 +47,7 @@ const OVERLAY_ORDER := [
 var cached_river_theme := ""
 ## Counts real `_draw` calls so the headless scene suite can prove the painters run.
 var draw_count := 0
+var hero_anim := HeroAnim.new()
 
 
 func _draw() -> void:
@@ -88,6 +92,7 @@ func _draw() -> void:
 ## and units. The marker is the baked source sprite (`SlotArt`); the selection preview
 ## (range disc and arc) is the rebuild's own and stays.
 func _draw_structures() -> void:
+	hero_anim.prune(session.world.units)
 	_draw_build_slots(session.world as Prototype)
 	super._draw_structures()
 
@@ -855,6 +860,8 @@ func _draw_unit(unit: UnitState) -> void:
 		super._draw_unit(unit)
 		return
 	var hero := unit as HeroState
+	if _draw_hero_sprite(hero):
+		return
 	var point := hero.position
 	var radius := hero.settings().radius_px
 	var team_color := Color("73cbbb") if hero.team == 0 else Color("d78579")
@@ -870,6 +877,19 @@ func _draw_unit(unit: UnitState) -> void:
 	var health := float(hero.hp) / maxf(1.0, hero.max_hp)
 	draw_rect(Rect2(point + Vector2(-17, -radius - 14), Vector2(34, 4)), Color("071518"))
 	draw_rect(Rect2(point + Vector2(-17, -radius - 14), Vector2(34 * health, 4)), team_color)
+
+
+## Layer 9bo: the baked source body of a kit hero with the live parts `Hero.draw` paints
+## around it. False when the hero is not baked or its sheet is not imported, so the marker
+## above still draws.
+func _draw_hero_sprite(hero: HeroState) -> bool:
+	var clocks := hero_anim.observe(hero, session.world.tick_count)
+	var pose := HeroAnim.pose_key(hero.attack_timer, bool(clocks["moving"]), float(clocks["pulse"]))
+	var art := HeroArt.frame(hero.definition.id, hero.team, pose, hero.facing)
+	if art.is_empty():
+		return false
+	HeroPainter.paint(self, hero, art, hero.id == session.selected_id)
+	return true
 
 
 ## Layer 9aq: `lighting.py` pass on a vector body - directional gradient over
