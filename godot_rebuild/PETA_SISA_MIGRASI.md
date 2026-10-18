@@ -62,6 +62,16 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
   (`transform.scale` dimodelkan di geometri lingkaran; 25 frame, 582 op);
   `death_explosion_draw_checks.gd` mereplay lewat state produksi dan
   `PrototypeView`. Rincian ada di bagian "Slice 9bg" paling bawah.
+- 9bh melengkapi langkah terakhir `MapRenderer.draw()`: tint ambient per tema
+  (53 dari 54 tema; forest tidak punya) yang menutup seluruh peta di bawah
+  unit. Sebelumnya `theme["ambient_tint"]` selalu `null` di Godot dan tidak ada
+  yang menggambarnya. Dengan `Quality.cheap_alpha` tint di-blit apa adanya
+  (alpha 12-22); tanpa itu layar dikalikan `255 - (255 - c) * a / 255`.
+  Oracle `map_tint_draw_source_oracle.py` menjalankan `MapRenderer.draw` asli di
+  bawah shim bersama dengan tint tiap tema dibaca dari literal tema asli
+  `map_components/_bundle.py` (54 tema x 2 jalur = 108 frame, 106 op);
+  `map_tint_draw_checks.gd` mereplay tabel dan frame lewat layout murni dan
+  `PrototypeView`. Rincian ada di bagian "Slice 9bh" paling bawah.
 - Kandidat visual berikutnya yang terbukti belum source-backed:
   `BossDeathAnimation._draw_celebration()` (true boss saja). Renderer sekarang
   menggambar overlay datar dan teks karangan `NAMA DEFEATED!` 32 px; sumber
@@ -205,6 +215,7 @@ Dibaca hanya untuk memilih slice berikutnya, bukan audit menyeluruh:
 | BossDeathAnimation celebration (`_render.py::BossDeathAnimation._draw_celebration`) | **Terport (layer 9be)** — `scripts/ui/boss_celebration_layout.gd::ops(anim, ticks, measure, cheap_alpha)`: `darken` 180 (fade-in <15 %, fade-out >85 %), tint `(80, 60, 20, 40)` sampai 85 %, `BOSS DEFEATED!` 66 px `title` (emas, 6 bayangan hitam alpha maks 80 atau 1 tanpa `cheap_alpha`) memantul 60 px sampai 30 %, nama 46 px `entrance_color` + bayangan (+2, +2), judul ber-kutip 32 px, hadiah `+ N GOLD` + koin (r=10) + `HERO UNLOCKED!` + 2 bintang `draw_icon("star", s=0.5)` setelah 30 %, 6 percikan setelah 40 %, hint `[SPACE] to continue` setelah 50 %; dirender `prototype_view._draw_boss_celebration`; oracle `boss_celebration_draw_source_oracle.py` (20 frame, 547 op). |
 | BossDeathAnimation death sequence (`_render.py::BossDeathAnimation._draw_death_sequence`) | **Terport (layer 9bf)** — `scripts/ui/boss_death_sequence_layout.gd::ops(anim)`: `flash` aditif `int(200*(1-t/15))`, per gelombang cincin lebar 3 `range(r, r-20, -3)` alpha `alpha*r/radius` + inti `max(1, r-15)` alpha/2 di (boss+2, boss+2), badan `boss_color` + inti `entrance_color` alpha/2 selama progress <0.5, fragmen persegi berotasi + tepi 1 px `entrance_color` sampai alpha <10, partikel jiwa glow `size+2..1` + inti putih; petunjuk painter `covered` / `ring_inner` untuk timpa-piksel SRCALPHA; dirender `prototype_view._draw_boss_death_animation` (paling akhir, screen space); oracle `boss_death_sequence_draw_source_oracle.py` (12 frame, 2299 op). |
 | DeathExplosion + HitParticle draw (`_render.py::DeathExplosion.draw`, `HitParticle.draw`) | **Terport (layer 9bg)** — `scripts/ui/death_explosion_layout.gd::ops(explosion)` + `scripts/ui/hit_particle_layout.gd::ops(particle)`: kilat = cakram `(255, 255, 200, int(200*i))` radius `int(20*i)` + inti putih `(255, 255, 255, int(255*i))` radius `size // 2` di `int(x), int(y)` selama 8 tick (`i = timer/8`); percikan = cakram warna radius `base` + inti putih `max(1, base // 2)` diskalakan `current_size / base`, alpha permukaan `int(255 * lifetime / max_lifetime)`, di `int(x) - current_size*3//2`; petunjuk painter `ring_inner` / `covered` untuk timpa-piksel; dirender `prototype_view._draw_world_effects` lewat `_draw_death_op`; oracle `death_explosion_draw_source_oracle.py` (25 frame, 582 op). |
+| MapRenderer ambient tint (`_render.py::MapRenderer.draw`) | **Terport (layer 9bh)** — `scripts/ui/map_tint_layout.gd::ops(theme, screen, cheap_alpha)` + tabel `TINTS` (54 tema, forest `null`): satu `fill` seukuran peta `(r, g, b, a)` (`cheap_alpha`) atau perkalian `255 - (255 - c) * a / 255` (`BLEND_RGB_MULT`); dirender `prototype_view._draw_map_overlay`, hook baru di `minion_view.gd` tepat setelah lapisan peta dan sebelum markas/unit; oracle `map_tint_draw_source_oracle.py` (108 frame, 106 op). Lapisan peta dinamis (`DynamicRenderer`), dekorasi, dan toko tetap belum diport. |
 | `hero_marker.gd` | Selesai: placeholder 4-6 sisi tetap untuk `grimjaw_checks`, siluet per-hero dipakai `prototype_view.gd:619`; art roster dipaku golden fixture (layer 9aj) |
 
 Catatan: `ui_components/hero_portraits.py` yang di-impor `_core.py:3056`
@@ -1966,3 +1977,39 @@ sumber diport sebagai daftar op murni:
 Divergensi yang disadari: pygame menskalakan piksel sprite (nearest neighbour)
 sedangkan Godot menggambar lingkaran bergeometri terskala, sehingga tepi bisa beda
 sub-piksel; lingkaran tidak anti-alias seperti pygame.
+
+## Slice 9bh — tint ambient `MapRenderer.draw()` (layer 9bh)
+
+Sumber menutup `MapRenderer.draw()` dengan tint ambient tema (`theme.get
+("ambient_tint")`) di atas peta statis + dinamis, di bawah bangunan, menara, minion,
+hero, boss, dan efek (`_core.py` memanggil `map_renderer.draw` sebelum semuanya).
+Port state `MapRenderer` hanya menyimpan `ambient_tint`; `prototype_battle.gd` mengisinya
+`null` dan `prototype_view` tidak menggambar apa pun, jadi 53 tema kehilangan semburat
+warna petanya. Kini langkah itu diport sebagai daftar op murni,
+`scripts/ui/map_tint_layout.gd::ops(theme, screen, cheap_alpha)`:
+
+- `Quality.cheap_alpha` (default PC): surface SRCALPHA seukuran layar diisi
+  `(r, g, b, a)` tema lalu di-blit: satu op `fill` `[0, 0, 1280, 720]`, `blend` 0.
+  Tanpa `cheap_alpha`: `fill` `(int(255 - (255 - r) * a / 255), ...)` dengan
+  `BLEND_RGB_MULT` (blend 3). Tema tanpa tint (forest, atau nama tak dikenal yang jatuh
+  ke forest lewat `get_theme`) tidak menggambar apa pun.
+- Tabel `TINTS` (54 tema) memuat nilai dari literal tema asli `map_components/
+  _bundle.py`; oracle membacanya dengan `ast` (`THEMES` + tiap `*_THEME`), karena
+  modul itu tidak bisa diimpor tanpa pygame. Validator membandingkan baris
+  `TINTS` di GDScript dengan fixture, sehingga tabel tidak bisa menyimpang diam-diam.
+- Oracle memanen `MapRenderer.draw` asli dan menjalankannya di instance tanpa
+  `__init__` (peta statis dan renderer dinamis berupa stand-in kosong) di bawah
+  `tests/draw_recorder.py`. Fixture: 54 tema x {cheap_alpha, perkalian} = 108 frame,
+  106 op (forest tanpa op).
+- `minion_view.gd` mendapat hook `_draw_map_overlay()` (kosong) yang dipanggil tepat
+  setelah tekstur dinding dan sebelum `_draw_base`; `prototype_view.gd` meng-override-nya
+  untuk melukis tint lewat painter level intro (`fill`). Tint ikut transform goncangan
+  seperti seluruh peta di sumber (surface dunia di-shake utuh).
+- `map_tint_draw_checks.gd` mereplay tabel dan 108 frame lewat layout murni, memeriksa
+  kuirk (blend 0 vs 3, forest, tema tak dikenal, ukuran layar), dan lewat
+  `PrototypeView.map_tint_draw_ops` dengan `level_config["map_theme"]`.
+
+Divergensi yang disadari: Godot hanya memakai jalur `cheap_alpha` (alpha blend);
+jalur perkalian di-pin di layout dan oracle tetapi tidak dilukis. Lapisan dinamis
+`DynamicRenderer` (animasi air, obor, dll.) dan renderer dekorasi/toko masih belum
+diport, jadi tint menutup peta yang belum memuat lapisan itu.

@@ -17,6 +17,7 @@ const BossCelebrationLayout = preload("res://scripts/ui/boss_celebration_layout.
 const BossDeathSequenceLayout = preload("res://scripts/ui/boss_death_sequence_layout.gd")
 const HitParticleLayout = preload("res://scripts/ui/hit_particle_layout.gd")
 const DeathExplosionLayout = preload("res://scripts/ui/death_explosion_layout.gd")
+const MapTintLayout = preload("res://scripts/ui/map_tint_layout.gd")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
@@ -87,6 +88,17 @@ func _draw() -> void:
 	_draw_boss_intro(world)
 	_draw_level_intro(world)
 	_draw_boss_death_animation(world)
+
+
+## Layer 9bh: the ambient tint `MapRenderer.draw()` lays over the map, under the
+## units. The base view calls this hook right after the cached map layers.
+func _draw_map_overlay() -> void:
+	for op in map_tint_draw_ops(session.world as Prototype):
+		_draw_intro_op(op)
+
+
+func map_tint_draw_ops(world: Prototype) -> Array:
+	return MapTintLayout.ops(String(world.level_config.get("map_theme", "forest")))
 
 
 func overlay_draw_summary() -> Dictionary:

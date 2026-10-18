@@ -78,6 +78,7 @@ func _draw() -> void:
 			draw_polyline(path, edge, 1.5, true)
 	if wall_texture != null:
 		draw_texture(wall_texture, Vector2.ZERO)
+	_draw_map_overlay()
 	_draw_base(Layout.BLUE_BASE, Color("73cbbb"))
 	_draw_base(Layout.RED_BASE, Color("d78579"))
 	for unit in session.world.units:
@@ -85,6 +86,12 @@ func _draw() -> void:
 	for event in session.world.recent_events:
 		if event.kind == "hit" and session.world.tick_count - int(event.tick) < 8:
 			draw_line(event["from"], event["to"], Color("e7c98a"), 2, true)
+
+
+## Hook for the layer the source paints over the finished map, under the units
+## (the prototype draws its ambient tint here).
+func _draw_map_overlay() -> void:
+	pass
 
 
 func _draw_unit(unit: UnitState) -> void:

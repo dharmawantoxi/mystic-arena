@@ -3777,6 +3777,71 @@ check("_check_production_replay(check, data)" in _burst_checks
       and "_check_view_wiring(check, data)" in _burst_checks,
       "9bg death explosion draw suite must replay production frames plus the view")
 
+# ── Layer 9bh: MapRenderer.draw() ambient tint as a pure op list ──
+from map_tint_draw_source_oracle import source_fixture as map_tint_draw_fixture
+_tint_path = ROOT / "tests/fixtures/map_tint_draw_source.json"
+_tint_layout = (ROOT / "scripts/ui/map_tint_layout.gd").read_text(encoding="utf-8")
+_tint_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_tint_base = (ROOT / "scenes/combat/minion_view.gd").read_text(encoding="utf-8")
+_tint_checks = (ROOT / "tests/map_tint_draw_checks.gd").read_text(encoding="utf-8")
+_tint_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+check('const MapTintDrawChecks = preload("res://tests/map_tint_draw_checks.gd")' in ai_tests
+      and "MapTintDrawChecks.new().run(_check)" in ai_tests,
+      "9bh map tint draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/map_tint_draw_source_oracle.py" in workflow,
+      "9bh CI must run the MapRenderer.draw() ambient tint source oracle")
+check(_tint_path.is_file(), "9bh map tint draw fixture must exist")
+if _tint_path.is_file():
+    _tint = json.loads(_tint_path.read_text(encoding="utf-8"))
+    check(map_tint_draw_fixture() == _tint,
+          "9bh map tint draw fixture must not drift from _render.py / map_components")
+    check(len(_tint["tints"]) == 54 and len(_tint["frames"]) == 108
+          and sum(len(frame["ops"]) for frame in _tint["frames"]) == 106,
+          "9bh oracle must pin 54 themes, 108 frames and 106 recorded draw ops")
+    _tint_rows = {name: None if value == "null" else json.loads(value)
+                  for name, value in re.findall(r'^\t"(\w+)": (null|\[[^\]]*\]),$',
+                                                _tint_layout, re.M)}
+    check(_tint_rows == _tint["tints"],
+          "9bh map_tint_layout.gd TINTS must equal the source theme tints")
+    check(_tint["tints"]["forest"] is None
+          and sum(value is not None for value in _tint["tints"].values()) == 53
+          and all(len(value) == 4 for value in _tint["tints"].values() if value is not None),
+          "9bh oracle must pin forest without tint and 53 RGBA theme tints")
+    check(all(frame["ops"] == [] for frame in _tint["frames"] if _tint["tints"][frame["theme"]] is None)
+          and all(frame["ops"] == [{"kind": "fill", "rect": [0, 0, 1280, 720],
+                                    "color": _tint["tints"][frame["theme"]], "mult": 255,
+                                    "blend": 0}]
+                  for frame in _tint["frames"]
+                  if frame["cheap_alpha"] and _tint["tints"][frame["theme"]] is not None),
+          "9bh oracle must pin the screen-sized alpha blit of the theme tint")
+    check(all(len(frame["ops"]) == 1 and frame["ops"][0]["blend"] == 3
+              and frame["ops"][0]["color"][3] == 255
+              and all(a >= b for a, b in zip([255, 255, 255],
+                                              frame["ops"][0]["color"][:3]))
+              for frame in _tint["frames"]
+              if not frame["cheap_alpha"] and _tint["tints"][frame["theme"]] is not None),
+          "9bh oracle must pin the BLEND_RGB_MULT path of the non-cheap tint")
+check("static func ops(" in _tint_layout
+      and "static func tint_for(" in _tint_layout
+      and "const BLEND_RGB_MULT := 3" in _tint_layout
+      and "const TINTS := {" in _tint_layout,
+      "9bh map tint layout must mirror MapRenderer.draw()'s tint step")
+check("MapTintLayout.ops(" in _tint_view
+      and "func map_tint_draw_ops(" in _tint_view
+      and "func _draw_map_overlay(" in _tint_view
+      and "func _draw_map_overlay(" in _tint_base
+      and _tint_base.index("draw_texture(wall_texture")
+      < _tint_base.index("_draw_map_overlay()")
+      < _tint_base.index("_draw_base(Layout.BLUE_BASE"),
+      "9bh the tint must be painted right after the map layers and before the units")
+check(_tint_core.index("self.map_renderer.draw(draw_target") < _tint_core.index("h.draw(draw_target)"),
+      "9bh the source draws the map (and its tint) before the heroes")
+check("_check_table(check, data)" in _tint_checks
+      and "_check_frames(check, data)" in _tint_checks
+      and "_check_quirks(check, data)" in _tint_checks
+      and "_check_view_wiring(check)" in _tint_checks,
+      "9bh map tint draw suite must replay every theme frame plus the view")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")
