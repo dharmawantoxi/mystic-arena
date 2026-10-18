@@ -35,7 +35,9 @@ func _check_sheet(check: Callable, manifest: Dictionary) -> void:
 	var image := Image.load_from_file(MenuBackdrop.BACKGROUND)
 	var decodes := image != null and image.get_size() == Vector2i(int(size[0]), int(size[1]))
 	check.call(decodes, "The menu background decodes at its manifest size")
-	check.call(size == [1280, 720], "It is the 1280x720 frame the pygame menu blits")
+	# JSON numbers are floats and Array == Array does not equate 1280.0 with 1280.
+	var is_frame := int(size[0]) == 1280 and int(size[1]) == 720
+	check.call(is_frame, "It is the 1280x720 frame the pygame menu blits")
 	var texture := MenuBackdrop.texture()
 	check.call(texture != null, "The menu background loads from the imported sheet")
 	if image == null:
