@@ -2377,6 +2377,13 @@ atas puncak sprite.
   memutar arahnya tiap frame, mengedipkan luka, dan membuatnya mengamuk di paruh akhir sehingga
   `boss_sprite_draws > 0` terbukti di CI. Workflow dipicu perubahan `bosses/**`.
 
+Koreksi (CI 9bq): registry native tidak pernah memegang boss (`active_boss` hanya ada di
+`_by_id`), sehingga `_draw_unit` tidak pernah mencapai `_draw_boss` dan boss tidak tergambar
+sama sekali di view match, juga sebelum slice ini. `PrototypeView._draw()` kini menggambar
+`world.active_boss` yang hidup sendiri, sesudah hero dan panah mereka (urutan `Game.draw`:
+"DRAW BOSS (di luar hero loop!)") dan sebelum presentasi kematian. Cek painter
+`boss_sprite_draws > 0` yang menangkapnya.
+
 Batas yang diketahui: pose jalan, serang, skill, dan kilat luka bawaan sumber, 7+ fase idle,
 aura hidup (`_LIVE_FX_HEROES`), serta aura enrage/ability ber-cache masih pendekatan Godot
 (busur) atau kosong; boss `entrance` tetap gambar lama.

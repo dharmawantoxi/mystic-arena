@@ -4679,6 +4679,15 @@ check('UiSkin.palette("OPEN_BG_TOP")' in _ui_card and 'UiSkin.palette("LOCKED_ED
       and "162d34" not in _ui_card,
       "9br hero shop rows must use the source card colours instead of the old teal literals")
 
+# ── Layer 9bq follow-up: the match view paints the live boss itself ──
+_bf_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+check("var live_boss: BossState = world.active_boss" in _bf_view
+      and "if live_boss != null and live_boss.alive:\n\t\t_draw_boss(live_boss)" in _bf_view,
+      "9bq the match view must paint the live boss: the unit registry never holds it")
+check(_bf_view.index("draw_circle(arrow.position, 3, ink)") < _bf_view.index("_draw_boss(live_boss)")
+      < _bf_view.index("_draw_boss_death(snapshot)"),
+      "9bq the boss is drawn after the heroes and their arrows and before the death presentations")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

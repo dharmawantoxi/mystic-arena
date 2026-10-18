@@ -75,6 +75,11 @@ func _draw() -> void:
 	for arrow in world.hero_projectiles:
 		var ink := Color("73cbbb") if arrow.team == 0 else Color("d78579")
 		draw_circle(arrow.position, 3, ink)
+	# `Game.draw` paints the boss after every hero ("di luar hero loop"). The registry never
+	# holds the boss (`active_boss` only lives in `_by_id`), so `_draw_unit` cannot reach it.
+	var live_boss: BossState = world.active_boss
+	if live_boss != null and live_boss.alive:
+		_draw_boss(live_boss)
 	for snapshot in world.boss_death_presentations:
 		_draw_boss_death(snapshot)
 	for layer in WORLD_LAYER_ORDER:
