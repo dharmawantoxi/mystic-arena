@@ -4278,6 +4278,24 @@ check("_check_pulse(check, manifest)" in _sl_checks and "_check_frames(check)" i
       and "_check_view_wiring(check)" in _sl_checks,
       "9bm slot art suite must check the pulse, the frames and the wiring")
 
+# ── Layer 9bn: the painters run for real in the headless scene suite ──
+_pt_checks = (ROOT / "tests/painter_scene_checks.gd").read_text(encoding="utf-8")
+_pt_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+check('const PainterSceneChecks = preload("res://tests/painter_scene_checks.gd")' in ai_tests
+      and "await PainterSceneChecks.new().run(root.get_tree(), app, _check)" in ai_tests
+      and "painter scene restores the menu" in ai_tests,
+      "9bn the painter scene suite must be preloaded, awaited and followed by the menu check")
+check("var draw_count := 0" in _pt_view and "\tdraw_count += 1\n\tif session == null:" in _pt_view,
+      "9bn PrototypeView must count real _draw calls")
+check("view.draw_count > first_draw" in _pt_checks and "world.step_tick()" in _pt_checks
+      and "world.build_tower(0, slot.id, \"archer\")" in _pt_checks
+      and "world.upgrade_tower(tower.id, 1, PATHS[index])" in _pt_checks
+      and "view.minion_anim.tracked() > 0" in _pt_checks
+      and "view.structure_anim.tracked() > 0" in _pt_checks
+      and 'const TYPES := ["goblin", "orc", "troll", "undead", "dark_rider"]' in _pt_checks
+      and "unit.slow_timer = 60" in _pt_checks and "tower.cooldown_ticks" in _pt_checks,
+      "9bn the painter suite must prove _draw ran and exercise every minion type, towers, slow and fire")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

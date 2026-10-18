@@ -99,6 +99,9 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
   kini dilukis SEBELUM unit (seperti `Game.draw`). Rincian di bagian "Slice 9bl".
 - 9bm membake penanda slot bangun (lima frame glow biru + satu merah, `BuildSlots` asli) dan
   menggambarnya di bawah menara, seperti `Game.draw`. Rincian di bagian "Slice 9bm".
+- 9bn menambah suite scene `painter_scene_checks.gd` yang menjalankan `_draw` view prototipe
+  sungguhan di CI (penghitung `draw_count`) dengan semua tipe minion, menara tiap jalur,
+  seleksi, slow, hurt, dan tembakan. Rincian di bagian "Slice 9bn".
 - Urutan bake berikutnya (user: "semuanya"): HUD/menu, lalu hero dan boss.
   Sisanya di luar bake: `DynamicRenderer`
   (partikel, kabut, obor, air bergerak) dan `tactical_commands.draw_world/draw_ui`.
@@ -2242,3 +2245,20 @@ terlihat di bawah platform); itu ikut terbake apa adanya.
 
 Batas yang diketahui: denyut memakai `tick_count` sebagai `animation_time`; slot yang
 terisi tidak digambar (seperti sumber); tombol bangun dan popup biaya tetap UI Godot.
+
+## Slice 9bn — painter dijalankan sungguhan di CI (layer 9bn)
+
+Sebelumnya painter `_draw_*` di `PrototypeView` hanya di-parse oleh CI. `CanvasItem.queue_redraw`
+menunda `_draw` ke akhir frame (bukan lewat renderer), sehingga frame yang ditunggu suite scene
+seharusnya sudah menggambar view; belum ada bukti dan keadaan yang digambar sangat sedikit.
+`tests/painter_scene_checks.gd` (di-await dari `run_all.gd` setelah suite scene lain):
+
+- membuktikan `_draw` berjalan di scene `PrototypeMatch` headless lewat `PrototypeView.draw_count`;
+- mengisi match dengan lima tipe minion di kedua tim, empat menara biru (tiga di-upgrade ke
+  Cannon/Ice/Mage), menara dan slot terseleksi, minion yang diperlambat dan terluka, serta
+  menara yang menembak, lalu menjalankan 16 frame (6 tick per frame);
+- memastikan jam animasi minion dan struktur terisi. Setiap `SCRIPT ERROR` di painter manapun
+  (termasuk layer 9be-9bi) membuat langkah native gagal karena workflow men-grep log-nya.
+
+Batas: renderer dummy tidak merasterisasi, jadi hasil gambar tetap tidak terlihat; hanya
+kesalahan skrip (tipe, null, argumen) yang tertangkap.

@@ -42,9 +42,12 @@ const OVERLAY_ORDER := [
 	"boss_death",
 ]
 var cached_river_theme := ""
+## Counts real `_draw` calls so the headless scene suite can prove the painters run.
+var draw_count := 0
 
 
 func _draw() -> void:
+	draw_count += 1
 	if session == null:
 		super._draw()
 		return
