@@ -8,6 +8,9 @@ extends RefCounted
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const HeroArt = preload("res://scripts/ui/hero_art.gd")
 const HudFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
+## `pygame.draw.ellipse(surface, (0, 0, 0, 100), ...)` on the display surface: pygame drops the
+## alpha of a draw call on a surface without per-pixel alpha, so the source shadow is solid.
+const SHADOW := Color(0, 0, 0)
 const BAR_WIDTH := 45
 const BAR_HEIGHT := 6
 const NAME_SIZE := 14
@@ -39,7 +42,7 @@ static func paint(canvas: CanvasItem, hero: HeroState, art: Dictionary, selected
 	if selected:
 		_paint_selection(canvas, hero, point, radius)
 	var shadow := Rect2(point.x - radius, point.y + radius - 4, radius * 2, 8)
-	canvas.draw_colored_polygon(_ellipse(shadow), Color(0, 0, 0, 100.0 / 255.0))
+	canvas.draw_colored_polygon(_ellipse(shadow), SHADOW)
 	var src: Rect2 = art["src"]
 	var corner := point - (art["anchor"] as Vector2)
 	canvas.draw_texture_rect_region(art["texture"] as Texture2D, Rect2(corner, src.size), src)

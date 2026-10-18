@@ -107,7 +107,10 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
   14 atlas, 5,5 MB) dan menggambarnya dengan overlay `Hero.draw` (bar HP 45x6, papan nama
   dan bintang level, bayangan, cincin seleksi, strip cooldown). Hero lain tetap memakai
   penanda siluet. Rincian di bagian "Slice 9bo".
-- Urutan bake berikutnya (user: "semuanya"): HUD/menu, boss, proyektil.
+- 9bp membake peluru menara (panah 16 arah per tim, bola meriam, kristal es, bolt mage; satu
+  sheet 6 KB) dan menggambarnya di `SiegeView` menggantikan titik 4 px. Peluru hero
+  (`world.hero_projectiles`) belum. Rincian di bagian "Slice 9bp".
+- Urutan bake berikutnya (user: "semuanya"): HUD/menu, boss, peluru hero.
   Sisanya di luar bake: `DynamicRenderer`
   (partikel, kabut, obor, air bergerak) dan `tactical_commands.draw_world/draw_ui`.
   Keputusan user: combo counter dan kill feed tetap tampil di Godot (walau tidak digambar
@@ -2294,7 +2297,8 @@ Latar: hero di Godot adalah lingkaran tim + poligon dari hash id. Sumbernya
   PC `atk_quant_floor`). `scripts/ui/hero_art.gd` memuat atlas dan menolak diam-diam bila belum
   diimpor; timer serang di luar jangkauan memakai pose serang terakhir.
 - `scripts/ui/hero_painter.gd` melukis seperti `Hero.draw`: elips kuning dan cakram jangkauan
-  saat terseleksi, bayangan, sprite di `int(x) - ax, int(y) - ay`, bar HP 45x6 (hijau/kuning/merah
+  saat terseleksi, bayangan hitam penuh (alpha `(0, 0, 0, 100)` dibuang pygame pada layar
+  tanpa alpha), sprite di `int(x) - ax, int(y) - ay`, bar HP 45x6 (hijau/kuning/merah
   di 0,5/0,25, border putih) di `y - max(radius, top_offset) - 6`, papan nama hitam 3 px di
   atasnya dengan nama 14 px dan sampai lima bintang (atau satu bintang dan `xN` setelah level
   5), dan strip skill di bawah kaki. `PrototypeView._draw_unit` mencobanya lebih dulu dan
@@ -2309,3 +2313,31 @@ Batas yang diketahui: pose skill, efek hidup hero (`_live_fx_*`), indikator HEAL
 lain belum dibake; warna cakram jangkauan memakai warna tim, bukan `hero.color`; Godot
 menghitung `eff_attack_cd` sendiri, sehingga timer di atas cooldown yang dibake memakai pose
 serang terakhir.
+
+## Slice 9bp — bake peluru menara (layer 9bp)
+
+Latar: `SiegeView` menggambar setiap `ProjectileState` sebagai lingkaran 4 px. Sumbernya
+(`_entity.py::_get_bullet_sprite`, dipakai `Bullet.draw`) men-cache satu sprite per kunci
+`(bullet_type, team, angle_k)` dan mem-blit-nya di `(int(x - ax), int(y - ay))`.
+
+- Hanya panah (`normal`) yang bergantung arah: 16 bucket `angle_k = (int(ang / (2 pi) * 16) +
+  16) % 16` dari `atan2` ke target (target mati atau hilang = 0). Bola meriam, kristal es, dan
+  bolt mage statis. Bucket 8 hanya tercapai oleh bearing tepat pi (target lurus ke kiri di baris
+  yang sama), jadi sheet tetap memuatnya.
+- `bake/bake_bullet_atlas.py` memanggil `_get_bullet_sprite` ASLI untuk 16 bucket x 2 tim
+  panah plus tiga bolt x 2 tim: 38 frame, satu sheet 200x125 (6 KB), deterministik (dua run
+  identik). `data/art/bullets.json` memuat tabel frame dan 66 `angle_cases` (bearing hasil
+  `atan2` yang dilihat fungsi sumber -> bucket pilihannya).
+- `scripts/ui/bullet_art.gd` memilih bucket dengan rumus yang sama dan menolak diam-diam bila
+  sheet belum diimpor. `ProjectileState.kind` (`normal`/`cannon`/`ice`/`mage`) setara
+  `bullet_type`; kind tak dikenal jatuh ke titik lama seperti `else` pada sumber.
+- `SiegeView._draw_shot`: panah menghadap `(target - peluru).angle()` (= `atan2(dy, dx)` sumber);
+  bolt tidak peduli arah. Peluru digambar setelah unit (sumber menggambarnya di dalam
+  `Tower.draw`, sebelum minion); selisih urutan ini diterima karena peluru hanya hidup
+  beberapa tick.
+- `tests/bullet_art_checks.gd`: 38 frame di dalam gambar, bucket 66 kasus sumber, empat arah
+  sumbu (0, 4, 8, 12), kind tak dikenal, dan pengabelan view. Suite painter 9bn kini memasukkan
+  satu peluru tiap kind ke dalam penerbangan sehingga `_draw_shot` jalan di CI.
+
+Batas yang diketahui: peluru hero (`world.hero_projectiles`; panah Sylara, bola, bolt, petir)
+masih titik; jejak hit/impact tetap efek lama.

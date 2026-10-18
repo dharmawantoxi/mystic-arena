@@ -3893,6 +3893,7 @@ check("_check_overlays(check, data, view.overlay_paint_order())" in _order_check
 
 # ── Layer 9bj: baked map decorations + shop buildings (bake/bake_map_overlay.py) ──
 import hashlib
+import math
 import struct
 
 _art_manifest_path = ROOT / "data/art/map_overlay.json"
@@ -4405,7 +4406,7 @@ for _fragment in (
     "Color(60 / 255.0, 60 / 255.0, 70 / 255.0)", "Color(40 / 255.0, 0 / 255.0, 0 / 255.0)",
     "Rect2(point.x - radius, point.y + radius - 4, radius * 2, 8)",
     "Rect2(point.x - radius - 3, point.y + radius - 6, (radius + 3) * 2, 10)",
-    "Color(0, 0, 0, 100.0 / 255.0)", "Color(ink, 30.0 / 255.0)", "Color(ink, 100.0 / 255.0)",
+    "const SHADOW := Color(0, 0, 0)", "_ellipse(shadow), SHADOW)", "Color(ink, 30.0 / 255.0)", "Color(ink, 100.0 / 255.0)",
     "maxi(radius, int(facts.get(\"top_offset\", radius))) - 6", "bar_top - height - 3",
     "level * 10 if level <= 5 else 18", "maxi(int(name_size.x), star_width) + 8",
     "int(name_size.y) + 4", "12 + name_height", "(level - 1) * 5 + index * 10",
@@ -4421,6 +4422,72 @@ check("if _draw_hero_sprite(hero):" in _hr_view and "func _draw_hero_sprite(" in
 check("_check_atlases(check)" in _hr_checks and "_check_key_cases(check, manifest)" in _hr_checks
       and "_check_clocks(check)" in _hr_checks and "_check_view_wiring(check)" in _hr_checks,
       "9bo hero art suite must check atlases, pose keys, clocks and wiring")
+
+# ── Layer 9bp: baked tower bullets (bake/bake_bullet_atlas.py) ──
+_bl_path = ROOT / "data/art/bullets.json"
+_bl_entity = (ROOT.parent / "_entity.py").read_text(encoding="utf-8")
+_bl_bake = (ROOT / "bake/bake_bullet_atlas.py").read_text(encoding="utf-8")
+_bl_art = (ROOT / "scripts/ui/bullet_art.gd").read_text(encoding="utf-8")
+_bl_view = (ROOT / "scenes/siege/siege_view.gd").read_text(encoding="utf-8")
+_bl_painter = (ROOT / "tests/painter_scene_checks.gd").read_text(encoding="utf-8")
+check('const BulletArtChecks = preload("res://tests/bullet_art_checks.gd")' in ai_tests
+      and "BulletArtChecks.new().run(_check)" in ai_tests,
+      "9bp bullet art suite must be preloaded and run in the native suite")
+check(_bl_path.is_file(), "9bp bullet atlas manifest must exist")
+if _bl_path.is_file():
+    _bl = json.loads(_bl_path.read_text(encoding="utf-8"))
+    _bl_sheet = _bl["sheet"]
+    _bl_png = ROOT / "assets/art/bullets/bullets.png"
+    check(_bl_png.is_file(), "9bp bullet sheet must ship")
+    if _bl_png.is_file():
+        _raw = _bl_png.read_bytes()
+        _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+        check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _bl_sheet["size"]
+              and (_depth, _color) == (8, 6),
+              "9bp bullet sheet must be an RGBA8 PNG of its manifest size")
+        check(len(_raw) == _bl_sheet["bytes"] and hashlib.sha256(_raw).hexdigest() == _bl_sheet["sha256"],
+              "9bp bullet sheet must match its manifest hash")
+    _bl_keys = sorted(
+        [f"normal:{team}:{n}" for team in ("blue", "red") for n in range(16)]
+        + [f"{kind}:{team}" for team in ("blue", "red") for kind in ("cannon", "ice", "mage")])
+    check(sorted(_bl_sheet["frames"]) == _bl_keys and _bl["buckets"] == 16
+          and _bl["types"] == ["normal", "cannon", "ice", "mage"],
+          "9bp the sheet must hold 16 arrows and three bolts per team")
+    check(all(w > 0 and h > 0 and x >= 0 and y >= 0 and x + w <= _bl_sheet["size"][0]
+              and y + h <= _bl_sheet["size"][1] and 0 <= ax <= w and 0 <= ay <= h
+              for x, y, w, h, ax, ay in _bl_sheet["frames"].values()),
+          "9bp every bullet frame must lie inside the sheet with its anchor in the crop")
+    _bl_cases = _bl["angle_cases"]
+    check(len(_bl_cases) >= 60 and {row[1] for row in _bl_cases} == set(range(16))
+          and all((int(a / (2 * math.pi) * 16) + 16) % 16 == k for a, k in _bl_cases),
+          "9bp the recorded bearings must reach all 16 buckets under the source formula")
+for _fragment in (
+    "angle_k = (int(ang / (math.pi * 2) * 16) + 16) % 16",
+    "key = (bullet.bullet_type, bullet.team, angle_k)",
+    "canvas = pygame.Surface((48, 48), pygame.SRCALPHA)", "cx = cy = 24",
+    "pygame.draw.circle(canvas, (60, 60, 60), (cx, cy), 6)",
+    "pygame.draw.circle(canvas, (255, 255, 200), (cx + 3, cy - 3), 1)",
+    "pygame.draw.polygon(canvas, (150, 220, 255), [",
+    "(cx, cy - 5), (cx + 3, cy), (cx, cy + 5), (cx - 3, cy)])",
+    "color = (180, 80, 220)", "alpha = 200 - r * 20",
+    "rect = canvas.get_bounding_rect(min_alpha=8)",
+    "(int(self.x - ent[1]), int(self.y - ent[2])))",
+    "shaft_dark = (85, 55, 25)", "shaft_dark = (60, 30, 15)",
+):
+    check(_fragment in _bl_entity, f"9bp the source bullet sprite must still read {_fragment!r}")
+check("entity._get_bullet_sprite(bullet)" in _bl_bake and "entity._BULLET_SPRITE_CACHE.clear()" in _bl_bake
+      and "entity._DummyBulletTarget" in _bl_bake and "BUCKETS = 16" in _bl_bake,
+      "9bp the bake must run the real _get_bullet_sprite for every bucket")
+check("(int(bearing / TAU * float(BUCKETS)) + BUCKETS) % BUCKETS" in _bl_art
+      and "ResourceLoader.exists(SHEET)" in _bl_art and 'if kind == "normal":' in _bl_art,
+      "9bp the loader must mirror the bucket formula and tolerate a missing import")
+check("BulletArt.frame(shot.kind, shot.team, bearing)" in _bl_view
+      and "bearing = (target.position - shot.position).angle()" in _bl_view
+      and "Vector2(int(shot.position.x - anchor.x), int(shot.position.y - anchor.y))" in _bl_view
+      and "draw_circle(shot.position, 4, color)" in _bl_view,
+      "9bp the siege view must blit the baked bullet at the source point with the dot as fallback")
+check("SHOT_KINDS := [" in _bl_painter and "world.projectiles.append(shot)" in _bl_painter,
+      "9bp the painter suite must put one shot of each kind in flight")
 
 for error in errors:
     print("FAIL:", error, file=sys.stderr)

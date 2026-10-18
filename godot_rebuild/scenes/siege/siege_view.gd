@@ -4,6 +4,7 @@ const Siege = preload("res://scripts/combat/siege_battle.gd")
 const Structure = preload("res://scripts/combat/structure_state.gd")
 const StructureArt = preload("res://scripts/ui/structure_art.gd")
 const StructureAnim = preload("res://scripts/ui/structure_anim.gd")
+const BulletArt = preload("res://scripts/ui/bullet_art.gd")
 const HudFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
 ## `_entity.py` bar colours: SHIELD_COLOR_*, CASTLE_SHIELD_COLOR_*, GREEN / YELLOW / RED.
 const TOWER_SHIELD_BLUE := Color(100 / 255.0, 180 / 255.0, 255 / 255.0)
@@ -28,8 +29,26 @@ func _draw() -> void:
 	var world := session.world as Siege
 	for shot in world.projectiles:
 		if shot.active:
-			var color := Color("c0f3dc") if shot.team == 0 else Color("ffd1af")
-			draw_circle(shot.position, 4, color)
+			_draw_shot(world, shot)
+
+
+## Layer 9bp: `Bullet.draw` - the baked sprite blitted at `(int(x - ax), int(y - ay))`, the
+## arrow turned toward its target. The old dot draws when the sheet is not imported.
+func _draw_shot(world: Siege, shot) -> void:
+	var bearing := 0.0
+	if shot.kind == "normal":
+		var target := world.get_unit(shot.target_id)
+		if target != null and target.alive:
+			bearing = (target.position - shot.position).angle()
+	var art := BulletArt.frame(shot.kind, shot.team, bearing)
+	if art.is_empty():
+		var color := Color("c0f3dc") if shot.team == 0 else Color("ffd1af")
+		draw_circle(shot.position, 4, color)
+		return
+	var src: Rect2 = art["src"]
+	var anchor: Vector2 = art["anchor"]
+	var corner := Vector2(int(shot.position.x - anchor.x), int(shot.position.y - anchor.y))
+	draw_texture_rect_region(art["texture"] as Texture2D, Rect2(corner, src.size), src)
 
 
 func _draw_structures() -> void:

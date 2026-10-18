@@ -7,7 +7,9 @@ extends RefCounted
 ## lets a few dozen frames draw. A script error in any painter prints `SCRIPT ERROR`,
 ## which the native step fails on, so this is the first time those painters are exercised.
 
+const Projectile = preload("res://scripts/combat/projectile_state.gd")
 const MINIONS := "res://data/minions/"
+const SHOT_KINDS := ["normal", "cannon", "ice", "mage"]
 const TYPES := ["goblin", "orc", "troll", "undead", "dark_rider"]
 const PATHS := ["cannon", "ice", "mage"]
 const FRAMES := 16
@@ -36,6 +38,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	if not towers.is_empty():
 		session.selected_id = towers[0].id
 	session.selected_slot_id = _free_slot(world)
+	_seed_shots(world, towers)
 	var hero = null
 	if not world.player_hero_ids.is_empty():
 		hero = world.get_unit(int(world.player_hero_ids[0]))
@@ -73,6 +76,28 @@ func _populate(world) -> void:
 		if index < PATHS.size():
 			world.upgrade_tower(tower.id, 1, PATHS[index])
 		index += 1
+
+
+## One shot of each bullet kind, both teams' colours, far enough from a red minion to stay in
+## flight for several frames, so the baked bullets draw even when no tower has a target yet.
+func _seed_shots(world, towers: Array) -> void:
+	var target = null
+	for unit in world.units:
+		if unit.team == 1 and not unit.is_hero and unit.alive:
+			target = unit
+			break
+	if towers.is_empty() or target == null:
+		return
+	for index in range(SHOT_KINDS.size()):
+		var shot := Projectile.new()
+		shot.id = 9000 + index
+		shot.source_id = towers[0].id
+		shot.target_id = target.id
+		shot.team = index % 2
+		shot.damage = 1
+		shot.kind = SHOT_KINDS[index]
+		shot.position = target.position + Vector2(-170.0 - 25.0 * index, -90.0 + 60.0 * index)
+		world.projectiles.append(shot)
 
 
 func _towers(world) -> Array:
