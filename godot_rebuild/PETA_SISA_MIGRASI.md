@@ -2456,3 +2456,24 @@ grid dan vignette). Kabut dan partikel animasi di atasnya belum diport.
 Belum: arena layar penuh dan HUD ringkas. Arena tetap 0,7 di dalam bingkai HUD karena skala 1,0
 menaruh TopBar, BottomBar dan TacticalPanel (yang tombolnya ditekan tes lewat event mouse sungguhan)
 di atas lane; perubahan itu perlu desain ulang HUD dan tidak bisa diverifikasi tanpa engine lokal.
+
+## Slice 9bt — tebasan serang dan animasi kematian minion
+
+- `bake/bake_minion_combat_fx.py` menjalankan `_entity.Minion._spawn_slash_effect`,
+  `minions._bundle.draw_slash_effects`, dan `_entity.Minion._draw_death_animation` asli lewat
+  `pygame_env.py`. Lima atlas (goblin/orc/troll/undead/dark_rider), masing-masing 1536x2496,
+  404 frame (12 umur tebasan x 32 arah pygame + 20 frame mati); PNG total 178.380 byte.
+  Dua bake menghasilkan SHA-256 PNG dan manifest yang identik.
+- `data/art/minion_combat_fx.json` mem-pin ukuran, byte, hash, radius/distance sumber dan
+  `key_cases` berupa hash hasil render pygame untuk sudut/umur tebasan serta awal/tengah/akhir mati.
+  `scripts/ui/minion_combat_fx_art.gd` memilih atlas/frame; cek `ResourceLoader.exists` sebelum load
+  dan tetap punya fallback painter vektor bila PNG belum diimpor.
+- `minion_anim.gd` memulai tebasan pada transisi cooldown, memakai arah target/hit terakhir, dan
+  menangkap snapshot kematian sebelum simulasi memensiunkan minion. `minion_view.gd` melukis efek;
+  `siege_view.gd` dan `prototype_view.gd` mewarisi jalur yang sama. Counter `minion_slash_draws` /
+  `minion_death_draws` dibuktikan >0 di `painter_scene_checks.gd`.
+- `tests/minion_combat_fx_checks.gd` terdaftar di `run_all.gd`; validator mem-pin sumber, konstanta,
+  hash PNG, frame bounds, key cases, dan trigger workflow `_entity.py` + `minions/_bundle.py`.
+
+Batas: arah sumber kontinu dikuantisasi ke 32 sudut pygame; validator statis dan counter membuktikan
+jalur aset, bukan kesamaan piksel. Hasil akhirnya tetap perlu Anda nilai di Godot.

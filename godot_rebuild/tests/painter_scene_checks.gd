@@ -3,7 +3,7 @@ extends RefCounted
 ## frame, so the frames the scene suites already wait for draw the PrototypeView; this
 ## suite proves it with a draw counter, then fills the real PrototypeMatch scene with
 ## every kind of thing the baked art covers (all minion types on both teams, towers of
-## each path, a selected tower and slot, a slowed and a wounded minion, fired towers) and
+## each path, selected towers/slots, slowed/wounded minions, slash/death frames, and fired towers)
 ## lets a few dozen frames draw. A script error in any painter prints `SCRIPT ERROR`,
 ## which the native step fails on, so this is the first time those painters are exercised.
 
@@ -34,6 +34,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		return
 	world.economy.gold[0] = 90000
 	_populate(world)
+	var fx_pair := _seed_minion_fx(world)
 	var towers := _towers(world)
 	check.call(towers.size() >= 3, "The match holds blue towers to draw: %d" % towers.size())
 	if not towers.is_empty():
@@ -44,6 +45,16 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	var hero = null
 	if not world.player_hero_ids.is_empty():
 		hero = world.get_unit(int(world.player_hero_ids[0]))
+	await _settle(tree)
+	var fx_kill_landed := false
+	if fx_pair.size() == 2:
+		var striker = fx_pair[0]
+		var victim = fx_pair[1]
+		victim.hp = 1.0
+		fx_kill_landed = world.apply_hit(striker.id, victim.id)
+		if fx_kill_landed:
+			world.step_tick()
+	check.call(fx_kill_landed, "The painter fixture lands a minion-killing swing")
 	var drawn_before: int = view.draw_count
 	for frame in range(FRAMES):
 		for _tick in range(TICKS_PER_FRAME):
@@ -59,6 +70,8 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		"The populated match drew %d frames" % (view.draw_count - drawn_before)
 	)
 	check.call(view.minion_anim.tracked() > 0, "Minion clocks were tracked while drawing")
+	check.call(view.minion_slash_draws > 0, "The source-baked minion slash path was drawn")
+	check.call(view.minion_death_draws > 0, "The source-baked minion death path was drawn")
 	check.call(view.structure_anim.tracked() > 0, "Structure clocks were tracked while drawing")
 	check.call(view.hero_anim.tracked() > 0, "Hero clocks were tracked while drawing")
 	if boss != null:
@@ -67,6 +80,29 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		check.call(false, "The suite could not spawn a boss to draw")
 	app.show_menu()
 	await _settle(tree)
+
+
+func _seed_minion_fx(world) -> Array:
+	var blue = null
+	var red = null
+	for unit in world.units:
+		if unit.is_hero or not unit.alive:
+			continue
+		if unit.team == 0 and blue == null:
+			blue = unit
+		elif unit.team == 1 and red == null:
+			red = unit
+		if blue != null and red != null:
+			break
+	if blue == null or red == null:
+		return []
+	blue.position = Vector2(500, 360)
+	red.position = Vector2(510, 360)
+	blue.target_id = red.id
+	red.target_id = blue.id
+	blue.cooldown_ticks = 0
+	red.cooldown_ticks = 0
+	return [blue, red]
 
 
 func _populate(world) -> void:

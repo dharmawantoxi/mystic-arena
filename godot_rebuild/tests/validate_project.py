@@ -4059,7 +4059,7 @@ check("ResourceLoader.exists(atlas_path(name))" in _mn_art
       and "static func frame(" in _mn_art and "\"anchor\"" in _mn_art,
       "9bk the loader must tolerate an atlas that is not imported")
 check("func _draw_minion_sprite(" in _mn_view and "MinionArt.frame(" in _mn_view
-      and "minion_anim.observe(unit, session.world.tick_count)" in _mn_view
+      and "minion_anim.observe(unit, session.world.tick_count," in _mn_view
       and "draw_texture_rect_region(" in _mn_view and "return false" in _mn_view
       and "if not unit.is_hero and _draw_minion_sprite(unit):" in _mn_view
       and "minion_anim.prune(session.world.units)" in _mn_view,
@@ -4766,6 +4766,156 @@ check(_mn_scenes.count(_mn_colour("TEXT_DIM")) == 8 and _mn_scenes.count(_mn_col
       and _mn_scenes.count("Color(0.0392, 0.0392, 0.0784, 0.7843)") == 4
       and "overlay.fill((10, 10, 20, 200))" in _mn_core,
       "9bs the scenes must use the ui_theme.py muted, gold, cyan and the (10, 10, 20, 200) pause dim")
+
+# ── Layer 9bt: source-baked minion slash and death effects ──
+_mfx_path = ROOT / "data/art/minion_combat_fx.json"
+_mfx_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+_mfx_entity = (ROOT.parent / "_entity.py").read_text(encoding="utf-8")
+_mfx_bundle = (ROOT.parent / "minions/_bundle.py").read_text(encoding="utf-8")
+_mfx_bake = (ROOT / "bake/bake_minion_combat_fx.py").read_text(encoding="utf-8")
+_mfx_art = (ROOT / "scripts/ui/minion_combat_fx_art.gd").read_text(encoding="utf-8")
+_mfx_anim = (ROOT / "scripts/ui/minion_anim.gd").read_text(encoding="utf-8")
+_mfx_view = (ROOT / "scenes/combat/minion_view.gd").read_text(encoding="utf-8")
+_mfx_checks = (ROOT / "tests/minion_combat_fx_checks.gd").read_text(encoding="utf-8")
+_mfx_painter = (ROOT / "tests/painter_scene_checks.gd").read_text(encoding="utf-8")
+_mfx_siege = (ROOT / "scenes/siege/siege_view.gd").read_text(encoding="utf-8")
+_mfx_prototype = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+check('const MinionCombatFxChecks = preload("res://tests/minion_combat_fx_checks.gd")' in ai_tests
+      and "MinionCombatFxChecks.new().run(_check)" in ai_tests,
+      "9bt FX checks must be registered in the native test suite")
+check(workflow.count("      - '_entity.py'") == 2
+      and workflow.count("      - 'minions/_bundle.py'") == 2,
+      "9bt CI must run for both original minion-effect sources on push and pull_request")
+check('const ROOT := "res://assets/art/minion_combat_fx/"' in _mfx_art
+      and 'const MANIFEST := "res://data/art/minion_combat_fx.json"' in _mfx_art
+      and "if ResourceLoader.exists(path):" in _mfx_art,
+      "9bt loader must use a dynamic atlas root and guard PNG imports before load")
+check("MinionCombatFxArt.draw_slash(" in _mfx_view
+      and "MinionCombatFxArt.draw_death(" in _mfx_view
+      and "take_death_snapshots" in _mfx_view,
+      "9bt minion view must draw the baked effects and retain the source death snapshot")
+check('extends "res://scenes/combat/minion_view.gd"' in _mfx_siege
+      and 'extends "res://scenes/siege/siege_view.gd"' in _mfx_prototype,
+      "9bt shared painter must reach siege and prototype views through inheritance")
+check("view.minion_slash_draws > 0" in _mfx_painter
+      and "view.minion_death_draws > 0" in _mfx_painter,
+      "9bt painter scene must prove both baked FX paths execute")
+check("_check_atlases(check, manifest)" in _mfx_checks
+      and "_check_source_cases(check, manifest)" in _mfx_checks
+      and "_check_clocks(check)" in _mfx_checks,
+      "9bt native checks must validate atlas, source cases and clocks")
+_mfx_types_match = re.search(r"^MINION_TYPES = \{\n(.*?)^\}", _mfx_core, re.S | re.M)
+_mfx_source_types = []
+_mfx_source_radii = {}
+if _mfx_types_match is not None:
+    _mfx_type_block = _mfx_types_match.group(1)
+    _mfx_type_matches = list(re.finditer(r'^    "(\w+)": \{', _mfx_type_block, re.M))
+    _mfx_source_types = [match.group(1) for match in _mfx_type_matches]
+    for _index, _match in enumerate(_mfx_type_matches):
+        _end = (_mfx_type_matches[_index + 1].start()
+                if _index + 1 < len(_mfx_type_matches) else len(_mfx_type_block))
+        _type_source = _mfx_type_block[_match.start():_end]
+        _radius_match = re.search(r'^        "radius": (\d+),', _type_source, re.M)
+        if _radius_match is not None:
+            _mfx_source_radii[_match.group(1)] = int(_radius_match.group(1))
+check(_mfx_source_types == ["goblin", "orc", "troll", "undead", "dark_rider"]
+      and set(_mfx_source_radii) == set(_mfx_source_types),
+      "9bt minion types and radii must come from _core.MINION_TYPES")
+for _fragment in (
+    "'life': 12,",
+    "'max_life': 12,",
+    "'distance': self.radius + 8,",
+    "progress = 1.0 - (self.death_anim / 20.0)",
+    "alpha = int((1 - progress) * 255)",
+    "def _draw_death_animation(self, surface):",
+):
+    check(_fragment in _mfx_entity, f"9bt source minion animation must retain {_fragment!r}")
+for _fragment in (
+    "def draw_slash_effects(surface, cx, cy, slash_effects):",
+    "if _RENDERING_TO_CACHE:",
+    "alpha = int(220 * (1.0 - progress))",
+    "span = 1.1",
+    "steps = 7",
+):
+    check(_fragment in _mfx_bundle, f"9bt source slash painter must retain {_fragment!r}")
+check("ANGLE_STEPS = 32" in _mfx_bake and "const ANGLE_STEPS := 32" in _mfx_art
+      and "SLASH_LIFE = 12" in _mfx_bake and "DEATH_LIFE = 20" in _mfx_bake
+      and "const SLASH_LIFE := 12" in _mfx_anim
+      and "const DEATH_LIFE := 20" in _mfx_anim,
+      "9bt bake, loader and presentation clocks must agree on their frame ranges")
+check("_spawn_slash_effect()" in _mfx_bake
+      and "draw_slash_effects(surface" in _mfx_bake
+      and "_draw_death_animation(surface)" in _mfx_bake,
+      "9bt bake must execute the original slash and death drawing functions")
+check(_mfx_path.is_file(), "9bt minion combat FX manifest must exist")
+if _mfx_path.is_file():
+    import math as _mfx_math
+
+    _mfx = json.loads(_mfx_path.read_text(encoding="utf-8"))
+    check(_mfx["types"] == _mfx_source_types,
+          "9bt manifest type order must match _core.MINION_TYPES")
+    check(_mfx["angle_steps"] == 32 and _mfx["slash_life"] == 12
+          and _mfx["death_life"] == 20,
+          "9bt manifest must pin source slash/death lifetimes and atlas angles")
+    _mfx_cases = _mfx["key_cases"]
+    _mfx_slash_cases = [case for case in _mfx_cases if case["kind"] == "slash"]
+    _mfx_death_cases = [case for case in _mfx_cases if case["kind"] == "death"]
+    check(len(_mfx_slash_cases) == len(_mfx_source_types) * 12
+          and len(_mfx_death_cases) == len(_mfx_source_types) * 3,
+          "9bt manifest key_cases must come from both original effect functions")
+    _mfx_bad_cases = []
+    for _case in _mfx_slash_cases:
+        _theta = 2.0 * _mfx_math.pi * _case["angle_index"] / _mfx["angle_steps"]
+        _source_angle = _mfx_math.atan2(_mfx_math.sin(_theta), _mfx_math.cos(_theta))
+        if (_case["type"] not in _mfx_source_radii
+                or _case["max_life"] != 12
+                or _case["distance"] != _mfx_source_radii.get(_case["type"], -100) + 8
+                or abs(_case["angle"] - round(_source_angle, 8)) > 1e-7
+                or _case["life"] not in (1, 6, 12)
+                or not re.fullmatch(r"[0-9a-f]{64}", _case["rgba_sha256"])):
+            _mfx_bad_cases.append(str(_case))
+    for _case in _mfx_death_cases:
+        if (_case["type"] not in _mfx_source_radii
+                or _case["radius"] != _mfx_source_radii.get(_case["type"], -100)
+                or _case["life"] not in (1, 11, 20)
+                or not re.fullmatch(r"[0-9a-f]{64}", _case["rgba_sha256"])):
+            _mfx_bad_cases.append(str(_case))
+    check(not _mfx_bad_cases,
+          "9bt source key_cases must preserve source params/render hashes: "
+          + str(_mfx_bad_cases[:3]))
+    _mfx_expected_keys = {f"slash{life:02d}:{angle:02d}"
+                          for life in range(1, 13) for angle in range(32)}
+    _mfx_expected_keys.update(f"death{life:02d}" for life in range(1, 21))
+    _mfx_atlases = _mfx.get("atlases", {})
+    check(set(_mfx_atlases) == set(_mfx_source_types),
+          "9bt one atlas must exist for each source minion type")
+    for _type_id in _mfx_source_types:
+        _entry = _mfx_atlases.get(_type_id)
+        if _entry is None:
+            continue
+        _png = ROOT / "assets/art/minion_combat_fx" / f"{_type_id}.png"
+        check(_png.is_file(), f"9bt atlas PNG must ship: {_type_id}")
+        if not _png.is_file():
+            continue
+        _raw = _png.read_bytes()
+        _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+        check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _entry["size"]
+              and (_depth, _color) == (8, 6),
+              f"9bt atlas must be an RGBA8 PNG of its manifest size: {_type_id}")
+        check(len(_raw) == _entry["bytes"]
+              and hashlib.sha256(_raw).hexdigest() == _entry["sha256"],
+              f"9bt atlas must match its manifest SHA-256: {_type_id}")
+        check(_entry["radius"] == _mfx_source_radii[_type_id]
+              and _entry["slash_distance"] == _mfx_source_radii[_type_id] + 8,
+              f"9bt atlas radius and slash distance must match the source: {_type_id}")
+        _rows = _entry["frames"]
+        check(set(_rows) == _mfx_expected_keys,
+              f"9bt atlas must hold every slash/death case: {_type_id}")
+        check(all(w > 0 and h > 0 and x >= 0 and y >= 0
+                  and x + w <= _entry["size"][0] and y + h <= _entry["size"][1]
+                  and 0 <= ax <= w and 0 <= ay <= h
+                  for x, y, w, h, ax, ay in _rows.values()),
+              f"9bt every frame must fit its atlas and have a valid anchor: {_type_id}")
 
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
