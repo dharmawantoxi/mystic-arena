@@ -15,6 +15,8 @@ const ComboCounterLayout = preload("res://scripts/ui/combo_counter_layout.gd")
 const BossIntroLayout = preload("res://scripts/ui/boss_intro_layout.gd")
 const BossCelebrationLayout = preload("res://scripts/ui/boss_celebration_layout.gd")
 const BossDeathSequenceLayout = preload("res://scripts/ui/boss_death_sequence_layout.gd")
+const HitParticleLayout = preload("res://scripts/ui/hit_particle_layout.gd")
+const DeathExplosionLayout = preload("res://scripts/ui/death_explosion_layout.gd")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
@@ -158,31 +160,11 @@ func _path_point(raw: Variant) -> Vector2:
 
 func _draw_world_effects(world: Prototype) -> void:
 	for explosion in world.effects.explosions:
-		if not explosion.is_alive():
-			continue
-		var flash: Dictionary = explosion.get_flash_state()
-		var f_size: float = float(flash.get("size", 0))
-		var f_intensity: float = clampf(float(flash.get("intensity", 0.0)), 0.0, 1.0)
-		var center := Vector2(float(explosion.x), float(explosion.y))
-		if f_size > 0.0 and f_intensity > 0.0:
-			draw_circle(center, f_size, Color(1.0, 1.0, 0.78, 0.78 * f_intensity))
-			draw_circle(center, f_size * 0.5, Color(1.0, 1.0, 1.0, f_intensity))
-		for spark in explosion.particles:
-			if not spark.alive:
-				continue
-			var s_alpha: float = clampf(float(spark.alpha()) / 255.0, 0.0, 1.0)
-			var s_size: float = float(spark.current_size())
-			if s_size > 0.0 and s_alpha > 0.0:
-				draw_circle(Vector2(spark.x, spark.y), s_size, Color(spark.color, s_alpha))
+		for op in DeathExplosionLayout.ops(explosion):
+			_draw_death_op(op)
 	for particle in world.effects.particles:
-		if not particle.alive:
-			continue
-		var p_alpha := clampf(float(particle.alpha()) / 255.0, 0.0, 1.0)
-		var p_size := float(particle.current_size())
-		if p_size > 0.0 and p_alpha > 0.0:
-			var particle_center := Vector2(int(particle.x), int(particle.y))
-			draw_circle(particle_center, p_size, Color(particle.color, p_alpha))
-			draw_circle(particle_center, particle.core_radius(), Color(1.0, 1.0, 1.0, p_alpha))
+		for op in HitParticleLayout.ops(particle):
+			_draw_death_op(op)
 	for item in world.effects.floating_texts:
 		if not item.alive or String(item.text).is_empty():
 			continue
@@ -580,6 +562,15 @@ func _draw_boss_death_animation(world: Prototype) -> void:
 		_draw_death_op(op)
 	for op in boss_celebration_draw_ops(world):
 		_draw_intro_op(op)
+
+
+## Layer 9bg: ops of one explosion (flash discs, then its sparks) / one spark.
+func death_explosion_draw_ops(explosion) -> Array:
+	return DeathExplosionLayout.ops(explosion)
+
+
+func hit_particle_draw_ops(particle) -> Array:
+	return HitParticleLayout.ops(particle)
 
 
 ## Layer 9bf: the `_draw_death_sequence()` op list.

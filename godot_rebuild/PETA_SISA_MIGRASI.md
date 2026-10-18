@@ -51,6 +51,17 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
   mereplay lewat `configure(...)` (12 frame, 2299 op); `boss_death_sequence_draw_checks.gd`
   mereplay lewat state produksi dan `PrototypeView`. Rincian ada di bagian
   "Slice 9bf" paling bawah.
+- 9bg melengkapi visual `DeathExplosion.draw()` dan `HitParticle.draw()`: kilat
+  pusat berupa dua cakram di satu surface SRCALPHA (inti putih `size // 2`
+  MENIMPA cakram pucat `size`) pada anchor `int(x), int(y)`, dan tiap percikan
+  berupa sprite (cakram warna + inti putih yang menimpa tengahnya) yang diskalakan
+  ke `max(1, int(size * rasio))` dan di-blit dengan alpha `int(255 * rasio)`.
+  Percikan ledakan dan partikel dunia kini memakai satu layout
+  (`hit_particle_layout.gd`). Oracle `death_explosion_draw_source_oracle.py`
+  menjalankan `DeathExplosion` dan `HitParticle` asli di bawah shim bersama
+  (`transform.scale` dimodelkan di geometri lingkaran; 25 frame, 582 op);
+  `death_explosion_draw_checks.gd` mereplay lewat state produksi dan
+  `PrototypeView`. Rincian ada di bagian "Slice 9bg" paling bawah.
 - Kandidat visual berikutnya yang terbukti belum source-backed:
   `BossDeathAnimation._draw_celebration()` (true boss saja). Renderer sekarang
   menggambar overlay datar dan teks karangan `NAMA DEFEATED!` 32 px; sumber
@@ -186,13 +197,14 @@ Dibaca hanya untuk memilih slice berikutnya, bukan audit menyeluruh:
 | `LevelIntroScreen.draw()` (`_render.py` 2761-3391) | **Terport (layer 9av)** — `scripts/ui/level_intro_layout.gd` (op list murni: darken, tint tema 33+forest, vignette 60 cincin, pembatas + 3 berlian, kolom level dengan angka 200 px + 6 bayangan, bar kesulitan, koin reward/starting gold, kolom boss dengan pill tag, aura berdenyut, 12 sinar, siluet tubuh/inner/duri, mata bercahaya, nama + 5 bayangan, judul, PREPARE FOR BATTLE + ikon warn, prompt PRESS SPACE berdenyut + panah) dirender `prototype_view._draw_intro_op`; oracle `level_intro_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam |
 | WaveAnnouncer + PathPreview visual (`_render.py`) | **Terport (layer 9aw)** — banner lengkap: gradien 80 strip, border emas ganda, 40 diagonal, corner ticks, judul berbayang + subtitle; panah lane segitiga kini memakai geometri hasil gambar sumber (termasuk pembulatan floor Python). Oracle `wave_announcer_source_oracle.py` memaku kotak visual; `path_preview_source_oracle.py` memaku semua vertex panah dan fase animasi. Tetap prosedural, tanpa aset hero final. |
 | AchievementPopup ikon (`_render.py::AchievementPopup._draw_icon`) | **Terport (layer 9ax)** — ikon star/sword/skull/shield/gold berikut lencana lingkaran/warna alpha dan fallback; oracle menjalankan method sumber dan membandingkan primitive fixture lewat `AchievementPopupChecks`. |
-| HitParticle sprite (`_render.py::HitParticle`) | **Visual dilengkapi (layer 9ay)** — mempertahankan gerak/umur yang sudah terport, menggambar ulang lingkaran warna + inti putih dari sprite sumber dengan ukuran mengikuti lifetime; oracle merekam primitive `pygame.draw.circle` asli dan suite memaku warna, radius, pusat, serta skala inti. |
+| HitParticle sprite (`_render.py::HitParticle`) | **Visual dilengkapi (layer 9ay); digambar dari daftar op sumber sejak layer 9bg (`hit_particle_layout.gd`)** — mempertahankan gerak/umur yang sudah terport, menggambar ulang lingkaran warna + inti putih dari sprite sumber dengan ukuran mengikuti lifetime; oracle merekam primitive `pygame.draw.circle` asli dan suite memaku warna, radius, pusat, serta skala inti. |
 | FloatingText presentation (`_render.py::FloatingText.draw`) | **Visual dilengkapi** — renderer memakai anchor integer dan font size ter-clamp dari sumber, teks ber-shadow ber-offset (1,2), warna alpha dan body style normal/critical; oracle menjalankan `draw()` cached-surface path dengan fake font/surface perekam dan fixture mengunci kedua blit. |
 | KillFeed draw (`_render.py::KillFeed.draw`) | **Terport (layer 9bb)** — `scripts/ui/kill_feed_layout.gd::ops(entries, screen_w, measure)`: alpha fade-in 15 tick / hold / fade-out 45 tick, slide-in 100 px, kotak latar `inflate(12, 4)` hitam alpha/2, border membulat r=3 warna tim alpha/2, teks 22 px rata kanan di (layar-20, 250+int(y_offset)); dirender `prototype_view._draw_kill_feed`; oracle `kill_feed_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam (31 frame, 192 op). |
 | ComboCounter draw (`_render.py::ComboCounter.draw`) | **Terport (layer 9bc)** — `scripts/ui/combo_counter_layout.gd::ops(state, screen_w, measure, cheap_alpha)`: bar timer 80x4 di (layar-140..-60, 140) dari 2 kill, teks `xN` `int(48*display_scale)` px berpusat di (layar-100, 100) dengan bayangan 8 arah (`cheap_alpha`) atau (2, 2), label tier 24 px di (layar-100, 70) dari 5 kill, warna tier 5/10/15/20 dan lerp flash `color_flash/20` ke putih; dirender `prototype_view._draw_combo_counter`; oracle `combo_counter_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam (52 frame, 426 op). |
 | BossIntroCinematic draw (`_render.py::BossIntroCinematic.draw`) | **Terport (layer 9bd)** — `scripts/ui/boss_intro_layout.gd::ops(intro)`: banner 600x92 (maks `layar-40`) membulat r=10 dengan latar `(10, 10, 18)` alpha `210*alpha/255` dan border 2 px `entrance_color`, 8 garis corner ticks emas `(255, 220, 120)` panjang 12 inset 5 hanya bila alpha > 60, teks tag 24 px / nama 46 px (`title`) / judul ber-kutip 24 px pada `(banner_x + 14, banner_y + 8/26/64)` dengan alpha fade, bar HP 150x12 r=5 (track `(40, 8, 12)`, isi `entrance_color`, outline putih 1 px) yang TIDAK ikut fade; dirender `prototype_view._draw_boss_intro` lewat `_draw_banner_op`; oracle `boss_intro_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam (22 frame, 279 op). |
 | BossDeathAnimation celebration (`_render.py::BossDeathAnimation._draw_celebration`) | **Terport (layer 9be)** — `scripts/ui/boss_celebration_layout.gd::ops(anim, ticks, measure, cheap_alpha)`: `darken` 180 (fade-in <15 %, fade-out >85 %), tint `(80, 60, 20, 40)` sampai 85 %, `BOSS DEFEATED!` 66 px `title` (emas, 6 bayangan hitam alpha maks 80 atau 1 tanpa `cheap_alpha`) memantul 60 px sampai 30 %, nama 46 px `entrance_color` + bayangan (+2, +2), judul ber-kutip 32 px, hadiah `+ N GOLD` + koin (r=10) + `HERO UNLOCKED!` + 2 bintang `draw_icon("star", s=0.5)` setelah 30 %, 6 percikan setelah 40 %, hint `[SPACE] to continue` setelah 50 %; dirender `prototype_view._draw_boss_celebration`; oracle `boss_celebration_draw_source_oracle.py` (20 frame, 547 op). |
 | BossDeathAnimation death sequence (`_render.py::BossDeathAnimation._draw_death_sequence`) | **Terport (layer 9bf)** — `scripts/ui/boss_death_sequence_layout.gd::ops(anim)`: `flash` aditif `int(200*(1-t/15))`, per gelombang cincin lebar 3 `range(r, r-20, -3)` alpha `alpha*r/radius` + inti `max(1, r-15)` alpha/2 di (boss+2, boss+2), badan `boss_color` + inti `entrance_color` alpha/2 selama progress <0.5, fragmen persegi berotasi + tepi 1 px `entrance_color` sampai alpha <10, partikel jiwa glow `size+2..1` + inti putih; petunjuk painter `covered` / `ring_inner` untuk timpa-piksel SRCALPHA; dirender `prototype_view._draw_boss_death_animation` (paling akhir, screen space); oracle `boss_death_sequence_draw_source_oracle.py` (12 frame, 2299 op). |
+| DeathExplosion + HitParticle draw (`_render.py::DeathExplosion.draw`, `HitParticle.draw`) | **Terport (layer 9bg)** — `scripts/ui/death_explosion_layout.gd::ops(explosion)` + `scripts/ui/hit_particle_layout.gd::ops(particle)`: kilat = cakram `(255, 255, 200, int(200*i))` radius `int(20*i)` + inti putih `(255, 255, 255, int(255*i))` radius `size // 2` di `int(x), int(y)` selama 8 tick (`i = timer/8`); percikan = cakram warna radius `base` + inti putih `max(1, base // 2)` diskalakan `current_size / base`, alpha permukaan `int(255 * lifetime / max_lifetime)`, di `int(x) - current_size*3//2`; petunjuk painter `ring_inner` / `covered` untuk timpa-piksel; dirender `prototype_view._draw_world_effects` lewat `_draw_death_op`; oracle `death_explosion_draw_source_oracle.py` (25 frame, 582 op). |
 | `hero_marker.gd` | Selesai: placeholder 4-6 sisi tetap untuk `grimjaw_checks`, siluet per-hero dipakai `prototype_view.gd:619`; art roster dipaku golden fixture (layer 9aj) |
 
 Catatan: `ui_components/hero_portraits.py` yang di-impor `_core.py:3056`
@@ -1911,3 +1923,46 @@ Divergensi yang disadari: kilat aditif = alpha-blend; `covered` / `ring_inner`
 meniru timpa-piksel dengan `draw_arc` 1 px, bukan rasterisasi pygame; lingkaran
 tidak anti-alias seperti pygame; tepi fragmen digambar sebagai polyline tertutup
 di atas isian (tepi pygame menimpa piksel).
+
+## Slice 9bg — visual `DeathExplosion.draw()` + `HitParticle.draw()` (layer 9bg)
+
+Sebelumnya `prototype_view` menggambar kilat ledakan sebagai dua `draw_circle`
+berpadu (radius inti `size * 0.5` tanpa pembulatan, pusat float), percikan ledakan
+sebagai satu lingkaran tanpa inti putih di pusat float, dan percikan dunia lewat
+`core_radius()` (9ay) dengan inti yang berpadu di atas cakram. Kini kedua `draw()`
+sumber diport sebagai daftar op murni:
+
+- `scripts/ui/death_explosion_layout.gd::ops(explosion)`: bila `flash_timer > 0`
+  dan `size = int(20 * timer / 8) > 0`, dua cakram berpusat `int(x), int(y)`:
+  `(255, 255, 200, int(200 * i))` radius `size` lalu `(255, 255, 255, int(255 * i))`
+  radius `size // 2` (menimpa, bukan memadu). Lalu tiap percikan lewat
+  `hit_particle_layout.gd`.
+- `scripts/ui/hit_particle_layout.gd::ops(particle)`: sprite sumber digambar sekali
+  di constructor (cakram warna radius `base = max(1, int(size))`, inti putih
+  `max(1, base // 2)`) dan di setiap frame diskalakan ke `current_size =
+  max(1, int(size * rasio))` lalu di-blit di `(int(x) - current_size*3//2, int(y) -
+  current_size*3//2)` dengan `set_alpha(int(255 * rasio))`. Layout menghitung pusat
+  dan radius terskala (`half * factor + offset`, `base * factor`, `core * factor`);
+  `ring_inner` menjadikan cakram warna sebagai cincin di sekeliling inti, dan
+  `covered` menandai cakram yang sepenuhnya tertutup inti (`size` 1).
+- `tests/draw_recorder.py` kini memodelkan `pygame.transform.scale` pada geometri
+  lingkaran sprite (pusat dan radius dikali faktor). Oracle memanen `HitParticle` dan
+  `DeathExplosion` asli, menyetel `random.seed` per ledakan dan menyimpan
+  percikan yang dibuat (`particle_specs` untuk `death_explosion.gd::configure`).
+  Skenario: ledakan red small (8 percikan), blue medium (15), blue large (25) dengan
+  anchor pecahan (120.5, 80.25) dan (640.9, 360) dan frame di tick 0-34, plus empat
+  `HitParticle` mandiri (size 1, 2, 3, 6; satu mati sebelum tick 9). Fixture 25
+  frame, 582 op.
+- `death_explosion_draw_checks.gd` mereplay setiap frame dari `DeathExplosion` dan
+  `HitParticle` produksi yang di-tick, plus pin kilat (radius/alpha per tick,
+  anchor terpotong), petunjuk timpa-piksel, sprite terskala, dan
+  `PrototypeView.death_explosion_draw_ops` / `hit_particle_draw_ops`.
+- `prototype_view._draw_world_effects` kini melukis ledakan lalu partikel dunia lewat
+  `_draw_death_op`; dua pin lama 9ay (`particle.core_radius()` di view dan
+  `Color(1.0, 1.0, 1.0, p_alpha)`) diganti pin yang setara untuk layout
+  (`float(core) * factor`, inti putih `[255, 255, 255, 255]`). `core_radius()` tetap
+  ada di state port dan masih dipin `hit_particle_checks.gd`.
+
+Divergensi yang disadari: pygame menskalakan piksel sprite (nearest neighbour)
+sedangkan Godot menggambar lingkaran bergeometri terskala, sehingga tepi bisa beda
+sub-piksel; lingkaran tidak anti-alias seperti pygame.

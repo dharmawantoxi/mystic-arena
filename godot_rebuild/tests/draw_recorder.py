@@ -156,10 +156,27 @@ class Draw:
                             "color": rgba(color), "mult": 255, "width": int(width)})
 
 
+class Transform:
+    @staticmethod
+    def scale(surface, size):
+        """Uniform nearest-neighbour scale, modelled on the geometry of circle ops."""
+        factor = size[0] / surface.w
+        scaled = Surface(size)
+        for op in surface.ops:
+            if op["kind"] != "circle":
+                raise NotImplementedError("scale() only models circle ops, got " + op["kind"])
+            moved = dict(op)
+            moved["center"] = [num(op["center"][0] * factor), num(op["center"][1] * factor)]
+            moved["radius"] = num(op["radius"] * factor)
+            scaled.ops.append(moved)
+        return scaled
+
+
 def make_pygame(clock):
     """`clock["ticks"]` backs `pygame.time.get_ticks()`."""
     module = types.ModuleType("pygame")
     module.Surface, module.Rect, module.draw = Surface, Rect, Draw
+    module.transform = Transform
     module.SRCALPHA, module.BLEND_RGB_MULT, module.BLEND_RGB_ADD = (
         SRCALPHA, BLEND_RGB_MULT, BLEND_RGB_ADD)
     module.K_SPACE, module.K_ESCAPE = 32, 27

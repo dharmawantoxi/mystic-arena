@@ -3351,11 +3351,14 @@ _hit_particle_checks = (ROOT / "tests/hit_particle_checks.gd").read_text(encodin
 _hit_particle_fixture = json.loads(
     (ROOT / "tests/fixtures/hit_particle_source.json").read_text(encoding="utf-8")
 )
+_hit_particle_layout = (ROOT / "scripts/ui/hit_particle_layout.gd").read_text(encoding="utf-8")
 check("func core_radius()" in _hit_particle_script
-      and "particle.core_radius()" in _hit_particle_view,
-      "9ay HitParticle must render the lifetime-scaled inner sprite circle")
-check("Color(1.0, 1.0, 1.0, p_alpha)" in _hit_particle_view,
-      "9ay HitParticle's white source sprite core must remain visible")
+      and "HitParticleLayout.ops(" in _hit_particle_view
+      and "float(core) * factor" in _hit_particle_layout,
+      "9ay HitParticle must render the lifetime-scaled inner sprite circle (9bg: via the layout)")
+check('"color": [255, 255, 255, 255]' in _hit_particle_layout
+      and "particle.core_radius()" not in _hit_particle_view,
+      "9ay HitParticle's white source sprite core must remain visible (9bg: layout op)")
 check("_check_sprite(entry, check)" in _hit_particle_checks
       and "HitParticleChecks.new().run(_check)" in (ROOT / "tests/run_all.gd").read_text(encoding="utf-8"),
       "9ay source sprite geometry must be checked in the native suite")
@@ -3700,6 +3703,79 @@ check("_check_production_replay(check, data)" in _seq_checks
       and "_check_overwrite_hints(check, data)" in _seq_checks
       and "_check_view_wiring(check, data)" in _seq_checks,
       "9bf death sequence draw suite must replay production frames plus the view")
+
+# ── Layer 9bg: DeathExplosion.draw() + HitParticle.draw() visuals as pure op lists ──
+from death_explosion_draw_source_oracle import source_fixture as death_explosion_draw_fixture
+_burst_path = ROOT / "tests/fixtures/death_explosion_draw_source.json"
+_burst_layout = (ROOT / "scripts/ui/death_explosion_layout.gd").read_text(encoding="utf-8")
+_spark_layout = (ROOT / "scripts/ui/hit_particle_layout.gd").read_text(encoding="utf-8")
+_burst_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_burst_checks = (ROOT / "tests/death_explosion_draw_checks.gd").read_text(encoding="utf-8")
+check('const DeathExplosionDrawChecks = preload("res://tests/death_explosion_draw_checks.gd")'
+      in ai_tests and "DeathExplosionDrawChecks.new().run(_check)" in ai_tests,
+      "9bg death explosion draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/death_explosion_draw_source_oracle.py" in workflow,
+      "9bg CI must run the DeathExplosion.draw() / HitParticle.draw() source oracle")
+check(_burst_path.is_file(), "9bg death explosion draw fixture must exist")
+if _burst_path.is_file():
+    _burst = json.loads(_burst_path.read_text(encoding="utf-8"))
+    check(death_explosion_draw_fixture() == _burst,
+          "9bg death explosion draw fixture must not drift from _render.py")
+    _burst_frames = _burst["frames"]
+    check(len(_burst_frames) == 25 and sum(len(frame["ops"]) for frame in _burst_frames) == 582,
+          "9bg oracle must pin 25 frames and 582 recorded draw ops")
+    _burst_flashes = [frame for frame in _burst_frames
+                      if frame["label"] != "sparks" and frame["state"]["flash_timer"] > 0]
+    check(len(_burst_flashes) == 10
+          and all(frame["ops"][0]["color"]
+                  == [255, 255, 200, int(200 * frame["state"]["flash_timer"] / 8)]
+                  and frame["ops"][0]["radius"] == int(20 * frame["state"]["flash_timer"] / 8)
+                  and frame["ops"][1]["color"]
+                  == [255, 255, 255, int(255 * frame["state"]["flash_timer"] / 8)]
+                  and frame["ops"][1]["radius"] == frame["ops"][0]["radius"] // 2
+                  for frame in _burst_flashes),
+          "9bg oracle must pin the two flash discs shrinking and fading over 8 ticks")
+    check(all(frame["ops"][0]["center"] == [int(scenario["x"]), int(scenario["y"])]
+              for frame in _burst_flashes for scenario in _burst["scenarios"]
+              if scenario["label"] == frame["label"]),
+          "9bg oracle must pin the int() anchor of the flash (fractional x / y truncated)")
+    _burst_sparks = [op for frame in _burst_frames
+                     for op in frame["ops"][(2 if frame in _burst_flashes else 0):]]
+    check(len(_burst_sparks) % 2 == 0
+          and all(_burst_sparks[i]["center"] == _burst_sparks[i + 1]["center"]
+                  and _burst_sparks[i + 1]["color"] == [255, 255, 255, 255]
+                  and _burst_sparks[i]["mult"] == _burst_sparks[i + 1]["mult"]
+                  for i in range(0, len(_burst_sparks), 2)),
+          "9bg oracle must pin each spark as a colour disc plus a white core at one anchor")
+    check(any(isinstance(op["center"][0], float) and op["radius"] < 1
+              for frame in _burst_frames if frame["label"] == "sparks" for op in frame["ops"]),
+          "9bg oracle must pin a scaled sprite (fractional centre, sub-pixel core)")
+    check(_burst["scenarios"][3]["kind"] == "sparks"
+          and sum(frame["state"].get("alive", [True]).count(False) for frame in _burst_frames
+                  if frame["label"] == "sparks") == 1
+          and len(_burst["scenarios"][0]["particles"]) == 8
+          and len(_burst["scenarios"][1]["particles"]) == 15
+          and len(_burst["scenarios"][2]["particles"]) == 25,
+          "9bg oracle must store the seeded spark specs (8 / 15 / 25) and a dead standalone spark")
+check("static func ops(" in _burst_layout
+      and "HitParticleLayout.ops(" in _burst_layout
+      and "const FLASH_PEAK_ALPHA := 200.0" in _burst_layout
+      and '"ring_inner"' in _burst_layout
+      and "static func ops(" in _spark_layout
+      and "float(half) * factor" in _spark_layout
+      and '"covered": core >= base' in _spark_layout,
+      "9bg explosion and spark layouts must mirror DeathExplosion.draw() / HitParticle.draw()")
+check("DeathExplosionLayout.ops(" in _burst_view
+      and "HitParticleLayout.ops(" in _burst_view
+      and "func death_explosion_draw_ops(" in _burst_view
+      and "func hit_particle_draw_ops(" in _burst_view
+      and "f_intensity" not in _burst_view and "spark.current_size()" not in _burst_view,
+      "9bg PrototypeView must paint explosions and sparks from the source op lists")
+check("_check_production_replay(check, data)" in _burst_checks
+      and "_check_flash(check, data)" in _burst_checks
+      and "_check_sparks(check, data)" in _burst_checks
+      and "_check_view_wiring(check, data)" in _burst_checks,
+      "9bg death explosion draw suite must replay production frames plus the view")
 
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
