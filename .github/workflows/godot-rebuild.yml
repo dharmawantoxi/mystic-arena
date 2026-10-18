@@ -29,6 +29,7 @@ on:
       - 'ui_components/_bundle.py'
       - 'heroes/__init__.py'
       - 'heroes/_bundle.py'
+      - 'ui_theme.py'
       - 'map_components/_bundle.py'
       - '.github/workflows/godot-rebuild.yml'
   push:
@@ -58,6 +59,7 @@ on:
       - 'ui_components/_bundle.py'
       - 'heroes/__init__.py'
       - 'heroes/_bundle.py'
+      - 'ui_theme.py'
       - 'map_components/_bundle.py'
       - '.github/workflows/godot-rebuild.yml'
 

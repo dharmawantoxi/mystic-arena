@@ -5,6 +5,7 @@ extends Button
 ## tooltip_text and still read `.text` and `.disabled` from the same node.
 
 const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
+const UiSkin = preload("res://scripts/ui/ui_skin.gd")
 const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
 
 const CARD_WIDTH := 485.0
@@ -64,10 +65,15 @@ func _ensure_portrait() -> void:
 
 
 func _apply_styleboxes() -> void:
-	add_theme_stylebox_override("normal", _card_box(Color("162d34"), Color("36514f"), 1))
-	add_theme_stylebox_override("hover", _card_box(Color("25433f"), UI_THEME.TEAL, 1))
-	add_theme_stylebox_override("pressed", _card_box(Color("102823"), UI_THEME.GOLD, 1))
-	add_theme_stylebox_override("disabled", _card_box(Color("141c22"), Color("2a333a"), 1))
+	# Level-card colours of ui_theme.py: open, (hover), (pressed) and locked.
+	var open_card := _card_box(UiSkin.palette("OPEN_BG_TOP"), UiSkin.palette("OPEN_EDGE"), 1)
+	var locked_card := _card_box(UiSkin.palette("LOCKED_BG_TOP"), UiSkin.palette("LOCKED_EDGE"), 1)
+	add_theme_stylebox_override("normal", open_card)
+	add_theme_stylebox_override("hover", _card_box(UI_THEME.HOVER_FILL, UI_THEME.TEAL, 1))
+	add_theme_stylebox_override(
+		"pressed", _card_box(UiSkin.palette("OPEN_BG_BOTTOM"), UI_THEME.GOLD, 1)
+	)
+	add_theme_stylebox_override("disabled", locked_card)
 	add_theme_stylebox_override("focus", _card_box(Color(0, 0, 0, 0), UI_THEME.GOLD, 2))
 
 

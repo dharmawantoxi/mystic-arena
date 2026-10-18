@@ -4567,6 +4567,118 @@ check("_seed_boss(world)" in _bs_painter
       and "world._spawn_boss(BOSS_TYPE)" in _bs_painter and "view.boss_sprite_draws > 0" in _bs_painter,
       "9bq the painter suite must spawn a boss and prove the sprite path ran")
 
+# ── Layer 9br: UI skin from ui_theme.py (bake/bake_ui_theme.py) ──
+_ui_path = ROOT / "data/art/ui_theme.json"
+_ui_src = (ROOT.parent / "ui_theme.py").read_text(encoding="utf-8")
+_ui_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+_ui_bake = (ROOT / "bake/bake_ui_theme.py").read_text(encoding="utf-8")
+_ui_skin = (ROOT / "scripts/ui/ui_skin.gd").read_text(encoding="utf-8")
+_ui_theme = (ROOT / "scripts/ui/rebuild_theme.gd").read_text(encoding="utf-8")
+_ui_card = (ROOT / "scripts/ui/hero_shop_card.gd").read_text(encoding="utf-8")
+_ui_project = (ROOT / "project.godot").read_text(encoding="utf-8")
+check('const UiSkinChecks = preload("res://tests/ui_skin_checks.gd")' in ai_tests
+      and "UiSkinChecks.new().run(_check)" in ai_tests,
+      "9br UI skin suite must be preloaded and run in the native suite")
+check(_ui_path.is_file(), "9br UI skin manifest must exist")
+_ui_palette_src = {
+    name: [int(r), int(g), int(b)]
+    for name, r, g, b in re.findall(r"^([A-Z_]+)\s*=\s*\((\d+),\s*(\d+),\s*(\d+)\)", _ui_src, re.M)}
+if _ui_path.is_file():
+    _ui = json.loads(_ui_path.read_text(encoding="utf-8"))
+    check(_ui["palette"] == _ui_palette_src and len(_ui_palette_src) >= 30,
+          "9br the recorded palette must equal every colour constant of ui_theme.py")
+    for _sheet_name, _png_name in (("panels", "panels.png"), ("pills", "pills.png")):
+        _sheet = _ui[_sheet_name]
+        _png = ROOT / "assets/art/ui" / _png_name
+        check(_png.is_file(), f"9br {_png_name} must ship")
+        if _png.is_file():
+            _raw = _png.read_bytes()
+            _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+            check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _sheet["size"]
+                  and (_depth, _color) == (8, 6),
+                  f"9br {_png_name} must be an RGBA8 PNG of its manifest size")
+            check(len(_raw) == _sheet["bytes"] and hashlib.sha256(_raw).hexdigest() == _sheet["sha256"],
+                  f"9br {_png_name} must match its manifest hash")
+        check(all(w > 0 and h > 0 and x >= 0 and y >= 0 and x + w <= _sheet["size"][0]
+                  and y + h <= _sheet["size"][1] for x, y, w, h in _sheet["frames"].values()),
+              f"9br every {_sheet_name} frame must lie inside its sheet")
+    _ui_kinds = ["gold", "success", "danger", "locked", "owned", "neutral", "violet", "cyan"]
+    check(sorted(_ui["panels"]["frames"]) == ["panel", "panel_bold"]
+          and _ui["panels"]["rect"] == [4, 4, 72, 72] and _ui["panels"]["margin"] == 20
+          and _ui["panels"]["expand"] == 4,
+          "9br the panel sheet must hold the dialog and default panels on a 4 px shadow canvas")
+    check(_ui["pills"]["kinds"] == _ui_kinds and _ui["pills"]["states"] == ["normal", "hover", "disabled"]
+          and sorted(_ui["pills"]["frames"])
+          == sorted(f"{kind}:{state}" for kind in _ui_kinds for state in ("normal", "hover", "disabled"))
+          and _ui["pills"]["rect"] == [15, 12, 24, 24] and _ui["pills"]["margin"] == [23, 20]
+          and _ui["pills"]["expand"] == [15, 12],
+          "9br the pill sheet must hold every source kind in normal, hover and disabled state")
+    check(_ui["pills"]["colors"]["neutral"]
+          == {"top": [52, 58, 84], "bottom": [30, 35, 56], "edge": _ui_palette_src["SLATE"],
+              "text": _ui_palette_src["TEXT_BODY"]}
+          and _ui["pills"]["colors"]["gold"]["text"] == _ui_palette_src["GOLD_TEXT"]
+          and _ui["pills"]["colors"]["locked"]["edge"] == _ui_palette_src["SLATE"],
+          "9br the pill colour table must be the one read from pill()")
+    _ui_consts = {
+        name: ([int(r), int(g), int(b)], source)
+        for name, r, g, b, source in re.findall(
+            r"^const (\w+) := Color8\((\d+), (\d+), (\d+)\)\s*#\s*(\w+)", _ui_theme, re.M)}
+    _ui_pins = {"INK": "TEXT_WHITE", "BODY": "TEXT_BODY", "MUTED": "TEXT_DIM", "FAINT": "TEXT_FAINT",
+                "GOLD": "GOLD", "GOLD_TEXT": "GOLD_TEXT", "CYAN": "CYAN", "EDGE_GOLD": "EDGE_GOLD",
+                "PANEL_FILL": "PANEL_FILL"}
+    check(all(name in _ui_consts and _ui_consts[name][1] == source
+              and _ui_consts[name][0] == _ui_palette_src[source] for name, source in _ui_pins.items()),
+          "9br every palette constant of the theme must carry the value of its ui_theme.py name")
+    check(_ui_consts["HOVER_FILL"][0] == [44, 52, 86] and "top = (44, 52, 86) if hover else (34, 41, 70)" in _ui_src
+          and _ui_consts["TRACK"][0] == [16, 18, 30] and "pygame.draw.rect(screen, (16, 18, 30), r," in _ui_src
+          and _ui_consts["TRACK_LINE"][0] == [86, 92, 120] and "pygame.draw.rect(screen, (86, 92, 120), r, 1," in _ui_src
+          and _ui_consts["SCROLL_TRACK"][0] == [28, 32, 52]
+          and "pygame.draw.rect(screen, (28, 32, 52), track, border_radius=3)" in _ui_src
+          and "GOLD_BRIGHT,\n                               (196, 138, 40), radius=3)" in _ui_src,
+          "9br the bar, popup and scrollbar colours must be the literals the source draws with")
+    check("Color8(225, 185, 99)" in _ui_theme and "Color8(255, 233, 158)" in _ui_theme
+          and _ui_palette_src["GOLD_BRIGHT"] == [255, 233, 158]
+          and [(a + b) // 2 for a, b in zip(_ui_palette_src["GOLD_BRIGHT"], [196, 138, 40])] == [225, 185, 99],
+          "9br the scroll thumb colours must be the GOLD_BRIGHT and mid gradient of scroll_indicator")
+    _ui_clear = re.search(r"default_clear_color=Color\(([\d.]+), ([\d.]+), ([\d.]+), 1\)", _ui_project)
+    check(_ui_clear is not None and all(
+        abs(float(got) - want / 255) < 0.001
+        for got, want in zip(_ui_clear.groups(), _ui_palette_src["BG_DEEP"])),
+        "9br the window clear colour must be the BG_DEEP of ui_theme.py")
+for _fragment in (
+    "pygame.draw.rect(screen, border, r, border_w, border_radius=12)",
+    "sh = _shadow(r.w, r.h, radius=12)", "screen.blit(sh, (r.x - 4, r.y - 4))",
+    "corner_ticks(screen, r, GOLD)",
+    "def corner_ticks(screen, rect, color, length=11, width=2, inset=2):",
+    "pygame.draw.rect(screen, edge, r, 2 if enabled else 1, border_radius=7)",
+    "screen.blit(_radial(r.w + 30, r.h + 24, edge, 66),", "(r.x - 15, r.y - 12))",
+    "top = tuple(min(255, c + 18) for c in top)", "bot = tuple(min(255, c + 14) for c in bot)",
+    '"neutral": ((52, 58, 84), (30, 35, 56), SLATE, TEXT_BODY),',
+    '"gold":    ((86, 66, 22), (52, 40, 14), GOLD, GOLD_TEXT),',
+    "screen.blit(_vgrad(r.w, r.h, top, bot, radius=7), (r.x, r.y))",
+    "surf = pygame.transform.smoothscale(small, (w, h))",
+):
+    check(_fragment in _ui_src, f"9br the source UI skin must still read {_fragment!r}")
+check("border=ui_theme.EDGE_GOLD, border_w=2)" in _ui_core,
+      "9br the dialog panel the bake mirrors (border_w=2) must still be what the settings menu calls")
+check("ui_theme.panel(canvas, PANEL_RECT, **kwargs)" in _ui_bake and "ui_theme.pill(" in _ui_bake
+      and "assert ui_theme.cheap_alpha()" in _ui_bake and "def _pill_table(" in _ui_bake
+      and "ui_theme.draw_text = lambda" in _ui_bake,
+      "9br the bake must run the real panel() and pill() on transparent canvases")
+check("ResourceLoader.exists(PANELS)" in _ui_skin and "ResourceLoader.exists(PILLS)" in _ui_skin
+      and "box.region_rect = Rect2(" in _ui_skin and "box.texture_margin_left = margin.x" in _ui_skin
+      and "box.expand_margin_left = expand.x" in _ui_skin and "return NO_COLOR" in _ui_skin,
+      "9br the skin loader must cut nine-patches by manifest frame and tolerate a missing import")
+check("pill_style(\"gold\", \"hover\", use_skin)" in _ui_theme
+      and "pill_style(\"locked\", \"disabled\", use_skin)" in _ui_theme
+      and "result.set_type_variation(variation, \"Button\")" in _ui_theme
+      and "skin = UiSkin.panel_box(\"panel_bold\", PANEL_PAD)" in _ui_theme
+      and "static func create_theme(use_skin: bool = true) -> Theme:" in _ui_theme,
+      "9br the theme must map the pill states, variations and dialog panel with a flat fallback")
+check('UiSkin.palette("OPEN_BG_TOP")' in _ui_card and 'UiSkin.palette("LOCKED_EDGE")' in _ui_card
+      and "162d34" not in _ui_card,
+      "9br hero shop rows must use the source card colours instead of the old teal literals")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

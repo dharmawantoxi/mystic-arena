@@ -113,7 +113,8 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
 - 9bq membake badan 216 boss (pose diam fase 0, dua arah; satu PNG per boss, 2,6 MB) dan
   menggambarnya menggantikan lingkaran bermahkota, dengan bayangan, bar HP, dan papan nama di atas
   puncak sprite (`BOSS_LABEL_TOP`). Rincian di bagian "Slice 9bq".
-- Urutan bake berikutnya (user: "semuanya"): HUD/menu, peluru hero, pose jalan/serang boss.
+- Urutan bake berikutnya (user: "semuanya"): skin HUD/menu (9br: tema; menu dan arena layar penuh
+  menyusul), peluru hero, pose jalan/serang boss.
   Sisanya di luar bake: `DynamicRenderer`
   (partikel, kabut, obor, air bergerak) dan `tactical_commands.draw_world/draw_ui`.
   Keputusan user: combo counter dan kill feed tetap tampil di Godot (walau tidak digambar
@@ -2379,3 +2380,43 @@ atas puncak sprite.
 Batas yang diketahui: pose jalan, serang, skill, dan kilat luka bawaan sumber, 7+ fase idle,
 aura hidup (`_LIVE_FX_HEROES`), serta aura enrage/ability ber-cache masih pendekatan Godot
 (busur) atau kosong; boss `entrance` tetap gambar lama.
+
+## Slice 9br — skin UI dari `ui_theme.py` (layer 9br)
+
+Latar: semua layar memakai satu `Theme` yang dibangun kode (`RebuildTheme.create_theme()`, dipasang
+di `app.gd` dan tiap layar). Palet dan bentuknya (teal gelap, kotak 10 px) tidak ada di pygame,
+yang memakai `ui_theme.py`: panel kaca gelap (gradasi, border emas, sudut emas, bayangan) dan
+tombol pil berwarna.
+
+- `bake/bake_ui_theme.py` memanggil `ui_theme.panel()` dan `ui_theme.pill()` ASLI pada kanvas
+  transparan. `panels.png` (160x80) berisi dua panel 80x80 (`panel_bold` = panggilan dialog
+  `border_w=2`, `panel` = bawaan; rect 72x72 di (4, 4) sehingga bayangan 4 px ada di tepi kanvas).
+  `pills.png` (432x144) berisi 8 jenis pil x normal/hover (dengan glow radial)/disabled, kanvas
+  54x48, rect 24x24 di (15, 12). Hasil deterministik (dua run identik), 7,7 KB. `draw_text`
+  dimatikan saat bake karena teks digambar Godot.
+- `data/art/ui_theme.json`: palet (semua konstanta warna modul, 32), frame, margin nine-patch
+  (panel 20 px; pil 23x20), `expand` (bayangan 4 px; glow 15x12) dan tabel warna pil yang dibaca dari
+  literal `colors` di sumber `pill()` (fill atas/bawah, tepi, teks).
+- `scripts/ui/ui_skin.gd`: memotong `StyleBoxTexture` (`region_rect`, margin, expand) dari sheet
+  menurut frame manifest; mengembalikan null bila sheet belum diimpor.
+- `rebuild_theme.gd`: konstanta palet kini nilai `ui_theme.py` (INK = TEXT_WHITE, MUTED = TEXT_DIM,
+  GOLD, CYAN; `TEAL` tetap sebagai nama lama = CYAN). Button: normal = pil `neutral`, hover = pil
+  `neutral` hover, pressed = pil `gold` hover, disabled = pil `locked` disabled; teks
+  `TEXT_BODY`/`GOLD_TEXT`/`TEXT_FAINT`. `PanelContainer` = panel dialog. Variasi tipe
+  `GoldButton`, `SuccessButton`, `DangerButton`, `CyanButton`, `VioletButton` (jenis pil sumber).
+  ProgressBar (track `hp_bar`), scrollbar (track dan jempol emas `scroll_indicator`) dan
+  PopupMenu (panel + hover) memakai warna sumber. `create_theme(false)` memaksa fallback datar
+  dengan warna yang sama (juga yang tampil bila sheet belum diimpor). Baris Hero Shop memakai warna
+  kartu level sumber (`OPEN_*`, `LOCKED_*`). Warna kosong atau nama tak dikenal tampil magenta.
+- `project.godot`: warna clear = `BG_DEEP` (9, 12, 26).
+- `tests/ui_skin_checks.gd`: konstanta tema = konstanta `ui_theme.py` dari manifest, sheet terdekode
+  dengan ukuran manifest, 24 frame pil + 2 panel di dalam sheet, piksel kunci (tengah buram, cincin
+  bayangan tembus, sudut kanvas pil transparan), Button/Panel/variasi memakai frame yang benar
+  dengan margin hasil bake, fallback datar, dan warna baris Hero Shop. Validator memeriksa palet
+  manifest = setiap konstanta di `ui_theme.py`, hash PNG, tabel warna pil, tiap `Color8` tema
+  bertanda nama sumber, dan fragmen sumber. Workflow dipicu perubahan `ui_theme.py`.
+
+Divergensi yang diterima: glow hover di-bake untuk satu ukuran lalu diregang (sumber menggambarnya
+elips sesuai ukuran tombol); bayangan panel sumber berupa cincin 4 px alpha 110 bersudut siku;
+tombol menu utama (`button()` dengan aksen kiri dan ikon), toggle, slider dan tab belum diport; font
+tetap Barlow Regular 20 dan SemiBold untuk tombol (sumber: Barlow Bold berspasi huruf).
