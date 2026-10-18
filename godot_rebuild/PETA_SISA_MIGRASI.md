@@ -40,6 +40,17 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
   `boss_celebration_draw_checks.gd` mereplay fixture dari state terekam, dari
   `BossDeathAnimation` produksi, dan lewat `PrototypeView`. Rincian ada di bagian
   "Slice 9be" paling bawah.
+- 9bf melengkapi visual `BossDeathAnimation._draw_death_sequence()`: kilat putih
+  aditif 15 tick, gelombang ledakan (cincin 3 px konsentris + inti setengah alpha,
+  bergeser 2 px dari boss), badan dua warna yang memudar, fragmen persegi
+  berotasi dengan tepi 1 px, dan partikel jiwa naik dengan glow radial. Seluruh
+  `boss_death.draw()` kini digambar PALING AKHIR di screen space (setelah level
+  intro dan tanpa goncangan), seperti `_core.py`. Oracle
+  `boss_death_sequence_draw_source_oracle.py` menjalankan `draw()` asli dengan
+  fragmen/partikel acak ber-seed lalu menyimpan spesifikasinya agar Godot
+  mereplay lewat `configure(...)` (12 frame, 2299 op); `boss_death_sequence_draw_checks.gd`
+  mereplay lewat state produksi dan `PrototypeView`. Rincian ada di bagian
+  "Slice 9bf" paling bawah.
 - Kandidat visual berikutnya yang terbukti belum source-backed:
   `BossDeathAnimation._draw_celebration()` (true boss saja). Renderer sekarang
   menggambar overlay datar dan teks karangan `NAMA DEFEATED!` 32 px; sumber
@@ -181,6 +192,7 @@ Dibaca hanya untuk memilih slice berikutnya, bukan audit menyeluruh:
 | ComboCounter draw (`_render.py::ComboCounter.draw`) | **Terport (layer 9bc)** — `scripts/ui/combo_counter_layout.gd::ops(state, screen_w, measure, cheap_alpha)`: bar timer 80x4 di (layar-140..-60, 140) dari 2 kill, teks `xN` `int(48*display_scale)` px berpusat di (layar-100, 100) dengan bayangan 8 arah (`cheap_alpha`) atau (2, 2), label tier 24 px di (layar-100, 70) dari 5 kill, warna tier 5/10/15/20 dan lerp flash `color_flash/20` ke putih; dirender `prototype_view._draw_combo_counter`; oracle `combo_counter_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam (52 frame, 426 op). |
 | BossIntroCinematic draw (`_render.py::BossIntroCinematic.draw`) | **Terport (layer 9bd)** — `scripts/ui/boss_intro_layout.gd::ops(intro)`: banner 600x92 (maks `layar-40`) membulat r=10 dengan latar `(10, 10, 18)` alpha `210*alpha/255` dan border 2 px `entrance_color`, 8 garis corner ticks emas `(255, 220, 120)` panjang 12 inset 5 hanya bila alpha > 60, teks tag 24 px / nama 46 px (`title`) / judul ber-kutip 24 px pada `(banner_x + 14, banner_y + 8/26/64)` dengan alpha fade, bar HP 150x12 r=5 (track `(40, 8, 12)`, isi `entrance_color`, outline putih 1 px) yang TIDAK ikut fade; dirender `prototype_view._draw_boss_intro` lewat `_draw_banner_op`; oracle `boss_intro_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam (22 frame, 279 op). |
 | BossDeathAnimation celebration (`_render.py::BossDeathAnimation._draw_celebration`) | **Terport (layer 9be)** — `scripts/ui/boss_celebration_layout.gd::ops(anim, ticks, measure, cheap_alpha)`: `darken` 180 (fade-in <15 %, fade-out >85 %), tint `(80, 60, 20, 40)` sampai 85 %, `BOSS DEFEATED!` 66 px `title` (emas, 6 bayangan hitam alpha maks 80 atau 1 tanpa `cheap_alpha`) memantul 60 px sampai 30 %, nama 46 px `entrance_color` + bayangan (+2, +2), judul ber-kutip 32 px, hadiah `+ N GOLD` + koin (r=10) + `HERO UNLOCKED!` + 2 bintang `draw_icon("star", s=0.5)` setelah 30 %, 6 percikan setelah 40 %, hint `[SPACE] to continue` setelah 50 %; dirender `prototype_view._draw_boss_celebration`; oracle `boss_celebration_draw_source_oracle.py` (20 frame, 547 op). |
+| BossDeathAnimation death sequence (`_render.py::BossDeathAnimation._draw_death_sequence`) | **Terport (layer 9bf)** — `scripts/ui/boss_death_sequence_layout.gd::ops(anim)`: `flash` aditif `int(200*(1-t/15))`, per gelombang cincin lebar 3 `range(r, r-20, -3)` alpha `alpha*r/radius` + inti `max(1, r-15)` alpha/2 di (boss+2, boss+2), badan `boss_color` + inti `entrance_color` alpha/2 selama progress <0.5, fragmen persegi berotasi + tepi 1 px `entrance_color` sampai alpha <10, partikel jiwa glow `size+2..1` + inti putih; petunjuk painter `covered` / `ring_inner` untuk timpa-piksel SRCALPHA; dirender `prototype_view._draw_boss_death_animation` (paling akhir, screen space); oracle `boss_death_sequence_draw_source_oracle.py` (12 frame, 2299 op). |
 | `hero_marker.gd` | Selesai: placeholder 4-6 sisi tetap untuk `grimjaw_checks`, siluet per-hero dipakai `prototype_view.gd:619`; art roster dipaku golden fixture (layer 9aj) |
 
 Catatan: `ui_components/hero_portraits.py` yang di-impor `_core.py:3056`
@@ -574,12 +586,13 @@ panel modal (`hero_shop_panel.gd`, `item_forge_panel.gd`,
   `effects.get_shake_offset()` dan dipakai oleh `PrototypeView._draw()`.
 - **Rendering `PrototypeView` (`scenes/prototype/prototype_view.gd`)** —
   menggambar world effects (`_draw_path_preview`, `_draw_world_effects` termasuk
-  `DeathExplosion` dan `_draw_boss_death_sequence`) serta screen overlays
-  (`_draw_wave_announcer`, `_draw_combo_counter`, `_draw_kill_feed`,
-  `_draw_achievement_popup` dengan glow awal slot, `_draw_boss_intro` dengan
-  subtitle & border alpha, `_draw_boss_celebration` dengan backdrop/reward/hint,
-  dan `_draw_level_intro` dengan theme tint, difficulty bars, gold/passive,
-  boss preview), serta memaparkan `overlay_draw_summary()`.
+  `DeathExplosion`) serta screen overlays (`_draw_wave_announcer`,
+  `_draw_combo_counter`, `_draw_kill_feed`, `_draw_achievement_popup` dengan glow
+  awal slot, `_draw_boss_intro` dengan subtitle & border alpha, dan
+  `_draw_level_intro` dengan theme tint, difficulty bars, gold/passive, boss
+  preview). `_draw_boss_death_animation` (fase kematian 9bf lalu perayaan 9be)
+  dipanggil paling akhir di screen space. `overlay_draw_summary()` memaparkan
+  ringkasan state-nya.
 - **Scene & Runtime Checks** — diuji di `effect_manager_checks.gd`,
   `map_renderer_checks.gd`, `sprite_cache_checks.gd`, `render_cache_checks.gd`,
   `level_intro_screen_checks.gd`, `boss_intro_cinematic_checks.gd`,
@@ -1849,3 +1862,52 @@ diduplikasi:
 Divergensi yang disadari: nama dan judul (`title_font`, Cinzel; `body_*`) memakai
 Barlow SemiBold di view; sudut lingkaran koin tidak anti-alias pygame. Kilat
 putih fase kematian masih versi lama (slice berikutnya).
+
+## Slice 9bf — visual `BossDeathAnimation._draw_death_sequence()` (layer 9bf)
+
+Sebelumnya `prototype_view` menggambar kilat putih alpha-blend, satu busur per
+gelombang, satu lingkaran untuk badan, lingkaran polos untuk fragmen dan partikel,
+semuanya di dalam `_draw_world_effects` (world space, ikut goncangan, di bawah HUD).
+Kini seluruh `_draw_death_sequence()` sumber diport sebagai daftar op murni,
+`scripts/ui/boss_death_sequence_layout.gd::ops(anim)`. Layout memakai
+`get_death_visual_state()` (flash, gelombang, dissolve sudah dipin oracle state)
+dan membaca fragmen / partikel dari state produksi:
+
+- Kilat: `mobile.perf.flash` = `fill` aditif `(a, a, a)` layar penuh, `a =
+  int(200 * (1 - elapsed / 15))`. Godot memakai alpha-blend putih sebagai
+  pendekatan (aditif murni butuh material `CanvasItemMaterial` terpisah).
+- Gelombang: surface 4 px lebih besar dari radius di-blit di `(boss - radius)`
+  sedangkan pusat lingkaran di `(radius + 2)`, jadi seluruh gelombang bergeser (+2, +2).
+  Cincin lebar 3 untuk `r in range(radius, max(0, radius - 20), -3)` dengan alpha
+  `int(alpha * r / radius)`, lalu cakram inti `max(1, radius - 15)` alpha/2 yang
+  MENIMPA cincin di dalamnya (pygame tidak memadukan di surface SRCALPHA); layout
+  menandai cincin yang tertutup dengan `covered`.
+- Badan (progress <0.5): lingkaran `boss_color` alpha `int(255 * (1 - 2p))` dan inti
+  `entrance_color` alpha/2 jari-jari `size // 2` yang menimpa tengahnya (`ring_inner`).
+- Fragmen: persegi `±size` diputar `rotation`, isi `color` + tepi 1 px
+  `entrance_color` pada alpha `int(255 * life / max_life)`, dilewati bila `life <=
+  0` atau alpha <10 (tick 58+ dari 60). Partikel jiwa: cakram glow `size+2 .. 1`
+  (alpha `int(alpha * (1 - r / (size + 2)))`, tiap cakram menimpa yang lebih besar
+  sehingga jadi cincin 1 px lewat `ring_inner`) dan inti putih r=1, alpha puncak
+  `int(200 * life / max_life)`, dilewati di bawah 10.
+- Oracle memanen `class BossDeathAnimation` dan menjalankan `draw()` asli di bawah
+  `tests/draw_recorder.py`. Fragmen dan partikel acak: tiap skenario menyetel
+  `random.seed(1107)` dan menyimpan dict yang dibuat; `boss_death_animation.gd::configure`
+  menerimanya sebagai `particle_specs` / `rising_specs`, sehingga checks mereplay
+  frame tanpa bergantung RNG. Skenario: true boss (tick 0, 7, 15, 25, 44, 45, 57, 60,
+  89: awal/akhir kilat, tiga gelombang, badan hilang di progress 0.5, fragmen
+  habis) dan mini boss (2, 30, 58). Fixture 12 frame, 2299 op.
+- `boss_death_sequence_draw_checks.gd` mereplay setiap frame dari
+  `BossDeathAnimation` produksi yang di-tick (posisi fragmen/partikel dihitung
+  `update()`), ditambah pin tahap (kilat, jumlah cincin 4/14/7/0, 50 / 30 polygon,
+  batas badan), petunjuk timpa-piksel, dan `PrototypeView.boss_death_draw_ops`.
+- Urutan gambar: `_core.py` memanggil `boss_death.draw(self.screen)` sebagai
+  pemanggilan TERAKHIR (setelah `level_intro.draw`) di layar tanpa goncangan.
+  `_draw_boss_death_animation` kini dipanggil paling akhir di `_draw()`, memuat
+  fase kematian lalu perayaan 9be; `_draw_boss_death_sequence` lama dan
+  `_draw_boss_celebration` dihapus.
+
+Divergensi yang disadari: kilat aditif = alpha-blend; `covered` / `ring_inner`
+meniru timpa-piksel dengan `draw_arc` 1 px, bukan rasterisasi pygame; lingkaran
+tidak anti-alias seperti pygame; tepi fragmen digambar sebagai polyline tertutup
+di atas isian (tepi pygame menimpa piksel).

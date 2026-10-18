@@ -14,6 +14,7 @@ const KillFeedLayout = preload("res://scripts/ui/kill_feed_layout.gd")
 const ComboCounterLayout = preload("res://scripts/ui/combo_counter_layout.gd")
 const BossIntroLayout = preload("res://scripts/ui/boss_intro_layout.gd")
 const BossCelebrationLayout = preload("res://scripts/ui/boss_celebration_layout.gd")
+const BossDeathSequenceLayout = preload("res://scripts/ui/boss_death_sequence_layout.gd")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
@@ -82,8 +83,8 @@ func _draw() -> void:
 	_draw_kill_feed(world)
 	_draw_achievement_popup(world)
 	_draw_boss_intro(world)
-	_draw_boss_celebration(world)
 	_draw_level_intro(world)
+	_draw_boss_death_animation(world)
 
 
 func overlay_draw_summary() -> Dictionary:
@@ -173,7 +174,6 @@ func _draw_world_effects(world: Prototype) -> void:
 			var s_size: float = float(spark.current_size())
 			if s_size > 0.0 and s_alpha > 0.0:
 				draw_circle(Vector2(spark.x, spark.y), s_size, Color(spark.color, s_alpha))
-	_draw_boss_death_sequence(world)
 	for particle in world.effects.particles:
 		if not particle.alive:
 			continue
@@ -237,57 +237,6 @@ func _draw_world_effects(world: Prototype) -> void:
 			-1.0,
 			font_size,
 			text_color
-		)
-
-
-func _draw_boss_death_sequence(world: Prototype) -> void:
-	if world.boss_death == null or not world.boss_death.is_death_active():
-		return
-	var anim = world.boss_death
-	var center := Vector2(float(anim.boss_x), float(anim.boss_y))
-	var visual: Dictionary = anim.get_death_visual_state()
-	for wave_value in visual.get("waves", []):
-		var wave: Dictionary = wave_value
-		var w_radius: float = float(wave.get("radius", 0))
-		var w_alpha: float = clampf(float(wave.get("alpha", 0)) / 255.0, 0.0, 1.0)
-		var w_rgb: Array = wave.get("color", [255, 220, 150])
-		if w_radius > 0.0 and w_alpha > 0.0 and w_rgb.size() >= 3:
-			var w_col: Color = Color8(int(w_rgb[0]), int(w_rgb[1]), int(w_rgb[2]))
-			draw_arc(center, w_radius, 0.0, TAU, 48, Color(w_col, w_alpha), 3.0, true)
-	if bool(visual.get("body_visible", false)):
-		var d_size: float = float(visual.get("dissolve_size", 0))
-		var d_alpha: float = clampf(float(visual.get("dissolve_alpha", 0)) / 255.0, 0.0, 1.0)
-		var b_rgb: Array = anim.boss_color
-		if d_size > 0.0 and d_alpha > 0.0 and b_rgb.size() >= 3:
-			var b_col: Color = Color8(int(b_rgb[0]), int(b_rgb[1]), int(b_rgb[2]))
-			draw_circle(center, d_size, Color(b_col, d_alpha))
-	for fragment_value in anim.fragments:
-		var frag: Dictionary = fragment_value
-		var f_life: int = int(frag.get("life", 0))
-		var f_max: int = maxi(1, int(frag.get("max_life", 60)))
-		if f_life <= 0:
-			continue
-		var f_alpha: float = clampf(float(f_life) / float(f_max), 0.0, 1.0)
-		var f_rgb: Array = frag.get("color", [180, 90, 80])
-		var f_col: Color = Color8(int(f_rgb[0]), int(f_rgb[1]), int(f_rgb[2]))
-		draw_circle(
-			Vector2(float(frag.get("x", 0.0)), float(frag.get("y", 0.0))),
-			float(frag.get("size", 4)),
-			Color(f_col, f_alpha)
-		)
-	for rising_value in anim.rising_particles:
-		var rising: Dictionary = rising_value
-		var r_life: int = int(rising.get("life", 0))
-		var r_max: int = maxi(1, int(rising.get("max_life", 100)))
-		if r_life <= 0:
-			continue
-		var r_alpha: float = clampf(float(r_life) / float(r_max), 0.0, 1.0)
-		var r_rgb: Array = rising.get("color", [255, 220, 150])
-		var r_col: Color = Color8(int(r_rgb[0]), int(r_rgb[1]), int(r_rgb[2]))
-		draw_circle(
-			Vector2(float(rising.get("x", 0.0)), float(rising.get("y", 0.0))),
-			float(rising.get("size", 3)),
-			Color(r_col, r_alpha)
 		)
 
 
@@ -624,18 +573,53 @@ func _fill_rounded_op(op: Dictionary) -> void:
 	draw_colored_polygon(_achievement_rounded_points(rect, radius), color)
 
 
-func _draw_boss_celebration(world: Prototype) -> void:
-	var death := world.boss_death_state()
-	if bool(death.get("death_active", false)):
-		var d_visual: Dictionary = death.get("death_visual", {})
-		if bool(d_visual.get("flash_visible", false)):
-			var flash_alpha: float = clampf(float(d_visual.get("flash_alpha", 0)) / 255.0, 0.0, 1.0)
-			if flash_alpha > 0.0:
-				draw_rect(
-					Rect2(Vector2.ZERO, Vector2(1280.0, 720.0)), Color(1.0, 1.0, 1.0, flash_alpha)
-				)
+## `boss_death.draw()` runs LAST in the source, in screen space (after the shake
+## and above every HUD layer): the death phase, then the celebration.
+func _draw_boss_death_animation(world: Prototype) -> void:
+	for op in boss_death_draw_ops(world):
+		_draw_death_op(op)
 	for op in boss_celebration_draw_ops(world):
 		_draw_intro_op(op)
+
+
+## Layer 9bf: the `_draw_death_sequence()` op list.
+func boss_death_draw_ops(world: Prototype) -> Array:
+	var anim = world.boss_death
+	if anim == null:
+		return []
+	return BossDeathSequenceLayout.ops(anim)
+
+
+## Death sequence ops. `flash` is additive in the source; it is approximated with
+## an alpha blend. A ring wider than its radius is a filled disc in pygame, a
+## `covered` ring or disc is hidden by a later one, and a polygon with a width is
+## the 1 px edge of the fragment.
+func _draw_death_op(op: Dictionary) -> void:
+	var kind := String(op.get("kind", ""))
+	if kind == "flash":
+		var alpha := clampf(float(op.get("alpha", 0)) / 255.0, 0.0, 1.0)
+		draw_rect(Rect2(Vector2.ZERO, Vector2(1280.0, 720.0)), Color(1.0, 1.0, 1.0, alpha))
+	elif kind == "polygon" and int(op.get("width", 0)) > 0:
+		_draw_polygon_edge(op)
+	elif kind == "circle" and bool(op.get("covered", false)):
+		return
+	elif kind == "circle" and int(op.get("width", 0)) > int(op.get("radius", 0)):
+		var filled: Dictionary = op.duplicate()
+		filled["width"] = 0
+		_draw_intro_op(filled)
+	else:
+		_draw_intro_op(op)
+
+
+func _draw_polygon_edge(op: Dictionary) -> void:
+	var color := _intro_color(op)
+	var points := PackedVector2Array()
+	for point in op.get("points", []):
+		points.append(Vector2(float(point[0]), float(point[1])))
+	if color.a <= 0.0 or points.size() < 3:
+		return
+	points.append(points[0])
+	draw_polyline(points, color, float(op.get("width", 1)))
 
 
 ## Layer 9be: the `_draw_celebration()` op list. `ticks` defaults to the engine

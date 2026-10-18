@@ -3627,6 +3627,80 @@ check("_check_recorded_frames(check, data)" in _cele_checks
       and "_check_view_wiring(check, data)" in _cele_checks,
       "9be celebration draw suite must replay recorded and production frames plus the view")
 
+# ── Layer 9bf: BossDeathAnimation._draw_death_sequence() visuals as a pure op list ──
+from boss_death_sequence_draw_source_oracle import source_fixture as boss_death_sequence_fixture
+_seq_path = ROOT / "tests/fixtures/boss_death_sequence_draw_source.json"
+_seq_layout = (ROOT / "scripts/ui/boss_death_sequence_layout.gd").read_text(encoding="utf-8")
+_seq_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_seq_checks = (ROOT / "tests/boss_death_sequence_draw_checks.gd").read_text(encoding="utf-8")
+_seq_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+check('const BossDeathSequenceDrawChecks = preload("res://tests/boss_death_sequence_draw_checks.gd")'
+      in ai_tests and "BossDeathSequenceDrawChecks.new().run(_check)" in ai_tests,
+      "9bf boss death sequence draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/boss_death_sequence_draw_source_oracle.py" in workflow,
+      "9bf CI must run the BossDeathAnimation._draw_death_sequence() source oracle")
+check(_seq_path.is_file(), "9bf boss death sequence draw fixture must exist")
+if _seq_path.is_file():
+    _seq = json.loads(_seq_path.read_text(encoding="utf-8"))
+    check(boss_death_sequence_fixture() == _seq,
+          "9bf boss death sequence draw fixture must not drift from _render.py")
+    _seq_frames = _seq["frames"]
+    check(len(_seq_frames) == 12 and sum(len(frame["ops"]) for frame in _seq_frames) == 2299,
+          "9bf oracle must pin 12 frames and 2299 recorded draw ops")
+    check(all((frame["ops"][0]["kind"] == "flash") == (frame["tick"] < 15)
+              and (frame["tick"] >= 15
+                   or frame["ops"][0]["alpha"] == int(200 * (1 - frame["tick"] / 15)))
+              for frame in _seq_frames),
+          "9bf oracle must pin the additive flash fading over the first 15 ticks")
+    _seq_rings = [op for frame in _seq_frames for op in frame["ops"]
+                  if op["kind"] == "circle" and op["width"] == 3]
+    check(_seq_rings and all(op["center"] == [642, 362] for op in _seq_rings),
+          "9bf oracle must pin the waves sitting 2 px off the boss")
+    _seq_shards = {(frame["label"], frame["tick"]): sum(op["kind"] == "polygon"
+                                                         for op in frame["ops"])
+                   for frame in _seq_frames}
+    check(all(_seq_shards[("abaddon_true", tick)] == 50 for tick in (0, 7, 15, 25, 44, 45, 57))
+          and _seq_shards[("abaddon_true", 60)] == 0 and _seq_shards[("abaddon_true", 89)] == 0
+          and _seq_shards[("drakar_mini", 2)] == 30 and _seq_shards[("drakar_mini", 30)] == 30
+          and _seq_shards[("drakar_mini", 58)] == 0,
+          "9bf oracle must pin 25 / 15 fragments (fill + edge) until their alpha drops below 10")
+    check(all(sum(op["kind"] == "polygon" and op["width"] == 1 for op in frame["ops"])
+              == sum(op["kind"] == "polygon" and op["width"] == 0 for op in frame["ops"])
+              for frame in _seq_frames),
+          "9bf oracle must pin one 1 px edge polygon per filled fragment")
+    check(any(op["kind"] == "circle" and op["width"] == 0 and op["radius"] == 1
+              and op["color"][:3] == [255, 255, 255]
+              for frame in _seq_frames for op in frame["ops"])
+          and any(op["kind"] == "circle" and op["width"] == 0 and op["color"][3] == 0
+                  for frame in _seq_frames for op in frame["ops"]),
+          "9bf oracle must pin the white 1 px core and the alpha-0 outer glow disc")
+    check(all(len(_seq["scenarios"][i]["fragments"]) == (25, 15)[i]
+              and len(_seq["scenarios"][i]["rising"]) == (30, 15)[i] for i in range(2)),
+          "9bf oracle must store the seeded fragment / rising particle replay specs")
+check("static func ops(" in _seq_layout
+      and "const RING_WIDTH := 3" in _seq_layout
+      and "func _wave(" in _seq_layout
+      and "func _fragment(" in _seq_layout
+      and "func _rising(" in _seq_layout
+      and '"covered"' in _seq_layout and '"ring_inner"' in _seq_layout,
+      "9bf boss death sequence layout must mirror _draw_death_sequence()")
+check("BossDeathSequenceLayout.ops(" in _seq_view
+      and "func boss_death_draw_ops(" in _seq_view
+      and "func _draw_death_op(" in _seq_view
+      and "func _draw_polygon_edge(" in _seq_view
+      and "func _draw_boss_death_animation(" in _seq_view
+      and "_draw_boss_death_sequence(" not in _seq_view,
+      "9bf PrototypeView must paint the death sequence from the source op list")
+check("\t_draw_level_intro(world)\n\t_draw_boss_death_animation(world)\n" in _seq_view
+      and _seq_core.index("self.level_intro.draw(self.screen)")
+      < _seq_core.index("self.boss_death.draw(self.screen)"),
+      "9bf boss_death.draw() runs after the level intro, in screen space, in the source and view")
+check("_check_production_replay(check, data)" in _seq_checks
+      and "_check_stages(check, data)" in _seq_checks
+      and "_check_overwrite_hints(check, data)" in _seq_checks
+      and "_check_view_wiring(check, data)" in _seq_checks,
+      "9bf death sequence draw suite must replay production frames plus the view")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")
