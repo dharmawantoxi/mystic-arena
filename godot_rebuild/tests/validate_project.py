@@ -3438,6 +3438,64 @@ check("_check_recorded_frames(check, data, screen)" in _kill_feed_draw_checks
       and "_check_view_wiring(check)" in _kill_feed_draw_checks,
       "9bb kill feed draw suite must replay recorded and production frames plus the view")
 
+# ── Layer 9bc: ComboCounter.draw() visuals as a pure op list ──
+from combo_counter_draw_source_oracle import source_fixture as combo_counter_draw_fixture
+_combo_draw_path = ROOT / "tests/fixtures/combo_counter_draw_source.json"
+_combo_layout = (ROOT / "scripts/ui/combo_counter_layout.gd").read_text(encoding="utf-8")
+_combo_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_combo_draw_checks = (ROOT / "tests/combo_counter_draw_checks.gd").read_text(encoding="utf-8")
+check('const ComboCounterDrawChecks = preload("res://tests/combo_counter_draw_checks.gd")' in ai_tests
+      and "ComboCounterDrawChecks.new().run(_check)" in ai_tests,
+      "9bc combo counter draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/combo_counter_draw_source_oracle.py" in workflow,
+      "9bc CI must run the ComboCounter.draw() source oracle")
+check(_combo_draw_path.is_file(), "9bc combo counter draw fixture must exist")
+if _combo_draw_path.is_file():
+    _combo_draw = json.loads(_combo_draw_path.read_text(encoding="utf-8"))
+    check(combo_counter_draw_fixture() == _combo_draw,
+          "9bc combo counter draw fixture must not drift from _render.py")
+    _combo_frames = _combo_draw["frames"]
+    _combo_texts = [(frame, op) for frame in _combo_frames for op in frame["ops"]
+                    if op["kind"] == "text"]
+    check(len(_combo_frames) == 52 and sum(len(frame["ops"]) for frame in _combo_frames) == 426,
+          "9bc oracle must pin 52 frames and 426 recorded draw ops")
+    check({op["text"] for _, op in _combo_texts if op["style"] == "body"}
+          == {"KILLING SPREE!", "RAMPAGE!", "UNSTOPPABLE!", "GODLIKE!"},
+          "9bc oracle must cover all four tier labels")
+    check(any(frame["state"]["count"] == 1 and frame["ops"]
+              and all(op["kind"] == "text" for op in frame["ops"]) for frame in _combo_frames)
+          and any(frame["state"]["count"] == 0 and any(op["text"] == "x0" for op in frame["ops"]
+                                                       if op["kind"] == "text")
+                  for frame in _combo_frames),
+          "9bc oracle must pin the x1 pop without a bar and the x0 fade-out quirks")
+    check(any(frame["label"] == "double_kill" and frame["phase"] == "pre"
+              and [op["kind"] for op in frame["ops"]] == ["rect", "rect"]
+              for frame in _combo_frames),
+          "9bc oracle must pin the timer bar drawn before the sub 8 px count text is skipped")
+    check(sum(1 for frame in _combo_frames if not frame["cheap_alpha"]) == 5
+          and all(len([op for op in frame["ops"] if op["kind"] == "text"
+                       and op["style"] == "body_bold" and op["color"][:3] == [0, 0, 0]])
+                  == (8 if frame["cheap_alpha"] else 1)
+                  for frame in _combo_frames
+                  if any(op["kind"] == "text" for op in frame["ops"])),
+          "9bc oracle must pin the 8-way and the single (2, 2) count shadow")
+check("static func tier(" in _combo_layout
+      and "static func flash_color(" in _combo_layout
+      and "const RIGHT_INSET := 100" in _combo_layout
+      and "const CENTER_Y := 100" in _combo_layout
+      and "const BAR_WIDTH := 80" in _combo_layout
+      and 'const COUNT_STYLE := "body_bold"' in _combo_layout,
+      "9bc combo counter layout must mirror ComboCounter.draw()")
+check("ComboCounterLayout.ops(" in _combo_view
+      and "func combo_counter_draw_ops(" in _combo_view,
+      "9bc PrototypeView must paint the combo counter from the source op list")
+check("HIT COMBO" not in _combo_view,
+      "9bc the invented HIT COMBO text must not return")
+check("_check_recorded_frames(check, data, screen)" in _combo_draw_checks
+      and "_check_production_replay(check, data, screen)" in _combo_draw_checks
+      and "_check_view_wiring(check)" in _combo_draw_checks,
+      "9bc combo draw suite must replay recorded and production frames plus the view")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

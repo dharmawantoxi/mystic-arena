@@ -13,13 +13,22 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
   `draw()` asli di bawah shim pygame perekam (31 frame, 192 op);
   `kill_feed_draw_checks.gd` mereplay fixture lewat layout murni dan lewat state
   `KillFeed` produksi. Rincian ada di bagian "Slice 9bb" paling bawah.
+- 9bc melengkapi visual `ComboCounter.draw()`: bar timer 80x4, teks `xN` 48 px
+  berbayang (cincin 8 arah atau satu bayangan (2, 2) menurut `cheap_alpha`)
+  di (layar-100, 100), label tier dari 5 kill, dan lerp flash ke putih.
+  Oracle `combo_counter_draw_source_oracle.py` menjalankan `draw()` asli di
+  bawah shim pygame perekam (52 frame, 426 op); `combo_counter_draw_checks.gd`
+  mereplay fixture lewat layout murni dan lewat state `ComboCounter` produksi.
+  Rincian ada di bagian "Slice 9bc" paling bawah.
 - Kandidat visual berikutnya yang terbukti belum source-backed:
-  `ComboCounter.draw()` (renderer sekarang menggambar teks "N HIT COMBO"
-  karangan di (1020, 160); sumber menggambar `xN` 48 px berbayang, label tier,
-  dan bar timer di (layar-100, 100)), lalu `BossIntroCinematic.draw()` (banner
-  dan siluet; bagian BossIntroCinematic di bawah mencatat siluetnya belum
-  diport). Entri "siluet hero arena" di bawah bersifat historis: sudah selesai
-  (layer 9aj, `hero_marker.gd`).
+  `BossIntroCinematic.draw()`. Hanya banner kompak yang benar-benar digambar
+  sumber (latar membulat + border `entrance_color`, corner ticks, tag, nama,
+  judul ber-kutip, bar HP membulat); `_draw_boss_silhouette` dan dua turunannya
+  tidak dipanggil dari `draw()` (kode mati, sama seperti `_draw_boss_text`,
+  `_draw_hp_preview`, `_draw_skip_hint`), jadi catatan lama "siluet belum diport"
+  di bagian BossIntroCinematic bukan gap. Renderer sekarang menggambar header
+  karangan `TAG · NAMA` pada rect bersudut siku. Entri "siluet hero arena" di
+  bawah bersifat historis: sudah selesai (layer 9aj, `hero_marker.gd`).
 
 ## Catatan historis portrait Hero Shop
 
@@ -149,7 +158,8 @@ Dibaca hanya untuk memilih slice berikutnya, bukan audit menyeluruh:
 | AchievementPopup ikon (`_render.py::AchievementPopup._draw_icon`) | **Terport (layer 9ax)** — ikon star/sword/skull/shield/gold berikut lencana lingkaran/warna alpha dan fallback; oracle menjalankan method sumber dan membandingkan primitive fixture lewat `AchievementPopupChecks`. |
 | HitParticle sprite (`_render.py::HitParticle`) | **Visual dilengkapi (layer 9ay)** — mempertahankan gerak/umur yang sudah terport, menggambar ulang lingkaran warna + inti putih dari sprite sumber dengan ukuran mengikuti lifetime; oracle merekam primitive `pygame.draw.circle` asli dan suite memaku warna, radius, pusat, serta skala inti. |
 | FloatingText presentation (`_render.py::FloatingText.draw`) | **Visual dilengkapi** — renderer memakai anchor integer dan font size ter-clamp dari sumber, teks ber-shadow ber-offset (1,2), warna alpha dan body style normal/critical; oracle menjalankan `draw()` cached-surface path dengan fake font/surface perekam dan fixture mengunci kedua blit. |
-| KillFeed draw (`_render.py::KillFeed.draw`) | **Terport (layer 9bb)** — `scripts/ui/kill_feed_layout.gd::ops(entries, screen_w, measure)`: alpha fade-in 15 tick / hold / fade-out 45 tick, slide-in 100 px, kotak latar `inflate(12, 4)` hitam alpha/2, border membulat r=3 warna tim alpha/2, teks 22 px rata kanan di (layar-20, 250+int(y_offset)); dirender `prototype_view._draw_kill_feed`; oracle `kill_feed_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam (31 frame, 192 op). `ComboCounter.draw()` masih pendekatan. |
+| KillFeed draw (`_render.py::KillFeed.draw`) | **Terport (layer 9bb)** — `scripts/ui/kill_feed_layout.gd::ops(entries, screen_w, measure)`: alpha fade-in 15 tick / hold / fade-out 45 tick, slide-in 100 px, kotak latar `inflate(12, 4)` hitam alpha/2, border membulat r=3 warna tim alpha/2, teks 22 px rata kanan di (layar-20, 250+int(y_offset)); dirender `prototype_view._draw_kill_feed`; oracle `kill_feed_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam (31 frame, 192 op). |
+| ComboCounter draw (`_render.py::ComboCounter.draw`) | **Terport (layer 9bc)** — `scripts/ui/combo_counter_layout.gd::ops(state, screen_w, measure, cheap_alpha)`: bar timer 80x4 di (layar-140..-60, 140) dari 2 kill, teks `xN` `int(48*display_scale)` px berpusat di (layar-100, 100) dengan bayangan 8 arah (`cheap_alpha`) atau (2, 2), label tier 24 px di (layar-100, 70) dari 5 kill, warna tier 5/10/15/20 dan lerp flash `color_flash/20` ke putih; dirender `prototype_view._draw_combo_counter`; oracle `combo_counter_draw_source_oracle.py` menjalankan kelas ASLI di bawah shim pygame perekam (52 frame, 426 op). |
 | `hero_marker.gd` | Selesai: placeholder 4-6 sisi tetap untuk `grimjaw_checks`, siluet per-hero dipakai `prototype_view.gd:619`; art roster dipaku golden fixture (layer 9aj) |
 
 Catatan: `ui_components/hero_portraits.py` yang di-impor `_core.py:3056`
@@ -220,8 +230,9 @@ jalur itu keputusan terpisah yang perlu Anda setujui.
 Dua mesin state deterministik dari `_render.py`, diport dengan pola yang sama
 (oracle sumber → fixture JSON → suite Godot yang memutar ulang fixture).
 
-> Hanya state. Visual `KillFeed.draw()` ditutup di layer 9bb (bagian "Slice 9bb"
-> paling bawah); visual `ComboCounter.draw()` belum diport.
+> Hanya state. Visual `KillFeed.draw()` ditutup di layer 9bb dan visual
+> `ComboCounter.draw()` di layer 9bc (bagian "Slice 9bb" / "Slice 9bc" paling
+> bawah).
 
 - `scripts/ui/kill_feed.gd` — `add_kill(killer, victim, team)` menyusun
   `"Kaizen >> Grimjaw"` (biru) atau `"<<"` (merah), mendorong `target_y` tiap
@@ -1665,4 +1676,55 @@ Divergensi yang disadari: `Barlow-Medium.ttf` (gaya `body_medium`) tidak ada di
 metrik Godot (lebar kotak bisa beda beberapa piksel dari pygame; oracle memaku
 tata letak, bukan metrik). Border adalah polyline anti-alias yang ditarik
 setengah lebar goresan ke dalam (pygame menggores di dalam rect), bukan outline
-piksel-presisi. `ComboCounter.draw()` tidak disentuh.
+piksel-presisi. `ComboCounter.draw()` menyusul di layer 9bc.
+
+## Slice 9bc — visual `ComboCounter.draw()` (layer 9bc)
+
+Sebelumnya hanya state `ComboCounter` yang terport; `prototype_view` menggambar
+teks "N HIT COMBO" karangan di (1020, 160) tanpa bar timer, bayangan, atau
+label tier. Kini seluruh `draw()` sumber diport sebagai daftar op murni,
+`scripts/ui/combo_counter_layout.gd::ops(state, screen_w, measure, cheap_alpha)`
+(`state_of(counter)` mengambil lima field yang dibaca `draw()`):
+
+- Jangkar: `cx = screen_w - 100`, `cy = 100`. Bar timer 80x4 di
+  `(cx - 40, cy + 40)` hanya dari 2 kill (latar `(40, 40, 40)`, isi warna tier
+  `int(80 * timer / max_timer)`). Teks `x{count}` berpusat di (cx, cy) pada
+  `int(48 * display_scale)` px, **dilewati bila < 8 px — setelah bar digambar**.
+  Label tier 24 px berpusat di (cx, cy - 30) dengan bayangan (+1, +1), dari
+  5 kill. Tier `>=`: 5 hijau KILLING SPREE!, 10 kuning RAMPAGE!, 15 oranye
+  UNSTOPPABLE!, 20 merah GODLIKE!, selain itu putih COMBO. Flash: tiap kanal
+  `int(c + (255 - c) * color_flash / 20)`; bar tetap memakai warna tier.
+- Bayangan `x{count}`: `cheap_alpha` true = cincin 8 arah (urutan dx lalu dy,
+  tanpa (0, 0)), false = satu bayangan (2, 2). Port menerima flag itu; view
+  memakai default sumber (`Quality.cheap_alpha = True`, sama seperti 9av).
+- Oracle `combo_counter_draw_source_oracle.py` memanen `class ComboCounter`
+  dengan `ast` dan menjalankan `draw()` asli di bawah shim pygame perekam (font
+  `int(0.55*size)` px per glyph, tinggi = size). `draw()` meng-import
+  `mobile.perf.Quality` saat dipanggil, jadi oracle memasang stub `mobile.perf`
+  selama berjalan (dipulihkan sesudahnya) dan sengaja **tidak** menyediakan
+  `mobile.sidepanel`: `add_kill()` menelan ImportError itu seperti di game tanpa
+  panel samping Python. State berasal dari `add_kill`/`update` asli: pendakian
+  22 kill tiap 2 tick (semua batas tier, hold dengan bar menyusut, kedaluwarsa
+  dan fade-out), tiga frame sebelum `update()` (flash penuh), empat frame
+  dengan bayangan tunggal, serta dua kill dalam satu tick. Fixture
+  `combo_counter_draw_source.json` = 52 frame, 426 op; validator
+  meregenerasinya dari `_render.py` dan membandingkan.
+- `combo_counter_draw_checks.gd` memeriksa tangga tier dan lerp flash, mereplay
+  setiap frame dari state terekam, mereplay semua frame lewat `ComboCounter`
+  produksi, dan memeriksa wiring `PrototypeView.combo_counter_draw_ops` dengan
+  metrik font nyata. `prototype_view` juga memakai `HUD_SCREEN_W` dan
+  `_measure_hud_text` bersama dengan kill feed (nama generik dari 9bb).
+
+Perilaku sumber yang ikut dipertahankan: satu kill saja sudah menggambar `x1`
+(penjaga awal hanya memeriksa `display_scale`, bukan `count`); setelah jendela
+120 tick habis `count` menjadi 0 tetapi skala masih meluruh, jadi `x0` putih
+ikut tergambar sampai skalanya turun di bawah 8 px (frame 161-172 di fixture);
+dan dua kill dalam satu frame menggambar bar timer tanpa teks pada frame
+sebelum `update()` pertama.
+
+Divergensi yang disadari: `Barlow-Bold.ttf` (`body_bold`) dan `Barlow-Regular.ttf`
+(`body`) tidak dipakai view; semua teks HUD memakai Barlow SemiBold dan metrik
+Godot (posisi pusat bisa beda beberapa piksel dari pygame; oracle memaku tata
+letak, bukan metrik). Stub `mobile.perf` hanya menyediakan `Quality`; hook
+sidepanel (`beri_tahu_global`) tetap tidak diport (lihat bagian KillFeed +
+ComboCounter).

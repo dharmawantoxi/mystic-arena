@@ -11,12 +11,13 @@ const SpriteLighting = preload("res://scripts/ui/sprite_lighting.gd")
 const BossFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
 const LevelIntroLayout = preload("res://scripts/ui/level_intro_layout.gd")
 const KillFeedLayout = preload("res://scripts/ui/kill_feed_layout.gd")
+const ComboCounterLayout = preload("res://scripts/ui/combo_counter_layout.gd")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
 const WallTiles = preload("res://scripts/ui/wall_tiles.gd")
 const TerrainTiles = preload("res://scripts/ui/terrain_tiles.gd")
-const KILL_FEED_SCREEN_W := 1280
+const HUD_SCREEN_W := 1280
 var cached_river_theme := ""
 
 
@@ -363,25 +364,19 @@ func _draw_gold_corner_ticks(rect: Rect2, alpha: float) -> void:
 			draw_line(Vector2(x, y), Vector2(x, y - y_sign * 12.0), ink, 2.0, true)
 
 
+## Layer 9bc: the ops `ComboCounter.draw()` paints this frame, measured with the
+## real font (the oracle uses a 0.55*size fake; the layout code is shared).
+func combo_counter_draw_ops(world: Prototype) -> Array:
+	var counter = world.effects.combo_counter
+	if counter == null:
+		return []
+	var state := ComboCounterLayout.state_of(counter)
+	return ComboCounterLayout.ops(state, HUD_SCREEN_W, _measure_hud_text)
+
+
 func _draw_combo_counter(world: Prototype) -> void:
-	var combo = world.effects.combo_counter
-	if combo == null or combo.display_scale <= 0.0:
-		return
-	var shown_count: int = combo.count if combo.count > 0 else combo.last_combo
-	if shown_count < 2:
-		return
-	var alpha := clampf(float(combo.display_scale), 0.0, 1.0)
-	var ink := Color.WHITE if combo.color_flash > 0 else Color(1.0, 0.82, 0.31)
-	var font_size := maxi(12, int(round(22.0 * clampf(float(combo.display_scale), 0.5, 1.5))))
-	draw_string(
-		BossFont,
-		Vector2(1020.0, 160.0),
-		"%d HIT COMBO" % shown_count,
-		HORIZONTAL_ALIGNMENT_RIGHT,
-		220.0,
-		font_size,
-		Color(ink, alpha)
-	)
+	for op in combo_counter_draw_ops(world):
+		_draw_intro_op(op)
 
 
 ## Layer 9bb: the ops `KillFeed.draw()` paints this frame, measured with the
@@ -390,7 +385,7 @@ func kill_feed_draw_ops(world: Prototype) -> Array:
 	var feed = world.effects.kill_feed
 	if feed == null:
 		return []
-	return KillFeedLayout.ops(feed.entries, KILL_FEED_SCREEN_W, _measure_kill_feed_text)
+	return KillFeedLayout.ops(feed.entries, HUD_SCREEN_W, _measure_hud_text)
 
 
 func _draw_kill_feed(world: Prototype) -> void:
@@ -398,7 +393,7 @@ func _draw_kill_feed(world: Prototype) -> void:
 		_draw_kill_feed_op(op)
 
 
-func _measure_kill_feed_text(text: String, font_size: int) -> Vector2i:
+func _measure_hud_text(text: String, font_size: int) -> Vector2i:
 	var measured := BossFont.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
 	return Vector2i(ceili(measured.x), ceili(BossFont.get_height(font_size)))
 
