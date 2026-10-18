@@ -24,6 +24,21 @@ const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
 const WallTiles = preload("res://scripts/ui/wall_tiles.gd")
 const TerrainTiles = preload("res://scripts/ui/terrain_tiles.gd")
 const HUD_SCREEN_W := 1280
+## Layer 9bi: paint order of the world-space layers (`EffectManager.draw` = path
+## preview then the effects, then `tactical.draw_world`) and of the screen overlays
+## (`Game.draw`: boss intro, then `effects.draw_ui` = wave announcer and achievement,
+## level intro, and the boss death animation last). The combo counter and kill feed
+## are never drawn by the source; they keep their slot between announcer and popup.
+const WORLD_LAYER_ORDER := ["path_preview", "effects", "tactical"]
+const OVERLAY_ORDER := [
+	"boss_intro",
+	"wave_announcer",
+	"combo_counter",
+	"kill_feed",
+	"achievement",
+	"level_intro",
+	"boss_death",
+]
 var cached_river_theme := ""
 
 
@@ -70,9 +85,8 @@ func _draw() -> void:
 		draw_arc(slot.position, 19, 0, TAU, 36, Color(color, 0.95 if selected else 0.5), 2, true)
 		draw_line(slot.position - Vector2(6, 0), slot.position + Vector2(6, 0), color, 2, true)
 		draw_line(slot.position - Vector2(0, 6), slot.position + Vector2(0, 6), color, 2, true)
-	_draw_tactical(world)
-	_draw_path_preview(world)
-	_draw_world_effects(world)
+	for layer in WORLD_LAYER_ORDER:
+		_draw_world_layer(String(layer), world)
 	var hero := world.get_unit(match_session.selected_id) as HeroState
 	if hero != null and hero.team == world.BLUE and hero.has_destination:
 		var mark := hero.destination
@@ -81,13 +95,8 @@ func _draw() -> void:
 		draw_line(mark - Vector2(5, 5), mark + Vector2(5, 5), color, 1.5, true)
 		draw_line(mark + Vector2(-5, 5), mark + Vector2(5, -5), color, 1.5, true)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	_draw_wave_announcer(world)
-	_draw_combo_counter(world)
-	_draw_kill_feed(world)
-	_draw_achievement_popup(world)
-	_draw_boss_intro(world)
-	_draw_level_intro(world)
-	_draw_boss_death_animation(world)
+	for layer in OVERLAY_ORDER:
+		_draw_overlay_layer(String(layer), world)
 
 
 ## Layer 9bh: the ambient tint `MapRenderer.draw()` lays over the map, under the
@@ -99,6 +108,42 @@ func _draw_map_overlay() -> void:
 
 func map_tint_draw_ops(world: Prototype) -> Array:
 	return MapTintLayout.ops(String(world.level_config.get("map_theme", "forest")))
+
+
+func world_layer_order() -> Array:
+	return WORLD_LAYER_ORDER.duplicate()
+
+
+func overlay_paint_order() -> Array:
+	return OVERLAY_ORDER.duplicate()
+
+
+func _draw_world_layer(layer: String, world: Prototype) -> void:
+	match layer:
+		"path_preview":
+			_draw_path_preview(world)
+		"effects":
+			_draw_world_effects(world)
+		"tactical":
+			_draw_tactical(world)
+
+
+func _draw_overlay_layer(layer: String, world: Prototype) -> void:
+	match layer:
+		"boss_intro":
+			_draw_boss_intro(world)
+		"wave_announcer":
+			_draw_wave_announcer(world)
+		"combo_counter":
+			_draw_combo_counter(world)
+		"kill_feed":
+			_draw_kill_feed(world)
+		"achievement":
+			_draw_achievement_popup(world)
+		"level_intro":
+			_draw_level_intro(world)
+		"boss_death":
+			_draw_boss_death_animation(world)
 
 
 func overlay_draw_summary() -> Dictionary:

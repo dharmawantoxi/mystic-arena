@@ -3694,10 +3694,11 @@ check("BossDeathSequenceLayout.ops(" in _seq_view
       and "func _draw_boss_death_animation(" in _seq_view
       and "_draw_boss_death_sequence(" not in _seq_view,
       "9bf PrototypeView must paint the death sequence from the source op list")
-check("\t_draw_level_intro(world)\n\t_draw_boss_death_animation(world)\n" in _seq_view
+check('"boss_death":\n\t\t\t_draw_boss_death_animation(world)' in _seq_view
       and _seq_core.index("self.level_intro.draw(self.screen)")
       < _seq_core.index("self.boss_death.draw(self.screen)"),
-      "9bf boss_death.draw() runs after the level intro, in screen space, in the source and view")
+      "9bf boss_death.draw() runs after the level intro in the source; the view dispatches it "
+      "as the last overlay (order pinned by 9bi)")
 check("_check_production_replay(check, data)" in _seq_checks
       and "_check_stages(check, data)" in _seq_checks
       and "_check_overwrite_hints(check, data)" in _seq_checks
@@ -3841,6 +3842,54 @@ check("_check_table(check, data)" in _tint_checks
       and "_check_quirks(check, data)" in _tint_checks
       and "_check_view_wiring(check)" in _tint_checks,
       "9bh map tint draw suite must replay every theme frame plus the view")
+
+# ── Layer 9bi: paint order of the world layers and screen overlays ──
+from draw_order_source_oracle import source_fixture as draw_order_fixture
+_order_path = ROOT / "tests/fixtures/draw_order_source.json"
+_order_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_order_checks = (ROOT / "tests/draw_order_checks.gd").read_text(encoding="utf-8")
+check('const DrawOrderChecks = preload("res://tests/draw_order_checks.gd")' in ai_tests
+      and "DrawOrderChecks.new().run(_check)" in ai_tests,
+      "9bi draw order suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/draw_order_source_oracle.py" in workflow,
+      "9bi CI must run the draw order source oracle")
+check(_order_path.is_file(), "9bi draw order fixture must exist")
+if _order_path.is_file():
+    _order = json.loads(_order_path.read_text(encoding="utf-8"))
+    check(draw_order_fixture() == _order, "9bi draw order fixture must not drift from the source")
+    check(_order["game_draw"] == ["map", "effects", "tactical_world", "boss_intro", "effects_ui",
+                                  "level_intro", "boss_death"]
+          and _order["effects_draw"] == ["path_preview", "explosions", "particles",
+                                         "floating_texts"]
+          and _order["effects_draw_ui"] == ["wave_announcer", "achievement"],
+          "9bi oracle must pin Game.draw and EffectManager.draw / draw_ui order")
+    _order_live = ["boss_intro", *_order["effects_draw_ui"], "level_intro", "boss_death"]
+    _order_block = re.search(r"const OVERLAY_ORDER := \[(.*?)\]", _order_view, re.S)
+    _order_view_layers = re.findall(r'"(\w+)"', _order_block.group(1)) if _order_block else []
+    check([name for name in _order_view_layers if name in _order_live] == _order_live
+          and _order_view_layers[-1] == "boss_death"
+          and _order_view_layers.index("boss_intro") < _order_view_layers.index("wave_announcer"),
+          "9bi OVERLAY_ORDER must follow the source stack (banner < announcer < achievement < "
+          "level intro < boss death)")
+    check(re.search(r'const WORLD_LAYER_ORDER := \["path_preview", "effects", "tactical"\]',
+                    _order_view) is not None,
+          "9bi WORLD_LAYER_ORDER must be path preview, effects, then tactical world")
+_order_effects = _order_view[_order_view.index("func _draw_world_effects("):]
+check(_order_effects.index("DeathExplosionLayout.ops(")
+      < _order_effects.index("HitParticleLayout.ops(")
+      < _order_effects.index("world.effects.floating_texts"),
+      "9bi world effects must paint explosions, particles, then floating texts")
+check("for layer in OVERLAY_ORDER:" in _order_view
+      and "for layer in WORLD_LAYER_ORDER:" in _order_view
+      and "func _draw_overlay_layer(" in _order_view
+      and "func _draw_world_layer(" in _order_view
+      and "func overlay_paint_order(" in _order_view
+      and "func world_layer_order(" in _order_view
+      and "\t_draw_wave_announcer(world)\n\t_draw_combo_counter(world)\n" not in _order_view,
+      "9bi PrototypeView must paint from the order constants, not a fixed call list")
+check("_check_overlays(check, data, view.overlay_paint_order())" in _order_checks
+      and "_check_world(check, data, view.world_layer_order())" in _order_checks,
+      "9bi draw order suite must read the view's order back")
 
 for error in errors:
     print("FAIL:", error, file=sys.stderr)

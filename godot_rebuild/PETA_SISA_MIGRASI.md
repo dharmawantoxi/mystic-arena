@@ -72,14 +72,22 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
   `map_components/_bundle.py` (54 tema x 2 jalur = 108 frame, 106 op);
   `map_tint_draw_checks.gd` mereplay tabel dan frame lewat layout murni dan
   `PrototypeView`. Rincian ada di bagian "Slice 9bh" paling bawah.
-- Kandidat visual berikutnya yang terbukti belum source-backed:
-  `BossDeathAnimation._draw_celebration()` (true boss saja). Renderer sekarang
-  menggambar overlay datar dan teks karangan `NAMA DEFEATED!` 32 px; sumber
-  menggambar `darken` 180, tint emas `(80, 60, 20, 40)`, `BOSS DEFEATED!` 66 px
-  berbayang yang memantul, nama 46 px, judul ber-kutip, hadiah, dan hint.
-  `_draw_death_sequence()` (flash, fragmen, partikel naik; ~150 baris) lebih
-  besar, jadi kerjakan terpisah sesudahnya. Entri "siluet hero arena" di bawah
-  bersifat historis: sudah selesai (layer 9aj, `hero_marker.gd`).
+- 9bi memin urutan gambar dari sumber: `Game.draw` melukis banner boss SEBELUM
+  `effects.draw_ui` (wave announcer, lalu achievement), lalu level intro, dan
+  `boss_death.draw` paling akhir; `EffectManager.draw` melukis path preview, ledakan,
+  partikel, lalu teks melayang, dan `tactical.draw_world` sesudahnya. Sebelumnya
+  Godot melukis banner boss DI ATAS announcer dan achievement, dan efek taktis di
+  bawah path preview. Oracle `draw_order_source_oracle.py` membaca urutan itu
+  langsung dari `_core.py` / `_render.py` dengan `ast`; `prototype_view` kini melukis
+  dari konstanta `OVERLAY_ORDER` / `WORLD_LAYER_ORDER` yang dibaca balik
+  `draw_order_checks.gd`. Rincian ada di bagian "Slice 9bi" paling bawah.
+- Kandidat visual berikutnya: audit `_render.py` setelah 9bi tidak menemukan lagi
+  `draw()` hidup yang belum diport. Sisa celah ada di luar `_render.py`:
+  `map_components/` (`DynamicRenderer` animasi peta, `DecorationRenderer`,
+  `ShopRenderer`; besar, perlu dipecah) dan `tactical_commands.py` (`draw_world` /
+  `draw_ui`). Temuan penting: `ComboCounter.draw()` dan `KillFeed.draw()` (9bb/9bc)
+  tidak pernah dipanggil sumber; lihat "Catatan 9bi" di bawah. Entri "siluet hero
+  arena" di bawah bersifat historis: sudah selesai (layer 9aj, `hero_marker.gd`).
 
 ## Catatan historis portrait Hero Shop
 
@@ -216,6 +224,7 @@ Dibaca hanya untuk memilih slice berikutnya, bukan audit menyeluruh:
 | BossDeathAnimation death sequence (`_render.py::BossDeathAnimation._draw_death_sequence`) | **Terport (layer 9bf)** — `scripts/ui/boss_death_sequence_layout.gd::ops(anim)`: `flash` aditif `int(200*(1-t/15))`, per gelombang cincin lebar 3 `range(r, r-20, -3)` alpha `alpha*r/radius` + inti `max(1, r-15)` alpha/2 di (boss+2, boss+2), badan `boss_color` + inti `entrance_color` alpha/2 selama progress <0.5, fragmen persegi berotasi + tepi 1 px `entrance_color` sampai alpha <10, partikel jiwa glow `size+2..1` + inti putih; petunjuk painter `covered` / `ring_inner` untuk timpa-piksel SRCALPHA; dirender `prototype_view._draw_boss_death_animation` (paling akhir, screen space); oracle `boss_death_sequence_draw_source_oracle.py` (12 frame, 2299 op). |
 | DeathExplosion + HitParticle draw (`_render.py::DeathExplosion.draw`, `HitParticle.draw`) | **Terport (layer 9bg)** — `scripts/ui/death_explosion_layout.gd::ops(explosion)` + `scripts/ui/hit_particle_layout.gd::ops(particle)`: kilat = cakram `(255, 255, 200, int(200*i))` radius `int(20*i)` + inti putih `(255, 255, 255, int(255*i))` radius `size // 2` di `int(x), int(y)` selama 8 tick (`i = timer/8`); percikan = cakram warna radius `base` + inti putih `max(1, base // 2)` diskalakan `current_size / base`, alpha permukaan `int(255 * lifetime / max_lifetime)`, di `int(x) - current_size*3//2`; petunjuk painter `ring_inner` / `covered` untuk timpa-piksel; dirender `prototype_view._draw_world_effects` lewat `_draw_death_op`; oracle `death_explosion_draw_source_oracle.py` (25 frame, 582 op). |
 | MapRenderer ambient tint (`_render.py::MapRenderer.draw`) | **Terport (layer 9bh)** — `scripts/ui/map_tint_layout.gd::ops(theme, screen, cheap_alpha)` + tabel `TINTS` (54 tema, forest `null`): satu `fill` seukuran peta `(r, g, b, a)` (`cheap_alpha`) atau perkalian `255 - (255 - c) * a / 255` (`BLEND_RGB_MULT`); dirender `prototype_view._draw_map_overlay`, hook baru di `minion_view.gd` tepat setelah lapisan peta dan sebelum markas/unit; oracle `map_tint_draw_source_oracle.py` (108 frame, 106 op). Lapisan peta dinamis (`DynamicRenderer`), dekorasi, dan toko tetap belum diport. |
+| Urutan gambar (`_core.py::Game.draw`, `_render.py::EffectManager.draw/draw_ui`) | **Terport (layer 9bi)** — `prototype_view.gd`: `WORLD_LAYER_ORDER` (path preview, efek, tactical) dan `OVERLAY_ORDER` (banner boss, announcer, [combo, kill feed], achievement, level intro, boss death) sebagai satu-satunya sumber urutan di `_draw()`; oracle `draw_order_source_oracle.py` membaca urutan dengan `ast`. |
 | `hero_marker.gd` | Selesai: placeholder 4-6 sisi tetap untuk `grimjaw_checks`, siluet per-hero dipakai `prototype_view.gd:619`; art roster dipaku golden fixture (layer 9aj) |
 
 Catatan: `ui_components/hero_portraits.py` yang di-impor `_core.py:3056`
@@ -2013,3 +2022,41 @@ Divergensi yang disadari: Godot hanya memakai jalur `cheap_alpha` (alpha blend);
 jalur perkalian di-pin di layout dan oracle tetapi tidak dilukis. Lapisan dinamis
 `DynamicRenderer` (animasi air, obor, dll.) dan renderer dekorasi/toko masih belum
 diport, jadi tint menutup peta yang belum memuat lapisan itu.
+
+## Slice 9bi — urutan gambar overlay dan lapisan dunia (layer 9bi)
+
+Layer 9bb-9bh memport tampilan tiap overlay; slice ini memin POSISI-nya di tumpukan,
+dibaca dari sumber tanpa menjalankan apa pun (`draw_order_source_oracle.py`):
+
+- `_core.py::Game.draw`: `map_renderer.draw` < `effects.draw` < `tactical.draw_world`
+  (lapisan dunia, ikut goncangan) < `boss_intro.draw` < `effects.draw_ui` <
+  `level_intro.draw` < `boss_death.draw` (lapisan UI, tanpa goncangan). Komentar sumber
+  menyatakan banner boss sengaja digambar sebelum `effects.draw_ui` agar wave
+  announcer tidak pernah tertutup, dan `boss_death.draw` adalah panggilan paling akhir.
+- `EffectManager.draw`: `path_preview`, `explosions`, `particles`, `floating_texts`;
+  `draw_ui`: `wave_announcer`, `achievement` (loop `for e in self.explosions` diselesaikan
+  ke nama daftarnya).
+- `prototype_view.gd` sebelumnya memanggil `_draw_wave_announcer`, `_draw_combo_counter`,
+  `_draw_kill_feed`, `_draw_achievement_popup`, `_draw_boss_intro`, `_draw_level_intro`
+  berurutan: banner boss menimpa announcer dan popup achievement (kebalikan sumber), dan
+  `_draw_tactical` dilukis sebelum path preview dan efek. Kini `_draw()` mengiterasi
+  `WORLD_LAYER_ORDER` dan `OVERLAY_ORDER` lewat `_draw_world_layer` / `_draw_overlay_layer`.
+  Combo counter dan kill feed tidak pernah digambar sumber (lihat catatan di bawah),
+  jadi mereka tetap di slot lama di antara announcer dan achievement.
+- `draw_order_checks.gd` membaca balik `overlay_paint_order()` / `world_layer_order()` dan
+  membandingkannya dengan urutan sumber (`effects_ui` diperluas jadi daftar `draw_ui`).
+  Validator menambah pin statis: isi konstanta di view, urutan blok ledakan < partikel <
+  teks di `_draw_world_effects`, dan fixture tidak menyimpang dari sumber.
+
+## Catatan 9bi — `KillFeed.draw()` dan `ComboCounter.draw()` tidak dipanggil sumber
+
+Audit saat mengerjakan 9bi (grep seluruh `*.py` di luar `godot_rebuild/`):
+`EffectManager.draw_ui` hanya menggambar `wave_announcer` dan `achievement`
+(komentar sumber: "NOTIFIKASI DIHAPUS (request user)"), `register_kill` langsung
+`return`, dan tidak ada pemanggil `combo_counter.draw(`, `kill_feed.draw(` maupun
+`kill_feed.add_kill(`; `_core.py` hanya memanggil `combo_counter.add_kill()` (state).
+Jadi di game Python asli combo counter dan kill feed TIDAK PERNAH tampil. Layer
+9bb/9bc memport `draw()` keduanya dengan setia dan `prototype_view` sudah lebih dulu
+melukis keduanya, sehingga Godot menampilkan overlay yang tidak ada di sumber.
+Menyembunyikannya (hapus `combo_counter` dan `kill_feed` dari `OVERLAY_ORDER`) adalah
+keputusan produk yang belum diambil; slice ini tidak mengubah visibilitasnya.

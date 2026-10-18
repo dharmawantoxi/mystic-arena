@@ -1,0 +1,22 @@
+{
+ "source": "_core.py::Game.draw + _render.py::EffectManager.draw / draw_ui",
+ "game_draw": [
+  "map",
+  "effects",
+  "tactical_world",
+  "boss_intro",
+  "effects_ui",
+  "level_intro",
+  "boss_death"
+ ],
+ "effects_draw": [
+  "path_preview",
+  "explosions",
+  "particles",
+  "floating_texts"
+ ],
+ "effects_draw_ui": [
+  "wave_announcer",
+  "achievement"
+ ]
+}

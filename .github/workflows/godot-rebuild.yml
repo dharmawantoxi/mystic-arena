@@ -128,6 +128,7 @@ jobs:
           python godot_rebuild/tests/boss_death_sequence_draw_source_oracle.py
           python godot_rebuild/tests/death_explosion_draw_source_oracle.py
           python godot_rebuild/tests/map_tint_draw_source_oracle.py
+          python godot_rebuild/tests/draw_order_source_oracle.py
           python godot_rebuild/tests/burn_boss_delivery_source_oracle.py
           python godot_rebuild/tests/boss_sourceless_delivery_source_oracle.py
           python godot_rebuild/tests/boss_debuff_tenacity_source_oracle.py
