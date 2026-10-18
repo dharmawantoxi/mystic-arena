@@ -19,6 +19,7 @@ const HitParticleLayout = preload("res://scripts/ui/hit_particle_layout.gd")
 const DeathExplosionLayout = preload("res://scripts/ui/death_explosion_layout.gd")
 const MapTintLayout = preload("res://scripts/ui/map_tint_layout.gd")
 const MapArt = preload("res://scripts/ui/map_art.gd")
+const SlotArt = preload("res://scripts/ui/slot_art.gd")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
@@ -66,6 +67,30 @@ func _draw() -> void:
 		draw_circle(arrow.position, 3, ink)
 	for snapshot in world.boss_death_presentations:
 		_draw_boss_death(snapshot)
+	for layer in WORLD_LAYER_ORDER:
+		_draw_world_layer(String(layer), world)
+	var hero := world.get_unit(match_session.selected_id) as HeroState
+	if hero != null and hero.team == world.BLUE and hero.has_destination:
+		var mark := hero.destination
+		var color := Color("f4d491")
+		draw_arc(mark, 8, 0, TAU, 20, color, 1.5, true)
+		draw_line(mark - Vector2(5, 5), mark + Vector2(5, 5), color, 1.5, true)
+		draw_line(mark + Vector2(-5, 5), mark + Vector2(5, -5), color, 1.5, true)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	for layer in OVERLAY_ORDER:
+		_draw_overlay_layer(String(layer), world)
+
+
+## Layer 9bm: `Game.draw` paints the build slots right after the map and BEFORE the towers
+## and units. The marker is the baked source sprite (`SlotArt`); the selection preview
+## (range disc and arc) is the rebuild's own and stays.
+func _draw_structures() -> void:
+	_draw_build_slots(session.world as Prototype)
+	super._draw_structures()
+
+
+func _draw_build_slots(world: Prototype) -> void:
+	var match_session := session as PrototypeSession
 	for slot in world.slots:
 		if slot.structure_id != -1:
 			continue
@@ -83,21 +108,21 @@ func _draw() -> void:
 				1.5,
 				true
 			)
-		draw_arc(slot.position, 19, 0, TAU, 36, Color(color, 0.95 if selected else 0.5), 2, true)
-		draw_line(slot.position - Vector2(6, 0), slot.position + Vector2(6, 0), color, 2, true)
-		draw_line(slot.position - Vector2(0, 6), slot.position + Vector2(0, 6), color, 2, true)
-	for layer in WORLD_LAYER_ORDER:
-		_draw_world_layer(String(layer), world)
-	var hero := world.get_unit(match_session.selected_id) as HeroState
-	if hero != null and hero.team == world.BLUE and hero.has_destination:
-		var mark := hero.destination
-		var color := Color("f4d491")
-		draw_arc(mark, 8, 0, TAU, 20, color, 1.5, true)
-		draw_line(mark - Vector2(5, 5), mark + Vector2(5, 5), color, 1.5, true)
-		draw_line(mark + Vector2(-5, 5), mark + Vector2(5, -5), color, 1.5, true)
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	for layer in OVERLAY_ORDER:
-		_draw_overlay_layer(String(layer), world)
+		var art := SlotArt.frame(slot.team, world.tick_count)
+		if art.is_empty():
+			_draw_slot_outline(slot.position, color, selected)
+			continue
+		var src: Rect2 = art["src"]
+		var corner := slot.position - (art["anchor"] as Vector2)
+		corner = Vector2(int(corner.x), int(corner.y))
+		draw_texture_rect_region(art["texture"] as Texture2D, Rect2(corner, src.size), src)
+
+
+## The rebuild's plain marker, used only while the baked sheet is unavailable.
+func _draw_slot_outline(point: Vector2, color: Color, selected: bool) -> void:
+	draw_arc(point, 19, 0, TAU, 36, Color(color, 0.95 if selected else 0.5), 2, true)
+	draw_line(point - Vector2(6, 0), point + Vector2(6, 0), color, 2, true)
+	draw_line(point - Vector2(0, 6), point + Vector2(0, 6), color, 2, true)
 
 
 ## Layer 9bj: the baked decorations and shop buildings of the current theme.

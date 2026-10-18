@@ -4212,6 +4212,72 @@ check("_check_sheets(check, manifest)" in _st_checks and "_check_definitions(che
       and "_check_clocks(check, manifest)" in _st_checks and "_check_view_wiring(check)" in _st_checks,
       "9bl structure art suite must check sheets, definitions, clocks and wiring")
 
+# ── Layer 9bm: baked build-slot markers (bake/bake_slot_atlas.py) ──
+_sl_path = ROOT / "data/art/slots.json"
+_sl_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+_sl_ui = (ROOT.parent / "ui_components/_bundle.py").read_text(encoding="utf-8")
+_sl_bake = (ROOT / "bake/bake_slot_atlas.py").read_text(encoding="utf-8")
+_sl_art = (ROOT / "scripts/ui/slot_art.gd").read_text(encoding="utf-8")
+_sl_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_sl_checks = (ROOT / "tests/slot_art_checks.gd").read_text(encoding="utf-8")
+check('const SlotArtChecks = preload("res://tests/slot_art_checks.gd")' in ai_tests
+      and "SlotArtChecks.new().run(_check)" in ai_tests,
+      "9bm slot art suite must be preloaded and run in the native suite")
+check(workflow.count("      - 'ui_components/_bundle.py'") == 2,
+      "9bm CI must run when the source slot art changes (push and pull_request)")
+check(_sl_path.is_file(), "9bm slot manifest must exist")
+if _sl_path.is_file():
+    _sl = json.loads(_sl_path.read_text(encoding="utf-8"))
+    _sl_sheet = _sl["sheet"]
+    _sl_png = ROOT / "assets/art/slots/slots.png"
+    check(_sl_png.is_file(), "9bm slot sheet must ship")
+    if _sl_png.is_file():
+        _raw = _sl_png.read_bytes()
+        _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+        check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _sl_sheet["size"] == [240, 38]
+              and (_depth, _color) == (8, 6),
+              "9bm slot sheet must be a 240x38 RGBA8 PNG")
+        check(len(_raw) == _sl_sheet["bytes"] and hashlib.sha256(_raw).hexdigest() == _sl_sheet["sha256"],
+              "9bm slot sheet must match its manifest hash")
+    check(sorted(_sl_sheet["frames"]) == sorted(["red"] + [f"blue:{k}" for k in range(-2, 3)])
+          and all(row[2:] == [40, 38, 20, 17] for row in _sl_sheet["frames"].values()),
+          "9bm five blue pulse frames and one red frame, all 40x38 anchored at (20, 17)")
+    check(_sl["pulses"] == [-2, -1, 0, 1, 2] and len(_sl["pulse_cases"]) >= 50
+          and {row[1] for row in _sl["pulse_cases"]} == {-2, -1, 0, 1, 2},
+          "9bm the manifest must carry the source pulse answers across every glow size")
+for _fragment in (
+    "pulse = math.sin(g.animation_time * 0.08) * 2",
+    "pk = int(round(pulse))",
+    "surface.blit(bslot, (sx - 20, sy - 17))",
+    "surface.blit(rsurf, (sx - 20, sy - 17))",
+    "s = pygame.Surface((40, 38), pygame.SRCALPHA)",
+    "15 + pk",
+    "plus_size = 8 + pk",
+):
+    check(_fragment in _sl_ui, f"9bm the source slot code must still read {_fragment!r}")
+_sl_draw = _sl_core[_sl_core.index("self.ui.draw_build_slots(draw_target)"):]
+check(_sl_draw.index("for b in self.bases:") < _sl_draw.index("for t in self.towers:\n            t.draw(draw_target)")
+      < _sl_draw.index("for m in self.minions:"),
+      "9bm the source paints the build slots, then the castles, the towers and the minions")
+check("component._render_blue_slot_surface(pulse)" in _sl_bake
+      and "component._render_red_slot_surface()" in _sl_bake
+      and "game.ui.build_slots_component" in _sl_bake
+      and "PULSES = (-2, -1, 0, 1, 2)" in _sl_bake
+      and "int(round(math.sin(tick * 0.08) * 2))" in _sl_bake,
+      "9bm the bake must render the real slot surfaces and record the source pulse formula")
+check("PULSE_SPEED := 0.08" in _sl_art and "roundi(sin(float(tick) * PULSE_SPEED) * 2.0)" in _sl_art
+      and "ResourceLoader.exists(SHEET)" in _sl_art,
+      "9bm the loader must mirror the source pulse and tolerate a missing import")
+check("SlotArt.frame(slot.team, world.tick_count)" in _sl_view
+      and "func _draw_build_slots(" in _sl_view and "func _draw_slot_outline(" in _sl_view
+      and _sl_view.count("for slot in world.slots:") == 1
+      and _sl_view.index("func _draw_structures() -> void:") < _sl_view.index("_draw_build_slots(session.world")
+      < _sl_view.index("super._draw_structures()"),
+      "9bm the view must paint the slot art from the structure layer, below the towers")
+check("_check_pulse(check, manifest)" in _sl_checks and "_check_frames(check)" in _sl_checks
+      and "_check_view_wiring(check)" in _sl_checks,
+      "9bm slot art suite must check the pulse, the frames and the wiring")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

@@ -97,7 +97,9 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
   level 1-5 (lima frame api obor) dan lencana perisai, lalu menggambarnya di `SiegeView`
   dengan bar HP/perisai, lencana level, dan label perisai kastil seperti sumber. Struktur
   kini dilukis SEBELUM unit (seperti `Game.draw`). Rincian di bagian "Slice 9bl".
-- Urutan bake berikutnya (user: "semuanya"): slot bangun, HUD/menu, lalu hero dan boss.
+- 9bm membake penanda slot bangun (lima frame glow biru + satu merah, `BuildSlots` asli) dan
+  menggambarnya di bawah menara, seperti `Game.draw`. Rincian di bagian "Slice 9bm".
+- Urutan bake berikutnya (user: "semuanya"): HUD/menu, lalu hero dan boss.
   Sisanya di luar bake: `DynamicRenderer`
   (partikel, kabut, obor, air bergerak) dan `tactical_commands.draw_world/draw_ui`.
   Keputusan user: combo counter dan kill feed tetap tampil di Godot (walau tidak digambar
@@ -2212,3 +2214,31 @@ Batas yang diketahui:
   menurut sudut bidik di luar kunci (hadap kiri/kanan) tidak dicakup.
 - Painter tidak dieksekusi suite headless; hanya pemuatan sheet, cakupan definisi, jam, dan
   urutan pemanggilan yang diuji CI.
+
+## Slice 9bm — bake penanda slot bangun (layer 9bm)
+
+Latar: slot bangun kosong di Godot berupa cincin dan tanda silang tipis. Sumbernya
+(`ui_components/_bundle.py::BuildSlots.draw`) mem-blit satu surface 40x38 ter-cache per slot di
+`(x - 20, y - 17)`: slot biru (platform batu, plus bersinar, label biaya "100G") dalam lima
+varian denyut `pk = int(round(sin(animation_time * 0.08) * 2))` = -2..2 dan satu slot merah
+statis. Label "100G" di sumber memang terpotong tinggi surface (hanya garis emas tipis yang
+terlihat di bawah platform); itu ikut terbake apa adanya.
+
+- `bake/bake_slot_atlas.py` memanggil `_render_blue_slot_surface(pk)` dan
+  `_render_red_slot_surface()` ASLI dari `Game.ui.build_slots_component`, menyimpan
+  `assets/art/slots/slots.png` (240x38, 6 frame, 1,6 KB) dan `data/art/slots.json` dengan
+  tabel frame, versi pygame, dan 56 baris `pulse_cases` (rumus sumber untuk deretan waktu).
+- `scripts/ui/slot_art.gd`: `pulse(tick)` meniru rumus sumber (jam = tick), memuat sheet hanya
+  bila `ResourceLoader.exists`. `PrototypeView._draw_structures()` melukis slot kosong LEBIH
+  DULU lalu menara (`super._draw_structures()`), karena `Game.draw` memanggil
+  `draw_build_slots` sebelum menara. Pratinjau pilihan slot (cakram dan busur jangkauan
+  Archer) tetap milik rebuild; bila sheet belum diimpor, penanda lama
+  (`_draw_slot_outline`) tetap tergambar.
+- `tests/slot_art_checks.gd`: sheet ada dan terdekode 240x38, enam frame di dalam sheet dengan
+  anchor (20, 17), `pulse` identik dengan 56 jawaban sumber dan mencapai kelima ukuran glow,
+  frame biru/merah termuat sebagai tekstur, dan urutan slot-di-bawah-menara. Validator memin
+  header/hash sheet, potongan sumber (`BuildSlots`), urutan `draw_build_slots` < menara di
+  `_core.py`, dan isi view. Workflow kini juga dipicu perubahan `ui_components/_bundle.py`.
+
+Batas yang diketahui: denyut memakai `tick_count` sebagai `animation_time`; slot yang
+terisi tidak digambar (seperti sumber); tombol bangun dan popup biaya tetap UI Godot.

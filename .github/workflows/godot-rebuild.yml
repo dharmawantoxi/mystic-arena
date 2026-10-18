@@ -25,6 +25,7 @@ on:
       - 'hero_archetypes.py'
       - 'towers/_bundle.py'
       - 'minions/_bundle.py'
+      - 'ui_components/_bundle.py'
       - 'map_components/_bundle.py'
       - '.github/workflows/godot-rebuild.yml'
   push:
@@ -50,6 +51,7 @@ on:
       - 'hero_archetypes.py'
       - 'towers/_bundle.py'
       - 'minions/_bundle.py'
+      - 'ui_components/_bundle.py'
       - 'map_components/_bundle.py'
       - '.github/workflows/godot-rebuild.yml'
 
