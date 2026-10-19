@@ -666,7 +666,7 @@ panel modal (`hero_shop_panel.gd`, `item_forge_panel.gd`,
 
 ## Batas scope
 
-- Tidak ada portrait hero lain yang dimulai (hanya Kaizen + Thorne + fallback generik).
+- Pada checkpoint ini belum ada portrait hero lain selain Kaizen + Thorne + fallback generik; catatan historis ini dikoreksi pada 9bw untuk portrait Vex.
 - `lighting.py` semula tidak diport (post-process per-piksel vs vektor).
   **Dibuka pengguna 2026-10-16 ("migrasi penuh, buka semua pembatas")** →
   layer 9aq: matematika mask diport eksak, pengecatan vektor sebagai adaptor
@@ -2513,3 +2513,11 @@ Anda nilai di Godot.
 
 Batas: tata letak memakai bidang logis 1280×720 dan elemen HUD memang menimpa tepi arena. Tidak ada
 bake gambar pada slice ini; visual akhir tetap perlu Anda nilai di Godot.
+
+## Slice 9bw — portrait mage Vex di Hero Shop
+
+- `hero_portrait.gd` menambahkan kanvas Vex bernuansa arcane yang dipanggil lewat jalur kartu Hero Shop; portrait Kaizen/Thorne dan bust generik lain tetap tersedia.
+- `hero_shop_portrait_checks.gd` mengunci dispatch, fallback Sylara, serta penghitung pass `_draw()` dan cabang Vex; `run_all.gd` menunggu dua frame agar bukti hitung berasal dari renderer native.
+- Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan visual perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.

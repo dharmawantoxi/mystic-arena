@@ -255,7 +255,7 @@ func _physics_steps(count: int) -> void:
 func _run() -> void:
 	_check(Engine.physics_ticks_per_second == 60, "physics frequency is 60 Hz")
 	LevelCatalogChecks.new().run(_check)
-	HeroShopPortraitChecks.new().run(_check)
+	await HeroShopPortraitChecks.new().run(self, _check)
 	HeroMarkerChecks.new().run(_check)
 	FloatingTextChecks.new().run(_check)
 	HitParticleChecks.new().run(_check)

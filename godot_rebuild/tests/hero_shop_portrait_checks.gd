@@ -1,6 +1,6 @@
 extends RefCounted
-## Hero Shop portrait slice: the Kaizen/Thorne canvases, the dispatch through
-## the shared Hero Shop card and the deterministic generic fallback bust.
+## Hero Shop portrait slice: Kaizen, Thorne, and Vex canvases, shared-card
+## dispatch, the deterministic generic fallback bust, and native draw counters.
 
 const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
@@ -11,29 +11,36 @@ const META_PANEL := "res://scripts/ui/meta_hero_shop_panel.gd"
 const SAMPLE: Array[String] = ["kaizen", "thorne", "grimjaw", "vex", "sylara", "zephyr"]
 
 
-func run(check: Callable) -> void:
+func run(tree: SceneTree, check: Callable) -> void:
 	_dispatch(check)
 	_fallback(check)
 	_card(check)
 	_wiring(check)
+	await _draw_counter(tree, check)
 
 
 func _dispatch(check: Callable) -> void:
 	var custom := HeroPortrait.custom_ids()
-	check.call(custom == ["kaizen", "thorne"], "Portrait slice covers Kaizen and Thorne only")
+	check.call(
+		custom == ["kaizen", "thorne", "vex"], "Portrait slice covers Kaizen, Thorne, and Vex"
+	)
 	check.call(HeroPortrait.has_custom("kaizen"), "Kaizen dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("thorne"), "Thorne dispatches to a hand-authored canvas")
-	check.call(not HeroPortrait.has_custom("vex"), "Other starters fall back to the generic bust")
+	check.call(HeroPortrait.has_custom("vex"), "Vex dispatches to a hand-authored canvas")
+	check.call(
+		not HeroPortrait.has_custom("sylara"), "Other starters fall back to the generic bust"
+	)
 	check.call(not HeroPortrait.has_custom("gornak"), "Boss heroes fall back to the generic bust")
 	check.call(not HeroPortrait.has_custom(""), "Empty id falls back to the generic bust")
 
 
 func _fallback(check: Callable) -> void:
 	check.call(
-		is_equal_approx(HeroPortrait.hue_for("vex"), 9.0 / 360.0), "Fallback hue is deterministic"
+		is_equal_approx(HeroPortrait.hue_for("sylara"), 82.0 / 360.0),
+		"Fallback hue is deterministic"
 	)
 	check.call(
-		HeroPortrait.hue_for("vex") != HeroPortrait.hue_for("sylara"),
+		HeroPortrait.hue_for("sylara") != HeroPortrait.hue_for("grimjaw"),
 		"Fallback hue separates heroes"
 	)
 	for hero_type in SAMPLE:
@@ -101,12 +108,14 @@ func _card(check: Callable) -> void:
 	check.call(card.get_portrait().hero_type == "thorne", "Card dispatches Thorne to its portrait")
 
 	var generic := HeroShopCard.new()
-	generic.setup("vex", "Vex — Vex\nAssassin  ·  420 G", false, 485.0, HERO_ROSTER["vex"])
-	check.call(
-		generic.get_portrait().hero_type == "vex", "Card routes other heroes to the fallback"
+	generic.setup(
+		"sylara", "Sylara — Sylara\nMarksman  ·  420 G", false, 485.0, HERO_ROSTER["sylara"]
 	)
 	check.call(
-		not HeroPortrait.has_custom(generic.get_portrait().hero_type), "Vex uses the fallback"
+		generic.get_portrait().hero_type == "sylara", "Card routes other heroes to the fallback"
+	)
+	check.call(
+		not HeroPortrait.has_custom(generic.get_portrait().hero_type), "Sylara uses the fallback"
 	)
 	generic.free()
 	card.free()
@@ -129,3 +138,17 @@ func _wiring(check: Callable) -> void:
 	check.call(
 		"unlock_requested.emit(hero_type)" in meta_panel, "Permanent card keeps its request signal"
 	)
+
+
+func _draw_counter(tree: SceneTree, check: Callable) -> void:
+	var portrait := HeroPortrait.new()
+	portrait.setup("vex", HERO_ROSTER["vex"], 96.0)
+	portrait.size = Vector2(96.0, 96.0)
+	tree.root.add_child(portrait)
+	await tree.process_frame
+	await tree.process_frame
+	check.call(
+		portrait.draw_pass_count > 0 and portrait.vex_draw_count > 0,
+		"Vex hand-authored canvas reaches _draw (draw counters)"
+	)
+	portrait.free()

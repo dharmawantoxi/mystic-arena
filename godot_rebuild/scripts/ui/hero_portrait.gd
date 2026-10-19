@@ -1,24 +1,27 @@
 extends Control
-## Procedural Hero Shop portrait. Kaizen and Thorne carry a hand-authored
-## canvas; every other hero id falls back to a deterministic generic bust
+## Procedural Hero Shop portrait. Kaizen, Thorne, and Vex carry hand-authored
+## canvases; every other hero id falls back to a deterministic generic bust
 ## derived from the id hash, so a shared card never renders an empty slot.
 ## Presentation only: no roster state, no input, no gameplay dependencies.
 
 const SIZE := 96.0
 const KAIZEN := "kaizen"
 const THORNE := "thorne"
+const VEX := "vex"
 
 var hero_type := ""
+var draw_pass_count: int = 0
+var vex_draw_count: int = 0
 
 var _definition: Variant = null
 
 
 static func custom_ids() -> Array[String]:
-	return [KAIZEN, THORNE]
+	return [KAIZEN, THORNE, VEX]
 
 
 static func has_custom(id: String) -> bool:
-	return id == KAIZEN or id == THORNE
+	return id == KAIZEN or id == THORNE or id == VEX
 
 
 ## Stable HSV hue in [0, 1) used by the generic fallback bust.
@@ -32,6 +35,8 @@ static func hue_for(id: String) -> float:
 func setup(id: String, definition: Variant = null, pixel_size: float = SIZE) -> void:
 	hero_type = id
 	_definition = definition
+	draw_pass_count = 0
+	vex_draw_count = 0
 	custom_minimum_size = Vector2(pixel_size, pixel_size)
 	queue_redraw()
 
@@ -40,11 +45,15 @@ func _draw() -> void:
 	var box := Rect2(Vector2.ZERO, size)
 	if box.size.x < 8.0 or box.size.y < 8.0:
 		return
+	draw_pass_count += 1
 	match hero_type:
 		KAIZEN:
 			_draw_kaizen(box)
 		THORNE:
 			_draw_thorne(box)
+		VEX:
+			vex_draw_count += 1
+			_draw_vex(box)
 		_:
 			_draw_generic(box)
 	draw_rect(box.grow(-1.0), Color8(10, 16, 24), false, 2.0)
@@ -204,6 +213,170 @@ func _draw_thorne(box: Rect2) -> void:
 	draw_circle(_p(box, 51.0, 27.0), 2.2 * unit, outline)
 	draw_circle(_p(box, 77.0, 38.0), 3.0 * unit, goop)
 	draw_circle(_p(box, 85.0, 45.0), 2.0 * unit, goop)
+
+
+func _draw_vex(box: Rect2) -> void:
+	var unit := _scale(box)
+	var outline := Color8(23, 13, 43)
+	var mantle := Color8(54, 31, 92)
+	var robe := Color8(91, 53, 145)
+	var trim := Color8(181, 143, 237)
+	var face := Color8(205, 194, 230)
+	var arcane := Color8(151, 106, 240)
+	var glow := Color8(118, 228, 255)
+
+	_backdrop(box, Color8(54, 29, 93), Color8(14, 12, 30))
+	for index in 3:
+		var alpha := 0.30 - 0.08 * float(index)
+		var radius := (22.0 + 7.0 * float(index)) * unit
+		draw_arc(
+			_p(box, 48.0, 42.0),
+			radius,
+			-PI * 0.82,
+			PI * 0.18,
+			28,
+			Color(arcane.r, arcane.g, arcane.b, alpha),
+			maxf(1.5 * unit, 1.0),
+			true
+		)
+
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(48.0, 8.0),
+				Vector2(69.0, 25.0),
+				Vector2(72.0, 49.0),
+				Vector2(62.0, 61.0),
+				Vector2(79.0, 88.0),
+				Vector2(17.0, 88.0),
+				Vector2(34.0, 61.0),
+				Vector2(24.0, 49.0),
+				Vector2(27.0, 25.0),
+			]
+		),
+		outline
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(35.0, 60.0),
+				Vector2(43.0, 54.0),
+				Vector2(53.0, 54.0),
+				Vector2(61.0, 60.0),
+				Vector2(66.0, 84.0),
+				Vector2(30.0, 84.0),
+			]
+		),
+		robe
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(28.0, 63.0),
+				Vector2(39.0, 54.0),
+				Vector2(58.0, 54.0),
+				Vector2(70.0, 64.0),
+				Vector2(76.0, 86.0),
+				Vector2(22.0, 86.0),
+			]
+		),
+		mantle
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(44.0, 62.0),
+				Vector2(48.0, 58.0),
+				Vector2(52.0, 62.0),
+				Vector2(58.0, 84.0),
+				Vector2(38.0, 84.0),
+			]
+		),
+		robe
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(32.0, 31.0),
+				Vector2(37.0, 21.0),
+				Vector2(48.0, 15.0),
+				Vector2(59.0, 21.0),
+				Vector2(64.0, 31.0),
+				Vector2(60.0, 48.0),
+				Vector2(53.0, 56.0),
+				Vector2(43.0, 56.0),
+				Vector2(36.0, 48.0),
+			]
+		),
+		face
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(25.0, 36.0),
+				Vector2(28.0, 23.0),
+				Vector2(48.0, 9.0),
+				Vector2(68.0, 23.0),
+				Vector2(71.0, 36.0),
+				Vector2(59.0, 30.0),
+				Vector2(48.0, 26.0),
+				Vector2(37.0, 30.0),
+			]
+		),
+		outline
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(30.0, 36.0),
+				Vector2(38.0, 31.0),
+				Vector2(37.0, 53.0),
+				Vector2(29.0, 48.0),
+			]
+		),
+		mantle
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(66.0, 36.0),
+				Vector2(58.0, 31.0),
+				Vector2(59.0, 53.0),
+				Vector2(67.0, 48.0),
+			]
+		),
+		mantle
+	)
+	draw_line(_p(box, 39.0, 39.0), _p(box, 44.0, 39.0), arcane, maxf(2.0 * unit, 1.0))
+	draw_line(_p(box, 52.0, 39.0), _p(box, 57.0, 39.0), arcane, maxf(2.0 * unit, 1.0))
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(40.0, 65.0),
+				Vector2(48.0, 58.0),
+				Vector2(56.0, 65.0),
+			]
+		),
+		trim
+	)
+	draw_line(_p(box, 30.0, 69.0), _p(box, 43.0, 79.0), trim, maxf(2.0 * unit, 1.0), true)
+	draw_line(_p(box, 66.0, 70.0), _p(box, 75.0, 61.0), outline, maxf(4.0 * unit, 1.0), true)
+	draw_arc(
+		_p(box, 75.0, 53.0), 12.0 * unit, -PI * 0.9, PI * 1.8, 24, glow, maxf(2.0 * unit, 1.0), true
+	)
+	draw_circle(_p(box, 75.0, 53.0), 8.0 * unit, arcane)
+	draw_circle(_p(box, 75.0, 53.0), 3.5 * unit, glow)
+	draw_circle(_p(box, 19.0, 29.0), 1.5 * unit, glow)
+	draw_circle(_p(box, 79.0, 25.0), 1.5 * unit, trim)
 
 
 func _draw_generic(box: Rect2) -> void:
