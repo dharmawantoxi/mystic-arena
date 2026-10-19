@@ -42,13 +42,17 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		_touch(screen, 1, enemy_point, true, 10_300.0)
 		check.call(session.command.is_empty(), "Enemy touch cannot queue follow on press")
 		_touch(screen, 1, enemy_point, false, 10_400.0)
+		var follow_command: Dictionary = session.command
 		check.call(
 			(
-				session.command.kind == "follow"
-				and session.command.id == hero.id
-				and session.command.target_id == enemy.id
+				follow_command.get("kind", "") == "follow"
+				and int(follow_command.get("id", -1)) == hero.id
+				and int(follow_command.get("target_id", -1)) == enemy.id
 			),
-			"Released enemy tap captures the source follow command"
+			(
+				"Released enemy tap captures follow: enemy=%s point=%s command=%s selected=%d"
+				% [enemy.position, enemy_point, follow_command, session.selected_id]
+			)
 		)
 		session._physics_process(1.0 / 60.0)
 		check.call(hero.follow_id == enemy.id, "Fixed tick executes the touch follow target")
@@ -60,9 +64,9 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	_touch(screen, 1, destination_point, false, 11_100.0)
 	check.call(
 		(
-			session.command.kind == "move"
-			and session.command.id == hero.id
-			and Vector2(session.command.point).is_equal_approx(destination)
+			session.command.get("kind", "") == "move"
+			and int(session.command.get("id", -1)) == hero.id
+			and Vector2(session.command.get("point", Vector2.ZERO)).is_equal_approx(destination)
 		),
 		"Released tap captures the selected hero and destination"
 	)
@@ -81,13 +85,17 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	screen._route_touch_actions(screen.touch_gestures.advance(12_451.0))
 	check.call(
 		(
-			session.command.kind == "move"
-			and Vector2(session.command.point).is_equal_approx(hold_destination)
+			session.command.get("kind", "") == "move"
+			and Vector2(session.command.get("point", Vector2.ZERO)).is_equal_approx(
+				hold_destination
+			)
 		),
 		"Long press emits the source right-click move exactly once"
 	)
 	_touch(screen, 2, hold_point, false, 12_700.0)
-	check.call(session.command.kind == "move", "Long-press release cannot replace its command")
+	check.call(
+		session.command.get("kind", "") == "move", "Long-press release cannot replace its command"
+	)
 	session._physics_process(1.0 / 60.0)
 
 	var drag_start := hero_point + Vector2(80, -30)
@@ -103,7 +111,9 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	)
 	_touch(screen, 4, first_double_screen, true, 14_000.0)
 	_touch(screen, 4, first_double_screen, false, 14_050.0)
-	check.call(session.command.kind == "move", "First double-tap edge remains a normal tap")
+	check.call(
+		session.command.get("kind", "") == "move", "First double-tap edge remains a normal tap"
+	)
 	session._physics_process(1.0 / 60.0)
 	_touch(screen, 4, first_double_screen + Vector2(10, 10), true, 14_150.0)
 	_touch(screen, 4, first_double_screen + Vector2(10, 10), false, 14_200.0)

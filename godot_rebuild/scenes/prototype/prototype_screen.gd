@@ -52,12 +52,14 @@ func _ready() -> void:
 	UI_THEME.title(%PauseTitle, 32)
 	var selected_world := match_session.world as Prototype
 	$HUD/TopBar/Row/Names/Description.text = (
-		"Lv.%d · %s · %s"
+		"Lv.%d · %s"
 		% [
 			selected_world.level_number,
 			selected_world.difficulty,
-			selected_world.level_config.get("name", "?")
 		]
+	)
+	$HUD/TopBar/Row/Names/Description.tooltip_text = String(
+		selected_world.level_config.get("name", "?")
 	)
 	%BuildButton.pressed.connect(
 		func() -> void: match_session.request_build(match_session.selected_slot_id)
