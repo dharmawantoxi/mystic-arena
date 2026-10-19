@@ -38,6 +38,7 @@ var side_panel: SidePanel
 var ai_toggle: Button
 var migration_status: Label
 var touch_gestures = TouchGestureRuntime.new()
+var _tactical_panel_open := false
 var _touch_tactical_claims: Dictionary = {}
 @onready var match_session: PrototypeSession = $Simulation
 @onready var controller_cursor = %ControllerCursor
@@ -47,7 +48,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	theme = UI_THEME.create_theme()
 	arena.session = simulation
-	UI_THEME.title(%ArenaTitle, 23)
+	UI_THEME.title(%ArenaTitle, 19)
 	UI_THEME.title(%PauseTitle, 32)
 	var selected_world := match_session.world as Prototype
 	$HUD/TopBar/Row/Names/Description.text = (
@@ -102,6 +103,7 @@ func _ready() -> void:
 	_bind_tactical_button(%ProtectCastleButton, "protect_castle")
 	_bind_tactical_button(%AttackBossButton, "attack_boss")
 	_bind_tactical_button(%AttackDealerButton, "attack_damage_dealer")
+	%TacticalToggleButton.toggled.connect(_set_tactical_panel_open)
 	_build_forge_ui()
 	_build_hero_shop_ui()
 	_build_ai_toggle()
@@ -285,7 +287,7 @@ func _process(_delta: float) -> void:
 		%CastleShieldButton.text = "Castle Shield · ON"
 	else:
 		%CastleShieldButton.text = "Aktifkan Castle Shield · %d G" % Structure.CASTLE_SHIELD_COST
-	%Paths.visible = tower_option or regen_context or castle_context
+	var path_row := tower_option or regen_context or castle_context
 	%NexusButton.visible = not path_choice
 	var nexus_price := world.nexus_upgrade_price(simulation.selected_id)
 	%NexusButton.disabled = locked or nexus_price <= 0 or world.economy.gold[0] < nexus_price
@@ -323,6 +325,7 @@ func _process(_delta: float) -> void:
 	# dedicated row so all of them stay inside the 1280x720 viewport.
 	var hero_row := hero != null and hero.team == 0
 	%HeroCommands.visible = hero_row
+	%Paths.visible = path_row and not hero_row
 	%AutoCastButton.visible = hero_row
 	%AutoCastButton.disabled = locked or not hero_row or not hero.alive
 	if hero_row:
@@ -545,7 +548,7 @@ func _update_tactical_hud(world: Prototype) -> void:
 		var progress := float(180 - world.tactical.feedback_timer) / 30.0
 		alpha = clampf(progress, 0.0, 1.0)
 		y_offset = (1.0 - alpha) * 20.0
-	%TacticalFeedback.position.y = 112.0 + y_offset
+	%TacticalFeedback.position.y = 78.0 + y_offset
 	%TacticalFeedback.modulate = Color(world.tactical.feedback_color, alpha)
 
 
@@ -568,7 +571,15 @@ func _layout_side_panel() -> void:
 	if side_panel == null:
 		return
 	side_panel.configure(int(get_viewport().get_visible_rect().size.x))
-	%TacticalPanel.visible = not side_panel.is_active()
+	var docked := side_panel.is_active()
+	%TacticalToggleButton.visible = not docked
+	%TacticalPanel.visible = _tactical_panel_open and not docked
+
+
+func _set_tactical_panel_open(open: bool) -> void:
+	_tactical_panel_open = open
+	if side_panel == null or not side_panel.is_active():
+		%TacticalPanel.visible = open
 
 
 func _update_side_panel(world: Prototype) -> void:

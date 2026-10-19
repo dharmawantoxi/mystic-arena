@@ -2496,3 +2496,18 @@ jalur aset, bukan kesamaan piksel. Hasil akhirnya tetap perlu Anda nilai di Godo
 Batas: arah kontinu dibulatkan ke 32 langkah dan usia disampel pada tick integer. Validator/hash dan
 counter membuktikan jalur serta sumber bake, bukan kesamaan piksel; tampilan akhirnya tetap perlu
 Anda nilai di Godot.
+
+## Slice 9bv — arena layar penuh dengan HUD overlay ringkas
+
+- `PrototypeMatch.tscn` kini menggambar arena pada seluruh bidang logis 1280×720; bar atas dan bawah
+  tetap menjadi overlay, dipadatkan ke satu baris status di atas dan kontrol berbaris rapat di bawah.
+  Panel taktis menjadi dock kanan yang tertutup secara awal dan dapat dibuka/tutup dari tombol Taktik;
+  pada layar lebar, dock responsif yang sudah ada tetap mengambil alih.
+- `prototype_screen.gd` menyelaraskan posisi feedback, menjaga jalur kontrol tower dan hero tidak
+  berebut tinggi bar, serta menyinkronkan visibilitas toggle dengan dock layar lebar. Tidak mengubah
+  simulasi, aturan, renderer Python sumber, atau aset gambar.
+- `prototype_layout_checks.gd` membuktikan transform arena, tinggi bar, panel tertutup di awal, dan
+  transisi buka/tutup; validasi statis juga memastikan tes tersebut terdaftar.
+
+Batas: tata letak memakai bidang logis 1280×720 dan elemen HUD memang menimpa tepi arena. Tidak ada
+bake gambar pada slice ini; visual akhir tetap perlu Anda nilai di Godot.

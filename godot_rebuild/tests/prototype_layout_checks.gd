@@ -1,0 +1,52 @@
+extends RefCounted
+## Playable-scene proof for the full-screen arena and compact overlay HUD.
+
+
+func run(tree: SceneTree, app: Node, check: Callable) -> void:
+	var baseline := tree.get_node_count()
+	app.start_prototype()
+	await _settle(tree)
+	var screen = app.current_screen
+	screen.simulation.set_physics_process(false)
+	var arena: Node2D = screen.get_node("Arena")
+	var top_bar: Control = screen.get_node("HUD/TopBar")
+	var bottom_bar: Control = screen.get_node("HUD/BottomBar")
+	var tactical_panel: Control = screen.get_node("%TacticalPanel")
+	var tactical_toggle: Button = screen.get_node("%TacticalToggleButton")
+	check.call(
+		arena.position == Vector2.ZERO and arena.scale == Vector2.ONE,
+		"Playable arena fills the 1280 by 720 logical viewport"
+	)
+	check.call(
+		(
+			top_bar.get_rect().size.y <= 64.0
+			and bottom_bar.get_rect().size.y <= 164.0
+			and bottom_bar.position.y >= 540.0
+		),
+		"Compact HUD bars stay docked over the arena edges"
+	)
+	var tactical_rect := tactical_panel.get_global_rect()
+	check.call(
+		(
+			not tactical_panel.visible
+			and tactical_toggle.visible
+			and tactical_rect.position.x >= 1000.0
+			and tactical_rect.position.x + tactical_rect.size.x <= 1280.0
+		),
+		"Tactical commands start closed in a right-side dock"
+	)
+	tactical_toggle.toggled.emit(true)
+	check.call(tactical_panel.visible, "Tactical toggle opens the dock over the arena")
+	tactical_toggle.toggled.emit(false)
+	check.call(not tactical_panel.visible, "Tactical toggle restores the unobstructed arena")
+
+	screen.get_node("%BackButton").pressed.emit()
+	await _settle(tree)
+	check.call(app.current_screen.name == "MainMenu", "Prototype layout exits cleanly")
+	check.call(tree.get_node_count() == baseline, "Prototype layout leaves no orphan controls")
+
+
+func _settle(tree: SceneTree) -> void:
+	await tree.process_frame
+	await tree.process_frame
+	await tree.process_frame

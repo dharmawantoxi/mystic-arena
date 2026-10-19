@@ -609,8 +609,10 @@ _side_screen_text = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(en
 check("side_panel.pause_requested.connect(pause_match)" in _side_screen_text
       and "side_panel.tactical_down.connect(_start_panel_tactical)" in _side_screen_text
       and "side_panel.tactical_up.connect(_finish_tactical)" in _side_screen_text
-      and "%TacticalPanel.visible = not side_panel.is_active()" in _side_screen_text,
-      "9as the match screen must mount the side panel and relocate the tactical box")
+      and "var docked := side_panel.is_active()" in _side_screen_text
+      and "%TacticalToggleButton.visible = not docked" in _side_screen_text
+      and "%TacticalPanel.visible = _tactical_panel_open and not docked" in _side_screen_text,
+      "9as the match screen must mount the side panel and dock tactical controls")
 _project_text = (ROOT / "project.godot").read_text(encoding="utf-8")
 check('window/stretch/aspect="expand"' in _project_text,
       "9as the viewport must expand so wide screens expose the right panel")
@@ -1022,6 +1024,15 @@ check("await PlayerStructureCommandSceneChecks.new().run(self, app, _check)" in 
 structure_scene = (ROOT / "scenes/prototype/PrototypeMatch.tscn").read_text(encoding="utf-8")
 check(all(name in structure_scene for name in ("RegenShieldButton", "CastleShieldButton")),
       "Playable scene must author both player shield controls")
+check('position = Vector2(0, 0)' in structure_scene
+      and 'scale = Vector2(1, 1)' in structure_scene,
+      "Prototype arena must fill its 1280x720 logical viewport")
+check('name="TacticalToggleButton"' in structure_scene
+      and 'visible = false\noffset_left = 1032.0' in structure_scene,
+      "Prototype tactical dock must be closed behind a compact HUD toggle")
+check('const PrototypeLayoutChecks = preload("res://tests/prototype_layout_checks.gd")' in ai_tests
+      and 'await PrototypeLayoutChecks.new().run(self, app, _check)' in ai_tests,
+      "Prototype full-screen overlay layout must have a registered scene proof")
 check(all(path in shield_screen for path in ('"cannon"', '"ice"', '"mage"'))
       and "request_regen_shield" in shield_screen and "request_castle_shield" in shield_screen,
       "Playable scene must route all source build and shield choices")

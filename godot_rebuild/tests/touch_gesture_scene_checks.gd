@@ -157,6 +157,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		"Released touch outside Forge keeps source modal close behavior"
 	)
 
+	screen.get_node("%TacticalToggleButton").toggled.emit(true)
 	var gather: Button = screen.get_node("%GatherButton")
 	var gather_rect := gather.get_global_rect()
 	var gather_point := Vector2(gather_rect.get_center().x, gather_rect.position.y - 4.0)
@@ -178,6 +179,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	)
 	session._physics_process(1.0 / 60.0)
 	check.call(not world.tactical.hold_active(), "Tactical touch release cannot remain sticky")
+	screen.get_node("%TacticalToggleButton").toggled.emit(false)
 
 	_touch(screen, 9, hero_point, true, 18_000.0)
 	screen.touch_gestures.fling_velocity = 12.0
