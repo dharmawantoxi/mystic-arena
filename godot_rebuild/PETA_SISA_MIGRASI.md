@@ -2504,10 +2504,12 @@ Anda nilai di Godot.
   Kontrol, sehingga arena/area toko tidak tertutup secara awal. Panel taktis juga menjadi dock kanan
   tertutup dengan toggle Taktik; pada layar lebar, dock responsif yang sudah ada tetap mengambil alih.
 - `prototype_screen.gd` menyelaraskan posisi feedback, menjaga jalur kontrol tower dan hero tidak
-  berebut tinggi bar, serta menyinkronkan visibilitas toggle dengan dock layar lebar. Tidak mengubah
-  simulasi, aturan, renderer Python sumber, atau aset gambar.
+  berebut tinggi bar, serta menyinkronkan visibilitas toggle dengan dock layar lebar. Label status dan
+  kontrol (termasuk toko hero) dipadatkan di bar atas dengan detail pada tooltip, agar tombol tidak
+  menutupi titik sentuh arena. Tidak mengubah simulasi, aturan, renderer Python sumber, atau aset gambar.
 - `prototype_layout_checks.gd` membuktikan transform arena, tinggi bar, panel tertutup di awal, dan
-  transisi buka/tutup; validasi statis juga memastikan tes tersebut terdaftar.
+  transisi buka/tutup; `touch_gesture_scene_checks.gd` menjaga target sentuh bebas dari tombol HUD.
+  Validasi statis juga memastikan tes tersebut terdaftar.
 
 Batas: tata letak memakai bidang logis 1280×720 dan elemen HUD memang menimpa tepi arena. Tidak ada
 bake gambar pada slice ini; visual akhir tetap perlu Anda nilai di Godot.

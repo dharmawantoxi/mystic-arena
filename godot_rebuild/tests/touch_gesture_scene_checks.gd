@@ -39,6 +39,10 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	check.call(enemy != null, "Touch follow fixture finds the source red hero")
 	if enemy != null:
 		var enemy_point: Vector2 = screen.arena.get_global_transform_with_canvas() * enemy.position
+		check.call(
+			screen._touch_button_at(enemy_point) == null,
+			"Compact HUD leaves enemy tap target unobstructed"
+		)
 		_touch(screen, 1, enemy_point, true, 10_300.0)
 		check.call(session.command.is_empty(), "Enemy touch cannot queue follow on press")
 		_touch(screen, 1, enemy_point, false, 10_400.0)

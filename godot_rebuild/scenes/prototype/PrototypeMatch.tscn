@@ -64,13 +64,13 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(1, 0.8039, 0.3333, 1)
-text = "GOLD 1000 G"
+text = "G:1000 · AI:1000"
 
 [node name="TickLabel" type="Label" parent="HUD/TopBar/Row/Counters"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-text = "WAVE 00 · Persiapan 5.0 s"
+text = "W00 · 5.0 s"
 
 [node name="GameSpeedSelector" type="OptionButton" parent="HUD/TopBar/Row/Counters"]
 unique_name_in_owner = true
@@ -79,28 +79,29 @@ layout_mode = 2
 
 [node name="PauseButton" type="Button" parent="HUD/TopBar/Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(96, 36)
+custom_minimum_size = Vector2(72, 36)
 layout_mode = 2
-text = "Jeda  [Esc]"
+text = "Jeda"
+tooltip_text = "Jeda / lanjut [Esc]"
 
 [node name="TacticalToggleButton" type="Button" parent="HUD/TopBar/Row"]
 unique_name_in_owner = true
 toggle_mode = true
-custom_minimum_size = Vector2(82, 36)
+custom_minimum_size = Vector2(72, 36)
 layout_mode = 2
 text = "Taktik"
 
 [node name="CommandDockToggle" type="Button" parent="HUD/TopBar/Row"]
 unique_name_in_owner = true
 toggle_mode = true
-custom_minimum_size = Vector2(90, 36)
+custom_minimum_size = Vector2(80, 36)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "Kontrol"
 
 [node name="BackButton" type="Button" parent="HUD/TopBar/Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(64, 36)
+custom_minimum_size = Vector2(60, 36)
 layout_mode = 2
 text = "Menu"
 
