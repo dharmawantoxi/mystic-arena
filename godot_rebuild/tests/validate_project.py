@@ -1030,6 +1030,11 @@ check('position = Vector2(0, 0)' in structure_scene
 check('name="TacticalToggleButton"' in structure_scene
       and 'visible = false\noffset_left = 1032.0' in structure_scene,
       "Prototype tactical dock must be closed behind a compact HUD toggle")
+check('[node name="BottomBar" type="PanelContainer" parent="HUD"]\n'
+      'unique_name_in_owner = true\nvisible = false' in structure_scene
+      and 'name="CommandDockToggle"' in structure_scene
+      and '%CommandDockToggle.toggled.connect(_set_command_dock_open)' in shield_screen,
+      "Prototype commands must stay available in a closed, toggleable bottom dock")
 check('const PrototypeLayoutChecks = preload("res://tests/prototype_layout_checks.gd")' in ai_tests
       and 'await PrototypeLayoutChecks.new().run(self, app, _check)' in ai_tests,
       "Prototype full-screen overlay layout must have a registered scene proof")

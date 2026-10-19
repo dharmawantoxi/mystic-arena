@@ -2499,10 +2499,10 @@ Anda nilai di Godot.
 
 ## Slice 9bv — arena layar penuh dengan HUD overlay ringkas
 
-- `PrototypeMatch.tscn` kini menggambar arena pada seluruh bidang logis 1280×720; bar atas dan bawah
-  tetap menjadi overlay, dipadatkan ke satu baris status di atas dan kontrol berbaris rapat di bawah.
-  Panel taktis menjadi dock kanan yang tertutup secara awal dan dapat dibuka/tutup dari tombol Taktik;
-  pada layar lebar, dock responsif yang sudah ada tetap mengambil alih.
+- `PrototypeMatch.tscn` kini menggambar arena pada seluruh bidang logis 1280×720; bar atas dipadatkan
+  dan menjadi overlay. Kontrol bawah dibungkus sebagai dock tertutup yang bisa dibuka dari tombol
+  Kontrol, sehingga arena/area toko tidak tertutup secara awal. Panel taktis juga menjadi dock kanan
+  tertutup dengan toggle Taktik; pada layar lebar, dock responsif yang sudah ada tetap mengambil alih.
 - `prototype_screen.gd` menyelaraskan posisi feedback, menjaga jalur kontrol tower dan hero tidak
   berebut tinggi bar, serta menyinkronkan visibilitas toggle dengan dock layar lebar. Tidak mengubah
   simulasi, aturan, renderer Python sumber, atau aset gambar.

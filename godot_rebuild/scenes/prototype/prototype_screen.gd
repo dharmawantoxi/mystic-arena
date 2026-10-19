@@ -52,7 +52,7 @@ func _ready() -> void:
 	UI_THEME.title(%PauseTitle, 32)
 	var selected_world := match_session.world as Prototype
 	$HUD/TopBar/Row/Names/Description.text = (
-		"Lv.%d · %s · %s · uji konfigurasi, belum parity penuh"
+		"Lv.%d · %s · %s"
 		% [
 			selected_world.level_number,
 			selected_world.difficulty,
@@ -104,6 +104,7 @@ func _ready() -> void:
 	_bind_tactical_button(%AttackBossButton, "attack_boss")
 	_bind_tactical_button(%AttackDealerButton, "attack_damage_dealer")
 	%TacticalToggleButton.toggled.connect(_set_tactical_panel_open)
+	%CommandDockToggle.toggled.connect(_set_command_dock_open)
 	_build_forge_ui()
 	_build_hero_shop_ui()
 	_build_ai_toggle()
@@ -580,6 +581,12 @@ func _set_tactical_panel_open(open: bool) -> void:
 	_tactical_panel_open = open
 	if side_panel == null or not side_panel.is_active():
 		%TacticalPanel.visible = open
+
+
+func _set_command_dock_open(open: bool) -> void:
+	%BottomBar.visible = open
+	%CommandDockToggle.text = "Tutup" if open else "Kontrol"
+	%CommandDockToggle.position.y = 500.0 if open else 668.0
 
 
 func _update_side_panel(world: Prototype) -> void:

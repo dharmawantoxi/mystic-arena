@@ -37,7 +37,7 @@ offset_bottom = 72.0
 
 [node name="Row" type="HBoxContainer" parent="HUD/TopBar"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 8
 
 [node name="Names" type="VBoxContainer" parent="HUD/TopBar/Row"]
 layout_mode = 2
@@ -50,26 +50,26 @@ text = "Pertandingan awal"
 
 [node name="Description" type="Label" parent="HUD/TopBar/Row/Names"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 12
 theme_override_colors/font_color = Color(0.5176, 0.5569, 0.6667, 1)
 text = "Lv.1 · normal · lawan AI · progres pengembangan terpisah"
 clip_text = true
 
 [node name="Counters" type="HBoxContainer" parent="HUD/TopBar/Row"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 
 [node name="GoldLabel" type="Label" parent="HUD/TopBar/Row/Counters"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(1, 0.8039, 0.3333, 1)
 text = "GOLD 1000 G"
 
 [node name="TickLabel" type="Label" parent="HUD/TopBar/Row/Counters"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 text = "WAVE 00 · Persiapan 5.0 s"
 
 [node name="GameSpeedSelector" type="OptionButton" parent="HUD/TopBar/Row/Counters"]
@@ -79,20 +79,20 @@ layout_mode = 2
 
 [node name="PauseButton" type="Button" parent="HUD/TopBar/Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(104, 36)
+custom_minimum_size = Vector2(96, 36)
 layout_mode = 2
 text = "Jeda  [Esc]"
 
 [node name="TacticalToggleButton" type="Button" parent="HUD/TopBar/Row"]
 unique_name_in_owner = true
 toggle_mode = true
-custom_minimum_size = Vector2(90, 36)
+custom_minimum_size = Vector2(82, 36)
 layout_mode = 2
 text = "Taktik"
 
 [node name="BackButton" type="Button" parent="HUD/TopBar/Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(72, 36)
+custom_minimum_size = Vector2(64, 36)
 layout_mode = 2
 text = "Menu"
 
@@ -165,10 +165,12 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="BottomBar" type="PanelContainer" parent="HUD"]
+unique_name_in_owner = true
+visible = false
 offset_left = 16.0
 offset_top = 540.0
 offset_right = 1264.0
-offset_bottom = 704.0
+offset_bottom = 720.0
 
 [node name="Column" type="VBoxContainer" parent="HUD/BottomBar"]
 layout_mode = 2
@@ -324,6 +326,16 @@ theme_override_font_sizes/font_size = 12
 clip_text = true
 theme_override_colors/font_color = Color(0.5176, 0.5569, 0.6667, 1)
 text = "Pilih slot biru, lalu bangun salah satu dari empat tower (100 G)."
+
+[node name="CommandDockToggle" type="Button" parent="HUD"]
+unique_name_in_owner = true
+toggle_mode = true
+offset_left = 16.0
+offset_top = 668.0
+offset_right = 144.0
+offset_bottom = 704.0
+theme_override_font_sizes/font_size = 13
+text = "Kontrol"
 
 [node name="PauseOverlay" type="ColorRect" parent="HUD"]
 unique_name_in_owner = true

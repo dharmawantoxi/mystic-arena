@@ -13,17 +13,32 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	var bottom_bar: Control = screen.get_node("HUD/BottomBar")
 	var tactical_panel: Control = screen.get_node("%TacticalPanel")
 	var tactical_toggle: Button = screen.get_node("%TacticalToggleButton")
+	var command_toggle: Button = screen.get_node("%CommandDockToggle")
 	check.call(
 		arena.position == Vector2.ZERO and arena.scale == Vector2.ONE,
 		"Playable arena fills the 1280 by 720 logical viewport"
 	)
 	check.call(
 		(
-			top_bar.get_rect().size.y <= 64.0
-			and bottom_bar.get_rect().size.y <= 164.0
+			top_bar.get_global_rect().end.x <= 1280.0
+			and top_bar.get_rect().size.y <= 64.0
+			and bottom_bar.get_global_rect().end.y <= 720.0
+			and bottom_bar.get_rect().size.y <= 180.0
 			and bottom_bar.position.y >= 540.0
+			and not bottom_bar.visible
+			and command_toggle.visible
 		),
-		"Compact HUD bars stay docked over the arena edges"
+		"Compact HUD keeps its command dock closed and inside the viewport"
+	)
+	command_toggle.toggled.emit(true)
+	check.call(
+		bottom_bar.visible and is_equal_approx(command_toggle.position.y, 500.0),
+		"Command toggle opens the bottom dock above its button"
+	)
+	command_toggle.toggled.emit(false)
+	check.call(
+		not bottom_bar.visible and is_equal_approx(command_toggle.position.y, 668.0),
+		"Command toggle closes the bottom dock without covering the arena"
 	)
 	var tactical_rect := tactical_panel.get_global_rect()
 	check.call(
