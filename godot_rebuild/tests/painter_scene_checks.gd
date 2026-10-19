@@ -45,6 +45,8 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	var hero = null
 	if not world.player_hero_ids.is_empty():
 		hero = world.get_unit(int(world.player_hero_ids[0]))
+	var projectile_seeded := _seed_hero_projectile(world, hero)
+	check.call(projectile_seeded, "The painter fixture seeds a hero projectile")
 	await _settle(tree)
 	var fx_kill_landed := false
 	if fx_pair.size() == 2:
@@ -74,12 +76,47 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	check.call(view.minion_death_draws > 0, "The source-baked minion death path was drawn")
 	check.call(view.structure_anim.tracked() > 0, "Structure clocks were tracked while drawing")
 	check.call(view.hero_anim.tracked() > 0, "Hero clocks were tracked while drawing")
+	check.call(view.hero_projectile_draws > 0, "Source-baked hero projectiles were drawn")
 	if boss != null:
 		check.call(view.boss_sprite_draws > 0, "The baked boss body was drawn")
 	else:
 		check.call(false, "The suite could not spawn a boss to draw")
 	app.show_menu()
 	await _settle(tree)
+
+
+func _seed_hero_projectile(world, hero) -> bool:
+	if hero == null:
+		return false
+	var shooter: HeroState = hero as HeroState
+	if shooter == null or not shooter.alive:
+		return false
+	var target = null
+	for unit in world.units:
+		if unit.alive and unit.team != shooter.team:
+			target = unit
+			break
+	if target == null:
+		return false
+	world.hero_projectiles.clear()
+	var origin: Vector2 = shooter.position + Vector2(0, -5)
+	var projectile: Dictionary = {
+		"source_id": shooter.id,
+		"target_id": target.id,
+		"team": shooter.team,
+		"school": shooter.dmg_school,
+		"hero_type": shooter.settings().id,
+		"damage": int(shooter.damage),
+		"is_crit": true,
+		"position": origin,
+		"origin": origin,
+		"last_target": target.position,
+		"age": 24,
+		"impact": false,
+		"active": true,
+	}
+	world.hero_projectiles.append(projectile)
+	return true
 
 
 func _seed_minion_fx(world) -> Array:

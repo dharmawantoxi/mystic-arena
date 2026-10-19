@@ -29,6 +29,7 @@ const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
 const WallTiles = preload("res://scripts/ui/wall_tiles.gd")
 const TerrainTiles = preload("res://scripts/ui/terrain_tiles.gd")
+const HeroProjectileArtScript = preload("res://scripts/ui/hero_projectile_art.gd")
 const HUD_SCREEN_W := 1280
 ## Layer 9bi: paint order of the world-space layers (`EffectManager.draw` = path
 ## preview then the effects, then `tactical.draw_world`) and of the screen overlays
@@ -49,6 +50,9 @@ var cached_river_theme := ""
 ## Counts real `_draw` calls so the headless scene suite can prove the painters run.
 var draw_count := 0
 var hero_anim := HeroAnim.new()
+var hero_projectile_art = HeroProjectileArtScript.new()
+## Source-baked projectile painter calls proven by the scene suite.
+var hero_projectile_draws := 0
 ## Baked boss bodies drawn so far; the painter suite proves the sprite path runs.
 var boss_sprite_draws := 0
 
@@ -73,8 +77,29 @@ func _draw() -> void:
 	super._draw()
 	var match_session := session as PrototypeSession
 	for arrow in world.hero_projectiles:
-		var ink := Color("73cbbb") if arrow.team == 0 else Color("d78579")
-		draw_circle(arrow.position, 3, ink)
+		if not bool(arrow.get("active", true)):
+			continue
+		var heading: Vector2 = arrow.last_target - arrow.position
+		if heading.length_squared() < 0.001:
+			heading = arrow.position - arrow.origin
+		var angle := heading.angle() if heading.length_squared() >= 0.001 else 0.0
+		var drawn := bool(
+			hero_projectile_art.call(
+				"draw",
+				self,
+				String(arrow.get("hero_type", "")),
+				arrow.position,
+				angle,
+				int(arrow.get("age", 0)),
+				int(arrow.get("damage", 1)),
+				bool(arrow.get("is_crit", false))
+			)
+		)
+		if drawn:
+			hero_projectile_draws += 1
+		else:
+			var ink := Color("73cbbb") if arrow.team == 0 else Color("d78579")
+			draw_circle(arrow.position, 3, ink)
 	# `Game.draw` paints the boss after every hero ("di luar hero loop"). The registry never
 	# holds the boss (`active_boss` only lives in `_by_id`), so `_draw_unit` cannot reach it.
 	var live_boss: BossState = world.active_boss

@@ -7,7 +7,7 @@ const UnitState = preload("res://scripts/combat/unit_state.gd")
 
 
 static func spawn(
-	shots: Array[Dictionary], hero: HeroState, target: UnitState, damage: int
+	shots: Array[Dictionary], hero: HeroState, target: UnitState, damage: int, is_crit: bool = false
 ) -> void:
 	# Source cap of six PER hero; evict oldest basic arrow if full.
 	var own: Array[int] = []
@@ -23,7 +23,9 @@ static func spawn(
 			"target_id": target.id,
 			"team": hero.team,
 			"school": hero.dmg_school,
+			"hero_type": hero.settings().id,
 			"damage": damage,
+			"is_crit": is_crit,
 			"position": origin,
 			"origin": origin,
 			"last_target": target.position,

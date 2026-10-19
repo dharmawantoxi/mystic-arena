@@ -4917,6 +4917,168 @@ if _mfx_path.is_file():
                   for x, y, w, h, ax, ay in _rows.values()),
               f"9bt every frame must fit its atlas and have a valid anchor: {_type_id}")
 
+_hp_manifest_path = ROOT / "data/art/hero_projectiles.json"
+check(_hp_manifest_path.is_file(), "9bu hero-projectile source manifest must ship")
+if _hp_manifest_path.is_file():
+    _hp = json.loads(_hp_manifest_path.read_text(encoding="utf-8"))
+    _hp_atlases = _hp.get("atlases", {})
+    _hp_specials = {
+        "sylara": "arrow",
+        "vex": "orb",
+        "zephyr": "bolt",
+        "morgath": "lightning",
+        "ancient_apparition": "ice_shard",
+    }
+    _hp_ids = _hp.get("hero_types", [])
+    _hp_data_ids = {path.stem for path in (ROOT / "data/heroes").glob("*.tres")}
+    check(_hp.get("source") == "_entity.py:4976 Hero._draw_projectile",
+          "9bu manifest must pin the source projectile painter")
+    check(set(_hp_ids) == _hp_data_ids and len(_hp_ids) == 222,
+          "9bu projectile styles must cover all 222 Godot/source heroes")
+    check(_hp.get("special_types") == _hp_specials,
+          "9bu must retain all five source-specific projectile branches")
+    check(set(_hp.get("hero_meta", {})) == set(_hp_ids),
+          "9bu source color/radius metadata must cover the full hero roster")
+    _hp_source = (ROOT.parent / "_entity.py").read_text(encoding="utf-8")
+    _hp_vex = (ROOT.parent / "heroes/vex_fx.py").read_text(encoding="utf-8")
+    _hp_zephyr = (ROOT.parent / "heroes/zephyr_fx.py").read_text(encoding="utf-8")
+    _hp_aa = (ROOT.parent / "heroes/ancient_apparition_fx.py").read_text(encoding="utf-8")
+    _hp_bake = (ROOT / "bake/bake_hero_projectiles.py").read_text(encoding="utf-8")
+    _hp_art = (ROOT / "scripts/ui/hero_projectile_art.gd").read_text(encoding="utf-8")
+    _hp_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+    _hp_projectiles = (ROOT / "scripts/combat/hero_projectiles.gd").read_text(encoding="utf-8")
+    _hp_battle = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+    _hp_checks = (ROOT / "tests/hero_projectile_art_checks.gd").read_text(encoding="utf-8")
+    _hp_painter = (ROOT / "tests/painter_scene_checks.gd").read_text(encoding="utf-8")
+    _hp_run_all = (ROOT / "tests/run_all.gd").read_text(encoding="utf-8")
+    check("hero._draw_projectile(surface, projectile)" in _hp_bake
+          and "heroes_mod._reset_hero_render_budget()" in _hp_bake,
+          "9bu baker must render the original pygame painter with its per-draw budget")
+    check("_draw_arrow_projectile" in _hp_source
+          and "_draw_magic_orb_projectile" in _hp_source
+          and "_draw_magic_bolt_projectile" in _hp_source
+          and "_draw_lightning_projectile" in _hp_source
+          and "_draw_ice_shard_projectile" in _hp_source
+          and "draw_arcane_orb" in _hp_vex
+          and "draw_bolt" in _hp_zephyr
+          and "draw_ice_shard" in _hp_aa,
+          "9bu source branch and original FX helper keys must remain present")
+    check("_entity.Hero._draw_projectile" in _hp_art
+          and "func frame_for(" in _hp_art
+          and "ResourceLoader.exists(path)" in _hp_art
+          and "TEXTURE_PREFIX := \"res://assets/art/hero_projectiles/\"" in _hp_art,
+          "9bu Godot loader must select source frames and retain import fallback")
+    check("HeroProjectileArtScript.new()" in _hp_view
+          and 'hero_projectile_art.call(' in _hp_view
+          and "hero_projectile_draws += 1" in _hp_view
+          and "draw_circle(arrow.position, 3, ink)" in _hp_view,
+          "9bu prototype painter must draw baked art, count it, and keep fallback")
+    check('"hero_type": hero.settings().id' in _hp_projectiles
+          and '"is_crit": is_crit' in _hp_projectiles
+          and "_hero_ranged_spawn(hero, target, raw, is_crit)" in _hp_battle
+          and "HeroProjectiles.spawn(hero_projectiles, hero, target, damage, is_crit)" in _hp_battle,
+          "9bu projectile metadata must preserve hero style and Zephyr crit visuals")
+    check('const HeroProjectileArtChecks = preload("res://tests/hero_projectile_art_checks.gd")'
+          in _hp_run_all
+          and "HeroProjectileArtChecks.new().run(_check)" in _hp_run_all
+          and "_seed_hero_projectile(world, hero)" in _hp_painter
+          and "view.hero_projectile_draws > 0" in _hp_painter,
+          "9bu frame and live painter draw-count tests must be registered")
+    check(workflow.count("heroes/zephyr_fx.py") == 2
+          and workflow.count("heroes/ancient_apparition_fx.py") == 2,
+          "9bu helper source changes must trigger both workflow events")
+
+    _hp_expected_frames = {
+        "sylara": 32,
+        "vex_attack": 73 * 32,
+        "vex_skill": 73 * 32,
+        "zephyr_basic": 73 * 32,
+        "zephyr_crit": 73 * 32,
+        "morgath": 73 * 32,
+        "ancient_apparition": 32,
+        "generic": 2 * (len(_hp_ids) - len(_hp_specials)),
+    }
+    _hp_expected_cells = {
+        "sylara": 40,
+        "vex_attack": 48,
+        "vex_skill": 48,
+        "zephyr_basic": 56,
+        "zephyr_crit": 64,
+        "morgath": 40,
+        "ancient_apparition": 48,
+        "generic": 48,
+    }
+    check(set(_hp_atlases) == set(_hp_expected_frames),
+          "9bu atlas set must cover all five special styles and generic heroes")
+    check(_hp.get("cell_sizes") == _hp_expected_cells,
+          "9bu per-style cells must keep source bounds while limiting texture memory")
+    for _atlas_name, _frame_count in _hp_expected_frames.items():
+        _entry = _hp_atlases.get(_atlas_name)
+        if _entry is None:
+            continue
+        _png_path = ROOT / "assets/art/hero_projectiles" / _entry.get("file", "")
+        check(_png_path.is_file(), f"9bu projectile atlas PNG must ship: {_atlas_name}")
+        _cell = _hp_expected_cells.get(_atlas_name, 0)
+        check(_entry.get("frames") == _frame_count
+              and _entry.get("cell") == _cell
+              and _entry.get("columns") == 64,
+              f"9bu atlas frame layout must be complete: {_atlas_name}")
+        if not _png_path.is_file():
+            continue
+        _raw = _png_path.read_bytes()
+        _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+        _size = _entry.get("size", [])
+        _rows = (_frame_count + 63) // 64
+        check(_raw[:8] == b"\x89PNG\r\n\x1a\n"
+              and [_width, _height] == _size
+              and [_width, _height] == [64 * _cell, _rows * _cell]
+              and (_depth, _color) == (8, 6),
+              f"9bu atlas must be a packed RGBA8 sheet: {_atlas_name}")
+        check(len(_raw) == _entry.get("bytes")
+              and hashlib.sha256(_raw).hexdigest() == _entry.get("sha256")
+              and re.fullmatch(r"[0-9a-f]{64}", _entry.get("sha256", "")) is not None,
+              f"9bu atlas SHA-256 must match its manifest: {_atlas_name}")
+        _age_frames = 1 if _atlas_name in ("sylara", "ancient_apparition", "generic") else 73
+        _directions = 1 if _atlas_name == "generic" else 32
+        check(_entry.get("age_frames") == _age_frames
+              and _entry.get("directions") == _directions,
+              f"9bu atlas animation/direction metadata must fit: {_atlas_name}")
+
+    _hp_generic = _hp_atlases.get("generic", {}).get("hero_frames", {})
+    _hp_expected_generic = set(_hp_ids) - set(_hp_specials)
+    check(set(_hp_generic) == _hp_expected_generic,
+          "9bu generic frame table must cover every non-special hero")
+    _hp_generic_indices = []
+    for _hero_id in _hp_expected_generic:
+        _frames = _hp_generic.get(_hero_id, {})
+        check(set(_frames) == {"normal", "crit"}
+              and _frames.get("crit") == _frames.get("normal", -2) + 1,
+              f"9bu generic normal/crit frames must be paired: {_hero_id}")
+        _hp_generic_indices.extend(_frames.values())
+    check(sorted(_hp_generic_indices) == list(range(_hp_expected_frames["generic"])),
+          "9bu generic frame indices must be unique and contiguous")
+
+    _hp_expected_cases = {
+        "sylara:arrow:age00:dir00", "sylara:arrow:age00:dir11",
+        "vex:attack:age00:dir00", "vex:attack:age36:dir09", "vex:attack:age72:dir31",
+        "vex:skill:age00:dir00", "vex:skill:age36:dir12", "vex:skill:age72:dir24",
+        "zephyr:basic:age00:dir00", "zephyr:basic:age36:dir08", "zephyr:basic:age72:dir24",
+        "zephyr:crit:age00:dir00", "zephyr:crit:age36:dir16", "zephyr:crit:age72:dir31",
+        "morgath:lightning:age00:dir00", "morgath:lightning:age36:dir16",
+        "morgath:lightning:age72:dir31",
+        "ancient_apparition:ice_shard:age00:dir00",
+        "ancient_apparition:ice_shard:age00:dir16",
+        "kaizen:generic:normal", "kaizen:generic:crit", "abaddon:generic:normal",
+    }
+    _hp_cases = _hp.get("key_cases", [])
+    check({case.get("key") for case in _hp_cases} == _hp_expected_cases
+          and len(_hp_cases) == len(_hp_expected_cases),
+          "9bu key cases must cover source families, ages, angles, and crit variants")
+    for _case in _hp_cases:
+        check(re.fullmatch(r"[0-9a-f]{64}", _case.get("pygame_rgb_sha256", "")) is not None
+              and re.fullmatch(r"[0-9a-f]{64}", _case.get("rgba_sha256", "")) is not None,
+              f"9bu source-render hashes must be pinned: {_case.get('key')}")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

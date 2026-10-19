@@ -2477,3 +2477,22 @@ di atas lane; perubahan itu perlu desain ulang HUD dan tidak bisa diverifikasi t
 
 Batas: arah sumber kontinu dikuantisasi ke 32 sudut pygame; validator statis dan counter membuktikan
 jalur aset, bukan kesamaan piksel. Hasil akhirnya tetap perlu Anda nilai di Godot.
+
+## Slice 9bu — peluru hero dari `_entity.py:4976 Hero._draw_projectile`
+
+- `bake/bake_hero_projectiles.py` menjalankan painter pygame asli per frame, dengan reset budget FX
+  tiap draw. Delapan atlas PNG RGBA memuat 12.178 frame untuk 222 hero: panah Sylara, orb Vex
+  (serangan/skill), bolt Zephyr (normal/crit), kilat Morgath, shard Ancient Apparition, dan fallback
+  warna/crit generik. Usia 0–72, arah 32 langkah, sel per atlas 40–64 px untuk menahan jejak memori;
+  dua bake mem-pin hash SHA-256.
+- `data/art/hero_projectiles.json` menyimpan warna/radius hero, ukuran/hash atlas, pemetaan frame dan
+  22 hash key-case hasil render pygame. `scripts/ui/hero_projectile_art.gd` memilih frame terdekat;
+  `prototype_view.gd` menggambar tekstur dan mempertahankan titik fallback saat atlas belum tersedia.
+- `hero_projectiles.gd` membawa `hero_type` dan `is_crit` sebagai metadata visual; aturan damage,
+  gerak dan tabrakan tidak berubah. `painter_scene_checks.gd` membuktikan hitungan gambar >0, dan
+  `hero_projectile_art_checks.gd` memeriksa 222 tipe, kelima cabang, frame, atlas serta key-case.
+  Workflow mencakup perubahan FX Zephyr dan Ancient Apparition.
+
+Batas: arah kontinu dibulatkan ke 32 langkah dan usia disampel pada tick integer. Validator/hash dan
+counter membuktikan jalur serta sumber bake, bukan kesamaan piksel; tampilan akhirnya tetap perlu
+Anda nilai di Godot.
