@@ -8,6 +8,7 @@ extends RefCounted
 ## which the native step fails on, so this is the first time those painters are exercised.
 
 const Projectile = preload("res://scripts/combat/projectile_state.gd")
+const HeroState = preload("res://scripts/combat/hero_state.gd")
 const MINIONS := "res://data/minions/"
 const SHOT_KINDS := ["normal", "cannon", "ice", "mage"]
 const BOSS_TYPE := "abaddon"
