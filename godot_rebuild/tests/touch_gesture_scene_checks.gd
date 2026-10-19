@@ -23,7 +23,13 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		session.selected_id == -1, "Touch-down alone cannot select before the source release gate"
 	)
 	_touch(screen, 0, hero_point, false, 10_100.0)
-	check.call(session.selected_id == hero.id, "Released tap selects the exact touched player hero")
+	check.call(
+		session.selected_id == hero.id,
+		(
+			"Released tap selects the touched hero: selected=%d hero=%d point=%s arena=%s scale=%s"
+			% [session.selected_id, hero.id, hero_point, screen.arena.position, screen.arena.scale]
+		)
+	)
 
 	var enemy
 	for unit in world.units:

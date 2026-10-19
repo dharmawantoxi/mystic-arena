@@ -586,7 +586,6 @@ func _set_tactical_panel_open(open: bool) -> void:
 func _set_command_dock_open(open: bool) -> void:
 	%BottomBar.visible = open
 	%CommandDockToggle.text = "Tutup" if open else "Kontrol"
-	%CommandDockToggle.position.y = 500.0 if open else 668.0
 
 
 func _update_side_panel(world: Prototype) -> void:
