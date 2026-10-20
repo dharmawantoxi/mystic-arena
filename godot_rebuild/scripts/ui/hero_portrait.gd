@@ -1,27 +1,29 @@
 extends Control
-## Procedural Hero Shop portrait. Kaizen, Thorne, and Vex carry hand-authored
-## canvases; every other hero id falls back to a deterministic generic bust
+## Procedural Hero Shop portrait. Kaizen, Sylara, Thorne, and Vex carry
+## hand-authored canvases; every other hero id falls back to a deterministic generic bust
 ## derived from the id hash, so a shared card never renders an empty slot.
 ## Presentation only: no roster state, no input, no gameplay dependencies.
 
 const SIZE := 96.0
 const KAIZEN := "kaizen"
+const SYLARA := "sylara"
 const THORNE := "thorne"
 const VEX := "vex"
 
 var hero_type := ""
 var draw_pass_count: int = 0
+var sylara_draw_count: int = 0
 var vex_draw_count: int = 0
 
 var _definition: Variant = null
 
 
 static func custom_ids() -> Array[String]:
-	return [KAIZEN, THORNE, VEX]
+	return [KAIZEN, SYLARA, THORNE, VEX]
 
 
 static func has_custom(id: String) -> bool:
-	return id == KAIZEN or id == THORNE or id == VEX
+	return id == KAIZEN or id == SYLARA or id == THORNE or id == VEX
 
 
 ## Stable HSV hue in [0, 1) used by the generic fallback bust.
@@ -36,6 +38,7 @@ func setup(id: String, definition: Variant = null, pixel_size: float = SIZE) -> 
 	hero_type = id
 	_definition = definition
 	draw_pass_count = 0
+	sylara_draw_count = 0
 	vex_draw_count = 0
 	custom_minimum_size = Vector2(pixel_size, pixel_size)
 	queue_redraw()
@@ -49,6 +52,9 @@ func _draw() -> void:
 	match hero_type:
 		KAIZEN:
 			_draw_kaizen(box)
+		SYLARA:
+			sylara_draw_count += 1
+			_draw_sylara(box)
 		THORNE:
 			_draw_thorne(box)
 		VEX:
@@ -213,6 +219,178 @@ func _draw_thorne(box: Rect2) -> void:
 	draw_circle(_p(box, 51.0, 27.0), 2.2 * unit, outline)
 	draw_circle(_p(box, 77.0, 38.0), 3.0 * unit, goop)
 	draw_circle(_p(box, 85.0, 45.0), 2.0 * unit, goop)
+
+
+func _draw_sylara(box: Rect2) -> void:
+	var unit := _scale(box)
+	var outline := Color8(29, 30, 31)
+	var cloak := Color8(31, 75, 75)
+	var body := Color8(53, 128, 115)
+	var hair := Color8(145, 63, 49)
+	var skin := Color8(233, 190, 146)
+	var trim := Color8(229, 192, 119)
+	var wind := Color8(145, 220, 202)
+
+	_backdrop(box, Color8(31, 83, 83), Color8(14, 25, 32))
+	draw_arc(
+		_p(box, 62.0, 49.0),
+		30.0 * unit,
+		-PI * 0.43,
+		PI * 0.43,
+		32,
+		outline,
+		maxf(5.0 * unit, 1.5),
+		true
+	)
+	draw_arc(
+		_p(box, 62.0, 49.0),
+		30.0 * unit,
+		-PI * 0.43,
+		PI * 0.43,
+		32,
+		trim,
+		maxf(2.0 * unit, 1.0),
+		true
+	)
+	draw_line(_p(box, 68.5, 20.0), _p(box, 68.5, 78.0), wind, maxf(1.5 * unit, 1.0), true)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(15.0, 48.0),
+				Vector2(26.0, 39.0),
+				Vector2(29.0, 73.0),
+				Vector2(19.0, 84.0),
+			]
+		),
+		outline
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(19.0, 50.0),
+				Vector2(24.0, 46.0),
+				Vector2(26.0, 72.0),
+				Vector2(20.0, 78.0),
+			]
+		),
+		trim
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(48.0, 50.0),
+				Vector2(65.0, 58.0),
+				Vector2(78.0, 87.0),
+				Vector2(18.0, 87.0),
+				Vector2(27.0, 61.0),
+			]
+		),
+		outline
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(48.0, 55.0),
+				Vector2(62.0, 62.0),
+				Vector2(71.0, 83.0),
+				Vector2(25.0, 83.0),
+				Vector2(32.0, 64.0),
+			]
+		),
+		body
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(27.0, 65.0),
+				Vector2(35.0, 59.0),
+				Vector2(41.0, 63.0),
+				Vector2(34.0, 82.0),
+				Vector2(24.0, 82.0),
+			]
+		),
+		cloak
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(33.0, 17.0),
+				Vector2(48.0, 10.0),
+				Vector2(63.0, 17.0),
+				Vector2(68.0, 35.0),
+				Vector2(63.0, 51.0),
+				Vector2(53.0, 59.0),
+				Vector2(37.0, 55.0),
+				Vector2(27.0, 43.0),
+				Vector2(28.0, 27.0),
+			]
+		),
+		hair
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(37.0, 24.0),
+				Vector2(48.0, 19.0),
+				Vector2(59.0, 24.0),
+				Vector2(61.0, 40.0),
+				Vector2(54.0, 51.0),
+				Vector2(43.0, 51.0),
+				Vector2(36.0, 43.0),
+			]
+		),
+		skin
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(28.0, 31.0),
+				Vector2(34.0, 18.0),
+				Vector2(48.0, 12.0),
+				Vector2(63.0, 20.0),
+				Vector2(66.0, 32.0),
+				Vector2(56.0, 27.0),
+				Vector2(47.0, 25.0),
+				Vector2(38.0, 31.0),
+			]
+		),
+		hair
+	)
+	draw_line(_p(box, 40.0, 36.0), _p(box, 44.0, 36.0), outline, maxf(2.0 * unit, 1.0))
+	draw_line(_p(box, 52.0, 36.0), _p(box, 56.0, 36.0), outline, maxf(2.0 * unit, 1.0))
+	draw_line(_p(box, 38.0, 59.0), _p(box, 58.0, 69.0), trim, maxf(2.0 * unit, 1.0), true)
+	draw_line(_p(box, 39.0, 64.0), _p(box, 76.0, 46.0), outline, maxf(4.0 * unit, 1.0), true)
+	draw_line(_p(box, 39.0, 64.0), _p(box, 76.0, 46.0), trim, maxf(1.5 * unit, 1.0), true)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(79.0, 45.0),
+				Vector2(72.0, 44.0),
+				Vector2(76.0, 51.0),
+			]
+		),
+		trim
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(30.0, 19.0),
+				Vector2(22.0, 8.0),
+				Vector2(37.0, 14.0),
+			]
+		),
+		wind
+	)
 
 
 func _draw_vex(box: Rect2) -> void:

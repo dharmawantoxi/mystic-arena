@@ -666,7 +666,7 @@ panel modal (`hero_shop_panel.gd`, `item_forge_panel.gd`,
 
 ## Batas scope
 
-- Pada checkpoint ini belum ada portrait hero lain selain Kaizen + Thorne + fallback generik; catatan historis ini dikoreksi pada 9bw untuk portrait Vex.
+- Pada checkpoint ini belum ada portrait hero lain selain Kaizen + Thorne + fallback generik; catatan historis ini dikoreksi pada 9bw–9bx untuk portrait Vex dan Sylara.
 - `lighting.py` semula tidak diport (post-process per-piksel vs vektor).
   **Dibuka pengguna 2026-10-16 ("migrasi penuh, buka semua pembatas")** →
   layer 9aq: matematika mask diport eksak, pengecatan vektor sebagai adaptor
@@ -2521,3 +2521,11 @@ bake gambar pada slice ini; visual akhir tetap perlu Anda nilai di Godot.
 - Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
 
 Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan visual perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9bx — portrait Sylara, The Wind Ranger
+
+- `hero_portrait.gd` menambahkan kanvas Marksman Sylara dengan busur, panah, dan aksen angin; dispatch Vex/Kaizen/Thorne dan bust generik tetap ada.
+- `hero_shop_portrait_checks.gd` mengunci daftar custom, fallback Grimjaw, dan counter `_draw()` untuk Sylara serta Vex; runner menunggu dua frame sebelum pemeriksaan.
+- Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
