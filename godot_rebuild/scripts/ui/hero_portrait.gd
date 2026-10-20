@@ -3,6 +3,7 @@ extends Control
 
 const SIZE := 96.0
 const GORNAK_PAINTER = preload("res://scripts/ui/hero_portrait_gornak.gd")
+const MORGATH_PAINTER = preload("res://scripts/ui/hero_portrait_morgath.gd")
 const GORNAK := "gornak"
 const GRIMJAW := "grimjaw"
 const KAIZEN := "kaizen"
@@ -23,14 +24,13 @@ var _definition: Variant = null
 
 
 static func custom_ids() -> Array[String]:
-	return [GORNAK, GRIMJAW, KAIZEN, SYLARA, THORNE, VEX, ZEPHYR]
+	return [GORNAK, GRIMJAW, KAIZEN, "morgath", SYLARA, THORNE, VEX, ZEPHYR]
 
 
 static func has_custom(id: String) -> bool:
 	return id in custom_ids()
 
 
-## Stable HSV hue in [0, 1) used by the generic fallback bust.
 static func hue_for(id: String) -> float:
 	var total := 0
 	for byte in id.to_utf8_buffer():
@@ -65,6 +65,8 @@ func _draw() -> void:
 			_draw_grimjaw(box)
 		KAIZEN:
 			_draw_kaizen(box)
+		"morgath":
+			MORGATH_PAINTER.paint(self, box)
 		SYLARA:
 			sylara_draw_count += 1
 			_draw_sylara(box)

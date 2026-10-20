@@ -2553,3 +2553,11 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
 - Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
 
 Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c1 — portrait Morgath, Boss/Temporal Mage
+
+- `hero_portrait_morgath.gd` melukis kanvas native bergaya chronomancer dengan jubah malam, halo jam, dan orb temporal; dispatch ada di `hero_portrait.gd`.
+- `hero_shop_portrait_checks.gd` mengunci dispatch Morgath, fallback generik Alchemist, dan penghitung `_draw()` setelah dua frame bersama portrait sebelumnya.
+- Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
