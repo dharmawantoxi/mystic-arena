@@ -1,5 +1,5 @@
 extends RefCounted
-## Hero Shop portrait slice: Grimjaw, Kaizen, Sylara, Thorne, and Vex canvases
+## Hero Shop portrait slice: Grimjaw, Kaizen, Sylara, Thorne, Vex, and Zephyr canvases
 ## dispatch, the deterministic generic fallback bust, and native draw counters.
 
 const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
@@ -8,7 +8,7 @@ const HERO_ROSTER = preload("res://scripts/data/hero_roster.gd").DEFINITIONS
 
 const MATCH_PANEL := "res://scripts/ui/hero_shop_panel.gd"
 const META_PANEL := "res://scripts/ui/meta_hero_shop_panel.gd"
-const SAMPLE: Array[String] = ["kaizen", "thorne", "grimjaw", "vex", "sylara", "zephyr"]
+const SAMPLE: Array[String] = ["kaizen", "thorne", "grimjaw", "vex", "sylara", "zephyr", "gornak"]
 
 
 func run(tree: SceneTree, check: Callable) -> void:
@@ -22,28 +22,26 @@ func run(tree: SceneTree, check: Callable) -> void:
 func _dispatch(check: Callable) -> void:
 	var custom := HeroPortrait.custom_ids()
 	check.call(
-		custom == ["grimjaw", "kaizen", "sylara", "thorne", "vex"],
-		"Portrait slice covers Grimjaw, Kaizen, Sylara, Thorne, and Vex"
+		custom == ["grimjaw", "kaizen", "sylara", "thorne", "vex", "zephyr"],
+		"Portrait slice covers Grimjaw, Kaizen, Sylara, Thorne, Vex, and Zephyr"
 	)
 	check.call(HeroPortrait.has_custom("grimjaw"), "Grimjaw dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("kaizen"), "Kaizen dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("sylara"), "Sylara dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("thorne"), "Thorne dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("vex"), "Vex dispatches to a hand-authored canvas")
-	check.call(
-		not HeroPortrait.has_custom("zephyr"), "Other starters fall back to the generic bust"
-	)
-	check.call(not HeroPortrait.has_custom("gornak"), "Boss heroes fall back to the generic bust")
+	check.call(HeroPortrait.has_custom("zephyr"), "Zephyr dispatches to a hand-authored canvas")
+	check.call(not HeroPortrait.has_custom("gornak"), "Gornak keeps the generic fallback bust")
 	check.call(not HeroPortrait.has_custom(""), "Empty id falls back to the generic bust")
 
 
 func _fallback(check: Callable) -> void:
 	check.call(
-		is_equal_approx(HeroPortrait.hue_for("zephyr"), 284.0 / 360.0),
+		is_equal_approx(HeroPortrait.hue_for("gornak"), 222.0 / 360.0),
 		"Fallback hue is deterministic"
 	)
 	check.call(
-		HeroPortrait.hue_for("zephyr") != HeroPortrait.hue_for("gornak"),
+		HeroPortrait.hue_for("gornak") != HeroPortrait.hue_for("zephyr"),
 		"Fallback hue separates heroes"
 	)
 	for hero_type in SAMPLE:
@@ -111,12 +109,12 @@ func _card(check: Callable) -> void:
 	check.call(card.get_portrait().hero_type == "thorne", "Card dispatches Thorne to its portrait")
 
 	var generic := HeroShopCard.new()
-	generic.setup("zephyr", "Zephyr\n420 G", false, 485.0, HERO_ROSTER["zephyr"])
+	generic.setup("gornak", "Gornak\n420 G", false, 485.0, HERO_ROSTER["gornak"])
 	check.call(
-		generic.get_portrait().hero_type == "zephyr", "Card routes other heroes to the fallback"
+		generic.get_portrait().hero_type == "gornak", "Card routes other heroes to the fallback"
 	)
 	check.call(
-		not HeroPortrait.has_custom(generic.get_portrait().hero_type), "Zephyr uses the fallback"
+		not HeroPortrait.has_custom(generic.get_portrait().hero_type), "Gornak uses the fallback"
 	)
 	generic.free()
 	card.free()
@@ -156,6 +154,11 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 	sylara_portrait.size = Vector2(96.0, 96.0)
 	sylara_portrait.position = Vector2(192.0, 0.0)
 	tree.root.add_child(sylara_portrait)
+	var zephyr_portrait := HeroPortrait.new()
+	zephyr_portrait.setup("zephyr", HERO_ROSTER["zephyr"], 96.0)
+	zephyr_portrait.size = Vector2(96.0, 96.0)
+	zephyr_portrait.position = Vector2(288.0, 0.0)
+	tree.root.add_child(zephyr_portrait)
 	await tree.process_frame
 	await tree.process_frame
 	check.call(
@@ -166,9 +169,12 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 			and vex_portrait.vex_draw_count > 0
 			and sylara_portrait.draw_pass_count > 0
 			and sylara_portrait.sylara_draw_count > 0
+			and zephyr_portrait.draw_pass_count > 0
+			and zephyr_portrait.zephyr_draw_count > 0
 		),
-		"Grimjaw, Vex, and Sylara canvases reach _draw (draw counters)"
+		"Grimjaw, Vex, Sylara, and Zephyr canvases reach _draw (draw counters)"
 	)
 	grimjaw_portrait.free()
 	vex_portrait.free()
 	sylara_portrait.free()
+	zephyr_portrait.free()

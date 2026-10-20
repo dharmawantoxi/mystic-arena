@@ -2537,3 +2537,11 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
 - Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
 
 Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9bz — portrait Zephyr, Mage/Trickster
+
+- `hero_portrait.gd` menambahkan kanvas Zephyr dengan tudung/selendang, pusaran angin, dan bola sihir; custom portrait Grimjaw, Kaizen, Sylara, Thorne, dan Vex tetap ada.
+- `hero_shop_portrait_checks.gd` mengunci dispatch Zephyr, fallback generik Gornak, serta penghitung `_draw()` Zephyr bersama Grimjaw, Vex, dan Sylara; runner menunggu dua frame.
+- Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
