@@ -1,10 +1,11 @@
 extends Control
-## Procedural Hero Shop portrait. Kaizen, Sylara, Thorne, and Vex carry
+## Procedural Hero Shop portrait. Grimjaw, Kaizen, Sylara, Thorne, and Vex carry
 ## hand-authored canvases; every other hero id falls back to a deterministic generic bust
 ## derived from the id hash, so a shared card never renders an empty slot.
 ## Presentation only: no roster state, no input, no gameplay dependencies.
 
 const SIZE := 96.0
+const GRIMJAW := "grimjaw"
 const KAIZEN := "kaizen"
 const SYLARA := "sylara"
 const THORNE := "thorne"
@@ -12,6 +13,7 @@ const VEX := "vex"
 
 var hero_type := ""
 var draw_pass_count: int = 0
+var grimjaw_draw_count: int = 0
 var sylara_draw_count: int = 0
 var vex_draw_count: int = 0
 
@@ -19,11 +21,11 @@ var _definition: Variant = null
 
 
 static func custom_ids() -> Array[String]:
-	return [KAIZEN, SYLARA, THORNE, VEX]
+	return [GRIMJAW, KAIZEN, SYLARA, THORNE, VEX]
 
 
 static func has_custom(id: String) -> bool:
-	return id == KAIZEN or id == SYLARA or id == THORNE or id == VEX
+	return id == GRIMJAW or id == KAIZEN or id == SYLARA or id == THORNE or id == VEX
 
 
 ## Stable HSV hue in [0, 1) used by the generic fallback bust.
@@ -38,6 +40,7 @@ func setup(id: String, definition: Variant = null, pixel_size: float = SIZE) -> 
 	hero_type = id
 	_definition = definition
 	draw_pass_count = 0
+	grimjaw_draw_count = 0
 	sylara_draw_count = 0
 	vex_draw_count = 0
 	custom_minimum_size = Vector2(pixel_size, pixel_size)
@@ -50,6 +53,9 @@ func _draw() -> void:
 		return
 	draw_pass_count += 1
 	match hero_type:
+		GRIMJAW:
+			grimjaw_draw_count += 1
+			_draw_grimjaw(box)
 		KAIZEN:
 			_draw_kaizen(box)
 		SYLARA:
@@ -219,6 +225,172 @@ func _draw_thorne(box: Rect2) -> void:
 	draw_circle(_p(box, 51.0, 27.0), 2.2 * unit, outline)
 	draw_circle(_p(box, 77.0, 38.0), 3.0 * unit, goop)
 	draw_circle(_p(box, 85.0, 45.0), 2.0 * unit, goop)
+
+
+func _draw_grimjaw(box: Rect2) -> void:
+	var unit := _scale(box)
+	var outline := Color8(36, 19, 16)
+	var armor := Color8(117, 58, 35)
+	var leather := Color8(78, 39, 28)
+	var steel := Color8(187, 151, 110)
+	var skin := Color8(188, 125, 83)
+	var hair := Color8(49, 27, 23)
+	var ember := Color8(241, 96, 47)
+
+	_backdrop(box, Color8(126, 57, 34), Color8(26, 17, 20))
+	draw_arc(
+		_p(box, 48.0, 43.0),
+		34.0 * unit,
+		-PI * 0.78,
+		PI * 0.78,
+		28,
+		Color(ember.r, ember.g, ember.b, 0.30),
+		maxf(2.0 * unit, 1.0),
+		true
+	)
+	draw_line(_p(box, 20.0, 80.0), _p(box, 40.0, 46.0), outline, maxf(8.0 * unit, 2.0), true)
+	draw_line(_p(box, 20.0, 80.0), _p(box, 40.0, 46.0), steel, maxf(3.0 * unit, 1.0), true)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(35.0, 48.0),
+				Vector2(38.0, 35.0),
+				Vector2(48.0, 42.0),
+				Vector2(43.0, 53.0),
+			]
+		),
+		steel
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(11.0, 68.0),
+				Vector2(25.0, 55.0),
+				Vector2(39.0, 53.0),
+				Vector2(57.0, 53.0),
+				Vector2(72.0, 57.0),
+				Vector2(85.0, 71.0),
+				Vector2(80.0, 88.0),
+				Vector2(16.0, 88.0),
+			]
+		),
+		outline
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(18.0, 69.0),
+				Vector2(29.0, 60.0),
+				Vector2(41.0, 59.0),
+				Vector2(57.0, 59.0),
+				Vector2(68.0, 62.0),
+				Vector2(78.0, 72.0),
+				Vector2(74.0, 84.0),
+				Vector2(22.0, 84.0),
+			]
+		),
+		armor
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(18.0, 61.0),
+				Vector2(28.0, 51.0),
+				Vector2(39.0, 58.0),
+				Vector2(33.0, 72.0),
+				Vector2(19.0, 74.0),
+			]
+		),
+		steel
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(78.0, 60.0),
+				Vector2(68.0, 51.0),
+				Vector2(57.0, 58.0),
+				Vector2(63.0, 72.0),
+				Vector2(77.0, 74.0),
+			]
+		),
+		steel
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(32.0, 18.0),
+				Vector2(44.0, 10.0),
+				Vector2(58.0, 17.0),
+				Vector2(66.0, 31.0),
+				Vector2(63.0, 46.0),
+				Vector2(55.0, 55.0),
+				Vector2(40.0, 54.0),
+				Vector2(30.0, 43.0),
+			]
+		),
+		hair
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(38.0, 23.0),
+				Vector2(48.0, 18.0),
+				Vector2(58.0, 24.0),
+				Vector2(60.0, 39.0),
+				Vector2(54.0, 48.0),
+				Vector2(43.0, 47.0),
+				Vector2(36.0, 39.0),
+			]
+		),
+		skin
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(28.0, 31.0),
+				Vector2(26.0, 20.0),
+				Vector2(36.0, 23.0),
+				Vector2(39.0, 13.0),
+				Vector2(47.0, 19.0),
+				Vector2(56.0, 11.0),
+				Vector2(59.0, 21.0),
+				Vector2(69.0, 18.0),
+				Vector2(64.0, 33.0),
+				Vector2(55.0, 28.0),
+				Vector2(47.0, 25.0),
+				Vector2(39.0, 30.0),
+			]
+		),
+		hair
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(37.0, 40.0),
+				Vector2(44.0, 45.0),
+				Vector2(53.0, 45.0),
+				Vector2(59.0, 39.0),
+				Vector2(57.0, 52.0),
+				Vector2(48.0, 61.0),
+				Vector2(39.0, 53.0),
+			]
+		),
+		leather
+	)
+	draw_line(_p(box, 40.0, 34.0), _p(box, 44.0, 34.0), ember, maxf(2.5 * unit, 1.0))
+	draw_line(_p(box, 52.0, 34.0), _p(box, 56.0, 34.0), ember, maxf(2.5 * unit, 1.0))
+	draw_line(_p(box, 37.0, 30.0), _p(box, 56.0, 39.0), outline, maxf(2.0 * unit, 1.0))
+	draw_line(_p(box, 31.0, 65.0), _p(box, 62.0, 74.0), leather, maxf(3.0 * unit, 1.0), true)
+	draw_circle(_p(box, 48.0, 72.0), 3.0 * unit, steel)
 
 
 func _draw_sylara(box: Rect2) -> void:

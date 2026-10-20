@@ -2529,3 +2529,11 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
 - Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
 
 Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9by — portrait Grimjaw, The Berserker
+
+- `hero_portrait.gd` menambahkan kanvas Fighter Grimjaw dengan kapak, armor, janggut, dan aksen bara; custom portrait Kaizen, Sylara, Thorne, dan Vex tetap tersedia.
+- `hero_shop_portrait_checks.gd` mengunci dispatch Grimjaw, fallback generik Zephyr, serta penghitung `_draw()` Grimjaw, Vex, dan Sylara; runner menunggu dua frame sebelum pemeriksaan.
+- Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
