@@ -2561,3 +2561,11 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
 - Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
 
 Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c2 — portrait Alchemist, The Greed is Good
+
+- `hero_portrait_alchemist.gd` melukis kanvas native True Boss/Bruiser dengan labu alkimia, aura emas-hijau, dan aksen koin; dispatch ada di `hero_portrait.gd`.
+- `hero_shop_portrait_checks.gd` mengunci dispatch Alchemist, fallback generik Drakar, dan penghitung `_draw()` setelah dua frame bersama portrait sebelumnya.
+- Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.

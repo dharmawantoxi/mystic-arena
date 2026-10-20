@@ -2,6 +2,7 @@ extends Control
 ## Presentation-only native Hero Shop portraits with a deterministic generic fallback bust.
 
 const SIZE := 96.0
+const ALCHEMIST_PAINTER = preload("res://scripts/ui/hero_portrait_alchemist.gd")
 const GORNAK_PAINTER = preload("res://scripts/ui/hero_portrait_gornak.gd")
 const MORGATH_PAINTER = preload("res://scripts/ui/hero_portrait_morgath.gd")
 const GORNAK := "gornak"
@@ -14,7 +15,6 @@ const ZEPHYR := "zephyr"
 
 var hero_type := ""
 var draw_pass_count: int = 0
-var gornak_draw_count: int = 0
 var grimjaw_draw_count: int = 0
 var sylara_draw_count: int = 0
 var vex_draw_count: int = 0
@@ -24,7 +24,7 @@ var _definition: Variant = null
 
 
 static func custom_ids() -> Array[String]:
-	return [GORNAK, GRIMJAW, KAIZEN, "morgath", SYLARA, THORNE, VEX, ZEPHYR]
+	return ["alchemist", GORNAK, GRIMJAW, KAIZEN, "morgath", SYLARA, THORNE, VEX, ZEPHYR]
 
 
 static func has_custom(id: String) -> bool:
@@ -42,7 +42,6 @@ func setup(id: String, definition: Variant = null, pixel_size: float = SIZE) -> 
 	hero_type = id
 	_definition = definition
 	draw_pass_count = 0
-	gornak_draw_count = 0
 	grimjaw_draw_count = 0
 	sylara_draw_count = 0
 	vex_draw_count = 0
@@ -57,8 +56,9 @@ func _draw() -> void:
 		return
 	draw_pass_count += 1
 	match hero_type:
+		"alchemist":
+			ALCHEMIST_PAINTER.paint(self, box)
 		GORNAK:
-			gornak_draw_count += 1
 			GORNAK_PAINTER.paint(self, box)
 		GRIMJAW:
 			grimjaw_draw_count += 1

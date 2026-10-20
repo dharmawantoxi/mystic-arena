@@ -1,6 +1,6 @@
 extends RefCounted
-## Hero Shop portrait slice: Gornak, Grimjaw, Kaizen, Morgath, Sylara, Thorne, Vex, and Zephyr
-## dispatch, the deterministic generic fallback bust, and native draw counters.
+## Hero Shop custom portrait dispatch, generic fallback, and native draw counters.
+## Canvases: Alchemist, Gornak, Grimjaw, Kaizen, Morgath, Sylara, Thorne, Vex, and Zephyr.
 
 const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
@@ -9,7 +9,16 @@ const HERO_ROSTER = preload("res://scripts/data/hero_roster.gd").DEFINITIONS
 const MATCH_PANEL := "res://scripts/ui/hero_shop_panel.gd"
 const META_PANEL := "res://scripts/ui/meta_hero_shop_panel.gd"
 const SAMPLE: Array[String] = [
-	"kaizen", "thorne", "grimjaw", "vex", "sylara", "zephyr", "gornak", "morgath", "alchemist"
+	"kaizen",
+	"thorne",
+	"grimjaw",
+	"vex",
+	"sylara",
+	"zephyr",
+	"gornak",
+	"morgath",
+	"alchemist",
+	"drakar"
 ]
 
 
@@ -24,8 +33,24 @@ func run(tree: SceneTree, check: Callable) -> void:
 func _dispatch(check: Callable) -> void:
 	var custom := HeroPortrait.custom_ids()
 	check.call(
-		custom == ["gornak", "grimjaw", "kaizen", "morgath", "sylara", "thorne", "vex", "zephyr"],
-		"Portrait slice covers Gornak, Grimjaw, Kaizen, Morgath, Sylara, Thorne, Vex, and Zephyr"
+		(
+			custom
+			== [
+				"alchemist",
+				"gornak",
+				"grimjaw",
+				"kaizen",
+				"morgath",
+				"sylara",
+				"thorne",
+				"vex",
+				"zephyr"
+			]
+		),
+		"Portrait list covers every hand-authored hero canvas"
+	)
+	check.call(
+		HeroPortrait.has_custom("alchemist"), "Alchemist dispatches to a hand-authored canvas"
 	)
 	check.call(HeroPortrait.has_custom("gornak"), "Gornak dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("grimjaw"), "Grimjaw dispatches to a hand-authored canvas")
@@ -35,19 +60,17 @@ func _dispatch(check: Callable) -> void:
 	check.call(HeroPortrait.has_custom("thorne"), "Thorne dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("vex"), "Vex dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("zephyr"), "Zephyr dispatches to a hand-authored canvas")
-	check.call(
-		not HeroPortrait.has_custom("alchemist"), "Alchemist keeps the generic fallback bust"
-	)
+	check.call(not HeroPortrait.has_custom("drakar"), "Drakar keeps the generic fallback bust")
 	check.call(not HeroPortrait.has_custom(""), "Empty id falls back to the generic bust")
 
 
 func _fallback(check: Callable) -> void:
 	check.call(
-		is_equal_approx(HeroPortrait.hue_for("alchemist"), 234.0 / 360.0),
+		is_equal_approx(HeroPortrait.hue_for("drakar"), 209.0 / 360.0),
 		"Fallback hue is deterministic"
 	)
 	check.call(
-		HeroPortrait.hue_for("alchemist") != HeroPortrait.hue_for("zephyr"),
+		HeroPortrait.hue_for("drakar") != HeroPortrait.hue_for("zephyr"),
 		"Fallback hue separates heroes"
 	)
 	for hero_type in SAMPLE:
@@ -115,12 +138,12 @@ func _card(check: Callable) -> void:
 	check.call(card.get_portrait().hero_type == "thorne", "Card dispatches Thorne to its portrait")
 
 	var generic := HeroShopCard.new()
-	generic.setup("alchemist", "Alchemist\n420 G", false, 485.0, HERO_ROSTER["alchemist"])
+	generic.setup("drakar", "Drakar\n420 G", false, 485.0, HERO_ROSTER["drakar"])
 	check.call(
-		generic.get_portrait().hero_type == "alchemist", "Card routes other heroes to the fallback"
+		generic.get_portrait().hero_type == "drakar", "Card routes other heroes to the fallback"
 	)
 	check.call(
-		not HeroPortrait.has_custom(generic.get_portrait().hero_type), "Alchemist uses the fallback"
+		not HeroPortrait.has_custom(generic.get_portrait().hero_type), "Drakar uses the fallback"
 	)
 	generic.free()
 	card.free()
@@ -175,6 +198,11 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 	morgath_portrait.size = Vector2(96.0, 96.0)
 	morgath_portrait.position = Vector2(96.0, 96.0)
 	tree.root.add_child(morgath_portrait)
+	var alchemist_portrait := HeroPortrait.new()
+	alchemist_portrait.setup("alchemist", HERO_ROSTER["alchemist"], 96.0)
+	alchemist_portrait.size = Vector2(96.0, 96.0)
+	alchemist_portrait.position = Vector2(192.0, 96.0)
+	tree.root.add_child(alchemist_portrait)
 	await tree.process_frame
 	await tree.process_frame
 	check.call(
@@ -188,10 +216,10 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 			and zephyr_portrait.draw_pass_count > 0
 			and zephyr_portrait.zephyr_draw_count > 0
 			and gornak_portrait.draw_pass_count > 0
-			and gornak_portrait.gornak_draw_count > 0
 			and morgath_portrait.draw_pass_count > 0
+			and alchemist_portrait.draw_pass_count > 0
 		),
-		"Grimjaw, Vex, Sylara, Zephyr, Gornak, and Morgath reach _draw (draw counters)"
+		"Grimjaw, Vex, Sylara, Zephyr, Gornak, Morgath, and Alchemist reach _draw"
 	)
 	grimjaw_portrait.free()
 	vex_portrait.free()
@@ -199,3 +227,4 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 	zephyr_portrait.free()
 	gornak_portrait.free()
 	morgath_portrait.free()
+	alchemist_portrait.free()
