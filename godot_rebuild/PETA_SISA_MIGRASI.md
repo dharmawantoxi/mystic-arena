@@ -2569,3 +2569,11 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
 - Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
 
 Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c3 — portrait Drakar, Boss/Berserker
+
+- `hero_portrait_drakar.gd` melukis kanvas native dengan tanduk, kapak berat, zirah boss, dan inti bara; dispatch ada di `hero_portrait.gd`.
+- `hero_shop_portrait_checks.gd` mengunci dispatch Drakar, fallback generik Abaddon, dan penghitung `_draw()` setelah dua frame bersama portrait sebelumnya.
+- Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.

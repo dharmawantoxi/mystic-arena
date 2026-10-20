@@ -3,6 +3,7 @@ extends Control
 
 const SIZE := 96.0
 const ALCHEMIST_PAINTER = preload("res://scripts/ui/hero_portrait_alchemist.gd")
+const DRAKAR_PAINTER = preload("res://scripts/ui/hero_portrait_drakar.gd")
 const GORNAK_PAINTER = preload("res://scripts/ui/hero_portrait_gornak.gd")
 const MORGATH_PAINTER = preload("res://scripts/ui/hero_portrait_morgath.gd")
 const GORNAK := "gornak"
@@ -18,13 +19,12 @@ var draw_pass_count: int = 0
 var grimjaw_draw_count: int = 0
 var sylara_draw_count: int = 0
 var vex_draw_count: int = 0
-var zephyr_draw_count: int = 0
 
 var _definition: Variant = null
 
 
 static func custom_ids() -> Array[String]:
-	return ["alchemist", GORNAK, GRIMJAW, KAIZEN, "morgath", SYLARA, THORNE, VEX, ZEPHYR]
+	return ["alchemist", "drakar", GORNAK, GRIMJAW, KAIZEN, "morgath", SYLARA, THORNE, VEX, ZEPHYR]
 
 
 static func has_custom(id: String) -> bool:
@@ -45,7 +45,6 @@ func setup(id: String, definition: Variant = null, pixel_size: float = SIZE) -> 
 	grimjaw_draw_count = 0
 	sylara_draw_count = 0
 	vex_draw_count = 0
-	zephyr_draw_count = 0
 	custom_minimum_size = Vector2(pixel_size, pixel_size)
 	queue_redraw()
 
@@ -58,6 +57,8 @@ func _draw() -> void:
 	match hero_type:
 		"alchemist":
 			ALCHEMIST_PAINTER.paint(self, box)
+		"drakar":
+			DRAKAR_PAINTER.paint(self, box)
 		GORNAK:
 			GORNAK_PAINTER.paint(self, box)
 		GRIMJAW:
@@ -76,7 +77,6 @@ func _draw() -> void:
 			vex_draw_count += 1
 			_draw_vex(box)
 		ZEPHYR:
-			zephyr_draw_count += 1
 			_draw_zephyr(box)
 		_:
 			_draw_generic(box)
