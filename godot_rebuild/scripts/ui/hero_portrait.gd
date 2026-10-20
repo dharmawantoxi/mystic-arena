@@ -1,10 +1,9 @@
 extends Control
-## Procedural Hero Shop portrait. Grimjaw, Kaizen, Sylara, Thorne, Vex, and Zephyr carry
-## hand-authored canvases; every other hero id falls back to a deterministic generic bust
-## derived from the id hash, so a shared card never renders an empty slot.
-## Presentation only: no roster state, no input, no gameplay dependencies.
+## Presentation-only native Hero Shop portraits with a deterministic generic fallback bust.
 
 const SIZE := 96.0
+const GORNAK_PAINTER = preload("res://scripts/ui/hero_portrait_gornak.gd")
+const GORNAK := "gornak"
 const GRIMJAW := "grimjaw"
 const KAIZEN := "kaizen"
 const SYLARA := "sylara"
@@ -14,6 +13,7 @@ const ZEPHYR := "zephyr"
 
 var hero_type := ""
 var draw_pass_count: int = 0
+var gornak_draw_count: int = 0
 var grimjaw_draw_count: int = 0
 var sylara_draw_count: int = 0
 var vex_draw_count: int = 0
@@ -23,13 +23,11 @@ var _definition: Variant = null
 
 
 static func custom_ids() -> Array[String]:
-	return [GRIMJAW, KAIZEN, SYLARA, THORNE, VEX, ZEPHYR]
+	return [GORNAK, GRIMJAW, KAIZEN, SYLARA, THORNE, VEX, ZEPHYR]
 
 
 static func has_custom(id: String) -> bool:
-	return (
-		id == GRIMJAW or id == KAIZEN or id == SYLARA or id == THORNE or id == VEX or id == ZEPHYR
-	)
+	return id in custom_ids()
 
 
 ## Stable HSV hue in [0, 1) used by the generic fallback bust.
@@ -44,6 +42,7 @@ func setup(id: String, definition: Variant = null, pixel_size: float = SIZE) -> 
 	hero_type = id
 	_definition = definition
 	draw_pass_count = 0
+	gornak_draw_count = 0
 	grimjaw_draw_count = 0
 	sylara_draw_count = 0
 	vex_draw_count = 0
@@ -58,6 +57,9 @@ func _draw() -> void:
 		return
 	draw_pass_count += 1
 	match hero_type:
+		GORNAK:
+			gornak_draw_count += 1
+			GORNAK_PAINTER.paint(self, box)
 		GRIMJAW:
 			grimjaw_draw_count += 1
 			_draw_grimjaw(box)

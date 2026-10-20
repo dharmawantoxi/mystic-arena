@@ -2545,3 +2545,11 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
 - Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
 
 Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c0 — portrait Gornak, Boss/Anti-Mage
+
+- `hero_portrait.gd` menambahkan kanvas Gornak dengan armor boss, pelindung rune, dan aura anti-sihir; custom portrait Grimjaw, Kaizen, Sylara, Thorne, Vex, dan Zephyr tetap ada.
+- `hero_shop_portrait_checks.gd` mengunci dispatch Gornak, fallback generik Morgath, serta penghitung `_draw()` Gornak, Grimjaw, Vex, Sylara, dan Zephyr; runner menunggu dua frame.
+- Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
