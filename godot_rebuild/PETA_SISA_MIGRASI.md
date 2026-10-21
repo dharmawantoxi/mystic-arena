@@ -2634,3 +2634,11 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
 - Art-only: tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
 
 Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan tetap perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c11 — portrait Grondmauris, The Earthborn
+
+- `hero_portrait_grondmauris.gd` melukis kanvas native True Boss/Earth Colossus dengan siluet batu basalt, tanduk batu pecah, retakan hijau berpendar, moss, dan inti earthstone; dispatch ada di `hero_portrait.gd`.
+- `hero_shop_portrait_checks.gd` mengunci daftar dan dispatch Grondmauris serta membuat kanvasnya ikut jalur gambar; Raz tetap menjadi hero roster non-custom untuk regresi generic fallback.
+- Art-only: tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan tetap perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
