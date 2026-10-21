@@ -2,11 +2,13 @@ extends Control
 ## Presentation-only native Hero Shop portraits with a deterministic generic fallback bust.
 
 const SIZE := 96.0
+const GENERIC_PAINTER = preload("res://scripts/ui/hero_portrait_generic.gd")
 const ALCHEMIST_PAINTER = preload("res://scripts/ui/hero_portrait_alchemist.gd")
 const ABADDON_PAINTER = preload("res://scripts/ui/hero_portrait_abaddon.gd")
 const APPARITION_PAINTER = preload("res://scripts/ui/hero_portrait_ancient_apparition.gd")
 const DRAKAR_PAINTER = preload("res://scripts/ui/hero_portrait_drakar.gd")
 const GORNAK_PAINTER = preload("res://scripts/ui/hero_portrait_gornak.gd")
+const IGNIS_PAINTER = preload("res://scripts/ui/hero_portrait_ignis_drachorn.gd")
 const KUNKKA_PAINTER = preload("res://scripts/ui/hero_portrait_kunkka.gd")
 const MORGATH_PAINTER = preload("res://scripts/ui/hero_portrait_morgath.gd")
 const GORNAK := "gornak"
@@ -23,8 +25,10 @@ var _definition: Variant = null
 
 
 static func custom_ids() -> Array[String]:
-	var ids: Array[String] = ["abaddon", "alchemist", "ancient_apparition", "drakar"]
-	ids.append_array([GORNAK, GRIMJAW, KAIZEN, "kunkka", "morgath", SYLARA, THORNE, VEX, ZEPHYR])
+	var ids: Array[String] = [
+		"abaddon", "alchemist", "ancient_apparition", "drakar", GORNAK, GRIMJAW
+	]
+	ids.append_array(["ignis_drachorn", KAIZEN, "kunkka", "morgath", SYLARA, THORNE, VEX, ZEPHYR])
 	return ids
 
 
@@ -65,6 +69,8 @@ func _draw() -> void:
 			GORNAK_PAINTER.paint(self, box)
 		GRIMJAW:
 			_draw_grimjaw(box)
+		"ignis_drachorn":
+			IGNIS_PAINTER.paint(self, box)
 		KAIZEN:
 			_draw_kaizen(box)
 		"kunkka":
@@ -80,7 +86,7 @@ func _draw() -> void:
 		ZEPHYR:
 			_draw_zephyr(box)
 		_:
-			_draw_generic(box)
+			GENERIC_PAINTER.paint(self, box, hue_for(hero_type), _accent())
 	draw_rect(box.grow(-1.0), Color8(10, 16, 24), false, 2.0)
 
 
@@ -927,33 +933,6 @@ func _draw_zephyr(box: Rect2) -> void:
 	draw_circle(_p(box, 55.0, 34.0), 1.2 * unit, wind)
 	draw_line(_p(box, 49.0, 35.0), _p(box, 47.0, 40.0), Color8(148, 105, 79), maxf(1.3 * unit, 1.0))
 	draw_line(_p(box, 44.0, 43.0), _p(box, 53.0, 43.0), Color8(113, 69, 61), maxf(1.4 * unit, 1.0))
-
-
-func _draw_generic(box: Rect2) -> void:
-	var unit := _scale(box)
-	var hue := hue_for(hero_type)
-	var dark := Color.from_hsv(hue, 0.55, 0.22)
-	var body := Color.from_hsv(hue, 0.42, 0.62)
-	var light := Color.from_hsv(hue, 0.30, 0.86)
-
-	_backdrop(box, dark, Color.from_hsv(hue, 0.45, 0.10))
-	draw_circle(_p(box, 48.0, 44.0), 27.0 * unit, Color.from_hsv(hue, 0.40, 0.30))
-	draw_colored_polygon(
-		_poly(
-			box,
-			[
-				Vector2(26.0, 88.0),
-				Vector2(32.0, 58.0),
-				Vector2(48.0, 50.0),
-				Vector2(64.0, 58.0),
-				Vector2(70.0, 88.0)
-			]
-		),
-		body
-	)
-	draw_circle(_p(box, 48.0, 34.0), 12.0 * unit, light)
-	draw_rect(Rect2(_p(box, 40.0, 31.0), Vector2(16.0, 4.0) * unit), dark)
-	draw_rect(Rect2(_p(box, 26.0, 88.0), Vector2(44.0, 4.0) * unit), _accent())
 
 
 func _accent() -> Color:

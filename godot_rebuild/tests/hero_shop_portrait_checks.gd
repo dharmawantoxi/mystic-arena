@@ -1,7 +1,7 @@
 extends RefCounted
 ## Hero Shop custom portrait dispatch, generic fallback, and native draw-pass counter.
 ## Canvases: Abaddon, Alchemist, Ancient Apparition, Drakar, Gornak, Grimjaw,
-## Kaizen, Kunkka, Morgath, Sylara, Thorne, Vex, and Zephyr.
+## Ignis Drachorn, Kaizen, Kunkka, Morgath, Sylara, Thorne, Vex, and Zephyr.
 
 const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
@@ -23,6 +23,7 @@ const SAMPLE: Array[String] = [
 	"abaddon",
 	"ancient_apparition",
 	"kunkka",
+	"ignis_drachorn",
 	"raz"
 ]
 
@@ -47,6 +48,7 @@ func _dispatch(check: Callable) -> void:
 				"drakar",
 				"gornak",
 				"grimjaw",
+				"ignis_drachorn",
 				"kaizen",
 				"kunkka",
 				"morgath",
@@ -69,6 +71,10 @@ func _dispatch(check: Callable) -> void:
 	check.call(HeroPortrait.has_custom("drakar"), "Drakar dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("gornak"), "Gornak dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("grimjaw"), "Grimjaw dispatches to a hand-authored canvas")
+	check.call(
+		HeroPortrait.has_custom("ignis_drachorn"),
+		"Ignis Drachorn dispatches to a hand-authored canvas"
+	)
 	check.call(HeroPortrait.has_custom("kaizen"), "Kaizen dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("kunkka"), "Kunkka dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("morgath"), "Morgath dispatches to a hand-authored canvas")
@@ -238,6 +244,11 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 	kunkka_portrait.size = Vector2(96.0, 96.0)
 	kunkka_portrait.position = Vector2(576.0, 96.0)
 	tree.root.add_child(kunkka_portrait)
+	var ignis_drachorn_portrait := HeroPortrait.new()
+	ignis_drachorn_portrait.setup("ignis_drachorn", HERO_ROSTER["ignis_drachorn"], 96.0)
+	ignis_drachorn_portrait.size = Vector2(96.0, 96.0)
+	ignis_drachorn_portrait.position = Vector2(768.0, 96.0)
+	tree.root.add_child(ignis_drachorn_portrait)
 	var raz_portrait := HeroPortrait.new()
 	raz_portrait.setup("raz", HERO_ROSTER["raz"], 96.0)
 	raz_portrait.size = Vector2(96.0, 96.0)
@@ -258,9 +269,10 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 			and abaddon_portrait.draw_pass_count > 0
 			and apparition_portrait.draw_pass_count > 0
 			and kunkka_portrait.draw_pass_count > 0
+			and ignis_drachorn_portrait.draw_pass_count > 0
 			and raz_portrait.draw_pass_count > 0
 		),
-		"Kunkka and the generic fallback reach _draw after two frames"
+		"Ignis Drachorn, Kunkka, and fallback reach _draw after two frames"
 	)
 	grimjaw_portrait.free()
 	vex_portrait.free()
@@ -273,4 +285,5 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 	abaddon_portrait.free()
 	apparition_portrait.free()
 	kunkka_portrait.free()
+	ignis_drachorn_portrait.free()
 	raz_portrait.free()

@@ -2601,3 +2601,12 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
 - Art-only: tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
 
 Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan tetap perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c7 — portrait Ignis Drachorn, The Molten Sovereign
+
+- `hero_portrait_ignis_drachorn.gd` melukis kanvas native True Boss/Dragon Knight dengan zirah naga berlapis, tanduk, greatsword berinti magma, dan jantung bara; dispatch ada di `hero_portrait.gd`.
+- Bust generic deterministik dipindah tanpa mengubah palet/geometri ke `hero_portrait_generic.gd` agar dispatcher utama tetap di bawah batas lint 1.000 baris; Raz tetap dipakai untuk regresi fallback.
+- `hero_shop_portrait_checks.gd` mengunci daftar, dispatch, dan jalur gambar Ignis setelah dua frame; semua portrait custom sebelumnya tetap terdaftar.
+- Art-only: tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan tetap perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
