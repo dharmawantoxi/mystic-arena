@@ -2577,3 +2577,11 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
 - Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
 
 Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c4 — portrait Abaddon, True Boss/Knight
+
+- `hero_portrait_abaddon.gd` melukis kanvas native dengan zirah spektral, pedang hantu, perisai rune, dan aura biru-frost; dispatch ada di `hero_portrait.gd`.
+- `hero_shop_portrait_checks.gd` mengunci dispatch Abaddon, fallback generik Ancient Apparition, dan penghitung `_draw()` setelah dua frame bersama portrait sebelumnya.
+- Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
