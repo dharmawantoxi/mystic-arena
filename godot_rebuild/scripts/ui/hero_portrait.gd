@@ -13,6 +13,7 @@ const GORNAK_PAINTER = preload("res://scripts/ui/hero_portrait_gornak.gd")
 const IGNIS_PAINTER = preload("res://scripts/ui/hero_portrait_ignis_drachorn.gd")
 const KUNKKA_PAINTER = preload("res://scripts/ui/hero_portrait_kunkka.gd")
 const MORGATH_PAINTER = preload("res://scripts/ui/hero_portrait_morgath.gd")
+const MORTHRAXIS_PAINTER = preload("res://scripts/ui/hero_portrait_morthraxis.gd")
 const GORNAK := "gornak"
 const GRIMJAW := "grimjaw"
 const KAIZEN := "kaizen"
@@ -37,7 +38,8 @@ static func custom_ids() -> Array[String]:
 		GORNAK,
 		GRIMJAW
 	]
-	ids.append_array(["ignis_drachorn", KAIZEN, "kunkka", "morgath", SYLARA, THORNE, VEX, ZEPHYR])
+	ids.append_array(["ignis_drachorn", KAIZEN, "kunkka", "morgath", "morthraxis"])
+	ids.append_array([SYLARA, THORNE, VEX, ZEPHYR])
 	return ids
 
 
@@ -90,6 +92,8 @@ func _draw() -> void:
 			KUNKKA_PAINTER.paint(self, box)
 		"morgath":
 			MORGATH_PAINTER.paint(self, box)
+		"morthraxis":
+			MORTHRAXIS_PAINTER.paint(self, box)
 		SYLARA:
 			_draw_sylara(box)
 		THORNE:

@@ -1,7 +1,8 @@
 extends RefCounted
 ## Hero Shop custom portrait dispatch, generic fallback, and native draw-pass counter.
 ## Canvases: Abaddon, Alchemist, Ancient Apparition, Aureth'zar, Cogsworth, Drakar,
-## Gornak, Grimjaw, Ignis Drachorn, Kaizen, Kunkka, Morgath, Sylara, Thorne, Vex, and Zephyr.
+## Gornak, Grimjaw, Ignis Drachorn, Kaizen, Kunkka, Morgath, Morthraxis, Sylara,
+## Thorne, Vex, and Zephyr.
 
 const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
@@ -24,6 +25,7 @@ const SAMPLE: Array[String] = [
 	"ancient_apparition",
 	"aurethzar",
 	"cogsworth",
+	"morthraxis",
 	"kunkka",
 	"ignis_drachorn",
 	"raz"
@@ -56,6 +58,7 @@ func _dispatch(check: Callable) -> void:
 				"kaizen",
 				"kunkka",
 				"morgath",
+				"morthraxis",
 				"sylara",
 				"thorne",
 				"vex",
@@ -88,6 +91,9 @@ func _dispatch(check: Callable) -> void:
 	check.call(HeroPortrait.has_custom("kaizen"), "Kaizen dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("kunkka"), "Kunkka dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("morgath"), "Morgath dispatches to a hand-authored canvas")
+	check.call(
+		HeroPortrait.has_custom("morthraxis"), "Morthraxis dispatches to a hand-authored canvas"
+	)
 	check.call(HeroPortrait.has_custom("sylara"), "Sylara dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("thorne"), "Thorne dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("vex"), "Vex dispatches to a hand-authored canvas")
@@ -259,6 +265,11 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 	cogsworth_portrait.size = Vector2(96.0, 96.0)
 	cogsworth_portrait.position = Vector2(0.0, 192.0)
 	tree.root.add_child(cogsworth_portrait)
+	var morthraxis_portrait := HeroPortrait.new()
+	morthraxis_portrait.setup("morthraxis", HERO_ROSTER["morthraxis"], 96.0)
+	morthraxis_portrait.size = Vector2(96.0, 96.0)
+	morthraxis_portrait.position = Vector2(96.0, 192.0)
+	tree.root.add_child(morthraxis_portrait)
 	var kunkka_portrait := HeroPortrait.new()
 	kunkka_portrait.setup("kunkka", HERO_ROSTER["kunkka"], 96.0)
 	kunkka_portrait.size = Vector2(96.0, 96.0)
@@ -307,6 +318,7 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 	apparition_portrait.free()
 	aurethzar_portrait.free()
 	cogsworth_portrait.free()
+	morthraxis_portrait.free()
 	kunkka_portrait.free()
 	ignis_drachorn_portrait.free()
 	raz_portrait.free()

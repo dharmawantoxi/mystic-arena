@@ -2626,3 +2626,11 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
 - Art-only: tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
 
 Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan tetap perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c10 — portrait Morthraxis, The Crimson Sovereign
+
+- `hero_portrait_morthraxis.gd` melukis kanvas native True Boss/Vampire Lord dengan mantel bersayap, kerah aristokratik, mane hitam, mata ruby, taring, dan sigil darah; dispatch ada di `hero_portrait.gd`.
+- `hero_shop_portrait_checks.gd` mengunci daftar, dispatch, dan jalur gambar Morthraxis; Raz tetap menjadi hero roster non-custom untuk regresi generic fallback.
+- Art-only: tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan tetap perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
