@@ -1,7 +1,7 @@
 extends RefCounted
 ## Hero Shop custom portrait dispatch, generic fallback, and native draw-pass counter.
-## Canvases: Abaddon, Alchemist, Ancient Apparition, Aureth'zar, Drakar, Gornak,
-## Grimjaw, Ignis Drachorn, Kaizen, Kunkka, Morgath, Sylara, Thorne, Vex, and Zephyr.
+## Canvases: Abaddon, Alchemist, Ancient Apparition, Aureth'zar, Cogsworth, Drakar,
+## Gornak, Grimjaw, Ignis Drachorn, Kaizen, Kunkka, Morgath, Sylara, Thorne, Vex, and Zephyr.
 
 const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
@@ -23,6 +23,7 @@ const SAMPLE: Array[String] = [
 	"abaddon",
 	"ancient_apparition",
 	"aurethzar",
+	"cogsworth",
 	"kunkka",
 	"ignis_drachorn",
 	"raz"
@@ -47,6 +48,7 @@ func _dispatch(check: Callable) -> void:
 				"alchemist",
 				"ancient_apparition",
 				"aurethzar",
+				"cogsworth",
 				"drakar",
 				"gornak",
 				"grimjaw",
@@ -72,6 +74,9 @@ func _dispatch(check: Callable) -> void:
 	)
 	check.call(
 		HeroPortrait.has_custom("aurethzar"), "Aureth'zar dispatches to a hand-authored canvas"
+	)
+	check.call(
+		HeroPortrait.has_custom("cogsworth"), "Cogsworth dispatches to a hand-authored canvas"
 	)
 	check.call(HeroPortrait.has_custom("drakar"), "Drakar dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("gornak"), "Gornak dispatches to a hand-authored canvas")
@@ -249,6 +254,11 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 	aurethzar_portrait.size = Vector2(96.0, 96.0)
 	aurethzar_portrait.position = Vector2(864.0, 96.0)
 	tree.root.add_child(aurethzar_portrait)
+	var cogsworth_portrait := HeroPortrait.new()
+	cogsworth_portrait.setup("cogsworth", HERO_ROSTER["cogsworth"], 96.0)
+	cogsworth_portrait.size = Vector2(96.0, 96.0)
+	cogsworth_portrait.position = Vector2(0.0, 192.0)
+	tree.root.add_child(cogsworth_portrait)
 	var kunkka_portrait := HeroPortrait.new()
 	kunkka_portrait.setup("kunkka", HERO_ROSTER["kunkka"], 96.0)
 	kunkka_portrait.size = Vector2(96.0, 96.0)
@@ -283,7 +293,7 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 			and ignis_drachorn_portrait.draw_pass_count > 0
 			and raz_portrait.draw_pass_count > 0
 		),
-		"Aureth'zar joins the Kunkka, Ignis, and fallback draw checks"
+		"Existing portrait canvases and the generic fallback reach _draw after two frames"
 	)
 	grimjaw_portrait.free()
 	vex_portrait.free()
@@ -296,6 +306,7 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 	abaddon_portrait.free()
 	apparition_portrait.free()
 	aurethzar_portrait.free()
+	cogsworth_portrait.free()
 	kunkka_portrait.free()
 	ignis_drachorn_portrait.free()
 	raz_portrait.free()

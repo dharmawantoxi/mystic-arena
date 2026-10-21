@@ -2618,3 +2618,11 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
 - Art-only: tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
 
 Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan tetap perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c9 — portrait Cogsworth, The Skyfury
+
+- `hero_portrait_cogsworth.gd` melukis kanvas native True Boss/Steampunk Sky Machine dengan rotor atas, vanes penstabil, mata lensa bercahaya, turbin bahu, dan inti jam mekanis; dispatch ada di `hero_portrait.gd`.
+- `hero_shop_portrait_checks.gd` mengunci daftar dan dispatch Cogsworth serta membuat kanvasnya ikut jalur gambar; Raz tetap menjadi hero roster non-custom untuk regresi generic fallback.
+- Art-only: tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan tetap perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
