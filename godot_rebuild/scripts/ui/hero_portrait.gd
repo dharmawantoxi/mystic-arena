@@ -22,10 +22,10 @@ var _definition: Variant = null
 
 
 static func custom_ids() -> Array[String]:
-	var ids := [
-		"alchemist", "drakar", GORNAK, GRIMJAW, KAIZEN, "morgath", SYLARA, THORNE, VEX, ZEPHYR
-	]
-	ids.push_front("abaddon")
+	var ids: Array[String] = ["abaddon"]
+	ids.append_array(
+		["alchemist", "drakar", GORNAK, GRIMJAW, KAIZEN, "morgath", SYLARA, THORNE, VEX, ZEPHYR]
+	)
 	return ids
 
 
