@@ -2593,3 +2593,11 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
 - Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
 
 Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c6 — portrait Kunkka, The Admiral of the Fleet
+
+- `hero_portrait_kunkka.gd` melukis kanvas native True Boss/Naval Admiral dengan coat biru, epaulet emas, topi tiga sudut, cutlass, sash merah, dan aksen ombak; dispatch ada di `hero_portrait.gd`.
+- `hero_shop_portrait_checks.gd` mengunci daftar dan dispatch portrait Kunkka serta jalur gambar setelah dua frame; Raz kini menjadi hero roster non-custom untuk regresi generic fallback.
+- Art-only: tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan tetap perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.

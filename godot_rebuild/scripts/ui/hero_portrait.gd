@@ -7,6 +7,7 @@ const ABADDON_PAINTER = preload("res://scripts/ui/hero_portrait_abaddon.gd")
 const APPARITION_PAINTER = preload("res://scripts/ui/hero_portrait_ancient_apparition.gd")
 const DRAKAR_PAINTER = preload("res://scripts/ui/hero_portrait_drakar.gd")
 const GORNAK_PAINTER = preload("res://scripts/ui/hero_portrait_gornak.gd")
+const KUNKKA_PAINTER = preload("res://scripts/ui/hero_portrait_kunkka.gd")
 const MORGATH_PAINTER = preload("res://scripts/ui/hero_portrait_morgath.gd")
 const GORNAK := "gornak"
 const GRIMJAW := "grimjaw"
@@ -22,8 +23,8 @@ var _definition: Variant = null
 
 
 static func custom_ids() -> Array[String]:
-	var ids: Array[String] = ["abaddon", "alchemist", "ancient_apparition"]
-	ids.append_array(["drakar", GORNAK, GRIMJAW, KAIZEN, "morgath", SYLARA, THORNE, VEX, ZEPHYR])
+	var ids: Array[String] = ["abaddon", "alchemist", "ancient_apparition", "drakar"]
+	ids.append_array([GORNAK, GRIMJAW, KAIZEN, "kunkka", "morgath", SYLARA, THORNE, VEX, ZEPHYR])
 	return ids
 
 
@@ -66,6 +67,8 @@ func _draw() -> void:
 			_draw_grimjaw(box)
 		KAIZEN:
 			_draw_kaizen(box)
+		"kunkka":
+			KUNKKA_PAINTER.paint(self, box)
 		"morgath":
 			MORGATH_PAINTER.paint(self, box)
 		SYLARA:
@@ -91,7 +94,6 @@ func _draw_kaizen(box: Rect2) -> void:
 	var light := Color8(175, 220, 250)
 	var weapon := Color8(210, 220, 235)
 	var fx := Color8(245, 252, 255)
-
 	_backdrop(box, shadow, dark)
 	for index in 3:
 		var radius := (20.0 + 9.0 * float(index)) * unit
