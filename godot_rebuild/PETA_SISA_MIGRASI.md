@@ -2610,3 +2610,11 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
 - Art-only: tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
 
 Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan tetap perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c8 — portrait Aureth'zar, The Radiant Dawn
+
+- `hero_portrait_aurethzar.gd` melukis kanvas native True Boss/Solar Archer dengan busur recurve bercahaya, halo matahari, circlet emas, mantel biru malam, dan sunstone di dada; dispatch ada di `hero_portrait.gd`.
+- `hero_shop_portrait_checks.gd` mengunci daftar, dispatch, dan jalur gambar Aureth'zar setelah dua frame; Raz tetap menjadi hero roster non-custom untuk regresi generic fallback.
+- Art-only: tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan tetap perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.

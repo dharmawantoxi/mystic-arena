@@ -6,6 +6,7 @@ const GENERIC_PAINTER = preload("res://scripts/ui/hero_portrait_generic.gd")
 const ALCHEMIST_PAINTER = preload("res://scripts/ui/hero_portrait_alchemist.gd")
 const ABADDON_PAINTER = preload("res://scripts/ui/hero_portrait_abaddon.gd")
 const APPARITION_PAINTER = preload("res://scripts/ui/hero_portrait_ancient_apparition.gd")
+const AURETHZAR_PAINTER = preload("res://scripts/ui/hero_portrait_aurethzar.gd")
 const DRAKAR_PAINTER = preload("res://scripts/ui/hero_portrait_drakar.gd")
 const GORNAK_PAINTER = preload("res://scripts/ui/hero_portrait_gornak.gd")
 const IGNIS_PAINTER = preload("res://scripts/ui/hero_portrait_ignis_drachorn.gd")
@@ -26,7 +27,7 @@ var _definition: Variant = null
 
 static func custom_ids() -> Array[String]:
 	var ids: Array[String] = [
-		"abaddon", "alchemist", "ancient_apparition", "drakar", GORNAK, GRIMJAW
+		"abaddon", "alchemist", "ancient_apparition", "aurethzar", "drakar", GORNAK, GRIMJAW
 	]
 	ids.append_array(["ignis_drachorn", KAIZEN, "kunkka", "morgath", SYLARA, THORNE, VEX, ZEPHYR])
 	return ids
@@ -61,6 +62,8 @@ func _draw() -> void:
 			ABADDON_PAINTER.paint(self, box)
 		"ancient_apparition":
 			APPARITION_PAINTER.paint(self, box)
+		"aurethzar":
+			AURETHZAR_PAINTER.paint(self, box)
 		"alchemist":
 			ALCHEMIST_PAINTER.paint(self, box)
 		"drakar":
