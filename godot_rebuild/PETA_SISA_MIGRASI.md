@@ -2585,3 +2585,11 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
 - Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
 
 Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c5 — portrait Ancient Apparition, The Inscrutable
+
+- `hero_portrait_ancient_apparition.gd` melukis kanvas native True Boss/Ice Mage dengan jubah spektral, mahkota kristal es, tongkat kristal, dan fokus frost; dispatch ada di `hero_portrait.gd`.
+- `hero_shop_portrait_checks.gd` mengunci dispatch Ancient Apparition, fallback generik Kunkka, dan penghitung `_draw()` setelah dua frame bersama portrait sebelumnya.
+- Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.

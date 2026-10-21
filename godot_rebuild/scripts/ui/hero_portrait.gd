@@ -4,6 +4,7 @@ extends Control
 const SIZE := 96.0
 const ALCHEMIST_PAINTER = preload("res://scripts/ui/hero_portrait_alchemist.gd")
 const ABADDON_PAINTER = preload("res://scripts/ui/hero_portrait_abaddon.gd")
+const APPARITION_PAINTER = preload("res://scripts/ui/hero_portrait_ancient_apparition.gd")
 const DRAKAR_PAINTER = preload("res://scripts/ui/hero_portrait_drakar.gd")
 const GORNAK_PAINTER = preload("res://scripts/ui/hero_portrait_gornak.gd")
 const MORGATH_PAINTER = preload("res://scripts/ui/hero_portrait_morgath.gd")
@@ -17,15 +18,12 @@ const ZEPHYR := "zephyr"
 
 var hero_type := ""
 var draw_pass_count: int = 0
-
 var _definition: Variant = null
 
 
 static func custom_ids() -> Array[String]:
-	var ids: Array[String] = ["abaddon"]
-	ids.append_array(
-		["alchemist", "drakar", GORNAK, GRIMJAW, KAIZEN, "morgath", SYLARA, THORNE, VEX, ZEPHYR]
-	)
+	var ids: Array[String] = ["abaddon", "alchemist", "ancient_apparition"]
+	ids.append_array(["drakar", GORNAK, GRIMJAW, KAIZEN, "morgath", SYLARA, THORNE, VEX, ZEPHYR])
 	return ids
 
 
@@ -56,6 +54,8 @@ func _draw() -> void:
 	match hero_type:
 		"abaddon":
 			ABADDON_PAINTER.paint(self, box)
+		"ancient_apparition":
+			APPARITION_PAINTER.paint(self, box)
 		"alchemist":
 			ALCHEMIST_PAINTER.paint(self, box)
 		"drakar":

@@ -1,7 +1,7 @@
 extends RefCounted
 ## Hero Shop custom portrait dispatch, generic fallback, and native draw-pass counter.
-## Canvases: Abaddon, Alchemist, Drakar, Gornak, Grimjaw, Kaizen, Morgath,
-## Sylara, Thorne, Vex, and Zephyr.
+## Canvases: Abaddon, Alchemist, Ancient Apparition, Drakar, Gornak, Grimjaw,
+## Kaizen, Morgath, Sylara, Thorne, Vex, and Zephyr.
 
 const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
@@ -21,7 +21,8 @@ const SAMPLE: Array[String] = [
 	"alchemist",
 	"drakar",
 	"abaddon",
-	"ancient_apparition"
+	"ancient_apparition",
+	"kunkka"
 ]
 
 
@@ -41,6 +42,7 @@ func _dispatch(check: Callable) -> void:
 			== [
 				"abaddon",
 				"alchemist",
+				"ancient_apparition",
 				"drakar",
 				"gornak",
 				"grimjaw",
@@ -58,6 +60,10 @@ func _dispatch(check: Callable) -> void:
 	check.call(
 		HeroPortrait.has_custom("alchemist"), "Alchemist dispatches to a hand-authored canvas"
 	)
+	check.call(
+		HeroPortrait.has_custom("ancient_apparition"),
+		"Ancient Apparition dispatches to a hand-authored canvas"
+	)
 	check.call(HeroPortrait.has_custom("drakar"), "Drakar dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("gornak"), "Gornak dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("grimjaw"), "Grimjaw dispatches to a hand-authored canvas")
@@ -67,20 +73,17 @@ func _dispatch(check: Callable) -> void:
 	check.call(HeroPortrait.has_custom("thorne"), "Thorne dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("vex"), "Vex dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("zephyr"), "Zephyr dispatches to a hand-authored canvas")
-	check.call(
-		not HeroPortrait.has_custom("ancient_apparition"),
-		"Ancient Apparition keeps the generic fallback bust"
-	)
+	check.call(not HeroPortrait.has_custom("kunkka"), "Kunkka keeps the generic fallback bust")
 	check.call(not HeroPortrait.has_custom(""), "Empty id falls back to the generic bust")
 
 
 func _fallback(check: Callable) -> void:
 	check.call(
-		is_equal_approx(HeroPortrait.hue_for("ancient_apparition"), 202.0 / 360.0),
+		is_equal_approx(HeroPortrait.hue_for("kunkka"), 45.0 / 360.0),
 		"Fallback hue is deterministic"
 	)
 	check.call(
-		HeroPortrait.hue_for("ancient_apparition") != HeroPortrait.hue_for("zephyr"),
+		HeroPortrait.hue_for("kunkka") != HeroPortrait.hue_for("zephyr"),
 		"Fallback hue separates heroes"
 	)
 	for hero_type in SAMPLE:
@@ -149,19 +152,13 @@ func _card(check: Callable) -> void:
 
 	var generic := HeroShopCard.new()
 	generic.setup(
-		"ancient_apparition",
-		"Ancient Apparition\n800 G",
-		false,
-		485.0,
-		HERO_ROSTER["ancient_apparition"]
+		"kunkka", "Kunkka — The Admiral of the Fleet\n900 G", false, 485.0, HERO_ROSTER["kunkka"]
 	)
 	check.call(
-		generic.get_portrait().hero_type == "ancient_apparition",
-		"Card routes other heroes to the fallback"
+		generic.get_portrait().hero_type == "kunkka", "Card routes other heroes to the fallback"
 	)
 	check.call(
-		not HeroPortrait.has_custom(generic.get_portrait().hero_type),
-		"Ancient Apparition uses the fallback"
+		not HeroPortrait.has_custom(generic.get_portrait().hero_type), "Kunkka uses the fallback"
 	)
 	generic.free()
 	card.free()
@@ -231,6 +228,11 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 	abaddon_portrait.size = Vector2(96.0, 96.0)
 	abaddon_portrait.position = Vector2(384.0, 96.0)
 	tree.root.add_child(abaddon_portrait)
+	var apparition_portrait := HeroPortrait.new()
+	apparition_portrait.setup("ancient_apparition", HERO_ROSTER["ancient_apparition"], 96.0)
+	apparition_portrait.size = Vector2(96.0, 96.0)
+	apparition_portrait.position = Vector2(480.0, 96.0)
+	tree.root.add_child(apparition_portrait)
 	await tree.process_frame
 	await tree.process_frame
 	check.call(
@@ -244,8 +246,9 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 			and alchemist_portrait.draw_pass_count > 0
 			and drakar_portrait.draw_pass_count > 0
 			and abaddon_portrait.draw_pass_count > 0
+			and apparition_portrait.draw_pass_count > 0
 		),
-		"Portraits through Abaddon reach _draw after two frames"
+		"Portraits through Ancient Apparition reach _draw after two frames"
 	)
 	grimjaw_portrait.free()
 	vex_portrait.free()
@@ -256,3 +259,4 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 	alchemist_portrait.free()
 	drakar_portrait.free()
 	abaddon_portrait.free()
+	apparition_portrait.free()
