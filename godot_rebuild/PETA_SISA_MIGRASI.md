@@ -2761,3 +2761,31 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
   guardrails workflow lulus sekali setelah batch (`validate_project`, source
   contract/oracles, gdparse, gdlint, gdformat --check; 407 GDScript).
   Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
+
+
+## Batch slice 9c25–9c27 — Aurex, Auroth, Azkharion
+
+- **9c25 Aurex — The Omega Knight**: metadata Boss/Omega Knight;
+  helm tertutup bersegi, visor cyan, crest emas, pauldron berlapis,
+  sigil omega bercahaya dan pedang rune lebar dengan gauntlet.
+- **9c26 Auroth — The Celestial Bastion**: metadata Boss/Bastion Titan;
+  siluet benteng dengan pauldron crenellated, wajah monolit batu,
+  mahkota astronomis, inti kristal dan dua tinju batu berartikulasi.
+- **9c27 Azkharion — The Ashen Warlord**: metadata Boss/Ashen Warlord;
+  armour jelaga berduri, mantle merah robek, wajah abu-abu berbekas luka,
+  helm perang terbuka, cinder serta kapak eksekusi bertakik.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  34 custom. Seluruh 31 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 784 baris, belum perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  Grid batch menjadi delapan kolom dengan jarak 96 unit agar 30 kanvas
+  tetap dalam empat baris, tidak tumpang tindih atau turun ke baris kelima.
+  Shared `draw_pass_count` tetap tanpa reset/increment atau assertion
+  counter per hero baru.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Kandidat berikutnya: Azureth (belum custom).
+- Validasi lokal: 76 poligon baru tanpa edge silang; seluruh blok static
+  guardrails workflow lulus sekali setelah batch (`validate_project`, source
+  contract/oracles, gdparse, gdlint, gdformat --check; 410 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.

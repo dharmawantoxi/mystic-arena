@@ -29,6 +29,9 @@ const AURELIAN_PAINTER = preload("res://scripts/ui/hero_portrait_aurelian.gd")
 const AURELION_PAINTER = preload("res://scripts/ui/hero_portrait_aurelion.gd")
 const AURELIX_PAINTER = preload("res://scripts/ui/hero_portrait_aurelix.gd")
 const AURELYSSA_PAINTER = preload("res://scripts/ui/hero_portrait_aurelyssa.gd")
+const AUREX_PAINTER = preload("res://scripts/ui/hero_portrait_aurex.gd")
+const AUROTH_PAINTER = preload("res://scripts/ui/hero_portrait_auroth.gd")
+const AZKHARION_PAINTER = preload("res://scripts/ui/hero_portrait_azkharion.gd")
 const OKEANORA_PAINTER = preload("res://scripts/ui/hero_portrait_okeanora.gd")
 const GORNAK := "gornak"
 const GRIMJAW := "grimjaw"
@@ -61,6 +64,9 @@ static func custom_ids() -> Array[String]:
 		"aurelix",
 		"aurelyssa",
 		"aurethzar",
+		"aurex",
+		"auroth",
+		"azkharion",
 		"cogsworth",
 		"drakar",
 		GORNAK,
@@ -121,6 +127,12 @@ func _draw() -> void:
 			AURELIX_PAINTER.paint(self, box)
 		"aurelyssa":
 			AURELYSSA_PAINTER.paint(self, box)
+		"aurex":
+			AUREX_PAINTER.paint(self, box)
+		"auroth":
+			AUROTH_PAINTER.paint(self, box)
+		"azkharion":
+			AZKHARION_PAINTER.paint(self, box)
 		"abaddon":
 			ABADDON_PAINTER.paint(self, box)
 		"ancient_apparition":
