@@ -2789,3 +2789,30 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
   guardrails workflow lulus sekali setelah batch (`validate_project`, source
   contract/oracles, gdparse, gdlint, gdformat --check; 410 GDScript).
   Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
+
+
+## Batch slice 9c28–9c30 — Azureth, Bhor'gathul, Broggmar
+
+- **9c28 Azureth — The Arcane Sky-Scribe**: metadata Boss/Arcane Mage;
+  sky-chart halo, rune terpisah, rambut perak dan janggut panjang,
+  codex terbuka melayang serta quill bercahaya di atas halaman.
+- **9c29 Bhor'gathul — The Earth Render**: metadata Boss/Earth Render;
+  batu pecah melayang, bahu cragged, brow batu, taring tumpul,
+  side lock tebal serta gauntlet batu dengan retakan mineral bercahaya.
+- **9c30 Broggmar — The Caskbreaker**: metadata Boss/Cask Brawler;
+  bahu terbuka, vest berjahit, cap miring, kumis/janggut merah,
+  harness kulit, tinju berbalut stave barrel dan tankard berbusa.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  37 custom. Seluruh 34 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 796 baris, belum perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  Grid menjadi sembilan kolom dengan jarak 96 unit agar 36 kanvas batch
+  tetap empat baris. Shared `draw_pass_count` tidak berubah; tanpa reset,
+  increment atau assertion counter per hero baru.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Kandidat berikutnya: Brumhar (belum custom).
+- Validasi lokal: 72 poligon baru tanpa edge silang; seluruh blok static
+  guardrails workflow lulus sekali setelah batch (`validate_project`, source
+  contract/oracles, gdparse, gdlint, gdformat --check; 413 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
