@@ -2680,3 +2680,31 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
   gdformat --check). Body Zephyr dibandingkan dengan HEAD: geometri/palet
   dan urutan draw tetap. Runtime native diserahkan ke CI Godot 4.7.2 karena
   unduhan release engine tidak dapat diakses dari sandbox.
+
+
+## Batch slice 9c16–9c18 — Akaroth, Akashari, Akirakumo
+
+- **9c16 Akaroth — The Crimson Fist**: metadata Boss/Crimson Brawler;
+  siluet petarung berbahu lebar, dua gauntlet merah terangkat, wrist wrap,
+  rambut pendek runcing, bekas luka alis dan garis impact.
+- **9c17 Akashari — The Painbringer**: metadata Boss/Queen of Pain;
+  sayap kelelawar tinggi, tanduk melengkung, kerah berduri, korset ruby,
+  taring, lash melingkar dan dagger.
+- **9c18 Akirakumo — The Moonfang Prince**: metadata True Boss/Moon Demon
+  Prince; rambut perak, telinga runcing, tanduk bercabang, crescent jewel,
+  pelat bahu berlapis dan moon blade diagonal.
+- Painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; daftar menjadi
+  25 custom. Semua 22 custom sebelumnya tetap, Raz tetap generic fallback.
+  Dispatcher tetap jauh di bawah batas 1.000 baris sehingga tidak perlu
+  ekstraksi tambahan pada batch ini.
+- Tes memperluas daftar/dispatch dan kanvas ukuran kartu + 96 unit, memakai
+  grid dua baris untuk batch. Shared `draw_pass_count` tetap tanpa perubahan;
+  tidak menambah assertion counter per hero.
+- Art-only: tidak menambah image assets atau mengubah Python, simulasi,
+  maupun gameplay. Tidak mengklaim pixel parity; review visual akhir tetap
+  perlu dilakukan di Godot.
+- Berikutnya berdasarkan urutan metadata: Akiraze (belum custom).
+- Validasi lokal: 76 poligon baru tanpa edge silang; seluruh blok static
+  guardrails workflow lulus satu kali setelah batch (`validate_project`,
+  source contract/oracles, gdparse, gdlint, gdformat --check; 401 GDScript).
+  Import/runtime native Godot 4.7.2 divalidasi lewat CI PR #337.

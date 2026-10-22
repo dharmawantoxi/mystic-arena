@@ -2,7 +2,8 @@ extends RefCounted
 ## Hero Shop custom portrait dispatch, generic fallback, and native draw-pass counter.
 ## Canvases: Abaddon, Alchemist, Ancient Apparition, Aureth'zar, Cogsworth, Drakar,
 ## Gornak, Grimjaw, Grondmauris, Ignis Drachorn, Kaizen, Kunkka, Morgath,
-## Morthraxis, Okeanora, Sylara, Thorne, Vex, Zephyr, Aelyrion, Aeralith, and Akahime.
+## Morthraxis, Okeanora, Sylara, Thorne, Vex, Zephyr, Aelyrion, Aeralith, Akahime,
+## Akaroth, Akashari, and Akirakumo.
 
 const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
@@ -33,6 +34,9 @@ const SAMPLE: Array[String] = [
 	"aelyrion",
 	"aeralith",
 	"akahime",
+	"akaroth",
+	"akashari",
+	"akirakumo",
 	"raz"
 ]
 
@@ -55,6 +59,9 @@ func _dispatch(check: Callable) -> void:
 				"aelyrion",
 				"aeralith",
 				"akahime",
+				"akaroth",
+				"akashari",
+				"akirakumo",
 				"alchemist",
 				"ancient_apparition",
 				"aurethzar",
@@ -77,7 +84,7 @@ func _dispatch(check: Callable) -> void:
 		),
 		"Portrait list covers every hand-authored hero canvas"
 	)
-	for id in ["aelyrion", "aeralith", "akahime"]:
+	for id in ["aelyrion", "aeralith", "akahime", "akaroth", "akashari", "akirakumo"]:
 		check.call(HeroPortrait.has_custom(id), "%s dispatches to a hand-authored canvas" % id)
 	check.call(HeroPortrait.has_custom("abaddon"), "Abaddon dispatches to a hand-authored canvas")
 	check.call(
@@ -319,12 +326,15 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 	# Exercise the new painters at card size and the 96-unit design size.
 	# Shared draw_pass_count remains unchanged; no per-hero counter assertions.
 	var batch_portraits: Array[Control] = []
-	for id in ["aelyrion", "aeralith", "akahime"]:
+	for id in ["aelyrion", "aeralith", "akahime", "akaroth", "akashari", "akirakumo"]:
 		for pixel_size in [HeroShopCard.PORTRAIT_SIZE, 96.0]:
 			var portrait := HeroPortrait.new()
 			portrait.setup(id, HERO_ROSTER[id], pixel_size)
 			portrait.size = Vector2(pixel_size, pixel_size)
-			portrait.position = Vector2(480.0 + batch_portraits.size() * 80.0, 288.0)
+			portrait.position = Vector2(
+				480.0 + (batch_portraits.size() % 6) * 80.0,
+				288.0 + floorf(batch_portraits.size() / 6.0) * 96.0
+			)
 			tree.root.add_child(portrait)
 			batch_portraits.append(portrait)
 	await tree.process_frame
