@@ -2735,3 +2735,29 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
   guardrails workflow lulus sekali setelah batch (`validate_project`, source
   contract/oracles, gdparse, gdlint, gdformat --check; 404 GDScript).
   Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
+
+
+## Batch slice 9c22–9c24 — Aurelion, Aurelix, Aurelyssa
+
+- **9c22 Aurelion — The Golden Sovereign**: metadata True Boss/Royal King;
+  mahkota tinggi, throne finial, mantle ermine, janggut bercabang,
+  rantai/seal emerald dan sceptre orb untuk peran magic ranged.
+- **9c23 Aurelix — The Time Sovereign**: metadata Boss/Time Mage;
+  halo jam bersegmen dengan jarum offset, rambut perak, monocle,
+  kerah bercabang, seal hourglass dan staff clock-head.
+- **9c24 Aurelyssa — The Golden Blade Dancer**: metadata Boss/Blade Dancer;
+  ponytail tinggi, circlet asimetris, ribbon melengkung, pose lengan
+  terangkat serta dua bilah crescent melengkung ke dalam.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd` menjadikan
+  daftar 31 custom; seluruh 28 custom sebelumnya tetap, Raz tetap generic
+  fallback. Dispatcher 772 baris; tidak perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke ketiga
+  hero; grid memakai baris keempat. Shared `draw_pass_count` tetap, tanpa
+  reset/increment atau assertion counter per hero baru.
+- Art-only: tanpa image assets, perubahan Python, simulasi atau gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Kandidat berikutnya: Aurex (Aurethzar sudah custom).
+- Validasi lokal: 59 poligon baru tanpa edge silang; seluruh blok static
+  guardrails workflow lulus sekali setelah batch (`validate_project`, source
+  contract/oracles, gdparse, gdlint, gdformat --check; 407 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
