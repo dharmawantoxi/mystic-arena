@@ -3,7 +3,7 @@ extends RefCounted
 ## Canvases: Abaddon, Alchemist, Ancient Apparition, Aureth'zar, Cogsworth, Drakar,
 ## Gornak, Grimjaw, Grondmauris, Ignis Drachorn, Kaizen, Kunkka, Morgath,
 ## Morthraxis, Okeanora, Sylara, Thorne, Vex, Zephyr, Aelyrion, Aeralith, Akahime,
-## Akaroth, Akashari, and Akirakumo.
+## Akaroth, Akashari, Akirakumo, Akiraze, Astraelion, and Aurelian.
 
 const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
@@ -37,6 +37,9 @@ const SAMPLE: Array[String] = [
 	"akaroth",
 	"akashari",
 	"akirakumo",
+	"akiraze",
+	"astraelion",
+	"aurelian",
 	"raz"
 ]
 
@@ -62,8 +65,11 @@ func _dispatch(check: Callable) -> void:
 				"akaroth",
 				"akashari",
 				"akirakumo",
+				"akiraze",
 				"alchemist",
 				"ancient_apparition",
+				"astraelion",
+				"aurelian",
 				"aurethzar",
 				"cogsworth",
 				"drakar",
@@ -84,7 +90,17 @@ func _dispatch(check: Callable) -> void:
 		),
 		"Portrait list covers every hand-authored hero canvas"
 	)
-	for id in ["aelyrion", "aeralith", "akahime", "akaroth", "akashari", "akirakumo"]:
+	for id in [
+		"aelyrion",
+		"aeralith",
+		"akahime",
+		"akaroth",
+		"akashari",
+		"akirakumo",
+		"akiraze",
+		"astraelion",
+		"aurelian"
+	]:
 		check.call(HeroPortrait.has_custom(id), "%s dispatches to a hand-authored canvas" % id)
 	check.call(HeroPortrait.has_custom("abaddon"), "Abaddon dispatches to a hand-authored canvas")
 	check.call(
@@ -326,7 +342,17 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 	# Exercise the new painters at card size and the 96-unit design size.
 	# Shared draw_pass_count remains unchanged; no per-hero counter assertions.
 	var batch_portraits: Array[Control] = []
-	for id in ["aelyrion", "aeralith", "akahime", "akaroth", "akashari", "akirakumo"]:
+	for id in [
+		"aelyrion",
+		"aeralith",
+		"akahime",
+		"akaroth",
+		"akashari",
+		"akirakumo",
+		"akiraze",
+		"astraelion",
+		"aurelian"
+	]:
 		for pixel_size in [HeroShopCard.PORTRAIT_SIZE, 96.0]:
 			var portrait := HeroPortrait.new()
 			portrait.setup(id, HERO_ROSTER[id], pixel_size)

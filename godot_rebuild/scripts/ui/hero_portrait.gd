@@ -23,6 +23,9 @@ const AKAHIME_PAINTER = preload("res://scripts/ui/hero_portrait_akahime.gd")
 const AKAROTH_PAINTER = preload("res://scripts/ui/hero_portrait_akaroth.gd")
 const AKASHARI_PAINTER = preload("res://scripts/ui/hero_portrait_akashari.gd")
 const AKIRAKUMO_PAINTER = preload("res://scripts/ui/hero_portrait_akirakumo.gd")
+const AKIRAZE_PAINTER = preload("res://scripts/ui/hero_portrait_akiraze.gd")
+const ASTRAELION_PAINTER = preload("res://scripts/ui/hero_portrait_astraelion.gd")
+const AURELIAN_PAINTER = preload("res://scripts/ui/hero_portrait_aurelian.gd")
 const OKEANORA_PAINTER = preload("res://scripts/ui/hero_portrait_okeanora.gd")
 const GORNAK := "gornak"
 const GRIMJAW := "grimjaw"
@@ -46,8 +49,11 @@ static func custom_ids() -> Array[String]:
 		"akaroth",
 		"akashari",
 		"akirakumo",
+		"akiraze",
 		"alchemist",
 		"ancient_apparition",
+		"astraelion",
+		"aurelian",
 		"aurethzar",
 		"cogsworth",
 		"drakar",
@@ -97,6 +103,12 @@ func _draw() -> void:
 			AKASHARI_PAINTER.paint(self, box)
 		"akirakumo":
 			AKIRAKUMO_PAINTER.paint(self, box)
+		"akiraze":
+			AKIRAZE_PAINTER.paint(self, box)
+		"astraelion":
+			ASTRAELION_PAINTER.paint(self, box)
+		"aurelian":
+			AURELIAN_PAINTER.paint(self, box)
 		"abaddon":
 			ABADDON_PAINTER.paint(self, box)
 		"ancient_apparition":

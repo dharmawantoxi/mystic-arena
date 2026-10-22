@@ -2708,3 +2708,30 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
   guardrails workflow lulus satu kali setelah batch (`validate_project`,
   source contract/oracles, gdparse, gdlint, gdformat --check; 401 GDScript).
   Import/runtime native Godot 4.7.2 divalidasi lewat CI PR #337.
+
+
+## Batch slice 9c19–9c21 — Akiraze, Astraelion, Aurelian
+
+- **9c19 Akiraze — The Golden Tempest**: metadata Boss/Golden Ninja;
+  crest dan brow plate emas, celah mata tajam, masker, scarf tertiup angin,
+  bilah silang dan clasp shuriken pada harness diagonal.
+- **9c20 Astraelion — The Starlight Swordmaster**: metadata Boss/Starlight
+  Assassin; rambut perak menyapu, cape asimetris, rasi bintang, mata biru,
+  clasp bintang, pedang tipis bercahaya dan bilah reverse-grip.
+- **9c21 Aurelian — The Goldspear Sovereign**: metadata Boss/Fighter-Tank;
+  helm bermahkota terbuka, janggut persegi, pauldron berat berlapis,
+  sigil kerajaan, tombak emas tinggi dan shield kecil.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd` menambah
+  daftar menjadi 28 custom; seluruh 25 custom sebelumnya dipertahankan,
+  Raz tetap generic fallback. Dispatcher masih di bawah 1.000 baris,
+  tanpa ekstraksi atau refactor tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch
+  ini. Grid otomatis memakai baris ketiga. Shared `draw_pass_count` tidak
+  berubah; tidak menambah reset/increment atau assertion counter per hero.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Kandidat berikutnya menurut urutan metadata: Aurelion (belum custom).
+- Validasi lokal: 71 poligon baru tanpa edge silang; seluruh blok static
+  guardrails workflow lulus sekali setelah batch (`validate_project`, source
+  contract/oracles, gdparse, gdlint, gdformat --check; 404 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
