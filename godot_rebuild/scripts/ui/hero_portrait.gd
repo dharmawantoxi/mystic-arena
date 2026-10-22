@@ -1,27 +1,56 @@
 extends Control
-## Procedural Hero Shop portrait. Kaizen and Thorne carry a hand-authored
-## canvas; every other hero id falls back to a deterministic generic bust
-## derived from the id hash, so a shared card never renders an empty slot.
-## Presentation only: no roster state, no input, no gameplay dependencies.
+## Presentation-only native Hero Shop portraits with a deterministic generic fallback bust.
 
 const SIZE := 96.0
+const GENERIC_PAINTER = preload("res://scripts/ui/hero_portrait_generic.gd")
+const ALCHEMIST_PAINTER = preload("res://scripts/ui/hero_portrait_alchemist.gd")
+const ABADDON_PAINTER = preload("res://scripts/ui/hero_portrait_abaddon.gd")
+const APPARITION_PAINTER = preload("res://scripts/ui/hero_portrait_ancient_apparition.gd")
+const AURETHZAR_PAINTER = preload("res://scripts/ui/hero_portrait_aurethzar.gd")
+const COGSWORTH_PAINTER = preload("res://scripts/ui/hero_portrait_cogsworth.gd")
+const DRAKAR_PAINTER = preload("res://scripts/ui/hero_portrait_drakar.gd")
+const GORNAK_PAINTER = preload("res://scripts/ui/hero_portrait_gornak.gd")
+const GRONDMAURIS_PAINTER = preload("res://scripts/ui/hero_portrait_grondmauris.gd")
+const IGNIS_PAINTER = preload("res://scripts/ui/hero_portrait_ignis_drachorn.gd")
+const KAIZEN_PAINTER = preload("res://scripts/ui/hero_portrait_kaizen.gd")
+const KUNKKA_PAINTER = preload("res://scripts/ui/hero_portrait_kunkka.gd")
+const MORGATH_PAINTER = preload("res://scripts/ui/hero_portrait_morgath.gd")
+const MORTHRAXIS_PAINTER = preload("res://scripts/ui/hero_portrait_morthraxis.gd")
+const OKEANORA_PAINTER = preload("res://scripts/ui/hero_portrait_okeanora.gd")
+const GORNAK := "gornak"
+const GRIMJAW := "grimjaw"
 const KAIZEN := "kaizen"
+const SYLARA := "sylara"
 const THORNE := "thorne"
+const VEX := "vex"
+const ZEPHYR := "zephyr"
 
 var hero_type := ""
-
+var draw_pass_count: int = 0
 var _definition: Variant = null
 
 
 static func custom_ids() -> Array[String]:
-	return [KAIZEN, THORNE]
+	var ids: Array[String] = [
+		"abaddon",
+		"alchemist",
+		"ancient_apparition",
+		"aurethzar",
+		"cogsworth",
+		"drakar",
+		GORNAK,
+		GRIMJAW,
+		"grondmauris"
+	]
+	ids.append_array(["ignis_drachorn", KAIZEN, "kunkka", "morgath", "morthraxis", "okeanora"])
+	ids.append_array([SYLARA, THORNE, VEX, ZEPHYR])
+	return ids
 
 
 static func has_custom(id: String) -> bool:
-	return id == KAIZEN or id == THORNE
+	return id in custom_ids()
 
 
-## Stable HSV hue in [0, 1) used by the generic fallback bust.
 static func hue_for(id: String) -> float:
 	var total := 0
 	for byte in id.to_utf8_buffer():
@@ -32,6 +61,7 @@ static func hue_for(id: String) -> float:
 func setup(id: String, definition: Variant = null, pixel_size: float = SIZE) -> void:
 	hero_type = id
 	_definition = definition
+	draw_pass_count = 0
 	custom_minimum_size = Vector2(pixel_size, pixel_size)
 	queue_redraw()
 
@@ -40,108 +70,49 @@ func _draw() -> void:
 	var box := Rect2(Vector2.ZERO, size)
 	if box.size.x < 8.0 or box.size.y < 8.0:
 		return
+	draw_pass_count += 1
 	match hero_type:
+		"abaddon":
+			ABADDON_PAINTER.paint(self, box)
+		"ancient_apparition":
+			APPARITION_PAINTER.paint(self, box)
+		"aurethzar":
+			AURETHZAR_PAINTER.paint(self, box)
+		"cogsworth":
+			COGSWORTH_PAINTER.paint(self, box)
+		"alchemist":
+			ALCHEMIST_PAINTER.paint(self, box)
+		"drakar":
+			DRAKAR_PAINTER.paint(self, box)
+		GORNAK:
+			GORNAK_PAINTER.paint(self, box)
+		GRIMJAW:
+			_draw_grimjaw(box)
+		"grondmauris":
+			GRONDMAURIS_PAINTER.paint(self, box)
+		"ignis_drachorn":
+			IGNIS_PAINTER.paint(self, box)
 		KAIZEN:
-			_draw_kaizen(box)
+			KAIZEN_PAINTER.paint(self, box)
+		"kunkka":
+			KUNKKA_PAINTER.paint(self, box)
+		"morgath":
+			MORGATH_PAINTER.paint(self, box)
+		"morthraxis":
+			MORTHRAXIS_PAINTER.paint(self, box)
+		"okeanora":
+			OKEANORA_PAINTER.paint(self, box)
+		SYLARA:
+			_draw_sylara(box)
 		THORNE:
 			_draw_thorne(box)
+		VEX:
+			_draw_vex(box)
+		ZEPHYR:
+			_draw_zephyr(box)
 		_:
-			_draw_generic(box)
+			GENERIC_PAINTER.paint(self, box, hue_for(hero_type), _accent())
 	draw_rect(box.grow(-1.0), Color8(10, 16, 24), false, 2.0)
-
-
-func _draw_kaizen(box: Rect2) -> void:
-	var unit := _scale(box)
-	var outline := Color8(24, 26, 40)
-	var shadow := Color8(16, 40, 82)
-	var dark := Color8(30, 60, 110)
-	var body := Color8(55, 80, 145)
-	var mid := Color8(110, 175, 230)
-	var light := Color8(175, 220, 250)
-	var weapon := Color8(210, 220, 235)
-	var fx := Color8(245, 252, 255)
-
-	_backdrop(box, shadow, dark)
-	for index in 3:
-		var radius := (20.0 + 9.0 * float(index)) * unit
-		draw_arc(
-			_p(box, 48.0, 44.0),
-			radius,
-			-PI * 0.35,
-			PI * 0.75,
-			24,
-			Color(mid.r, mid.g, mid.b, 0.34 - 0.09 * float(index)),
-			maxf(2.0 * unit, 1.0),
-			true
-		)
-	draw_colored_polygon(
-		_poly(
-			box,
-			[
-				Vector2(40.0, 26.0),
-				Vector2(12.0, 34.0),
-				Vector2(4.0, 46.0),
-				Vector2(16.0, 45.0),
-				Vector2(38.0, 34.0)
-			]
-		),
-		light
-	)
-	draw_colored_polygon(
-		_poly(
-			box,
-			[
-				Vector2(38.0, 32.0),
-				Vector2(58.0, 32.0),
-				Vector2(66.0, 58.0),
-				Vector2(58.0, 86.0),
-				Vector2(38.0, 86.0),
-				Vector2(30.0, 58.0)
-			]
-		),
-		dark
-	)
-	draw_colored_polygon(
-		_poly(
-			box,
-			[
-				Vector2(42.0, 34.0),
-				Vector2(54.0, 34.0),
-				Vector2(60.0, 58.0),
-				Vector2(54.0, 84.0),
-				Vector2(42.0, 84.0),
-				Vector2(36.0, 58.0)
-			]
-		),
-		body
-	)
-	draw_colored_polygon(
-		_poly(
-			box,
-			[Vector2(46.0, 36.0), Vector2(50.0, 36.0), Vector2(52.0, 58.0), Vector2(44.0, 58.0)]
-		),
-		mid
-	)
-	draw_circle(_p(box, 48.0, 24.0), 10.0 * unit, mid)
-	draw_colored_polygon(
-		_poly(
-			box,
-			[
-				Vector2(36.0, 26.0),
-				Vector2(48.0, 9.0),
-				Vector2(60.0, 26.0),
-				Vector2(56.0, 30.0),
-				Vector2(40.0, 30.0)
-			]
-		),
-		dark
-	)
-	draw_line(_p(box, 42.0, 24.0), _p(box, 46.0, 24.0), outline, maxf(2.0 * unit, 1.0))
-	draw_line(_p(box, 51.0, 24.0), _p(box, 55.0, 24.0), outline, maxf(2.0 * unit, 1.0))
-	draw_line(_p(box, 66.0, 82.0), _p(box, 22.0, 20.0), weapon, maxf(5.0 * unit, 1.5), true)
-	draw_line(_p(box, 66.0, 82.0), _p(box, 22.0, 20.0), light, maxf(2.0 * unit, 1.0), true)
-	draw_line(_p(box, 64.0, 78.0), _p(box, 70.0, 84.0), outline, maxf(3.0 * unit, 1.0))
-	draw_circle(_p(box, 76.0, 20.0), 3.0 * unit, fx)
 
 
 func _draw_thorne(box: Rect2) -> void:
@@ -206,31 +177,694 @@ func _draw_thorne(box: Rect2) -> void:
 	draw_circle(_p(box, 85.0, 45.0), 2.0 * unit, goop)
 
 
-func _draw_generic(box: Rect2) -> void:
+func _draw_grimjaw(box: Rect2) -> void:
 	var unit := _scale(box)
-	var hue := hue_for(hero_type)
-	var dark := Color.from_hsv(hue, 0.55, 0.22)
-	var body := Color.from_hsv(hue, 0.42, 0.62)
-	var light := Color.from_hsv(hue, 0.30, 0.86)
+	var outline := Color8(36, 19, 16)
+	var armor := Color8(117, 58, 35)
+	var leather := Color8(78, 39, 28)
+	var steel := Color8(187, 151, 110)
+	var skin := Color8(188, 125, 83)
+	var hair := Color8(49, 27, 23)
+	var ember := Color8(241, 96, 47)
 
-	_backdrop(box, dark, Color.from_hsv(hue, 0.45, 0.10))
-	draw_circle(_p(box, 48.0, 44.0), 27.0 * unit, Color.from_hsv(hue, 0.40, 0.30))
+	_backdrop(box, Color8(126, 57, 34), Color8(26, 17, 20))
+	draw_arc(
+		_p(box, 48.0, 43.0),
+		34.0 * unit,
+		-PI * 0.78,
+		PI * 0.78,
+		28,
+		Color(ember.r, ember.g, ember.b, 0.30),
+		maxf(2.0 * unit, 1.0),
+		true
+	)
+	draw_line(_p(box, 20.0, 80.0), _p(box, 40.0, 46.0), outline, maxf(8.0 * unit, 2.0), true)
+	draw_line(_p(box, 20.0, 80.0), _p(box, 40.0, 46.0), steel, maxf(3.0 * unit, 1.0), true)
 	draw_colored_polygon(
 		_poly(
 			box,
 			[
-				Vector2(26.0, 88.0),
-				Vector2(32.0, 58.0),
+				Vector2(35.0, 48.0),
+				Vector2(38.0, 35.0),
+				Vector2(48.0, 42.0),
+				Vector2(43.0, 53.0),
+			]
+		),
+		steel
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(11.0, 68.0),
+				Vector2(25.0, 55.0),
+				Vector2(39.0, 53.0),
+				Vector2(57.0, 53.0),
+				Vector2(72.0, 57.0),
+				Vector2(85.0, 71.0),
+				Vector2(80.0, 88.0),
+				Vector2(16.0, 88.0),
+			]
+		),
+		outline
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(18.0, 69.0),
+				Vector2(29.0, 60.0),
+				Vector2(41.0, 59.0),
+				Vector2(57.0, 59.0),
+				Vector2(68.0, 62.0),
+				Vector2(78.0, 72.0),
+				Vector2(74.0, 84.0),
+				Vector2(22.0, 84.0),
+			]
+		),
+		armor
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(18.0, 61.0),
+				Vector2(28.0, 51.0),
+				Vector2(39.0, 58.0),
+				Vector2(33.0, 72.0),
+				Vector2(19.0, 74.0),
+			]
+		),
+		steel
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(78.0, 60.0),
+				Vector2(68.0, 51.0),
+				Vector2(57.0, 58.0),
+				Vector2(63.0, 72.0),
+				Vector2(77.0, 74.0),
+			]
+		),
+		steel
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(32.0, 18.0),
+				Vector2(44.0, 10.0),
+				Vector2(58.0, 17.0),
+				Vector2(66.0, 31.0),
+				Vector2(63.0, 46.0),
+				Vector2(55.0, 55.0),
+				Vector2(40.0, 54.0),
+				Vector2(30.0, 43.0),
+			]
+		),
+		hair
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(38.0, 23.0),
+				Vector2(48.0, 18.0),
+				Vector2(58.0, 24.0),
+				Vector2(60.0, 39.0),
+				Vector2(54.0, 48.0),
+				Vector2(43.0, 47.0),
+				Vector2(36.0, 39.0),
+			]
+		),
+		skin
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(28.0, 31.0),
+				Vector2(26.0, 20.0),
+				Vector2(36.0, 23.0),
+				Vector2(39.0, 13.0),
+				Vector2(47.0, 19.0),
+				Vector2(56.0, 11.0),
+				Vector2(59.0, 21.0),
+				Vector2(69.0, 18.0),
+				Vector2(64.0, 33.0),
+				Vector2(55.0, 28.0),
+				Vector2(47.0, 25.0),
+				Vector2(39.0, 30.0),
+			]
+		),
+		hair
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(37.0, 40.0),
+				Vector2(44.0, 45.0),
+				Vector2(53.0, 45.0),
+				Vector2(59.0, 39.0),
+				Vector2(57.0, 52.0),
+				Vector2(48.0, 61.0),
+				Vector2(39.0, 53.0),
+			]
+		),
+		leather
+	)
+	draw_line(_p(box, 40.0, 34.0), _p(box, 44.0, 34.0), ember, maxf(2.5 * unit, 1.0))
+	draw_line(_p(box, 52.0, 34.0), _p(box, 56.0, 34.0), ember, maxf(2.5 * unit, 1.0))
+	draw_line(_p(box, 37.0, 30.0), _p(box, 56.0, 39.0), outline, maxf(2.0 * unit, 1.0))
+	draw_line(_p(box, 31.0, 65.0), _p(box, 62.0, 74.0), leather, maxf(3.0 * unit, 1.0), true)
+	draw_circle(_p(box, 48.0, 72.0), 3.0 * unit, steel)
+
+
+func _draw_sylara(box: Rect2) -> void:
+	var unit := _scale(box)
+	var outline := Color8(29, 30, 31)
+	var cloak := Color8(31, 75, 75)
+	var body := Color8(53, 128, 115)
+	var hair := Color8(145, 63, 49)
+	var skin := Color8(233, 190, 146)
+	var trim := Color8(229, 192, 119)
+	var wind := Color8(145, 220, 202)
+
+	_backdrop(box, Color8(31, 83, 83), Color8(14, 25, 32))
+	draw_arc(
+		_p(box, 62.0, 49.0),
+		30.0 * unit,
+		-PI * 0.43,
+		PI * 0.43,
+		32,
+		outline,
+		maxf(5.0 * unit, 1.5),
+		true
+	)
+	draw_arc(
+		_p(box, 62.0, 49.0),
+		30.0 * unit,
+		-PI * 0.43,
+		PI * 0.43,
+		32,
+		trim,
+		maxf(2.0 * unit, 1.0),
+		true
+	)
+	draw_line(_p(box, 68.5, 20.0), _p(box, 68.5, 78.0), wind, maxf(1.5 * unit, 1.0), true)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(15.0, 48.0),
+				Vector2(26.0, 39.0),
+				Vector2(29.0, 73.0),
+				Vector2(19.0, 84.0),
+			]
+		),
+		outline
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(19.0, 50.0),
+				Vector2(24.0, 46.0),
+				Vector2(26.0, 72.0),
+				Vector2(20.0, 78.0),
+			]
+		),
+		trim
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
 				Vector2(48.0, 50.0),
-				Vector2(64.0, 58.0),
-				Vector2(70.0, 88.0)
+				Vector2(65.0, 58.0),
+				Vector2(78.0, 87.0),
+				Vector2(18.0, 87.0),
+				Vector2(27.0, 61.0),
+			]
+		),
+		outline
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(48.0, 55.0),
+				Vector2(62.0, 62.0),
+				Vector2(71.0, 83.0),
+				Vector2(25.0, 83.0),
+				Vector2(32.0, 64.0),
 			]
 		),
 		body
 	)
-	draw_circle(_p(box, 48.0, 34.0), 12.0 * unit, light)
-	draw_rect(Rect2(_p(box, 40.0, 31.0), Vector2(16.0, 4.0) * unit), dark)
-	draw_rect(Rect2(_p(box, 26.0, 88.0), Vector2(44.0, 4.0) * unit), _accent())
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(27.0, 65.0),
+				Vector2(35.0, 59.0),
+				Vector2(41.0, 63.0),
+				Vector2(34.0, 82.0),
+				Vector2(24.0, 82.0),
+			]
+		),
+		cloak
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(33.0, 17.0),
+				Vector2(48.0, 10.0),
+				Vector2(63.0, 17.0),
+				Vector2(68.0, 35.0),
+				Vector2(63.0, 51.0),
+				Vector2(53.0, 59.0),
+				Vector2(37.0, 55.0),
+				Vector2(27.0, 43.0),
+				Vector2(28.0, 27.0),
+			]
+		),
+		hair
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(37.0, 24.0),
+				Vector2(48.0, 19.0),
+				Vector2(59.0, 24.0),
+				Vector2(61.0, 40.0),
+				Vector2(54.0, 51.0),
+				Vector2(43.0, 51.0),
+				Vector2(36.0, 43.0),
+			]
+		),
+		skin
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(28.0, 31.0),
+				Vector2(34.0, 18.0),
+				Vector2(48.0, 12.0),
+				Vector2(63.0, 20.0),
+				Vector2(66.0, 32.0),
+				Vector2(56.0, 27.0),
+				Vector2(47.0, 25.0),
+				Vector2(38.0, 31.0),
+			]
+		),
+		hair
+	)
+	draw_line(_p(box, 40.0, 36.0), _p(box, 44.0, 36.0), outline, maxf(2.0 * unit, 1.0))
+	draw_line(_p(box, 52.0, 36.0), _p(box, 56.0, 36.0), outline, maxf(2.0 * unit, 1.0))
+	draw_line(_p(box, 38.0, 59.0), _p(box, 58.0, 69.0), trim, maxf(2.0 * unit, 1.0), true)
+	draw_line(_p(box, 39.0, 64.0), _p(box, 76.0, 46.0), outline, maxf(4.0 * unit, 1.0), true)
+	draw_line(_p(box, 39.0, 64.0), _p(box, 76.0, 46.0), trim, maxf(1.5 * unit, 1.0), true)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(79.0, 45.0),
+				Vector2(72.0, 44.0),
+				Vector2(76.0, 51.0),
+			]
+		),
+		trim
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(30.0, 19.0),
+				Vector2(22.0, 8.0),
+				Vector2(37.0, 14.0),
+			]
+		),
+		wind
+	)
+
+
+func _draw_vex(box: Rect2) -> void:
+	var unit := _scale(box)
+	var outline := Color8(23, 13, 43)
+	var mantle := Color8(54, 31, 92)
+	var robe := Color8(91, 53, 145)
+	var trim := Color8(181, 143, 237)
+	var face := Color8(205, 194, 230)
+	var arcane := Color8(151, 106, 240)
+	var glow := Color8(118, 228, 255)
+
+	_backdrop(box, Color8(54, 29, 93), Color8(14, 12, 30))
+	for index in 3:
+		var alpha := 0.30 - 0.08 * float(index)
+		var radius := (22.0 + 7.0 * float(index)) * unit
+		draw_arc(
+			_p(box, 48.0, 42.0),
+			radius,
+			-PI * 0.82,
+			PI * 0.18,
+			28,
+			Color(arcane.r, arcane.g, arcane.b, alpha),
+			maxf(1.5 * unit, 1.0),
+			true
+		)
+
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(48.0, 8.0),
+				Vector2(69.0, 25.0),
+				Vector2(72.0, 49.0),
+				Vector2(62.0, 61.0),
+				Vector2(79.0, 88.0),
+				Vector2(17.0, 88.0),
+				Vector2(34.0, 61.0),
+				Vector2(24.0, 49.0),
+				Vector2(27.0, 25.0),
+			]
+		),
+		outline
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(35.0, 60.0),
+				Vector2(43.0, 54.0),
+				Vector2(53.0, 54.0),
+				Vector2(61.0, 60.0),
+				Vector2(66.0, 84.0),
+				Vector2(30.0, 84.0),
+			]
+		),
+		robe
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(28.0, 63.0),
+				Vector2(39.0, 54.0),
+				Vector2(58.0, 54.0),
+				Vector2(70.0, 64.0),
+				Vector2(76.0, 86.0),
+				Vector2(22.0, 86.0),
+			]
+		),
+		mantle
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(44.0, 62.0),
+				Vector2(48.0, 58.0),
+				Vector2(52.0, 62.0),
+				Vector2(58.0, 84.0),
+				Vector2(38.0, 84.0),
+			]
+		),
+		robe
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(32.0, 31.0),
+				Vector2(37.0, 21.0),
+				Vector2(48.0, 15.0),
+				Vector2(59.0, 21.0),
+				Vector2(64.0, 31.0),
+				Vector2(60.0, 48.0),
+				Vector2(53.0, 56.0),
+				Vector2(43.0, 56.0),
+				Vector2(36.0, 48.0),
+			]
+		),
+		face
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(25.0, 36.0),
+				Vector2(28.0, 23.0),
+				Vector2(48.0, 9.0),
+				Vector2(68.0, 23.0),
+				Vector2(71.0, 36.0),
+				Vector2(59.0, 30.0),
+				Vector2(48.0, 26.0),
+				Vector2(37.0, 30.0),
+			]
+		),
+		outline
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(30.0, 36.0),
+				Vector2(38.0, 31.0),
+				Vector2(37.0, 53.0),
+				Vector2(29.0, 48.0),
+			]
+		),
+		mantle
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(66.0, 36.0),
+				Vector2(58.0, 31.0),
+				Vector2(59.0, 53.0),
+				Vector2(67.0, 48.0),
+			]
+		),
+		mantle
+	)
+	draw_line(_p(box, 39.0, 39.0), _p(box, 44.0, 39.0), arcane, maxf(2.0 * unit, 1.0))
+	draw_line(_p(box, 52.0, 39.0), _p(box, 57.0, 39.0), arcane, maxf(2.0 * unit, 1.0))
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(40.0, 65.0),
+				Vector2(48.0, 58.0),
+				Vector2(56.0, 65.0),
+			]
+		),
+		trim
+	)
+	draw_line(_p(box, 30.0, 69.0), _p(box, 43.0, 79.0), trim, maxf(2.0 * unit, 1.0), true)
+	draw_line(_p(box, 66.0, 70.0), _p(box, 75.0, 61.0), outline, maxf(4.0 * unit, 1.0), true)
+	draw_arc(
+		_p(box, 75.0, 53.0), 12.0 * unit, -PI * 0.9, PI * 1.8, 24, glow, maxf(2.0 * unit, 1.0), true
+	)
+	draw_circle(_p(box, 75.0, 53.0), 8.0 * unit, arcane)
+	draw_circle(_p(box, 75.0, 53.0), 3.5 * unit, glow)
+	draw_circle(_p(box, 19.0, 29.0), 1.5 * unit, glow)
+	draw_circle(_p(box, 79.0, 25.0), 1.5 * unit, trim)
+
+
+func _draw_zephyr(box: Rect2) -> void:
+	var unit := _scale(box)
+	var outline := Color8(14, 25, 41)
+	var cloak := Color8(24, 63, 77)
+	var robe := Color8(33, 115, 125)
+	var trim := Color8(130, 224, 212)
+	var skin := Color8(222, 179, 133)
+	var hair := Color8(15, 39, 53)
+	var wind := Color8(71, 227, 227)
+	var gold := Color8(241, 197, 119)
+
+	_backdrop(box, Color8(17, 79, 101), Color8(8, 19, 36))
+	draw_arc(
+		_p(box, 48.0, 43.0),
+		36.0 * unit,
+		-PI * 0.93,
+		PI * 0.06,
+		32,
+		Color(wind.r, wind.g, wind.b, 0.28),
+		maxf(2.0 * unit, 1.0),
+		true
+	)
+	draw_arc(
+		_p(box, 48.0, 43.0),
+		29.0 * unit,
+		PI * 0.14,
+		PI * 0.93,
+		28,
+		Color(trim.r, trim.g, trim.b, 0.22),
+		maxf(1.5 * unit, 1.0),
+		true
+	)
+	draw_line(_p(box, 12.0, 44.0), _p(box, 25.0, 39.0), wind, maxf(1.5 * unit, 1.0), true)
+	draw_line(_p(box, 15.0, 49.0), _p(box, 26.0, 46.0), trim, maxf(1.0 * unit, 1.0), true)
+
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(15.0, 88.0),
+				Vector2(21.0, 64.0),
+				Vector2(34.0, 54.0),
+				Vector2(43.0, 51.0),
+				Vector2(55.0, 52.0),
+				Vector2(70.0, 59.0),
+				Vector2(81.0, 88.0),
+			],
+		),
+		outline
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(21.0, 86.0),
+				Vector2(27.0, 67.0),
+				Vector2(37.0, 59.0),
+				Vector2(45.0, 62.0),
+				Vector2(48.0, 72.0),
+				Vector2(55.0, 61.0),
+				Vector2(66.0, 63.0),
+				Vector2(74.0, 86.0),
+			],
+		),
+		robe
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(34.0, 53.0),
+				Vector2(42.0, 49.0),
+				Vector2(48.0, 58.0),
+				Vector2(55.0, 50.0),
+				Vector2(64.0, 55.0),
+				Vector2(56.0, 68.0),
+				Vector2(48.0, 73.0),
+				Vector2(40.0, 67.0),
+			],
+		),
+		trim
+	)
+	draw_line(_p(box, 48.0, 59.0), _p(box, 48.0, 84.0), gold, maxf(2.0 * unit, 1.0), true)
+	draw_circle(_p(box, 48.0, 63.0), 3.0 * unit, gold)
+
+	draw_line(_p(box, 59.0, 67.0), _p(box, 70.0, 57.0), outline, maxf(7.0 * unit, 2.0), true)
+	draw_line(_p(box, 59.0, 67.0), _p(box, 70.0, 57.0), trim, maxf(3.0 * unit, 1.0), true)
+	draw_circle(_p(box, 72.0, 54.0), 7.0 * unit, Color(wind.r, wind.g, wind.b, 0.22))
+	draw_arc(
+		_p(box, 72.0, 54.0),
+		6.0 * unit,
+		-PI * 0.85,
+		PI * 0.45,
+		20,
+		wind,
+		maxf(1.5 * unit, 1.0),
+		true
+	)
+	draw_circle(_p(box, 72.0, 54.0), 2.5 * unit, Color8(222, 255, 241))
+
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(30.0, 34.0),
+				Vector2(31.0, 22.0),
+				Vector2(41.0, 11.0),
+				Vector2(53.0, 10.0),
+				Vector2(64.0, 21.0),
+				Vector2(67.0, 36.0),
+				Vector2(62.0, 49.0),
+				Vector2(56.0, 55.0),
+				Vector2(38.0, 54.0),
+				Vector2(32.0, 45.0),
+			],
+		),
+		outline
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(34.0, 32.0),
+				Vector2(36.0, 23.0),
+				Vector2(44.0, 16.0),
+				Vector2(54.0, 17.0),
+				Vector2(61.0, 25.0),
+				Vector2(62.0, 38.0),
+				Vector2(56.0, 48.0),
+				Vector2(40.0, 48.0),
+				Vector2(35.0, 41.0),
+			],
+		),
+		cloak
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(39.0, 25.0),
+				Vector2(46.0, 20.0),
+				Vector2(56.0, 23.0),
+				Vector2(60.0, 31.0),
+				Vector2(58.0, 41.0),
+				Vector2(52.0, 47.0),
+				Vector2(42.0, 45.0),
+				Vector2(37.0, 38.0),
+			],
+		),
+		skin
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(31.0, 34.0),
+				Vector2(30.0, 22.0),
+				Vector2(41.0, 12.0),
+				Vector2(52.0, 14.0),
+				Vector2(63.0, 23.0),
+				Vector2(58.0, 26.0),
+				Vector2(50.0, 22.0),
+				Vector2(43.0, 27.0),
+				Vector2(37.0, 33.0),
+			],
+		),
+		hair
+	)
+	draw_colored_polygon(
+		_poly(
+			box,
+			[
+				Vector2(50.0, 18.0),
+				Vector2(67.0, 13.0),
+				Vector2(61.0, 22.0),
+				Vector2(56.0, 26.0),
+			],
+		),
+		wind
+	)
+	draw_line(_p(box, 42.0, 33.0), _p(box, 46.0, 32.0), outline, maxf(2.0 * unit, 1.0), true)
+	draw_line(_p(box, 53.0, 32.0), _p(box, 57.0, 33.0), outline, maxf(2.0 * unit, 1.0), true)
+	draw_circle(_p(box, 44.0, 34.0), 1.2 * unit, wind)
+	draw_circle(_p(box, 55.0, 34.0), 1.2 * unit, wind)
+	draw_line(_p(box, 49.0, 35.0), _p(box, 47.0, 40.0), Color8(148, 105, 79), maxf(1.3 * unit, 1.0))
+	draw_line(_p(box, 44.0, 43.0), _p(box, 53.0, 43.0), Color8(113, 69, 61), maxf(1.4 * unit, 1.0))
 
 
 func _accent() -> Color:

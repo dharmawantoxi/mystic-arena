@@ -26,7 +26,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	var session = screen.simulation
 	var world = session.world
 	session.set_physics_process(false)
-	var toggle = screen.get_node("HUD/HeroShopButton")
+	var toggle: Button = screen.get_node("HUD/TopBar/Row/HeroShopButton")
 	var panel = screen.get_node("HUD/HeroShop")
 	check.call(toggle != null and panel != null, "Playable match installs Hero Shop controls")
 	toggle.pressed.emit()

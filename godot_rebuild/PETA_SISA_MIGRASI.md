@@ -666,7 +666,7 @@ panel modal (`hero_shop_panel.gd`, `item_forge_panel.gd`,
 
 ## Batas scope
 
-- Tidak ada portrait hero lain yang dimulai (hanya Kaizen + Thorne + fallback generik).
+- Pada checkpoint ini belum ada portrait hero lain selain Kaizen + Thorne + fallback generik; catatan historis ini dikoreksi pada 9bw–9bx untuk portrait Vex dan Sylara.
 - `lighting.py` semula tidak diport (post-process per-piksel vs vektor).
   **Dibuka pengguna 2026-10-16 ("migrasi penuh, buka semua pembatas")** →
   layer 9aq: matematika mask diport eksak, pengecatan vektor sebagai adaptor
@@ -2456,3 +2456,198 @@ grid dan vignette). Kabut dan partikel animasi di atasnya belum diport.
 Belum: arena layar penuh dan HUD ringkas. Arena tetap 0,7 di dalam bingkai HUD karena skala 1,0
 menaruh TopBar, BottomBar dan TacticalPanel (yang tombolnya ditekan tes lewat event mouse sungguhan)
 di atas lane; perubahan itu perlu desain ulang HUD dan tidak bisa diverifikasi tanpa engine lokal.
+
+## Slice 9bt — tebasan serang dan animasi kematian minion
+
+- `bake/bake_minion_combat_fx.py` menjalankan `_entity.Minion._spawn_slash_effect`,
+  `minions._bundle.draw_slash_effects`, dan `_entity.Minion._draw_death_animation` asli lewat
+  `pygame_env.py`. Lima atlas (goblin/orc/troll/undead/dark_rider), masing-masing 1536x2496,
+  404 frame (12 umur tebasan x 32 arah pygame + 20 frame mati); PNG total 178.380 byte.
+  Dua bake menghasilkan SHA-256 PNG dan manifest yang identik.
+- `data/art/minion_combat_fx.json` mem-pin ukuran, byte, hash, radius/distance sumber dan
+  `key_cases` berupa hash hasil render pygame untuk sudut/umur tebasan serta awal/tengah/akhir mati.
+  `scripts/ui/minion_combat_fx_art.gd` memilih atlas/frame; cek `ResourceLoader.exists` sebelum load
+  dan tetap punya fallback painter vektor bila PNG belum diimpor.
+- `minion_anim.gd` memulai tebasan pada transisi cooldown, memakai arah target/hit terakhir, dan
+  menangkap snapshot kematian sebelum simulasi memensiunkan minion. `minion_view.gd` melukis efek;
+  `siege_view.gd` dan `prototype_view.gd` mewarisi jalur yang sama. Counter `minion_slash_draws` /
+  `minion_death_draws` dibuktikan >0 di `painter_scene_checks.gd`.
+- `tests/minion_combat_fx_checks.gd` terdaftar di `run_all.gd`; validator mem-pin sumber, konstanta,
+  hash PNG, frame bounds, key cases, dan trigger workflow `_entity.py` + `minions/_bundle.py`.
+
+Batas: arah sumber kontinu dikuantisasi ke 32 sudut pygame; validator statis dan counter membuktikan
+jalur aset, bukan kesamaan piksel. Hasil akhirnya tetap perlu Anda nilai di Godot.
+
+## Slice 9bu — peluru hero dari `_entity.py:4976 Hero._draw_projectile`
+
+- `bake/bake_hero_projectiles.py` menjalankan painter pygame asli per frame, dengan reset budget FX
+  tiap draw. Delapan atlas PNG RGBA memuat 12.178 frame untuk 222 hero: panah Sylara, orb Vex
+  (serangan/skill), bolt Zephyr (normal/crit), kilat Morgath, shard Ancient Apparition, dan fallback
+  warna/crit generik. Usia 0–72, arah 32 langkah, sel per atlas 40–64 px untuk menahan jejak memori;
+  dua bake mem-pin hash SHA-256.
+- `data/art/hero_projectiles.json` menyimpan warna/radius hero, ukuran/hash atlas, pemetaan frame dan
+  22 hash key-case hasil render pygame. `scripts/ui/hero_projectile_art.gd` memilih frame terdekat;
+  `prototype_view.gd` menggambar tekstur dan mempertahankan titik fallback saat atlas belum tersedia.
+- `hero_projectiles.gd` membawa `hero_type` dan `is_crit` sebagai metadata visual; aturan damage,
+  gerak dan tabrakan tidak berubah. `painter_scene_checks.gd` membuktikan hitungan gambar >0, dan
+  `hero_projectile_art_checks.gd` memeriksa 222 tipe, kelima cabang, frame, atlas serta key-case.
+  Workflow mencakup perubahan FX Zephyr dan Ancient Apparition.
+
+Batas: arah kontinu dibulatkan ke 32 langkah dan usia disampel pada tick integer. Validator/hash dan
+counter membuktikan jalur serta sumber bake, bukan kesamaan piksel; tampilan akhirnya tetap perlu
+Anda nilai di Godot.
+
+## Slice 9bv — arena layar penuh dengan HUD overlay ringkas
+
+- `PrototypeMatch.tscn` kini menggambar arena pada seluruh bidang logis 1280×720; bar atas dipadatkan
+  dan menjadi overlay. Kontrol bawah dibungkus sebagai dock tertutup yang bisa dibuka dari tombol
+  Kontrol, sehingga arena/area toko tidak tertutup secara awal. Panel taktis juga menjadi dock kanan
+  tertutup dengan toggle Taktik; pada layar lebar, dock responsif yang sudah ada tetap mengambil alih.
+- `prototype_screen.gd` menyelaraskan posisi feedback, menjaga jalur kontrol tower dan hero tidak
+  berebut tinggi bar, serta menyinkronkan visibilitas toggle dengan dock layar lebar. Label status dan
+  kontrol (termasuk toko hero) dipadatkan di bar atas dengan detail pada tooltip, agar tombol tidak
+  menutupi titik sentuh arena. Tidak mengubah simulasi, aturan, renderer Python sumber, atau aset gambar.
+- `prototype_layout_checks.gd` membuktikan transform arena, tinggi bar, panel tertutup di awal, dan
+  transisi buka/tutup; `touch_gesture_scene_checks.gd` menjaga target sentuh bebas dari tombol HUD.
+  Validasi statis juga memastikan tes tersebut terdaftar.
+
+Batas: tata letak memakai bidang logis 1280×720 dan elemen HUD memang menimpa tepi arena. Tidak ada
+bake gambar pada slice ini; visual akhir tetap perlu Anda nilai di Godot.
+
+## Slice 9bw — portrait mage Vex di Hero Shop
+
+- `hero_portrait.gd` menambahkan kanvas Vex bernuansa arcane yang dipanggil lewat jalur kartu Hero Shop; portrait Kaizen/Thorne dan bust generik lain tetap tersedia.
+- `hero_shop_portrait_checks.gd` mengunci dispatch, fallback Sylara, serta penghitung pass `_draw()` dan cabang Vex; `run_all.gd` menunggu dua frame agar bukti hitung berasal dari renderer native.
+- Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan visual perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9bx — portrait Sylara, The Wind Ranger
+
+- `hero_portrait.gd` menambahkan kanvas Marksman Sylara dengan busur, panah, dan aksen angin; dispatch Vex/Kaizen/Thorne dan bust generik tetap ada.
+- `hero_shop_portrait_checks.gd` mengunci daftar custom, fallback Grimjaw, dan counter `_draw()` untuk Sylara serta Vex; runner menunggu dua frame sebelum pemeriksaan.
+- Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9by — portrait Grimjaw, The Berserker
+
+- `hero_portrait.gd` menambahkan kanvas Fighter Grimjaw dengan kapak, armor, janggut, dan aksen bara; custom portrait Kaizen, Sylara, Thorne, dan Vex tetap tersedia.
+- `hero_shop_portrait_checks.gd` mengunci dispatch Grimjaw, fallback generik Zephyr, serta penghitung `_draw()` Grimjaw, Vex, dan Sylara; runner menunggu dua frame sebelum pemeriksaan.
+- Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9bz — portrait Zephyr, Mage/Trickster
+
+- `hero_portrait.gd` menambahkan kanvas Zephyr dengan tudung/selendang, pusaran angin, dan bola sihir; custom portrait Grimjaw, Kaizen, Sylara, Thorne, dan Vex tetap ada.
+- `hero_shop_portrait_checks.gd` mengunci dispatch Zephyr, fallback generik Gornak, serta penghitung `_draw()` Zephyr bersama Grimjaw, Vex, dan Sylara; runner menunggu dua frame.
+- Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c0 — portrait Gornak, Boss/Anti-Mage
+
+- `hero_portrait.gd` menambahkan kanvas Gornak dengan armor boss, pelindung rune, dan aura anti-sihir; custom portrait Grimjaw, Kaizen, Sylara, Thorne, Vex, dan Zephyr tetap ada.
+- `hero_shop_portrait_checks.gd` mengunci dispatch Gornak, fallback generik Morgath, serta penghitung `_draw()` Gornak, Grimjaw, Vex, Sylara, dan Zephyr; runner menunggu dua frame.
+- Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c1 — portrait Morgath, Boss/Temporal Mage
+
+- `hero_portrait_morgath.gd` melukis kanvas native bergaya chronomancer dengan jubah malam, halo jam, dan orb temporal; dispatch ada di `hero_portrait.gd`.
+- `hero_shop_portrait_checks.gd` mengunci dispatch Morgath, fallback generik Alchemist, dan penghitung `_draw()` setelah dua frame bersama portrait sebelumnya.
+- Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c2 — portrait Alchemist, The Greed is Good
+
+- `hero_portrait_alchemist.gd` melukis kanvas native True Boss/Bruiser dengan labu alkimia, aura emas-hijau, dan aksen koin; dispatch ada di `hero_portrait.gd`.
+- `hero_shop_portrait_checks.gd` mengunci dispatch Alchemist, fallback generik Drakar, dan penghitung `_draw()` setelah dua frame bersama portrait sebelumnya.
+- Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c3 — portrait Drakar, Boss/Berserker
+
+- `hero_portrait_drakar.gd` melukis kanvas native dengan tanduk, kapak berat, zirah boss, dan inti bara; dispatch ada di `hero_portrait.gd`.
+- `hero_shop_portrait_checks.gd` mengunci dispatch Drakar, fallback generik Abaddon, dan penghitung `_draw()` setelah dua frame bersama portrait sebelumnya.
+- Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c4 — portrait Abaddon, True Boss/Knight
+
+- `hero_portrait_abaddon.gd` melukis kanvas native dengan zirah spektral, pedang hantu, perisai rune, dan aura biru-frost; dispatch ada di `hero_portrait.gd`.
+- `hero_shop_portrait_checks.gd` mengunci dispatch Abaddon, fallback generik Ancient Apparition, dan penghitung `_draw()` setelah dua frame bersama portrait sebelumnya.
+- Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c5 — portrait Ancient Apparition, The Inscrutable
+
+- `hero_portrait_ancient_apparition.gd` melukis kanvas native True Boss/Ice Mage dengan jubah spektral, mahkota kristal es, tongkat kristal, dan fokus frost; dispatch ada di `hero_portrait.gd`.
+- `hero_shop_portrait_checks.gd` mengunci dispatch Ancient Apparition, fallback generik Kunkka, dan penghitung `_draw()` setelah dua frame bersama portrait sebelumnya.
+- Tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c6 — portrait Kunkka, The Admiral of the Fleet
+
+- `hero_portrait_kunkka.gd` melukis kanvas native True Boss/Naval Admiral dengan coat biru, epaulet emas, topi tiga sudut, cutlass, sash merah, dan aksen ombak; dispatch ada di `hero_portrait.gd`.
+- `hero_shop_portrait_checks.gd` mengunci daftar dan dispatch portrait Kunkka serta jalur gambar setelah dua frame; Raz kini menjadi hero roster non-custom untuk regresi generic fallback.
+- Art-only: tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan tetap perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c7 — portrait Ignis Drachorn, The Molten Sovereign
+
+- `hero_portrait_ignis_drachorn.gd` melukis kanvas native True Boss/Dragon Knight dengan zirah naga berlapis, tanduk, greatsword berinti magma, dan jantung bara; dispatch ada di `hero_portrait.gd`.
+- Bust generic deterministik dipindah tanpa mengubah palet/geometri ke `hero_portrait_generic.gd` agar dispatcher utama tetap di bawah batas lint 1.000 baris; Raz tetap dipakai untuk regresi fallback.
+- `hero_shop_portrait_checks.gd` mengunci daftar, dispatch, dan jalur gambar Ignis setelah dua frame; semua portrait custom sebelumnya tetap terdaftar.
+- Art-only: tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan tetap perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c8 — portrait Aureth'zar, The Radiant Dawn
+
+- `hero_portrait_aurethzar.gd` melukis kanvas native True Boss/Solar Archer dengan busur recurve bercahaya, halo matahari, circlet emas, mantel biru malam, dan sunstone di dada; dispatch ada di `hero_portrait.gd`.
+- `hero_shop_portrait_checks.gd` mengunci daftar, dispatch, dan jalur gambar Aureth'zar setelah dua frame; Raz tetap menjadi hero roster non-custom untuk regresi generic fallback.
+- Art-only: tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan tetap perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c9 — portrait Cogsworth, The Skyfury
+
+- `hero_portrait_cogsworth.gd` melukis kanvas native True Boss/Steampunk Sky Machine dengan rotor atas, vanes penstabil, mata lensa bercahaya, turbin bahu, dan inti jam mekanis; dispatch ada di `hero_portrait.gd`.
+- `hero_shop_portrait_checks.gd` mengunci daftar dan dispatch Cogsworth serta membuat kanvasnya ikut jalur gambar; Raz tetap menjadi hero roster non-custom untuk regresi generic fallback.
+- Art-only: tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan tetap perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c10 — portrait Morthraxis, The Crimson Sovereign
+
+- `hero_portrait_morthraxis.gd` melukis kanvas native True Boss/Vampire Lord dengan mantel bersayap, kerah aristokratik, mane hitam, mata ruby, taring, dan sigil darah; dispatch ada di `hero_portrait.gd`.
+- `hero_shop_portrait_checks.gd` mengunci daftar, dispatch, dan jalur gambar Morthraxis; Raz tetap menjadi hero roster non-custom untuk regresi generic fallback.
+- Art-only: tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan tetap perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c11 — portrait Grondmauris, The Earthborn
+
+- `hero_portrait_grondmauris.gd` melukis kanvas native True Boss/Earth Colossus dengan siluet batu basalt, tanduk batu pecah, retakan hijau berpendar, moss, dan inti earthstone; dispatch ada di `hero_portrait.gd`.
+- `hero_shop_portrait_checks.gd` mengunci daftar dan dispatch Grondmauris serta membuat kanvasnya ikut jalur gambar; Raz tetap menjadi hero roster non-custom untuk regresi generic fallback.
+- Art-only: tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan tetap perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c12 — portrait Okeanora, The Deepborn Oracle
+
+- `hero_portrait_okeanora.gd` melukis kanvas native True Boss/Kraken Priestess dengan mahkota karang, trisula, jubah laut, mata pearl-teal, dan tentakel bersucker sebagai bingkai; dispatch ada di `hero_portrait.gd`.
+- Painter Kaizen yang sudah ada dipindah tanpa perubahan geometri/palet ke `hero_portrait_kaizen.gd` agar dispatcher tetap di bawah batas lint; pemeriksaan draw menjalankan painter hasil ekstraksi dan Okeanora.
+- `hero_shop_portrait_checks.gd` mengunci daftar dan dispatch Okeanora; Raz tetap menjadi hero roster non-custom untuk regresi generic fallback.
+- Art-only: tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan tetap perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.

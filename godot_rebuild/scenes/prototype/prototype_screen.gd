@@ -38,6 +38,7 @@ var side_panel: SidePanel
 var ai_toggle: Button
 var migration_status: Label
 var touch_gestures = TouchGestureRuntime.new()
+var _tactical_panel_open := false
 var _touch_tactical_claims: Dictionary = {}
 @onready var match_session: PrototypeSession = $Simulation
 @onready var controller_cursor = %ControllerCursor
@@ -47,16 +48,18 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	theme = UI_THEME.create_theme()
 	arena.session = simulation
-	UI_THEME.title(%ArenaTitle, 23)
+	UI_THEME.title(%ArenaTitle, 19)
 	UI_THEME.title(%PauseTitle, 32)
 	var selected_world := match_session.world as Prototype
 	$HUD/TopBar/Row/Names/Description.text = (
-		"Lv.%d · %s · %s · uji konfigurasi, belum parity penuh"
+		"Lv.%d · %s"
 		% [
 			selected_world.level_number,
 			selected_world.difficulty,
-			selected_world.level_config.get("name", "?")
 		]
+	)
+	$HUD/TopBar/Row/Names/Description.tooltip_text = String(
+		selected_world.level_config.get("name", "?")
 	)
 	%BuildButton.pressed.connect(
 		func() -> void: match_session.request_build(match_session.selected_slot_id)
@@ -102,6 +105,8 @@ func _ready() -> void:
 	_bind_tactical_button(%ProtectCastleButton, "protect_castle")
 	_bind_tactical_button(%AttackBossButton, "attack_boss")
 	_bind_tactical_button(%AttackDealerButton, "attack_damage_dealer")
+	%TacticalToggleButton.toggled.connect(_set_tactical_panel_open)
+	%CommandDockToggle.toggled.connect(_set_command_dock_open)
 	_build_forge_ui()
 	_build_hero_shop_ui()
 	_build_ai_toggle()
@@ -119,9 +124,7 @@ func _ready() -> void:
 	%SaveRetryButton.hide()
 	%NextLevelButton.hide()
 	if ai_toggle != null:
-		ai_toggle.text = (
-			"AI lawan  [A] : ON" if match_session.world.ai_enabled else "AI lawan  [A] : OFF"
-		)
+		ai_toggle.text = "AI:ON" if match_session.world.ai_enabled else "AI:OFF"
 	%PauseButton.grab_focus()
 
 
@@ -161,13 +164,27 @@ func _process(_delta: float) -> void:
 	if hero_shop_panel != null and hero_shop_panel.visible:
 		hero_shop_panel.command_pending = not match_session.command.is_empty()
 		hero_shop_panel.refresh()
-	%GoldLabel.text = "GOLD  %d G   ·   Lawan %d G" % [world.economy.gold[0], world.economy.gold[1]]
-	var next_wave := "menunggu lane bersih"
+	%GoldLabel.text = "G:%d · AI:%d" % [world.economy.gold[0], world.economy.gold[1]]
+	%GoldLabel.tooltip_text = (
+		"Emas: %d G · Lawan: %d G"
+		% [
+			world.economy.gold[0],
+			world.economy.gold[1],
+		]
+	)
+	var next_wave := "Bersih"
 	if world.scheduler.remaining_ticks > 0:
 		next_wave = "%.1f s" % (world.scheduler.remaining_ticks / 60.0)
 	elif world.scheduler.pending_count() > 0:
-		next_wave = "menunggu antrean spawn"
-	%TickLabel.text = "WAVE %02d  ·  Berikut: %s" % [world.wave_count, next_wave]
+		next_wave = "Antrean"
+	%TickLabel.text = "W%02d · %s" % [world.wave_count, next_wave]
+	%TickLabel.tooltip_text = (
+		"Gelombang %02d · berikut: %s"
+		% [
+			world.wave_count,
+			next_wave,
+		]
+	)
 	if migration_status != null:
 		var active_boss: Object = world.active_boss
 		var boss_text := "Boss: belum muncul"
@@ -285,7 +302,7 @@ func _process(_delta: float) -> void:
 		%CastleShieldButton.text = "Castle Shield · ON"
 	else:
 		%CastleShieldButton.text = "Aktifkan Castle Shield · %d G" % Structure.CASTLE_SHIELD_COST
-	%Paths.visible = tower_option or regen_context or castle_context
+	var path_row := tower_option or regen_context or castle_context
 	%NexusButton.visible = not path_choice
 	var nexus_price := world.nexus_upgrade_price(simulation.selected_id)
 	%NexusButton.disabled = locked or nexus_price <= 0 or world.economy.gold[0] < nexus_price
@@ -323,6 +340,7 @@ func _process(_delta: float) -> void:
 	# dedicated row so all of them stay inside the 1280x720 viewport.
 	var hero_row := hero != null and hero.team == 0
 	%HeroCommands.visible = hero_row
+	%Paths.visible = path_row and not hero_row
 	%AutoCastButton.visible = hero_row
 	%AutoCastButton.disabled = locked or not hero_row or not hero.alive
 	if hero_row:
@@ -545,7 +563,7 @@ func _update_tactical_hud(world: Prototype) -> void:
 		var progress := float(180 - world.tactical.feedback_timer) / 30.0
 		alpha = clampf(progress, 0.0, 1.0)
 		y_offset = (1.0 - alpha) * 20.0
-	%TacticalFeedback.position.y = 112.0 + y_offset
+	%TacticalFeedback.position.y = 78.0 + y_offset
 	%TacticalFeedback.modulate = Color(world.tactical.feedback_color, alpha)
 
 
@@ -568,7 +586,20 @@ func _layout_side_panel() -> void:
 	if side_panel == null:
 		return
 	side_panel.configure(int(get_viewport().get_visible_rect().size.x))
-	%TacticalPanel.visible = not side_panel.is_active()
+	var docked := side_panel.is_active()
+	%TacticalToggleButton.visible = not docked
+	%TacticalPanel.visible = _tactical_panel_open and not docked
+
+
+func _set_tactical_panel_open(open: bool) -> void:
+	_tactical_panel_open = open
+	if side_panel == null or not side_panel.is_active():
+		%TacticalPanel.visible = open
+
+
+func _set_command_dock_open(open: bool) -> void:
+	%BottomBar.visible = open
+	%CommandDockToggle.text = "Tutup" if open else "Kontrol"
 
 
 func _update_side_panel(world: Prototype) -> void:
@@ -643,8 +674,9 @@ func _build_forge_ui() -> void:
 	$HUD.add_child(forge_panel)
 	var toggle := Button.new()
 	toggle.name = "ForgeButton"
-	toggle.text = "Item Forge  [I]"
-	toggle.custom_minimum_size = Vector2(170, 52)
+	toggle.text = "Item"
+	toggle.custom_minimum_size = Vector2(84, 36)
+	toggle.tooltip_text = "Item Forge [I]"
 	toggle.pressed.connect(_toggle_forge)
 	%PauseButton.get_parent().add_child(toggle)
 	%PauseButton.get_parent().move_child(toggle, %PauseButton.get_index())
@@ -653,11 +685,14 @@ func _build_forge_ui() -> void:
 func _build_hero_shop_ui() -> void:
 	hero_shop_toggle = Button.new()
 	hero_shop_toggle.name = "HeroShopButton"
-	hero_shop_toggle.text = "Hero Shop  [H]"
-	hero_shop_toggle.position = Vector2(1066, 112)
-	hero_shop_toggle.size = Vector2(190, 44)
+	hero_shop_toggle.text = "Hero"
+	hero_shop_toggle.custom_minimum_size = Vector2(76, 36)
+	hero_shop_toggle.tooltip_text = "Hero Shop [H]"
+	hero_shop_toggle.toggle_mode = true
 	hero_shop_toggle.pressed.connect(_toggle_hero_shop)
-	$HUD.add_child(hero_shop_toggle)
+	var top_row: HBoxContainer = $HUD/TopBar/Row
+	top_row.add_child(hero_shop_toggle)
+	top_row.move_child(hero_shop_toggle, %PauseButton.get_index())
 	hero_shop_panel = HeroShopPanel.new()
 	hero_shop_panel.name = "HeroShop"
 	hero_shop_panel.bind(match_session.world)
@@ -677,6 +712,8 @@ func _toggle_hero_shop() -> void:
 	if forge_panel != null and forge_panel.visible:
 		forge_panel.set_open(false)
 	hero_shop_panel.toggle_open()
+	if hero_shop_toggle != null:
+		hero_shop_toggle.button_pressed = hero_shop_panel.is_open
 
 
 func _toggle_forge() -> void:
@@ -684,6 +721,8 @@ func _toggle_forge() -> void:
 		return
 	if hero_shop_panel != null and hero_shop_panel.is_open:
 		hero_shop_panel.set_open(false)
+		if hero_shop_toggle != null:
+			hero_shop_toggle.button_pressed = false
 	forge_panel.toggle_open()
 	forge_panel.refresh()
 
@@ -694,9 +733,9 @@ func _build_ai_toggle() -> void:
 	# migrated red-side policy/recruitment/item/upgrade adapters for manual QA.
 	ai_toggle = Button.new()
 	ai_toggle.name = "AIToggle"
-	ai_toggle.text = "AI lawan  [A] : OFF"
-	ai_toggle.custom_minimum_size = Vector2(190, 52)
-	ai_toggle.tooltip_text = "Aktifkan AIPlayer native untuk sisi merah"
+	ai_toggle.text = "AI:OFF"
+	ai_toggle.custom_minimum_size = Vector2(76, 36)
+	ai_toggle.tooltip_text = "Aktifkan AIPlayer native untuk sisi merah [A]"
 	ai_toggle.pressed.connect(_toggle_ai)
 	%PauseButton.get_parent().add_child(ai_toggle)
 	%PauseButton.get_parent().move_child(ai_toggle, %PauseButton.get_index())
@@ -724,7 +763,7 @@ func _toggle_ai() -> void:
 	if world.ai_enabled:
 		world.reset_ai()
 	if ai_toggle != null:
-		ai_toggle.text = "AI lawan  [A] : ON" if world.ai_enabled else "AI lawan  [A] : OFF"
+		ai_toggle.text = "AI:ON" if world.ai_enabled else "AI:OFF"
 
 
 func _handle_keyboard_input(event: InputEvent) -> bool:

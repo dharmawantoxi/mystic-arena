@@ -6,6 +6,7 @@ const UnitState = preload("res://scripts/combat/unit_state.gd")
 const Layout = preload("res://scripts/data/lane_layout.gd")
 const MinionArt = preload("res://scripts/ui/minion_art.gd")
 const MinionAnim = preload("res://scripts/ui/minion_anim.gd")
+const MinionCombatFxArt = preload("res://scripts/ui/minion_combat_fx_art.gd")
 # Source `apply_hurt_flash` lifts every channel by 90 for 8 ticks; a multiply is the
 # closest a baked sprite can get.
 const HURT_TINT := Color(1.6, 1.6, 1.6)
@@ -18,6 +19,9 @@ var lane_texture: Texture2D
 var wall_texture: Texture2D
 var terrain_texture: Texture2D
 var minion_anim := MinionAnim.new()
+var minion_slash_draws := 0
+var minion_death_draws := 0
+var _minion_death_animations: Array[Dictionary] = []
 
 
 func _ready() -> void:
@@ -89,9 +93,13 @@ func _draw() -> void:
 	_draw_base(Layout.BLUE_BASE, Color("73cbbb"))
 	_draw_base(Layout.RED_BASE, Color("d78579"))
 	_draw_structures()
+	_minion_death_animations.append_array(
+		minion_anim.take_death_snapshots(session.world.recent_events)
+	)
 	minion_anim.prune(session.world.units)
 	for unit in session.world.units:
 		_draw_unit(unit)
+	_draw_minion_death_animations()
 	for event in session.world.recent_events:
 		if event.kind == "hit" and session.world.tick_count - int(event.tick) < 8:
 			draw_line(event["from"], event["to"], Color("e7c98a"), 2, true)
@@ -141,7 +149,7 @@ func _draw_base(point: Vector2, color: Color) -> void:
 ## outside its sprite cache (slow aura, HP bar). False when the art is unavailable, so
 ## the plain circle above still draws.
 func _draw_minion_sprite(unit: UnitState) -> bool:
-	var clocks := minion_anim.observe(unit, session.world.tick_count)
+	var clocks := minion_anim.observe(unit, session.world.tick_count, _minion_target_position(unit))
 	var pose := MinionAnim.pose_key(
 		int(clocks["attack"]), bool(clocks["moving"]), float(clocks["walk"]), int(clocks["anim"])
 	)
@@ -158,6 +166,14 @@ func _draw_minion_sprite(unit: UnitState) -> bool:
 	var tint := HURT_TINT if int(clocks["hurt"]) > 0 else Color.WHITE
 	var corner := point - (art["anchor"] as Vector2)
 	draw_texture_rect_region(art["texture"] as Texture2D, Rect2(corner, src.size), src, tint)
+	var slash_life := int(clocks["slash_life"])
+	if (
+		slash_life > 0
+		and MinionCombatFxArt.draw_slash(
+			self, unit.definition.id, point, slash_life, float(clocks["slash_angle"])
+		)
+	):
+		minion_slash_draws += 1
 	_draw_minion_hp_bar(unit, point)
 	return true
 
@@ -192,3 +208,37 @@ func _draw_minion_slow(point: Vector2, radius: int, anim: int) -> void:
 		var angle := float(anim) * 0.1 + float(index) * 2.0
 		var offset := Vector2(int(cos(angle) * (radius + 3)), int(sin(angle) * (radius + 3)))
 		draw_rect(Rect2(point + offset, Vector2(2, 2)), Color8(200, 240, 255))
+
+
+## Prefer the live target; a just-recorded hit retains its coordinates when it dies
+## and the simulation removes it from `world.units` before the next draw.
+func _minion_target_position(unit: UnitState) -> Vector2:
+	var target := session.world.get_unit(unit.target_id)
+	if target != null and target.alive:
+		return target.position
+	for event in session.world.recent_events:
+		if String(event.get("kind", "")) != "hit":
+			continue
+		var from_value: Variant = event.get("from", Vector2.INF)
+		var to_value: Variant = event.get("to", Vector2.INF)
+		if typeof(from_value) != TYPE_VECTOR2 or typeof(to_value) != TYPE_VECTOR2:
+			continue
+		var origin: Vector2 = from_value
+		if origin.distance_to(unit.position) <= 1.0:
+			return to_value as Vector2
+	return Vector2.INF
+
+
+func _draw_minion_death_animations() -> void:
+	var remaining: Array[Dictionary] = []
+	for animation in _minion_death_animations:
+		var life := int(animation.get("life", 0))
+		if life <= 0:
+			continue
+		var point: Vector2 = animation["position"]
+		if MinionCombatFxArt.draw_death(self, String(animation["type"]), point, life):
+			minion_death_draws += 1
+		animation["life"] = life - 1
+		if int(animation["life"]) > 0:
+			remaining.append(animation)
+	_minion_death_animations = remaining

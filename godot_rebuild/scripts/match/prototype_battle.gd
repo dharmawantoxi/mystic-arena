@@ -3253,7 +3253,7 @@ func hero_basic_attack(hero_id: int, target_id: int) -> bool:
 	_bind_miasma_registry(hero)
 	var bus := _battle_item_effects(hero)
 	if not hero.is_melee and hero.settings().id != "morgath":
-		_hero_ranged_spawn(hero, target, raw)
+		_hero_ranged_spawn(hero, target, raw, is_crit)
 		var ls: float = hero.items.get_lifesteal_pct()
 		if ls > 0.0:
 			hero.hp = minf(hero.max_hp, hero.hp + float(raw) * ls)
@@ -3269,5 +3269,7 @@ func hero_basic_attack(hero_id: int, target_id: int) -> bool:
 	return true
 
 
-func _hero_ranged_spawn(hero: HeroState, target: Object, damage: int) -> void:
-	HeroProjectiles.spawn(hero_projectiles, hero, target, damage)
+func _hero_ranged_spawn(
+	hero: HeroState, target: Object, damage: int, is_crit: bool = false
+) -> void:
+	HeroProjectiles.spawn(hero_projectiles, hero, target, damage, is_crit)

@@ -22,22 +22,22 @@ script = ExtResource("3")
 
 [node name="Arena" type="Node2D" parent="."]
 process_mode = 1
-position = Vector2(192, 112)
-scale = Vector2(0.7, 0.7)
+position = Vector2(0, 0)
+scale = Vector2(1, 1)
 script = ExtResource("2")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 layer = 10
 
 [node name="TopBar" type="PanelContainer" parent="HUD"]
-offset_left = 24.0
-offset_top = 20.0
-offset_right = 1256.0
-offset_bottom = 104.0
+offset_left = 16.0
+offset_top = 10.0
+offset_right = 1264.0
+offset_bottom = 72.0
 
 [node name="Row" type="HBoxContainer" parent="HUD/TopBar"]
 layout_mode = 2
-theme_override_constants/separation = 22
+theme_override_constants/separation = 8
 
 [node name="Names" type="VBoxContainer" parent="HUD/TopBar/Row"]
 layout_mode = 2
@@ -50,60 +50,79 @@ text = "Pertandingan awal"
 
 [node name="Description" type="Label" parent="HUD/TopBar/Row/Names"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 12
 theme_override_colors/font_color = Color(0.5176, 0.5569, 0.6667, 1)
-text = "Lv.1 · normal · lawan AI · progres pengembangan terpisah"
+text = "Lv.1 · normal"
 clip_text = true
 
-[node name="Counters" type="VBoxContainer" parent="HUD/TopBar/Row"]
+[node name="Counters" type="HBoxContainer" parent="HUD/TopBar/Row"]
 layout_mode = 2
+theme_override_constants/separation = 6
 
 [node name="GoldLabel" type="Label" parent="HUD/TopBar/Row/Counters"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(1, 0.8039, 0.3333, 1)
-text = "GOLD 1000 G"
+text = "G:1000 · AI:1000"
 
 [node name="TickLabel" type="Label" parent="HUD/TopBar/Row/Counters"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "WAVE 00 · Persiapan 5.0 s"
+theme_override_font_sizes/font_size = 13
+text = "W00 · 5.0 s"
 
 [node name="GameSpeedSelector" type="OptionButton" parent="HUD/TopBar/Row/Counters"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(68, 26)
+custom_minimum_size = Vector2(68, 28)
 layout_mode = 2
 
 [node name="PauseButton" type="Button" parent="HUD/TopBar/Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(130, 52)
+custom_minimum_size = Vector2(72, 36)
 layout_mode = 2
-text = "Jeda  [Esc]"
+text = "Jeda"
+tooltip_text = "Jeda / lanjut [Esc]"
+
+[node name="TacticalToggleButton" type="Button" parent="HUD/TopBar/Row"]
+unique_name_in_owner = true
+toggle_mode = true
+custom_minimum_size = Vector2(72, 36)
+layout_mode = 2
+text = "Taktik"
+
+[node name="CommandDockToggle" type="Button" parent="HUD/TopBar/Row"]
+unique_name_in_owner = true
+toggle_mode = true
+custom_minimum_size = Vector2(80, 36)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Kontrol"
 
 [node name="BackButton" type="Button" parent="HUD/TopBar/Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(100, 52)
+custom_minimum_size = Vector2(60, 36)
 layout_mode = 2
 text = "Menu"
 
 [node name="TacticalFeedback" type="Label" parent="HUD"]
 unique_name_in_owner = true
 visible = false
-offset_left = 300.0
-offset_top = 112.0
-offset_right = 980.0
-offset_bottom = 148.0
-theme_override_font_sizes/font_size = 22
+offset_left = 380.0
+offset_top = 78.0
+offset_right = 900.0
+offset_bottom = 110.0
+theme_override_font_sizes/font_size = 18
 text = "TACTICAL COMMAND"
 horizontal_alignment = 1
 
 [node name="TacticalPanel" type="PanelContainer" parent="HUD"]
 unique_name_in_owner = true
-offset_left = 1068.0
-offset_top = 162.0
-offset_right = 1256.0
-offset_bottom = 528.0
+visible = false
+offset_left = 1032.0
+offset_top = 84.0
+offset_right = 1264.0
+offset_bottom = 454.0
 
 [node name="Column" type="VBoxContainer" parent="HUD/TacticalPanel"]
 layout_mode = 2
@@ -155,17 +174,20 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="BottomBar" type="PanelContainer" parent="HUD"]
-offset_left = 24.0
-offset_top = 534.0
-offset_right = 1256.0
-offset_bottom = 712.0
+unique_name_in_owner = true
+visible = false
+offset_left = 16.0
+offset_top = 540.0
+offset_right = 1264.0
+offset_bottom = 720.0
 
 [node name="Column" type="VBoxContainer" parent="HUD/BottomBar"]
 layout_mode = 2
+theme_override_constants/separation = 2
 
 [node name="Commands" type="HBoxContainer" parent="HUD/BottomBar/Column"]
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 8
 
 [node name="BuildButton" type="Button" parent="HUD/BottomBar/Column/Commands"]
 unique_name_in_owner = true
@@ -199,7 +221,7 @@ text = "Upgrade Nexus"
 unique_name_in_owner = true
 layout_mode = 2
 visible = false
-theme_override_constants/separation = 14
+theme_override_constants/separation = 8
 
 [node name="SkillQButton" type="Button" parent="HUD/BottomBar/Column/HeroCommands"]
 unique_name_in_owner = true
@@ -253,7 +275,7 @@ text = "Upgrade hero"
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 8
 
 [node name="CannonButton" type="Button" parent="HUD/BottomBar/Column/Paths"]
 unique_name_in_owner = true
@@ -295,19 +317,22 @@ text = "Castle Shield · FREE"
 [node name="StatusLabel" type="Label" parent="HUD/BottomBar/Column"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 13
+clip_text = true
 text = "Kill B/R: 0 / 0"
 
 [node name="SelectionLabel" type="Label" parent="HUD/BottomBar/Column"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 14
+clip_text = true
 text = "Klik minion untuk inspeksi"
 
 [node name="ActionLabel" type="Label" parent="HUD/BottomBar/Column"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 12
+clip_text = true
 theme_override_colors/font_color = Color(0.5176, 0.5569, 0.6667, 1)
 text = "Pilih slot biru, lalu bangun salah satu dari empat tower (100 G)."
 
