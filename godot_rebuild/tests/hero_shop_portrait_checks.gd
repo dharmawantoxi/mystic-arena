@@ -2,7 +2,7 @@ extends RefCounted
 ## Hero Shop custom portrait dispatch, generic fallback, and native draw-pass counter.
 ## Canvases: Abaddon, Alchemist, Ancient Apparition, Aureth'zar, Cogsworth, Drakar,
 ## Gornak, Grimjaw, Grondmauris, Ignis Drachorn, Kaizen, Kunkka, Morgath,
-## Morthraxis, Okeanora, Sylara, Thorne, Vex, and Zephyr.
+## Morthraxis, Okeanora, Sylara, Thorne, Vex, Zephyr, Aelyrion, Aeralith, and Akahime.
 
 const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
@@ -30,6 +30,9 @@ const SAMPLE: Array[String] = [
 	"okeanora",
 	"kunkka",
 	"ignis_drachorn",
+	"aelyrion",
+	"aeralith",
+	"akahime",
 	"raz"
 ]
 
@@ -49,6 +52,9 @@ func _dispatch(check: Callable) -> void:
 			custom
 			== [
 				"abaddon",
+				"aelyrion",
+				"aeralith",
+				"akahime",
 				"alchemist",
 				"ancient_apparition",
 				"aurethzar",
@@ -71,6 +77,8 @@ func _dispatch(check: Callable) -> void:
 		),
 		"Portrait list covers every hand-authored hero canvas"
 	)
+	for id in ["aelyrion", "aeralith", "akahime"]:
+		check.call(HeroPortrait.has_custom(id), "%s dispatches to a hand-authored canvas" % id)
 	check.call(HeroPortrait.has_custom("abaddon"), "Abaddon dispatches to a hand-authored canvas")
 	check.call(
 		HeroPortrait.has_custom("alchemist"), "Alchemist dispatches to a hand-authored canvas"
@@ -308,6 +316,17 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 	raz_portrait.size = Vector2(96.0, 96.0)
 	raz_portrait.position = Vector2(672.0, 96.0)
 	tree.root.add_child(raz_portrait)
+	# Exercise the new painters at card size and the 96-unit design size.
+	# Shared draw_pass_count remains unchanged; no per-hero counter assertions.
+	var batch_portraits: Array[Control] = []
+	for id in ["aelyrion", "aeralith", "akahime"]:
+		for pixel_size in [HeroShopCard.PORTRAIT_SIZE, 96.0]:
+			var portrait := HeroPortrait.new()
+			portrait.setup(id, HERO_ROSTER[id], pixel_size)
+			portrait.size = Vector2(pixel_size, pixel_size)
+			portrait.position = Vector2(480.0 + batch_portraits.size() * 80.0, 288.0)
+			tree.root.add_child(portrait)
+			batch_portraits.append(portrait)
 	await tree.process_frame
 	await tree.process_frame
 	check.call(
@@ -329,6 +348,8 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 		),
 		"Existing portrait canvases and the generic fallback reach _draw after two frames"
 	)
+	for portrait in batch_portraits:
+		portrait.free()
 	grimjaw_portrait.free()
 	vex_portrait.free()
 	sylara_portrait.free()

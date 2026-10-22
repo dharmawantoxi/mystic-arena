@@ -2651,3 +2651,32 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
 - Art-only: tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
 
 Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan tetap perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+
+## Batch slice 9c13–9c15 — Aelyrion, Aeralith, Akahime
+
+- **9c13 Aelyrion — The Divine Guardian**: metadata Boss/Steel Maiden Guardian;
+  painter native dengan aureole, pelat baja bersegi, rambut pucat, gorget,
+  sword tegak dan shield bersigil.
+- **9c14 Aeralith — The West Gale**: metadata Boss/Wind Ranger; hood hijau,
+  hembusan angin, scarf terbang, bulu panah, busur recurve dan tali busur.
+- **9c15 Akahime — The Scarlet Blossom**: metadata Boss/Scarlet Kunoichi;
+  rambut terikat, veil, ribbon merah, ornamen bunga lima kelopak, kunai,
+  scarf dan pelindung lengan berlapis.
+- Ketiga painter berada di `scripts/ui/hero_portrait_{id}.gd`. Sebelum
+  menambah dispatch, painter Zephyr lama diekstrak ke `hero_portrait_zephyr.gd`
+  tanpa perubahan geometri, palet, atau urutan draw; dispatcher menjauh dari
+  batas 1.000 baris. Semua 19 custom sebelumnya dipertahankan.
+- Tes portrait mengunci daftar 22 custom dan dispatch, serta menjalankan
+  ketiga painter pada ukuran kartu dan 96 unit. Raz tetap generic fallback.
+  Tidak ada reset/increment atau assertion counter per hero baru;
+  `draw_pass_count` tetap shared di dispatcher.
+- Art-only: tidak menambah image assets dan tidak mengubah Python, simulasi,
+  atau gameplay. Tidak mengklaim pixel parity. Penilaian visual akhir tetap
+  perlu dilakukan di Godot; ini bukan penyelesaian seluruh art final.
+- Kandidat sesi berikutnya berdasarkan urutan metadata: Akaroth (belum custom).
+- Validasi lokal batch: seluruh blok static guardrails workflow `godot-rebuild`
+  lulus (`validate_project`, source contract/oracles, gdparse, gdlint,
+  gdformat --check). Body Zephyr dibandingkan dengan HEAD: geometri/palet
+  dan urutan draw tetap. Runtime native diserahkan ke CI Godot 4.7.2 karena
+  unduhan release engine tidak dapat diakses dari sandbox.
