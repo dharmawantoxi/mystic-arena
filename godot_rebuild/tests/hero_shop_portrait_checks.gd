@@ -2,7 +2,7 @@ extends RefCounted
 ## Hero Shop custom portrait dispatch, generic fallback, and native draw-pass counter.
 ## Canvases: Abaddon, Alchemist, Ancient Apparition, Aureth'zar, Cogsworth, Drakar,
 ## Gornak, Grimjaw, Grondmauris, Ignis Drachorn, Kaizen, Kunkka, Morgath,
-## Morthraxis, Sylara, Thorne, Vex, and Zephyr.
+## Morthraxis, Okeanora, Sylara, Thorne, Vex, and Zephyr.
 
 const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
@@ -27,6 +27,7 @@ const SAMPLE: Array[String] = [
 	"cogsworth",
 	"grondmauris",
 	"morthraxis",
+	"okeanora",
 	"kunkka",
 	"ignis_drachorn",
 	"raz"
@@ -61,6 +62,7 @@ func _dispatch(check: Callable) -> void:
 				"kunkka",
 				"morgath",
 				"morthraxis",
+				"okeanora",
 				"sylara",
 				"thorne",
 				"vex",
@@ -99,6 +101,7 @@ func _dispatch(check: Callable) -> void:
 	check.call(
 		HeroPortrait.has_custom("morthraxis"), "Morthraxis dispatches to a hand-authored canvas"
 	)
+	check.call(HeroPortrait.has_custom("okeanora"), "Okeanora dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("sylara"), "Sylara dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("thorne"), "Thorne dispatches to a hand-authored canvas")
 	check.call(HeroPortrait.has_custom("vex"), "Vex dispatches to a hand-authored canvas")
@@ -280,6 +283,16 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 	grondmauris_portrait.size = Vector2(96.0, 96.0)
 	grondmauris_portrait.position = Vector2(192.0, 192.0)
 	tree.root.add_child(grondmauris_portrait)
+	var kaizen_portrait := HeroPortrait.new()
+	kaizen_portrait.setup("kaizen", HERO_ROSTER["kaizen"], 96.0)
+	kaizen_portrait.size = Vector2(96.0, 96.0)
+	kaizen_portrait.position = Vector2(288.0, 192.0)
+	tree.root.add_child(kaizen_portrait)
+	var okeanora_portrait := HeroPortrait.new()
+	okeanora_portrait.setup("okeanora", HERO_ROSTER["okeanora"], 96.0)
+	okeanora_portrait.size = Vector2(96.0, 96.0)
+	okeanora_portrait.position = Vector2(384.0, 192.0)
+	tree.root.add_child(okeanora_portrait)
 	var kunkka_portrait := HeroPortrait.new()
 	kunkka_portrait.setup("kunkka", HERO_ROSTER["kunkka"], 96.0)
 	kunkka_portrait.size = Vector2(96.0, 96.0)
@@ -330,6 +343,8 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 	cogsworth_portrait.free()
 	morthraxis_portrait.free()
 	grondmauris_portrait.free()
+	kaizen_portrait.free()
+	okeanora_portrait.free()
 	kunkka_portrait.free()
 	ignis_drachorn_portrait.free()
 	raz_portrait.free()

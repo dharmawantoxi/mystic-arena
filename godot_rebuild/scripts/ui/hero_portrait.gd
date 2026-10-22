@@ -12,9 +12,11 @@ const DRAKAR_PAINTER = preload("res://scripts/ui/hero_portrait_drakar.gd")
 const GORNAK_PAINTER = preload("res://scripts/ui/hero_portrait_gornak.gd")
 const GRONDMAURIS_PAINTER = preload("res://scripts/ui/hero_portrait_grondmauris.gd")
 const IGNIS_PAINTER = preload("res://scripts/ui/hero_portrait_ignis_drachorn.gd")
+const KAIZEN_PAINTER = preload("res://scripts/ui/hero_portrait_kaizen.gd")
 const KUNKKA_PAINTER = preload("res://scripts/ui/hero_portrait_kunkka.gd")
 const MORGATH_PAINTER = preload("res://scripts/ui/hero_portrait_morgath.gd")
 const MORTHRAXIS_PAINTER = preload("res://scripts/ui/hero_portrait_morthraxis.gd")
+const OKEANORA_PAINTER = preload("res://scripts/ui/hero_portrait_okeanora.gd")
 const GORNAK := "gornak"
 const GRIMJAW := "grimjaw"
 const KAIZEN := "kaizen"
@@ -40,7 +42,7 @@ static func custom_ids() -> Array[String]:
 		GRIMJAW,
 		"grondmauris"
 	]
-	ids.append_array(["ignis_drachorn", KAIZEN, "kunkka", "morgath", "morthraxis"])
+	ids.append_array(["ignis_drachorn", KAIZEN, "kunkka", "morgath", "morthraxis", "okeanora"])
 	ids.append_array([SYLARA, THORNE, VEX, ZEPHYR])
 	return ids
 
@@ -91,13 +93,15 @@ func _draw() -> void:
 		"ignis_drachorn":
 			IGNIS_PAINTER.paint(self, box)
 		KAIZEN:
-			_draw_kaizen(box)
+			KAIZEN_PAINTER.paint(self, box)
 		"kunkka":
 			KUNKKA_PAINTER.paint(self, box)
 		"morgath":
 			MORGATH_PAINTER.paint(self, box)
 		"morthraxis":
 			MORTHRAXIS_PAINTER.paint(self, box)
+		"okeanora":
+			OKEANORA_PAINTER.paint(self, box)
 		SYLARA:
 			_draw_sylara(box)
 		THORNE:
@@ -109,99 +113,6 @@ func _draw() -> void:
 		_:
 			GENERIC_PAINTER.paint(self, box, hue_for(hero_type), _accent())
 	draw_rect(box.grow(-1.0), Color8(10, 16, 24), false, 2.0)
-
-
-func _draw_kaizen(box: Rect2) -> void:
-	var unit := _scale(box)
-	var outline := Color8(24, 26, 40)
-	var shadow := Color8(16, 40, 82)
-	var dark := Color8(30, 60, 110)
-	var body := Color8(55, 80, 145)
-	var mid := Color8(110, 175, 230)
-	var light := Color8(175, 220, 250)
-	var weapon := Color8(210, 220, 235)
-	var fx := Color8(245, 252, 255)
-	_backdrop(box, shadow, dark)
-	for index in 3:
-		var radius := (20.0 + 9.0 * float(index)) * unit
-		draw_arc(
-			_p(box, 48.0, 44.0),
-			radius,
-			-PI * 0.35,
-			PI * 0.75,
-			24,
-			Color(mid.r, mid.g, mid.b, 0.34 - 0.09 * float(index)),
-			maxf(2.0 * unit, 1.0),
-			true
-		)
-	draw_colored_polygon(
-		_poly(
-			box,
-			[
-				Vector2(40.0, 26.0),
-				Vector2(12.0, 34.0),
-				Vector2(4.0, 46.0),
-				Vector2(16.0, 45.0),
-				Vector2(38.0, 34.0)
-			]
-		),
-		light
-	)
-	draw_colored_polygon(
-		_poly(
-			box,
-			[
-				Vector2(38.0, 32.0),
-				Vector2(58.0, 32.0),
-				Vector2(66.0, 58.0),
-				Vector2(58.0, 86.0),
-				Vector2(38.0, 86.0),
-				Vector2(30.0, 58.0)
-			]
-		),
-		dark
-	)
-	draw_colored_polygon(
-		_poly(
-			box,
-			[
-				Vector2(42.0, 34.0),
-				Vector2(54.0, 34.0),
-				Vector2(60.0, 58.0),
-				Vector2(54.0, 84.0),
-				Vector2(42.0, 84.0),
-				Vector2(36.0, 58.0)
-			]
-		),
-		body
-	)
-	draw_colored_polygon(
-		_poly(
-			box,
-			[Vector2(46.0, 36.0), Vector2(50.0, 36.0), Vector2(52.0, 58.0), Vector2(44.0, 58.0)]
-		),
-		mid
-	)
-	draw_circle(_p(box, 48.0, 24.0), 10.0 * unit, mid)
-	draw_colored_polygon(
-		_poly(
-			box,
-			[
-				Vector2(36.0, 26.0),
-				Vector2(48.0, 9.0),
-				Vector2(60.0, 26.0),
-				Vector2(56.0, 30.0),
-				Vector2(40.0, 30.0)
-			]
-		),
-		dark
-	)
-	draw_line(_p(box, 42.0, 24.0), _p(box, 46.0, 24.0), outline, maxf(2.0 * unit, 1.0))
-	draw_line(_p(box, 51.0, 24.0), _p(box, 55.0, 24.0), outline, maxf(2.0 * unit, 1.0))
-	draw_line(_p(box, 66.0, 82.0), _p(box, 22.0, 20.0), weapon, maxf(5.0 * unit, 1.5), true)
-	draw_line(_p(box, 66.0, 82.0), _p(box, 22.0, 20.0), light, maxf(2.0 * unit, 1.0), true)
-	draw_line(_p(box, 64.0, 78.0), _p(box, 70.0, 84.0), outline, maxf(3.0 * unit, 1.0))
-	draw_circle(_p(box, 76.0, 20.0), 3.0 * unit, fx)
 
 
 func _draw_thorne(box: Rect2) -> void:

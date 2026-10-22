@@ -2642,3 +2642,12 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
 - Art-only: tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
 
 Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan tetap perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+## Slice 9c12 — portrait Okeanora, The Deepborn Oracle
+
+- `hero_portrait_okeanora.gd` melukis kanvas native True Boss/Kraken Priestess dengan mahkota karang, trisula, jubah laut, mata pearl-teal, dan tentakel bersucker sebagai bingkai; dispatch ada di `hero_portrait.gd`.
+- Painter Kaizen yang sudah ada dipindah tanpa perubahan geometri/palet ke `hero_portrait_kaizen.gd` agar dispatcher tetap di bawah batas lint; pemeriksaan draw menjalankan painter hasil ekstraksi dan Okeanora.
+- `hero_shop_portrait_checks.gd` mengunci daftar dan dispatch Okeanora; Raz tetap menjadi hero roster non-custom untuk regresi generic fallback.
+- Art-only: tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
+
+Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan tetap perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
