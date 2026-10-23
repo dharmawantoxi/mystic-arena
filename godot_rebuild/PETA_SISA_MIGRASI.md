@@ -2872,3 +2872,31 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
   lulus sekali setelah batch (`validate_project`, source contract/oracles,
   gdparse, gdlint, gdformat --check; 419 GDScript).
   Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
+
+
+## Batch slice 9c37–9c39 — Emberwick, Garumenshi, Ghrakmaal
+
+- **9c37 Emberwick — The Blazing Matron**: metadata Boss/Fire Matron;
+  bun auburn ber-streak silver, flame diadem, kerah tinggi, fire clasp,
+  robe berpiping emas, palm casting dengan api berlapis dan ember motes.
+- **9c38 Garumenshi — The Sage Toad Hermit**: metadata Boss/Summoner;
+  rambut putih liar, forehead plate, sage marking merah, travel scroll,
+  toad kecil bermata emas di bahu dan dua tangan membentuk summoning seal.
+- **9c39 Ghrakmaal — The Colossus of Sundered Earth**: metadata Boss/Earth
+  Colossus; tubuh slab asimetris, kepala basalt ber-ridge pecah, chest fault
+  amber, pillar terdislokasi, boulder fist serta moss seam.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  46 custom. Seluruh 43 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 832 baris, belum perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  Grid 13 kolom dimulai pada y=192 dengan lima slot pertama dilewati;
+  54 kanvas batch muat di viewport 1280x720 tanpa menimpa kanvas lama.
+  Shared `draw_pass_count` tetap; tanpa reset, increment atau assertion
+  counter per hero baru.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Kandidat berikutnya: Gorath (belum custom).
+- Validasi lokal: 71 poligon baru tanpa edge silang; seluruh blok static
+  guardrails workflow lulus sekali setelah batch (`validate_project`, source
+  contract/oracles, gdparse, gdlint, gdformat --check; 422 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
