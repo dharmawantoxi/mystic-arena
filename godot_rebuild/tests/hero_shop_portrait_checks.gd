@@ -7,7 +7,7 @@ extends RefCounted
 ## Aurelix, Aurelyssa, Aurex, Auroth, Azkharion, Azureth, Bhor'gathul, Broggmar,
 ## Brumhar, Celwynn, Cryssalia, Deidara, Dorakai, Drav, Emberwick, Garumenshi,
 ## Ghrakmaal, Gorath, Gravefang, Gravewake, Grimjack, Grimkor, Grimstalker,
-## Grondarthul, Hitokage, and Hollowbane.
+## Grondarthul, Hitokage, Hollowbane, Ignakhor, Ignirus, and Infrakzaar.
 
 const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
@@ -71,6 +71,9 @@ const SAMPLE: Array[String] = [
 	"grondarthul",
 	"hitokage",
 	"hollowbane",
+	"ignakhor",
+	"ignirus",
+	"infrakzaar",
 	"raz"
 ]
 
@@ -134,7 +137,10 @@ func _dispatch(check: Callable) -> void:
 				"grondmauris",
 				"hitokage",
 				"hollowbane",
+				"ignakhor",
+				"ignirus",
 				"ignis_drachorn",
+				"infrakzaar",
 				"kaizen",
 				"kunkka",
 				"morgath",
@@ -184,7 +190,10 @@ func _dispatch(check: Callable) -> void:
 		"grimstalker",
 		"grondarthul",
 		"hitokage",
-		"hollowbane"
+		"hollowbane",
+		"ignakhor",
+		"ignirus",
+		"infrakzaar"
 	]:
 		check.call(HeroPortrait.has_custom(id), "%s dispatches to a hand-authored canvas" % id)
 	check.call(HeroPortrait.has_custom("abaddon"), "Abaddon dispatches to a hand-authored canvas")
@@ -463,14 +472,25 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 		"grimstalker",
 		"grondarthul",
 		"hitokage",
-		"hollowbane"
+		"hollowbane",
+		"ignakhor",
+		"ignirus",
+		"infrakzaar"
 	]:
 		for pixel_size in [HeroShopCard.PORTRAIT_SIZE, 96.0]:
+			# Draw each full page before freeing its batch nodes and reusing free slots.
+			if batch_portraits.size() == 72:
+				await tree.process_frame
+				await tree.process_frame
+				for previous_portrait in batch_portraits:
+					previous_portrait.queue_free()
+				batch_portraits.clear()
+				await tree.process_frame
 			var portrait := HeroPortrait.new()
 			portrait.setup(id, HERO_ROSTER[id], pixel_size)
 			portrait.size = Vector2(pixel_size, pixel_size)
 			# Reserve four old top-row canvases, ten at y=96 and five at y=192.
-			# All 72 batch canvases fit inside 1280x720 without overlapping old nodes.
+			# Up to 72 canvases per page fit inside 1280x720 without overlapping old nodes.
 			var slot := batch_portraits.size() + 4
 			if slot >= 13:
 				slot += 10

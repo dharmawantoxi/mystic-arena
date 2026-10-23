@@ -2995,3 +2995,33 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
   workflow lulus sekali setelah batch (`validate_project`, source
   contract/oracles, gdparse, gdlint, gdformat --check; 431 GDScript).
   Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
+
+
+## Batch slice 9c49–9c51 — Ignakhor, Ignirus, Infrakzaar
+
+- **9c49 Ignakhor — The Furnace-Wrought Berserker**: metadata Boss/Furnace
+  Berserker; siluet lebar, vent berasap, half-helm, armour ber-rivet,
+  chest furnace bergrate, forge axe bertakik dan gauntlet besi.
+- **9c50 Ignirus — The Infernal Pyromancer**: metadata Boss/Infernal Mage;
+  siluet robe sempit dengan cowl menyerupai tanduk, hooked collar emas,
+  fire seal, forked staff berorb api dan spark kecil di tangan bebas.
+- **9c51 Infrakzaar — The Emberflesh Pyromancer**: metadata Boss/Ember
+  Pyromancer; torso ember-cracked terbuka, crust bahu hangus, brow botak
+  bertanduk basalt, dua palm casting dan cinder tanpa staff/weapon.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  58 custom. Seluruh 55 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 878 baris, belum perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  78 kanvas batch dipaginasi 72 + 6: setiap halaman diberi dua process
+  frame untuk draw, lalu batch node di-free sebelum slot dipakai ulang.
+  Kanvas lama non-batch tetap, tanpa overlap/out-of-viewport. Shared
+  `draw_pass_count` tetap; tanpa reset, increment atau assertion per hero.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Berikutnya: pilih metadata hero non-custom setelah Infrakzaar;
+  Ignis Drachorn tetap custom.
+- Validasi lokal: 62 poligon baru tanpa edge silang; packing 78 kanvas
+  dalam dua halaman terbukti tanpa overlap/out-of-viewport. Seluruh blok
+  static guardrails workflow lulus sekali setelah batch (`validate_project`,
+  source contract/oracles, gdparse, gdlint, gdformat --check; 434 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
