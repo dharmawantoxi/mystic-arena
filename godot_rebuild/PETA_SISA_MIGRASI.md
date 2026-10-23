@@ -2651,3 +2651,377 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
 - Art-only: tidak membuat PNG dan tidak mengubah Python, simulasi, aturan, atau aset gambar sumber.
 
 Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tampilan tetap perlu dinilai pengguna di Godot. Tidak mengklaim pixel parity dengan pygame.
+
+
+## Batch slice 9c13–9c15 — Aelyrion, Aeralith, Akahime
+
+- **9c13 Aelyrion — The Divine Guardian**: metadata Boss/Steel Maiden Guardian;
+  painter native dengan aureole, pelat baja bersegi, rambut pucat, gorget,
+  sword tegak dan shield bersigil.
+- **9c14 Aeralith — The West Gale**: metadata Boss/Wind Ranger; hood hijau,
+  hembusan angin, scarf terbang, bulu panah, busur recurve dan tali busur.
+- **9c15 Akahime — The Scarlet Blossom**: metadata Boss/Scarlet Kunoichi;
+  rambut terikat, veil, ribbon merah, ornamen bunga lima kelopak, kunai,
+  scarf dan pelindung lengan berlapis.
+- Ketiga painter berada di `scripts/ui/hero_portrait_{id}.gd`. Sebelum
+  menambah dispatch, painter Zephyr lama diekstrak ke `hero_portrait_zephyr.gd`
+  tanpa perubahan geometri, palet, atau urutan draw; dispatcher menjauh dari
+  batas 1.000 baris. Semua 19 custom sebelumnya dipertahankan.
+- Tes portrait mengunci daftar 22 custom dan dispatch, serta menjalankan
+  ketiga painter pada ukuran kartu dan 96 unit. Raz tetap generic fallback.
+  Tidak ada reset/increment atau assertion counter per hero baru;
+  `draw_pass_count` tetap shared di dispatcher.
+- Art-only: tidak menambah image assets dan tidak mengubah Python, simulasi,
+  atau gameplay. Tidak mengklaim pixel parity. Penilaian visual akhir tetap
+  perlu dilakukan di Godot; ini bukan penyelesaian seluruh art final.
+- Kandidat sesi berikutnya berdasarkan urutan metadata: Akaroth (belum custom).
+- Validasi lokal batch: seluruh blok static guardrails workflow `godot-rebuild`
+  lulus (`validate_project`, source contract/oracles, gdparse, gdlint,
+  gdformat --check). Body Zephyr dibandingkan dengan HEAD: geometri/palet
+  dan urutan draw tetap. Runtime native diserahkan ke CI Godot 4.7.2 karena
+  unduhan release engine tidak dapat diakses dari sandbox.
+
+
+## Batch slice 9c16–9c18 — Akaroth, Akashari, Akirakumo
+
+- **9c16 Akaroth — The Crimson Fist**: metadata Boss/Crimson Brawler;
+  siluet petarung berbahu lebar, dua gauntlet merah terangkat, wrist wrap,
+  rambut pendek runcing, bekas luka alis dan garis impact.
+- **9c17 Akashari — The Painbringer**: metadata Boss/Queen of Pain;
+  sayap kelelawar tinggi, tanduk melengkung, kerah berduri, korset ruby,
+  taring, lash melingkar dan dagger.
+- **9c18 Akirakumo — The Moonfang Prince**: metadata True Boss/Moon Demon
+  Prince; rambut perak, telinga runcing, tanduk bercabang, crescent jewel,
+  pelat bahu berlapis dan moon blade diagonal.
+- Painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; daftar menjadi
+  25 custom. Semua 22 custom sebelumnya tetap, Raz tetap generic fallback.
+  Dispatcher tetap jauh di bawah batas 1.000 baris sehingga tidak perlu
+  ekstraksi tambahan pada batch ini.
+- Tes memperluas daftar/dispatch dan kanvas ukuran kartu + 96 unit, memakai
+  grid dua baris untuk batch. Shared `draw_pass_count` tetap tanpa perubahan;
+  tidak menambah assertion counter per hero.
+- Art-only: tidak menambah image assets atau mengubah Python, simulasi,
+  maupun gameplay. Tidak mengklaim pixel parity; review visual akhir tetap
+  perlu dilakukan di Godot.
+- Berikutnya berdasarkan urutan metadata: Akiraze (belum custom).
+- Validasi lokal: 76 poligon baru tanpa edge silang; seluruh blok static
+  guardrails workflow lulus satu kali setelah batch (`validate_project`,
+  source contract/oracles, gdparse, gdlint, gdformat --check; 401 GDScript).
+  Import/runtime native Godot 4.7.2 divalidasi lewat CI PR #337.
+
+
+## Batch slice 9c19–9c21 — Akiraze, Astraelion, Aurelian
+
+- **9c19 Akiraze — The Golden Tempest**: metadata Boss/Golden Ninja;
+  crest dan brow plate emas, celah mata tajam, masker, scarf tertiup angin,
+  bilah silang dan clasp shuriken pada harness diagonal.
+- **9c20 Astraelion — The Starlight Swordmaster**: metadata Boss/Starlight
+  Assassin; rambut perak menyapu, cape asimetris, rasi bintang, mata biru,
+  clasp bintang, pedang tipis bercahaya dan bilah reverse-grip.
+- **9c21 Aurelian — The Goldspear Sovereign**: metadata Boss/Fighter-Tank;
+  helm bermahkota terbuka, janggut persegi, pauldron berat berlapis,
+  sigil kerajaan, tombak emas tinggi dan shield kecil.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd` menambah
+  daftar menjadi 28 custom; seluruh 25 custom sebelumnya dipertahankan,
+  Raz tetap generic fallback. Dispatcher masih di bawah 1.000 baris,
+  tanpa ekstraksi atau refactor tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch
+  ini. Grid otomatis memakai baris ketiga. Shared `draw_pass_count` tidak
+  berubah; tidak menambah reset/increment atau assertion counter per hero.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Kandidat berikutnya menurut urutan metadata: Aurelion (belum custom).
+- Validasi lokal: 71 poligon baru tanpa edge silang; seluruh blok static
+  guardrails workflow lulus sekali setelah batch (`validate_project`, source
+  contract/oracles, gdparse, gdlint, gdformat --check; 404 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
+
+
+## Batch slice 9c22–9c24 — Aurelion, Aurelix, Aurelyssa
+
+- **9c22 Aurelion — The Golden Sovereign**: metadata True Boss/Royal King;
+  mahkota tinggi, throne finial, mantle ermine, janggut bercabang,
+  rantai/seal emerald dan sceptre orb untuk peran magic ranged.
+- **9c23 Aurelix — The Time Sovereign**: metadata Boss/Time Mage;
+  halo jam bersegmen dengan jarum offset, rambut perak, monocle,
+  kerah bercabang, seal hourglass dan staff clock-head.
+- **9c24 Aurelyssa — The Golden Blade Dancer**: metadata Boss/Blade Dancer;
+  ponytail tinggi, circlet asimetris, ribbon melengkung, pose lengan
+  terangkat serta dua bilah crescent melengkung ke dalam.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd` menjadikan
+  daftar 31 custom; seluruh 28 custom sebelumnya tetap, Raz tetap generic
+  fallback. Dispatcher 772 baris; tidak perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke ketiga
+  hero; grid memakai baris keempat. Shared `draw_pass_count` tetap, tanpa
+  reset/increment atau assertion counter per hero baru.
+- Art-only: tanpa image assets, perubahan Python, simulasi atau gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Kandidat berikutnya: Aurex (Aurethzar sudah custom).
+- Validasi lokal: 59 poligon baru tanpa edge silang; seluruh blok static
+  guardrails workflow lulus sekali setelah batch (`validate_project`, source
+  contract/oracles, gdparse, gdlint, gdformat --check; 407 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
+
+
+## Batch slice 9c25–9c27 — Aurex, Auroth, Azkharion
+
+- **9c25 Aurex — The Omega Knight**: metadata Boss/Omega Knight;
+  helm tertutup bersegi, visor cyan, crest emas, pauldron berlapis,
+  sigil omega bercahaya dan pedang rune lebar dengan gauntlet.
+- **9c26 Auroth — The Celestial Bastion**: metadata Boss/Bastion Titan;
+  siluet benteng dengan pauldron crenellated, wajah monolit batu,
+  mahkota astronomis, inti kristal dan dua tinju batu berartikulasi.
+- **9c27 Azkharion — The Ashen Warlord**: metadata Boss/Ashen Warlord;
+  armour jelaga berduri, mantle merah robek, wajah abu-abu berbekas luka,
+  helm perang terbuka, cinder serta kapak eksekusi bertakik.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  34 custom. Seluruh 31 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 784 baris, belum perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  Grid batch menjadi delapan kolom dengan jarak 96 unit agar 30 kanvas
+  tetap dalam empat baris, tidak tumpang tindih atau turun ke baris kelima.
+  Shared `draw_pass_count` tetap tanpa reset/increment atau assertion
+  counter per hero baru.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Kandidat berikutnya: Azureth (belum custom).
+- Validasi lokal: 76 poligon baru tanpa edge silang; seluruh blok static
+  guardrails workflow lulus sekali setelah batch (`validate_project`, source
+  contract/oracles, gdparse, gdlint, gdformat --check; 410 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
+
+
+## Batch slice 9c28–9c30 — Azureth, Bhor'gathul, Broggmar
+
+- **9c28 Azureth — The Arcane Sky-Scribe**: metadata Boss/Arcane Mage;
+  sky-chart halo, rune terpisah, rambut perak dan janggut panjang,
+  codex terbuka melayang serta quill bercahaya di atas halaman.
+- **9c29 Bhor'gathul — The Earth Render**: metadata Boss/Earth Render;
+  batu pecah melayang, bahu cragged, brow batu, taring tumpul,
+  side lock tebal serta gauntlet batu dengan retakan mineral bercahaya.
+- **9c30 Broggmar — The Caskbreaker**: metadata Boss/Cask Brawler;
+  bahu terbuka, vest berjahit, cap miring, kumis/janggut merah,
+  harness kulit, tinju berbalut stave barrel dan tankard berbusa.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  37 custom. Seluruh 34 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 796 baris, belum perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  Grid menjadi sembilan kolom dengan jarak 96 unit agar 36 kanvas batch
+  tetap empat baris. Shared `draw_pass_count` tidak berubah; tanpa reset,
+  increment atau assertion counter per hero baru.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Kandidat berikutnya: Brumhar (belum custom).
+- Validasi lokal: 72 poligon baru tanpa edge silang; seluruh blok static
+  guardrails workflow lulus sekali setelah batch (`validate_project`, source
+  contract/oracles, gdparse, gdlint, gdformat --check; 413 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
+
+
+## Batch slice 9c31–9c33 — Brumhar, Celwynn, Cryssalia
+
+- **9c31 Brumhar — The Glacier Reaver**: metadata Boss/Glacier Warrior;
+  helm besi bertanduk pendek, wajah scarred, janggut abu-es, collar fur,
+  armour berlapis es dan frost cleaver bertakik dengan gauntlet.
+- **9c32 Celwynn — The Star Caretaker**: metadata Boss/Star Mage;
+  hood lembut, silver side lock, tatapan tenang, halo bintang kecil,
+  dua tangan menangkup bintang terang di atas celestial bowl.
+- **9c33 Cryssalia — The Glacial Empress**: metadata Boss/Ice Empress;
+  diadem icicle tinggi, rambut putih panjang, collar kristal tegak,
+  clasp snowflake, glacial fan serta sceptre kristal melayang.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  40 custom. Seluruh 37 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 808 baris, belum perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  Grid menjadi sebelas kolom dengan jarak 96 unit untuk 42 kanvas batch
+  dalam empat baris. Shared `draw_pass_count` tidak berubah; tanpa reset,
+  increment atau assertion counter per hero baru.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Berikutnya: pilih metadata hero non-custom setelah Cryssalia; Cogsworth
+  dan Drakar sudah custom.
+- Validasi lokal: 69 poligon baru tanpa edge silang; seluruh blok static
+  guardrails workflow lulus sekali setelah batch (`validate_project`, source
+  contract/oracles, gdparse, gdlint, gdformat --check; 416 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
+
+
+## Batch slice 9c34–9c36 — Deidara, Dorakai, Drav
+
+- **9c34 Deidara — The Explosive Artist**: metadata True Boss/Explosive
+  Artist; fringe blond menutup satu mata, headband berukir, cloak berkerah
+  tinggi, palm sculpting, clay bird kecil serta spark ledakan.
+- **9c35 Dorakai — The Blood-Drum Oni**: metadata Boss/Area Demon;
+  wajah oni crimson bertaring, tanduk ivory, mane hitam, necklace tali,
+  dua drum taiko di belakang, belly drum dan dua beater terangkat.
+- **9c36 Drav — The Tideforged Warden**: metadata Boss/Tideforged Warden;
+  helm reef/coral terbuka, janggut sea-grey, pauldron scallop ber-barnacle,
+  plate pasang-surut, shield bersigil anchor serta trident berkait.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  43 custom. Seluruh 40 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 820 baris, belum perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  Grid menjadi dua belas kolom berjarak 96 unit untuk 48 kanvas batch
+  dalam empat baris. Shared `draw_pass_count` tetap; tanpa reset,
+  increment atau assertion counter per hero baru.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Kandidat berikutnya: Emberwick (belum custom); Drakar tetap custom.
+- Validasi lokal: 61 poligon baru tanpa edge silang setelah pemisahan
+  highlight prong trident Drav; seluruh blok static guardrails workflow
+  lulus sekali setelah batch (`validate_project`, source contract/oracles,
+  gdparse, gdlint, gdformat --check; 419 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
+
+
+## Batch slice 9c37–9c39 — Emberwick, Garumenshi, Ghrakmaal
+
+- **9c37 Emberwick — The Blazing Matron**: metadata Boss/Fire Matron;
+  bun auburn ber-streak silver, flame diadem, kerah tinggi, fire clasp,
+  robe berpiping emas, palm casting dengan api berlapis dan ember motes.
+- **9c38 Garumenshi — The Sage Toad Hermit**: metadata Boss/Summoner;
+  rambut putih liar, forehead plate, sage marking merah, travel scroll,
+  toad kecil bermata emas di bahu dan dua tangan membentuk summoning seal.
+- **9c39 Ghrakmaal — The Colossus of Sundered Earth**: metadata Boss/Earth
+  Colossus; tubuh slab asimetris, kepala basalt ber-ridge pecah, chest fault
+  amber, pillar terdislokasi, boulder fist serta moss seam.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  46 custom. Seluruh 43 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 832 baris, belum perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  Grid 13 kolom dimulai pada y=192 dengan lima slot pertama dilewati;
+  54 kanvas batch muat di viewport 1280x720 tanpa menimpa kanvas lama.
+  Shared `draw_pass_count` tetap; tanpa reset, increment atau assertion
+  counter per hero baru.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Kandidat berikutnya: Gorath (belum custom).
+- Validasi lokal: 71 poligon baru tanpa edge silang; seluruh blok static
+  guardrails workflow lulus sekali setelah batch (`validate_project`, source
+  contract/oracles, gdparse, gdlint, gdformat --check; 422 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
+
+
+## Batch slice 9c40–9c42 — Gorath, Gravefang, Gravewake
+
+- **9c40 Gorath — The Bloodwarden**: metadata Boss/Blood Hunter;
+  cowl robek, bone brow, tear-mark merah, kalung gigi, dua bilah berkait
+  silang serta wrist guard dengan inlay blood-red.
+- **9c41 Gravefang — The Bone Devourer**: metadata Boss/Earth Guardian;
+  siluet membungkuk dengan fossil plate asimetris, skull muzzle bertaring,
+  rib-like chest arc, root-bound fist, fossil claw dan moss patch.
+- **9c42 Gravewake — The Tidehunter**: metadata Boss/Kraken Tidehunter;
+  kepala berkubah, cheek tentacle, fin kipas, shell/barnacle pauldron,
+  tentacle melingkar dengan sucker serta salvaged anchor dan webbed hand.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  49 custom. Seluruh 46 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 844 baris, belum perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  Grid tetap 13 kolom, lima slot pertama y=192 dilewati; 60 kanvas batch
+  muat pada viewport 1280x720 tanpa menimpa kanvas lama.
+  Shared `draw_pass_count` tetap; tanpa reset, increment atau assertion
+  counter per hero baru.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Kandidat berikutnya: Grimjack (belum custom); Gornak tetap custom.
+- Validasi lokal: 79 poligon baru tanpa edge silang; seluruh blok static
+  guardrails workflow lulus sekali setelah batch (`validate_project`, source
+  contract/oracles, gdparse, gdlint, gdformat --check; 425 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
+
+
+## Batch slice 9c43–9c45 — Grimjack, Grimkor, Grimstalker
+
+- **9c43 Grimjack — The Cackling Fiend**: metadata Boss/Void Assassin;
+  cap tiga ujung miring, pale mask dengan grin lebar, mata void,
+  serrated ruff, diamond clasp serta dua reverse-grip knife.
+- **9c44 Grimkor — The Sawmill Warlord**: metadata True Boss/Sawmill
+  Warlord; mill wheel bergerigi, half-helm ber-rivet dan work goggle,
+  rahang bertaring, apron kulit, plate bolted serta mechanical saw panjang.
+- **9c45 Grimstalker — The Chembeast of the Depths**: metadata Boss/Toxic
+  Werewolf; telinga wolf tinggi, muzzle panjang, taring, fur robek,
+  reservoir kimia, collar bercahaya, hose bocor dan tangan bercakar.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  52 custom. Seluruh 49 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 856 baris, belum perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  Packing grid memakai slot kosong baris atas, melewati y=96 dan lima
+  kanvas lama y=192; 66 kanvas batch muat di viewport 1280x720.
+  Shared `draw_pass_count` tetap; tanpa reset, increment atau assertion
+  counter per hero baru.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Kandidat berikutnya: Grondarthul (belum custom); Grimjaw tetap custom.
+- Validasi lokal: 90 poligon baru tanpa edge silang setelah perbaikan cap
+  dan ruff Grimjack; seluruh blok static guardrails workflow lulus sekali
+  setelah batch (`validate_project`, source contract/oracles, gdparse,
+  gdlint, gdformat --check; 428 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
+- CI awal batch gagal pada native import Grimjack (preload/parse error).
+  Nama warna lokal `void` diganti menjadi `void_glow` untuk menghindari
+  keyword GDScript. Koreksi terbatas pada nama variabel; geometri/palet,
+  draw order, shared counter dan gameplay tidak berubah. Pemeriksaan
+  changed-file dijalankan sebelum commit koreksi; CI native diulang.
+- CI koreksi pertama mendeteksi unresolved `paint`: penggantian nama ikut
+  mengganti tiga return type `void` menjadi `void_glow`. Ketiganya dipulihkan
+  ke `void`, dengan rename hanya pada variabel warna dan argumen draw.
+
+
+## Batch slice 9c46–9c48 — Grondarthul, Hitokage, Hollowbane
+
+- **9c46 Grondarthul — The Troll King**: metadata Boss/Troll King;
+  pointed ear panjang, hidung berat, tusk besar, hammered crown, fur mantle
+  asimetris, trophy tooth, royal chain dan sceptre berkepala batu.
+- **9c47 Hitokage — The Sunfire Blade Master**: metadata Boss/Sun Swordsman;
+  sun disc, rambut dark-red liar, brow flame mark, earring panjang,
+  haori split berujung flame dan katana dengan flame guard serta grip wrap.
+- **9c48 Kurosaki Hollowbane — The Substitute Shinigami**: metadata True
+  Boss/Shinigami; rambut orange runcing, broken ivory half-mask, robe hitam
+  berkerah putih, diagonal harness, sword besar gelap dan binding berjumbai.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  55 custom. Seluruh 52 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 868 baris, belum perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  Packing melewati empat kanvas lama baris atas, sepuluh pada y=96, lima
+  pada y=192; seluruh 72 kanvas batch muat pada viewport 1280x720.
+  Shared `draw_pass_count` tetap; tanpa reset, increment atau assertion
+  counter per hero baru.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Berikutnya: pilih metadata hero non-custom setelah Hollowbane;
+  Grondmauris dan Ignis Drachorn tetap custom.
+- Validasi lokal: 65 poligon baru tanpa edge silang; packing 72 kanvas
+  dalam viewport terbukti tanpa overlap. Seluruh blok static guardrails
+  workflow lulus sekali setelah batch (`validate_project`, source
+  contract/oracles, gdparse, gdlint, gdformat --check; 431 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
+
+
+## Batch slice 9c49–9c51 — Ignakhor, Ignirus, Infrakzaar
+
+- **9c49 Ignakhor — The Furnace-Wrought Berserker**: metadata Boss/Furnace
+  Berserker; siluet lebar, vent berasap, half-helm, armour ber-rivet,
+  chest furnace bergrate, forge axe bertakik dan gauntlet besi.
+- **9c50 Ignirus — The Infernal Pyromancer**: metadata Boss/Infernal Mage;
+  siluet robe sempit dengan cowl menyerupai tanduk, hooked collar emas,
+  fire seal, forked staff berorb api dan spark kecil di tangan bebas.
+- **9c51 Infrakzaar — The Emberflesh Pyromancer**: metadata Boss/Ember
+  Pyromancer; torso ember-cracked terbuka, crust bahu hangus, brow botak
+  bertanduk basalt, dua palm casting dan cinder tanpa staff/weapon.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  58 custom. Seluruh 55 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 878 baris, belum perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  78 kanvas batch dipaginasi 72 + 6: setiap halaman diberi dua process
+  frame untuk draw, lalu batch node di-free sebelum slot dipakai ulang.
+  Kanvas lama non-batch tetap, tanpa overlap/out-of-viewport. Shared
+  `draw_pass_count` tetap; tanpa reset, increment atau assertion per hero.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Berikutnya: pilih metadata hero non-custom setelah Infrakzaar;
+  Ignis Drachorn tetap custom.
+- Validasi lokal: 62 poligon baru tanpa edge silang; packing 78 kanvas
+  dalam dua halaman terbukti tanpa overlap/out-of-viewport. Seluruh blok
+  static guardrails workflow lulus sekali setelah batch (`validate_project`,
+  source contract/oracles, gdparse, gdlint, gdformat --check; 434 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.

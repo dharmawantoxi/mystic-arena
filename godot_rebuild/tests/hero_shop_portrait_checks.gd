@@ -2,7 +2,12 @@ extends RefCounted
 ## Hero Shop custom portrait dispatch, generic fallback, and native draw-pass counter.
 ## Canvases: Abaddon, Alchemist, Ancient Apparition, Aureth'zar, Cogsworth, Drakar,
 ## Gornak, Grimjaw, Grondmauris, Ignis Drachorn, Kaizen, Kunkka, Morgath,
-## Morthraxis, Okeanora, Sylara, Thorne, Vex, and Zephyr.
+## Morthraxis, Okeanora, Sylara, Thorne, Vex, Zephyr, Aelyrion, Aeralith, Akahime,
+## Akaroth, Akashari, Akirakumo, Akiraze, Astraelion, Aurelian, Aurelion,
+## Aurelix, Aurelyssa, Aurex, Auroth, Azkharion, Azureth, Bhor'gathul, Broggmar,
+## Brumhar, Celwynn, Cryssalia, Deidara, Dorakai, Drav, Emberwick, Garumenshi,
+## Ghrakmaal, Gorath, Gravefang, Gravewake, Grimjack, Grimkor, Grimstalker,
+## Grondarthul, Hitokage, Hollowbane, Ignakhor, Ignirus, and Infrakzaar.
 
 const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
@@ -30,6 +35,45 @@ const SAMPLE: Array[String] = [
 	"okeanora",
 	"kunkka",
 	"ignis_drachorn",
+	"aelyrion",
+	"aeralith",
+	"akahime",
+	"akaroth",
+	"akashari",
+	"akirakumo",
+	"akiraze",
+	"astraelion",
+	"aurelian",
+	"aurelion",
+	"aurelix",
+	"aurelyssa",
+	"aurex",
+	"auroth",
+	"azkharion",
+	"azureth",
+	"bhorgathul",
+	"broggmar",
+	"brumhar",
+	"celwynn",
+	"cryssalia",
+	"deidara",
+	"dorakai",
+	"drav",
+	"emberwick",
+	"garumenshi",
+	"ghrakmaal",
+	"gorath",
+	"gravefang",
+	"gravewake",
+	"grimjack",
+	"grimkor",
+	"grimstalker",
+	"grondarthul",
+	"hitokage",
+	"hollowbane",
+	"ignakhor",
+	"ignirus",
+	"infrakzaar",
 	"raz"
 ]
 
@@ -49,15 +93,54 @@ func _dispatch(check: Callable) -> void:
 			custom
 			== [
 				"abaddon",
+				"aelyrion",
+				"aeralith",
+				"akahime",
+				"akaroth",
+				"akashari",
+				"akirakumo",
+				"akiraze",
 				"alchemist",
 				"ancient_apparition",
+				"astraelion",
+				"aurelian",
+				"aurelion",
+				"aurelix",
+				"aurelyssa",
 				"aurethzar",
+				"aurex",
+				"auroth",
+				"azkharion",
+				"azureth",
+				"bhorgathul",
+				"broggmar",
+				"brumhar",
+				"celwynn",
 				"cogsworth",
+				"cryssalia",
+				"deidara",
+				"dorakai",
 				"drakar",
+				"drav",
+				"emberwick",
+				"garumenshi",
+				"ghrakmaal",
+				"gorath",
 				"gornak",
+				"gravefang",
+				"gravewake",
+				"grimjack",
 				"grimjaw",
+				"grimkor",
+				"grimstalker",
+				"grondarthul",
 				"grondmauris",
+				"hitokage",
+				"hollowbane",
+				"ignakhor",
+				"ignirus",
 				"ignis_drachorn",
+				"infrakzaar",
 				"kaizen",
 				"kunkka",
 				"morgath",
@@ -71,6 +154,48 @@ func _dispatch(check: Callable) -> void:
 		),
 		"Portrait list covers every hand-authored hero canvas"
 	)
+	for id in [
+		"aelyrion",
+		"aeralith",
+		"akahime",
+		"akaroth",
+		"akashari",
+		"akirakumo",
+		"akiraze",
+		"astraelion",
+		"aurelian",
+		"aurelion",
+		"aurelix",
+		"aurelyssa",
+		"aurex",
+		"auroth",
+		"azkharion",
+		"azureth",
+		"bhorgathul",
+		"broggmar",
+		"brumhar",
+		"celwynn",
+		"cryssalia",
+		"deidara",
+		"dorakai",
+		"drav",
+		"emberwick",
+		"garumenshi",
+		"ghrakmaal",
+		"gorath",
+		"gravefang",
+		"gravewake",
+		"grimjack",
+		"grimkor",
+		"grimstalker",
+		"grondarthul",
+		"hitokage",
+		"hollowbane",
+		"ignakhor",
+		"ignirus",
+		"infrakzaar"
+	]:
+		check.call(HeroPortrait.has_custom(id), "%s dispatches to a hand-authored canvas" % id)
 	check.call(HeroPortrait.has_custom("abaddon"), "Abaddon dispatches to a hand-authored canvas")
 	check.call(
 		HeroPortrait.has_custom("alchemist"), "Alchemist dispatches to a hand-authored canvas"
@@ -308,6 +433,72 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 	raz_portrait.size = Vector2(96.0, 96.0)
 	raz_portrait.position = Vector2(672.0, 96.0)
 	tree.root.add_child(raz_portrait)
+	# Exercise the new painters at card size and the 96-unit design size.
+	# Shared draw_pass_count remains unchanged; no per-hero counter assertions.
+	var batch_portraits: Array[Control] = []
+	for id in [
+		"aelyrion",
+		"aeralith",
+		"akahime",
+		"akaroth",
+		"akashari",
+		"akirakumo",
+		"akiraze",
+		"astraelion",
+		"aurelian",
+		"aurelion",
+		"aurelix",
+		"aurelyssa",
+		"aurex",
+		"auroth",
+		"azkharion",
+		"azureth",
+		"bhorgathul",
+		"broggmar",
+		"brumhar",
+		"celwynn",
+		"cryssalia",
+		"deidara",
+		"dorakai",
+		"drav",
+		"emberwick",
+		"garumenshi",
+		"ghrakmaal",
+		"gorath",
+		"gravefang",
+		"gravewake",
+		"grimjack",
+		"grimkor",
+		"grimstalker",
+		"grondarthul",
+		"hitokage",
+		"hollowbane",
+		"ignakhor",
+		"ignirus",
+		"infrakzaar"
+	]:
+		for pixel_size in [HeroShopCard.PORTRAIT_SIZE, 96.0]:
+			# Draw each full page before freeing its batch nodes and reusing free slots.
+			if batch_portraits.size() == 72:
+				await tree.process_frame
+				await tree.process_frame
+				for previous_portrait in batch_portraits:
+					previous_portrait.queue_free()
+				batch_portraits.clear()
+				await tree.process_frame
+			var portrait := HeroPortrait.new()
+			portrait.setup(id, HERO_ROSTER[id], pixel_size)
+			portrait.size = Vector2(pixel_size, pixel_size)
+			# Reserve four old top-row canvases, ten at y=96 and five at y=192.
+			# Up to 72 canvases per page fit inside 1280x720 without overlapping old nodes.
+			var slot := batch_portraits.size() + 4
+			if slot >= 13:
+				slot += 10
+			if slot >= 26:
+				slot += 5
+			portrait.position = Vector2((slot % 13) * 96.0, floorf(slot / 13.0) * 96.0)
+			tree.root.add_child(portrait)
+			batch_portraits.append(portrait)
 	await tree.process_frame
 	await tree.process_frame
 	check.call(
@@ -329,6 +520,8 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 		),
 		"Existing portrait canvases and the generic fallback reach _draw after two frames"
 	)
+	for portrait in batch_portraits:
+		portrait.free()
 	grimjaw_portrait.free()
 	vex_portrait.free()
 	sylara_portrait.free()
