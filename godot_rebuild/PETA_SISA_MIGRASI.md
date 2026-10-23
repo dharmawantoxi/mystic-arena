@@ -3054,3 +3054,32 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
   static guardrails workflow lulus sekali setelah batch (`validate_project`,
   source contract/oracles, gdparse, gdlint, gdformat --check; 437 GDScript).
   Import/runtime native Godot 4.7.2 dijalankan lewat CI PR sesi.
+
+
+## Batch slice 9c55–9c57 — Thorgaruk, Zorathiel, Nyxallaria
+
+- **9c55 Thorgaruk — The Skyhorn Warrior**: metadata Boss/Skyhorn Warrior;
+  huge ivory skyward horns, storm clouds/lightning, cloud-fur mantle,
+  stormbird chevron, braided beard dan compact storm hammer.
+- **9c56 Zorathiel — The Arcane Mage**: metadata Boss/Arcane Mage; arcane
+  orbitals, prism satellites, silver hair, long ears, three-point circlet,
+  embroidered robe serta open hand yang mengangkat faceted focus.
+- **9c57 Nyxallaria — The Abyss Mage**: metadata Boss/Abyss Mage; broken
+  abyssal portal, curling tendrils, many-pointed crown, pearl sea fans,
+  shell cuirass dan clawed hand dengan dark focus bercahaya.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  64 custom. Seluruh 61 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 900 baris, belum perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  90 kanvas batch dipaginasi 72 + 18: setiap halaman diberi dua process
+  frame untuk draw, lalu batch node di-free sebelum slot dipakai ulang.
+  Kanvas lama non-batch tetap, tanpa overlap/out-of-viewport. Shared
+  `draw_pass_count` tetap; tanpa reset, increment atau assertion per hero.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Berikutnya: pilih metadata hero non-custom setelah Nyxallaria.
+- Validasi lokal: 75 poligon baru tanpa edge silang; packing 90 kanvas
+  dalam dua halaman terbukti tanpa overlap/out-of-viewport. Seluruh blok
+  static guardrails workflow lulus sekali setelah batch (`validate_project`,
+  source contract/oracles, gdparse, gdlint, gdformat --check; 440 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR sesi.
