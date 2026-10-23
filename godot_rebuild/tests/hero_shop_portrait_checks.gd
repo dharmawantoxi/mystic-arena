@@ -9,7 +9,7 @@ extends RefCounted
 ## Ghrakmaal, Gorath, Gravefang, Gravewake, Grimjack, Grimkor, Grimstalker,
 ## Grondarthul, Hitokage, Hollowbane, Ignakhor, Ignirus, Infrakzaar, Kaerissa,
 ## Xarnathul, Zhyrakaan, Thorgaruk, Zorathiel, Nyxallaria, Vhaerinth,
-## Xharokh, and Kazreth.
+## Xharokh, Kazreth, Varkuthar, Zhyvrek, and Thargoroth.
 
 const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
@@ -85,6 +85,9 @@ const SAMPLE: Array[String] = [
 	"vhaerinth",
 	"xharokh",
 	"kazreth",
+	"varkuthar",
+	"zhyvrek",
+	"thargoroth",
 	"raz"
 ]
 
@@ -161,14 +164,17 @@ func _dispatch(check: Callable) -> void:
 				"nyxallaria",
 				"okeanora",
 				"sylara",
+				"thargoroth",
 				"thorgaruk",
 				"thorne",
+				"varkuthar",
 				"vex",
 				"vhaerinth",
 				"xarnathul",
 				"xharokh",
 				"zephyr",
 				"zhyrakaan",
+				"zhyvrek",
 				"zorathiel"
 			]
 		),
@@ -222,7 +228,10 @@ func _dispatch(check: Callable) -> void:
 		"nyxallaria",
 		"vhaerinth",
 		"xharokh",
-		"kazreth"
+		"kazreth",
+		"varkuthar",
+		"zhyvrek",
+		"thargoroth"
 	]:
 		check.call(HeroPortrait.has_custom(id), "%s dispatches to a hand-authored canvas" % id)
 	check.call(HeroPortrait.has_custom("abaddon"), "Abaddon dispatches to a hand-authored canvas")
@@ -513,7 +522,10 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 		"nyxallaria",
 		"vhaerinth",
 		"xharokh",
-		"kazreth"
+		"kazreth",
+		"varkuthar",
+		"zhyvrek",
+		"thargoroth"
 	]:
 		for pixel_size in [HeroShopCard.PORTRAIT_SIZE, 96.0]:
 			# Draw each full page before freeing its batch nodes and reusing free slots.

@@ -3112,3 +3112,36 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
   static guardrails workflow lulus sekali setelah batch (`validate_project`,
   source contract/oracles, gdparse, gdlint, gdformat --check; 443 GDScript).
   Import/runtime native Godot 4.7.2 dijalankan lewat CI PR sesi.
+
+
+## Batch slice 9c61–9c63 — Varkuthar, Zhyvrek, Thargoroth
+
+- Sebelum dispatch baru, painter lama Thorne diekstrak utuh ke
+  `scripts/ui/hero_portrait_thorne.gd`; normalized paint body terbukti sama,
+  termasuk geometri, palet dan urutan draw. Dispatch memakai `THORNE_PAINTER`,
+  sementara shared helpers tetap untuk painter inline lama lainnya.
+- **9c61 Varkuthar — The Bloodfire Zealot**: metadata Boss/Bloodfire Zealot;
+  bloodfire halo, flame-shaped mitre, ceremonial crimson robes, prayer beads,
+  bloodfire seal serta chained censer tanpa conventional weapon.
+- **9c62 Zhyvrek — The Void Reaper**: metadata Boss/Void Reaper; huge crescent
+  scythe, ragged cloak, tattered shoulder wings, pointed cowl, skull-like mask,
+  spectral claws dan luminous empty sockets.
+- **9c63 Thargoroth — The Primordial Colossus**: metadata Boss/Primordial
+  Colossus; primitive mountains, held cracked boulder, massive mossy stone
+  torso, amber core, slab brow, fossil teeth dan heavy stone fist.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  70 custom. Seluruh 67 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 871 baris setelah ekstraksi Thorne dan dispatch batch.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  102 kanvas batch dipaginasi 72 + 30: setiap halaman diberi dua process
+  frame untuk draw, lalu batch node di-free sebelum slot dipakai ulang.
+  Kanvas lama non-batch termasuk Thorne tetap, tanpa overlap/out-of-viewport.
+  Shared `draw_pass_count` tetap; tanpa reset, increment atau assertion per hero.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Berikutnya: pilih metadata hero non-custom setelah Thargoroth.
+- Validasi lokal: 72 poligon baru tanpa edge silang; packing 102 kanvas
+  dalam dua halaman terbukti tanpa overlap/out-of-viewport. Seluruh blok
+  static guardrails workflow lulus sekali setelah batch (`validate_project`,
+  source contract/oracles, gdparse, gdlint, gdformat --check; 447 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR sesi.
