@@ -2928,3 +2928,32 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
   guardrails workflow lulus sekali setelah batch (`validate_project`, source
   contract/oracles, gdparse, gdlint, gdformat --check; 425 GDScript).
   Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
+
+
+## Batch slice 9c43–9c45 — Grimjack, Grimkor, Grimstalker
+
+- **9c43 Grimjack — The Cackling Fiend**: metadata Boss/Void Assassin;
+  cap tiga ujung miring, pale mask dengan grin lebar, mata void,
+  serrated ruff, diamond clasp serta dua reverse-grip knife.
+- **9c44 Grimkor — The Sawmill Warlord**: metadata True Boss/Sawmill
+  Warlord; mill wheel bergerigi, half-helm ber-rivet dan work goggle,
+  rahang bertaring, apron kulit, plate bolted serta mechanical saw panjang.
+- **9c45 Grimstalker — The Chembeast of the Depths**: metadata Boss/Toxic
+  Werewolf; telinga wolf tinggi, muzzle panjang, taring, fur robek,
+  reservoir kimia, collar bercahaya, hose bocor dan tangan bercakar.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  52 custom. Seluruh 49 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 856 baris, belum perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  Packing grid memakai slot kosong baris atas, melewati y=96 dan lima
+  kanvas lama y=192; 66 kanvas batch muat di viewport 1280x720.
+  Shared `draw_pass_count` tetap; tanpa reset, increment atau assertion
+  counter per hero baru.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Kandidat berikutnya: Grondarthul (belum custom); Grimjaw tetap custom.
+- Validasi lokal: 90 poligon baru tanpa edge silang setelah perbaikan cap
+  dan ruff Grimjack; seluruh blok static guardrails workflow lulus sekali
+  setelah batch (`validate_project`, source contract/oracles, gdparse,
+  gdlint, gdformat --check; 428 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.

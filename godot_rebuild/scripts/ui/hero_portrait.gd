@@ -47,6 +47,9 @@ const GHRAKMAAL_PAINTER = preload("res://scripts/ui/hero_portrait_ghrakmaal.gd")
 const GORATH_PAINTER = preload("res://scripts/ui/hero_portrait_gorath.gd")
 const GRAVEFANG_PAINTER = preload("res://scripts/ui/hero_portrait_gravefang.gd")
 const GRAVEWAKE_PAINTER = preload("res://scripts/ui/hero_portrait_gravewake.gd")
+const GRIMJACK_PAINTER = preload("res://scripts/ui/hero_portrait_grimjack.gd")
+const GRIMKOR_PAINTER = preload("res://scripts/ui/hero_portrait_grimkor.gd")
+const GRIMSTALKER_PAINTER = preload("res://scripts/ui/hero_portrait_grimstalker.gd")
 const OKEANORA_PAINTER = preload("res://scripts/ui/hero_portrait_okeanora.gd")
 const GORNAK := "gornak"
 const GRIMJAW := "grimjaw"
@@ -100,7 +103,10 @@ static func custom_ids() -> Array[String]:
 		GORNAK,
 		"gravefang",
 		"gravewake",
+		"grimjack",
 		GRIMJAW,
+		"grimkor",
+		"grimstalker",
 		"grondmauris"
 	]
 	ids.append_array(["ignis_drachorn", KAIZEN, "kunkka", "morgath", "morthraxis", "okeanora"])
@@ -193,6 +199,12 @@ func _draw() -> void:
 			GRAVEFANG_PAINTER.paint(self, box)
 		"gravewake":
 			GRAVEWAKE_PAINTER.paint(self, box)
+		"grimjack":
+			GRIMJACK_PAINTER.paint(self, box)
+		"grimkor":
+			GRIMKOR_PAINTER.paint(self, box)
+		"grimstalker":
+			GRIMSTALKER_PAINTER.paint(self, box)
 		"abaddon":
 			ABADDON_PAINTER.paint(self, box)
 		"ancient_apparition":

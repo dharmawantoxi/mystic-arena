@@ -6,7 +6,7 @@ extends RefCounted
 ## Akaroth, Akashari, Akirakumo, Akiraze, Astraelion, Aurelian, Aurelion,
 ## Aurelix, Aurelyssa, Aurex, Auroth, Azkharion, Azureth, Bhor'gathul, Broggmar,
 ## Brumhar, Celwynn, Cryssalia, Deidara, Dorakai, Drav, Emberwick, Garumenshi,
-## Ghrakmaal, Gorath, Gravefang, and Gravewake.
+## Ghrakmaal, Gorath, Gravefang, Gravewake, Grimjack, Grimkor, and Grimstalker.
 
 const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
@@ -64,6 +64,9 @@ const SAMPLE: Array[String] = [
 	"gorath",
 	"gravefang",
 	"gravewake",
+	"grimjack",
+	"grimkor",
+	"grimstalker",
 	"raz"
 ]
 
@@ -119,7 +122,10 @@ func _dispatch(check: Callable) -> void:
 				"gornak",
 				"gravefang",
 				"gravewake",
+				"grimjack",
 				"grimjaw",
+				"grimkor",
+				"grimstalker",
 				"grondmauris",
 				"ignis_drachorn",
 				"kaizen",
@@ -165,7 +171,10 @@ func _dispatch(check: Callable) -> void:
 		"ghrakmaal",
 		"gorath",
 		"gravefang",
-		"gravewake"
+		"gravewake",
+		"grimjack",
+		"grimkor",
+		"grimstalker"
 	]:
 		check.call(HeroPortrait.has_custom(id), "%s dispatches to a hand-authored canvas" % id)
 	check.call(HeroPortrait.has_custom("abaddon"), "Abaddon dispatches to a hand-authored canvas")
@@ -438,15 +447,21 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 		"ghrakmaal",
 		"gorath",
 		"gravefang",
-		"gravewake"
+		"gravewake",
+		"grimjack",
+		"grimkor",
+		"grimstalker"
 	]:
 		for pixel_size in [HeroShopCard.PORTRAIT_SIZE, 96.0]:
 			var portrait := HeroPortrait.new()
 			portrait.setup(id, HERO_ROSTER[id], pixel_size)
 			portrait.size = Vector2(pixel_size, pixel_size)
-			# Leave the five existing canvases at y=192 untouched; fit inside 1280x720.
-			var slot := batch_portraits.size() + 5
-			portrait.position = Vector2((slot % 13) * 96.0, 192.0 + floorf(slot / 13.0) * 96.0)
+			# Use free top-row slots, then skip y=96 and five old canvases at y=192.
+			# All 66 batch canvases fit inside 1280x720 without overlapping old nodes.
+			var slot := batch_portraits.size() + 4
+			if slot >= 13:
+				slot += 18
+			portrait.position = Vector2((slot % 13) * 96.0, floorf(slot / 13.0) * 96.0)
 			tree.root.add_child(portrait)
 			batch_portraits.append(portrait)
 	await tree.process_frame
