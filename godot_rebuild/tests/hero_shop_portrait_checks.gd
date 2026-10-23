@@ -4,7 +4,8 @@ extends RefCounted
 ## Gornak, Grimjaw, Grondmauris, Ignis Drachorn, Kaizen, Kunkka, Morgath,
 ## Morthraxis, Okeanora, Sylara, Thorne, Vex, Zephyr, Aelyrion, Aeralith, Akahime,
 ## Akaroth, Akashari, Akirakumo, Akiraze, Astraelion, Aurelian, Aurelion,
-## Aurelix, Aurelyssa, Aurex, Auroth, Azkharion, Azureth, Bhor'gathul, and Broggmar.
+## Aurelix, Aurelyssa, Aurex, Auroth, Azkharion, Azureth, Bhor'gathul, Broggmar,
+## Brumhar, Celwynn, and Cryssalia.
 
 const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
@@ -50,6 +51,9 @@ const SAMPLE: Array[String] = [
 	"azureth",
 	"bhorgathul",
 	"broggmar",
+	"brumhar",
+	"celwynn",
+	"cryssalia",
 	"raz"
 ]
 
@@ -90,7 +94,10 @@ func _dispatch(check: Callable) -> void:
 				"azureth",
 				"bhorgathul",
 				"broggmar",
+				"brumhar",
+				"celwynn",
 				"cogsworth",
+				"cryssalia",
 				"drakar",
 				"gornak",
 				"grimjaw",
@@ -127,7 +134,10 @@ func _dispatch(check: Callable) -> void:
 		"azkharion",
 		"azureth",
 		"bhorgathul",
-		"broggmar"
+		"broggmar",
+		"brumhar",
+		"celwynn",
+		"cryssalia"
 	]:
 		check.call(HeroPortrait.has_custom(id), "%s dispatches to a hand-authored canvas" % id)
 	check.call(HeroPortrait.has_custom("abaddon"), "Abaddon dispatches to a hand-authored canvas")
@@ -388,15 +398,18 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 		"azkharion",
 		"azureth",
 		"bhorgathul",
-		"broggmar"
+		"broggmar",
+		"brumhar",
+		"celwynn",
+		"cryssalia"
 	]:
 		for pixel_size in [HeroShopCard.PORTRAIT_SIZE, 96.0]:
 			var portrait := HeroPortrait.new()
 			portrait.setup(id, HERO_ROSTER[id], pixel_size)
 			portrait.size = Vector2(pixel_size, pixel_size)
 			portrait.position = Vector2(
-				(batch_portraits.size() % 9) * 96.0,
-				288.0 + floorf(batch_portraits.size() / 9.0) * 96.0
+				(batch_portraits.size() % 11) * 96.0,
+				288.0 + floorf(batch_portraits.size() / 11.0) * 96.0
 			)
 			tree.root.add_child(portrait)
 			batch_portraits.append(portrait)

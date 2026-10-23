@@ -35,6 +35,9 @@ const AZKHARION_PAINTER = preload("res://scripts/ui/hero_portrait_azkharion.gd")
 const AZURETH_PAINTER = preload("res://scripts/ui/hero_portrait_azureth.gd")
 const BHORGATHUL_PAINTER = preload("res://scripts/ui/hero_portrait_bhorgathul.gd")
 const BROGGMAR_PAINTER = preload("res://scripts/ui/hero_portrait_broggmar.gd")
+const BRUMHAR_PAINTER = preload("res://scripts/ui/hero_portrait_brumhar.gd")
+const CELWYNN_PAINTER = preload("res://scripts/ui/hero_portrait_celwynn.gd")
+const CRYSSALIA_PAINTER = preload("res://scripts/ui/hero_portrait_cryssalia.gd")
 const OKEANORA_PAINTER = preload("res://scripts/ui/hero_portrait_okeanora.gd")
 const GORNAK := "gornak"
 const GRIMJAW := "grimjaw"
@@ -73,7 +76,10 @@ static func custom_ids() -> Array[String]:
 		"azureth",
 		"bhorgathul",
 		"broggmar",
+		"brumhar",
+		"celwynn",
 		"cogsworth",
+		"cryssalia",
 		"drakar",
 		GORNAK,
 		GRIMJAW,
@@ -145,6 +151,12 @@ func _draw() -> void:
 			BHORGATHUL_PAINTER.paint(self, box)
 		"broggmar":
 			BROGGMAR_PAINTER.paint(self, box)
+		"brumhar":
+			BRUMHAR_PAINTER.paint(self, box)
+		"celwynn":
+			CELWYNN_PAINTER.paint(self, box)
+		"cryssalia":
+			CRYSSALIA_PAINTER.paint(self, box)
 		"abaddon":
 			ABADDON_PAINTER.paint(self, box)
 		"ancient_apparition":

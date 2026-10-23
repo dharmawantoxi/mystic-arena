@@ -2816,3 +2816,31 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
   guardrails workflow lulus sekali setelah batch (`validate_project`, source
   contract/oracles, gdparse, gdlint, gdformat --check; 413 GDScript).
   Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
+
+
+## Batch slice 9c31–9c33 — Brumhar, Celwynn, Cryssalia
+
+- **9c31 Brumhar — The Glacier Reaver**: metadata Boss/Glacier Warrior;
+  helm besi bertanduk pendek, wajah scarred, janggut abu-es, collar fur,
+  armour berlapis es dan frost cleaver bertakik dengan gauntlet.
+- **9c32 Celwynn — The Star Caretaker**: metadata Boss/Star Mage;
+  hood lembut, silver side lock, tatapan tenang, halo bintang kecil,
+  dua tangan menangkup bintang terang di atas celestial bowl.
+- **9c33 Cryssalia — The Glacial Empress**: metadata Boss/Ice Empress;
+  diadem icicle tinggi, rambut putih panjang, collar kristal tegak,
+  clasp snowflake, glacial fan serta sceptre kristal melayang.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  40 custom. Seluruh 37 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 808 baris, belum perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  Grid menjadi sebelas kolom dengan jarak 96 unit untuk 42 kanvas batch
+  dalam empat baris. Shared `draw_pass_count` tidak berubah; tanpa reset,
+  increment atau assertion counter per hero baru.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Berikutnya: pilih metadata hero non-custom setelah Cryssalia; Cogsworth
+  dan Drakar sudah custom.
+- Validasi lokal: 69 poligon baru tanpa edge silang; seluruh blok static
+  guardrails workflow lulus sekali setelah batch (`validate_project`, source
+  contract/oracles, gdparse, gdlint, gdformat --check; 416 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
