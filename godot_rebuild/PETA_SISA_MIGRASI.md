@@ -3083,3 +3083,32 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
   static guardrails workflow lulus sekali setelah batch (`validate_project`,
   source contract/oracles, gdparse, gdlint, gdformat --check; 440 GDScript).
   Import/runtime native Godot 4.7.2 dijalankan lewat CI PR sesi.
+
+
+## Batch slice 9c58–9c60 — Vhaerinth, Xharokh, Kazreth
+
+- **9c58 Vhaerinth — The Ink Mage**: metadata Boss/Ink Mage; parchment moon,
+  calligraphic strokes, broad tilted hat, round scholar lenses, inkpot clasp,
+  script-marked robe panels dan long calligraphy brush berujung dark bristles.
+- **9c59 Xharokh — The Void Mage**: metadata Boss/Void Mage; star field,
+  fractured event horizon, floating monoliths, faceted fractured mask,
+  angular armoured robes, chest singularity dan suspended void shard.
+- **9c60 Kazreth — The Blood Reaver**: metadata Boss/Blood Reaver; heavy red
+  plate, spiked pauldrons, trophy chain, bald scarred head, metal jaw guard,
+  single tusk serta long-hafted double reaver axe dengan opposing crescents.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  67 custom. Seluruh 64 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 920 baris, belum perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  96 kanvas batch dipaginasi 72 + 24: setiap halaman diberi dua process
+  frame untuk draw, lalu batch node di-free sebelum slot dipakai ulang.
+  Kanvas lama non-batch tetap, tanpa overlap/out-of-viewport. Shared
+  `draw_pass_count` tetap; tanpa reset, increment atau assertion per hero.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Berikutnya: pilih metadata hero non-custom setelah Kazreth.
+- Validasi lokal: 69 poligon baru tanpa edge silang; packing 96 kanvas
+  dalam dua halaman terbukti tanpa overlap/out-of-viewport. Seluruh blok
+  static guardrails workflow lulus sekali setelah batch (`validate_project`,
+  source contract/oracles, gdparse, gdlint, gdformat --check; 443 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR sesi.

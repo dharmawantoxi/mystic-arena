@@ -62,6 +62,9 @@ const ZHYRAKAAN_PAINTER = preload("res://scripts/ui/hero_portrait_zhyrakaan.gd")
 const NYXALLARIA_PAINTER = preload("res://scripts/ui/hero_portrait_nyxallaria.gd")
 const THORGARUK_PAINTER = preload("res://scripts/ui/hero_portrait_thorgaruk.gd")
 const ZORATHIEL_PAINTER = preload("res://scripts/ui/hero_portrait_zorathiel.gd")
+const KAZRETH_PAINTER = preload("res://scripts/ui/hero_portrait_kazreth.gd")
+const VHAERINTH_PAINTER = preload("res://scripts/ui/hero_portrait_vhaerinth.gd")
+const XHAROKH_PAINTER = preload("res://scripts/ui/hero_portrait_xharokh.gd")
 const OKEANORA_PAINTER = preload("res://scripts/ui/hero_portrait_okeanora.gd")
 const GORNAK := "gornak"
 const GRIMJAW := "grimjaw"
@@ -126,10 +129,21 @@ static func custom_ids() -> Array[String]:
 	]
 	ids.append_array(["ignakhor", "ignirus", "ignis_drachorn", "infrakzaar"])
 	ids.append_array(
-		["kaerissa", KAIZEN, "kunkka", "morgath", "morthraxis", "nyxallaria", "okeanora"]
+		["kaerissa", KAIZEN, "kazreth", "kunkka", "morgath", "morthraxis", "nyxallaria", "okeanora"]
 	)
 	ids.append_array(
-		[SYLARA, "thorgaruk", THORNE, VEX, "xarnathul", ZEPHYR, "zhyrakaan", "zorathiel"]
+		[
+			SYLARA,
+			"thorgaruk",
+			THORNE,
+			VEX,
+			"vhaerinth",
+			"xarnathul",
+			"xharokh",
+			ZEPHYR,
+			"zhyrakaan",
+			"zorathiel"
+		]
 	)
 	return ids
 
@@ -249,6 +263,12 @@ func _draw() -> void:
 			THORGARUK_PAINTER.paint(self, box)
 		"zorathiel":
 			ZORATHIEL_PAINTER.paint(self, box)
+		"kazreth":
+			KAZRETH_PAINTER.paint(self, box)
+		"vhaerinth":
+			VHAERINTH_PAINTER.paint(self, box)
+		"xharokh":
+			XHAROKH_PAINTER.paint(self, box)
 		"abaddon":
 			ABADDON_PAINTER.paint(self, box)
 		"ancient_apparition":
