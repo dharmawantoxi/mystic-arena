@@ -56,6 +56,9 @@ const HOLLOWBANE_PAINTER = preload("res://scripts/ui/hero_portrait_hollowbane.gd
 const IGNAKHOR_PAINTER = preload("res://scripts/ui/hero_portrait_ignakhor.gd")
 const IGNIRUS_PAINTER = preload("res://scripts/ui/hero_portrait_ignirus.gd")
 const INFRAKZAAR_PAINTER = preload("res://scripts/ui/hero_portrait_infrakzaar.gd")
+const KAERISSA_PAINTER = preload("res://scripts/ui/hero_portrait_kaerissa.gd")
+const XARNATHUL_PAINTER = preload("res://scripts/ui/hero_portrait_xarnathul.gd")
+const ZHYRAKAAN_PAINTER = preload("res://scripts/ui/hero_portrait_zhyrakaan.gd")
 const OKEANORA_PAINTER = preload("res://scripts/ui/hero_portrait_okeanora.gd")
 const GORNAK := "gornak"
 const GRIMJAW := "grimjaw"
@@ -119,8 +122,8 @@ static func custom_ids() -> Array[String]:
 		"hollowbane"
 	]
 	ids.append_array(["ignakhor", "ignirus", "ignis_drachorn", "infrakzaar"])
-	ids.append_array([KAIZEN, "kunkka", "morgath", "morthraxis", "okeanora"])
-	ids.append_array([SYLARA, THORNE, VEX, ZEPHYR])
+	ids.append_array(["kaerissa", KAIZEN, "kunkka", "morgath", "morthraxis", "okeanora"])
+	ids.append_array([SYLARA, THORNE, VEX, "xarnathul", ZEPHYR, "zhyrakaan"])
 	return ids
 
 
@@ -227,6 +230,12 @@ func _draw() -> void:
 			IGNIRUS_PAINTER.paint(self, box)
 		"infrakzaar":
 			INFRAKZAAR_PAINTER.paint(self, box)
+		"kaerissa":
+			KAERISSA_PAINTER.paint(self, box)
+		"xarnathul":
+			XARNATHUL_PAINTER.paint(self, box)
+		"zhyrakaan":
+			ZHYRAKAAN_PAINTER.paint(self, box)
 		"abaddon":
 			ABADDON_PAINTER.paint(self, box)
 		"ancient_apparition":

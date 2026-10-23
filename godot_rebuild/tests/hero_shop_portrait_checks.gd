@@ -7,7 +7,8 @@ extends RefCounted
 ## Aurelix, Aurelyssa, Aurex, Auroth, Azkharion, Azureth, Bhor'gathul, Broggmar,
 ## Brumhar, Celwynn, Cryssalia, Deidara, Dorakai, Drav, Emberwick, Garumenshi,
 ## Ghrakmaal, Gorath, Gravefang, Gravewake, Grimjack, Grimkor, Grimstalker,
-## Grondarthul, Hitokage, Hollowbane, Ignakhor, Ignirus, and Infrakzaar.
+## Grondarthul, Hitokage, Hollowbane, Ignakhor, Ignirus, Infrakzaar, Kaerissa,
+## Xarnathul, and Zhyrakaan.
 
 const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
@@ -74,6 +75,9 @@ const SAMPLE: Array[String] = [
 	"ignakhor",
 	"ignirus",
 	"infrakzaar",
+	"kaerissa",
+	"xarnathul",
+	"zhyrakaan",
 	"raz"
 ]
 
@@ -141,6 +145,7 @@ func _dispatch(check: Callable) -> void:
 				"ignirus",
 				"ignis_drachorn",
 				"infrakzaar",
+				"kaerissa",
 				"kaizen",
 				"kunkka",
 				"morgath",
@@ -149,7 +154,9 @@ func _dispatch(check: Callable) -> void:
 				"sylara",
 				"thorne",
 				"vex",
-				"zephyr"
+				"xarnathul",
+				"zephyr",
+				"zhyrakaan"
 			]
 		),
 		"Portrait list covers every hand-authored hero canvas"
@@ -193,7 +200,10 @@ func _dispatch(check: Callable) -> void:
 		"hollowbane",
 		"ignakhor",
 		"ignirus",
-		"infrakzaar"
+		"infrakzaar",
+		"kaerissa",
+		"xarnathul",
+		"zhyrakaan"
 	]:
 		check.call(HeroPortrait.has_custom(id), "%s dispatches to a hand-authored canvas" % id)
 	check.call(HeroPortrait.has_custom("abaddon"), "Abaddon dispatches to a hand-authored canvas")
@@ -475,7 +485,10 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 		"hollowbane",
 		"ignakhor",
 		"ignirus",
-		"infrakzaar"
+		"infrakzaar",
+		"kaerissa",
+		"xarnathul",
+		"zhyrakaan"
 	]:
 		for pixel_size in [HeroShopCard.PORTRAIT_SIZE, 96.0]:
 			# Draw each full page before freeing its batch nodes and reusing free slots.
