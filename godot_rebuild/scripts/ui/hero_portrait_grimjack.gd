@@ -4,7 +4,7 @@ extends RefCounted
 const SIZE := 96.0
 
 
-static func paint(canvas: CanvasItem, box: Rect2) -> void:
+static func paint(canvas: CanvasItem, box: Rect2) -> void_glow:
 	var unit := box.size.x / SIZE
 	var ink := Color8(26, 21, 41)
 	var cloth := Color8(58, 40, 87)
@@ -13,7 +13,7 @@ static func paint(canvas: CanvasItem, box: Rect2) -> void:
 	var mask := Color8(203, 190, 201)
 	var shade := Color8(134, 114, 151)
 	var light := Color8(247, 227, 203)
-	var void := Color8(118, 231, 199)
+	var void_glow := Color8(118, 231, 199)
 	var steel := Color8(166, 180, 204)
 	var gold := Color8(201, 163, 92)
 	_backdrop(canvas, box, Color8(58, 36, 83), Color8(20, 20, 38))
@@ -30,7 +30,14 @@ static func paint(canvas: CanvasItem, box: Rect2) -> void:
 		true
 	)
 	canvas.draw_arc(
-		_p(box, 46.0, 40.0), 37.0 * unit, PI * 0.08, PI * 0.5, 40, void, maxf(1.0 * unit, 1.0), true
+		_p(box, 46.0, 40.0),
+		37.0 * unit,
+		PI * 0.08,
+		PI * 0.5,
+		40,
+		void_glow,
+		maxf(1.0 * unit, 1.0),
+		true
 	)
 	_fill(
 		canvas,
@@ -188,8 +195,12 @@ static func paint(canvas: CanvasItem, box: Rect2) -> void:
 		[Vector2(50.0, 38.0), Vector2(59.0, 34.0), Vector2(57.0, 41.0), Vector2(50.0, 43.0)],
 		ink
 	)
-	canvas.draw_line(_p(box, 36.0, 38.0), _p(box, 41.0, 40.0), void, maxf(1.5 * unit, 1.0), true)
-	canvas.draw_line(_p(box, 52.0, 40.0), _p(box, 57.0, 37.0), void, maxf(1.5 * unit, 1.0), true)
+	canvas.draw_line(
+		_p(box, 36.0, 38.0), _p(box, 41.0, 40.0), void_glow, maxf(1.5 * unit, 1.0), true
+	)
+	canvas.draw_line(
+		_p(box, 52.0, 40.0), _p(box, 57.0, 37.0), void_glow, maxf(1.5 * unit, 1.0), true
+	)
 	_fill(canvas, box, [Vector2(36.0, 42.0), Vector2(41.0, 45.0), Vector2(38.0, 49.0)], red)
 	_fill(canvas, box, [Vector2(54.0, 44.0), Vector2(58.0, 42.0), Vector2(55.0, 49.0)], violet)
 	_fill(
@@ -302,7 +313,9 @@ static func paint(canvas: CanvasItem, box: Rect2) -> void:
 		],
 		steel
 	)
-	canvas.draw_line(_p(box, 16.0, 77.0), _p(box, 25.0, 87.0), void, maxf(1.0 * unit, 1.0), true)
+	canvas.draw_line(
+		_p(box, 16.0, 77.0), _p(box, 25.0, 87.0), void_glow, maxf(1.0 * unit, 1.0), true
+	)
 	canvas.draw_line(_p(box, 21.0, 92.0), _p(box, 33.0, 85.0), gold, maxf(2.0 * unit, 1.0), true)
 	_fill(
 		canvas,
@@ -328,13 +341,17 @@ static func paint(canvas: CanvasItem, box: Rect2) -> void:
 		],
 		steel
 	)
-	canvas.draw_line(_p(box, 81.0, 77.0), _p(box, 72.0, 88.0), void, maxf(1.0 * unit, 1.0), true)
+	canvas.draw_line(
+		_p(box, 81.0, 77.0), _p(box, 72.0, 88.0), void_glow, maxf(1.0 * unit, 1.0), true
+	)
 	canvas.draw_line(_p(box, 64.0, 85.0), _p(box, 76.0, 92.0), gold, maxf(2.0 * unit, 1.0), true)
 	canvas.draw_circle(_p(box, 27.0, 83.0), 3.0 * unit, mask)
 	canvas.draw_circle(_p(box, 70.0, 82.0), 3.0 * unit, shade)
 
 
-static func _fill(canvas: CanvasItem, box: Rect2, points: Array[Vector2], color: Color) -> void:
+static func _fill(
+	canvas: CanvasItem, box: Rect2, points: Array[Vector2], color: Color
+) -> void_glow:
 	canvas.draw_colored_polygon(_poly(box, points), color)
 
 
@@ -349,7 +366,7 @@ static func _p(box: Rect2, x: float, y: float) -> Vector2:
 	return box.position + Vector2(x, y) * box.size.x / SIZE
 
 
-static func _backdrop(canvas: CanvasItem, box: Rect2, top: Color, bottom: Color) -> void:
+static func _backdrop(canvas: CanvasItem, box: Rect2, top: Color, bottom: Color) -> void_glow:
 	var bands := 18
 	var height := box.size.y / float(bands)
 	for index in bands:

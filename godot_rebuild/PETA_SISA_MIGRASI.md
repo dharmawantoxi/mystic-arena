@@ -2957,3 +2957,8 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
   setelah batch (`validate_project`, source contract/oracles, gdparse,
   gdlint, gdformat --check; 428 GDScript).
   Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
+- CI awal batch gagal pada native import Grimjack (preload/parse error).
+  Nama warna lokal `void` diganti menjadi `void_glow` untuk menghindari
+  keyword GDScript. Koreksi terbatas pada nama variabel; geometri/palet,
+  draw order, shared counter dan gameplay tidak berubah. Pemeriksaan
+  changed-file dijalankan sebelum commit koreksi; CI native diulang.
