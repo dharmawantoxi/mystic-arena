@@ -4,7 +4,7 @@ extends RefCounted
 const SIZE := 96.0
 
 
-static func paint(canvas: CanvasItem, box: Rect2) -> void_glow:
+static func paint(canvas: CanvasItem, box: Rect2) -> void:
 	var unit := box.size.x / SIZE
 	var ink := Color8(26, 21, 41)
 	var cloth := Color8(58, 40, 87)
@@ -349,9 +349,7 @@ static func paint(canvas: CanvasItem, box: Rect2) -> void_glow:
 	canvas.draw_circle(_p(box, 70.0, 82.0), 3.0 * unit, shade)
 
 
-static func _fill(
-	canvas: CanvasItem, box: Rect2, points: Array[Vector2], color: Color
-) -> void_glow:
+static func _fill(canvas: CanvasItem, box: Rect2, points: Array[Vector2], color: Color) -> void:
 	canvas.draw_colored_polygon(_poly(box, points), color)
 
 
@@ -366,7 +364,7 @@ static func _p(box: Rect2, x: float, y: float) -> Vector2:
 	return box.position + Vector2(x, y) * box.size.x / SIZE
 
 
-static func _backdrop(canvas: CanvasItem, box: Rect2, top: Color, bottom: Color) -> void_glow:
+static func _backdrop(canvas: CanvasItem, box: Rect2, top: Color, bottom: Color) -> void:
 	var bands := 18
 	var height := box.size.y / float(bands)
 	for index in bands:

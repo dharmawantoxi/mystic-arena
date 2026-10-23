@@ -2962,3 +2962,6 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
   keyword GDScript. Koreksi terbatas pada nama variabel; geometri/palet,
   draw order, shared counter dan gameplay tidak berubah. Pemeriksaan
   changed-file dijalankan sebelum commit koreksi; CI native diulang.
+- CI koreksi pertama mendeteksi unresolved `paint`: penggantian nama ikut
+  mengganti tiga return type `void` menjadi `void_glow`. Ketiganya dipulihkan
+  ke `void`, dengan rename hanya pada variabel warna dan argumen draw.
