@@ -2844,3 +2844,31 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
   guardrails workflow lulus sekali setelah batch (`validate_project`, source
   contract/oracles, gdparse, gdlint, gdformat --check; 416 GDScript).
   Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
+
+
+## Batch slice 9c34–9c36 — Deidara, Dorakai, Drav
+
+- **9c34 Deidara — The Explosive Artist**: metadata True Boss/Explosive
+  Artist; fringe blond menutup satu mata, headband berukir, cloak berkerah
+  tinggi, palm sculpting, clay bird kecil serta spark ledakan.
+- **9c35 Dorakai — The Blood-Drum Oni**: metadata Boss/Area Demon;
+  wajah oni crimson bertaring, tanduk ivory, mane hitam, necklace tali,
+  dua drum taiko di belakang, belly drum dan dua beater terangkat.
+- **9c36 Drav — The Tideforged Warden**: metadata Boss/Tideforged Warden;
+  helm reef/coral terbuka, janggut sea-grey, pauldron scallop ber-barnacle,
+  plate pasang-surut, shield bersigil anchor serta trident berkait.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  43 custom. Seluruh 40 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 820 baris, belum perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  Grid menjadi dua belas kolom berjarak 96 unit untuk 48 kanvas batch
+  dalam empat baris. Shared `draw_pass_count` tetap; tanpa reset,
+  increment atau assertion counter per hero baru.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Kandidat berikutnya: Emberwick (belum custom); Drakar tetap custom.
+- Validasi lokal: 61 poligon baru tanpa edge silang setelah pemisahan
+  highlight prong trident Drav; seluruh blok static guardrails workflow
+  lulus sekali setelah batch (`validate_project`, source contract/oracles,
+  gdparse, gdlint, gdformat --check; 419 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
