@@ -70,6 +70,7 @@ const THARGOROTH_PAINTER = preload("res://scripts/ui/hero_portrait_thargoroth.gd
 const VARKUTHAR_PAINTER = preload("res://scripts/ui/hero_portrait_varkuthar.gd")
 const ZHYVREK_PAINTER = preload("res://scripts/ui/hero_portrait_zhyvrek.gd")
 const OKEANORA_PAINTER = preload("res://scripts/ui/hero_portrait_okeanora.gd")
+const EXPANSION_PAINTER = preload("res://scripts/ui/hero_portrait_expansion.gd")
 const GORNAK := "gornak"
 const GRIMJAW := "grimjaw"
 const KAIZEN := "kaizen"
@@ -152,6 +153,8 @@ static func custom_ids() -> Array[String]:
 			"zorathiel"
 		]
 	)
+	ids.append_array(EXPANSION_PAINTER.ids())
+	ids.sort()
 	return ids
 
 
@@ -321,7 +324,10 @@ func _draw() -> void:
 		ZEPHYR:
 			ZEPHYR_PAINTER.paint(self, box)
 		_:
-			GENERIC_PAINTER.paint(self, box, hue_for(hero_type), _accent())
+			if EXPANSION_PAINTER.has_custom(hero_type):
+				EXPANSION_PAINTER.paint(self, box, hero_type)
+			else:
+				GENERIC_PAINTER.paint(self, box, hue_for(hero_type), _accent())
 	draw_rect(box.grow(-1.0), Color8(10, 16, 24), false, 2.0)
 
 

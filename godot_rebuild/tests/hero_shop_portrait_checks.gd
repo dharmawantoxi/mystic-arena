@@ -1,15 +1,7 @@
 extends RefCounted
-## Hero Shop custom portrait dispatch, generic fallback, and native draw-pass counter.
-## Canvases: Abaddon, Alchemist, Ancient Apparition, Aureth'zar, Cogsworth, Drakar,
-## Gornak, Grimjaw, Grondmauris, Ignis Drachorn, Kaizen, Kunkka, Morgath,
-## Morthraxis, Okeanora, Sylara, Thorne, Vex, Zephyr, Aelyrion, Aeralith, Akahime,
-## Akaroth, Akashari, Akirakumo, Akiraze, Astraelion, Aurelian, Aurelion,
-## Aurelix, Aurelyssa, Aurex, Auroth, Azkharion, Azureth, Bhor'gathul, Broggmar,
-## Brumhar, Celwynn, Cryssalia, Deidara, Dorakai, Drav, Emberwick, Garumenshi,
-## Ghrakmaal, Gorath, Gravefang, Gravewake, Grimjack, Grimkor, Grimstalker,
-## Grondarthul, Hitokage, Hollowbane, Ignakhor, Ignirus, Infrakzaar, Kaerissa,
-## Xarnathul, Zhyrakaan, Thorgaruk, Zorathiel, Nyxallaria, Vhaerinth,
-## Xharokh, Kazreth, Varkuthar, Zhyvrek, and Thargoroth.
+## Hero Shop native custom portrait dispatch, fallback, and shared draw-pass counter.
+## Every roster hero except Raz has a native custom canvas; unknown IDs and Raz
+## retain the deterministic generic fallback. Draw tests cover card and 96-unit sizes.
 
 const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
@@ -102,173 +94,14 @@ func run(tree: SceneTree, check: Callable) -> void:
 
 func _dispatch(check: Callable) -> void:
 	var custom := HeroPortrait.custom_ids()
-	check.call(
-		(
-			custom
-			== [
-				"abaddon",
-				"aelyrion",
-				"aeralith",
-				"akahime",
-				"akaroth",
-				"akashari",
-				"akirakumo",
-				"akiraze",
-				"alchemist",
-				"ancient_apparition",
-				"astraelion",
-				"aurelian",
-				"aurelion",
-				"aurelix",
-				"aurelyssa",
-				"aurethzar",
-				"aurex",
-				"auroth",
-				"azkharion",
-				"azureth",
-				"bhorgathul",
-				"broggmar",
-				"brumhar",
-				"celwynn",
-				"cogsworth",
-				"cryssalia",
-				"deidara",
-				"dorakai",
-				"drakar",
-				"drav",
-				"emberwick",
-				"garumenshi",
-				"ghrakmaal",
-				"gorath",
-				"gornak",
-				"gravefang",
-				"gravewake",
-				"grimjack",
-				"grimjaw",
-				"grimkor",
-				"grimstalker",
-				"grondarthul",
-				"grondmauris",
-				"hitokage",
-				"hollowbane",
-				"ignakhor",
-				"ignirus",
-				"ignis_drachorn",
-				"infrakzaar",
-				"kaerissa",
-				"kaizen",
-				"kazreth",
-				"kunkka",
-				"morgath",
-				"morthraxis",
-				"nyxallaria",
-				"okeanora",
-				"sylara",
-				"thargoroth",
-				"thorgaruk",
-				"thorne",
-				"varkuthar",
-				"vex",
-				"vhaerinth",
-				"xarnathul",
-				"xharokh",
-				"zephyr",
-				"zhyrakaan",
-				"zhyvrek",
-				"zorathiel"
-			]
-		),
-		"Portrait list covers every hand-authored hero canvas"
-	)
-	for id in [
-		"aelyrion",
-		"aeralith",
-		"akahime",
-		"akaroth",
-		"akashari",
-		"akirakumo",
-		"akiraze",
-		"astraelion",
-		"aurelian",
-		"aurelion",
-		"aurelix",
-		"aurelyssa",
-		"aurex",
-		"auroth",
-		"azkharion",
-		"azureth",
-		"bhorgathul",
-		"broggmar",
-		"brumhar",
-		"celwynn",
-		"cryssalia",
-		"deidara",
-		"dorakai",
-		"drav",
-		"emberwick",
-		"garumenshi",
-		"ghrakmaal",
-		"gorath",
-		"gravefang",
-		"gravewake",
-		"grimjack",
-		"grimkor",
-		"grimstalker",
-		"grondarthul",
-		"hitokage",
-		"hollowbane",
-		"ignakhor",
-		"ignirus",
-		"infrakzaar",
-		"kaerissa",
-		"xarnathul",
-		"zhyrakaan",
-		"thorgaruk",
-		"zorathiel",
-		"nyxallaria",
-		"vhaerinth",
-		"xharokh",
-		"kazreth",
-		"varkuthar",
-		"zhyvrek",
-		"thargoroth"
-	]:
-		check.call(HeroPortrait.has_custom(id), "%s dispatches to a hand-authored canvas" % id)
-	check.call(HeroPortrait.has_custom("abaddon"), "Abaddon dispatches to a hand-authored canvas")
-	check.call(
-		HeroPortrait.has_custom("alchemist"), "Alchemist dispatches to a hand-authored canvas"
-	)
-	check.call(
-		HeroPortrait.has_custom("ancient_apparition"),
-		"Ancient Apparition dispatches to a hand-authored canvas"
-	)
-	check.call(
-		HeroPortrait.has_custom("aurethzar"), "Aureth'zar dispatches to a hand-authored canvas"
-	)
-	check.call(
-		HeroPortrait.has_custom("cogsworth"), "Cogsworth dispatches to a hand-authored canvas"
-	)
-	check.call(HeroPortrait.has_custom("drakar"), "Drakar dispatches to a hand-authored canvas")
-	check.call(HeroPortrait.has_custom("gornak"), "Gornak dispatches to a hand-authored canvas")
-	check.call(HeroPortrait.has_custom("grimjaw"), "Grimjaw dispatches to a hand-authored canvas")
-	check.call(
-		HeroPortrait.has_custom("grondmauris"), "Grondmauris dispatches to a hand-authored canvas"
-	)
-	check.call(
-		HeroPortrait.has_custom("ignis_drachorn"),
-		"Ignis Drachorn dispatches to a hand-authored canvas"
-	)
-	check.call(HeroPortrait.has_custom("kaizen"), "Kaizen dispatches to a hand-authored canvas")
-	check.call(HeroPortrait.has_custom("kunkka"), "Kunkka dispatches to a hand-authored canvas")
-	check.call(HeroPortrait.has_custom("morgath"), "Morgath dispatches to a hand-authored canvas")
-	check.call(
-		HeroPortrait.has_custom("morthraxis"), "Morthraxis dispatches to a hand-authored canvas"
-	)
-	check.call(HeroPortrait.has_custom("okeanora"), "Okeanora dispatches to a hand-authored canvas")
-	check.call(HeroPortrait.has_custom("sylara"), "Sylara dispatches to a hand-authored canvas")
-	check.call(HeroPortrait.has_custom("thorne"), "Thorne dispatches to a hand-authored canvas")
-	check.call(HeroPortrait.has_custom("vex"), "Vex dispatches to a hand-authored canvas")
-	check.call(HeroPortrait.has_custom("zephyr"), "Zephyr dispatches to a hand-authored canvas")
+	var expected: Array[String] = []
+	for id in HERO_ROSTER:
+		if id != "raz":
+			expected.append(str(id))
+	expected.sort()
+	check.call(custom == expected, "Portrait list covers every roster hero except Raz")
+	for id in expected:
+		check.call(HeroPortrait.has_custom(id), "%s dispatches to a native custom canvas" % id)
 	check.call(not HeroPortrait.has_custom("raz"), "Raz keeps the generic fallback bust")
 	check.call(not HeroPortrait.has_custom(""), "Empty id falls back to the generic bust")
 
@@ -471,62 +304,10 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 	raz_portrait.size = Vector2(96.0, 96.0)
 	raz_portrait.position = Vector2(672.0, 96.0)
 	tree.root.add_child(raz_portrait)
-	# Exercise the new painters at card size and the 96-unit design size.
+	# Exercise every custom painter at card size and the 96-unit design size.
 	# Shared draw_pass_count remains unchanged; no per-hero counter assertions.
 	var batch_portraits: Array[Control] = []
-	for id in [
-		"aelyrion",
-		"aeralith",
-		"akahime",
-		"akaroth",
-		"akashari",
-		"akirakumo",
-		"akiraze",
-		"astraelion",
-		"aurelian",
-		"aurelion",
-		"aurelix",
-		"aurelyssa",
-		"aurex",
-		"auroth",
-		"azkharion",
-		"azureth",
-		"bhorgathul",
-		"broggmar",
-		"brumhar",
-		"celwynn",
-		"cryssalia",
-		"deidara",
-		"dorakai",
-		"drav",
-		"emberwick",
-		"garumenshi",
-		"ghrakmaal",
-		"gorath",
-		"gravefang",
-		"gravewake",
-		"grimjack",
-		"grimkor",
-		"grimstalker",
-		"grondarthul",
-		"hitokage",
-		"hollowbane",
-		"ignakhor",
-		"ignirus",
-		"infrakzaar",
-		"kaerissa",
-		"xarnathul",
-		"zhyrakaan",
-		"thorgaruk",
-		"zorathiel",
-		"nyxallaria",
-		"vhaerinth",
-		"xharokh",
-		"kazreth",
-		"varkuthar",
-		"zhyvrek",
-		"thargoroth"
-	]:
+	for id in HeroPortrait.custom_ids():
 		for pixel_size in [HeroShopCard.PORTRAIT_SIZE, 96.0]:
 			# Draw each full page before freeing its batch nodes and reusing free slots.
 			if batch_portraits.size() == 72:
