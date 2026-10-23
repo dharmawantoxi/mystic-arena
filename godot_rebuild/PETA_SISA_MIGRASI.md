@@ -2965,3 +2965,33 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
 - CI koreksi pertama mendeteksi unresolved `paint`: penggantian nama ikut
   mengganti tiga return type `void` menjadi `void_glow`. Ketiganya dipulihkan
   ke `void`, dengan rename hanya pada variabel warna dan argumen draw.
+
+
+## Batch slice 9c46–9c48 — Grondarthul, Hitokage, Hollowbane
+
+- **9c46 Grondarthul — The Troll King**: metadata Boss/Troll King;
+  pointed ear panjang, hidung berat, tusk besar, hammered crown, fur mantle
+  asimetris, trophy tooth, royal chain dan sceptre berkepala batu.
+- **9c47 Hitokage — The Sunfire Blade Master**: metadata Boss/Sun Swordsman;
+  sun disc, rambut dark-red liar, brow flame mark, earring panjang,
+  haori split berujung flame dan katana dengan flame guard serta grip wrap.
+- **9c48 Kurosaki Hollowbane — The Substitute Shinigami**: metadata True
+  Boss/Shinigami; rambut orange runcing, broken ivory half-mask, robe hitam
+  berkerah putih, diagonal harness, sword besar gelap dan binding berjumbai.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  55 custom. Seluruh 52 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 868 baris, belum perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  Packing melewati empat kanvas lama baris atas, sepuluh pada y=96, lima
+  pada y=192; seluruh 72 kanvas batch muat pada viewport 1280x720.
+  Shared `draw_pass_count` tetap; tanpa reset, increment atau assertion
+  counter per hero baru.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Berikutnya: pilih metadata hero non-custom setelah Hollowbane;
+  Grondmauris dan Ignis Drachorn tetap custom.
+- Validasi lokal: 65 poligon baru tanpa edge silang; packing 72 kanvas
+  dalam viewport terbukti tanpa overlap. Seluruh blok static guardrails
+  workflow lulus sekali setelah batch (`validate_project`, source
+  contract/oracles, gdparse, gdlint, gdformat --check; 431 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.

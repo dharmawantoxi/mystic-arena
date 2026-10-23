@@ -6,7 +6,8 @@ extends RefCounted
 ## Akaroth, Akashari, Akirakumo, Akiraze, Astraelion, Aurelian, Aurelion,
 ## Aurelix, Aurelyssa, Aurex, Auroth, Azkharion, Azureth, Bhor'gathul, Broggmar,
 ## Brumhar, Celwynn, Cryssalia, Deidara, Dorakai, Drav, Emberwick, Garumenshi,
-## Ghrakmaal, Gorath, Gravefang, Gravewake, Grimjack, Grimkor, and Grimstalker.
+## Ghrakmaal, Gorath, Gravefang, Gravewake, Grimjack, Grimkor, Grimstalker,
+## Grondarthul, Hitokage, and Hollowbane.
 
 const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
@@ -67,6 +68,9 @@ const SAMPLE: Array[String] = [
 	"grimjack",
 	"grimkor",
 	"grimstalker",
+	"grondarthul",
+	"hitokage",
+	"hollowbane",
 	"raz"
 ]
 
@@ -126,7 +130,10 @@ func _dispatch(check: Callable) -> void:
 				"grimjaw",
 				"grimkor",
 				"grimstalker",
+				"grondarthul",
 				"grondmauris",
+				"hitokage",
+				"hollowbane",
 				"ignis_drachorn",
 				"kaizen",
 				"kunkka",
@@ -174,7 +181,10 @@ func _dispatch(check: Callable) -> void:
 		"gravewake",
 		"grimjack",
 		"grimkor",
-		"grimstalker"
+		"grimstalker",
+		"grondarthul",
+		"hitokage",
+		"hollowbane"
 	]:
 		check.call(HeroPortrait.has_custom(id), "%s dispatches to a hand-authored canvas" % id)
 	check.call(HeroPortrait.has_custom("abaddon"), "Abaddon dispatches to a hand-authored canvas")
@@ -450,17 +460,22 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 		"gravewake",
 		"grimjack",
 		"grimkor",
-		"grimstalker"
+		"grimstalker",
+		"grondarthul",
+		"hitokage",
+		"hollowbane"
 	]:
 		for pixel_size in [HeroShopCard.PORTRAIT_SIZE, 96.0]:
 			var portrait := HeroPortrait.new()
 			portrait.setup(id, HERO_ROSTER[id], pixel_size)
 			portrait.size = Vector2(pixel_size, pixel_size)
-			# Use free top-row slots, then skip y=96 and five old canvases at y=192.
-			# All 66 batch canvases fit inside 1280x720 without overlapping old nodes.
+			# Reserve four old top-row canvases, ten at y=96 and five at y=192.
+			# All 72 batch canvases fit inside 1280x720 without overlapping old nodes.
 			var slot := batch_portraits.size() + 4
 			if slot >= 13:
-				slot += 18
+				slot += 10
+			if slot >= 26:
+				slot += 5
 			portrait.position = Vector2((slot % 13) * 96.0, floorf(slot / 13.0) * 96.0)
 			tree.root.add_child(portrait)
 			batch_portraits.append(portrait)

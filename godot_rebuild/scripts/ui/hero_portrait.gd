@@ -50,6 +50,9 @@ const GRAVEWAKE_PAINTER = preload("res://scripts/ui/hero_portrait_gravewake.gd")
 const GRIMJACK_PAINTER = preload("res://scripts/ui/hero_portrait_grimjack.gd")
 const GRIMKOR_PAINTER = preload("res://scripts/ui/hero_portrait_grimkor.gd")
 const GRIMSTALKER_PAINTER = preload("res://scripts/ui/hero_portrait_grimstalker.gd")
+const GRONDARTHUL_PAINTER = preload("res://scripts/ui/hero_portrait_grondarthul.gd")
+const HITOKAGE_PAINTER = preload("res://scripts/ui/hero_portrait_hitokage.gd")
+const HOLLOWBANE_PAINTER = preload("res://scripts/ui/hero_portrait_hollowbane.gd")
 const OKEANORA_PAINTER = preload("res://scripts/ui/hero_portrait_okeanora.gd")
 const GORNAK := "gornak"
 const GRIMJAW := "grimjaw"
@@ -107,7 +110,10 @@ static func custom_ids() -> Array[String]:
 		GRIMJAW,
 		"grimkor",
 		"grimstalker",
-		"grondmauris"
+		"grondarthul",
+		"grondmauris",
+		"hitokage",
+		"hollowbane"
 	]
 	ids.append_array(["ignis_drachorn", KAIZEN, "kunkka", "morgath", "morthraxis", "okeanora"])
 	ids.append_array([SYLARA, THORNE, VEX, ZEPHYR])
@@ -205,6 +211,12 @@ func _draw() -> void:
 			GRIMKOR_PAINTER.paint(self, box)
 		"grimstalker":
 			GRIMSTALKER_PAINTER.paint(self, box)
+		"grondarthul":
+			GRONDARTHUL_PAINTER.paint(self, box)
+		"hitokage":
+			HITOKAGE_PAINTER.paint(self, box)
+		"hollowbane":
+			HOLLOWBANE_PAINTER.paint(self, box)
 		"abaddon":
 			ABADDON_PAINTER.paint(self, box)
 		"ancient_apparition":
