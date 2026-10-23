@@ -2900,3 +2900,31 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
   guardrails workflow lulus sekali setelah batch (`validate_project`, source
   contract/oracles, gdparse, gdlint, gdformat --check; 422 GDScript).
   Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
+
+
+## Batch slice 9c40–9c42 — Gorath, Gravefang, Gravewake
+
+- **9c40 Gorath — The Bloodwarden**: metadata Boss/Blood Hunter;
+  cowl robek, bone brow, tear-mark merah, kalung gigi, dua bilah berkait
+  silang serta wrist guard dengan inlay blood-red.
+- **9c41 Gravefang — The Bone Devourer**: metadata Boss/Earth Guardian;
+  siluet membungkuk dengan fossil plate asimetris, skull muzzle bertaring,
+  rib-like chest arc, root-bound fist, fossil claw dan moss patch.
+- **9c42 Gravewake — The Tidehunter**: metadata Boss/Kraken Tidehunter;
+  kepala berkubah, cheek tentacle, fin kipas, shell/barnacle pauldron,
+  tentacle melingkar dengan sucker serta salvaged anchor dan webbed hand.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  49 custom. Seluruh 46 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 844 baris, belum perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  Grid tetap 13 kolom, lima slot pertama y=192 dilewati; 60 kanvas batch
+  muat pada viewport 1280x720 tanpa menimpa kanvas lama.
+  Shared `draw_pass_count` tetap; tanpa reset, increment atau assertion
+  counter per hero baru.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Kandidat berikutnya: Grimjack (belum custom); Gornak tetap custom.
+- Validasi lokal: 79 poligon baru tanpa edge silang; seluruh blok static
+  guardrails workflow lulus sekali setelah batch (`validate_project`, source
+  contract/oracles, gdparse, gdlint, gdformat --check; 425 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.

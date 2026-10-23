@@ -6,7 +6,7 @@ extends RefCounted
 ## Akaroth, Akashari, Akirakumo, Akiraze, Astraelion, Aurelian, Aurelion,
 ## Aurelix, Aurelyssa, Aurex, Auroth, Azkharion, Azureth, Bhor'gathul, Broggmar,
 ## Brumhar, Celwynn, Cryssalia, Deidara, Dorakai, Drav, Emberwick, Garumenshi,
-## and Ghrakmaal.
+## Ghrakmaal, Gorath, Gravefang, and Gravewake.
 
 const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
@@ -61,6 +61,9 @@ const SAMPLE: Array[String] = [
 	"emberwick",
 	"garumenshi",
 	"ghrakmaal",
+	"gorath",
+	"gravefang",
+	"gravewake",
 	"raz"
 ]
 
@@ -112,7 +115,10 @@ func _dispatch(check: Callable) -> void:
 				"emberwick",
 				"garumenshi",
 				"ghrakmaal",
+				"gorath",
 				"gornak",
+				"gravefang",
+				"gravewake",
 				"grimjaw",
 				"grondmauris",
 				"ignis_drachorn",
@@ -156,7 +162,10 @@ func _dispatch(check: Callable) -> void:
 		"drav",
 		"emberwick",
 		"garumenshi",
-		"ghrakmaal"
+		"ghrakmaal",
+		"gorath",
+		"gravefang",
+		"gravewake"
 	]:
 		check.call(HeroPortrait.has_custom(id), "%s dispatches to a hand-authored canvas" % id)
 	check.call(HeroPortrait.has_custom("abaddon"), "Abaddon dispatches to a hand-authored canvas")
@@ -426,7 +435,10 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 		"drav",
 		"emberwick",
 		"garumenshi",
-		"ghrakmaal"
+		"ghrakmaal",
+		"gorath",
+		"gravefang",
+		"gravewake"
 	]:
 		for pixel_size in [HeroShopCard.PORTRAIT_SIZE, 96.0]:
 			var portrait := HeroPortrait.new()
