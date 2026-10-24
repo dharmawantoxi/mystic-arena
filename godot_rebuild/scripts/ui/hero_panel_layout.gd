@@ -224,7 +224,9 @@ func _skill_slots(px: int, py: int, hero_color: Array) -> void:
 	for index in range(4):
 		var cooldown := int(cooldowns[index]) if index < cooldowns.size() else 0
 		var maximum := int(cooldown_max[index]) if index < cooldown_max.size() else 1
-		var label := String(keys[index]) if index < keys.size() else ["Q", "W", "E", "R"][index]
+		var label: String = (
+			String(keys[index]) if index < keys.size() else String(["Q", "W", "E", "R"][index])
+		)
 		var x := start_x + index * (SKILL_SIZE + SKILL_GAP)
 		_draw_skill_slot(x, y, label, cooldown, maximum, colors[index], index == 3, auto_cast)
 
