@@ -3713,3 +3713,41 @@ hanya saat menang, setelah `_update_unlock_popup`.
 Batas: popup sumber nyaris tak terlihat karena bug timer di atas; Godot meniru perilaku itu,
 tidak memperbaikinya. Belum ada review visual di Godot. Bukan klaim pixel parity.
 
+## Slice 9bv7 — popup build tower (layer 9bv7)
+
+Sumber: `ui_components/_bundle.py::BuildPopup.draw` (cabang cheap-alpha dan cabang flat),
+dipanggil `Game.draw` sebagai `ui.draw_build_popup(self.screen)` saat `g.build_popup_slot`
+terisi (slot build kosong terpilih), setelah `draw_tactical_commands` dan sebelum hero shop.
+
+- Oracle `tests/build_popup_draw_source_oracle.py` menjalankan `draw`, `_draw_tower_buttons`
+  dan `_draw_close_button` (warisan `BaseUIComponent`) ASLI beserta `ui_theme.draw_icon`,
+  `ui_theme.corner_ticks` dan `ui_theme.fit_ellipsis` di shim perekam. `_shadow`, `_vgrad`,
+  `_radial` dan `outline_text` direkam sebagai satu op. Setiap helper yang di-harvest
+  didahului op `section`. `_popup_di_panel` dijalankan asli; fixture tidak mengaktifkan
+  panel samping mobile, jadi popup memakai posisi fallback di atas peta.
+  - Fixture berisi 9 frame dan 751 op: pusat, jepit atas/kiri/kanan, hover X, hover kartu,
+    emas tak cukup, panel flat, dan emas ribuan.
+- `scripts/ui/build_popup_layout.gd` membangun op yang sama:
+  - `origin` meniru urutan cek sumber (pusat di slot, 30 px di atas, jepit ke frame);
+  - garis konektor emas dari bawah-tengah kartu ke slot;
+  - bayangan, gradasi `(34,40,68)->(16,19,36)`, tepi 2 px `ui_theme.GOLD`, sudut emas;
+  - judul Cinzel "BUILD TOWER", baris `Gold: n (Cost: 100)`;
+  - tombol X (hover merah);
+  - grid 2x2 empat kartu tower (archer, cannon, ice, mage) dengan ikon koin, biaya, glow
+    hover, dan sudut emas bila emas mencukupi.
+- `prototype_view.gd` melukis layer `build_popup` setelah `tactical_feedback` dan sebelum
+  `end_overlay`, memakai `build_popup_state` dari layar.
+- `prototype_screen.gd` mengisi state setiap frame saat slot build kosong terpilih
+  (`selected_slot_id` dengan `structure_id == -1`): x, y dan emas.
+- Bukti: `tests/build_popup_draw_checks.gd` (replay semua frame, rect kartu dan X, urutan
+  layer, kosong bila tidak ada slot), blok 9bv7 di `validate_project.py`, dan baris oracle di
+  workflow.
+
+Batas:
+- Cabang panel samping lebar (`_popup_di_panel` mengembalikan surface) belum diport; popup
+  tetap memakai posisi fallback. Cabang cheap-alpha dan flat keduanya diport.
+- Deskripsi empat kartu tidak mencapai lebar pemotongan `fit_ellipsis` pada fixture, jadi
+  Godot belum meniru pemotongan bila deskripsi sumber berubah jadi lebih panjang.
+- Klik di popup tidak dilayani (tombol HUD yang memicu build); perilaku game tidak berubah.
+- Belum ada review visual di Godot. Bukan klaim pixel parity.
+

@@ -32,6 +32,7 @@ const GoldHudLayout = preload("res://scripts/ui/gold_hud_layout.gd")
 const ShopHintLayout = preload("res://scripts/ui/shop_hint_layout.gd")
 const InputHintLayout = preload("res://scripts/ui/input_hint_layout.gd")
 const EndOverlayLayout = preload("res://scripts/ui/end_overlay_layout.gd")
+const BuildPopupLayout = preload("res://scripts/ui/build_popup_layout.gd")
 const TitleFont = preload("res://assets/fonts/Cinzel.ttf")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
@@ -55,6 +56,7 @@ const OVERLAY_ORDER := [
 	"kill_feed",
 	"achievement",
 	"tactical_feedback",
+	"build_popup",
 	"end_overlay",
 	"input_hints",
 	"level_intro",
@@ -86,6 +88,9 @@ var input_hints: Array = []
 ## Layer 9bv5: the victory / defeat overlay state (title, colour, action line, stats,
 ## achievements) the screen hands over once the match ends; empty while it runs.
 var end_overlay_state: Dictionary = {}
+## Layer 9bv7: the build-tower popup state (slot x/y and gold) the screen hands over while an
+## empty build slot is selected; empty otherwise.
+var build_popup_state: Dictionary = {}
 var hud_shadow_box := StyleBoxFlat.new()
 ## Layer 9bv6: `Overlay.unlock_popup_timer`, advanced once per victory overlay draw and
 ## stopped AT the 90-call delay exactly like `_update_unlock_popup`.
@@ -291,6 +296,8 @@ func _draw_overlay_layer(layer: String, world: Prototype) -> void:
 			_draw_gold_hud(world)
 		"tactical_feedback":
 			_draw_tactical_feedback(world)
+		"build_popup":
+			_draw_build_popup(world)
 		"end_overlay":
 			_draw_end_overlay(world)
 		"input_hints":
@@ -985,6 +992,38 @@ func input_hints_blocked(world: Prototype) -> bool:
 		or bool(world.boss_intro_state().get("active", false))
 		or bool(world.boss_death_state().get("celebration_active", false))
 	)
+
+
+## Layer 9bv7: `BuildPopup.draw`, the build-tower popup painted right after the tactical banner
+## while the screen hands over `build_popup_state` (slot x/y and gold).
+func _draw_build_popup(world: Prototype) -> void:
+	var mouse := Vector2i(get_local_mouse_position())
+	for op in build_popup_draw_ops(world, Callable(), mouse):
+		match String(op.get("kind", "")):
+			"section":
+				continue
+			"radial":
+				_draw_radial_op(op)
+			"outline_text":
+				_draw_outline_text_op(op)
+			"shadow":
+				_draw_shadow_op(op)
+			_:
+				_draw_hud_op(op)
+
+
+## `BuildPopup.draw`'s ops; `mouse` is the arena-local pointer for the hover states.
+func build_popup_draw_ops(
+	world: Prototype, measure: Callable = Callable(), mouse: Vector2i = Vector2i()
+) -> Array:
+	if build_popup_state.is_empty() or not world.is_running():
+		return []
+	var metrics: Callable = _measure_intro_text
+	if measure.is_valid():
+		metrics = measure
+	var state := build_popup_state.duplicate()
+	state["mouse"] = mouse
+	return BuildPopupLayout.ops(state, metrics, true)
 
 
 ## Layer 9bv5: `Overlay.draw`, the victory / defeat screen, painted after the tactical banner
