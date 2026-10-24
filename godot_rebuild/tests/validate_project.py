@@ -5017,7 +5017,7 @@ check("if mgr is None or not mgr.is_controller_mode():" in _ih_draw
 check("var x := (SCREEN_WIDTH - total_w) >> 1" in _ih_layout and "const BAR_Y := 690" in _ih_layout,
       "9bv4 layout must keep the centred floor start and y = SCREEN_HEIGHT - 30")
 check('const InputHintLayout = preload("res://scripts/ui/input_hint_layout.gd")' in _ih_view
-      and re.search(r'"tactical_feedback",\s*"end_overlay",\s*"input_hints",\s*"level_intro",',
+      and re.search(r'"tactical_feedback",\s*"build_popup",\s*"end_overlay",\s*"input_hints",\s*"level_intro",',
                     _ih_view) is not None
       and '"input_hints":\n\t\t\t_draw_input_hints(world)' in _ih_view
       and "func input_hints_blocked(" in _ih_view,
@@ -5069,7 +5069,8 @@ check("if unlock_popup_timer < EndOverlayLayout.UNLOCK_DELAY:" in _eo_view
       and "Control.MOUSE_FILTER_IGNORE if result else Control.MOUSE_FILTER_STOP" in _eo_screen,
       "9bv6 view/screen must cap the timer like pygame and route PLAY NEXT LEVEL clicks")
 check('const EndOverlayLayout = preload("res://scripts/ui/end_overlay_layout.gd")' in _eo_view
-      and re.search(r'"tactical_feedback",\s*"end_overlay",\s*"input_hints",', _eo_view) is not None
+      and re.search(r'"tactical_feedback",\s*"build_popup",\s*"end_overlay",\s*"input_hints",',
+                    _eo_view) is not None
       and '"end_overlay":\n\t\t\t_draw_end_overlay(world)' in _eo_view
       and "state[\"animation_time\"] = world.tick_count" in _eo_view,
       "9bv5 view must paint the overlay between the tactical banner and the hint bar")
@@ -5077,6 +5078,43 @@ check('arena.set("end_overlay_state", {} if world.is_running() else _end_overlay
       in _eo_screen and "_set_result_layout(true)" in _eo_screen
       and "_set_result_layout(false)" in _eo_screen,
       "9bv5 screen must hand the end state to the arena and switch the pause card layout")
+
+# ── Layer 9bv7: the build-tower popup (BuildPopup.draw) ──
+from build_popup_draw_source_oracle import source_fixture as build_popup_draw_fixture
+_bp_path = ROOT / "tests/fixtures/build_popup_draw_source.json"
+_bp_layout = (ROOT / "scripts/ui/build_popup_layout.gd").read_text(encoding="utf-8")
+_bp_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_bp_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+_bp_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+check('const BuildPopupDrawChecks = preload("res://tests/build_popup_draw_checks.gd")' in ai_tests
+      and "BuildPopupDrawChecks.new().run(_check)" in ai_tests,
+      "9bv7 build popup draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/build_popup_draw_source_oracle.py" in workflow,
+      "9bv7 CI must run the BuildPopup.draw source oracle")
+check(_bp_path.is_file(), "9bv7 build popup fixture must exist")
+if _bp_path.is_file():
+    _bp = json.loads(_bp_path.read_text(encoding="utf-8"))
+    check(build_popup_draw_fixture() == _bp, "9bv7 build popup fixture must not drift from the source")
+    check(len(_bp["frames"]) == 9 and sum(len(f["ops"]) for f in _bp["frames"]) == 751
+          and {f["cheap_alpha"] for f in _bp["frames"]} == {True, False},
+          "9bv7 fixture must pin 9 frames / 751 ops over both the cheap-alpha and flat branches")
+check("if self.build_popup_slot is not None:\n            self.ui.draw_build_popup(self.screen)"
+      in _bp_core, "9bv7 source must still paint the build popup while a build slot is set")
+check("static func origin(slot_x: int, slot_y: int) -> Vector2i:" in _bp_layout
+      and "static func button_rect(slot_x: int, slot_y: int, index: int) -> Rect2i:" in _bp_layout
+      and "static func close_rect(slot_x: int, slot_y: int) -> Rect2i:" in _bp_layout
+      and "const TOWER_TYPES :=" in _bp_layout,
+      "9bv7 layout must keep the fallback origin, the card rects and the four tower types")
+check('const BuildPopupLayout = preload("res://scripts/ui/build_popup_layout.gd")' in _bp_view
+      and '"tactical_feedback",\n\t"build_popup",\n\t"end_overlay",' in _bp_view
+      and '"build_popup":\n\t\t\t_draw_build_popup(world)' in _bp_view
+      and "func build_popup_draw_ops(" in _bp_view
+      and "if build_popup_state.is_empty() or not world.is_running():" in _bp_view,
+      "9bv7 view must paint the popup between the tactical banner and the end overlay")
+check('arena.set("build_popup_state", _build_popup_state(world, match_session))' in _bp_screen
+      and "func _build_popup_state(world: Prototype, match_session: PrototypeSession) -> Dictionary:" in _bp_screen
+      and "if slot == null or slot.structure_id != -1:" in _bp_screen,
+      "9bv7 screen must hand the selected empty build slot to the arena")
 
 # ── Layer 9br: UI skin from ui_theme.py (bake/bake_ui_theme.py) ──
 _ui_path = ROOT / "data/art/ui_theme.json"
