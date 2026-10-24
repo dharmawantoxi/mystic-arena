@@ -3529,3 +3529,34 @@ dari entropi di tiap run, jadi pola bintiknya memang tidak pernah tetap di sumbe
 kabut, dan partikel tetap dari 9d0. Tekstur digambar dengan filter dan goncangan layar milik view.
 Bukan klaim pixel parity layar penuh, dan belum ada review di Godot.
 
+## Slice 9bv2 — chip emas dan badge mode sumber (layer 9bv2)
+
+Sumber: `_core.py::Game._draw_gold_hud`. `Game.draw` memanggilnya di pass UI hanya kalau panel
+kanan tidak aktif (`if not _PANEL_AKTIF()`), setelah `draw_shop_hints` dan sebelum banner boss.
+
+- Oracle `tests/gold_hud_draw_source_oracle.py` menjalankan `_draw_gold_hud` ASLI (diambil
+  dengan `ast` dari kelas `Game`), `format_gold_rate`, dan `ui_theme.draw_icon` asli di shim
+  perekam `draw_recorder.py`. `_vgrad` direkam sebagai satu op `vgrad`. Fixture
+  `tests/fixtures/gold_hud_draw_source.json` berisi 6 frame dan 102 op: dua cabang
+  `cheap_alpha()`, mode easy/normal/hard, satu mode tak dikenal (jatuh ke NORMAL), dan lebar
+  minimum 150. `draw_recorder.Font` sekarang punya `size()`.
+- `scripts/ui/gold_hud_layout.gd` membangun op yang sama. Chip di (18, 22), tinggi 40, lebar
+  `max(150, val_w + inc_w + 78)`, radius 20, gradasi (44,38,18)→(24,20,9) atau solid
+  (26,22,10), tepi GOLD 2 px, ikon koin s=0.9, emas `f"{gold:,}"` 24 px, garis rambut, dan
+  `+rate/s` 17 px. Badge di y + 46, tinggi 24, radius 12, ikon pedang s=0.55, dan teks
+  EASY/NORMAL/HARD 18 px.
+- `prototype_view.gd` melukis layer `gold_hud` pertama di `OVERLAY_ORDER` (tanpa goncangan,
+  sebelum `boss_intro`). Gradasi dilukis per baris dengan sudut bulat, rect bulat lewat
+  `StyleBoxFlat` tanpa anti-alias. Data dari `world.economy.gold[0]`,
+  `economy.income_per_second`, dan `world.difficulty`.
+- `prototype_screen.gd` mematikan `gold_hud_visible` saat panel kanan aktif, sama seperti
+  sumber. Bar atas Godot tidak ada di pygame. Bar itu sekarang mulai di x = 240 agar chip dan
+  badge tidak tertutup, `ArenaTitle` boleh terpotong, dan `GoldLabel` hanya menampilkan emas
+  lawan (`AI:%d`). Emas pemain dan income sekarang ada di chip sumber.
+- Bukti: `tests/gold_hud_draw_checks.gd` (replay semua frame, format ribuan, urutan layer,
+  data hidup), `prototype_layout_checks.gd` (chip dan badge hidup tidak bertumpuk dengan bar
+  atas), blok 9bv2 di `validate_project.py`, dan baris oracle di workflow.
+
+Batas: font Barlow SemiBold Godot, bukan Barlow Bold/Medium sumber. Lebar chip mengikuti metrik
+font Godot. Belum ada review visual di Godot. Bukan klaim pixel parity.
+

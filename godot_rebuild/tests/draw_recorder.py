@@ -135,6 +135,9 @@ class Font:
     def render(self, text, _antialias, color):
         return Text(text, self.font_size, self.style, color)
 
+    def size(self, text):
+        return glyph_width(self.font_size) * len(text), self.font_size
+
 
 class Draw:
     @staticmethod

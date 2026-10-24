@@ -28,6 +28,7 @@ const BossArt = preload("res://scripts/ui/boss_art.gd")
 const BossAnim = preload("res://scripts/ui/boss_anim.gd")
 const NyxarethRealmLayout = preload("res://scripts/ui/nyxareth_realm_layout.gd")
 const TacticalLayout = preload("res://scripts/ui/tactical_layout.gd")
+const GoldHudLayout = preload("res://scripts/ui/gold_hud_layout.gd")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
@@ -42,6 +43,7 @@ const HUD_SCREEN_W := 1280
 ## are never drawn by the source; they keep their slot between announcer and popup.
 const WORLD_LAYER_ORDER := ["path_preview", "effects", "tactical"]
 const OVERLAY_ORDER := [
+	"gold_hud",
 	"boss_intro",
 	"wave_announcer",
 	"combo_counter",
@@ -66,6 +68,13 @@ var boss_pose_draws: Dictionary = {}
 var boss_screen_layer_draws := 0
 ## The tactical banner border (layer 9bi2): 2 px, 6 px corners, drawn inside its box.
 var tactical_border := StyleBoxFlat.new()
+## Layer 9bv2: pygame skips `_draw_gold_hud` while the wide-screen side panel shows the
+## gold; the screen clears this flag then.
+var gold_hud_visible := true
+## Gold HUD paints so far; the scene suite proves the chip reaches `_draw`.
+var gold_hud_draws := 0
+## Rounded chip/badge fills and borders (pygame `draw.rect(..., border_radius=r)`).
+var hud_round_box := StyleBoxFlat.new()
 var dynamic_map := DynamicMapRenderer.new()
 ## Real DynamicRenderer paints; the scene suite proves this reaches `_draw`.
 var dynamic_map_draws := 0
@@ -257,6 +266,8 @@ func _draw_overlay_layer(layer: String, world: Prototype) -> void:
 			_draw_kill_feed(world)
 		"achievement":
 			_draw_achievement_popup(world)
+		"gold_hud":
+			_draw_gold_hud(world)
 		"tactical_feedback":
 			_draw_tactical_feedback(world)
 		"level_intro":
@@ -900,6 +911,77 @@ func _draw_intro_op(op: Dictionary) -> void:
 				font_size,
 				color
 			)
+
+
+## Layer 9bv2: `Game._draw_gold_hud`, the gold chip and mode badge at the top-left, painted
+## unshaken before the boss banner like the source UI pass.
+func _draw_gold_hud(world: Prototype) -> void:
+	if not gold_hud_visible:
+		return
+	gold_hud_draws += 1
+	for op in gold_hud_draw_ops(world):
+		match String(op.get("kind", "")):
+			"vgrad":
+				_draw_vgrad_op(op)
+			"rect":
+				_draw_round_rect_op(op)
+			_:
+				_draw_intro_op(op)
+
+
+## `measure` defaults to the real HUD font; the checks pass the oracle's.
+func gold_hud_draw_ops(world: Prototype, measure: Callable = Callable()) -> Array:
+	var metrics: Callable = _measure_intro_text
+	if measure.is_valid():
+		metrics = measure
+	return GoldHudLayout.ops(
+		int(world.economy.gold[0]),
+		float(world.economy.income_per_second),
+		String(world.difficulty),
+		metrics
+	)
+
+
+## `ui_theme._vgrad`: one row per pixel, `int(top + (bottom - top) * y / (h - 1))`, masked by
+## the rounded rect (each row is inset by the corner circle).
+func _draw_vgrad_op(op: Dictionary) -> void:
+	var box: Array = op.get("rect", [0, 0, 0, 0])
+	var top: Array = op.get("top", [0, 0, 0])
+	var bottom: Array = op.get("bottom", [0, 0, 0])
+	var width := float(box[2])
+	var height := int(box[3])
+	var radius := float(op.get("radius", 0))
+	for row in range(height):
+		var t := float(row) / float(maxi(1, height - 1))
+		var color := Color8(
+			int(top[0] + (bottom[0] - top[0]) * t),
+			int(top[1] + (bottom[1] - top[1]) * t),
+			int(top[2] + (bottom[2] - top[2]) * t)
+		)
+		var inset := 0.0
+		var from_edge := minf(float(row) + 0.5, float(height) - float(row) - 0.5)
+		if radius > 0.0 and from_edge < radius:
+			var rise := radius - from_edge
+			inset = roundf(radius - sqrt(maxf(0.0, radius * radius - rise * rise)))
+		if width - inset * 2.0 > 0.0:
+			draw_rect(
+				Rect2(float(box[0]) + inset, float(box[1]) + row, width - inset * 2.0, 1.0), color
+			)
+
+
+## A pygame rounded `draw.rect`: filled when `width` is 0, else a border drawn inside.
+func _draw_round_rect_op(op: Dictionary) -> void:
+	var box: Array = op.get("rect", [0, 0, 0, 0])
+	var rgba: Array = op.get("color", [0, 0, 0, 255])
+	var color := Color8(int(rgba[0]), int(rgba[1]), int(rgba[2]))
+	var width := int(op.get("width", 0))
+	hud_round_box.anti_aliasing = false
+	hud_round_box.set_corner_radius_all(int(op.get("radius", 0)))
+	hud_round_box.draw_center = width == 0
+	hud_round_box.bg_color = color
+	hud_round_box.set_border_width_all(width)
+	hud_round_box.border_color = color
+	draw_style_box(hud_round_box, Rect2(float(box[0]), float(box[1]), float(box[2]), float(box[3])))
 
 
 ## Layer 9bi2: `TacticalCommandManager.draw_world`, the gather marker and hero dashes.

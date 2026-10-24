@@ -4912,6 +4912,47 @@ check("_check_world_frames(check" in _td_checks and "_check_feedback_frames(chec
       and "_check_feedback_side_effects(check)" in _td_checks,
       "9bi2 the tactical draw suite must replay frames, the view and the feedback side effects")
 
+# ── Layer 9bv2: the source gold chip and mode badge (Game._draw_gold_hud) ──
+from gold_hud_draw_source_oracle import source_fixture as gold_hud_draw_fixture
+_gh_path = ROOT / "tests/fixtures/gold_hud_draw_source.json"
+_gh_layout = (ROOT / "scripts/ui/gold_hud_layout.gd").read_text(encoding="utf-8")
+_gh_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_gh_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+_gh_scene = (ROOT / "scenes/prototype/PrototypeMatch.tscn").read_text(encoding="utf-8")
+_gh_hud = (ROOT / "tests/prototype_layout_checks.gd").read_text(encoding="utf-8")
+_gh_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+check('const GoldHudDrawChecks = preload("res://tests/gold_hud_draw_checks.gd")' in ai_tests
+      and "GoldHudDrawChecks.new().run(_check)" in ai_tests,
+      "9bv2 gold HUD draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/gold_hud_draw_source_oracle.py" in workflow,
+      "9bv2 CI must run the _draw_gold_hud source oracle")
+check(_gh_path.is_file(), "9bv2 gold HUD fixture must exist")
+if _gh_path.is_file():
+    _gh = json.loads(_gh_path.read_text(encoding="utf-8"))
+    check(gold_hud_draw_fixture() == _gh, "9bv2 gold HUD fixture must not drift from _core.py")
+    check(len(_gh["frames"]) == 6 and sum(len(f["ops"]) for f in _gh["frames"]) == 102
+          and {f["cheap_alpha"] for f in _gh["frames"]} == {True, False}
+          and {f["difficulty"] for f in _gh["frames"]} >= {"easy", "normal", "hard"},
+          "9bv2 fixture must pin 6 frames / 102 ops over both fill branches and every mode")
+check("if not _PANEL_AKTIF():\n            self._draw_gold_hud(self.screen)" in _gh_core,
+      "9bv2 source must still paint the gold HUD only while the side panel is off")
+check("const ORIGIN := Vector2i(18, 22)" in _gh_layout
+      and "maxi(CHIP_MIN_WIDTH, val_w + inc_w + 78)" in _gh_layout
+      and "Economy.format_gold_rate(rate)" in _gh_layout,
+      "9bv2 layout must keep the source origin, chip width rule and format_gold_rate")
+check('const GoldHudLayout = preload("res://scripts/ui/gold_hud_layout.gd")' in _gh_view
+      and re.search(r'const OVERLAY_ORDER := \[\s*"gold_hud",\s*"boss_intro",', _gh_view) is not None
+      and '"gold_hud":\n\t\t\t_draw_gold_hud(world)' in _gh_view
+      and "if not gold_hud_visible:" in _gh_view
+      and "func _draw_vgrad_op(" in _gh_view and "func _draw_round_rect_op(" in _gh_view,
+      "9bv2 view must paint the gold HUD first in the UI pass, gated by gold_hud_visible")
+check('arena.set("gold_hud_visible", side_panel == null or not side_panel.is_active())'
+      in _gh_screen and '%GoldLabel.text = "AI:%d" % world.economy.gold[1]' in _gh_screen,
+      "9bv2 screen must hide the chip with the side panel and keep only the opponent gold")
+check('[node name="TopBar" type="PanelContainer" parent="HUD"]\noffset_left = 240.0\n' in _gh_scene
+      and "Gold chip %s and badge %s stay clear of the top bar %s" in _gh_hud,
+      "9bv2 top bar must start right of the gold chip, proven by the live layout checks")
+
 # ── Layer 9br: UI skin from ui_theme.py (bake/bake_ui_theme.py) ──
 _ui_path = ROOT / "data/art/ui_theme.json"
 _ui_src = (ROOT.parent / "ui_theme.py").read_text(encoding="utf-8")

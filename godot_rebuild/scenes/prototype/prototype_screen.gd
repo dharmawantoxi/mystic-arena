@@ -164,7 +164,11 @@ func _process(_delta: float) -> void:
 	if hero_shop_panel != null and hero_shop_panel.visible:
 		hero_shop_panel.command_pending = not match_session.command.is_empty()
 		hero_shop_panel.refresh()
-	%GoldLabel.text = "G:%d · AI:%d" % [world.economy.gold[0], world.economy.gold[1]]
+	# Layer 9bv2: the player's gold and income live in the source gold chip the arena
+	# paints at the top-left (only while the side panel is off, like `_draw_gold_hud`);
+	# the bar keeps the opponent's gold, which pygame never shows.
+	arena.set("gold_hud_visible", side_panel == null or not side_panel.is_active())
+	%GoldLabel.text = "AI:%d" % world.economy.gold[1]
 	%GoldLabel.tooltip_text = (
 		"Emas: %d G · Lawan: %d G"
 		% [
