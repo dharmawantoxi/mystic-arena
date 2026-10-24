@@ -15,6 +15,7 @@ import json
 import os
 import sys
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
@@ -42,6 +43,17 @@ def boot():
     return pygame, _core, screen
 
 
+@contextmanager
+def virtual_ticks(pygame, value):
+    """Freeze pygame's wall clock for one deterministic source-render frame."""
+    original = pygame.time.get_ticks
+    pygame.time.get_ticks = lambda: int(value)
+    try:
+        yield
+    finally:
+        pygame.time.get_ticks = original
+
+
 def write_png(path: Path, rgba) -> dict:
     """Write an HxWx4 uint8 array deterministically; return its manifest entry."""
     from PIL import Image
@@ -49,6 +61,22 @@ def write_png(path: Path, rgba) -> dict:
     path.parent.mkdir(parents=True, exist_ok=True)
     image = Image.fromarray(rgba, "RGBA")
     image.save(path, format="PNG", optimize=True, compress_level=9)
+    data = path.read_bytes()
+    return {
+        "size": [image.width, image.height],
+        "bytes": len(data),
+        "sha256": hashlib.sha256(data).hexdigest(),
+    }
+
+
+def write_webp(path: Path, rgba) -> dict:
+    """Write deterministic lossless WebP; return the same manifest shape as PNG."""
+    from PIL import Image
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    image = Image.fromarray(rgba, "RGBA")
+    # Method 0 is fast and deterministic; lossless mode preserves every source RGBA byte.
+    image.save(path, format="WEBP", lossless=True, quality=100, method=0, exact=True)
     data = path.read_bytes()
     return {
         "size": [image.width, image.height],

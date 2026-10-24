@@ -8,12 +8,23 @@ const PULSE_STEP := 0.1
 const MOVE_EPSILON := 0.3
 const PHASES := 8
 const ATK_QUANT := 3
+const SKILL_QUANT := 2
 var _entries: Dictionary = {}
 
 
-## `heroes/__init__.py::_hero_cache_key` pose part as an atlas pose name: attacking
-## `timer // 3`, else `int(pulse * 2) % 8` with a walk or idle prefix.
-static func pose_key(attack_timer: int, moving: bool, pulse: float) -> String:
+## `heroes/__init__.py::_hero_cache_key` pose part as an atlas pose name: an active
+## skill wins, then attacking `timer // 3`, else `int(pulse * 2) % 8` walk or idle.
+static func pose_key(
+	attack_timer: int,
+	moving: bool,
+	pulse: float,
+	active_skill: String = "",
+	active_skill_timer: int = 0
+) -> String:
+	if not active_skill.is_empty():
+		return (
+			"skill_%s_%d" % [active_skill, floori(float(active_skill_timer) / float(SKILL_QUANT))]
+		)
 	if attack_timer > 0:
 		return "atk%d" % floori(float(attack_timer) / float(ATK_QUANT))
 	return "%s%d" % ["walk" if moving else "idle", int(pulse * 2.0) % PHASES]

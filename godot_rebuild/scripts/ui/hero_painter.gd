@@ -44,8 +44,11 @@ static func paint(canvas: CanvasItem, hero: HeroState, art: Dictionary, selected
 	var shadow := Rect2(point.x - radius, point.y + radius - 4, radius * 2, 8)
 	canvas.draw_colored_polygon(_ellipse(shadow), SHADOW)
 	var src: Rect2 = art["src"]
-	var corner := point - (art["anchor"] as Vector2)
-	canvas.draw_texture_rect_region(art["texture"] as Texture2D, Rect2(corner, src.size), src)
+	var scale := float(art.get("scale", 1.0))
+	var corner := point - (art["anchor"] as Vector2) * scale
+	canvas.draw_texture_rect_region(
+		art["texture"] as Texture2D, Rect2(corner, src.size * scale), src
+	)
 	var anchor := int(point.y) - maxi(radius, int(facts.get("top_offset", radius))) - 6
 	var left := int(point.x) - (BAR_WIDTH >> 1)
 	_paint_health(canvas, hero, left, anchor)

@@ -3367,3 +3367,37 @@ tidak mengubah file. Native import/runtime diperiksa melalui CI PR sesi.
 
 Berikutnya: DynamicRenderer tidak lagi menjadi sisa. Kandidat visual berikutnya
 adalah animasi boss (jalan/serang/skill dan fase idle) atau atlas hero arena.
+
+## Slice 9bo/9bq — Animasi boss dan atlas hero arena
+
+- **9bq boss:** seluruh 216 boss mempunyai delapan fase idle, empat sample attack,
+  walk bila renderer sumber menyediakannya, dan dua keyframe untuk setiap skill
+  Q/W/E/R yang benar-benar ditemukan pada smart-AI sumber. Manifest akhir memuat
+  **6.496 baris frame / 6.162 frame piksel unik**, empat rig walk, 312 family
+  skill, dan tidak ada pose yang belum ter-bake. Ukuran total 216 WebP lossless
+  adalah **40.676.706 byte**. Painter, skala, anchor, dan urutan overlay sumber
+  dipertahankan; death sequence dan intro yang sudah ada tidak diduplikasi.
+- **9bo hero arena:** seluruh 222 hero mempunyai atlas blue dan enam hero
+  non-boss juga mempunyai atlas red (**228 WebP**, **10.606 baris frame /
+  9.609 frame piksel unik**, **65.082.880 byte**). Sebanyak 216 red boss-hero
+  memakai frame boss pada `hero_scale`, bukan duplikasi gambar. Enam hero non-boss
+  mempunyai dua keyframe untuk masing-masing Q/W/E/R pada kedua tim; smart-skill
+  boss-hero juga resolve pada kedua tim. Hero tanpa skill khusus jatuh kembali ke
+  animasi normal, bukan marker generik. Portrait custom dan fallback Raz tidak
+  diubah oleh slice arena ini.
+- Bake memakai renderer dan timeline sumber, seed konstruksi, virtual wall clock
+  per frame, lossless WebP, deduplikasi piksel SHA-256, dan anchor per pose. Audit
+  independen memeriksa seluruh hash/dimensi WebP, himpunan pose, bounds, anchor,
+  unique-crop, dan non-overlap. Contact sheet dari crop lossless telah diperiksa
+  untuk komposisi idle/walk/attack/skill serta shared-scale; fit-to-cell pada
+  contact sheet bukan skala runtime.
+- `hero_anim.gd`, `boss_anim.gd`, `hero_art.gd`, `boss_art.gd`, dan
+  `prototype_view.gd` memilih state tanpa mengubah simulasi, cooldown, gameplay,
+  atau balance. Suite native mencakup seluruh atlas/facing/pose, nearest skill
+  keyframe, shared-scale, clock, non-overlap, serta draw nyata untuk attack/Q/W.
+
+Batas: ini bukan klaim pixel parity dengan pygame. Contact sheet bukan pengganti
+review komposisi/animasi interaktif di Godot; review native visual tetap perlu
+dilakukan. Full static workflow **lulus: 20.343 checks, 73 perintah, 607 GDScript**
+(validator, seluruh source oracle, gdparse/gdlint/gdformat). Native import/runtime
+Godot 4.7.2 dijalankan melalui CI PR #338.

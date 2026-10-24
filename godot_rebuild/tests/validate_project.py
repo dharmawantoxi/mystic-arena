@@ -4375,6 +4375,19 @@ check("view.draw_count > first_draw" in _pt_checks and "world.step_tick()" in _p
       and "unit.slow_timer = 60" in _pt_checks and "tower.cooldown_ticks" in _pt_checks,
       "9bn the painter suite must prove _draw ran and exercise every minion type, towers, slow and fire")
 
+def _webp_dimensions(raw):
+    """Dimensions of the dependency-free lossless WebP subset emitted by the bakes."""
+    if len(raw) < 26 or raw[:4] != b"RIFF" or raw[8:12] != b"WEBP":
+        return None
+    if raw[12:16] == b"VP8L" and raw[20] == 0x2F:
+        bits = int.from_bytes(raw[21:25], "little")
+        return [(bits & 0x3FFF) + 1, ((bits >> 14) & 0x3FFF) + 1]
+    if raw[12:16] == b"VP8X" and len(raw) >= 30:
+        return [1 + int.from_bytes(raw[24:27], "little"),
+                1 + int.from_bytes(raw[27:30], "little")]
+    return None
+
+
 # ── Layer 9bo: baked hero bodies (bake/bake_hero_atlas.py) ──
 _hr_path = ROOT / "data/art/heroes.json"
 _hr_pkg = (ROOT.parent / "heroes/__init__.py").read_text(encoding="utf-8")
@@ -4394,46 +4407,63 @@ check(workflow.count("      - 'heroes/__init__.py'") == 2 and workflow.count("  
 check(_hr_path.is_file(), "9bo hero atlas manifest must exist")
 if _hr_path.is_file():
     _hr = json.loads(_hr_path.read_text(encoding="utf-8"))
-    _hr_heroes = ["kaizen", "thorne", "grimjaw", "sylara", "vex", "zephyr", "alchemist"]
-    check(_hr["heroes"] == _hr_heroes and _hr["teams"] == ["blue", "red"]
-          and len(_hr["atlases"]) == 14 and sorted(_hr["meta"]) == sorted(_hr_heroes)
-          and _hr["phases"] == 8 and _hr["atk_quant"] == 3,
-          "9bo one atlas per kit hero x team, with the source phase count and attack quantum")
+    _hr_heroes = _hr["heroes"]
+    _hr_non_boss = ["grimjaw", "kaizen", "sylara", "thorne", "vex", "zephyr"]
+    _hr_shared = _hr["shared_red_bosses"]
+    _hr_expected = {f"{hero}_blue" for hero in _hr_heroes}
+    _hr_expected |= {f"{hero}_red" for hero in _hr_non_boss}
+    check(len(_hr_heroes) == 222 and len(_hr_shared) == 216
+          and _hr["non_boss"] == _hr_non_boss and _hr["teams"] == ["blue", "red"]
+          and set(_hr["atlases"]) == _hr_expected and len(_hr["atlases"]) == 228
+          and sorted(_hr["meta"]) == sorted(_hr_heroes)
+          and _hr["phases"] == 8 and _hr["atk_quant"] == 3
+          and _hr["skill_quant"] == 2 and _hr["skill_samples"] == 2
+          and _hr["skill_heroes"] == _hr_non_boss
+          and _hr["format"] == "webp-lossless-v0",
+          "9bo all 222 heroes: 222 blue + six red atlases, with 216 shared red boss-heroes")
     check(len(_hr["key_cases"]) >= 200 and {row[3] for row in _hr["key_cases"]} == {"atk", "walk", "idle"},
           "9bo the manifest must carry the source pose keys")
     for _hero in _hr_heroes:
         _facts = _hr["meta"][_hero]
         check((ROOT / "data/heroes" / f"{_hero}.tres").is_file()
-              and _facts["radius"] == 16 and 40 <= _facts["top_offset"] <= 50 and _facts["cooldown"] > 0
-              and _facts["name"],
+              and _facts["radius"] == 16 and _facts["top_offset"] > 0 and _facts["cooldown"] > 0
+              and _facts["hero_scale"] > 0 and _facts["name"],
               f"9bo source facts and a Godot definition must exist for {_hero}")
-        for _team in ("blue", "red"):
-            _name = f"{_hero}_{_team}"
-            _entry = _hr["atlases"][_name]
-            _png = ROOT / "assets/art/heroes" / f"{_name}.png"
-            check(_png.is_file(), f"9bo hero atlas must ship: {_name}")
-            if not _png.is_file():
-                continue
-            _raw = _png.read_bytes()
-            _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
-            check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _entry["size"]
-                  and (_depth, _color) == (8, 6),
-                  f"9bo atlas must be an RGBA8 PNG of its manifest size: {_name}")
-            check(len(_raw) == _entry["bytes"] and hashlib.sha256(_raw).hexdigest() == _entry["sha256"],
-                  f"9bo atlas must match its manifest hash: {_name}")
-            _poses = [f"idle{n}" for n in range(8)]
-            if _facts["walk_poses"]:
-                _poses += [f"walk{n}" for n in range(8)]
-            _poses += [f"atk{k}" for k in range(_facts["cooldown"] // 3 + 1)]
-            _rows = _entry["frames"]
-            check(sorted(_rows) == sorted(f"{pose}:{d}" for pose in _poses for d in (1, -1)),
-                  f"9bo atlas must hold every pose in both directions: {_name}")
-            check(all(w > 0 and h > 0 and x >= 0 and y >= 0 and x + w <= _entry["size"][0]
+    for _name, _entry in _hr["atlases"].items():
+        _hero = _name.rsplit("_", 1)[0]
+        _facts = _hr["meta"][_hero]
+        _sheet = ROOT / "assets/art/heroes" / f"{_name}.webp"
+        check(_sheet.is_file(), f"9bo hero atlas must ship: {_name}")
+        if not _sheet.is_file():
+            continue
+        _raw = _sheet.read_bytes()
+        check(_webp_dimensions(_raw) == _entry["size"],
+              f"9bo atlas must be lossless WebP at its manifest size: {_name}")
+        check(len(_raw) == _entry["bytes"] and hashlib.sha256(_raw).hexdigest() == _entry["sha256"],
+              f"9bo atlas must match its manifest hash: {_name}")
+        _poses = [f"idle{n}" for n in range(8)]
+        if _facts["walk_poses"]:
+            _poses += [f"walk{n}" for n in range(8)]
+        _poses += [f"atk{k}" for k in range(_facts["cooldown"] // 3 + 1)]
+        _skills = _entry["skills"]
+        check((set(_skills) == set("qwer")) == (_hero in _hr_non_boss)
+              and all(len(poses) == 2 for poses in _skills.values())
+              and _entry["skill_quant"] == 2,
+              f"9bo only non-boss sheets carry two frames for each Q/W/E/R skill: {_name}")
+        for _skill_poses in _skills.values():
+            _poses += _skill_poses
+        _rows = _entry["frames"]
+        check(sorted(_rows) == sorted(f"{pose}:{d}" for pose in _poses for d in (1, -1)),
+              f"9bo atlas must hold every pose in both directions: {_name}")
+        check(0 < _entry["unique_frames"] <= len(_rows)
+              and all(w > 0 and h > 0 and x >= 0 and y >= 0 and x + w <= _entry["size"][0]
                       and y + h <= _entry["size"][1] and 0 <= ax <= w and 0 <= ay <= h
                       for x, y, w, h, ax, ay in _rows.values()),
-                  f"9bo every frame must lie inside its atlas with its anchor in the crop: {_name}")
+              f"9bo every frame must lie inside its atlas with its anchor in the crop: {_name}")
 for _fragment in (
     "phase = int(getattr(hero, 'pulse', 0.0) * 2.0) % HERO_ANIM_PHASES",
+    "return (hero_type, team, level, facing, 'skill', skill,",
+    "skill_t // (_skill_quant() * _q))",
     "timer // (_atk_quant() * _q)",
     "return (hero_type, team, level, facing, 'idle', phase,",
     "bool(getattr(hero, '_moving_cached', False)))",
@@ -4468,11 +4498,16 @@ check("_detect_moving" in (ROOT.parent / "heroes/_bundle.py").read_text(encoding
 check("heroes_mod._reset_hero_render_budget()" in _hr_bake and "hero.draw(surface)" in _hr_bake
       and "heroes_mod._hero_cache_key(hero_type, hero)" in _hr_bake
       and "hero.x = 400.0 + step * 2.0" in _hr_bake
-      and "hero.attack_timer = cooldown" in _hr_bake and "IDLE_STEPS = 40" in _hr_bake,
-      "9bo the bake must drive the real Hero.draw through still, walking and attacking timelines")
+      and "hero.attack_timer = cooldown" in _hr_bake and "IDLE_STEPS = 40" in _hr_bake
+      and "hero.active_skill = skill" in _hr_bake and "_skill_sample_names(" in _hr_bake
+      and "NON_BOSS_SKILL_DURATIONS" in _hr_bake and "SKILL_SAMPLES = 2" in _hr_bake
+      and "env.virtual_ticks(pygame, ticks)" in _hr_bake,
+      "9bo the bake must drive real timelines and skill casts with a deterministic virtual wall clock")
 check("static func resolve(" in _hr_art and "ResourceLoader.exists(atlas_path(name))" in _hr_art
-      and "pose.begins_with(\"walk\")" in _hr_art and "pose.begins_with(\"atk\")" in _hr_art,
-      "9bo the loader must fall back to idle / the last attack pose and tolerate a missing import")
+      and "pose.begins_with(\"walk\")" in _hr_art and "pose.begins_with(\"atk\")" in _hr_art
+      and "static func _shared_boss_frame(" in _hr_art and "BossArt.frame(hero_id, direction, pose)" in _hr_art
+      and 'art["scale"] = float(facts.get("hero_scale", 1.0))' in _hr_art,
+      "9bo the loader must resolve every roster hero and share red boss frames at source scale")
 check("floori(float(attack_timer) / float(ATK_QUANT))" in _hr_anim
       and "int(pulse * 2.0) % PHASES" in _hr_anim and "PULSE_STEP := 0.1" in _hr_anim
       and "MOVE_EPSILON := 0.3" in _hr_anim and "PHASES := 8" in _hr_anim,
@@ -4498,8 +4533,10 @@ check("if _draw_hero_sprite(hero):" in _hr_view and "func _draw_hero_sprite(" in
       and _hr_view.index("if _draw_hero_sprite(hero):") < _hr_view.index("HeroMarker.silhouette(point, radius"),
       "9bo the view must draw the baked hero first and keep the marker as the fallback")
 check("_check_atlases(check)" in _hr_checks and "_check_key_cases(check, manifest)" in _hr_checks
-      and "_check_clocks(check)" in _hr_checks and "_check_view_wiring(check)" in _hr_checks,
-      "9bo hero art suite must check atlases, pose keys, clocks and wiring")
+      and "_check_shared_bosses(check, manifest)" in _hr_checks
+      and "_check_clocks(check)" in _hr_checks and "_check_view_wiring(check)" in _hr_checks
+      and "src.size * scale" in _hr_painter,
+      "9bo hero art suite must check all atlases, shared frames, pose keys, clocks and scaling")
 
 # ── Layer 9bp: baked tower bullets (bake/bake_bullet_atlas.py) ──
 _bl_path = ROOT / "data/art/bullets.json"
@@ -4574,6 +4611,8 @@ _bs_boss = (ROOT.parent / "bosses/base_boss.py").read_text(encoding="utf-8")
 _bs_pkg = (ROOT.parent / "heroes/__init__.py").read_text(encoding="utf-8")
 _bs_bake = (ROOT / "bake/bake_boss_atlas.py").read_text(encoding="utf-8")
 _bs_art = (ROOT / "scripts/ui/boss_art.gd").read_text(encoding="utf-8")
+_bs_anim = (ROOT / "scripts/ui/boss_anim.gd").read_text(encoding="utf-8")
+_bs_checks = (ROOT / "tests/boss_art_checks.gd").read_text(encoding="utf-8")
 _bs_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
 _bs_painter = (ROOT / "tests/painter_scene_checks.gd").read_text(encoding="utf-8")
 check('const BossArtChecks = preload("res://tests/boss_art_checks.gd")' in ai_tests
@@ -4584,31 +4623,52 @@ check(workflow.count("      - 'bosses/**'") == 2,
 check(_bs_path.is_file(), "9bq boss atlas manifest must exist")
 if _bs_path.is_file():
     _bs = json.loads(_bs_path.read_text(encoding="utf-8"))
-    check(sorted(_bs["bosses"]) == sorted(_bs_stats) and len(_bs["bosses"]) == 216 and _bs["facings"] == [-1, 1],
-          "9bq one sheet per boss in the Godot boss table, both facings")
-    check(all((1 if d > 0 else -1) == f for d, f in _bs["facing_cases"]) and len(_bs["facing_cases"]) >= 5,
+    check(sorted(_bs["bosses"]) == sorted(_bs_stats) and len(_bs["bosses"]) == 216
+          and _bs["facings"] == [-1, 1] and _bs["phases"] == 8
+          and _bs["attack_samples"] == 4 and _bs["skill_samples"] == 2
+          and len(_bs["smart_bosses"]) == 78 and _bs["format"] == "webp-lossless-v0",
+          "9bq animated sheets for 216 bosses, both facings and source smart skills")
+    check(all((1 if d > 0 else -1) == f for d, f in _bs["facing_cases"])
+          and len(_bs["facing_cases"]) >= 5,
           "9bq the recorded facings must follow the source key rule")
+    _bs_skill_rows = 0
+    _bs_walking = 0
     for _boss_id, _entry in sorted(_bs["bosses"].items()):
         _facts = _bs_stats[_boss_id]
         check(_entry["radius"] == _facts["radius"] and _entry["class"] == _facts["boss_class"]
-              and 0 < _entry["label_top"] < 400,
-              f"9bq baked radius, class and label top must match the Godot table: {_boss_id}")
-        _png = ROOT / "assets/art/bosses" / f"{_boss_id}.png"
-        check(_png.is_file(), f"9bq boss sheet must ship: {_boss_id}")
-        if not _png.is_file():
+              and 0 < _entry["label_top"] < 400 and _entry["cooldown"] > 0
+              and 0 < _entry["attack_quant"] <= 32 and 0 < _entry["skill_quant"] <= 32
+              and not _entry["unbaked_poses"],
+              f"9bq baked facts, quanta and complete direct fallback must hold: {_boss_id}")
+        _sheet = ROOT / "assets/art/bosses" / f"{_boss_id}.webp"
+        check(_sheet.is_file(), f"9bq boss sheet must ship: {_boss_id}")
+        if not _sheet.is_file():
             continue
-        _raw = _png.read_bytes()
-        _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
-        check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _entry["size"]
-              and (_depth, _color) == (8, 6),
-              f"9bq boss sheet must be an RGBA8 PNG of its manifest size: {_boss_id}")
+        _raw = _sheet.read_bytes()
+        check(_webp_dimensions(_raw) == _entry["size"],
+              f"9bq boss sheet must be lossless WebP at its manifest size: {_boss_id}")
         check(len(_raw) == _entry["bytes"] and hashlib.sha256(_raw).hexdigest() == _entry["sha256"],
               f"9bq boss sheet must match its manifest hash: {_boss_id}")
-        check(sorted(_entry["frames"]) == ["-1", "1"]
+        _poses = [f"idle{n}" for n in range(8)]
+        if _entry["walk_poses"]:
+            _poses += [f"walk{n}" for n in range(8)]
+            _bs_walking += 1
+        _poses += _entry["attack_poses"]
+        for _skill, _skill_poses in _entry["skills"].items():
+            _poses += _skill_poses
+            _bs_skill_rows += 1
+        _rows = _entry["frames"]
+        check(sorted(_rows) == sorted(f"{pose}:{d}" for pose in _poses for d in (1, -1))
+              and 0 < _entry["unique_frames"] <= len(_rows)
               and all(w > 0 and h > 0 and x >= 0 and y >= 0 and x + w <= _entry["size"][0]
                       and y + h <= _entry["size"][1] and 0 <= ax <= w and 0 <= ay <= h
-                      for x, y, w, h, ax, ay in _entry["frames"].values()),
-              f"9bq both facings must lie inside the sheet with the anchor in the crop: {_boss_id}")
+                      for x, y, w, h, ax, ay in _rows.values()),
+              f"9bq every animated pose must have two in-bounds facings: {_boss_id}")
+        if _boss_id in _bs["smart_bosses"]:
+            check(sorted(_entry["skills"]) == ["e", "q", "r", "w"],
+                  f"9bq all four smart skills must be baked: {_boss_id}")
+    check(_bs_walking > 0 and _bs_skill_rows == 312,
+          "9bq walking and all 312 source smart-skill families must be represented")
 for _fragment in (
     "head_top = max(int(BOSS_LABEL_TOP.get(self.boss_type, r)), r)",
     "bar_w = 70 if is_true else 60", "bar_h = 10 if is_true else 8", "by = y - head_top - 6 - bar_h",
@@ -4626,24 +4686,40 @@ for _fragment in (
     "box = canvas.get_bounding_rect(min_alpha=8)",
 ):
     check(_fragment in _bs_pkg, f"9bq the source boss cache must still read {_fragment!r}")
-check("heroes_mod._boss_render_sprite_fast(boss_type, boss, draw_fn, \"idle\")" in _bs_bake
+check("heroes_mod._boss_render_sprite_fast(boss_type, boss, draw_fn, key[8])" in _bs_bake
       and "heroes_mod._boss_cache_key(boss_type, boss)" in _bs_bake
-      and 'assert key[8] == "idle" and key[9] == 0 and not key[10], key' in _bs_bake
+      and "IDLE_STEPS = 40" in _bs_bake and "ATTACK_SAMPLES = 4" in _bs_bake
+      and "SKILL_SAMPLES = 2" in _bs_bake and "smart_skill_durations()" in _bs_bake
+      and "draw_fn(canvas, boss, center, center)" in _bs_bake and "tight=True" in _bs_bake
+      and "env.virtual_ticks(heroes_mod.pygame, ticks)" in _bs_bake
       and "MAX_TRIES = 12" in _bs_bake and "BOSS_LABEL_TOP.get(boss_type, probe.radius)" in _bs_bake,
-      "9bq the bake must run the real boss sprite renderer for the standing pose of every boss")
+      "9bq the bake must run real idle/walk/attack/skill timelines with direct fallback")
 check("return 1 if direction > 0 else -1" in _bs_art and "ResourceLoader.exists(path_for(boss_type))" in _bs_art
-      and "maxi(int(row.get(\"label_top\", radius)), radius)" in _bs_art,
-      "9bq the loader must mirror the facing and label rules and tolerate a missing import")
-check("var art := BossArt.frame(boss.boss_type, boss.direction)" in _bs_view
+      and "maxi(int(row.get(\"label_top\", radius)), radius)" in _bs_art
+      and "static func _nearest(" in _bs_art and "static func resolve(" in _bs_art
+      and 'return ROOT + boss_type + ".webp"' in _bs_art,
+      "9bq the loader must resolve animated keyframes, facing, labels and missing imports")
+check("var pose := BossAnim.from_boss(boss)" in _bs_view
+      and "BossArt.frame(boss.boss_type, boss.direction, pose)" in _bs_view
+      and "boss_pose_draws[pose]" in _bs_view
       and "bar_top = point.y - head_top - 6.0 - bar_height" in _bs_view
       and "var shadow := Rect2(x - (shadow_width >> 1), y + radius - 5, shadow_width, 12)" in _bs_view
       and "var shadow_width := radius * 2 + (10 if boss.boss_class == \"true\" else 0)" in _bs_view
       and "draw_colored_polygon(HeroPainter.ellipse(shadow), HeroPainter.SHADOW)" in _bs_view
       and "Rect2(corner, src.size), src, tint)" in _bs_view and "func _draw_boss_plain(" in _bs_view,
-      "9bq the match view must draw the baked boss with the source shadow, bar anchor and the plain fallback")
+      "9bq the match view must draw animated boss poses with source overlays and fallback")
+check("floori(float(active_skill_timer) / float(skill_quant))" in _bs_anim
+      and "floori(float(timer) / float(attack_quant))" in _bs_anim
+      and "int(pulse * 2.0) % PHASES" in _bs_anim and "PHASES := 8" in _bs_anim,
+      "9bq native pose selection must mirror source skill/attack/idle cache keys")
+check("_check_pose_keys(check)" in _bs_checks and "_check_sheets(check)" in _bs_checks
+      and "unbaked == 0" in _bs_checks and "_check_frames(check)" in _bs_checks,
+      "9bq native tests must cover every sheet, source quantum, keyframe and fallback")
 check("_seed_boss(world)" in _bs_painter
-      and "world._spawn_boss(BOSS_TYPE)" in _bs_painter and "view.boss_sprite_draws > 0" in _bs_painter,
-      "9bq the painter suite must spawn a boss and prove the sprite path ran")
+      and "world._spawn_boss(BOSS_TYPE)" in _bs_painter and "view.boss_sprite_draws > 0" in _bs_painter
+      and 'begins_with("skill_q_")' in _bs_painter and 'begins_with("skill_w_")' in _bs_painter
+      and 'begins_with("atk")' in _bs_painter,
+      "9bq the painter suite must draw attack and smart-skill poses on a live boss")
 
 # ── Layer 9br: UI skin from ui_theme.py (bake/bake_ui_theme.py) ──
 _ui_path = ROOT / "data/art/ui_theme.json"
