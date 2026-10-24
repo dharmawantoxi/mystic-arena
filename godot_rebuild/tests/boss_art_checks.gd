@@ -4,6 +4,7 @@ extends RefCounted
 
 const BossArt = preload("res://scripts/ui/boss_art.gd")
 const BossAnim = preload("res://scripts/ui/boss_anim.gd")
+const BossState = preload("res://scripts/match/boss_state.gd")
 const STATS := "res://data/bosses/boss_stats.json"
 const VIEW := "res://scenes/prototype/prototype_view.gd"
 
@@ -15,6 +16,7 @@ func run(check: Callable) -> void:
 	_check_sheets(check)
 	_check_facing(check, manifest)
 	_check_pose_keys(check)
+	_check_live_skill_poses(check)
 	_check_frames(check)
 	_check_view_wiring(check)
 
@@ -154,6 +156,35 @@ func _check_pose_keys(check: Callable) -> void:
 		BossAnim.pose_key("abaddon", 30, "q", 30, true, 0.55).begins_with("skill_q_"),
 		"Skill wins over attack and walking"
 	)
+
+
+## `from_boss` only names a skill pose the sheet baked: nyxareth's source AI casts "1".."4",
+## which have no keyframes, so the body keeps animating instead of freezing on idle0.
+func _check_live_skill_poses(check: Callable) -> void:
+	var boss := BossState.new()
+	boss.boss_type = "nyxareth"
+	boss.pulse = 0.55
+	boss.active_skill = "4"
+	boss.active_skill_timer = 95
+	check.call(
+		not (BossArt.entries()["nyxareth"]["skills"] as Dictionary).has("4"),
+		"nyxareth's numbered source skills have no baked keyframes"
+	)
+	check.call(BossAnim.from_boss(boss) == "idle1", "An unbaked cast keeps the idle phase")
+	boss.moving_cached = true
+	check.call(BossAnim.from_boss(boss) == "walk1", "An unbaked cast keeps the walk phase")
+	boss.timer = 30
+	var attack := BossAnim.from_boss(boss)
+	check.call(attack == "atk30", "An unbaked cast keeps the attack pose: %s" % attack)
+	var art := BossArt.frame("nyxareth", 1, attack)
+	check.call(
+		String(art.get("pose", "")).begins_with("atk"),
+		"That attack pose resolves to an attack crop"
+	)
+	boss.boss_type = "abaddon"
+	boss.active_skill = "q"
+	boss.active_skill_timer = 30
+	check.call(BossAnim.from_boss(boss) == "skill_q_5", "A baked cast still wins: abaddon Q")
 
 
 func _check_frames(check: Callable) -> void:
