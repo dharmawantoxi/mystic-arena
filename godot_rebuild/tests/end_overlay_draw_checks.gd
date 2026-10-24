@@ -127,8 +127,8 @@ func _check_view_wiring(check: Callable, frame: Dictionary, colors: Dictionary) 
 	var order: Array = view.overlay_paint_order()
 	check.call(
 		(
-			order.find("end_overlay") == order.find("tactical_feedback") + 1
-			and order.find("end_overlay") == order.find("input_hints") - 1
+			order.find("end_overlay") > order.find("tactical_feedback")
+			and order.find("end_overlay") < order.find("input_hints")
 		),
 		"The end overlay paints after the tactical banner and before the hint bar"
 	)

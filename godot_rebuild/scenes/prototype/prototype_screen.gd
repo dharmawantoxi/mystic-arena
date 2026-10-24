@@ -186,6 +186,9 @@ func _process(_delta: float) -> void:
 		hint_context = "shop"
 	var hints: Array = controller_cursor.get_hints(hint_context) if controller_cursor.active else []
 	arena.set("input_hints", hints)
+	# Layer 9bv7: while an empty build slot is selected the arena paints the source
+	# build-tower popup at the slot.
+	arena.set("build_popup_state", _build_popup_state(world, match_session))
 	# Layer 9bv5: once the match ends the arena paints the source victory / defeat overlay.
 	arena.set("end_overlay_state", {} if world.is_running() else _end_overlay_state(world))
 	%GoldLabel.tooltip_text = (
@@ -519,6 +522,21 @@ func _save_result() -> void:
 	end_new_best_time = bool(committed.get("is_new_best_time", false))
 	var saved: Dictionary = committed.get("state", {})
 	end_completed_levels = saved.get("completed_levels", []).duplicate()
+
+
+## Layer 9bv7: `g.build_popup_slot` while an empty build slot is selected; empty otherwise.
+func _build_popup_state(world: Prototype, match_session: PrototypeSession) -> Dictionary:
+	var slot_id := match_session.selected_slot_id
+	if slot_id < 0:
+		return {}
+	var slot := world.get_slot(slot_id)
+	if slot == null or slot.structure_id != -1:
+		return {}
+	return {
+		"x": int(slot.position.x),
+		"y": int(slot.position.y),
+		"gold": int(world.economy.gold[0]),
+	}
 
 
 ## `Game.draw`'s arguments for `ui.draw_overlay`: title, colour and action line (input labels
