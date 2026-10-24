@@ -169,6 +169,15 @@ func _process(_delta: float) -> void:
 	# the bar keeps the opponent's gold, which pygame never shows.
 	arena.set("gold_hud_visible", side_panel == null or not side_panel.is_active())
 	%GoldLabel.text = "AI:%d" % world.economy.gold[1]
+	# Layer 9bv4: `_draw_input_hints` only shows the hint bar in controller mode, with the
+	# context victory / defeat / shop (the hero shop) / game.
+	var hint_context := "game"
+	if not world.is_running():
+		hint_context = "victory" if world.winner == 0 else "defeat"
+	elif hero_shop_panel != null and hero_shop_panel.visible:
+		hint_context = "shop"
+	var hints: Array = controller_cursor.get_hints(hint_context) if controller_cursor.active else []
+	arena.set("input_hints", hints)
 	%GoldLabel.tooltip_text = (
 		"Emas: %d G · Lawan: %d G"
 		% [

@@ -3589,3 +3589,34 @@ Batas: `animation_time` sumber tetap naik saat level intro dan animasi kematian 
 `tick_count` Godot mengikuti langkah simulasi. Font yang dipakai Barlow SemiBold, bukan Barlow
 Bold. Belum ada review visual di Godot. Bukan klaim pixel parity.
 
+## Slice 9bv4 — hint bar tombol controller (layer 9bv4)
+
+Sumber: `_core.py::Game._draw_input_hints`, lalu `ControllerManager.draw_hint_bar`. `Game.draw`
+memanggilnya setelah overlay victory/defeat dan sebelum level intro serta kematian boss. Bar
+hanya digambar dalam mode controller, dan tidak digambar saat level intro, banner boss, atau
+selebrasi boss aktif. Konteksnya victory, defeat, shop (hero shop), atau game.
+
+- Oracle `tests/input_hint_draw_source_oracle.py` menjalankan `draw_hint_bar` ASLI (diambil
+  dengan `ast` dari `ControllerManager`) di shim perekam. `get_hints` diganti pengganti yang
+  mengembalikan daftar milik frame. Fixture `tests/fixtures/input_hint_draw_source.json` berisi
+  6 frame dan 89 op, termasuk bar kosong dan bar yang lebih lebar dari layar. Bar lebar itu
+  mengunci pembagian floor Python pada angka negatif. `draw_recorder.Font` sekarang punya
+  `get_height()`.
+- `scripts/ui/input_hint_layout.gd`:
+  - lebar item `label_w + 10 + 5 + desc_w`, jarak antar item 16;
+  - baris mulai di `(1280 - total_w) >> 1`;
+  - strip (0,0,0,140) di (x - 7, 686);
+  - kotak tombol radius 4 (48,52,70) bertepi (120,130,165);
+  - label (255,235,140) dan deskripsi (205,210,225), 19 px, di y = 690.
+- `prototype_view.gd` melukis layer `input_hints` setelah `tactical_feedback` dan sebelum
+  `level_intro`. Selama sinematik (`input_hints_blocked`) bar tidak dilukis.
+  `prototype_screen.gd` mengisi `input_hints` dari `controller_cursor.get_hints(context)`, tapi
+  hanya selama `controller_cursor.active`. Data hint memakai port `controller_runtime.gd` yang
+  sudah ada.
+- Bukti: `tests/input_hint_draw_checks.gd` (replay semua frame, urutan layer, kosong di mode
+  mouse/keyboard, dan `get_hints` hidup), blok 9bv4 di `validate_project.py`, dan baris oracle
+  di workflow.
+
+Batas: tinggi font mengikuti metrik Godot (`font_h` = ukuran font), dan font yang dipakai Barlow
+SemiBold, bukan font body sumber. Belum ada review visual di Godot. Bukan klaim pixel parity.
+

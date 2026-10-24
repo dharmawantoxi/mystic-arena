@@ -4901,7 +4901,8 @@ check("const SOLID_DRAWS := true" in _td_layout and "static func world_ops(" in 
       and "static func feedback_ops(" in _td_layout and "range(50, 20, -8)" in _td_layout
       and "const FEEDBACK_FONT_SIZE := 28" in _td_layout,
       "9bi2 the layout must mirror draw_world / draw_ui")
-check('\t"achievement",\n\t"tactical_feedback",\n\t"level_intro",' in _bs_view
+check('\t"achievement",\n\t"tactical_feedback",\n' in _bs_view
+      and _bs_view.index('\t"tactical_feedback",\n') < _bs_view.index('\t"level_intro",\n')
       and "TacticalLayout.world_ops(" in _bs_view and "TacticalLayout.feedback_ops(" in _bs_view
       and "_draw_solid_op(op)" in _bs_view and "draw_style_box(" in _bs_view,
       "9bi2 the view must paint the solid marker and the banner in the draw_ui slot")
@@ -4984,6 +4985,45 @@ check('const ShopHintLayout = preload("res://scripts/ui/shop_hint_layout.gd")' i
       and "ShopHintLayout.ops(int(world.tick_count), metrics)" in _sh_view
       and "func _draw_hud_op(" in _sh_view,
       "9bv3 view must open the UI pass with the shop hints, bobbing on the world tick count")
+
+# ── Layer 9bv4: the controller hint bar (Game._draw_input_hints / draw_hint_bar) ──
+from input_hint_draw_source_oracle import source_fixture as input_hint_draw_fixture
+_ih_path = ROOT / "tests/fixtures/input_hint_draw_source.json"
+_ih_layout = (ROOT / "scripts/ui/input_hint_layout.gd").read_text(encoding="utf-8")
+_ih_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_ih_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+_ih_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+check('const InputHintDrawChecks = preload("res://tests/input_hint_draw_checks.gd")' in ai_tests
+      and "InputHintDrawChecks.new().run(_check)" in ai_tests,
+      "9bv4 input hint draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/input_hint_draw_source_oracle.py" in workflow,
+      "9bv4 CI must run the draw_hint_bar source oracle")
+check(_ih_path.is_file(), "9bv4 input hint fixture must exist")
+if _ih_path.is_file():
+    _ih = json.loads(_ih_path.read_text(encoding="utf-8"))
+    check(input_hint_draw_fixture() == _ih, "9bv4 input hint fixture must not drift from _core.py")
+    check(len(_ih["frames"]) == 6 and sum(len(f["ops"]) for f in _ih["frames"]) == 89
+          and any(not f["ops"] for f in _ih["frames"])
+          and any(f["ops"] and f["ops"][0]["rect"][0] < 0 for f in _ih["frames"]),
+          "9bv4 fixture must pin 6 frames / 89 ops incl. the empty and the overflowing bar")
+_ih_draw = _ih_core[_ih_core.index("    def _draw_input_hints(self, surface):"):]
+_ih_draw = _ih_draw[:_ih_draw.index("    def _input_label(")]
+check("if mgr is None or not mgr.is_controller_mode():" in _ih_draw
+      and "self.boss_death.celebration_active" in _ih_draw
+      and "mgr.draw_hint_bar(surface, context=ctx)" in _ih_draw
+      and _ih_core.index("self._draw_input_hints(self.screen)")
+      < _ih_core.index("# ═══ LEVEL INTRO SCREEN (paling atas dari yang lain) ═══"),
+      "9bv4 source must still gate the bar on controller mode and cinematics, before the intro")
+check("var x := (SCREEN_WIDTH - total_w) >> 1" in _ih_layout and "const BAR_Y := 690" in _ih_layout,
+      "9bv4 layout must keep the centred floor start and y = SCREEN_HEIGHT - 30")
+check('const InputHintLayout = preload("res://scripts/ui/input_hint_layout.gd")' in _ih_view
+      and re.search(r'"tactical_feedback",\s*"input_hints",\s*"level_intro",', _ih_view) is not None
+      and '"input_hints":\n\t\t\t_draw_input_hints(world)' in _ih_view
+      and "func input_hints_blocked(" in _ih_view,
+      "9bv4 view must paint the hint bar between the tactical banner and the level intro")
+check("controller_cursor.get_hints(hint_context) if controller_cursor.active else []" in _ih_screen
+      and 'arena.set("input_hints", hints)' in _ih_screen,
+      "9bv4 screen must feed the hint bar only in controller mode")
 
 # ── Layer 9br: UI skin from ui_theme.py (bake/bake_ui_theme.py) ──
 _ui_path = ROOT / "data/art/ui_theme.json"

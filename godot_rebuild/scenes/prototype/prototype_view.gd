@@ -30,6 +30,7 @@ const NyxarethRealmLayout = preload("res://scripts/ui/nyxareth_realm_layout.gd")
 const TacticalLayout = preload("res://scripts/ui/tactical_layout.gd")
 const GoldHudLayout = preload("res://scripts/ui/gold_hud_layout.gd")
 const ShopHintLayout = preload("res://scripts/ui/shop_hint_layout.gd")
+const InputHintLayout = preload("res://scripts/ui/input_hint_layout.gd")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
@@ -52,6 +53,7 @@ const OVERLAY_ORDER := [
 	"kill_feed",
 	"achievement",
 	"tactical_feedback",
+	"input_hints",
 	"level_intro",
 	"boss_death",
 ]
@@ -75,6 +77,9 @@ var tactical_border := StyleBoxFlat.new()
 var gold_hud_visible := true
 ## Gold HUD paints so far; the scene suite proves the chip reaches `_draw`.
 var gold_hud_draws := 0
+## Layer 9bv4: `get_hints(context)` pairs while a controller drives the match (the screen
+## fills it every frame; empty in mouse / keyboard mode, like `_draw_input_hints`).
+var input_hints: Array = []
 ## Rounded chip/badge fills and borders (pygame `draw.rect(..., border_radius=r)`).
 var hud_round_box := StyleBoxFlat.new()
 var dynamic_map := DynamicMapRenderer.new()
@@ -274,6 +279,8 @@ func _draw_overlay_layer(layer: String, world: Prototype) -> void:
 			_draw_gold_hud(world)
 		"tactical_feedback":
 			_draw_tactical_feedback(world)
+		"input_hints":
+			_draw_input_hints(world)
 		"level_intro":
 			_draw_level_intro(world)
 		"boss_death":
@@ -939,6 +946,31 @@ func shop_hint_draw_ops(world: Prototype, measure: Callable = Callable()) -> Arr
 	if measure.is_valid():
 		metrics = measure
 	return ShopHintLayout.ops(int(world.tick_count), metrics)
+
+
+## Layer 9bv4: `Game._draw_input_hints`, the controller hint bar at the bottom, painted after
+## the tactical banner and before the level intro / boss death like the source.
+func _draw_input_hints(world: Prototype) -> void:
+	for op in input_hint_draw_ops(world):
+		_draw_hud_op(op)
+
+
+func input_hint_draw_ops(world: Prototype, measure: Callable = Callable()) -> Array:
+	if input_hints.is_empty() or input_hints_blocked(world):
+		return []
+	var metrics: Callable = _measure_intro_text
+	if measure.is_valid():
+		metrics = measure
+	return InputHintLayout.ops(input_hints, metrics)
+
+
+## The source skips the bar while a cinematic draws its own skip prompt.
+func input_hints_blocked(world: Prototype) -> bool:
+	return (
+		bool(world.level_intro_state().get("active", false))
+		or bool(world.boss_intro_state().get("active", false))
+		or bool(world.boss_death_state().get("celebration_active", false))
+	)
 
 
 ## Paints one source HUD op: `_vgrad` fills, rounded `draw.rect`s, then the shared painter.

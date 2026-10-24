@@ -138,6 +138,9 @@ class Font:
     def size(self, text):
         return glyph_width(self.font_size) * len(text), self.font_size
 
+    def get_height(self):
+        return self.font_size
+
 
 class Draw:
     @staticmethod
