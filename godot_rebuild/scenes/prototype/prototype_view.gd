@@ -1,4 +1,4 @@
-# gdlint:disable=max-file-lines
+# gdlint:disable=max-file-lines,max-public-methods
 extends "res://scenes/siege/siege_view.gd"
 
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
@@ -26,6 +26,13 @@ const HeroAnim = preload("res://scripts/ui/hero_anim.gd")
 const HeroPainter = preload("res://scripts/ui/hero_painter.gd")
 const BossArt = preload("res://scripts/ui/boss_art.gd")
 const BossAnim = preload("res://scripts/ui/boss_anim.gd")
+const NyxarethRealmLayout = preload("res://scripts/ui/nyxareth_realm_layout.gd")
+const TacticalLayout = preload("res://scripts/ui/tactical_layout.gd")
+const GoldHudLayout = preload("res://scripts/ui/gold_hud_layout.gd")
+const ShopHintLayout = preload("res://scripts/ui/shop_hint_layout.gd")
+const InputHintLayout = preload("res://scripts/ui/input_hint_layout.gd")
+const EndOverlayLayout = preload("res://scripts/ui/end_overlay_layout.gd")
+const TitleFont = preload("res://assets/fonts/Cinzel.ttf")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
@@ -40,11 +47,16 @@ const HUD_SCREEN_W := 1280
 ## are never drawn by the source; they keep their slot between announcer and popup.
 const WORLD_LAYER_ORDER := ["path_preview", "effects", "tactical"]
 const OVERLAY_ORDER := [
+	"shop_hints",
+	"gold_hud",
 	"boss_intro",
 	"wave_announcer",
 	"combo_counter",
 	"kill_feed",
 	"achievement",
+	"tactical_feedback",
+	"end_overlay",
+	"input_hints",
 	"level_intro",
 	"boss_death",
 ]
@@ -59,9 +71,32 @@ var hero_projectile_draws := 0
 var boss_sprite_draws := 0
 ## Resolved source keyframes painted by the live scene, including attack and skill poses.
 var boss_pose_draws: Dictionary = {}
+## Screen-wide boss skill layers painted under the body (nyxareth's ultimate, layer 9bq3).
+var boss_screen_layer_draws := 0
+## The tactical banner border (layer 9bi2): 2 px, 6 px corners, drawn inside its box.
+var tactical_border := StyleBoxFlat.new()
+## Layer 9bv2: pygame skips `_draw_gold_hud` while the wide-screen side panel shows the
+## gold; the screen clears this flag then.
+var gold_hud_visible := true
+## Gold HUD paints so far; the scene suite proves the chip reaches `_draw`.
+var gold_hud_draws := 0
+## Layer 9bv4: `get_hints(context)` pairs while a controller drives the match (the screen
+## fills it every frame; empty in mouse / keyboard mode, like `_draw_input_hints`).
+var input_hints: Array = []
+## Layer 9bv5: the victory / defeat overlay state (title, colour, action line, stats,
+## achievements) the screen hands over once the match ends; empty while it runs.
+var end_overlay_state: Dictionary = {}
+var hud_shadow_box := StyleBoxFlat.new()
+## Layer 9bv6: `Overlay.unlock_popup_timer`, advanced once per victory overlay draw and
+## stopped AT the 90-call delay exactly like `_update_unlock_popup`.
+var unlock_popup_timer := 0
+## Rounded chip/badge fills and borders (pygame `draw.rect(..., border_radius=r)`).
+var hud_round_box := StyleBoxFlat.new()
 var dynamic_map := DynamicMapRenderer.new()
 ## Real DynamicRenderer paints; the scene suite proves this reaches `_draw`.
 var dynamic_map_draws := 0
+var _end_backdrop: ImageTexture
+var _radial_textures: Dictionary = {}
 
 
 func _draw() -> void:
@@ -73,13 +108,8 @@ func _draw() -> void:
 	terrain_palette = TerrainPalette.for_level(world.level_config)
 	terrain_river = TerrainPalette.river_path()
 	var map_theme: String = String(world.level_config.get("map_theme", "forest"))
-	if river_texture == null or cached_river_theme != map_theme:
-		terrain_texture = ImageTexture.create_from_image(TerrainTiles.raster(terrain_palette))
-		river_texture = ImageTexture.create_from_image(RiverTiles.raster(terrain_palette))
-		lane_texture = ImageTexture.create_from_image(LaneTiles.raster(terrain_palette))
-		if wall_texture == null:
-			wall_texture = ImageTexture.create_from_image(WallTiles.raster())
-		cached_river_theme = map_theme
+	if cached_river_theme != map_theme:
+		cache_static_map(map_theme)
 	draw_set_transform(world.current_screen_shake_offset(), 0.0, Vector2.ONE)
 	super._draw()
 	var match_session := session as PrototypeSession
@@ -173,6 +203,31 @@ func _draw_slot_outline(point: Vector2, color: Color, selected: bool) -> void:
 	draw_line(point - Vector2(0, 6), point + Vector2(0, 6), color, 2, true)
 
 
+## Layer 9bj2: cache the theme's static map layers. The baked source base (terrain,
+## river and lanes, `bake/bake_map_base.py`) replaces the native tile rasters and the
+## baked border wall replaces `WallTiles`; either falls back to the native raster when
+## its PNG is not imported, so a fresh checkout still draws a map.
+func cache_static_map(map_theme: String) -> void:
+	if terrain_palette.is_empty():
+		terrain_palette = TerrainPalette.for_theme(map_theme)
+	var base := MapArt.base_texture(map_theme)
+	baked_static_base = base != null
+	if baked_static_base:
+		terrain_texture = base
+		river_texture = null
+		lane_texture = null
+	else:
+		terrain_texture = ImageTexture.create_from_image(TerrainTiles.raster(terrain_palette))
+		river_texture = ImageTexture.create_from_image(RiverTiles.raster(terrain_palette))
+		lane_texture = ImageTexture.create_from_image(LaneTiles.raster(terrain_palette))
+	var wall := MapArt.wall_texture()
+	if wall != null:
+		wall_texture = wall
+	elif wall_texture == null:
+		wall_texture = ImageTexture.create_from_image(WallTiles.raster())
+	cached_river_theme = map_theme
+
+
 ## Layer 9bj: the baked decorations and shop buildings of the current theme.
 func _draw_map_decor() -> void:
 	var overlay := MapArt.overlay_texture(cached_river_theme)
@@ -230,6 +285,16 @@ func _draw_overlay_layer(layer: String, world: Prototype) -> void:
 			_draw_kill_feed(world)
 		"achievement":
 			_draw_achievement_popup(world)
+		"shop_hints":
+			_draw_shop_hints(world)
+		"gold_hud":
+			_draw_gold_hud(world)
+		"tactical_feedback":
+			_draw_tactical_feedback(world)
+		"end_overlay":
+			_draw_end_overlay(world)
+		"input_hints":
+			_draw_input_hints(world)
 		"level_intro":
 			_draw_level_intro(world)
 		"boss_death":
@@ -873,32 +938,371 @@ func _draw_intro_op(op: Dictionary) -> void:
 			)
 
 
+## Layer 9bv2: `Game._draw_gold_hud`, the gold chip and mode badge at the top-left, painted
+## unshaken before the boss banner like the source UI pass.
+func _draw_gold_hud(world: Prototype) -> void:
+	if not gold_hud_visible:
+		return
+	gold_hud_draws += 1
+	for op in gold_hud_draw_ops(world):
+		_draw_hud_op(op)
+
+
+## Layer 9bv3: `ShopHints.draw`, the ITEM FORGE / HERO SHOP pills that open the source UI pass
+## (unshaken, before the gold HUD). The world tick count stands in for `animation_time`.
+func _draw_shop_hints(world: Prototype) -> void:
+	for op in shop_hint_draw_ops(world):
+		_draw_hud_op(op)
+
+
+func shop_hint_draw_ops(world: Prototype, measure: Callable = Callable()) -> Array:
+	var metrics: Callable = _measure_intro_text
+	if measure.is_valid():
+		metrics = measure
+	return ShopHintLayout.ops(int(world.tick_count), metrics)
+
+
+## Layer 9bv4: `Game._draw_input_hints`, the controller hint bar at the bottom, painted after
+## the tactical banner and before the level intro / boss death like the source.
+func _draw_input_hints(world: Prototype) -> void:
+	for op in input_hint_draw_ops(world):
+		_draw_hud_op(op)
+
+
+func input_hint_draw_ops(world: Prototype, measure: Callable = Callable()) -> Array:
+	if input_hints.is_empty() or input_hints_blocked(world):
+		return []
+	var metrics: Callable = _measure_intro_text
+	if measure.is_valid():
+		metrics = measure
+	return InputHintLayout.ops(input_hints, metrics)
+
+
+## The source skips the bar while a cinematic draws its own skip prompt.
+func input_hints_blocked(world: Prototype) -> bool:
+	return (
+		bool(world.level_intro_state().get("active", false))
+		or bool(world.boss_intro_state().get("active", false))
+		or bool(world.boss_death_state().get("celebration_active", false))
+	)
+
+
+## Layer 9bv5: `Overlay.draw`, the victory / defeat screen, painted after the tactical banner
+## and before the hint bar once the screen hands over `end_overlay_state`.
+func _draw_end_overlay(world: Prototype) -> void:
+	if end_overlay_state.is_empty():
+		unlock_popup_timer = 0
+		return
+	if bool(end_overlay_state.get("victory", false)):
+		if unlock_popup_timer < EndOverlayLayout.UNLOCK_DELAY:
+			unlock_popup_timer += 1
+	for op in end_overlay_draw_ops(world):
+		match String(op.get("kind", "")):
+			"section", "unlock_popup":
+				continue
+			"end_gradient":
+				_draw_end_backdrop(op)
+			"radial":
+				_draw_radial_op(op)
+			"outline_text":
+				_draw_outline_text_op(op)
+			"shadow":
+				_draw_shadow_op(op)
+			"arc":
+				_draw_arc_op(op)
+			_:
+				_draw_hud_op(op)
+
+
+func end_overlay_draw_ops(
+	world: Prototype, measure: Callable = Callable(), ticks_msec: int = -1
+) -> Array:
+	if end_overlay_state.is_empty():
+		return []
+	var metrics: Callable = _measure_intro_text
+	var title_metrics: Callable = _measure_title_text
+	if measure.is_valid():
+		metrics = measure
+		title_metrics = measure
+	var state := end_overlay_state.duplicate()
+	state["animation_time"] = world.tick_count
+	var unlock: Dictionary = state.get("unlock", {})
+	if not unlock.is_empty():
+		unlock = unlock.duplicate()
+		if not unlock.has("timer"):
+			unlock["timer"] = unlock_popup_timer
+		if not unlock.has("hover"):
+			var button := EndOverlayLayout.play_button_rect(int(unlock["timer"]))
+			unlock["hover"] = Rect2(button).has_point(get_local_mouse_position())
+		state["unlock"] = unlock
+	var ticks := Time.get_ticks_msec() if ticks_msec < 0 else ticks_msec
+	return EndOverlayLayout.ops(state, metrics, ticks, title_metrics)
+
+
+## Layer 9bv6: the PLAY NEXT LEVEL rect while the unlock popup draws (`g.ui_buttons`), else empty.
+func unlock_play_rect() -> Rect2:
+	var unlock: Dictionary = end_overlay_state.get("unlock", {})
+	if unlock.is_empty() or unlock_popup_timer < EndOverlayLayout.UNLOCK_DELAY:
+		return Rect2()
+	return Rect2(EndOverlayLayout.play_button_rect(unlock_popup_timer))
+
+
+func _measure_title_text(text: String, font_size: int) -> Vector2i:
+	var measured := TitleFont.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+	return Vector2i(int(measured.x), font_size)
+
+
+## The cached backdrop: a 1 px wide column of the per-row alphas, stretched over the screen.
+func _draw_end_backdrop(op: Dictionary) -> void:
+	if _end_backdrop == null:
+		var rows: Array = op.get("rows", [])
+		var rgb: Array = op.get("color", [10, 10, 20])
+		var image := Image.create(1, maxi(1, rows.size()), false, Image.FORMAT_RGBA8)
+		for row in range(rows.size()):
+			var color := Color8(int(rgb[0]), int(rgb[1]), int(rgb[2]), int(rows[row]))
+			image.set_pixel(0, row, color)
+		_end_backdrop = ImageTexture.create_from_image(image)
+	var box: Array = op.get("rect", [0, 0, 1280, 720])
+	draw_texture_rect(
+		_end_backdrop, Rect2(float(box[0]), float(box[1]), float(box[2]), float(box[3])), false
+	)
+
+
+## `ui_theme._radial`: alpha * (1 - d)^2 with d the distance over the half diagonal, so the
+## falloff is circular and cropped by the rect. A radial gradient square stands in for it.
+func _draw_radial_op(op: Dictionary) -> void:
+	var box: Array = op.get("rect", [0, 0, 8, 8])
+	var rgb: Array = op.get("color", [255, 255, 255])
+	var alpha := float(op.get("alpha", 0)) / 255.0
+	var key := "%s/%d" % [str(rgb), int(op.get("alpha", 0))]
+	if not _radial_textures.has(key):
+		var gradient := Gradient.new()
+		var offsets := PackedFloat32Array()
+		var colors := PackedColorArray()
+		for step in range(5):
+			var distance := step / 4.0
+			offsets.append(distance)
+			var color := Color8(int(rgb[0]), int(rgb[1]), int(rgb[2]))
+			color.a = alpha * pow(1.0 - distance, 2.0)
+			colors.append(color)
+		gradient.offsets = offsets
+		gradient.colors = colors
+		var texture := GradientTexture2D.new()
+		texture.gradient = gradient
+		texture.fill = GradientTexture2D.FILL_RADIAL
+		texture.fill_from = Vector2(0.5, 0.5)
+		texture.fill_to = Vector2(1.0, 0.5)
+		texture.width = 128
+		texture.height = 128
+		_radial_textures[key] = texture
+	var width := float(box[2])
+	var height := float(box[3])
+	var scale_to_texture := 128.0 / sqrt(width * width + height * height)
+	var region := Rect2(
+		64.0 - width * 0.5 * scale_to_texture,
+		64.0 - height * 0.5 * scale_to_texture,
+		width * scale_to_texture,
+		height * scale_to_texture
+	)
+	draw_texture_rect_region(
+		_radial_textures[key], Rect2(float(box[0]), float(box[1]), width, height), region
+	)
+
+
+## `ui_theme.outline_text`: eight outline copies at +-width, then the body. The source body
+## is a top -> bottom gradient; its mid colour stands in for it (as `RebuildTheme.title`).
+func _draw_outline_text_op(op: Dictionary) -> void:
+	var pos: Array = op.get("pos", [0, 0])
+	var size := int(op.get("size", 88))
+	var width := float(op.get("width", 2))
+	var text := String(op.get("text", ""))
+	var base := Vector2(float(pos[0]), float(pos[1]) + TitleFont.get_ascent(size))
+	var ink: Array = op.get("outline", [8, 9, 18])
+	var outline := Color8(int(ink[0]), int(ink[1]), int(ink[2]))
+	var offsets := [
+		Vector2(-width, 0),
+		Vector2(width, 0),
+		Vector2(0, -width),
+		Vector2(0, width),
+		Vector2(-width, -width),
+		Vector2(width, width),
+		Vector2(-width, width),
+		Vector2(width, -width),
+	]
+	for offset in offsets:
+		draw_string(TitleFont, base + offset, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, outline)
+	var top: Array = op.get("top", [255, 255, 255])
+	var bottom: Array = op.get("bottom", [255, 255, 255])
+	var body := Color8(
+		int((int(top[0]) + int(bottom[0])) * 0.5),
+		int((int(top[1]) + int(bottom[1])) * 0.5),
+		int((int(top[2]) + int(bottom[2])) * 0.5)
+	)
+	draw_string(TitleFont, base, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, body)
+
+
+## `ui_theme._shadow`: a soft dark rounded rect; a StyleBoxFlat shadow stands in for the blur.
+func _draw_shadow_op(op: Dictionary) -> void:
+	var box: Array = op.get("rect", [0, 0, 0, 0])
+	hud_shadow_box.bg_color = Color(0.0, 0.0, 0.0, float(op.get("alpha", 110)) / 255.0 * 0.5)
+	hud_shadow_box.set_corner_radius_all(int(op.get("radius", 12)) + 4)
+	hud_shadow_box.shadow_color = Color(0.0, 0.0, 0.0, 0.25)
+	hud_shadow_box.shadow_size = 4
+	draw_style_box(
+		hud_shadow_box, Rect2(float(box[0]), float(box[1]), float(box[2]), float(box[3]))
+	)
+
+
+## `pygame.draw.arc`: angles run counter-clockwise on screen, so they flip for `draw_arc`.
+func _draw_arc_op(op: Dictionary) -> void:
+	var box: Array = op.get("rect", [0, 0, 0, 0])
+	var center := Vector2(float(box[0]) + float(box[2]) * 0.5, float(box[1]) + float(box[3]) * 0.5)
+	var radius := maxf(0.5, (float(box[2]) + float(box[3])) * 0.25)
+	draw_arc(
+		center,
+		radius,
+		-float(op.get("end", 0.0)),
+		-float(op.get("start", 0.0)),
+		12,
+		_intro_color(op),
+		float(op.get("width", 1))
+	)
+
+
+## Paints one source HUD op: `_vgrad` fills, rounded `draw.rect`s, then the shared painter.
+func _draw_hud_op(op: Dictionary) -> void:
+	match String(op.get("kind", "")):
+		"vgrad":
+			_draw_vgrad_op(op)
+		"rect":
+			_draw_round_rect_op(op)
+		_:
+			_draw_intro_op(op)
+
+
+## `measure` defaults to the real HUD font; the checks pass the oracle's.
+func gold_hud_draw_ops(world: Prototype, measure: Callable = Callable()) -> Array:
+	var metrics: Callable = _measure_intro_text
+	if measure.is_valid():
+		metrics = measure
+	return GoldHudLayout.ops(
+		int(world.economy.gold[0]),
+		float(world.economy.income_per_second),
+		String(world.difficulty),
+		metrics
+	)
+
+
+## `ui_theme._vgrad`: one row per pixel, `int(top + (bottom - top) * y / (h - 1))`, masked by
+## the rounded rect (each row is inset by the corner circle).
+func _draw_vgrad_op(op: Dictionary) -> void:
+	var box: Array = op.get("rect", [0, 0, 0, 0])
+	var top: Array = op.get("top", [0, 0, 0])
+	var bottom: Array = op.get("bottom", [0, 0, 0])
+	var width := float(box[2])
+	var height := int(box[3])
+	var radius := float(op.get("radius", 0))
+	for row in range(height):
+		var t := float(row) / float(maxi(1, height - 1))
+		var color := Color8(
+			int(top[0] + (bottom[0] - top[0]) * t),
+			int(top[1] + (bottom[1] - top[1]) * t),
+			int(top[2] + (bottom[2] - top[2]) * t)
+		)
+		var inset := 0.0
+		var from_edge := minf(float(row) + 0.5, float(height) - float(row) - 0.5)
+		if radius > 0.0 and from_edge < radius:
+			var rise := radius - from_edge
+			inset = roundf(radius - sqrt(maxf(0.0, radius * radius - rise * rise)))
+		if width - inset * 2.0 > 0.0:
+			draw_rect(
+				Rect2(float(box[0]) + inset, float(box[1]) + row, width - inset * 2.0, 1.0), color
+			)
+
+
+## A pygame rounded `draw.rect`: filled when `width` is 0, else a border drawn inside.
+func _draw_round_rect_op(op: Dictionary) -> void:
+	var box: Array = op.get("rect", [0, 0, 0, 0])
+	var rgba: Array = op.get("color", [0, 0, 0, 255])
+	var color := Color8(int(rgba[0]), int(rgba[1]), int(rgba[2]))
+	var width := int(op.get("width", 0))
+	if rgba.size() > 3:
+		color.a = float(rgba[3]) * float(op.get("mult", 255)) / 65025.0
+	hud_round_box.anti_aliasing = false
+	hud_round_box.set_corner_radius_all(int(op.get("radius", 0)))
+	hud_round_box.draw_center = width == 0
+	hud_round_box.bg_color = color
+	hud_round_box.set_border_width_all(width)
+	hud_round_box.border_color = color
+	draw_style_box(hud_round_box, Rect2(float(box[0]), float(box[1]), float(box[2]), float(box[3])))
+
+
+## Layer 9bi2: `TacticalCommandManager.draw_world`, the gather marker and hero dashes.
+## Every op is a `pygame.draw` call on the alpha-less render surface, so it is solid.
 func _draw_tactical(world: Prototype) -> void:
+	for op in tactical_world_draw_ops(world):
+		_draw_solid_op(op)
+
+
+## `ticks` defaults to the engine wall clock, as the source pulses with `get_ticks()`.
+func tactical_world_draw_ops(world: Prototype, ticks: int = -1) -> Array:
 	var tactical = world.tactical
-	if not tactical.gather_point_active or tactical.gather_point_timer <= 0:
-		return
-	var point: Vector2 = tactical.gather_point
-	var fade := clampf(float(tactical.gather_point_timer) / 150.0, 0.0, 1.0)
-	var pulse := (sin(float(world.tick_count) * 0.133) * 0.3 + 0.7) * fade
-	var color: Color = tactical.command_color()
-	for radius in range(50, 20, -8):
-		var alpha := float(50 - radius) * 4.0 * pulse / 255.0
-		if alpha > 0.0:
-			draw_arc(point, radius, 0, TAU, 40, Color(color, alpha), 2, true)
-	draw_circle(point, 6, color)
-	draw_circle(point, 2, Color.WHITE)
-	if tactical.active_command not in ["gather", "protect_castle", "attack_boss", "protect_tower"]:
-		return
+	var heroes: Array = []
 	for hero in world.player_roster():
-		if not hero.alive:
+		if hero.alive:
+			heroes.append(hero.position)
+	var clock: int = ticks if ticks >= 0 else Time.get_ticks_msec()
+	return TacticalLayout.world_ops(
+		String(tactical.active_command),
+		tactical.gather_point,
+		bool(tactical.gather_point_active),
+		int(tactical.gather_point_timer),
+		clock,
+		heroes
+	)
+
+
+## Layer 9bi2: `TacticalCommandManager.draw_ui`, the feedback banner. `measure` defaults to
+## the real HUD font; the checks pass the oracle's.
+func tactical_feedback_draw_ops(world: Prototype, measure: Callable = Callable()) -> Array:
+	var tactical = world.tactical
+	var metrics: Callable = _measure_intro_text
+	if measure.is_valid():
+		metrics = measure
+	var color: Color = tactical.feedback_color
+	return TacticalLayout.feedback_ops(
+		String(tactical.feedback_text),
+		[color.r8, color.g8, color.b8],
+		int(tactical.feedback_timer),
+		metrics
+	)
+
+
+## The box and both texts fade through their alpha; the border is a `pygame.draw.rect` on
+## the alpha-less screen, so it stays solid while the banner shows.
+func _draw_tactical_feedback(world: Prototype) -> void:
+	for op in tactical_feedback_draw_ops(world):
+		if String(op.get("kind", "")) != "rect":
+			_draw_intro_op(op)
 			continue
-		var delta: Vector2 = point - hero.position
-		if delta.length() <= 80.0:
-			continue
-		for segment in range(3):
-			var from: Vector2 = hero.position + delta * (float(segment) * 0.33)
-			var to: Vector2 = hero.position + delta * (float(segment) * 0.33 + 0.18)
-			draw_line(from, to, Color(color, 120.0 * pulse / 255.0), 2, true)
+		var box: Array = op.get("rect", [0, 0, 0, 0])
+		var rgba: Array = op.get("color", [255, 255, 255, 255])
+		tactical_border.draw_center = false
+		tactical_border.set_border_width_all(int(op.get("width", 2)))
+		tactical_border.set_corner_radius_all(int(op.get("radius", 6)))
+		tactical_border.border_color = Color8(int(rgba[0]), int(rgba[1]), int(rgba[2]))
+		draw_style_box(
+			tactical_border, Rect2(float(box[0]), float(box[1]), float(box[2]), float(box[3]))
+		)
+
+
+## A `pygame.draw` op on the XRGB render surface: same colour, alpha dropped.
+func _draw_solid_op(op: Dictionary) -> void:
+	var rgba: Array = op.get("color", [255, 255, 255, 255])
+	var solid := op.duplicate()
+	solid["color"] = [rgba[0], rgba[1], rgba[2], 255]
+	solid["mult"] = 255
+	_draw_intro_op(solid)
 
 
 func _draw_unit(unit: UnitState) -> void:
@@ -997,6 +1401,13 @@ func _draw_boss(boss: BossState) -> void:
 	if is_true:
 		var true_pulse := sin(boss.pulse) * 0.3 + 0.7
 		draw_arc(point, radius + 15.0, 0, TAU, 48, Color(boss.color, 0.28 * true_pulse), 4, true)
+	# Layer 9bq3: the source paints nyxareth's ultimate realm inside its draw function, over
+	# everything drawn before the boss and under the body (the baked atlas leaves it out).
+	var realm_ops := nyxareth_realm_draw_ops(boss)
+	if not realm_ops.is_empty():
+		boss_screen_layer_draws += 1
+		for op in realm_ops:
+			_draw_realm_op(op)
 
 	var bar_width := 70.0 if is_true else 60.0
 	var bar_height := 10.0 if is_true else 8.0
@@ -1034,6 +1445,30 @@ func _draw_boss(boss: BossState) -> void:
 		18 if is_true else 16,
 		border
 	)
+
+
+## Layer 9bq3: `_draw_astro_realm_bg` ops while nyxareth's ultimate "4" runs, from the live
+## skill timer and pulse; empty for every other boss and skill.
+func nyxareth_realm_draw_ops(boss: BossState) -> Array:
+	if not NyxarethRealmLayout.active(boss.boss_type, boss.active_skill):
+		return []
+	return NyxarethRealmLayout.ops(
+		boss.active_skill_timer, boss.pulse, NyxarethRealmLayout.SCREEN_SIZE
+	)
+
+
+## The cosmic layer is an SRCALPHA surface blitted onto the screen, so it blends; the stars
+## are `pygame.draw` calls straight onto the alpha-less render surface, which keeps their
+## colour and drops the alpha.
+func _draw_realm_op(op: Dictionary) -> void:
+	if String(op.get("kind", "")) != "rect" or not NyxarethRealmLayout.OPAQUE_STARS:
+		_draw_intro_op(op)
+		return
+	var rgba: Array = op.get("color", [255, 255, 255, 255])
+	var solid := op.duplicate()
+	solid["color"] = [rgba[0], rgba[1], rgba[2], 255]
+	solid["mult"] = 255
+	_draw_intro_op(solid)
 
 
 ## The Godot fallback body for a boss whose sheet is not baked or not imported.

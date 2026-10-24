@@ -18,6 +18,9 @@ var river_texture: Texture2D
 var lane_texture: Texture2D
 var wall_texture: Texture2D
 var terrain_texture: Texture2D
+## True when `terrain_texture` is the baked source base (layer 9bj2), which already
+## holds the river and the lanes, so neither is painted again over it.
+var baked_static_base := false
 var minion_anim := MinionAnim.new()
 var minion_slash_draws := 0
 var minion_death_draws := 0
@@ -69,23 +72,25 @@ func _draw() -> void:
 				)
 	if session == null:
 		return
-	if river_texture != null:
-		draw_texture(river_texture, Vector2.ZERO)
-	elif terrain_river.size() > 1 and not terrain_palette.is_empty():
-		# Fallback for an unavailable cached texture, not the primary path.
-		draw_polyline(terrain_river, terrain_palette["river_mid"], 44, true)
-		draw_polyline(terrain_river, terrain_palette["river_deep"], 32, true)
-	if lane_texture != null:
-		draw_texture(lane_texture, Vector2.ZERO)
-	else:
-		for path in session.world.paths:
-			var stone := Color("314440")
-			var edge := Color("587160")
-			if not terrain_palette.is_empty():
-				stone = terrain_palette["path_stone_1"]
-				edge = terrain_palette["path_stone_3"]
-			draw_polyline(path, stone, 32, true)
-			draw_polyline(path, edge, 1.5, true)
+	# Layers 2-3: the baked source base (9bj2) already holds the river and lanes.
+	if not baked_static_base:
+		if river_texture != null:
+			draw_texture(river_texture, Vector2.ZERO)
+		elif terrain_river.size() > 1 and not terrain_palette.is_empty():
+			# Fallback for an unavailable cached texture, not the primary path.
+			draw_polyline(terrain_river, terrain_palette["river_mid"], 44, true)
+			draw_polyline(terrain_river, terrain_palette["river_deep"], 32, true)
+		if lane_texture != null:
+			draw_texture(lane_texture, Vector2.ZERO)
+		else:
+			for path in session.world.paths:
+				var stone := Color("314440")
+				var edge := Color("587160")
+				if not terrain_palette.is_empty():
+					stone = terrain_palette["path_stone_1"]
+					edge = terrain_palette["path_stone_3"]
+				draw_polyline(path, stone, 32, true)
+				draw_polyline(path, edge, 1.5, true)
 	_draw_map_decor()
 	if wall_texture != null:
 		draw_texture(wall_texture, Vector2.ZERO)

@@ -55,9 +55,19 @@ class Rect:
     centerx = property(lambda s: s.x + s.w // 2)
     centery = property(lambda s: s.y + s.h // 2)
     size = property(lambda s: (s.w, s.h))
+    topleft = property(lambda s: (s.x, s.y))
 
     def __iter__(self):
         return iter((self.x, self.y, self.w, self.h))
+
+    def collidepoint(self, x, y=None):
+        if y is None:
+            x, y = x
+        return self.x <= x < self.x + self.w and self.y <= y < self.y + self.h
+
+    def inflate(self, dx, dy):
+        """pygame keeps the centre; its C code halves the growth with truncation."""
+        return Rect(self.x - int(dx / 2), self.y - int(dy / 2), self.w + dx, self.h + dy)
 
 
 class Surface:
@@ -90,6 +100,8 @@ class Surface:
             y = int(anchors["center"][1]) - self.h // 2
         elif "topleft" in anchors:
             x, y = int(anchors["topleft"][0]), int(anchors["topleft"][1])
+        elif "topright" in anchors:
+            x, y = int(anchors["topright"][0]) - self.w, int(anchors["topright"][1])
         return Rect(x, y, self.w, self.h)
 
     def blit(self, src, dest, *_args, **_kwargs):
@@ -129,6 +141,12 @@ class Font:
 
     def render(self, text, _antialias, color):
         return Text(text, self.font_size, self.style, color)
+
+    def size(self, text):
+        return glyph_width(self.font_size) * len(text), self.font_size
+
+    def get_height(self):
+        return self.font_size
 
 
 class Draw:

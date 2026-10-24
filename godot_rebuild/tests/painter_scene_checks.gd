@@ -95,10 +95,39 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 			painted.any(func(pose): return String(pose).begins_with("skill_w_")),
 			"Boss W skill poses drew"
 		)
+		await _check_realm(tree, view, boss, check)
 	else:
 		check.call(false, "The suite could not spawn a boss to draw")
 	app.show_menu()
 	await _settle(tree)
+
+
+## Layer 9bq3: the live scene paints nyxareth's screen-wide ultimate realm under the body,
+## and no other boss skill paints one. The boss only wears nyxareth's type for these frames;
+## no tick runs, so its AI never sees the swap.
+func _check_realm(tree: SceneTree, view, boss, check: Callable) -> void:
+	check.call(view.boss_screen_layer_draws == 0, "No other boss skill painted a screen-wide layer")
+	var source_type: String = boss.boss_type
+	boss.boss_type = "nyxareth"
+	boss.timer = 0
+	boss.active_skill = "4"
+	boss.active_skill_timer = 60
+	var painted_before: int = view.boss_screen_layer_draws
+	for _frame in range(6):
+		await tree.process_frame
+		if view.boss_screen_layer_draws > painted_before:
+			break
+	check.call(
+		view.boss_screen_layer_draws > painted_before,
+		"Nyxareth's ultimate painted its screen-wide realm"
+	)
+	check.call(
+		view.boss_pose_draws.keys().any(func(pose): return String(pose).begins_with("skill_4_")),
+		"Nyxareth's baked ultimate pose drew under the realm"
+	)
+	boss.boss_type = source_type
+	boss.active_skill = ""
+	boss.active_skill_timer = 0
 
 
 func _seed_hero_projectile(world, hero) -> bool:

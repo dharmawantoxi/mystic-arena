@@ -43,6 +43,19 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 			]
 		)
 	)
+	# Layer 9bv2: the source gold chip sits on the map at the top-left; the bar starts right of
+	# it (and the badge below it) so neither covers the other.
+	var gold_ops: Array = arena.gold_hud_draw_ops(screen.match_session.world)
+	var chip: Array = gold_ops[1]["rect"]
+	var badge: Array = gold_ops[10]["rect"]
+	check.call(
+		(
+			arena.gold_hud_visible
+			and top_rect.position.x >= float(chip[0] + chip[2]) + 8.0
+			and top_rect.position.x >= float(badge[0] + badge[2]) + 8.0
+		),
+		"Gold chip %s and badge %s stay clear of the top bar %s" % [chip, badge, top_rect]
+	)
 	command_toggle.toggled.emit(true)
 	check.call(
 		bottom_bar.visible and command_toggle.text == "Tutup",

@@ -14,6 +14,9 @@ const SidePanel = preload("res://scripts/ui/side_panel.gd")
 const ProgressStore = preload("res://scripts/match/level_progress_store.gd")
 const SaveSlotStore = preload("res://scripts/match/save_slot_store.gd")
 const LevelCatalog = preload("res://scripts/match/level_catalog.gd")
+const EndOverlayLayout = preload("res://scripts/ui/end_overlay_layout.gd")
+## The pause card's dim (PrototypeMatch.tscn); the result layout clears it.
+const PAUSE_DIM := Color(0.0392, 0.0392, 0.0784, 0.7843)
 const GameSpeedStore = preload("res://scripts/simulation/game_speed_store.gd")
 const TouchGestureRuntime = preload("res://scripts/input/touch_gesture_runtime.gd")
 const TOUCH_TARGET_MIN := 48.0
@@ -31,6 +34,11 @@ var progress_path := ProgressStore.PATH
 var slot_path_template := SaveSlotStore.PATH_TEMPLATE
 var is_replay := false
 var result_shown := false
+## Layer 9bv5: NEW BEST flags of the saved result, for the overlay's stats panel.
+var end_new_best_score := false
+var end_new_best_time := false
+## Layer 9bv6: `save_data['completed_levels']` after the result was saved.
+var end_completed_levels: Array = []
 var forge_panel: ItemForgePanel
 var hero_shop_panel: HeroShopPanel
 var hero_shop_toggle: Button
@@ -164,7 +172,22 @@ func _process(_delta: float) -> void:
 	if hero_shop_panel != null and hero_shop_panel.visible:
 		hero_shop_panel.command_pending = not match_session.command.is_empty()
 		hero_shop_panel.refresh()
-	%GoldLabel.text = "G:%d · AI:%d" % [world.economy.gold[0], world.economy.gold[1]]
+	# Layer 9bv2: the player's gold and income live in the source gold chip the arena
+	# paints at the top-left (only while the side panel is off, like `_draw_gold_hud`);
+	# the bar keeps the opponent's gold, which pygame never shows.
+	arena.set("gold_hud_visible", side_panel == null or not side_panel.is_active())
+	%GoldLabel.text = "AI:%d" % world.economy.gold[1]
+	# Layer 9bv4: `_draw_input_hints` only shows the hint bar in controller mode, with the
+	# context victory / defeat / shop (the hero shop) / game.
+	var hint_context := "game"
+	if not world.is_running():
+		hint_context = "victory" if world.winner == 0 else "defeat"
+	elif hero_shop_panel != null and hero_shop_panel.visible:
+		hint_context = "shop"
+	var hints: Array = controller_cursor.get_hints(hint_context) if controller_cursor.active else []
+	arena.set("input_hints", hints)
+	# Layer 9bv5: once the match ends the arena paints the source victory / defeat overlay.
+	arena.set("end_overlay_state", {} if world.is_running() else _end_overlay_state(world))
 	%GoldLabel.tooltip_text = (
 		"Emas: %d G · Lawan: %d G"
 		% [
@@ -492,6 +515,96 @@ func _save_result() -> void:
 		% [int(committed.match_stats.score), int(committed.reward)]
 	)
 	%SaveRetryButton.hide()
+	end_new_best_score = bool(committed.get("is_new_best_score", false))
+	end_new_best_time = bool(committed.get("is_new_best_time", false))
+	var saved: Dictionary = committed.get("state", {})
+	end_completed_levels = saved.get("completed_levels", []).duplicate()
+
+
+## `Game.draw`'s arguments for `ui.draw_overlay`: title, colour and action line (input labels
+## follow the controller like `_input_label`), plus the stats `Overlay._draw_stats` reads.
+func _end_overlay_state(world: Prototype) -> Dictionary:
+	var victory := world.winner == world.BLUE
+	var labels := {"next_level": "N", "replay": "R", "to_menu": "ESC"}
+	if controller_cursor.active:
+		for action in labels.keys():
+			labels[action] = controller_cursor.get_action_label(action)
+	var has_next := LevelCatalog.get_next_level(world.level_number) >= 0
+	var stats := world.match_stats_snapshot()
+	return {
+		"title": ("VICTORY! LV.%d" if victory else "DEFEAT LV.%d") % world.level_number,
+		"victory": victory,
+		"color": EndOverlayLayout.VICTORY_COLOR if victory else EndOverlayLayout.DEFEAT_COLOR,
+		"action": EndOverlayLayout.action_text(victory, has_next, labels),
+		"stats":
+		[
+			int(stats.get("score", 0)),
+			int(stats.get("time_seconds", 0)),
+			world.wave_count,
+			int(stats.get("kills", 0)),
+			int(stats.get("combo", 0)),
+			end_new_best_score,
+			end_new_best_time,
+		],
+		"achievements": world.achievements_unlocked.size(),
+		"unlock": _unlock_popup_state(world) if victory else {},
+	}
+
+
+## Layer 9bv6: `_get_newly_unlocked_level` + `get_level_config` + the true boss entry the
+## unlock popup reads; empty unless this win just opened a level that was never won.
+func _unlock_popup_state(world: Prototype) -> Dictionary:
+	var next_level := LevelCatalog.get_next_level(world.level_number)
+	if next_level < 0:
+		return {}
+	if world.level_number not in end_completed_levels or next_level in end_completed_levels:
+		return {}
+	var config := LevelCatalog.get_level_config(next_level)
+	if config.is_empty():
+		return {}
+	var bosses: Dictionary = world.boss_table.get("bosses", {})
+	var entry: Dictionary = bosses.get(String(config.get("true_boss", "abaddon")), {})
+	return {
+		"level": next_level,
+		"name": String(config.get("name", "")),
+		"hp_mult": float(config.get("enemy_hp_mult", 1.0)),
+		"difficulty": world.difficulty,
+		"boss":
+		{
+			"name": String(entry.get("name", "???")),
+			"boss_class": String(entry.get("boss_class", "true")),
+			"color": _rgb(entry.get("color", null)),
+			"entrance_color": _rgb(entry.get("entrance_color", null)),
+		},
+	}
+
+
+static func _rgb(value: Variant) -> Array:
+	if value is Array and value.size() >= 3:
+		return [int(value[0]), int(value[1]), int(value[2])]
+	if value is Color:
+		return [value.r8, value.g8, value.b8]
+	return [150, 100, 200]
+
+
+## Layer 9bv5: at the end the painted source overlay owns the screen, so the pause card loses
+## its dim and title and moves to the bottom-left as a compact button card (touch still works).
+func _set_result_layout(result: bool) -> void:
+	var dim := pause_overlay as ColorRect
+	if dim != null:
+		dim.color = Color(0.0, 0.0, 0.0, 0.0) if result else PAUSE_DIM
+	# The see-through result layer lets clicks reach the painted PLAY NEXT LEVEL button.
+	pause_overlay.mouse_filter = (
+		Control.MOUSE_FILTER_IGNORE if result else Control.MOUSE_FILTER_STOP
+	)
+	%PauseTitle.visible = not result
+	var center: Control = $HUD/PauseOverlay/Center
+	if result:
+		center.set_anchors_and_offsets_preset(
+			Control.PRESET_BOTTOM_LEFT, Control.PRESET_MODE_MINSIZE, 16
+		)
+	else:
+		center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 
 func _bind_tactical_button(button: Button, command_name: String) -> void:
@@ -550,21 +663,7 @@ func _update_tactical_hud(world: Prototype) -> void:
 	]:
 		button.disabled = locked
 	%TacticalStatus.text = world.tactical.status_text(world)
-	var visible_feedback: bool = world.tactical.feedback_timer > 0
-	%TacticalFeedback.visible = visible_feedback
-	if not visible_feedback:
-		return
-	%TacticalFeedback.text = world.tactical.feedback_text
-	var alpha := 1.0
-	var y_offset := 0.0
-	if world.tactical.feedback_timer < 30:
-		alpha = float(world.tactical.feedback_timer) / 30.0
-	elif world.tactical.feedback_timer > 150:
-		var progress := float(180 - world.tactical.feedback_timer) / 30.0
-		alpha = clampf(progress, 0.0, 1.0)
-		y_offset = (1.0 - alpha) * 20.0
-	%TacticalFeedback.position.y = 78.0 + y_offset
-	%TacticalFeedback.modulate = Color(world.tactical.feedback_color, alpha)
+	# Layer 9bi2: the feedback banner is painted by the arena view (`draw_ui` order).
 
 
 func _build_side_panel() -> void:
@@ -1245,6 +1344,18 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _handle_keyboard_input(event):
 		get_viewport().set_input_as_handled()
 		return
+	if result_shown and event is InputEventMouseButton:
+		# Layer 9bv6: only the painted PLAY NEXT LEVEL button takes clicks on the result
+		# screen (the arena stays inert, as it was under the old full-screen card).
+		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			var local: Vector2 = (
+				arena.get_global_transform_with_canvas().affine_inverse() * event.position
+			)
+			var button: Rect2 = arena.call("unlock_play_rect")
+			if button.has_area() and button.has_point(local):
+				_request_next_level()
+		get_viewport().set_input_as_handled()
+		return
 	if (
 		event is InputEventMouseButton
 		and event.pressed
@@ -1283,10 +1394,12 @@ func pause_match() -> void:
 	super.pause_match()
 	var world := simulation.world as Prototype
 	if world.is_running():
+		_set_result_layout(false)
 		%PauseTitle.text = "Permainan Dijeda"
 		%ResumeButton.show()
 		%NextLevelButton.hide()
 		return
+	_set_result_layout(true)
 	%PauseTitle.text = "BIRU MENANG" if world.winner == world.BLUE else "MERAH MENANG"
 	%ResumeButton.hide()
 	var has_next := (

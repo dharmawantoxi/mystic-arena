@@ -60,6 +60,12 @@ const BossIntroCinematicChecks = preload("res://tests/boss_intro_cinematic_check
 const BossIntroDrawChecks = preload("res://tests/boss_intro_draw_checks.gd")
 const BossCelebrationDrawChecks = preload("res://tests/boss_celebration_draw_checks.gd")
 const BossDeathSequenceDrawChecks = preload("res://tests/boss_death_sequence_draw_checks.gd")
+const NyxarethRealmDrawChecks = preload("res://tests/nyxareth_realm_draw_checks.gd")
+const TacticalDrawChecks = preload("res://tests/tactical_draw_checks.gd")
+const GoldHudDrawChecks = preload("res://tests/gold_hud_draw_checks.gd")
+const ShopHintDrawChecks = preload("res://tests/shop_hint_draw_checks.gd")
+const InputHintDrawChecks = preload("res://tests/input_hint_draw_checks.gd")
+const EndOverlayDrawChecks = preload("res://tests/end_overlay_draw_checks.gd")
 const DeathExplosionDrawChecks = preload("res://tests/death_explosion_draw_checks.gd")
 const MapTintDrawChecks = preload("res://tests/map_tint_draw_checks.gd")
 const DrawOrderChecks = preload("res://tests/draw_order_checks.gd")
@@ -286,6 +292,12 @@ func _run() -> void:
 	BossIntroDrawChecks.new().run(_check)
 	BossCelebrationDrawChecks.new().run(_check)
 	BossDeathSequenceDrawChecks.new().run(_check)
+	NyxarethRealmDrawChecks.new().run(_check)
+	TacticalDrawChecks.new().run(_check)
+	GoldHudDrawChecks.new().run(_check)
+	ShopHintDrawChecks.new().run(_check)
+	InputHintDrawChecks.new().run(_check)
+	EndOverlayDrawChecks.new().run(_check)
 	DeathExplosionDrawChecks.new().run(_check)
 	MapTintDrawChecks.new().run(_check)
 	DrawOrderChecks.new().run(_check)
@@ -888,12 +900,25 @@ func _test_level_selection_scene(app: Node) -> void:
 		"Selected match view follows the source river spline"
 	)
 	_check(
-		screen.arena.river_texture != null and screen.arena.cached_river_theme == "desert",
-		"Selected map caches the source tiled river layer"
+		(
+			screen.arena.cached_river_theme == "desert"
+			and screen.arena.baked_static_base
+			and screen.arena.terrain_texture != null
+			and screen.arena.terrain_texture.resource_path.ends_with("map_base/desert.png")
+		),
+		"Selected map paints the baked source terrain, river and lanes"
 	)
-	_check(screen.arena.lane_texture != null, "Selected map caches source cobblestone lanes")
-	_check(screen.arena.wall_texture != null, "Selected map caches source border wall")
-	_check(screen.arena.terrain_texture != null, "Selected map caches source terrain")
+	_check(
+		screen.arena.river_texture == null and screen.arena.lane_texture == null,
+		"The baked base replaces the native river and lane rasters"
+	)
+	_check(
+		(
+			screen.arena.wall_texture != null
+			and screen.arena.wall_texture.resource_path.ends_with("map_base/border_wall.png")
+		),
+		"Selected map paints the baked source border wall"
+	)
 	screen.get_node("%RestartButton").pressed.emit()
 	await _settle()
 	_check(

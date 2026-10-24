@@ -22,6 +22,9 @@ const HOLD_RELEASE_TAIL := 30
 const GATHER_PUSH_DELAY_TICKS := 240
 const POINT_TICKS := 150
 const FEEDBACK_TICKS := 180
+## `_set_feedback` refusal colours: "nothing to target" warnings are orange, the rest red.
+const REFUSAL_RED := Color8(255, 100, 100)
+const REFUSAL_ORANGE := Color8(255, 150, 100)
 const BLUE := 0
 const RED := 1
 const RED_BASE := Vector2(1180, 100)
@@ -233,7 +236,7 @@ func _command_gather(
 		return false
 	var heroes := _alive_blue_heroes(world)
 	if heroes.is_empty():
-		_refuse("No heroes alive!", silent)
+		_refuse(world, "No heroes alive!", silent)
 		return false
 	if not has_point:
 		var selected := world.get_unit(selected_hero_id) as HeroState
@@ -267,7 +270,7 @@ func _command_gather(
 		hero.target_id = -1
 	if not silent:
 		AudioRuntime.play("ui_click")
-		_feedback("GATHER! %d heroes regrouping!" % heroes.size(), Color("64dcff"))
+		_feedback(world, "GATHER! %d heroes regrouping!" % heroes.size(), Color("64dcff"))
 	return true
 
 
@@ -276,13 +279,13 @@ func _command_protect_tower(world: Object, target_id: int, silent: bool) -> bool
 		return false
 	var heroes := _alive_blue_heroes(world)
 	if heroes.is_empty():
-		_refuse("No heroes alive!", silent)
+		_refuse(world, "No heroes alive!", silent)
 		return false
 	var target := world.get_unit(target_id) as StructureState
 	if not _is_blue_tower(target):
 		target = _find_most_threatened_tower(world)
 	if target == null:
-		_refuse("No tower to protect!", silent)
+		_refuse(world, "No tower to protect!", silent, REFUSAL_ORANGE)
 		return false
 	active_command = PROTECT_TOWER
 	command_timer = COMMAND_TICKS
@@ -307,6 +310,7 @@ func _command_protect_tower(world: Object, target_id: int, silent: bool) -> bool
 	if not silent:
 		AudioRuntime.play("ui_click")
 		_feedback(
+			world,
 			"PROTECT TOWER! %d heroes defending %s!" % [protectors.size(), _display_name(target)],
 			Color("64ff64")
 		)
@@ -318,11 +322,11 @@ func _command_protect_castle(world: Object, silent: bool) -> bool:
 		return false
 	var heroes := _alive_blue_heroes(world)
 	if heroes.is_empty():
-		_refuse("No heroes alive!", silent)
+		_refuse(world, "No heroes alive!", silent)
 		return false
 	var castle := world.nexuses[BLUE] as StructureState
 	if castle == null or not castle.alive:
-		_refuse("Castle destroyed!", silent)
+		_refuse(world, "Castle destroyed!", silent)
 		return false
 	active_command = PROTECT_CASTLE
 	command_timer = COMMAND_TICKS
@@ -344,7 +348,9 @@ func _command_protect_castle(world: Object, silent: bool) -> bool:
 		hero.target_id = -1
 	if not silent:
 		AudioRuntime.play("ui_click")
-		_feedback("PROTECT CASTLE! %d heroes defending base!" % heroes.size(), Color("ffdc32"))
+		_feedback(
+			world, "PROTECT CASTLE! %d heroes defending base!" % heroes.size(), Color("ffdc32")
+		)
 	return true
 
 
@@ -353,16 +359,18 @@ func _command_attack_boss(world: Object, silent: bool) -> bool:
 		return false
 	var heroes := _alive_blue_heroes(world)
 	if heroes.is_empty():
-		_refuse("No heroes alive!", silent)
+		_refuse(world, "No heroes alive!", silent)
 		return false
 	var boss: Object = world.active_boss
 	if boss == null or not boss.alive:
-		_refuse("No boss active!", silent)
+		_refuse(world, "No boss active!", silent, REFUSAL_ORANGE)
 		return false
 	_attack_target(world, heroes, boss, ATTACK_BOSS)
 	if not silent:
 		AudioRuntime.play("hero_skill")
-		_feedback("ATTACK BOSS! All heroes attack %s!" % _display_name(boss), Color("ff6464"))
+		_feedback(
+			world, "ATTACK BOSS! All heroes attack %s!" % _display_name(boss), Color("ff6464")
+		)
 	return true
 
 
@@ -371,16 +379,17 @@ func _command_attack_damage_dealer(world: Object, silent: bool) -> bool:
 		return false
 	var heroes := _alive_blue_heroes(world)
 	if heroes.is_empty():
-		_refuse("No heroes alive!", silent)
+		_refuse(world, "No heroes alive!", silent)
 		return false
 	var dealer := _find_enemy_damage_dealer(world)
 	if dealer == null:
-		_refuse("No enemy heroes!", silent)
+		_refuse(world, "No enemy heroes!", silent, REFUSAL_ORANGE)
 		return false
 	_attack_target(world, heroes, dealer, ATTACK_DAMAGE_DEALER)
 	if not silent:
 		AudioRuntime.play("hero_skill")
 		_feedback(
+			world,
 			(
 				"ATTACK DAMAGE DEALER! Focus %s (%d dmg)!"
 				% [_display_name(dealer), dealer.damage_dealt]
@@ -445,7 +454,7 @@ func _try_gather_push(world: Object) -> bool:
 		hero.follow_id = target.id
 		hero.has_destination = false
 	gather_push_fired = true
-	_feedback("GATHER ATTACK! %d heroes push together!" % heroes.size(), Color("64dcff"))
+	_feedback(world, "GATHER ATTACK! %d heroes push together!" % heroes.size(), Color("64dcff"))
 	return true
 
 
@@ -624,15 +633,21 @@ func _clear_retreat(heroes: Array) -> void:
 		hero.destination_auto = false
 
 
-func _feedback(text: String, color: Color) -> void:
+## `_set_feedback`: the banner state, and the same text floated as a critical damage number
+## at (640, 100) through the visual-only effect manager (its notification / side panel
+## calls are no-ops in the source).
+func _feedback(world: Object, text: String, color: Color) -> void:
 	feedback_text = text
 	feedback_timer = FEEDBACK_TICKS
 	feedback_color = color
+	var effects: Variant = world.get("effects") if world != null else null
+	if effects != null:
+		effects.add_damage_number(640.0, 100.0, text, true)
 
 
-func _refuse(text: String, silent: bool) -> void:
+func _refuse(world: Object, text: String, silent: bool, color: Color = REFUSAL_RED) -> void:
 	if not silent:
-		_feedback(text, Color("ff6464"))
+		_feedback(world, text, color)
 
 
 func _display_name(target: Object) -> String:

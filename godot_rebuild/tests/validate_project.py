@@ -3974,6 +3974,72 @@ check("_check_files(check, manifest)" in _art_checks
       and "_check_view_wiring(check)" in _art_checks,
       "9bj map art suite must check files, loaded textures and the view wiring")
 
+# ── Layer 9bj2: baked map base (layers 1-3) + border wall (bake/bake_map_base.py) ──
+_mb_manifest_path = ROOT / "data/art/map_base.json"
+_mb_bake = (ROOT / "bake/bake_map_base.py").read_text(encoding="utf-8")
+_mb_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_mb_base = (ROOT / "scenes/combat/minion_view.gd").read_text(encoding="utf-8")
+_mb_loader = (ROOT / "scripts/ui/map_art.gd").read_text(encoding="utf-8")
+_mb_checks = (ROOT / "tests/map_art_checks.gd").read_text(encoding="utf-8")
+check(_mb_manifest_path.is_file() and _art_manifest_path.is_file(), "9bj2 map base manifest must exist")
+if _mb_manifest_path.is_file() and _art_manifest_path.is_file():
+    _mb = json.loads(_mb_manifest_path.read_text(encoding="utf-8"))
+    _mb_overlay = json.loads(_art_manifest_path.read_text(encoding="utf-8"))
+    check(sorted(_mb["themes"]) == sorted(_mb_overlay["themes"]) and len(_mb["themes"]) == 54,
+          "9bj2 one baked base per overlay theme (54)")
+    check(_mb["generator"] == "godot_rebuild/bake/bake_map_base.py"
+          and "layers 1-3" in _mb["layers"] and "6 (border wall)" in _mb["layers"]
+          and _mb["seed"] == "{theme}:base",
+          "9bj2 manifest must name its generator, the source layers and the overlay seed")
+    _mb_files = [(f"{_theme}.png", _entry) for _theme, _entry in sorted(_mb["themes"].items())]
+    _mb_files.append(("border_wall.png", _mb["wall"]))
+    for _name, _entry in _mb_files:
+        _png = ROOT / "assets/art/map_base" / _name
+        check(_png.is_file(), f"9bj2 PNG must ship: {_name}")
+        if not _png.is_file():
+            continue
+        _raw = _png.read_bytes()
+        _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+        check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _entry["size"] == [1280, 720]
+              and (_depth, _color) == (8, 6),
+              f"9bj2 PNG must be a 1280x720 RGBA8 image: {_name}")
+        check(len(_raw) == _entry["bytes"] and hashlib.sha256(_raw).hexdigest() == _entry["sha256"],
+              f"9bj2 PNG must match its manifest hash: {_name}")
+    check(all(len(_entry.get("probes", [])) == 7 for _entry in _mb["themes"].values()),
+          "9bj2 every base must pin its probe pixels")
+    check(_mb["wall"].get("covered_pixels", 0) > 50000, "9bj2 the border wall must hold real wall pixels")
+check('random.seed(f"{renderer.theme_name}:base")' in _mb_bake
+      and 'random.seed(f"{theme_name}:base")' in _art_bake
+      and 'random.seed(f"{name}:decorations")' in _mb_bake
+      and 'random.seed(f"{theme_name}:decorations")' in _art_bake
+      and 'random.seed(f"{name}:shops")' in _mb_bake
+      and 'random.seed(f"{theme_name}:shops")' in _art_bake,
+      "9bj2 the base bake must seed every layer exactly like the overlay bake")
+check("assert (composite == full_rgb).all()" in _mb_bake
+      and "StaticRenderer.draw_border_wall(full, " in _mb_bake
+      and "assert (theme_wall == wall).all()" in _mb_bake,
+      "9bj2 the bake must prove base + overlay + wall == the source static map")
+check(_art_render.index("StaticRenderer.draw_terrain(surf") < _art_render.index("StaticRenderer.draw_river(surf")
+      < _art_render.index("StaticRenderer.draw_lane(surf")
+      < _art_render.index("DecorationRenderer.draw_all(surf, self)"),
+      "9bj2 the source paints terrain, river and lanes before the decorations")
+check("func cache_static_map(map_theme: String)" in _mb_view
+      and "MapArt.base_texture(map_theme)" in _mb_view and "MapArt.wall_texture()" in _mb_view
+      and "if cached_river_theme != map_theme:\n\t\tcache_static_map(map_theme)" in _mb_view
+      and "TerrainTiles.raster(terrain_palette)" in _mb_view,
+      "9bj2 the view must cache the baked base and wall, with the native rasters as fallback")
+check("var baked_static_base := false" in _mb_base
+      and _mb_base.index("if not baked_static_base:") < _mb_base.index("draw_texture(river_texture")
+      < _mb_base.index("draw_texture(lane_texture") < _mb_base.index("_draw_map_decor()"),
+      "9bj2 the baked base must skip the native river and lanes, under the decor")
+check("ResourceLoader.exists(base_path(theme))" in _mb_loader
+      and "ResourceLoader.exists(wall_path())" in _mb_loader,
+      "9bj2 the loader must tolerate a base or wall that is not imported")
+check(all(f"_check_base_{_part}(check)" in _mb_checks for _part in ("manifest", "files", "textures", "view")),
+      "9bj2 map art suite must check the base manifest, files, textures and the view")
+check('"Selected map paints the baked source terrain, river and lanes"' in ai_tests,
+      "9bj2 the scene suite must prove the live arena paints the baked base")
+
 # ── Layer 9d0: native DynamicRenderer + source state/op oracle ──
 _dyn_manifest_path = ROOT / "data/art/map_dynamic.json"
 _dyn_fixture_path = ROOT / "tests/fixtures/dynamic_renderer_source.json"
@@ -4626,7 +4692,7 @@ if _bs_path.is_file():
     check(sorted(_bs["bosses"]) == sorted(_bs_stats) and len(_bs["bosses"]) == 216
           and _bs["facings"] == [-1, 1] and _bs["phases"] == 8
           and _bs["attack_samples"] == 4 and _bs["skill_samples"] == 2
-          and len(_bs["smart_bosses"]) == 78 and _bs["format"] == "webp-lossless-v0",
+          and len(_bs["smart_bosses"]) == 79 and _bs["format"] == "webp-lossless-v0",
           "9bq animated sheets for 216 bosses, both facings and source smart skills")
     check(all((1 if d > 0 else -1) == f for d, f in _bs["facing_cases"])
           and len(_bs["facing_cases"]) >= 5,
@@ -4665,10 +4731,20 @@ if _bs_path.is_file():
                       for x, y, w, h, ax, ay in _rows.values()),
               f"9bq every animated pose must have two in-bounds facings: {_boss_id}")
         if _boss_id in _bs["smart_bosses"]:
-            check(sorted(_entry["skills"]) == ["e", "q", "r", "w"],
-                  f"9bq all four smart skills must be baked: {_boss_id}")
-    check(_bs_walking > 0 and _bs_skill_rows == 312,
-          "9bq walking and all 312 source smart-skill families must be represented")
+            # nyxareth's source smart AI casts the numbered keys "1".."4" instead of Q/W/E/R.
+            _bs_keys = ["1", "2", "3", "4"] if _boss_id == "nyxareth" else ["e", "q", "r", "w"]
+            check(sorted(_entry["skills"]) == _bs_keys,
+                  f"9bq every source smart-skill key must be baked: {_boss_id}")
+    check(_bs_walking > 0 and _bs_skill_rows == 316,
+          "9bq walking and all 316 source smart-skill families must be represented")
+check('SCREEN_LAYERS = {"nyxareth": ("_draw_astro_realm_bg",)}' in _bs_bake
+      and "with without_screen_layers(heroes_mod, boss_type):" in _bs_bake
+      and "isinstance(active, str) and active" in _bs_bake,
+      "9bq the bake must harvest every constant smart-skill key and skip screen-wide layers")
+_bs_l17 = (ROOT.parent / "bosses/level17.py").read_text(encoding="utf-8")
+check('"""Background layer of ultimate - covers entire screen."""' in _bs_l17
+      and '_set_skill(boss, "4", 95)' in (ROOT / "scripts/match/boss_ai.gd").read_text(encoding="utf-8"),
+      "9bq nyxareth's skipped layer must still be the source full-screen ultimate background")
 for _fragment in (
     "head_top = max(int(BOSS_LABEL_TOP.get(self.boss_type, r)), r)",
     "bar_w = 70 if is_true else 60", "bar_h = 10 if is_true else 8", "by = y - head_top - 6 - bar_h",
@@ -4720,6 +4796,287 @@ check("_seed_boss(world)" in _bs_painter
       and 'begins_with("skill_q_")' in _bs_painter and 'begins_with("skill_w_")' in _bs_painter
       and 'begins_with("atk")' in _bs_painter,
       "9bq the painter suite must draw attack and smart-skill poses on a live boss")
+
+# ── Layer 9bq3: nyxareth's full-screen ultimate realm as a native screen-space layer ──
+from nyxareth_realm_draw_source_oracle import source_fixture as nyxareth_realm_fixture
+_nr_path = ROOT / "tests/fixtures/nyxareth_realm_draw_source.json"
+_nr_layout = (ROOT / "scripts/ui/nyxareth_realm_layout.gd").read_text(encoding="utf-8")
+_nr_checks = (ROOT / "tests/nyxareth_realm_draw_checks.gd").read_text(encoding="utf-8")
+_nr_src = (ROOT.parent / "bosses/level17.py").read_text(encoding="utf-8")
+check('const NyxarethRealmDrawChecks = preload("res://tests/nyxareth_realm_draw_checks.gd")'
+      in ai_tests and "NyxarethRealmDrawChecks.new().run(_check)" in ai_tests,
+      "9bq3 nyxareth realm draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/nyxareth_realm_draw_source_oracle.py" in workflow,
+      "9bq3 CI must run the _draw_astro_realm_bg source oracle")
+check(_nr_path.is_file(), "9bq3 nyxareth realm draw fixture must exist")
+if _nr_path.is_file():
+    _nr = json.loads(_nr_path.read_text(encoding="utf-8"))
+    check(nyxareth_realm_fixture() == _nr,
+          "9bq3 nyxareth realm draw fixture must not drift from bosses/level17.py")
+    _nr_frames = _nr["frames"]
+    check(len(_nr_frames) == 7 and all(len(frame["ops"]) == 109 for frame in _nr_frames),
+          "9bq3 oracle must pin 7 frames of one screen fill plus 108 star rects")
+    check(all(frame["ops"][0]["kind"] == "fill"
+              and frame["ops"][0]["rect"] == [0, 0] + frame["screen"]
+              and frame["ops"][0]["color"][:3] == [25, 5, 55] for frame in _nr_frames),
+          "9bq3 oracle must pin the cosmic layer covering the whole render surface")
+    check([frame["ops"][0]["color"][3] for frame in _nr_frames] == [50, 64, 80, 80, 80, 80, 80],
+          "9bq3 oracle must pin the cosmic layer fading in from alpha 50 to 80")
+check("def _draw_astro_realm_bg(surface, boss, x, y, timer, phase):" in _nr_src
+      and "num_stars = 60" in _nr_src and "w, h = surface.get_size()" in _nr_src,
+      "9bq3 the source realm must still be the 60-star layer sized by its render surface")
+check("static func ops(" in _nr_layout and "const DURATION := 120" in _nr_layout
+      and "const STAR_COUNT := 60" in _nr_layout and "const OPAQUE_STARS := true" in _nr_layout
+      and "fposmod(float(i * 37) + phase * 5.0, float(size.x))" in _nr_layout
+      and 'const SKILL := "4"' in _nr_layout,
+      "9bq3 the realm layout must mirror the source formula")
+_nr_draw = _bs_view[_bs_view.index("func _draw_boss(boss: BossState)"):
+                    _bs_view.index("func _draw_boss_plain(")]
+check("var realm_ops := nyxareth_realm_draw_ops(boss)" in _nr_draw
+      and _nr_draw.index("draw_arc(point, radius + 15.0")
+      < _nr_draw.index("nyxareth_realm_draw_ops(boss)")
+      < _nr_draw.index("_draw_boss_sprite(boss, art)")
+      and "boss_screen_layer_draws += 1" in _nr_draw
+      and 'solid["color"] = [rgba[0], rgba[1], rgba[2], 255]' in _nr_draw,
+      "9bq3 the view must paint the realm after the boss rings and before the body")
+check('SCREEN_LAYERS = {"nyxareth": ("_draw_astro_realm_bg",)}' in _bs_bake,
+      "9bq3 the atlas bake must keep the realm out of the body frames")
+check("await _check_realm(tree, view, boss, check)" in _bs_painter
+      and "view.boss_screen_layer_draws > painted_before" in _bs_painter
+      and 'begins_with("skill_4_")' in _bs_painter,
+      "9bq3 the painter suite must paint the realm in the live scene")
+check("_check_frames(check, frames)" in _nr_checks and "_check_gate(check)" in _nr_checks
+      and "_check_view_wiring(check, frames)" in _nr_checks,
+      "9bq3 the realm suite must replay the source frames, the gate and the view")
+
+# ── Layer 9bi2: tactical command visuals (gather marker, feedback banner, floating text) ──
+from tactical_draw_source_oracle import source_fixture as tactical_draw_fixture
+_td_path = ROOT / "tests/fixtures/tactical_draw_source.json"
+_td_layout = (ROOT / "scripts/ui/tactical_layout.gd").read_text(encoding="utf-8")
+_td_checks = (ROOT / "tests/tactical_draw_checks.gd").read_text(encoding="utf-8")
+_td_sim = (ROOT / "scripts/match/tactical_commands.gd").read_text(encoding="utf-8")
+_td_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+_td_scene = (ROOT / "scenes/prototype/PrototypeMatch.tscn").read_text(encoding="utf-8")
+_td_src = (ROOT.parent / "tactical_commands.py").read_text(encoding="utf-8")
+_td_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+check('const TacticalDrawChecks = preload("res://tests/tactical_draw_checks.gd")' in ai_tests
+      and "TacticalDrawChecks.new().run(_check)" in ai_tests,
+      "9bi2 tactical draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/tactical_draw_source_oracle.py" in workflow,
+      "9bi2 CI must run the tactical draw_world / draw_ui source oracle")
+check(_td_path.is_file(), "9bi2 tactical draw fixture must exist")
+if _td_path.is_file():
+    _td = json.loads(_td_path.read_text(encoding="utf-8"))
+    check(tactical_draw_fixture() == _td,
+          "9bi2 tactical draw fixture must not drift from tactical_commands.py")
+    _td_world, _td_banner = _td["world_frames"], _td["feedback_frames"]
+    check(len(_td_world) == 10 and len(_td_banner) == 8
+          and sum(len(frame["ops"]) for frame in _td_world + _td_banner) == 105,
+          "9bi2 oracle must pin 18 frames and 105 draw ops")
+    check(all(op["radius"] in (42, 34, 26) and op["width"] == 2
+              for frame in _td_world for op in frame["ops"]
+              if op["kind"] == "circle" and op["radius"] > 6),
+          "9bi2 oracle must pin the alpha-gated marker rings (r = 50 never shows)")
+    check([sum(op["kind"] == "line" for op in frame["ops"]) for frame in _td_world]
+          == [9, 9, 9, 3, 3, 6, 0, 0, 0, 0],
+          "9bi2 oracle must pin three dashes per far hero for gather/tower/castle/boss only")
+    check([frame["ops"][1]["color"][3] for frame in _td_banner if frame["ops"]]
+          == [0, 85, 246, 255, 255, 246, 8],
+          "9bi2 oracle must pin the banner sliding in over 30 ticks and fading out over 30")
+_td_ui = _td_core[_td_core.index("self.effects.draw_ui(self.screen"):]
+check(_td_ui.index("self.tactical.draw_ui(self.screen)")
+      < _td_ui.index("self.level_intro.draw(self.screen)"),
+      "9bi2 the source paints the tactical banner after effects.draw_ui, before the level intro")
+check(re.search(r"add_damage_number\(\s*640, 100, text, is_critical=True\s*\)", _td_src)
+      is not None
+      and all('"%s", (255, 150, 100)' % text in _td_src
+              for text in ("No tower to protect!", "No boss active!", "No enemy heroes!")),
+      "9bi2 the source must still float feedback and warn in orange when nothing is targetable")
+check("effects.add_damage_number(640.0, 100.0, text, true)" in _td_sim
+      and "const REFUSAL_ORANGE := Color8(255, 150, 100)" in _td_sim
+      and all('_refuse(world, "%s", silent, REFUSAL_ORANGE)' % text in _td_sim
+              for text in ("No tower to protect!", "No boss active!", "No enemy heroes!")),
+      "9bi2 feedback must float its text and keep the source refusal colours")
+check("const SOLID_DRAWS := true" in _td_layout and "static func world_ops(" in _td_layout
+      and "static func feedback_ops(" in _td_layout and "range(50, 20, -8)" in _td_layout
+      and "const FEEDBACK_FONT_SIZE := 28" in _td_layout,
+      "9bi2 the layout must mirror draw_world / draw_ui")
+check('\t"achievement",\n\t"tactical_feedback",\n' in _bs_view
+      and _bs_view.index('\t"tactical_feedback",\n') < _bs_view.index('\t"level_intro",\n')
+      and "TacticalLayout.world_ops(" in _bs_view and "TacticalLayout.feedback_ops(" in _bs_view
+      and "_draw_solid_op(op)" in _bs_view and "draw_style_box(" in _bs_view,
+      "9bi2 the view must paint the solid marker and the banner in the draw_ui slot")
+check("TacticalFeedback" not in _td_screen and "TacticalFeedback" not in _td_scene,
+      "9bi2 the old 18 px HUD label must not return")
+check("_check_world_frames(check" in _td_checks and "_check_feedback_frames(check" in _td_checks
+      and "_check_view_wiring(check, data)" in _td_checks
+      and "_check_feedback_side_effects(check)" in _td_checks,
+      "9bi2 the tactical draw suite must replay frames, the view and the feedback side effects")
+
+# ── Layer 9bv2: the source gold chip and mode badge (Game._draw_gold_hud) ──
+from gold_hud_draw_source_oracle import source_fixture as gold_hud_draw_fixture
+_gh_path = ROOT / "tests/fixtures/gold_hud_draw_source.json"
+_gh_layout = (ROOT / "scripts/ui/gold_hud_layout.gd").read_text(encoding="utf-8")
+_gh_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_gh_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+_gh_scene = (ROOT / "scenes/prototype/PrototypeMatch.tscn").read_text(encoding="utf-8")
+_gh_hud = (ROOT / "tests/prototype_layout_checks.gd").read_text(encoding="utf-8")
+_gh_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+check('const GoldHudDrawChecks = preload("res://tests/gold_hud_draw_checks.gd")' in ai_tests
+      and "GoldHudDrawChecks.new().run(_check)" in ai_tests,
+      "9bv2 gold HUD draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/gold_hud_draw_source_oracle.py" in workflow,
+      "9bv2 CI must run the _draw_gold_hud source oracle")
+check(_gh_path.is_file(), "9bv2 gold HUD fixture must exist")
+if _gh_path.is_file():
+    _gh = json.loads(_gh_path.read_text(encoding="utf-8"))
+    check(gold_hud_draw_fixture() == _gh, "9bv2 gold HUD fixture must not drift from _core.py")
+    check(len(_gh["frames"]) == 6 and sum(len(f["ops"]) for f in _gh["frames"]) == 102
+          and {f["cheap_alpha"] for f in _gh["frames"]} == {True, False}
+          and {f["difficulty"] for f in _gh["frames"]} >= {"easy", "normal", "hard"},
+          "9bv2 fixture must pin 6 frames / 102 ops over both fill branches and every mode")
+check("if not _PANEL_AKTIF():\n            self._draw_gold_hud(self.screen)" in _gh_core,
+      "9bv2 source must still paint the gold HUD only while the side panel is off")
+check("const ORIGIN := Vector2i(18, 22)" in _gh_layout
+      and "maxi(CHIP_MIN_WIDTH, val_w + inc_w + 78)" in _gh_layout
+      and "Economy.format_gold_rate(rate)" in _gh_layout,
+      "9bv2 layout must keep the source origin, chip width rule and format_gold_rate")
+check('const GoldHudLayout = preload("res://scripts/ui/gold_hud_layout.gd")' in _gh_view
+      and re.search(r'const OVERLAY_ORDER := \[\s*"shop_hints",\s*"gold_hud",\s*"boss_intro",',
+                    _gh_view) is not None
+      and '"gold_hud":\n\t\t\t_draw_gold_hud(world)' in _gh_view
+      and "if not gold_hud_visible:" in _gh_view
+      and "func _draw_vgrad_op(" in _gh_view and "func _draw_round_rect_op(" in _gh_view,
+      "9bv2 view must paint the gold HUD after the shop hints, gated by gold_hud_visible")
+check('arena.set("gold_hud_visible", side_panel == null or not side_panel.is_active())'
+      in _gh_screen and '%GoldLabel.text = "AI:%d" % world.economy.gold[1]' in _gh_screen,
+      "9bv2 screen must hide the chip with the side panel and keep only the opponent gold")
+check('[node name="TopBar" type="PanelContainer" parent="HUD"]\noffset_left = 240.0\n' in _gh_scene
+      and "Gold chip %s and badge %s stay clear of the top bar %s" in _gh_hud,
+      "9bv2 top bar must start right of the gold chip, proven by the live layout checks")
+
+# ── Layer 9bv3: the floating ITEM FORGE / HERO SHOP hints (ShopHints.draw) ──
+from shop_hint_draw_source_oracle import source_fixture as shop_hint_draw_fixture
+_sh_path = ROOT / "tests/fixtures/shop_hint_draw_source.json"
+_sh_layout = (ROOT / "scripts/ui/shop_hint_layout.gd").read_text(encoding="utf-8")
+_sh_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_sh_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+check('const ShopHintDrawChecks = preload("res://tests/shop_hint_draw_checks.gd")' in ai_tests
+      and "ShopHintDrawChecks.new().run(_check)" in ai_tests,
+      "9bv3 shop hint draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/shop_hint_draw_source_oracle.py" in workflow,
+      "9bv3 CI must run the ShopHints.draw source oracle")
+check(_sh_path.is_file(), "9bv3 shop hint fixture must exist")
+if _sh_path.is_file():
+    _sh = json.loads(_sh_path.read_text(encoding="utf-8"))
+    check(shop_hint_draw_fixture() == _sh, "9bv3 shop hint fixture must not drift from the source")
+    check(len(_sh["frames"]) == 6 and sum(len(f["ops"]) for f in _sh["frames"]) == 36
+          and {f["cheap_alpha"] for f in _sh["frames"]} == {True, False}
+          and _sh["shops"] == {"dire_shop_pos": [940, 180], "radiant_shop_pos": [340, 540]},
+          "9bv3 fixture must pin 6 frames / 36 ops over both fill branches and both shops")
+check('self.ui.draw_shop_hints(self.screen)\n        _PH.mark("ui.gold")' in _sh_core,
+      "9bv3 source must still open the UI pass with the shop hints, right before the gold HUD")
+check("return int(sin(float(animation_time) * 0.06) * 2.0)" in _sh_layout
+      and '[[340, 540], "ITEM FORGE", [82, -30]]' in _sh_layout
+      and '[[940, 180], "HERO SHOP", [-82, 44]]' in _sh_layout,
+      "9bv3 layout must keep the source bob and the two anchored labels")
+check('const ShopHintLayout = preload("res://scripts/ui/shop_hint_layout.gd")' in _sh_view
+      and '"shop_hints":\n\t\t\t_draw_shop_hints(world)' in _sh_view
+      and "ShopHintLayout.ops(int(world.tick_count), metrics)" in _sh_view
+      and "func _draw_hud_op(" in _sh_view,
+      "9bv3 view must open the UI pass with the shop hints, bobbing on the world tick count")
+
+# ── Layer 9bv4: the controller hint bar (Game._draw_input_hints / draw_hint_bar) ──
+from input_hint_draw_source_oracle import source_fixture as input_hint_draw_fixture
+_ih_path = ROOT / "tests/fixtures/input_hint_draw_source.json"
+_ih_layout = (ROOT / "scripts/ui/input_hint_layout.gd").read_text(encoding="utf-8")
+_ih_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_ih_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+_ih_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+check('const InputHintDrawChecks = preload("res://tests/input_hint_draw_checks.gd")' in ai_tests
+      and "InputHintDrawChecks.new().run(_check)" in ai_tests,
+      "9bv4 input hint draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/input_hint_draw_source_oracle.py" in workflow,
+      "9bv4 CI must run the draw_hint_bar source oracle")
+check(_ih_path.is_file(), "9bv4 input hint fixture must exist")
+if _ih_path.is_file():
+    _ih = json.loads(_ih_path.read_text(encoding="utf-8"))
+    check(input_hint_draw_fixture() == _ih, "9bv4 input hint fixture must not drift from _core.py")
+    check(len(_ih["frames"]) == 6 and sum(len(f["ops"]) for f in _ih["frames"]) == 89
+          and any(not f["ops"] for f in _ih["frames"])
+          and any(f["ops"] and f["ops"][0]["rect"][0] < 0 for f in _ih["frames"]),
+          "9bv4 fixture must pin 6 frames / 89 ops incl. the empty and the overflowing bar")
+_ih_draw = _ih_core[_ih_core.index("    def _draw_input_hints(self, surface):"):]
+_ih_draw = _ih_draw[:_ih_draw.index("    def _input_label(")]
+check("if mgr is None or not mgr.is_controller_mode():" in _ih_draw
+      and "self.boss_death.celebration_active" in _ih_draw
+      and "mgr.draw_hint_bar(surface, context=ctx)" in _ih_draw
+      and _ih_core.index("self._draw_input_hints(self.screen)")
+      < _ih_core.index("# ═══ LEVEL INTRO SCREEN (paling atas dari yang lain) ═══"),
+      "9bv4 source must still gate the bar on controller mode and cinematics, before the intro")
+check("var x := (SCREEN_WIDTH - total_w) >> 1" in _ih_layout and "const BAR_Y := 690" in _ih_layout,
+      "9bv4 layout must keep the centred floor start and y = SCREEN_HEIGHT - 30")
+check('const InputHintLayout = preload("res://scripts/ui/input_hint_layout.gd")' in _ih_view
+      and re.search(r'"tactical_feedback",\s*"end_overlay",\s*"input_hints",\s*"level_intro",',
+                    _ih_view) is not None
+      and '"input_hints":\n\t\t\t_draw_input_hints(world)' in _ih_view
+      and "func input_hints_blocked(" in _ih_view,
+      "9bv4 view must paint the hint bar between the tactical banner and the level intro")
+check("controller_cursor.get_hints(hint_context) if controller_cursor.active else []" in _ih_screen
+      and 'arena.set("input_hints", hints)' in _ih_screen,
+      "9bv4 screen must feed the hint bar only in controller mode")
+
+# ── Layer 9bv5: the victory / defeat overlay (Overlay.draw) and the result layout ──
+from end_overlay_draw_source_oracle import source_fixture as end_overlay_draw_fixture
+_eo_path = ROOT / "tests/fixtures/end_overlay_draw_source.json"
+_eo_layout = (ROOT / "scripts/ui/end_overlay_layout.gd").read_text(encoding="utf-8")
+_eo_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_eo_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+_eo_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+check('const EndOverlayDrawChecks = preload("res://tests/end_overlay_draw_checks.gd")' in ai_tests
+      and "EndOverlayDrawChecks.new().run(_check)" in ai_tests,
+      "9bv5 end overlay draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/end_overlay_draw_source_oracle.py" in workflow,
+      "9bv5 CI must run the Overlay.draw source oracle")
+check(_eo_path.is_file(), "9bv5 end overlay fixture must exist")
+if _eo_path.is_file():
+    _eo = json.loads(_eo_path.read_text(encoding="utf-8"))
+    check(end_overlay_draw_fixture() == _eo, "9bv5 end overlay fixture must not drift from the source")
+    check(len(_eo["frames"]) == 8 and sum(len(f["ops"]) for f in _eo["frames"]) == 2210
+          and _eo["colors"] == {"victory": [255, 200, 50], "defeat": [220, 50, 50]},
+          "9bv5 fixture must pin 8 frames / 2210 ops and the GOLD / RED titles")
+    _eo_buttons = {f["label"]: (f["unlock"] or {}).get("button") for f in _eo["frames"]}
+    check(_eo_buttons.get("unlock_steady") == [1275, 440, 310, 30]
+          and _eo_buttons.get("unlock_full_hover") == [875, 440, 310, 30],
+          "9bv6 fixture must pin the capped-timer and the slid-in PLAY NEXT LEVEL rects")
+check('self.ui.draw_overlay(\n                self.screen,\n                f"VICTORY! LV.{self.level_number}"'
+      in _eo_core and "self._draw_input_hints(self.screen)" in _eo_core
+      and _eo_core.index('f"DEFEAT LV.{self.level_number}"')
+      < _eo_core.index("self._draw_input_hints(self.screen)"),
+      "9bv5 source must still paint the overlay before the input hint bar")
+check("static func backdrop_rows()" in _eo_layout and "static func action_text(" in _eo_layout
+      and "const UNLOCK_DELAY := 90" in _eo_layout and "static func play_button_rect(" in _eo_layout
+      and "func _unlock_popup(" in _eo_layout,
+      "9bv5/9bv6 layout must keep the backdrop rows, the action line and the unlock popup")
+_eo_bundle = (ROOT.parent / "ui_components" / "_bundle.py").read_text(encoding="utf-8")
+check("if self.unlock_popup_timer < self.unlock_popup_delay:\n                self.unlock_popup_timer += 1"
+      in _eo_bundle and "g.ui_buttons['play_next_level'] = btn_rect" in _eo_bundle,
+      "9bv6 source must still stop the unlock timer at the delay and register the PLAY button")
+check("if unlock_popup_timer < EndOverlayLayout.UNLOCK_DELAY:" in _eo_view
+      and "func unlock_play_rect() -> Rect2:" in _eo_view
+      and 'var button: Rect2 = arena.call("unlock_play_rect")' in _eo_screen
+      and "func _unlock_popup_state(world: Prototype) -> Dictionary:" in _eo_screen
+      and "Control.MOUSE_FILTER_IGNORE if result else Control.MOUSE_FILTER_STOP" in _eo_screen,
+      "9bv6 view/screen must cap the timer like pygame and route PLAY NEXT LEVEL clicks")
+check('const EndOverlayLayout = preload("res://scripts/ui/end_overlay_layout.gd")' in _eo_view
+      and re.search(r'"tactical_feedback",\s*"end_overlay",\s*"input_hints",', _eo_view) is not None
+      and '"end_overlay":\n\t\t\t_draw_end_overlay(world)' in _eo_view
+      and "state[\"animation_time\"] = world.tick_count" in _eo_view,
+      "9bv5 view must paint the overlay between the tactical banner and the hint bar")
+check('arena.set("end_overlay_state", {} if world.is_running() else _end_overlay_state(world))'
+      in _eo_screen and "_set_result_layout(true)" in _eo_screen
+      and "_set_result_layout(false)" in _eo_screen,
+      "9bv5 screen must hand the end state to the arena and switch the pause card layout")
 
 # ── Layer 9br: UI skin from ui_theme.py (bake/bake_ui_theme.py) ──
 _ui_path = ROOT / "data/art/ui_theme.json"

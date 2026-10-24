@@ -117,7 +117,8 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
   HUD dan arena layar penuh belum), peluru hero, pose jalan/serang boss.
   `DynamicRenderer` **sudah terport (layer 9d0)**: partikel, kabut, obor,
   rune air, glow/asap toko dan efek lingkungan boss. Tactical commands sudah
-  punya state dan render dasar; audit paritas visualnya adalah pekerjaan terpisah.
+  punya state dan render dasar; audit paritas visualnya **sudah dikerjakan (layer 9bi2)**:
+  penanda, banner feedback, teks melayang, dan warna penolakan. Rincian di bagian "Slice 9bi2".
   Keputusan user: combo counter dan kill feed tetap tampil di Godot (walau tidak digambar
   pygame).
 
@@ -2133,7 +2134,8 @@ Batas yang diketahui:
 
 - Alas Godot (tile native dengan RNG visual tetap) bukan salinan piksel alas pygame; overlay
   menyalin warna akhir sumber di tiap piksel yang disentuh lapisan 4-5, termasuk bayangan
-  yang di sumber transparan. Selisih hanya terlihat pada tepi bayangan.
+  yang di sumber transparan. Selisih hanya terlihat pada tepi bayangan. (**Ditutup 9bj2:** alas
+  dan tembok tepi kini juga hasil bake pygame, jadi overlay jatuh di atas alas yang sama.)
 - Animasi peta (`DynamicRenderer`: partikel, kabut, obor, kilau/asap toko dan air)
   **sudah ditutup oleh layer 9d0**; lihat bagian 9d0 di akhir dokumen.
 - Painter di view tidak dieksekusi suite headless; hanya pemuatan tekstur dan urutan hook
@@ -3401,3 +3403,313 @@ review komposisi/animasi interaktif di Godot; review native visual tetap perlu
 dilakukan. Full static workflow **lulus: 20.343 checks, 73 perintah, 607 GDScript**
 (validator, seluruh source oracle, gdparse/gdlint/gdformat). Native import/runtime
 Godot 4.7.2 dijalankan melalui CI PR #338.
+
+## Slice 9bq2 — skill bernomor nyxareth dan fallback pose skill boss
+
+- Review visual offline setelah #338 menemukan nyxareth membeku di idle0 setiap cast. Smart AI
+  sumber (`_smart_ai_nyxareth`) memakai key `"1".."4"`, bukan Q/W/E/R, sehingga panen durasi
+  bake melewatkannya. Panen kini menerima setiap key skill konstan; hanya nyxareth yang bertambah
+  (`1`: 45, `2`: 55, `3`: 65, `4`: 95 tick, sama dengan `boss_ai.gd`).
+- Ultimate `"4"` melukis lapisan kosmik + bintang **seluruh layar** (`_draw_astro_realm_bg`). Bila
+  di-crop ke frame badan, lapisan itu menjadi kotak gelap 920x920 bertepi keras. Bake melewatinya
+  lewat `SCREEN_LAYERS`; badan, jaring rune, dan FX lokal tetap ter-bake. Penggelapan layar
+  penuh belum digambar di Godot (kandidat lapisan native terpisah).
+- Hanya `nyxareth.webp` yang di-bake ulang: 24 frame lama identik per piksel dan per anchor, 16 frame
+  skill baru (4 skill x 2 sample x 2 arah), 32 crop unik. Manifest memuat 79 smart boss dan 316
+  family skill. Atlas lain tidak disentuh.
+- `BossAnim.from_boss` hanya menamai pose skill yang ter-bake; key tak dikenal mempertahankan animasi
+  idle/walk/attack seperti fallback hero, bukan membeku di idle0.
+
+Batas: bukan klaim pixel parity; Godot tidak tersedia di sandbox sesi ini sehingga review memakai
+contact sheet dari crop lossless dengan rumus penempatan runtime. Review interaktif tetap perlu.
+
+## Slice 9bq3 — lapisan layar penuh ultimate nyxareth
+
+- Menutup celah 9bq2. `scripts/ui/nyxareth_realm_layout.gd` memport `_draw_astro_realm_bg` menjadi
+  daftar op murni: satu `fill` seluruh layar `cosmic_darkest (25,5,55)` dengan alpha
+  `80*min(1, progress*3)`, lalu 60 bintang (setiap bintang kelima berupa salib terang). Posisinya
+  dihitung dengan `(i*37 + phase*5) % w` dan `(i*71 + phase*3) % h`, dengan
+  `progress = 1 - timer/120`. AI meng-cast `"4"` selama 95 tick, jadi alpha naik dari 50 ke 80.
+- `prototype_view._draw_boss` melukisnya setelah cincin boss dan sebelum badan. Urutan ini sama
+  dengan sumber: lapisan menimpa semua yang digambar sebelum boss (peta, struktur, unit, hero,
+  proyektil hero), sedangkan badan, HP bar, efek, dan HUD tetap di atasnya. Lapisan ikut
+  screen shake.
+- Bintang dilukis opak. Di sumber, `pygame.draw.rect` menulis ke render surface XRGB tanpa alpha
+  (`mobile/platform_utils.py`), sehingga warna ditulis apa adanya dan alpha twinkle dibuang
+  (sudah dicek dengan pygame 2.6.1). `fill` berasal dari blit surface SRCALPHA, jadi tetap
+  di-blend.
+- Oracle `tests/nyxareth_realm_draw_source_oracle.py` menjalankan `PALETTE`, `_alpha`, dan
+  `_draw_astro_realm_bg` asli dari badan kelas `_NS_nyxareth` di bawah `draw_recorder.py`.
+  Hasilnya 7 frame dan 763 op, termasuk satu layar lebar 1560 px. Fixture-nya diputar ulang
+  `tests/nyxareth_realm_draw_checks.gd`, sedangkan `painter_scene_checks.gd` membuktikan scene
+  hidup melukis lapisan ini beserta pose `skill_4_*`.
+- Selisih yang diketahui: aura kosmik dan cincin tanah nyxareth ikut ter-bake di sprite badan,
+  sehingga berada di atas lapisan dan tidak ikut digelapkan seperti di sumber. Lapisan selalu
+  1280x720. Di layar yang dilebarkan, sumber membungkus bintang pada lebar display.
+
+Batas: bukan klaim pixel parity. Godot tidak tersedia di sandbox sesi ini, jadi lapisan belum
+dilihat langsung. Review interaktif tetap perlu.
+
+## Slice 9bi2 — paritas visual tactical commands
+
+Audit `tactical_commands.py` terhadap Godot (catatan lama: "audit paritas visualnya adalah pekerjaan
+terpisah"). Ada empat selisih nyata, semuanya sekarang terport:
+
+- **Penanda titik kumpul** (`draw_world`) sebelumnya digambar tembus pandang dengan alpha
+  sumber. Di sumber, semua `pygame.draw` ditulis ke render surface XRGB tanpa alpha, jadi cincin
+  r = 42/34/26 (muncul selama alpha `int((50 - r) * 4 * pulse)` > 0), cakram 6 px, inti putih,
+  dan tiga garis putus dari setiap hero yang berjarak > 80 px tampil **solid**. Tebal cincin kini
+  tumbuh ke dalam seperti pygame, dan denyutnya memakai jam dinding (`get_ticks() * 0.008`), bukan
+  tick simulasi.
+- **Banner feedback** (`draw_ui`) sebelumnya berupa `Label` HUD 18 px tanpa kotak. Sekarang
+  teksnya 28 px `body_bold` berpusat di (640, 90 + geser), dengan kotak hitam (`inflate(20, 8)`,
+  alpha 160·a/255), border 2 px bersudut 6 px berwarna feedback, dan bayangan hitam +2 px
+  ber-alpha a/2. Banner naik 20 px saat masuk selama 30 tick dan memudar di 30 tick terakhir.
+  Border tetap solid karena ditulis `pygame.draw` ke layar tanpa alpha. Urutannya kini di slot
+  `draw_ui`: setelah `effects.draw_ui` (popup achievement), sebelum level intro, tanpa goncangan.
+  `Label` `%TacticalFeedback` dihapus.
+- **Teks melayang**: `_set_feedback` juga memanggil `effects.add_damage_number(640, 100, text,
+  is_critical=True)`, jadi setiap feedback (termasuk penolakan yang tidak silent) melayang sebagai
+  angka kritis emas `teks + "!"`. Godot belum melakukannya; sekarang `_feedback` memanggilnya
+  lewat effect manager visual (RNG global visual, bukan RNG simulasi).
+- **Warna penolakan**: "No tower to protect!", "No boss active!", dan "No enemy heroes!" berwarna
+  oranye (255,150,100) di sumber, bukan merah. Godot sebelumnya memakai merah untuk semuanya.
+- Panggilan notifikasi UI dan toast side panel dari `_set_feedback` adalah no-op di sumber
+  (`add_notification` kosong, `beri_tahu_global` mengembalikan False), jadi tidak diport.
+- Oracle `tests/tactical_draw_source_oracle.py` menjalankan `TacticalCommand`,
+  `_get_command_color`, `draw_world`, dan `draw_ui` asli di bawah `draw_recorder.py` (yang kini
+  punya `Rect.inflate`/`topleft`). Hasilnya 18 frame dan 105 op. `tests/tactical_draw_checks.gd`
+  memutar ulang fixture tersebut serta menguji wiring view, teks melayang, warna penolakan, dan
+  perintah silent.
+
+Selisih yang tersisa: font banner memakai Barlow SemiBold milik view (font `body_bold` sumber
+tidak di-bake); garis dan cincin Godot ter-antialias. Panel taktis mengambang di layar 16:9 adalah
+tambahan rebuild (sumber hanya menampilkan tombol taktis di side panel); panel itu tidak diubah.
+Bukan klaim pixel parity, dan belum ada review interaktif.
+
+## Slice 9bj2 — bake alas peta dan tembok tepi (layer 9bj2)
+
+Latar: sebelum slice ini Godot merasterisasi sendiri lapisan 1-3 (`draw_terrain`,
+`draw_terrain_details`, `draw_river`, tiga `draw_lane`) dan lapisan 6 (`draw_border_wall`) dari
+perintah gambar sumber yang direkam (`terrain_tiles.gd`, `river_tiles.gd`, `lane_tiles.gd`,
+`wall_tiles.gd`). Warna dan posisinya sudah dari sumber, tetapi bintik terrain memakai seed visual
+Godot, garis tipis dan lingkaran memakai Bresenham Godot, dan tepi segitiga memakai rasterisasi
+Godot. Overlay 9bj juga disusun di atas alas pygame ber-seed `{tema}:base`, bukan alas Godot,
+sehingga tepi bayangan dekorasi bisa meleset.
+
+- `bake/bake_map_base.py` menjalankan `StaticRenderer` ASLI lewat `pygame_env.py` untuk 54 tema.
+  Alas (lapisan 1-3) dirender dengan seed yang sama dengan bake overlay (`{tema}:base`), lalu
+  disimpan opak sebagai `assets/art/map_base/<tema>.png` (1280x720 RGBA8, sekitar 44 KB per
+  tema). Tembok tepi digambar sekali di atas latar hitam dan sekali di atas latar putih; piksel
+  yang berubah disimpan opak di `assets/art/map_base/border_wall.png` (79.268 piksel). Sumber
+  mengabaikan tema untuk tembok, dan bake menegaskan tembok tiap tema identik.
+- Untuk tiap tema, bake membuktikan alas + overlay 9bj yang sudah ada di repo + tembok == peta
+  statis sumber. Peta sumber itu dirender dengan urutan `_render_static_map` (lapisan 4-5
+  ber-seed seperti 9bj). Dua run penuh menghasilkan manifest dan hash yang identik. Total aset
+  2,4 MB (55 PNG).
+- `data/art/map_base.json` mencatat generator, lapisan, seed, serta per tema `size`, `bytes`,
+  `sha256`, dan tujuh piksel kunci (`probes`). Tembok punya `covered_pixels`.
+- `MapArt` mendapat `base_texture(tema)` dan `wall_texture()`. Keduanya mengecek
+  `ResourceLoader.exists` dan tidak menahan cache sendiri, jadi hanya peta yang sedang aktif yang
+  dipegang view.
+- `prototype_view.cache_static_map(tema)` memakai alas dan tembok hasil bake bila sudah diimpor.
+  Kalau belum, view kembali ke raster native lama. `minion_view.gd` punya `baked_static_base`
+  supaya sungai dan lane native tidak digambar ulang di atas alas hasil bake. Urutannya tetap
+  seperti sumber: alas, dekorasi + toko (9bj), tembok, DynamicRenderer (9d0), lalu tint (9bh).
+- `tests/map_art_checks.gd` menguji manifest (54 tema = tema overlay, seed), setiap PNG
+  terdekode opak 1280x720, piksel kunci sama dengan sumber, tembok membingkai peta, tekstur
+  forest/desert/volcanic dan tembok termuat lewat `load()` (menguji impor Godot di CI), dan view
+  memakai alas hasil bake. Cek scene di `run_all.gd` kini membuktikan arena desert yang hidup
+  menggambar `map_base/desert.png` dan `border_wall.png`. `validate_project.py` mem-pin header,
+  byte, dan sha256 tiap PNG, seed yang sama dengan bake overlay, bukti komposit di bake, urutan
+  lapisan sumber, serta wiring view dan loader.
+
+Batas: hasilnya sama dengan satu render pygame ber-seed. Pygame sendiri mengacak bintik terrain
+dari entropi di tiap run, jadi pola bintiknya memang tidak pernah tetap di sumber. Animasi sungai,
+kabut, dan partikel tetap dari 9d0. Tekstur digambar dengan filter dan goncangan layar milik view.
+Bukan klaim pixel parity layar penuh, dan belum ada review di Godot.
+
+## Slice 9bv2 — chip emas dan badge mode sumber (layer 9bv2)
+
+Sumber: `_core.py::Game._draw_gold_hud`. `Game.draw` memanggilnya di pass UI hanya kalau panel
+kanan tidak aktif (`if not _PANEL_AKTIF()`), setelah `draw_shop_hints` dan sebelum banner boss.
+
+- Oracle `tests/gold_hud_draw_source_oracle.py` menjalankan `_draw_gold_hud` ASLI (diambil
+  dengan `ast` dari kelas `Game`), `format_gold_rate`, dan `ui_theme.draw_icon` asli di shim
+  perekam `draw_recorder.py`. `_vgrad` direkam sebagai satu op `vgrad`. Fixture
+  `tests/fixtures/gold_hud_draw_source.json` berisi 6 frame dan 102 op: dua cabang
+  `cheap_alpha()`, mode easy/normal/hard, satu mode tak dikenal (jatuh ke NORMAL), dan lebar
+  minimum 150. `draw_recorder.Font` sekarang punya `size()`.
+- `scripts/ui/gold_hud_layout.gd` membangun op yang sama. Chip di (18, 22), tinggi 40, lebar
+  `max(150, val_w + inc_w + 78)`, radius 20, gradasi (44,38,18)→(24,20,9) atau solid
+  (26,22,10), tepi GOLD 2 px, ikon koin s=0.9, emas `f"{gold:,}"` 24 px, garis rambut, dan
+  `+rate/s` 17 px. Badge di y + 46, tinggi 24, radius 12, ikon pedang s=0.55, dan teks
+  EASY/NORMAL/HARD 18 px.
+- `prototype_view.gd` melukis layer `gold_hud` pertama di `OVERLAY_ORDER` (tanpa goncangan,
+  sebelum `boss_intro`). Gradasi dilukis per baris dengan sudut bulat, rect bulat lewat
+  `StyleBoxFlat` tanpa anti-alias. Data dari `world.economy.gold[0]`,
+  `economy.income_per_second`, dan `world.difficulty`.
+- `prototype_screen.gd` mematikan `gold_hud_visible` saat panel kanan aktif, sama seperti
+  sumber. Bar atas Godot tidak ada di pygame. Bar itu sekarang mulai di x = 240 agar chip dan
+  badge tidak tertutup, `ArenaTitle` boleh terpotong, dan `GoldLabel` hanya menampilkan emas
+  lawan (`AI:%d`). Emas pemain dan income sekarang ada di chip sumber.
+- Bukti: `tests/gold_hud_draw_checks.gd` (replay semua frame, format ribuan, urutan layer,
+  data hidup), `prototype_layout_checks.gd` (chip dan badge hidup tidak bertumpuk dengan bar
+  atas), blok 9bv2 di `validate_project.py`, dan baris oracle di workflow.
+
+Batas: font Barlow SemiBold Godot, bukan Barlow Bold/Medium sumber. Lebar chip mengikuti metrik
+font Godot. Belum ada review visual di Godot. Bukan klaim pixel parity.
+
+## Slice 9bv3 — hint toko ITEM FORGE dan HERO SHOP (layer 9bv3)
+
+Sumber: `ui_components/_bundle.py::ShopHints.draw`. `Game.draw` membuka pass UI tanpa goncangan
+dengan `self.ui.draw_shop_hints(self.screen)`, tepat sebelum chip emas 9bv2. Hint ini selalu
+digambar, juga saat panel kanan aktif.
+
+- Oracle `tests/shop_hint_draw_source_oracle.py` menjalankan `ShopHints.draw` dan
+  `_draw_single_hint` ASLI (diambil dengan `ast`) dan `ui_theme.letter` asli di shim perekam.
+  Posisi toko dibaca dari `MapRenderer.__init__` (`radiant_shop_pos` (340, 540), `dire_shop_pos`
+  (940, 180)). Fixture `tests/fixtures/shop_hint_draw_source.json` berisi 6 frame dan 36 op,
+  mencakup kedua cabang `cheap_alpha()` dan goyangan -1/0/+1. Pada t = 60, `int()` memotong ke
+  nol.
+- `scripts/ui/shop_hint_layout.gd`:
+  - goyangan `int(sin(animation_time * 0.06) * 2)`;
+  - ITEM FORGE di (340+82, 540-30) dan HERO SHOP di (940-82, 180+44);
+  - label `letter()` 14 px GOLD_TEXT di tengah titik;
+  - pil = rect teks `inflate(16, 8)` dengan radius `h // 2`, gradasi (48,42,20)→(24,20,9) atau
+    solid (30,24,10), dan tepi GOLD 1 px.
+- `prototype_view.gd` melukis layer `shop_hints` paling awal di `OVERLAY_ORDER`, sebelum
+  `gold_hud`. Painter op HUD bersama (`_draw_hud_op`) dipakai juga oleh chip emas.
+  `world.tick_count` menggantikan `animation_time`.
+- Bukti: `tests/shop_hint_draw_checks.gd` (replay semua frame, posisi toko, `letter`, pemotongan
+  goyangan, urutan layer, dan tick hidup), blok 9bv3 di `validate_project.py`, dan baris oracle
+  di workflow.
+
+Batas: `animation_time` sumber tetap naik saat level intro dan animasi kematian boss, sedangkan
+`tick_count` Godot mengikuti langkah simulasi. Font yang dipakai Barlow SemiBold, bukan Barlow
+Bold. Belum ada review visual di Godot. Bukan klaim pixel parity.
+
+## Slice 9bv4 — hint bar tombol controller (layer 9bv4)
+
+Sumber: `_core.py::Game._draw_input_hints`, lalu `ControllerManager.draw_hint_bar`. `Game.draw`
+memanggilnya setelah overlay victory/defeat dan sebelum level intro serta kematian boss. Bar
+hanya digambar dalam mode controller, dan tidak digambar saat level intro, banner boss, atau
+selebrasi boss aktif. Konteksnya victory, defeat, shop (hero shop), atau game.
+
+- Oracle `tests/input_hint_draw_source_oracle.py` menjalankan `draw_hint_bar` ASLI (diambil
+  dengan `ast` dari `ControllerManager`) di shim perekam. `get_hints` diganti pengganti yang
+  mengembalikan daftar milik frame. Fixture `tests/fixtures/input_hint_draw_source.json` berisi
+  6 frame dan 89 op, termasuk bar kosong dan bar yang lebih lebar dari layar. Bar lebar itu
+  mengunci pembagian floor Python pada angka negatif. `draw_recorder.Font` sekarang punya
+  `get_height()`.
+- `scripts/ui/input_hint_layout.gd`:
+  - lebar item `label_w + 10 + 5 + desc_w`, jarak antar item 16;
+  - baris mulai di `(1280 - total_w) >> 1`;
+  - strip (0,0,0,140) di (x - 7, 686);
+  - kotak tombol radius 4 (48,52,70) bertepi (120,130,165);
+  - label (255,235,140) dan deskripsi (205,210,225), 19 px, di y = 690.
+- `prototype_view.gd` melukis layer `input_hints` setelah `tactical_feedback` dan sebelum
+  `level_intro`. Selama sinematik (`input_hints_blocked`) bar tidak dilukis.
+  `prototype_screen.gd` mengisi `input_hints` dari `controller_cursor.get_hints(context)`, tapi
+  hanya selama `controller_cursor.active`. Data hint memakai port `controller_runtime.gd` yang
+  sudah ada.
+- Bukti: `tests/input_hint_draw_checks.gd` (replay semua frame, urutan layer, kosong di mode
+  mouse/keyboard, dan `get_hints` hidup), blok 9bv4 di `validate_project.py`, dan baris oracle
+  di workflow.
+
+Batas: tinggi font mengikuti metrik Godot (`font_h` = ukuran font), dan font yang dipakai Barlow
+SemiBold, bukan font body sumber. Belum ada review visual di Godot. Bukan klaim pixel parity.
+
+## Slice 9bv5 — overlay victory/defeat sumber dan tata letak hasil (layer 9bv5)
+
+Sumber: `ui_components/_bundle.py::Overlay.draw` (cabang cheap-alpha). `Game.draw` memanggil
+`ui.draw_overlay(screen, title, color, subtitle, action)` setelah popup dan sebelum hint bar
+tombol. Judul `VICTORY! LV.n` berwarna GOLD (255,200,50), dan `DEFEAT LV.n` berwarna RED
+(220,50,50). `Game.update` berhenti di luar state `playing`, jadi `animation_time` membeku.
+Akibatnya sinar, denyut judul, dan kilau diam di frame terakhir; yang tetap bergerak hanya
+bagian yang memakai `get_ticks`.
+
+- Oracle `tests/end_overlay_draw_source_oracle.py` menjalankan `draw` ASLI beserta semua
+  helper (`_draw_rays`, `_draw_central_glow`, `_draw_title`, `_draw_sparkles`, `_draw_stats`,
+  `_draw_action_hint`, `_draw_achievements`), `ui_theme.draw_icon`, dan `corner_ticks` di shim
+  perekam.
+  - `cached_render`, `_radial`, `_shadow`, `_vgrad`, dan `outline_text` direkam sebagai satu op.
+  - Setiap helper didahului op `section`.
+  - Popup level terbuka diport di 9bv6 (lihat di bawah).
+  - Fixture berisi 4 frame dan 407 op: menang dengan level berikutnya, menang di level
+    terakhir, kalah, dan label controller.
+  - `draw_recorder` sekarang mendukung `get_rect(topright=...)`.
+- `scripts/ui/end_overlay_layout.gd` membangun op yang sama:
+  - latar per baris `int(180 * (1 - |y - 360| / 360 * 0.3))`;
+  - 12 sinar alpha 30 dan cahaya tengah r = 200..60;
+  - glow radial dan judul Cinzel bergaris tepi 3 px;
+  - kilau, lalu panel statistik 500 x 214 berisi bayangan, gradasi, tepi 2 px, sudut emas,
+    lima baris, dan badge NEW BEST;
+  - keycap petunjuk aksi dari pasangan `[KEY] Desc`, dan jumlah achievement dengan ikon piala;
+  - `action_text()` meniru baris aksi `Game.draw`.
+- `prototype_view.gd` melukis layer `end_overlay` setelah `tactical_feedback` dan sebelum
+  `input_hints`, memakai `end_overlay_state` dari layar.
+  - Painter baru: latar sebagai tekstur kolom 1 px, glow radial sebagai potongan
+    `GradientTexture2D` radial, judul sebagai 8 salinan garis tepi plus badan warna tengah
+    gradasi, bayangan sebagai `StyleBoxFlat`, dan busur dengan sudut dibalik.
+  - Rect bulat sekarang mengikuti alpha.
+- `prototype_screen.gd` mengisi state setiap frame setelah pertandingan selesai: judul, warna,
+  baris aksi (label N/R/ESC atau label controller), `match_stats_snapshot`, `wave_count`, flag
+  NEW BEST dari hasil yang tersimpan, dan jumlah achievement.
+  - Kartu jeda di akhir pertandingan masuk ke tata letak hasil: tanpa redup, tanpa judul, dan
+    pindah ke kiri bawah sebagai kartu tombol ringkas, supaya sentuh tetap bisa.
+  - Game tetap dijeda, `result_shown` tetap sama, dan teks `PauseTitle` tetap diisi.
+- Bukti: `tests/end_overlay_draw_checks.gd` (replay semua frame, warna, baris aksi, urutan
+  layer, kosong saat bermain, dan state hidup), blok 9bv5 di `validate_project.py`, dan baris
+  oracle di workflow.
+
+Batas:
+- Hanya cabang cheap-alpha yang diport; cabang darken untuk HP belum.
+- Gradasi badan judul diganti warna tengahnya. Glow radial dan bayangan adalah tiruan.
+- `Match Time` sumber terus bertambah selama overlay tampil (`time.time()` dihitung tiap
+  frame). Godot memakai waktu selesai pertandingan.
+- Belum ada review visual di Godot. Bukan klaim pixel parity.
+
+## Slice 9bv6 — popup level baru terbuka di overlay victory (layer 9bv6)
+
+Sumber: `Overlay._draw_level_unlock_popup` dan `_get_newly_unlocked_level`, dipanggil di `draw`
+hanya saat menang, setelah `_update_unlock_popup`.
+
+- Popup 340 x 220 berisi:
+  - bayangan (0,0,0,150);
+  - kartu gradasi emas 220 baris dengan dua tepi, di-blit dua kali di sekitar glow berdenyut;
+  - ikon gembok terbuka dengan lubang kunci hijau;
+  - teks "NEW LEVEL UNLOCKED!" (dengan bayangan alpha 100), `LEVEL n`, dan nama level;
+  - garis pemisah;
+  - siluet true boss level berikutnya: aura, tubuh hitam dan berwarna, 5 atau 3 duri, dan mata
+    menyala;
+  - "FINAL BOSS" dan nama boss;
+  - meter kesulitan: hard = `min(5, max(1, int(hp_mult * 2.5)))`;
+  - tombol PLAY NEXT LEVEL dengan hover dan ikon play.
+- Animasi: geser dari kanan 400 px (ease kubik selama 30 panggilan) dan alpha naik selama 15
+  panggilan, setelah jeda 90 panggilan.
+- Quirk sumber yang ikut diport: `_update_unlock_popup` berhenti TEPAT di jeda (90). Di
+  pertandingan nyata popup tetap 400 px ke kanan dengan alpha 0. Yang terlihat hanya strip gelap
+  di tepi kanan dan potongan garis serta tombol (tombol di x = 1275). Godot memakai batas yang
+  sama (`unlock_popup_timer` di view, naik sekali per gambar overlay victory). Frame oracle di
+  atas jeda (seperti yang dipaksa `tools/test_godot_match_parity.py`) mengunci rumus geser dan
+  isinya.
+- Oracle 9bv5 sekarang menjalankan popup ASLI dengan pengganti modul `levels`,
+  `bosses.boss_data`, `_core.GameSettings`, dan `pygame.mouse`. Fixture berisi 8 frame dan
+  2210 op: popup diam, menggeser, penuh dengan hover, dan level berikutnya yang sudah pernah
+  dimenangkan. `draw_recorder.Rect` sekarang punya `collidepoint`.
+- Godot:
+  - `end_overlay_layout.gd` punya `_unlock_popup`, `popup_origin`, dan `play_button_rect`
+    (sama dengan `g.ui_buttons['play_next_level']` sumber).
+  - `prototype_screen.gd` mengisi `unlock` hanya kalau kemenangan ini baru membuka level yang
+    belum pernah dimenangkan. Datanya `completed_levels` dari hasil yang tersimpan, config level
+    berikutnya, entri true boss di `boss_table`, dan `world.difficulty`.
+  - Di tata letak hasil, lapisan kartu jeda tidak menangkap klik, jadi klik kiri di tombol yang
+    terlukis memanggil `_request_next_level()`. Klik lain di arena diabaikan selama hasil tampil.
+- Bukti: replay frame popup dan rect tombol di `tests/end_overlay_draw_checks.gd`, cek
+  `unlock_play_rect` (x = 1275 dengan timer yang dibatasi), dan pin 9bv6 di
+  `validate_project.py`.
+
+Batas: popup sumber nyaris tak terlihat karena bug timer di atas; Godot meniru perilaku itu,
+tidak memperbaikinya. Belum ada review visual di Godot. Bukan klaim pixel parity.
+

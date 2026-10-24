@@ -143,6 +143,12 @@ jobs:
           python godot_rebuild/tests/boss_intro_draw_source_oracle.py
           python godot_rebuild/tests/boss_celebration_draw_source_oracle.py
           python godot_rebuild/tests/boss_death_sequence_draw_source_oracle.py
+          python godot_rebuild/tests/nyxareth_realm_draw_source_oracle.py
+          python godot_rebuild/tests/tactical_draw_source_oracle.py
+          python godot_rebuild/tests/gold_hud_draw_source_oracle.py
+          python godot_rebuild/tests/shop_hint_draw_source_oracle.py
+          python godot_rebuild/tests/input_hint_draw_source_oracle.py
+          python godot_rebuild/tests/end_overlay_draw_source_oracle.py
           python godot_rebuild/tests/death_explosion_draw_source_oracle.py
           python godot_rebuild/tests/map_tint_draw_source_oracle.py
           python godot_rebuild/tests/draw_order_source_oracle.py
