@@ -5116,6 +5116,67 @@ check('arena.set("build_popup_state", _build_popup_state(world, match_session))'
       and "if slot == null or slot.structure_id != -1:" in _bp_screen,
       "9bv7 screen must hand the selected empty build slot to the arena")
 
+# ── Layer 9bv8: selected hero panel and its six inventory slots ──
+from hero_panel_draw_source_oracle import source_fixture as hero_panel_draw_fixture
+_hp_path = ROOT / "tests/fixtures/hero_panel_draw_source.json"
+_hp_layout = (ROOT / "scripts/ui/hero_panel_layout.gd").read_text(encoding="utf-8")
+_hp_checks = (ROOT / "tests/hero_panel_draw_checks.gd").read_text(encoding="utf-8")
+_hp_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_hp_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+_hp_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+_hp_bundle = (ROOT.parent / "ui_components/_bundle.py").read_text(encoding="utf-8")
+_hp_items = (ROOT.parent / "hero_items.py").read_text(encoding="utf-8")
+check('const HeroPanelDrawChecks = preload("res://tests/hero_panel_draw_checks.gd")' in ai_tests
+      and "HeroPanelDrawChecks.new().run(_check)" in ai_tests,
+      "9bv8 HeroPanel draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/hero_panel_draw_source_oracle.py" in workflow,
+      "9bv8 CI must run the HeroPanel and HeroItemRenderer source oracle")
+check(_hp_path.is_file(), "9bv8 HeroPanel source fixture must exist")
+if _hp_path.is_file():
+    _hp = json.loads(_hp_path.read_text(encoding="utf-8"))
+    _hp_frames = _hp["frames"]
+    check(hero_panel_draw_fixture() == _hp, "9bv8 HeroPanel fixture must not drift from its source")
+    check(len(_hp_frames) == 6 and sum(len(f["ops"]) for f in _hp_frames) == 440
+          and [f["label"] for f in _hp_frames] == [
+              "ready_fallback", "low_hp_autocast", "locked_flat", "mobile_anchor_hover_close",
+              "max_level_full_inventory_flat", "hover_upgrade"]
+          and _hp["source"] == "ui_components/_bundle.py::HeroPanel.draw + hero_items.py::HeroItemRenderer.draw",
+          "9bv8 fixture must pin the six representative source frames and 440 draw ops")
+    check({f["cheap_alpha"] for f in _hp_frames} == {True, False}
+          and any(f["state"].get("panel_pos") == [975, 420] for f in _hp_frames)
+          and all(f["buttons"].get("hero_item_slot_5") is not None for f in _hp_frames),
+          "9bv8 fixture must cover both panel fills, mobile anchoring, and all six item-slot rects")
+check("if self.selected_hero and self.selected_hero.alive:\n            self.ui.draw_hero_info(self.screen)" in _hp_core
+      and _hp_core.index("self.ui.draw_build_popup(self.screen)")
+      < _hp_core.index("self.ui.draw_hero_info(self.screen)")
+      and "HeroItemRenderer.draw(surface, h, px, y, panel_w)" in _hp_bundle
+      and "for i in range(MAX_ITEM_SLOTS):" in _hp_items,
+      "9bv8 source must draw the live selected hero after the build popup and use all six item slots")
+check("static func panel_rect(state: Dictionary) -> Rect2i:" in _hp_layout
+      and "static func item_slot_rect(state: Dictionary, index: int) -> Rect2i:" in _hp_layout
+      and "static func upgrade_rect(state: Dictionary) -> Rect2i:" in _hp_layout
+      and "const PANEL_W := 280" in _hp_layout and "const PANEL_H := 276" in _hp_layout,
+      "9bv8 layout must keep the source panel size and expose its panel, item, and upgrade geometry")
+_hp_order_match = re.search(r"const OVERLAY_ORDER := \[(.*?)\]", _hp_view, re.S)
+_hp_order = re.findall(r'"(\w+)"', _hp_order_match.group(1)) if _hp_order_match else []
+check('const HeroPanelLayout = preload("res://scripts/ui/hero_panel_layout.gd")' in _hp_view
+      and '"hero_panel":\n\t\t\t_draw_hero_panel(world)' in _hp_view
+      and "func hero_panel_draw_ops(" in _hp_view
+      and re.search(r'"build_popup",\s*"hero_panel",\s*"end_overlay"', _hp_view) is not None
+      and bool(_hp_order) and _hp_order[-1] == "boss_death",
+      "9bv8 view must paint after the build popup, before results, and leave boss death last")
+check('arena.set("hero_panel_state", _hero_panel_state(world, match_session))' in _hp_screen
+      and "func _hero_panel_state(world: Prototype, match_session: PrototypeSession) -> Dictionary:" in _hp_screen
+      and "selected == null or not selected.alive or selected.team != world.BLUE" in _hp_screen
+      and "func _hero_panel_item_active(inventory: HeroItemInventory, item_id: String) -> bool:" in _hp_screen
+      and "selected.upgrade_cost()" in _hp_screen,
+      "9bv8 screen must hand the selected live blue hero and item state to the view without commands")
+check("Hero panel oracle pins 6 source frames and 440 draw ops" in _hp_checks
+      and "hero_panel_draw_ops" in _hp_checks
+      and "for index in range(Layout.ITEM_COUNT):" in _hp_checks
+      and 'order.back() == "boss_death"' in _hp_checks,
+      "9bv8 draw checks must replay the fixture, pin all six slots, and keep the overlay order")
+
 # ── Layer 9br: UI skin from ui_theme.py (bake/bake_ui_theme.py) ──
 _ui_path = ROOT / "data/art/ui_theme.json"
 _ui_src = (ROOT.parent / "ui_theme.py").read_text(encoding="utf-8")

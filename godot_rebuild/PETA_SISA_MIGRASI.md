@@ -3751,3 +3751,32 @@ Batas:
 - Klik di popup tidak dilayani (tombol HUD yang memicu build); perilaku game tidak berubah.
 - Belum ada review visual di Godot. Bukan klaim pixel parity.
 
+## Slice 9bv8 — panel hero dan enam slot item (layer 9bv8)
+
+Sumber: `ui_components/_bundle.py::HeroPanel.draw` beserta helper panel/skill/tombolnya, dan
+`hero_items.py::HeroItemRenderer.draw`. `Game.draw` hanya memanggil panel untuk hero terpilih yang
+masih hidup, setelah popup build. Port ini mempertahankan panel sebagai gambar dan snapshot
+view-only; tidak mengubah command atau gameplay.
+
+- Oracle `tests/hero_panel_draw_source_oracle.py` menjalankan metode sumber asli bersama
+  `ui_theme` dan `HeroItemRenderer` di shim recorder. Fixture berisi 6 frame / 440 op:
+  fallback siap, HP rendah + auto-cast, panel flat dengan upgrade terkunci, anchor mobile + hover
+  tombol tutup, level maksimum dengan enam item, dan hover upgrade. Kedua cabang cheap-alpha
+  tercakup.
+- `scripts/ui/hero_panel_layout.gd` menyusun panel 280 x 276 di fallback kiri-bawah
+  (x = 20, y = 424 pada 1280 x 720), dengan opsi `panel_pos`, gradasi/bayangan dan sudut emas,
+  nama + level, HP, empat skill/cooldown, toggle auto-cast, enam slot item, tombol ITEM FORGE,
+  upgrade dan tutup. Helper geometri mengekspos rect panel serta semua tombol/slot.
+- `prototype_view.gd` melukis layer `hero_panel` setelah `build_popup` dan sebelum `end_overlay`;
+  `boss_death` tetap layer terakhir. `prototype_screen.gd` menyerahkan hanya snapshot hero biru
+  terpilih yang hidup, gold/upgrade, cooldown, dan metadata item melalui `arena.set()`.
+- Bukti: `tests/hero_panel_draw_checks.gd` replay frame, warna dan rect keenam slot/tombol,
+  memastikan panel kosong tanpa state, dan memeriksa urutan layer. Suite sudah terdaftar di
+  `tests/run_all.gd`; guard 9bv8 di `validate_project.py` dan command oracle di workflow.
+
+Batas:
+- Tombol dan rect interaksi hanya digambar/dicek; handler input panel tidak diport agar gameplay
+  tidak berubah. Screen belum memberi `panel_pos` mobile sehingga live panel memakai fallback
+  kiri-bawah, walau layout/oracle mencakup anchor mobile.
+- Belum ada runtime atau review visual di Godot. Bukan klaim pixel parity.
+

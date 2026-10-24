@@ -150,6 +150,7 @@ jobs:
           python godot_rebuild/tests/input_hint_draw_source_oracle.py
           python godot_rebuild/tests/end_overlay_draw_source_oracle.py
           python godot_rebuild/tests/build_popup_draw_source_oracle.py
+          python godot_rebuild/tests/hero_panel_draw_source_oracle.py
           python godot_rebuild/tests/death_explosion_draw_source_oracle.py
           python godot_rebuild/tests/map_tint_draw_source_oracle.py
           python godot_rebuild/tests/draw_order_source_oracle.py
