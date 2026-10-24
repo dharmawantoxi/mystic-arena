@@ -93,8 +93,11 @@ func _check_view_wiring(check: Callable, frames: Array) -> void:
 	var view := PrototypeView.new()
 	var order: Array = view.overlay_paint_order()
 	check.call(
-		order.find("gold_hud") == 0 and order.find("gold_hud") < order.find("boss_intro"),
-		"The gold HUD paints first in the UI pass, before the boss banner"
+		(
+			order.find("gold_hud") == order.find("shop_hints") + 1
+			and order.find("gold_hud") < order.find("boss_intro")
+		),
+		"The gold HUD paints right after the shop hints and before the boss banner"
 	)
 	check.call(view.gold_hud_visible, "The gold HUD shows by default (no side panel)")
 	var world := Prototype.new()

@@ -4941,17 +4941,49 @@ check("const ORIGIN := Vector2i(18, 22)" in _gh_layout
       and "Economy.format_gold_rate(rate)" in _gh_layout,
       "9bv2 layout must keep the source origin, chip width rule and format_gold_rate")
 check('const GoldHudLayout = preload("res://scripts/ui/gold_hud_layout.gd")' in _gh_view
-      and re.search(r'const OVERLAY_ORDER := \[\s*"gold_hud",\s*"boss_intro",', _gh_view) is not None
+      and re.search(r'const OVERLAY_ORDER := \[\s*"shop_hints",\s*"gold_hud",\s*"boss_intro",',
+                    _gh_view) is not None
       and '"gold_hud":\n\t\t\t_draw_gold_hud(world)' in _gh_view
       and "if not gold_hud_visible:" in _gh_view
       and "func _draw_vgrad_op(" in _gh_view and "func _draw_round_rect_op(" in _gh_view,
-      "9bv2 view must paint the gold HUD first in the UI pass, gated by gold_hud_visible")
+      "9bv2 view must paint the gold HUD after the shop hints, gated by gold_hud_visible")
 check('arena.set("gold_hud_visible", side_panel == null or not side_panel.is_active())'
       in _gh_screen and '%GoldLabel.text = "AI:%d" % world.economy.gold[1]' in _gh_screen,
       "9bv2 screen must hide the chip with the side panel and keep only the opponent gold")
 check('[node name="TopBar" type="PanelContainer" parent="HUD"]\noffset_left = 240.0\n' in _gh_scene
       and "Gold chip %s and badge %s stay clear of the top bar %s" in _gh_hud,
       "9bv2 top bar must start right of the gold chip, proven by the live layout checks")
+
+# ── Layer 9bv3: the floating ITEM FORGE / HERO SHOP hints (ShopHints.draw) ──
+from shop_hint_draw_source_oracle import source_fixture as shop_hint_draw_fixture
+_sh_path = ROOT / "tests/fixtures/shop_hint_draw_source.json"
+_sh_layout = (ROOT / "scripts/ui/shop_hint_layout.gd").read_text(encoding="utf-8")
+_sh_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_sh_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+check('const ShopHintDrawChecks = preload("res://tests/shop_hint_draw_checks.gd")' in ai_tests
+      and "ShopHintDrawChecks.new().run(_check)" in ai_tests,
+      "9bv3 shop hint draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/shop_hint_draw_source_oracle.py" in workflow,
+      "9bv3 CI must run the ShopHints.draw source oracle")
+check(_sh_path.is_file(), "9bv3 shop hint fixture must exist")
+if _sh_path.is_file():
+    _sh = json.loads(_sh_path.read_text(encoding="utf-8"))
+    check(shop_hint_draw_fixture() == _sh, "9bv3 shop hint fixture must not drift from the source")
+    check(len(_sh["frames"]) == 6 and sum(len(f["ops"]) for f in _sh["frames"]) == 36
+          and {f["cheap_alpha"] for f in _sh["frames"]} == {True, False}
+          and _sh["shops"] == {"dire_shop_pos": [940, 180], "radiant_shop_pos": [340, 540]},
+          "9bv3 fixture must pin 6 frames / 36 ops over both fill branches and both shops")
+check('self.ui.draw_shop_hints(self.screen)\n        _PH.mark("ui.gold")' in _sh_core,
+      "9bv3 source must still open the UI pass with the shop hints, right before the gold HUD")
+check("return int(sin(float(animation_time) * 0.06) * 2.0)" in _sh_layout
+      and '[[340, 540], "ITEM FORGE", [82, -30]]' in _sh_layout
+      and '[[940, 180], "HERO SHOP", [-82, 44]]' in _sh_layout,
+      "9bv3 layout must keep the source bob and the two anchored labels")
+check('const ShopHintLayout = preload("res://scripts/ui/shop_hint_layout.gd")' in _sh_view
+      and '"shop_hints":\n\t\t\t_draw_shop_hints(world)' in _sh_view
+      and "ShopHintLayout.ops(int(world.tick_count), metrics)" in _sh_view
+      and "func _draw_hud_op(" in _sh_view,
+      "9bv3 view must open the UI pass with the shop hints, bobbing on the world tick count")
 
 # ── Layer 9br: UI skin from ui_theme.py (bake/bake_ui_theme.py) ──
 _ui_path = ROOT / "data/art/ui_theme.json"

@@ -29,6 +29,7 @@ const BossAnim = preload("res://scripts/ui/boss_anim.gd")
 const NyxarethRealmLayout = preload("res://scripts/ui/nyxareth_realm_layout.gd")
 const TacticalLayout = preload("res://scripts/ui/tactical_layout.gd")
 const GoldHudLayout = preload("res://scripts/ui/gold_hud_layout.gd")
+const ShopHintLayout = preload("res://scripts/ui/shop_hint_layout.gd")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
@@ -43,6 +44,7 @@ const HUD_SCREEN_W := 1280
 ## are never drawn by the source; they keep their slot between announcer and popup.
 const WORLD_LAYER_ORDER := ["path_preview", "effects", "tactical"]
 const OVERLAY_ORDER := [
+	"shop_hints",
 	"gold_hud",
 	"boss_intro",
 	"wave_announcer",
@@ -266,6 +268,8 @@ func _draw_overlay_layer(layer: String, world: Prototype) -> void:
 			_draw_kill_feed(world)
 		"achievement":
 			_draw_achievement_popup(world)
+		"shop_hints":
+			_draw_shop_hints(world)
 		"gold_hud":
 			_draw_gold_hud(world)
 		"tactical_feedback":
@@ -920,13 +924,32 @@ func _draw_gold_hud(world: Prototype) -> void:
 		return
 	gold_hud_draws += 1
 	for op in gold_hud_draw_ops(world):
-		match String(op.get("kind", "")):
-			"vgrad":
-				_draw_vgrad_op(op)
-			"rect":
-				_draw_round_rect_op(op)
-			_:
-				_draw_intro_op(op)
+		_draw_hud_op(op)
+
+
+## Layer 9bv3: `ShopHints.draw`, the ITEM FORGE / HERO SHOP pills that open the source UI pass
+## (unshaken, before the gold HUD). The world tick count stands in for `animation_time`.
+func _draw_shop_hints(world: Prototype) -> void:
+	for op in shop_hint_draw_ops(world):
+		_draw_hud_op(op)
+
+
+func shop_hint_draw_ops(world: Prototype, measure: Callable = Callable()) -> Array:
+	var metrics: Callable = _measure_intro_text
+	if measure.is_valid():
+		metrics = measure
+	return ShopHintLayout.ops(int(world.tick_count), metrics)
+
+
+## Paints one source HUD op: `_vgrad` fills, rounded `draw.rect`s, then the shared painter.
+func _draw_hud_op(op: Dictionary) -> void:
+	match String(op.get("kind", "")):
+		"vgrad":
+			_draw_vgrad_op(op)
+		"rect":
+			_draw_round_rect_op(op)
+		_:
+			_draw_intro_op(op)
 
 
 ## `measure` defaults to the real HUD font; the checks pass the oracle's.

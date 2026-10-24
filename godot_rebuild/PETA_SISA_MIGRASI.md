@@ -3560,3 +3560,32 @@ kanan tidak aktif (`if not _PANEL_AKTIF()`), setelah `draw_shop_hints` dan sebel
 Batas: font Barlow SemiBold Godot, bukan Barlow Bold/Medium sumber. Lebar chip mengikuti metrik
 font Godot. Belum ada review visual di Godot. Bukan klaim pixel parity.
 
+## Slice 9bv3 — hint toko ITEM FORGE dan HERO SHOP (layer 9bv3)
+
+Sumber: `ui_components/_bundle.py::ShopHints.draw`. `Game.draw` membuka pass UI tanpa goncangan
+dengan `self.ui.draw_shop_hints(self.screen)`, tepat sebelum chip emas 9bv2. Hint ini selalu
+digambar, juga saat panel kanan aktif.
+
+- Oracle `tests/shop_hint_draw_source_oracle.py` menjalankan `ShopHints.draw` dan
+  `_draw_single_hint` ASLI (diambil dengan `ast`) dan `ui_theme.letter` asli di shim perekam.
+  Posisi toko dibaca dari `MapRenderer.__init__` (`radiant_shop_pos` (340, 540), `dire_shop_pos`
+  (940, 180)). Fixture `tests/fixtures/shop_hint_draw_source.json` berisi 6 frame dan 36 op,
+  mencakup kedua cabang `cheap_alpha()` dan goyangan -1/0/+1. Pada t = 60, `int()` memotong ke
+  nol.
+- `scripts/ui/shop_hint_layout.gd`:
+  - goyangan `int(sin(animation_time * 0.06) * 2)`;
+  - ITEM FORGE di (340+82, 540-30) dan HERO SHOP di (940-82, 180+44);
+  - label `letter()` 14 px GOLD_TEXT di tengah titik;
+  - pil = rect teks `inflate(16, 8)` dengan radius `h // 2`, gradasi (48,42,20)→(24,20,9) atau
+    solid (30,24,10), dan tepi GOLD 1 px.
+- `prototype_view.gd` melukis layer `shop_hints` paling awal di `OVERLAY_ORDER`, sebelum
+  `gold_hud`. Painter op HUD bersama (`_draw_hud_op`) dipakai juga oleh chip emas.
+  `world.tick_count` menggantikan `animation_time`.
+- Bukti: `tests/shop_hint_draw_checks.gd` (replay semua frame, posisi toko, `letter`, pemotongan
+  goyangan, urutan layer, dan tick hidup), blok 9bv3 di `validate_project.py`, dan baris oracle
+  di workflow.
+
+Batas: `animation_time` sumber tetap naik saat level intro dan animasi kematian boss, sedangkan
+`tick_count` Godot mengikuti langkah simulasi. Font yang dipakai Barlow SemiBold, bukan Barlow
+Bold. Belum ada review visual di Godot. Bukan klaim pixel parity.
+
