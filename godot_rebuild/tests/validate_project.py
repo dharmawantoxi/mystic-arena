@@ -3974,6 +3974,72 @@ check("_check_files(check, manifest)" in _art_checks
       and "_check_view_wiring(check)" in _art_checks,
       "9bj map art suite must check files, loaded textures and the view wiring")
 
+# ── Layer 9bj2: baked map base (layers 1-3) + border wall (bake/bake_map_base.py) ──
+_mb_manifest_path = ROOT / "data/art/map_base.json"
+_mb_bake = (ROOT / "bake/bake_map_base.py").read_text(encoding="utf-8")
+_mb_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_mb_base = (ROOT / "scenes/combat/minion_view.gd").read_text(encoding="utf-8")
+_mb_loader = (ROOT / "scripts/ui/map_art.gd").read_text(encoding="utf-8")
+_mb_checks = (ROOT / "tests/map_art_checks.gd").read_text(encoding="utf-8")
+check(_mb_manifest_path.is_file() and _art_manifest_path.is_file(), "9bj2 map base manifest must exist")
+if _mb_manifest_path.is_file() and _art_manifest_path.is_file():
+    _mb = json.loads(_mb_manifest_path.read_text(encoding="utf-8"))
+    _mb_overlay = json.loads(_art_manifest_path.read_text(encoding="utf-8"))
+    check(sorted(_mb["themes"]) == sorted(_mb_overlay["themes"]) and len(_mb["themes"]) == 54,
+          "9bj2 one baked base per overlay theme (54)")
+    check(_mb["generator"] == "godot_rebuild/bake/bake_map_base.py"
+          and "layers 1-3" in _mb["layers"] and "6 (border wall)" in _mb["layers"]
+          and _mb["seed"] == "{theme}:base",
+          "9bj2 manifest must name its generator, the source layers and the overlay seed")
+    _mb_files = [(f"{_theme}.png", _entry) for _theme, _entry in sorted(_mb["themes"].items())]
+    _mb_files.append(("border_wall.png", _mb["wall"]))
+    for _name, _entry in _mb_files:
+        _png = ROOT / "assets/art/map_base" / _name
+        check(_png.is_file(), f"9bj2 PNG must ship: {_name}")
+        if not _png.is_file():
+            continue
+        _raw = _png.read_bytes()
+        _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+        check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _entry["size"] == [1280, 720]
+              and (_depth, _color) == (8, 6),
+              f"9bj2 PNG must be a 1280x720 RGBA8 image: {_name}")
+        check(len(_raw) == _entry["bytes"] and hashlib.sha256(_raw).hexdigest() == _entry["sha256"],
+              f"9bj2 PNG must match its manifest hash: {_name}")
+    check(all(len(_entry.get("probes", [])) == 7 for _entry in _mb["themes"].values()),
+          "9bj2 every base must pin its probe pixels")
+    check(_mb["wall"].get("covered_pixels", 0) > 50000, "9bj2 the border wall must hold real wall pixels")
+check('random.seed(f"{renderer.theme_name}:base")' in _mb_bake
+      and 'random.seed(f"{theme_name}:base")' in _art_bake
+      and 'random.seed(f"{name}:decorations")' in _mb_bake
+      and 'random.seed(f"{theme_name}:decorations")' in _art_bake
+      and 'random.seed(f"{name}:shops")' in _mb_bake
+      and 'random.seed(f"{theme_name}:shops")' in _art_bake,
+      "9bj2 the base bake must seed every layer exactly like the overlay bake")
+check("assert (composite == full_rgb).all()" in _mb_bake
+      and "StaticRenderer.draw_border_wall(full, " in _mb_bake
+      and "assert (theme_wall == wall).all()" in _mb_bake,
+      "9bj2 the bake must prove base + overlay + wall == the source static map")
+check(_art_render.index("StaticRenderer.draw_terrain(surf") < _art_render.index("StaticRenderer.draw_river(surf")
+      < _art_render.index("StaticRenderer.draw_lane(surf")
+      < _art_render.index("DecorationRenderer.draw_all(surf, self)"),
+      "9bj2 the source paints terrain, river and lanes before the decorations")
+check("func cache_static_map(map_theme: String)" in _mb_view
+      and "MapArt.base_texture(map_theme)" in _mb_view and "MapArt.wall_texture()" in _mb_view
+      and "if cached_river_theme != map_theme:\n\t\tcache_static_map(map_theme)" in _mb_view
+      and "TerrainTiles.raster(terrain_palette)" in _mb_view,
+      "9bj2 the view must cache the baked base and wall, with the native rasters as fallback")
+check("var baked_static_base := false" in _mb_base
+      and _mb_base.index("if not baked_static_base:") < _mb_base.index("draw_texture(river_texture")
+      < _mb_base.index("draw_texture(lane_texture") < _mb_base.index("_draw_map_decor()"),
+      "9bj2 the baked base must skip the native river and lanes, under the decor")
+check("ResourceLoader.exists(base_path(theme))" in _mb_loader
+      and "ResourceLoader.exists(wall_path())" in _mb_loader,
+      "9bj2 the loader must tolerate a base or wall that is not imported")
+check(all(f"_check_base_{_part}(check)" in _mb_checks for _part in ("manifest", "files", "textures", "view")),
+      "9bj2 map art suite must check the base manifest, files, textures and the view")
+check('"Selected map paints the baked source terrain, river and lanes"' in ai_tests,
+      "9bj2 the scene suite must prove the live arena paints the baked base")
+
 # ── Layer 9d0: native DynamicRenderer + source state/op oracle ──
 _dyn_manifest_path = ROOT / "data/art/map_dynamic.json"
 _dyn_fixture_path = ROOT / "tests/fixtures/dynamic_renderer_source.json"

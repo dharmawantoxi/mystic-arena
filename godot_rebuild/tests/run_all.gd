@@ -892,12 +892,25 @@ func _test_level_selection_scene(app: Node) -> void:
 		"Selected match view follows the source river spline"
 	)
 	_check(
-		screen.arena.river_texture != null and screen.arena.cached_river_theme == "desert",
-		"Selected map caches the source tiled river layer"
+		(
+			screen.arena.cached_river_theme == "desert"
+			and screen.arena.baked_static_base
+			and screen.arena.terrain_texture != null
+			and screen.arena.terrain_texture.resource_path.ends_with("map_base/desert.png")
+		),
+		"Selected map paints the baked source terrain, river and lanes"
 	)
-	_check(screen.arena.lane_texture != null, "Selected map caches source cobblestone lanes")
-	_check(screen.arena.wall_texture != null, "Selected map caches source border wall")
-	_check(screen.arena.terrain_texture != null, "Selected map caches source terrain")
+	_check(
+		screen.arena.river_texture == null and screen.arena.lane_texture == null,
+		"The baked base replaces the native river and lane rasters"
+	)
+	_check(
+		(
+			screen.arena.wall_texture != null
+			and screen.arena.wall_texture.resource_path.ends_with("map_base/border_wall.png")
+		),
+		"Selected map paints the baked source border wall"
+	)
 	screen.get_node("%RestartButton").pressed.emit()
 	await _settle()
 	_check(

@@ -80,13 +80,8 @@ func _draw() -> void:
 	terrain_palette = TerrainPalette.for_level(world.level_config)
 	terrain_river = TerrainPalette.river_path()
 	var map_theme: String = String(world.level_config.get("map_theme", "forest"))
-	if river_texture == null or cached_river_theme != map_theme:
-		terrain_texture = ImageTexture.create_from_image(TerrainTiles.raster(terrain_palette))
-		river_texture = ImageTexture.create_from_image(RiverTiles.raster(terrain_palette))
-		lane_texture = ImageTexture.create_from_image(LaneTiles.raster(terrain_palette))
-		if wall_texture == null:
-			wall_texture = ImageTexture.create_from_image(WallTiles.raster())
-		cached_river_theme = map_theme
+	if cached_river_theme != map_theme:
+		cache_static_map(map_theme)
 	draw_set_transform(world.current_screen_shake_offset(), 0.0, Vector2.ONE)
 	super._draw()
 	var match_session := session as PrototypeSession
@@ -178,6 +173,31 @@ func _draw_slot_outline(point: Vector2, color: Color, selected: bool) -> void:
 	draw_arc(point, 19, 0, TAU, 36, Color(color, 0.95 if selected else 0.5), 2, true)
 	draw_line(point - Vector2(6, 0), point + Vector2(6, 0), color, 2, true)
 	draw_line(point - Vector2(0, 6), point + Vector2(0, 6), color, 2, true)
+
+
+## Layer 9bj2: cache the theme's static map layers. The baked source base (terrain,
+## river and lanes, `bake/bake_map_base.py`) replaces the native tile rasters and the
+## baked border wall replaces `WallTiles`; either falls back to the native raster when
+## its PNG is not imported, so a fresh checkout still draws a map.
+func cache_static_map(map_theme: String) -> void:
+	if terrain_palette.is_empty():
+		terrain_palette = TerrainPalette.for_theme(map_theme)
+	var base := MapArt.base_texture(map_theme)
+	baked_static_base = base != null
+	if baked_static_base:
+		terrain_texture = base
+		river_texture = null
+		lane_texture = null
+	else:
+		terrain_texture = ImageTexture.create_from_image(TerrainTiles.raster(terrain_palette))
+		river_texture = ImageTexture.create_from_image(RiverTiles.raster(terrain_palette))
+		lane_texture = ImageTexture.create_from_image(LaneTiles.raster(terrain_palette))
+	var wall := MapArt.wall_texture()
+	if wall != null:
+		wall_texture = wall
+	elif wall_texture == null:
+		wall_texture = ImageTexture.create_from_image(WallTiles.raster())
+	cached_river_theme = map_theme
 
 
 ## Layer 9bj: the baked decorations and shop buildings of the current theme.

@@ -2134,7 +2134,8 @@ Batas yang diketahui:
 
 - Alas Godot (tile native dengan RNG visual tetap) bukan salinan piksel alas pygame; overlay
   menyalin warna akhir sumber di tiap piksel yang disentuh lapisan 4-5, termasuk bayangan
-  yang di sumber transparan. Selisih hanya terlihat pada tepi bayangan.
+  yang di sumber transparan. Selisih hanya terlihat pada tepi bayangan. (**Ditutup 9bj2:** alas
+  dan tembok tepi kini juga hasil bake pygame, jadi overlay jatuh di atas alas yang sama.)
 - Animasi peta (`DynamicRenderer`: partikel, kabut, obor, kilau/asap toko dan air)
   **sudah ditutup oleh layer 9d0**; lihat bagian 9d0 di akhir dokumen.
 - Painter di view tidak dieksekusi suite headless; hanya pemuatan tekstur dan urutan hook
@@ -3485,3 +3486,46 @@ Selisih yang tersisa: font banner memakai Barlow SemiBold milik view (font `body
 tidak di-bake); garis dan cincin Godot ter-antialias. Panel taktis mengambang di layar 16:9 adalah
 tambahan rebuild (sumber hanya menampilkan tombol taktis di side panel); panel itu tidak diubah.
 Bukan klaim pixel parity, dan belum ada review interaktif.
+
+## Slice 9bj2 — bake alas peta dan tembok tepi (layer 9bj2)
+
+Latar: sebelum slice ini Godot merasterisasi sendiri lapisan 1-3 (`draw_terrain`,
+`draw_terrain_details`, `draw_river`, tiga `draw_lane`) dan lapisan 6 (`draw_border_wall`) dari
+perintah gambar sumber yang direkam (`terrain_tiles.gd`, `river_tiles.gd`, `lane_tiles.gd`,
+`wall_tiles.gd`). Warna dan posisinya sudah dari sumber, tetapi bintik terrain memakai seed visual
+Godot, garis tipis dan lingkaran memakai Bresenham Godot, dan tepi segitiga memakai rasterisasi
+Godot. Overlay 9bj juga disusun di atas alas pygame ber-seed `{tema}:base`, bukan alas Godot,
+sehingga tepi bayangan dekorasi bisa meleset.
+
+- `bake/bake_map_base.py` menjalankan `StaticRenderer` ASLI lewat `pygame_env.py` untuk 54 tema.
+  Alas (lapisan 1-3) dirender dengan seed yang sama dengan bake overlay (`{tema}:base`), lalu
+  disimpan opak sebagai `assets/art/map_base/<tema>.png` (1280x720 RGBA8, sekitar 44 KB per
+  tema). Tembok tepi digambar sekali di atas latar hitam dan sekali di atas latar putih; piksel
+  yang berubah disimpan opak di `assets/art/map_base/border_wall.png` (79.268 piksel). Sumber
+  mengabaikan tema untuk tembok, dan bake menegaskan tembok tiap tema identik.
+- Untuk tiap tema, bake membuktikan alas + overlay 9bj yang sudah ada di repo + tembok == peta
+  statis sumber. Peta sumber itu dirender dengan urutan `_render_static_map` (lapisan 4-5
+  ber-seed seperti 9bj). Dua run penuh menghasilkan manifest dan hash yang identik. Total aset
+  2,4 MB (55 PNG).
+- `data/art/map_base.json` mencatat generator, lapisan, seed, serta per tema `size`, `bytes`,
+  `sha256`, dan tujuh piksel kunci (`probes`). Tembok punya `covered_pixels`.
+- `MapArt` mendapat `base_texture(tema)` dan `wall_texture()`. Keduanya mengecek
+  `ResourceLoader.exists` dan tidak menahan cache sendiri, jadi hanya peta yang sedang aktif yang
+  dipegang view.
+- `prototype_view.cache_static_map(tema)` memakai alas dan tembok hasil bake bila sudah diimpor.
+  Kalau belum, view kembali ke raster native lama. `minion_view.gd` punya `baked_static_base`
+  supaya sungai dan lane native tidak digambar ulang di atas alas hasil bake. Urutannya tetap
+  seperti sumber: alas, dekorasi + toko (9bj), tembok, DynamicRenderer (9d0), lalu tint (9bh).
+- `tests/map_art_checks.gd` menguji manifest (54 tema = tema overlay, seed), setiap PNG
+  terdekode opak 1280x720, piksel kunci sama dengan sumber, tembok membingkai peta, tekstur
+  forest/desert/volcanic dan tembok termuat lewat `load()` (menguji impor Godot di CI), dan view
+  memakai alas hasil bake. Cek scene di `run_all.gd` kini membuktikan arena desert yang hidup
+  menggambar `map_base/desert.png` dan `border_wall.png`. `validate_project.py` mem-pin header,
+  byte, dan sha256 tiap PNG, seed yang sama dengan bake overlay, bukti komposit di bake, urutan
+  lapisan sumber, serta wiring view dan loader.
+
+Batas: hasilnya sama dengan satu render pygame ber-seed. Pygame sendiri mengacak bintik terrain
+dari entropi di tiap run, jadi pola bintiknya memang tidak pernah tetap di sumber. Animasi sungai,
+kabut, dan partikel tetap dari 9d0. Tekstur digambar dengan filter dan goncangan layar milik view.
+Bukan klaim pixel parity layar penuh, dan belum ada review di Godot.
+
