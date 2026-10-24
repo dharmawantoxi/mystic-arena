@@ -35,6 +35,7 @@ SKILL_SAMPLES = 2
 # Source layers that paint the whole screen rather than the boss body (nyxareth's ultimate
 # "4" fills the screen with a cosmic layer and stars). Cropped into a body frame they become a
 # hard-edged square, so the bake skips them; the body and its local skill FX stay baked.
+# Godot paints them natively in screen space (`scripts/ui/nyxareth_realm_layout.gd`, 9bq3).
 SCREEN_LAYERS = {"nyxareth": ("_draw_astro_realm_bg",)}
 
 

@@ -3420,3 +3420,30 @@ Godot 4.7.2 dijalankan melalui CI PR #338.
 
 Batas: bukan klaim pixel parity; Godot tidak tersedia di sandbox sesi ini sehingga review memakai
 contact sheet dari crop lossless dengan rumus penempatan runtime. Review interaktif tetap perlu.
+
+## Slice 9bq3 — lapisan layar penuh ultimate nyxareth
+
+- Menutup celah 9bq2. `scripts/ui/nyxareth_realm_layout.gd` memport `_draw_astro_realm_bg` menjadi
+  daftar op murni: satu `fill` seluruh layar `cosmic_darkest (25,5,55)` dengan alpha
+  `80*min(1, progress*3)`, lalu 60 bintang (setiap bintang kelima berupa salib terang). Posisinya
+  dihitung dengan `(i*37 + phase*5) % w` dan `(i*71 + phase*3) % h`, dengan
+  `progress = 1 - timer/120`. AI meng-cast `"4"` selama 95 tick, jadi alpha naik dari 50 ke 80.
+- `prototype_view._draw_boss` melukisnya setelah cincin boss dan sebelum badan. Urutan ini sama
+  dengan sumber: lapisan menimpa semua yang digambar sebelum boss (peta, struktur, unit, hero,
+  proyektil hero), sedangkan badan, HP bar, efek, dan HUD tetap di atasnya. Lapisan ikut
+  screen shake.
+- Bintang dilukis opak. Di sumber, `pygame.draw.rect` menulis ke render surface XRGB tanpa alpha
+  (`mobile/platform_utils.py`), sehingga warna ditulis apa adanya dan alpha twinkle dibuang
+  (sudah dicek dengan pygame 2.6.1). `fill` berasal dari blit surface SRCALPHA, jadi tetap
+  di-blend.
+- Oracle `tests/nyxareth_realm_draw_source_oracle.py` menjalankan `PALETTE`, `_alpha`, dan
+  `_draw_astro_realm_bg` asli dari badan kelas `_NS_nyxareth` di bawah `draw_recorder.py`.
+  Hasilnya 7 frame dan 763 op, termasuk satu layar lebar 1560 px. Fixture-nya diputar ulang
+  `tests/nyxareth_realm_draw_checks.gd`, sedangkan `painter_scene_checks.gd` membuktikan scene
+  hidup melukis lapisan ini beserta pose `skill_4_*`.
+- Selisih yang diketahui: aura kosmik dan cincin tanah nyxareth ikut ter-bake di sprite badan,
+  sehingga berada di atas lapisan dan tidak ikut digelapkan seperti di sumber. Lapisan selalu
+  1280x720. Di layar yang dilebarkan, sumber membungkus bintang pada lebar display.
+
+Batas: bukan klaim pixel parity. Godot tidak tersedia di sandbox sesi ini, jadi lapisan belum
+dilihat langsung. Review interaktif tetap perlu.

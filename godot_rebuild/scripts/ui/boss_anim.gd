@@ -26,9 +26,10 @@ static func pose_key(
 	return "%s%d" % ["walk" if moving else "idle", int(pulse * 2.0) % PHASES]
 
 
-## The live boss pose. A cast whose skill key has no baked keyframes (nyxareth's source
-## smart AI casts "1".."4") keeps the normal idle/walk/attack body, as `_draw_hero_sprite`
-## does for heroes, instead of freezing on the `BossArt` idle0 fallback for the whole cast.
+## The live boss pose. A cast whose skill key has no baked keyframes keeps the normal
+## idle/walk/attack body, as `_draw_hero_sprite` does for heroes, instead of freezing on the
+## `BossArt` idle0 fallback for the whole cast. Every source smart key is baked since 9bq2
+## (nyxareth's numbered "1".."4" included), so this is a guard for future gaps.
 static func from_boss(boss) -> String:
 	var baked: Dictionary = BossArt.entries().get(boss.boss_type, {}).get("skills", {})
 	var skill: String = boss.active_skill if baked.has(boss.active_skill) else ""

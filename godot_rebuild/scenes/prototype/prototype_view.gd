@@ -26,6 +26,7 @@ const HeroAnim = preload("res://scripts/ui/hero_anim.gd")
 const HeroPainter = preload("res://scripts/ui/hero_painter.gd")
 const BossArt = preload("res://scripts/ui/boss_art.gd")
 const BossAnim = preload("res://scripts/ui/boss_anim.gd")
+const NyxarethRealmLayout = preload("res://scripts/ui/nyxareth_realm_layout.gd")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
@@ -59,6 +60,8 @@ var hero_projectile_draws := 0
 var boss_sprite_draws := 0
 ## Resolved source keyframes painted by the live scene, including attack and skill poses.
 var boss_pose_draws: Dictionary = {}
+## Screen-wide boss skill layers painted under the body (nyxareth's ultimate, layer 9bq3).
+var boss_screen_layer_draws := 0
 var dynamic_map := DynamicMapRenderer.new()
 ## Real DynamicRenderer paints; the scene suite proves this reaches `_draw`.
 var dynamic_map_draws := 0
@@ -997,6 +1000,13 @@ func _draw_boss(boss: BossState) -> void:
 	if is_true:
 		var true_pulse := sin(boss.pulse) * 0.3 + 0.7
 		draw_arc(point, radius + 15.0, 0, TAU, 48, Color(boss.color, 0.28 * true_pulse), 4, true)
+	# Layer 9bq3: the source paints nyxareth's ultimate realm inside its draw function, over
+	# everything drawn before the boss and under the body (the baked atlas leaves it out).
+	var realm_ops := nyxareth_realm_draw_ops(boss)
+	if not realm_ops.is_empty():
+		boss_screen_layer_draws += 1
+		for op in realm_ops:
+			_draw_realm_op(op)
 
 	var bar_width := 70.0 if is_true else 60.0
 	var bar_height := 10.0 if is_true else 8.0
@@ -1034,6 +1044,30 @@ func _draw_boss(boss: BossState) -> void:
 		18 if is_true else 16,
 		border
 	)
+
+
+## Layer 9bq3: `_draw_astro_realm_bg` ops while nyxareth's ultimate "4" runs, from the live
+## skill timer and pulse; empty for every other boss and skill.
+func nyxareth_realm_draw_ops(boss: BossState) -> Array:
+	if not NyxarethRealmLayout.active(boss.boss_type, boss.active_skill):
+		return []
+	return NyxarethRealmLayout.ops(
+		boss.active_skill_timer, boss.pulse, NyxarethRealmLayout.SCREEN_SIZE
+	)
+
+
+## The cosmic layer is an SRCALPHA surface blitted onto the screen, so it blends; the stars
+## are `pygame.draw` calls straight onto the alpha-less render surface, which keeps their
+## colour and drops the alpha.
+func _draw_realm_op(op: Dictionary) -> void:
+	if String(op.get("kind", "")) != "rect" or not NyxarethRealmLayout.OPAQUE_STARS:
+		_draw_intro_op(op)
+		return
+	var rgba: Array = op.get("color", [255, 255, 255, 255])
+	var solid := op.duplicate()
+	solid["color"] = [rgba[0], rgba[1], rgba[2], 255]
+	solid["mult"] = 255
+	_draw_intro_op(solid)
 
 
 ## The Godot fallback body for a boss whose sheet is not baked or not imported.

@@ -4731,6 +4731,58 @@ check("_seed_boss(world)" in _bs_painter
       and 'begins_with("atk")' in _bs_painter,
       "9bq the painter suite must draw attack and smart-skill poses on a live boss")
 
+# ── Layer 9bq3: nyxareth's full-screen ultimate realm as a native screen-space layer ──
+from nyxareth_realm_draw_source_oracle import source_fixture as nyxareth_realm_fixture
+_nr_path = ROOT / "tests/fixtures/nyxareth_realm_draw_source.json"
+_nr_layout = (ROOT / "scripts/ui/nyxareth_realm_layout.gd").read_text(encoding="utf-8")
+_nr_checks = (ROOT / "tests/nyxareth_realm_draw_checks.gd").read_text(encoding="utf-8")
+_nr_src = (ROOT.parent / "bosses/level17.py").read_text(encoding="utf-8")
+check('const NyxarethRealmDrawChecks = preload("res://tests/nyxareth_realm_draw_checks.gd")'
+      in ai_tests and "NyxarethRealmDrawChecks.new().run(_check)" in ai_tests,
+      "9bq3 nyxareth realm draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/nyxareth_realm_draw_source_oracle.py" in workflow,
+      "9bq3 CI must run the _draw_astro_realm_bg source oracle")
+check(_nr_path.is_file(), "9bq3 nyxareth realm draw fixture must exist")
+if _nr_path.is_file():
+    _nr = json.loads(_nr_path.read_text(encoding="utf-8"))
+    check(nyxareth_realm_fixture() == _nr,
+          "9bq3 nyxareth realm draw fixture must not drift from bosses/level17.py")
+    _nr_frames = _nr["frames"]
+    check(len(_nr_frames) == 7 and all(len(frame["ops"]) == 109 for frame in _nr_frames),
+          "9bq3 oracle must pin 7 frames of one screen fill plus 108 star rects")
+    check(all(frame["ops"][0]["kind"] == "fill"
+              and frame["ops"][0]["rect"] == [0, 0] + frame["screen"]
+              and frame["ops"][0]["color"][:3] == [25, 5, 55] for frame in _nr_frames),
+          "9bq3 oracle must pin the cosmic layer covering the whole render surface")
+    check([frame["ops"][0]["color"][3] for frame in _nr_frames] == [50, 64, 80, 80, 80, 80, 80],
+          "9bq3 oracle must pin the cosmic layer fading in from alpha 50 to 80")
+check("def _draw_astro_realm_bg(surface, boss, x, y, timer, phase):" in _nr_src
+      and "num_stars = 60" in _nr_src and "w, h = surface.get_size()" in _nr_src,
+      "9bq3 the source realm must still be the 60-star layer sized by its render surface")
+check("static func ops(" in _nr_layout and "const DURATION := 120" in _nr_layout
+      and "const STAR_COUNT := 60" in _nr_layout and "const OPAQUE_STARS := true" in _nr_layout
+      and "fposmod(float(i * 37) + phase * 5.0, float(size.x))" in _nr_layout
+      and 'const SKILL := "4"' in _nr_layout,
+      "9bq3 the realm layout must mirror the source formula")
+_nr_draw = _bs_view[_bs_view.index("func _draw_boss(boss: BossState)"):
+                    _bs_view.index("func _draw_boss_plain(")]
+check("var realm_ops := nyxareth_realm_draw_ops(boss)" in _nr_draw
+      and _nr_draw.index("draw_arc(point, radius + 15.0")
+      < _nr_draw.index("nyxareth_realm_draw_ops(boss)")
+      < _nr_draw.index("_draw_boss_sprite(boss, art)")
+      and "boss_screen_layer_draws += 1" in _nr_draw
+      and 'solid["color"] = [rgba[0], rgba[1], rgba[2], 255]' in _nr_draw,
+      "9bq3 the view must paint the realm after the boss rings and before the body")
+check('SCREEN_LAYERS = {"nyxareth": ("_draw_astro_realm_bg",)}' in _bs_bake,
+      "9bq3 the atlas bake must keep the realm out of the body frames")
+check("await _check_realm(tree, view, boss, check)" in _bs_painter
+      and "view.boss_screen_layer_draws > painted_before" in _bs_painter
+      and 'begins_with("skill_4_")' in _bs_painter,
+      "9bq3 the painter suite must paint the realm in the live scene")
+check("_check_frames(check, frames)" in _nr_checks and "_check_gate(check)" in _nr_checks
+      and "_check_view_wiring(check, frames)" in _nr_checks,
+      "9bq3 the realm suite must replay the source frames, the gate and the view")
+
 # ── Layer 9br: UI skin from ui_theme.py (bake/bake_ui_theme.py) ──
 _ui_path = ROOT / "data/art/ui_theme.json"
 _ui_src = (ROOT.parent / "ui_theme.py").read_text(encoding="utf-8")
