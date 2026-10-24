@@ -233,18 +233,23 @@ func _coin(cx: int, cy: int, s: float) -> void:
 
 ## `ui_theme.corner_ticks(rect, color, length)` with width 2 and inset 2.
 func _corner_ticks(box: Array, color: Array, length: int) -> void:
-	var right := int(box[0]) + int(box[2])
-	var bottom := int(box[1]) + int(box[3])
-	var corners := [
-		[int(box[0]) + 2, int(box[1]) + 2, 1, 1],
-		[right - 2, int(box[1]) + 2, -1, 1],
-		[int(box[0]) + 2, bottom - 2, 1, -1],
+	var left: int = int(box[0])
+	var top: int = int(box[1])
+	var right: int = left + int(box[2])
+	var bottom: int = top + int(box[3])
+	var corners: Array = [
+		[left + 2, top + 2, 1, 1],
+		[right - 2, top + 2, -1, 1],
+		[left + 2, bottom - 2, 1, -1],
 		[right - 2, bottom - 2, -1, -1],
 	]
-	for corner in corners:
-		var a := [corner[0], corner[1]]
-		_ops.append(_line(a, [corner[0] + corner[2] * length, corner[1]], _rgba(color, 255), 2))
-		_ops.append(_line(a, [corner[0], corner[1] + corner[3] * length], _rgba(color, 255), 2))
+	for index in range(corners.size()):
+		var cx: int = int(corners[index][0])
+		var cy: int = int(corners[index][1])
+		var sx: int = int(corners[index][2])
+		var sy: int = int(corners[index][3])
+		_ops.append(_line([cx, cy], [cx + sx * length, cy], _rgba(color, 255), 2))
+		_ops.append(_line([cx, cy], [cx, cy + sy * length], _rgba(color, 255), 2))
 
 
 ## `int(channel * factor) + bias`, the source's dark / lighter / bottom tints; `clamp`
@@ -257,7 +262,7 @@ static func _tint(color: Array, factor: float, bias: int, clamp := false) -> Arr
 	]
 	if clamp:
 		for index in range(out.size()):
-			out[index] = mini(255, out[index])
+			out[index] = mini(255, int(out[index]))
 	return out
 
 
@@ -265,7 +270,7 @@ static func _tint(color: Array, factor: float, bias: int, clamp := false) -> Arr
 static func _thousands(value: int) -> String:
 	if value < 0:
 		return "-" + _thousands(-value)
-	var digits := String(value)
+	var digits := str(value)
 	var parts: Array = []
 	while digits.length() > 3:
 		parts.insert(0, digits.right(3))
