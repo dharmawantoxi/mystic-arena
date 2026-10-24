@@ -1348,7 +1348,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		# Layer 9bv6: only the painted PLAY NEXT LEVEL button takes clicks on the result
 		# screen (the arena stays inert, as it was under the old full-screen card).
 		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			var local := arena.get_global_transform_with_canvas().affine_inverse() * event.position
+			var local: Vector2 = (
+				arena.get_global_transform_with_canvas().affine_inverse() * event.position
+			)
 			var button: Rect2 = arena.call("unlock_play_rect")
 			if button.has_area() and button.has_point(local):
 				_request_next_level()
