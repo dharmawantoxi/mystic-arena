@@ -33,7 +33,7 @@ func _check_roster(check: Callable, manifest: Dictionary) -> void:
 	var baked := BossArt.entries()
 	check.call(baked.size() == 216, "All 216 bosses are baked: %d" % baked.size())
 	check.call(int(manifest.get("phases", 0)) == BossAnim.PHASES, "Eight source idle phases")
-	check.call(manifest.get("smart_bosses", []).size() == 78, "78 source smart-skill bosses")
+	check.call(manifest.get("smart_bosses", []).size() == 79, "79 source smart-skill bosses")
 	var missing := 0
 	var drift := 0
 	for boss_type in stats:
@@ -158,25 +158,32 @@ func _check_pose_keys(check: Callable) -> void:
 	)
 
 
-## `from_boss` only names a skill pose the sheet baked: nyxareth's source AI casts "1".."4",
-## which have no keyframes, so the body keeps animating instead of freezing on idle0.
+## nyxareth's source smart AI casts the numbered keys "1".."4"; they are baked like Q/W/E/R.
+## `from_boss` still names only baked skills, so an unknown key keeps the animated body
+## instead of freezing on the idle0 fallback.
 func _check_live_skill_poses(check: Callable) -> void:
 	var boss := BossState.new()
 	boss.boss_type = "nyxareth"
 	boss.pulse = 0.55
 	boss.active_skill = "4"
 	boss.active_skill_timer = 95
+	var skills: Dictionary = BossArt.entries()["nyxareth"]["skills"]
 	check.call(
-		not (BossArt.entries()["nyxareth"]["skills"] as Dictionary).has("4"),
-		"nyxareth's numbered source skills have no baked keyframes"
+		skills.keys().size() == 4 and skills.has("1") and skills.has("4"),
+		"nyxareth's numbered source skills are baked: %s" % str(skills.keys())
 	)
+	var cast := BossAnim.from_boss(boss)
+	check.call(cast == "skill_4_95", "nyxareth's ultimate names its skill pose: %s" % cast)
+	var art := BossArt.frame("nyxareth", 1, cast)
+	check.call(String(art.get("pose", "")) == "skill_4_95:1", "That cast resolves to its keyframe")
+	boss.active_skill = "z"
 	check.call(BossAnim.from_boss(boss) == "idle1", "An unbaked cast keeps the idle phase")
 	boss.moving_cached = true
 	check.call(BossAnim.from_boss(boss) == "walk1", "An unbaked cast keeps the walk phase")
 	boss.timer = 30
 	var attack := BossAnim.from_boss(boss)
 	check.call(attack == "atk30", "An unbaked cast keeps the attack pose: %s" % attack)
-	var art := BossArt.frame("nyxareth", 1, attack)
+	art = BossArt.frame("nyxareth", 1, attack)
 	check.call(
 		String(art.get("pose", "")).begins_with("atk"),
 		"That attack pose resolves to an attack crop"

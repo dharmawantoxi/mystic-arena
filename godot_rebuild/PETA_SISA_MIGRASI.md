@@ -3401,3 +3401,22 @@ review komposisi/animasi interaktif di Godot; review native visual tetap perlu
 dilakukan. Full static workflow **lulus: 20.343 checks, 73 perintah, 607 GDScript**
 (validator, seluruh source oracle, gdparse/gdlint/gdformat). Native import/runtime
 Godot 4.7.2 dijalankan melalui CI PR #338.
+
+## Slice 9bq2 — skill bernomor nyxareth dan fallback pose skill boss
+
+- Review visual offline setelah #338 menemukan nyxareth membeku di idle0 setiap cast. Smart AI
+  sumber (`_smart_ai_nyxareth`) memakai key `"1".."4"`, bukan Q/W/E/R, sehingga panen durasi
+  bake melewatkannya. Panen kini menerima setiap key skill konstan; hanya nyxareth yang bertambah
+  (`1`: 45, `2`: 55, `3`: 65, `4`: 95 tick, sama dengan `boss_ai.gd`).
+- Ultimate `"4"` melukis lapisan kosmik + bintang **seluruh layar** (`_draw_astro_realm_bg`). Bila
+  di-crop ke frame badan, lapisan itu menjadi kotak gelap 920x920 bertepi keras. Bake melewatinya
+  lewat `SCREEN_LAYERS`; badan, jaring rune, dan FX lokal tetap ter-bake. Penggelapan layar
+  penuh belum digambar di Godot (kandidat lapisan native terpisah).
+- Hanya `nyxareth.webp` yang di-bake ulang: 24 frame lama identik per piksel dan per anchor, 16 frame
+  skill baru (4 skill x 2 sample x 2 arah), 32 crop unik. Manifest memuat 79 smart boss dan 316
+  family skill. Atlas lain tidak disentuh.
+- `BossAnim.from_boss` hanya menamai pose skill yang ter-bake; key tak dikenal mempertahankan animasi
+  idle/walk/attack seperti fallback hero, bukan membeku di idle0.
+
+Batas: bukan klaim pixel parity; Godot tidak tersedia di sandbox sesi ini sehingga review memakai
+contact sheet dari crop lossless dengan rumus penempatan runtime. Review interaktif tetap perlu.

@@ -2,7 +2,8 @@
 
 Every boss receives eight idle phases, walking when its renderer reports movement,
 and four evenly spaced attack poses. Bosses with source smart AI also receive two
-samples of each Q/W/E/R skill using the real cast durations. The native resolver
+samples of each skill key the smart AI casts (Q/W/E/R, and nyxareth's "1".."4") using
+the real cast durations. The native resolver
 chooses the nearest baked keyframe between samples.
 
 The bake drives the real renderer and movement/pose controllers, preserves the source
@@ -16,6 +17,7 @@ import ast
 import copy
 import random
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -30,6 +32,25 @@ PHASES = 8
 IDLE_STEPS = 40
 ATTACK_SAMPLES = 4
 SKILL_SAMPLES = 2
+# Source layers that paint the whole screen rather than the boss body (nyxareth's ultimate
+# "4" fills the screen with a cosmic layer and stars). Cropped into a body frame they become a
+# hard-edged square, so the bake skips them; the body and its local skill FX stay baked.
+SCREEN_LAYERS = {"nyxareth": ("_draw_astro_realm_bg",)}
+
+
+@contextmanager
+def without_screen_layers(heroes_mod, boss_type):
+    """Temporarily replace the boss's ``SCREEN_LAYERS`` painters with no-ops."""
+    names = SCREEN_LAYERS.get(boss_type, ())
+    namespace = heroes_mod._boss_namespace(boss_type) if names else None
+    saved = {name: namespace.__dict__[name] for name in names} if namespace else {}
+    try:
+        for name in saved:
+            setattr(namespace, name, staticmethod(lambda *_args, **_kwargs: None))
+        yield
+    finally:
+        for name, painter in saved.items():
+            setattr(namespace, name, painter)
 
 
 def make_boss(boss_cls, boss_type, facing):
@@ -75,7 +96,7 @@ def _self_assignment(node, attribute):
 
 
 def smart_skill_durations():
-    """Harvest real Q/W/E/R durations from the source smart-AI call graph."""
+    """Harvest real cast durations of every constant skill key in the smart-AI call graph."""
     tree = ast.parse((env.REPO / "bosses/base_boss.py").read_text(encoding="utf-8"))
     cls = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "Boss")
     methods = {node.name: node for node in cls.body if isinstance(node, ast.FunctionDef)}
@@ -103,7 +124,7 @@ def smart_skill_durations():
                         pending.append(methods[called])
                 if _self_assignment(node, "active_skill"):
                     active = node.value.value if isinstance(node.value, ast.Constant) else None
-                elif _self_assignment(node, "active_skill_timer") and active in ("q", "w", "e", "r"):
+                elif _self_assignment(node, "active_skill_timer") and isinstance(active, str) and active:
                     if isinstance(node.value, ast.Constant) and isinstance(node.value.value, int):
                         skills[active] = node.value.value
         if skills:
@@ -312,9 +333,10 @@ def main() -> int:
     for boss_type in args.boss or sorted(BOSS_INDEX):
         draw_fn = _get_boss_draw_func(boss_type)
         durations = smart.get(boss_type, {})
-        sheet, table, cell, unique, facts = bake_boss(
-            np, pygame, heroes_mod, Boss, draw_fn, boss_type, durations
-        )
+        with without_screen_layers(heroes_mod, boss_type):
+            sheet, table, cell, unique, facts = bake_boss(
+                np, pygame, heroes_mod, Boss, draw_fn, boss_type, durations
+            )
         cooldown, attack_quant, skill_quant, unbaked = facts
         attack_names = sorted(
             {key.rsplit(":", 1)[0] for key in table if key.startswith("atk")}, key=pose_order

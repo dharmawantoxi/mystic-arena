@@ -4626,7 +4626,7 @@ if _bs_path.is_file():
     check(sorted(_bs["bosses"]) == sorted(_bs_stats) and len(_bs["bosses"]) == 216
           and _bs["facings"] == [-1, 1] and _bs["phases"] == 8
           and _bs["attack_samples"] == 4 and _bs["skill_samples"] == 2
-          and len(_bs["smart_bosses"]) == 78 and _bs["format"] == "webp-lossless-v0",
+          and len(_bs["smart_bosses"]) == 79 and _bs["format"] == "webp-lossless-v0",
           "9bq animated sheets for 216 bosses, both facings and source smart skills")
     check(all((1 if d > 0 else -1) == f for d, f in _bs["facing_cases"])
           and len(_bs["facing_cases"]) >= 5,
@@ -4665,10 +4665,20 @@ if _bs_path.is_file():
                       for x, y, w, h, ax, ay in _rows.values()),
               f"9bq every animated pose must have two in-bounds facings: {_boss_id}")
         if _boss_id in _bs["smart_bosses"]:
-            check(sorted(_entry["skills"]) == ["e", "q", "r", "w"],
-                  f"9bq all four smart skills must be baked: {_boss_id}")
-    check(_bs_walking > 0 and _bs_skill_rows == 312,
-          "9bq walking and all 312 source smart-skill families must be represented")
+            # nyxareth's source smart AI casts the numbered keys "1".."4" instead of Q/W/E/R.
+            _bs_keys = ["1", "2", "3", "4"] if _boss_id == "nyxareth" else ["e", "q", "r", "w"]
+            check(sorted(_entry["skills"]) == _bs_keys,
+                  f"9bq every source smart-skill key must be baked: {_boss_id}")
+    check(_bs_walking > 0 and _bs_skill_rows == 316,
+          "9bq walking and all 316 source smart-skill families must be represented")
+check('SCREEN_LAYERS = {"nyxareth": ("_draw_astro_realm_bg",)}' in _bs_bake
+      and "with without_screen_layers(heroes_mod, boss_type):" in _bs_bake
+      and "isinstance(active, str) and active" in _bs_bake,
+      "9bq the bake must harvest every constant smart-skill key and skip screen-wide layers")
+_bs_l17 = (ROOT.parent / "bosses/level17.py").read_text(encoding="utf-8")
+check('"""Background layer of ultimate - covers entire screen."""' in _bs_l17
+      and '_set_skill(boss, "4", 95)' in (ROOT / "scripts/match/boss_ai.gd").read_text(encoding="utf-8"),
+      "9bq nyxareth's skipped layer must still be the source full-screen ultimate background")
 for _fragment in (
     "head_top = max(int(BOSS_LABEL_TOP.get(self.boss_type, r)), r)",
     "bar_w = 70 if is_true else 60", "bar_h = 10 if is_true else 8", "by = y - head_top - 6 - bar_h",
