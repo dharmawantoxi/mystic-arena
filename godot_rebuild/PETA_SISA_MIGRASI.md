@@ -3635,7 +3635,7 @@ bagian yang memakai `get_ticks`.
   perekam.
   - `cached_render`, `_radial`, `_shadow`, `_vgrad`, dan `outline_text` direkam sebagai satu op.
   - Setiap helper didahului op `section`.
-  - Popup level terbuka masih berupa penanda `unlock_popup` sampai 9bv6.
+  - Popup level terbuka diport di 9bv6 (lihat di bawah).
   - Fixture berisi 4 frame dan 407 op: menang dengan level berikutnya, menang di level
     terakhir, kalah, dan label controller.
   - `draw_recorder` sekarang mendukung `get_rect(topright=...)`.
@@ -3669,4 +3669,47 @@ Batas:
 - `Match Time` sumber terus bertambah selama overlay tampil (`time.time()` dihitung tiap
   frame). Godot memakai waktu selesai pertandingan.
 - Belum ada review visual di Godot. Bukan klaim pixel parity.
+
+## Slice 9bv6 — popup level baru terbuka di overlay victory (layer 9bv6)
+
+Sumber: `Overlay._draw_level_unlock_popup` dan `_get_newly_unlocked_level`, dipanggil di `draw`
+hanya saat menang, setelah `_update_unlock_popup`.
+
+- Popup 340 x 220 berisi:
+  - bayangan (0,0,0,150);
+  - kartu gradasi emas 220 baris dengan dua tepi, di-blit dua kali di sekitar glow berdenyut;
+  - ikon gembok terbuka dengan lubang kunci hijau;
+  - teks "NEW LEVEL UNLOCKED!" (dengan bayangan alpha 100), `LEVEL n`, dan nama level;
+  - garis pemisah;
+  - siluet true boss level berikutnya: aura, tubuh hitam dan berwarna, 5 atau 3 duri, dan mata
+    menyala;
+  - "FINAL BOSS" dan nama boss;
+  - meter kesulitan: hard = `min(5, max(1, int(hp_mult * 2.5)))`;
+  - tombol PLAY NEXT LEVEL dengan hover dan ikon play.
+- Animasi: geser dari kanan 400 px (ease kubik selama 30 panggilan) dan alpha naik selama 15
+  panggilan, setelah jeda 90 panggilan.
+- Quirk sumber yang ikut diport: `_update_unlock_popup` berhenti TEPAT di jeda (90). Di
+  pertandingan nyata popup tetap 400 px ke kanan dengan alpha 0. Yang terlihat hanya strip gelap
+  di tepi kanan dan potongan garis serta tombol (tombol di x = 1275). Godot memakai batas yang
+  sama (`unlock_popup_timer` di view, naik sekali per gambar overlay victory). Frame oracle di
+  atas jeda (seperti yang dipaksa `tools/test_godot_match_parity.py`) mengunci rumus geser dan
+  isinya.
+- Oracle 9bv5 sekarang menjalankan popup ASLI dengan pengganti modul `levels`,
+  `bosses.boss_data`, `_core.GameSettings`, dan `pygame.mouse`. Fixture berisi 8 frame dan
+  2210 op: popup diam, menggeser, penuh dengan hover, dan level berikutnya yang sudah pernah
+  dimenangkan. `draw_recorder.Rect` sekarang punya `collidepoint`.
+- Godot:
+  - `end_overlay_layout.gd` punya `_unlock_popup`, `popup_origin`, dan `play_button_rect`
+    (sama dengan `g.ui_buttons['play_next_level']` sumber).
+  - `prototype_screen.gd` mengisi `unlock` hanya kalau kemenangan ini baru membuka level yang
+    belum pernah dimenangkan. Datanya `completed_levels` dari hasil yang tersimpan, config level
+    berikutnya, entri true boss di `boss_table`, dan `world.difficulty`.
+  - Di tata letak hasil, lapisan kartu jeda tidak menangkap klik, jadi klik kiri di tombol yang
+    terlukis memanggil `_request_next_level()`. Klik lain di arena diabaikan selama hasil tampil.
+- Bukti: replay frame popup dan rect tombol di `tests/end_overlay_draw_checks.gd`, cek
+  `unlock_play_rect` (x = 1275 dengan timer yang dibatasi), dan pin 9bv6 di
+  `validate_project.py`.
+
+Batas: popup sumber nyaris tak terlihat karena bug timer di atas; Godot meniru perilaku itu,
+tidak memperbaikinya. Belum ada review visual di Godot. Bukan klaim pixel parity.
 

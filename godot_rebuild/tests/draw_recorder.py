@@ -60,6 +60,11 @@ class Rect:
     def __iter__(self):
         return iter((self.x, self.y, self.w, self.h))
 
+    def collidepoint(self, x, y=None):
+        if y is None:
+            x, y = x
+        return self.x <= x < self.x + self.w and self.y <= y < self.y + self.h
+
     def inflate(self, dx, dy):
         """pygame keeps the centre; its C code halves the growth with truncation."""
         return Rect(self.x - int(dx / 2), self.y - int(dy / 2), self.w + dx, self.h + dy)

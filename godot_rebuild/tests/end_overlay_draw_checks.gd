@@ -1,8 +1,8 @@
 extends RefCounted
-## Layer 9bv5: `Overlay.draw` replay. `end_overlay_draw_source_oracle.py` runs the REAL source
-## overlay (cheap-alpha branch) under the recording pygame shim; `EndOverlayLayout` must
-## rebuild every op (backdrop, rays, glow, title, sparkles, stats, action hint, achievements)
-## and the arena view must paint the screen's end state in the source slot.
+## Layers 9bv5 + 9bv6: `Overlay.draw` replay. `end_overlay_draw_source_oracle.py` runs the REAL
+## source overlay (cheap-alpha branch) under the recording pygame shim; `EndOverlayLayout` must
+## rebuild every op (backdrop, rays, glow, title, sparkles, stats, level unlock popup, action
+## hint, achievements) and the arena view must paint the screen's end state in the source slot.
 
 const Layout = preload("res://scripts/ui/end_overlay_layout.gd")
 const GoldHudChecks = preload("res://tests/gold_hud_draw_checks.gd")
@@ -27,6 +27,32 @@ static func _state(frame: Dictionary, colors: Dictionary) -> Dictionary:
 		"animation_time": int(frame["animation_time"]),
 		"stats": frame["stats"],
 		"achievements": int(frame["achievements"]),
+		"unlock": _unlock(frame),
+	}
+
+
+## What the screen hands over: empty unless this win opened a level never won before.
+static func _unlock(frame: Dictionary) -> Dictionary:
+	var unlock: Variant = frame.get("unlock")
+	if not (unlock is Dictionary):
+		return {}
+	var completed: Array = unlock["completed"]
+	var level := int(String(frame["title"]).get_slice(".", 1))
+	if not completed.has(float(level)) or completed.has(float(unlock["level"])):
+		return {}
+	var timer := int(unlock["timer_before"])
+	if timer < Layout.UNLOCK_DELAY:
+		timer += 1
+	var mouse: Array = unlock["mouse"]
+	var button := Layout.play_button_rect(timer)
+	return {
+		"timer": timer,
+		"level": int(unlock["level"]),
+		"name": unlock["name"],
+		"hp_mult": float(unlock["hp_mult"]),
+		"difficulty": unlock["difficulty"],
+		"hover": button.has_point(Vector2i(int(mouse[0]), int(mouse[1]))),
+		"boss": unlock["boss"],
 	}
 
 
@@ -56,8 +82,8 @@ func run(check: Callable) -> void:
 	for frame in frames:
 		ops_total += frame["ops"].size()
 	check.call(
-		frames.size() == 4 and ops_total == 407,
-		"End overlay oracle pins 4 source frames and 407 draw ops (got %d)" % ops_total
+		frames.size() == 8 and ops_total == 2210,
+		"End overlay oracle pins 8 source frames and 2210 draw ops (got %d)" % ops_total
 	)
 	var colors: Dictionary = data["colors"]
 	check.call(
@@ -74,6 +100,17 @@ func run(check: Callable) -> void:
 			mismatch == -1,
 			"End overlay %s matches the source ops (first mismatch %d)" % [frame["label"], mismatch]
 		)
+	for frame in frames:
+		var unlock: Variant = frame.get("unlock")
+		if unlock is Dictionary and not _unlock(frame).is_empty():
+			var rect := Layout.play_button_rect(int(_unlock(frame)["timer"]))
+			var want: Array = unlock["button"]
+			check.call(
+				GoldHudChecks._value_equal(
+					[rect.position.x, rect.position.y, rect.size.x, 30], want
+				),
+				"PLAY NEXT LEVEL rect %s matches g.ui_buttons for %s" % [rect, frame["label"]]
+			)
 	check.call(
 		(
 			Layout.action_text(true, true, {}) == String(frames[0]["action"])
@@ -112,5 +149,12 @@ func _check_view_wiring(check: Callable, frame: Dictionary, colors: Dictionary) 
 			== -1
 		),
 		"The view builds the overlay from the screen state and the frozen world tick count"
+	)
+	check.call(view.unlock_play_rect() == Rect2(), "No unlock popup registers no PLAY button")
+	view.end_overlay_state = {"victory": true, "unlock": {"level": 4}}
+	view.unlock_popup_timer = Layout.UNLOCK_DELAY
+	check.call(
+		view.unlock_play_rect() == Rect2(1275, 440, 310, 30),
+		"pygame's capped unlock timer leaves the PLAY button 400 px right (x = 1275)"
 	)
 	view.free()

@@ -5042,17 +5042,32 @@ check(_eo_path.is_file(), "9bv5 end overlay fixture must exist")
 if _eo_path.is_file():
     _eo = json.loads(_eo_path.read_text(encoding="utf-8"))
     check(end_overlay_draw_fixture() == _eo, "9bv5 end overlay fixture must not drift from the source")
-    check(len(_eo["frames"]) == 4 and sum(len(f["ops"]) for f in _eo["frames"]) == 407
+    check(len(_eo["frames"]) == 8 and sum(len(f["ops"]) for f in _eo["frames"]) == 2210
           and _eo["colors"] == {"victory": [255, 200, 50], "defeat": [220, 50, 50]},
-          "9bv5 fixture must pin 4 frames / 407 ops and the GOLD / RED titles")
+          "9bv5 fixture must pin 8 frames / 2210 ops and the GOLD / RED titles")
+    _eo_buttons = {f["label"]: (f["unlock"] or {}).get("button") for f in _eo["frames"]}
+    check(_eo_buttons.get("unlock_steady") == [1275, 440, 310, 30]
+          and _eo_buttons.get("unlock_full_hover") == [875, 440, 310, 30],
+          "9bv6 fixture must pin the capped-timer and the slid-in PLAY NEXT LEVEL rects")
 check('self.ui.draw_overlay(\n                self.screen,\n                f"VICTORY! LV.{self.level_number}"'
       in _eo_core and "self._draw_input_hints(self.screen)" in _eo_core
       and _eo_core.index('f"DEFEAT LV.{self.level_number}"')
       < _eo_core.index("self._draw_input_hints(self.screen)"),
       "9bv5 source must still paint the overlay before the input hint bar")
 check("static func backdrop_rows()" in _eo_layout and "static func action_text(" in _eo_layout
-      and "const UNLOCK_POPUP" in _eo_layout,
-      "9bv5 layout must keep the backdrop rows, the action line and the unlock marker")
+      and "const UNLOCK_DELAY := 90" in _eo_layout and "static func play_button_rect(" in _eo_layout
+      and "func _unlock_popup(" in _eo_layout,
+      "9bv5/9bv6 layout must keep the backdrop rows, the action line and the unlock popup")
+_eo_bundle = (ROOT.parent / "ui_components" / "_bundle.py").read_text(encoding="utf-8")
+check("if self.unlock_popup_timer < self.unlock_popup_delay:\n                self.unlock_popup_timer += 1"
+      in _eo_bundle and "g.ui_buttons['play_next_level'] = btn_rect" in _eo_bundle,
+      "9bv6 source must still stop the unlock timer at the delay and register the PLAY button")
+check("if unlock_popup_timer < EndOverlayLayout.UNLOCK_DELAY:" in _eo_view
+      and "func unlock_play_rect() -> Rect2:" in _eo_view
+      and 'var button: Rect2 = arena.call("unlock_play_rect")' in _eo_screen
+      and "func _unlock_popup_state(world: Prototype) -> Dictionary:" in _eo_screen
+      and "Control.MOUSE_FILTER_IGNORE if result else Control.MOUSE_FILTER_STOP" in _eo_screen,
+      "9bv6 view/screen must cap the timer like pygame and route PLAY NEXT LEVEL clicks")
 check('const EndOverlayLayout = preload("res://scripts/ui/end_overlay_layout.gd")' in _eo_view
       and re.search(r'"tactical_feedback",\s*"end_overlay",\s*"input_hints",', _eo_view) is not None
       and '"end_overlay":\n\t\t\t_draw_end_overlay(world)' in _eo_view

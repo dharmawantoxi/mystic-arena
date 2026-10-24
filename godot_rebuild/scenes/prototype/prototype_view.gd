@@ -1,4 +1,4 @@
-# gdlint:disable=max-file-lines
+# gdlint:disable=max-file-lines,max-public-methods
 extends "res://scenes/siege/siege_view.gd"
 
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
@@ -87,6 +87,9 @@ var input_hints: Array = []
 ## achievements) the screen hands over once the match ends; empty while it runs.
 var end_overlay_state: Dictionary = {}
 var hud_shadow_box := StyleBoxFlat.new()
+## Layer 9bv6: `Overlay.unlock_popup_timer`, advanced once per victory overlay draw and
+## stopped AT the 90-call delay exactly like `_update_unlock_popup`.
+var unlock_popup_timer := 0
 ## Rounded chip/badge fills and borders (pygame `draw.rect(..., border_radius=r)`).
 var hud_round_box := StyleBoxFlat.new()
 var dynamic_map := DynamicMapRenderer.new()
@@ -987,6 +990,12 @@ func input_hints_blocked(world: Prototype) -> bool:
 ## Layer 9bv5: `Overlay.draw`, the victory / defeat screen, painted after the tactical banner
 ## and before the hint bar once the screen hands over `end_overlay_state`.
 func _draw_end_overlay(world: Prototype) -> void:
+	if end_overlay_state.is_empty():
+		unlock_popup_timer = 0
+		return
+	if bool(end_overlay_state.get("victory", false)):
+		if unlock_popup_timer < EndOverlayLayout.UNLOCK_DELAY:
+			unlock_popup_timer += 1
 	for op in end_overlay_draw_ops(world):
 		match String(op.get("kind", "")):
 			"section", "unlock_popup":
@@ -1017,8 +1026,25 @@ func end_overlay_draw_ops(
 		title_metrics = measure
 	var state := end_overlay_state.duplicate()
 	state["animation_time"] = world.tick_count
+	var unlock: Dictionary = state.get("unlock", {})
+	if not unlock.is_empty():
+		unlock = unlock.duplicate()
+		if not unlock.has("timer"):
+			unlock["timer"] = unlock_popup_timer
+		if not unlock.has("hover"):
+			var button := EndOverlayLayout.play_button_rect(int(unlock["timer"]))
+			unlock["hover"] = Rect2(button).has_point(get_local_mouse_position())
+		state["unlock"] = unlock
 	var ticks := Time.get_ticks_msec() if ticks_msec < 0 else ticks_msec
 	return EndOverlayLayout.ops(state, metrics, ticks, title_metrics)
+
+
+## Layer 9bv6: the PLAY NEXT LEVEL rect while the unlock popup draws (`g.ui_buttons`), else empty.
+func unlock_play_rect() -> Rect2:
+	var unlock: Dictionary = end_overlay_state.get("unlock", {})
+	if unlock.is_empty() or unlock_popup_timer < EndOverlayLayout.UNLOCK_DELAY:
+		return Rect2()
+	return Rect2(EndOverlayLayout.play_button_rect(unlock_popup_timer))
 
 
 func _measure_title_text(text: String, font_size: int) -> Vector2i:
