@@ -3974,6 +3974,68 @@ check("_check_files(check, manifest)" in _art_checks
       and "_check_view_wiring(check)" in _art_checks,
       "9bj map art suite must check files, loaded textures and the view wiring")
 
+# ── Layer 9d0: native DynamicRenderer + source state/op oracle ──
+_dyn_manifest_path = ROOT / "data/art/map_dynamic.json"
+_dyn_fixture_path = ROOT / "tests/fixtures/dynamic_renderer_source.json"
+_dyn_state = (ROOT / "scripts/ui/dynamic_map_renderer.gd").read_text(encoding="utf-8")
+_dyn_layout = (ROOT / "scripts/ui/dynamic_map_layout.gd").read_text(encoding="utf-8")
+_dyn_painter = (ROOT / "scripts/ui/dynamic_map_painter.gd").read_text(encoding="utf-8")
+_dyn_checks = (ROOT / "tests/dynamic_map_renderer_checks.gd").read_text(encoding="utf-8")
+_dyn_oracle = (ROOT / "tests/dynamic_renderer_source_oracle.py").read_text(encoding="utf-8")
+_dyn_source = (ROOT.parent / "map_components/_bundle.py").read_text(encoding="utf-8")
+check('const DynamicMapRendererChecks = preload("res://tests/dynamic_map_renderer_checks.gd")' in ai_tests
+      and "DynamicMapRendererChecks.new().run(_check)" in ai_tests,
+      "9d0 dynamic renderer suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/dynamic_renderer_source_oracle.py" in workflow,
+      "9d0 source oracle must run in the static workflow")
+check(_dyn_manifest_path.is_file() and _dyn_fixture_path.is_file(),
+      "9d0 dynamic manifest and source fixture must exist")
+if _dyn_manifest_path.is_file():
+    _dyn = json.loads(_dyn_manifest_path.read_text(encoding="utf-8"))
+    _dyn_palette = json.loads((ROOT / "data/levels/theme_palette.json").read_text(encoding="utf-8"))
+    check(_dyn["source"] == "map_components/_bundle.py::DynamicRenderer"
+          and _dyn["generator"] == "godot_rebuild/tests/dynamic_renderer_source_oracle.py",
+          "9d0 manifest must name its real source and generator")
+    check(sorted(_dyn["themes"]) == sorted(_dyn_palette) and len(_dyn["themes"]) == 54,
+          "9d0 all 54 themes must have dynamic data")
+    check(len(_dyn["layout"]["river_points"]) == 61
+          and len(_dyn["layout"]["torch_stones"]) == 18 and _dyn["layout_seed"] == 42,
+          "9d0 source river and seed-42 torch layout must be pinned")
+    for _theme, _entry in sorted(_dyn["themes"].items()):
+        check(all(level in _entry["states"] for level in ("low", "medium", "high")),
+              f"9d0 quality states missing: {_theme}")
+if _dyn_fixture_path.is_file():
+    _dyn_fixture = json.loads(_dyn_fixture_path.read_text(encoding="utf-8"))
+    _dyn_ops = sum(len(frame["ops"]) for case in _dyn_fixture["cases"] for frame in case["frames"])
+    check(len(_dyn_fixture["cases"]) == 10 and len(_dyn_fixture["torch_cases"]) == 15
+          and _dyn_ops >= 2000,
+          "9d0 fixture must cover particle/boss/quality cases and all torch palettes")
+check("class DynamicRenderer" in _dyn_source and "def _boss_dynamic_draw" in _dyn_source
+      and "def _draw_boss_environment" in _dyn_source,
+      "9d0 source must retain the base class and true-boss overrides")
+check('rec.harvest(BUNDLE, ["_NS_generators", "DynamicRenderer"])' in _dyn_oracle
+      and "RandomRecorder" in _dyn_oracle and '"low"' in _dyn_oracle
+      and '"medium"' in _dyn_oracle and '"high"' in _dyn_oracle,
+      "9d0 oracle must execute real source with random replay and all quality presets")
+check("func update()" in _dyn_state and "func _update_boss_particles" in _dyn_state
+      and "func set_random_replay" in _dyn_state and "func configure_state" in _dyn_state,
+      "9d0 native state must implement base/boss updates and the fixture replay seam")
+check("static func torch_ops" in _dyn_layout and "static func _boss_ops" in _dyn_layout
+      and '"mist"' not in _dyn_layout,
+      "9d0 layout must cover torches/boss effects without inventing a mist particle painter")
+check('"ellipse":' in _dyn_painter and '"arc":' in _dyn_painter
+      and "draw_colored_polygon" in _dyn_painter and "draw_polyline" in _dyn_painter,
+      "9d0 painter must handle fog ellipses and boss arcs natively")
+check(_art_base.index("draw_texture(wall_texture") < _art_base.index("_draw_map_dynamic()")
+      < _art_base.index("_draw_map_overlay()")
+      and "dynamic_map.draw(self, world.tick_count)" in _art_view
+      and "dynamic_map.configure(cached_river_theme)" in _art_view,
+      "9d0 view must draw dynamic ops after the wall and before ambient tint")
+check("_replay_case(case_value as Dictionary, check)" in _dyn_checks
+      and "_check_torch_case(case_value as Dictionary, check)" in _dyn_checks
+      and "random_replay_complete()" in _dyn_checks,
+      "9d0 native suite must replay state, random streams and every source op")
+
 # ── Layer 9bk: baked minion sprites (bake/bake_minion_atlas.py) ──
 _mn_path = ROOT / "data/art/minions.json"
 _mn_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")

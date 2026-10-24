@@ -1,6 +1,6 @@
 extends RefCounted
 ## Replays the source MapRenderer coordinator through the state-only port.
-## Static/dynamic pygame drawing is intentionally outside this suite.
+## Dynamic drawing is covered separately by `dynamic_map_renderer_checks.gd`.
 
 const MapRenderer = preload("res://scripts/ui/map_renderer.gd")
 const Prototype = preload("res://scripts/match/prototype_battle.gd")

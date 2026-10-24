@@ -19,6 +19,7 @@ const HitParticleLayout = preload("res://scripts/ui/hit_particle_layout.gd")
 const DeathExplosionLayout = preload("res://scripts/ui/death_explosion_layout.gd")
 const MapTintLayout = preload("res://scripts/ui/map_tint_layout.gd")
 const MapArt = preload("res://scripts/ui/map_art.gd")
+const DynamicMapRenderer = preload("res://scripts/ui/dynamic_map_renderer.gd")
 const SlotArt = preload("res://scripts/ui/slot_art.gd")
 const HeroArt = preload("res://scripts/ui/hero_art.gd")
 const HeroAnim = preload("res://scripts/ui/hero_anim.gd")
@@ -55,6 +56,9 @@ var hero_projectile_art = HeroProjectileArtScript.new()
 var hero_projectile_draws := 0
 ## Baked boss bodies drawn so far; the painter suite proves the sprite path runs.
 var boss_sprite_draws := 0
+var dynamic_map := DynamicMapRenderer.new()
+## Real DynamicRenderer paints; the scene suite proves this reaches `_draw`.
+var dynamic_map_draws := 0
 
 
 func _draw() -> void:
@@ -171,6 +175,15 @@ func _draw_map_decor() -> void:
 	var overlay := MapArt.overlay_texture(cached_river_theme)
 	if overlay != null:
 		draw_texture(overlay, Vector2.ZERO)
+
+
+## Layer 9d0: source DynamicRenderer between the static map and ambient tint.
+func _draw_map_dynamic() -> void:
+	if dynamic_map.theme_name != cached_river_theme:
+		dynamic_map.configure(cached_river_theme)
+	var world := session.world as Prototype
+	dynamic_map.draw(self, world.tick_count)
+	dynamic_map_draws += 1
 
 
 ## Layer 9bh: the ambient tint `MapRenderer.draw()` lays over the map, under the

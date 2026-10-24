@@ -115,8 +115,9 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
   puncak sprite (`BOSS_LABEL_TOP`). Rincian di bagian "Slice 9bq".
 - Urutan bake berikutnya (user: "semuanya"): skin HUD/menu (9br: tema, 9bs: latar menu utama;
   HUD dan arena layar penuh belum), peluru hero, pose jalan/serang boss.
-  Sisanya di luar bake: `DynamicRenderer`
-  (partikel, kabut, obor, air bergerak) dan `tactical_commands.draw_world/draw_ui`.
+  `DynamicRenderer` **sudah terport (layer 9d0)**: partikel, kabut, obor,
+  rune air, glow/asap toko dan efek lingkungan boss. Tactical commands sudah
+  punya state dan render dasar; audit paritas visualnya adalah pekerjaan terpisah.
   Keputusan user: combo counter dan kill feed tetap tampil di Godot (walau tidak digambar
   pygame).
 
@@ -2133,7 +2134,8 @@ Batas yang diketahui:
 - Alas Godot (tile native dengan RNG visual tetap) bukan salinan piksel alas pygame; overlay
   menyalin warna akhir sumber di tiap piksel yang disentuh lapisan 4-5, termasuk bayangan
   yang di sumber transparan. Selisih hanya terlihat pada tepi bayangan.
-- Belum ada animasi peta (`DynamicRenderer`: partikel, kabut, obor, kilau toko, air).
+- Animasi peta (`DynamicRenderer`: partikel, kabut, obor, kilau/asap toko dan air)
+  **sudah ditutup oleh layer 9d0**; lihat bagian 9d0 di akhir dokumen.
 - Painter di view tidak dieksekusi suite headless; hanya pemuatan tekstur dan urutan hook
   yang diuji CI. Tampilan akhir harus dilihat di Godot.
 
@@ -3328,3 +3330,40 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
   Godot 4.7.2 diperiksa melalui CI PR sesi.
 - Berikutnya: **0 hero non-custom selain Raz**. Raz tetap fallback oleh keputusan
   scope; tidak ada kandidat portrait tersisa dari metadata proyek.
+
+## Slice 9d0 — DynamicRenderer (animasi peta dan lingkungan boss)
+
+- `dynamic_renderer_source_oracle.py` memanen kelas sumber dan override
+  true-boss dengan AST, lalu menjalankannya di recorder pygame bersama. Surface
+  cache diratakan menjadi operasi screen-space dalam urutan sumber. Tidak ada
+  perubahan pada Python sumber dan tidak ada PNG full-map/frame baru.
+- `data/art/map_dynamic.json` memuat 54 tema, layout dekorasi seed-42 yang sama
+  dengan bake statis (61 titik sungai, 18 obor, tulang/batu/nisan), serta state
+  awal partikel dan kabut untuk LOW/MEDIUM/HIGH. Dua run oracle menghasilkan
+  byte yang identik.
+- `dynamic_map_renderer.gd` mem-port update partikel firefly/snow/sand/ember,
+  acid/ash/spirit, wrap/bounce, kabut, RNG deterministik runtime dan replay RNG
+  untuk tes. `dynamic_map_layout.gd` mem-port fog, rune sungai, glow/asap toko,
+  seluruh partikel, 15 cabang palet obor, dan efek Abaddon/Alchemist/
+  Ignis Drachorn/Krobellus. `dynamic_map_painter.gd` menerjemahkan op menjadi
+  rect/circle/ellipse/line/arc native.
+- Kuirk sumber dipertahankan: tipe `mist` tidak memiliki cabang painter dan
+  tetap tidak menggambar partikel. View memakai preset HIGH; konfigurasi LOW dan
+  MEDIUM tersedia pada renderer dan diuji tanpa menambah governor perangkat baru.
+- Hook `MinionView._draw_map_dynamic()` dipanggil sesudah border wall dan
+  sebelum ambient tint, sesuai `MapRenderer.draw`. `PrototypeView` memegang
+  state per tema dan counter draw; `painter_scene_checks.gd` membuktikan jalur
+  itu benar-benar masuk `_draw` pada scene hidup.
+- Fixture: 10 kasus, 30 frame dan 2.316 op untuk semua keluarga partikel, empat
+  efek boss, LOW/MEDIUM/HIGH, enam wrap dan random velocity firefly; ditambah
+  15 palet obor / 255 op. Suite native membandingkan state pasca-update, RNG
+  yang dikonsumsi, dan seluruh op, serta mengonfigurasi/menggambar 54 tema.
+
+Batas: ellipse/arc dan alpha digambar sebagai primitif vektor Godot, bukan
+rasterisasi pygame; ini bukan klaim pixel parity. Tampilan akhir tetap perlu
+review visual di Godot. Full static workflow **lulus**: 606 GDScript,
+validator dan seluruh source oracle sukses, gdparse/gdlint bersih, dan gdformat
+tidak mengubah file. Native import/runtime diperiksa melalui CI PR sesi.
+
+Berikutnya: DynamicRenderer tidak lagi menjadi sisa. Kandidat visual berikutnya
+adalah animasi boss (jalan/serang/skill dan fase idle) atau atlas hero arena.

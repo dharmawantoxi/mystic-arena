@@ -150,6 +150,16 @@ class Draw:
                             "mult": 255, "width": int(width)})
 
     @staticmethod
+    def ellipse(surface, color, rect, width=0, **_kwargs):
+        surface.ops.append({"kind": "ellipse", "rect": list(Rect(rect)), "color": rgba(color),
+                            "mult": 255, "width": int(width)})
+
+    @staticmethod
+    def arc(surface, color, rect, start, end, width=1, **_kwargs):
+        surface.ops.append({"kind": "arc", "rect": list(Rect(rect)), "color": rgba(color),
+                            "mult": 255, "width": int(width), "start": num(start), "end": num(end)})
+
+    @staticmethod
     def polygon(surface, color, points, width=0):
         surface.ops.append({"kind": "polygon",
                             "points": [[num(p[0]), num(p[1])] for p in points],

@@ -1,5 +1,5 @@
 extends RefCounted
-## Source map_components.themes colors, data only; no decorations/FX ported.
+## Source map_components.themes colors, data only; dynamic FX live in dynamic_map_*.gd.
 
 const DATA := "res://data/levels/theme_palette.json"
 const RIVER := "res://data/levels/river_path.json"

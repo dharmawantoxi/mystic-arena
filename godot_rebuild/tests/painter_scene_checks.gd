@@ -78,6 +78,8 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	check.call(view.structure_anim.tracked() > 0, "Structure clocks were tracked while drawing")
 	check.call(view.hero_anim.tracked() > 0, "Hero clocks were tracked while drawing")
 	check.call(view.hero_projectile_draws > 0, "Source-baked hero projectiles were drawn")
+	check.call(view.dynamic_map_draws > 0, "DynamicRenderer painted the live map")
+	check.call(view.dynamic_map.draw_count > 0, "DynamicRenderer advanced and painted its state")
 	if boss != null:
 		check.call(view.boss_sprite_draws > 0, "The baked boss body was drawn")
 	else:
