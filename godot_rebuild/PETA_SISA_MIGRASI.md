@@ -117,7 +117,8 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
   HUD dan arena layar penuh belum), peluru hero, pose jalan/serang boss.
   `DynamicRenderer` **sudah terport (layer 9d0)**: partikel, kabut, obor,
   rune air, glow/asap toko dan efek lingkungan boss. Tactical commands sudah
-  punya state dan render dasar; audit paritas visualnya adalah pekerjaan terpisah.
+  punya state dan render dasar; audit paritas visualnya **sudah dikerjakan (layer 9bi2)**:
+  penanda, banner feedback, teks melayang, dan warna penolakan. Rincian di bagian "Slice 9bi2".
   Keputusan user: combo counter dan kill feed tetap tampil di Godot (walau tidak digambar
   pygame).
 
