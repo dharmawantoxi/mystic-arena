@@ -5017,7 +5017,7 @@ check("if mgr is None or not mgr.is_controller_mode():" in _ih_draw
 check("var x := (SCREEN_WIDTH - total_w) >> 1" in _ih_layout and "const BAR_Y := 690" in _ih_layout,
       "9bv4 layout must keep the centred floor start and y = SCREEN_HEIGHT - 30")
 check('const InputHintLayout = preload("res://scripts/ui/input_hint_layout.gd")' in _ih_view
-      and re.search(r'"tactical_feedback",\s*"build_popup",\s*"end_overlay",\s*"input_hints",\s*"level_intro",',
+      and re.search(r'"tactical_feedback",\s*"build_popup",\s*"hero_panel",\s*"end_overlay",\s*"input_hints",\s*"level_intro",',
                     _ih_view) is not None
       and '"input_hints":\n\t\t\t_draw_input_hints(world)' in _ih_view
       and "func input_hints_blocked(" in _ih_view,
@@ -5069,7 +5069,7 @@ check("if unlock_popup_timer < EndOverlayLayout.UNLOCK_DELAY:" in _eo_view
       and "Control.MOUSE_FILTER_IGNORE if result else Control.MOUSE_FILTER_STOP" in _eo_screen,
       "9bv6 view/screen must cap the timer like pygame and route PLAY NEXT LEVEL clicks")
 check('const EndOverlayLayout = preload("res://scripts/ui/end_overlay_layout.gd")' in _eo_view
-      and re.search(r'"tactical_feedback",\s*"build_popup",\s*"end_overlay",\s*"input_hints",',
+      and re.search(r'"tactical_feedback",\s*"build_popup",\s*"hero_panel",\s*"end_overlay",\s*"input_hints",',
                     _eo_view) is not None
       and '"end_overlay":\n\t\t\t_draw_end_overlay(world)' in _eo_view
       and "state[\"animation_time\"] = world.tick_count" in _eo_view,
@@ -5106,7 +5106,7 @@ check("static func origin(slot_x: int, slot_y: int) -> Vector2i:" in _bp_layout
       and "const TOWER_TYPES :=" in _bp_layout,
       "9bv7 layout must keep the fallback origin, the card rects and the four tower types")
 check('const BuildPopupLayout = preload("res://scripts/ui/build_popup_layout.gd")' in _bp_view
-      and '"tactical_feedback",\n\t"build_popup",\n\t"end_overlay",' in _bp_view
+      and '"tactical_feedback",\n\t"build_popup",\n\t"hero_panel",\n\t"end_overlay",' in _bp_view
       and '"build_popup":\n\t\t\t_draw_build_popup(world)' in _bp_view
       and "func build_popup_draw_ops(" in _bp_view
       and "if build_popup_state.is_empty() or not world.is_running():" in _bp_view,

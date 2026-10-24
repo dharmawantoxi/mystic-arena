@@ -33,6 +33,7 @@ const ShopHintLayout = preload("res://scripts/ui/shop_hint_layout.gd")
 const InputHintLayout = preload("res://scripts/ui/input_hint_layout.gd")
 const EndOverlayLayout = preload("res://scripts/ui/end_overlay_layout.gd")
 const BuildPopupLayout = preload("res://scripts/ui/build_popup_layout.gd")
+const HeroPanelLayout = preload("res://scripts/ui/hero_panel_layout.gd")
 const TitleFont = preload("res://assets/fonts/Cinzel.ttf")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
@@ -57,6 +58,7 @@ const OVERLAY_ORDER := [
 	"achievement",
 	"tactical_feedback",
 	"build_popup",
+	"hero_panel",
 	"end_overlay",
 	"input_hints",
 	"level_intro",
@@ -91,6 +93,8 @@ var end_overlay_state: Dictionary = {}
 ## Layer 9bv7: the build-tower popup state (slot x/y and gold) the screen hands over while an
 ## empty build slot is selected; empty otherwise.
 var build_popup_state: Dictionary = {}
+## Layer 9bv8: selected live hero snapshot used by the screen-space panel painter.
+var hero_panel_state: Dictionary = {}
 var hud_shadow_box := StyleBoxFlat.new()
 ## Layer 9bv6: `Overlay.unlock_popup_timer`, advanced once per victory overlay draw and
 ## stopped AT the 90-call delay exactly like `_update_unlock_popup`.
@@ -298,6 +302,8 @@ func _draw_overlay_layer(layer: String, world: Prototype) -> void:
 			_draw_tactical_feedback(world)
 		"build_popup":
 			_draw_build_popup(world)
+		"hero_panel":
+			_draw_hero_panel(world)
 		"end_overlay":
 			_draw_end_overlay(world)
 		"input_hints":
@@ -1024,6 +1030,37 @@ func build_popup_draw_ops(
 	var state := build_popup_state.duplicate()
 	state["mouse"] = mouse
 	return BuildPopupLayout.ops(state, metrics, true)
+
+
+## Layer 9bv8: `HeroPanel.draw`, after the build popup and before the result overlay.
+func _draw_hero_panel(_world: Prototype) -> void:
+	var mouse := Vector2i(get_local_mouse_position())
+	for op in hero_panel_draw_ops(_world, Callable(), Time.get_ticks_msec(), mouse):
+		match String(op.get("kind", "")):
+			"radial":
+				_draw_radial_op(op)
+			"shadow":
+				_draw_shadow_op(op)
+			_:
+				_draw_hud_op(op)
+
+
+## The source panel has no state when nothing live is selected; quality and mouse are view-only.
+func hero_panel_draw_ops(
+	_world: Prototype,
+	measure: Callable = Callable(),
+	ticks_msec: int = -1,
+	mouse: Vector2i = Vector2i()
+) -> Array:
+	if hero_panel_state.is_empty():
+		return []
+	var metrics: Callable = _measure_intro_text
+	if measure.is_valid():
+		metrics = measure
+	var state := hero_panel_state.duplicate(true)
+	state["mouse"] = mouse
+	var ticks := Time.get_ticks_msec() if ticks_msec < 0 else ticks_msec
+	return HeroPanelLayout.ops(state, metrics, bool(state.get("cheap_alpha", true)), ticks)
 
 
 ## Layer 9bv5: `Overlay.draw`, the victory / defeat screen, painted after the tactical banner

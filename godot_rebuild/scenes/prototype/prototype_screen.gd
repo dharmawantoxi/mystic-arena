@@ -8,6 +8,8 @@ const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd")
 const Structure = preload("res://scripts/combat/structure_state.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
+const HeroDefinition = preload("res://scripts/data/hero_definition.gd")
+const HeroItemInventory = preload("res://scripts/match/hero_item_inventory.gd")
 const ItemForgePanel = preload("res://scripts/ui/item_forge_panel.gd")
 const HeroShopPanel = preload("res://scripts/ui/hero_shop_panel.gd")
 const SidePanel = preload("res://scripts/ui/side_panel.gd")
@@ -189,6 +191,8 @@ func _process(_delta: float) -> void:
 	# Layer 9bv7: while an empty build slot is selected the arena paints the source
 	# build-tower popup at the slot.
 	arena.set("build_popup_state", _build_popup_state(world, match_session))
+	# Layer 9bv8: the live selected hero's source panel is view-only; no commands are changed.
+	arena.set("hero_panel_state", _hero_panel_state(world, match_session))
 	# Layer 9bv5: once the match ends the arena paints the source victory / defeat overlay.
 	arena.set("end_overlay_state", {} if world.is_running() else _end_overlay_state(world))
 	%GoldLabel.tooltip_text = (
@@ -537,6 +541,129 @@ func _build_popup_state(world: Prototype, match_session: PrototypeSession) -> Di
 		"y": int(slot.position.y),
 		"gold": int(world.economy.gold[0]),
 	}
+
+
+## Layer 9bv8: selected live hero snapshot for the arena painter.
+## This view-only state does not enqueue gameplay commands.
+func _hero_panel_state(world: Prototype, match_session: PrototypeSession) -> Dictionary:
+	var selected := world.get_unit(match_session.selected_id) as HeroState
+	if selected == null or not selected.alive or selected.team != world.BLUE:
+		return {}
+	var definition: HeroDefinition = selected.settings()
+	if definition == null:
+		return {}
+	var inventory: HeroItemInventory = selected.items
+	var item_rows: Array = []
+	for index in range(6):
+		var item_id := ""
+		if inventory != null and index < inventory.slots.size():
+			var raw_id: Variant = inventory.slots[index]
+			if raw_id != null:
+				item_id = String(raw_id)
+		if item_id.is_empty():
+			item_rows.append({})
+			continue
+		var item_data: Dictionary = inventory.item(item_id)
+		var item_color := _hero_panel_rgb(item_data.get("color", [66, 74, 104]), [66, 74, 104])
+		var item_glow := _hero_panel_rgb(item_data.get("glow", item_color), item_color)
+		(
+			item_rows
+			. append(
+				{
+					"id": item_id,
+					"name": String(item_data.get("name", item_id)),
+					"color": item_color,
+					"glow": item_glow,
+					"active": _hero_panel_item_active(inventory, item_id),
+					"cooldown": int(inventory.blood_frenzy_cd) if item_id == "demon_maw" else 0,
+				}
+			)
+		)
+	var skill_labels: Array = ["Q", "W", "E", "R"]
+	if controller_cursor.active:
+		skill_labels = [
+			String(controller_cursor.get_action_label("skill_q")),
+			String(controller_cursor.get_action_label("skill_w")),
+			String(controller_cursor.get_action_label("skill_e")),
+			String(controller_cursor.get_action_label("skill_r")),
+		]
+	return {
+		"alive": true,
+		"name": String(definition.title),
+		"level": int(selected.level),
+		"max_level": HeroDefinition.MAX_HERO_LEVEL,
+		"hp": float(selected.hp),
+		"max_hp": float(selected.max_hp),
+		# The prototype's blue team accent stands in for the source hero-specific tint.
+		"color": [115, 203, 187],
+		"gold": int(world.economy.gold[world.BLUE]),
+		"upgrade_cost": int(selected.upgrade_cost()),
+		"auto_cast": bool(selected.auto_cast_enabled),
+		"cooldowns":
+		[selected.skill_timer, selected.w_cooldown, selected.e_cooldown, selected.r_cooldown],
+		"cooldown_max":
+		[
+			selected.skill_cd_max,
+			selected.w_cooldown_max,
+			selected.e_cooldown_max,
+			selected.r_cooldown_max
+		],
+		"skill_labels": skill_labels,
+		"items": item_rows,
+		"cheap_alpha": true,
+	}
+
+
+func _hero_panel_item_active(inventory: HeroItemInventory, item_id: String) -> bool:
+	match item_id:
+		"demon_maw":
+			return inventory.blood_frenzy_timer > 0
+		"scarlet_bulwark":
+			return inventory.guard_timer > 0
+		"tempest_vane":
+			return inventory.veil_timer > 0
+		"thunder_coil":
+			return inventory.static_timer > 0
+		"sanguine_thorn":
+			return inventory.rend_timer > 0
+		"razor_carapace":
+			return inventory.thorn_timer > 0
+		"gale_pike":
+			return inventory.gale_timer > 0
+		"searbrand":
+			return _hero_panel_item_cooldown_active(inventory, item_id, "searbrand_cd")
+		"astral_codex":
+			return _hero_panel_item_cooldown_active(inventory, item_id, "arcane_cd")
+		"spectral_charm":
+			return inventory.ghost_timer > 0
+		"fulgur_scepter":
+			return _hero_panel_item_cooldown_active(inventory, item_id, "fulgur_cd")
+		"hex_idol":
+			return _hero_panel_item_cooldown_active(inventory, item_id, "hex_cd")
+		"rift_veil":
+			return _hero_panel_item_cooldown_active(inventory, item_id, "rift_cd")
+		"vital_stone":
+			return _hero_panel_item_cooldown_active(inventory, item_id, "pact_cd")
+	return false
+
+
+func _hero_panel_item_cooldown_active(
+	inventory: HeroItemInventory, item_id: String, timer_name: String
+) -> bool:
+	var cooldown := int(inventory.get(timer_name))
+	if cooldown <= 0:
+		return false
+	var item_data := inventory.item(item_id)
+	var active: Dictionary = item_data.get("active", {})
+	return cooldown > int(active.get("cooldown", 0)) - 30
+
+
+func _hero_panel_rgb(value: Variant, fallback: Array) -> Array:
+	if value is Array and value.size() >= 3:
+		return [int(value[0]), int(value[1]), int(value[2])]
+	if value is Color:
+		return [int(value.r8), int(value.g8), int(value.b8)]
+	return fallback.duplicate()
 
 
 ## `Game.draw`'s arguments for `ui.draw_overlay`: title, colour and action line (input labels
