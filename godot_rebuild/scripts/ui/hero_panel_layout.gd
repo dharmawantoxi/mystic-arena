@@ -62,6 +62,18 @@ static func origin(state: Dictionary) -> Vector2i:
 	return Vector2i(PANEL_X, SCREEN_H - PANEL_H - 20)
 
 
+## Exact geometry of `mobile.platform_utils.panel_pos_bawah(280, 276)` for the wide-screen dock.
+static func mobile_panel_origin(panel: Rect2i) -> Variant:
+	if panel.size.x <= 0 or PANEL_W > panel.size.x - 8:
+		return null
+	var x := panel.position.x + int((panel.size.x - PANEL_W) / 2)
+	var y := panel.position.y + 430
+	var bottom := panel.position.y + panel.size.y
+	if y + PANEL_H > bottom - 120:
+		y = maxi(panel.position.y + 8, bottom - 120 - PANEL_H)
+	return Vector2i(x, y)
+
+
 static func panel_rect(state: Dictionary) -> Rect2i:
 	return Rect2i(origin(state), Vector2i(PANEL_W, PANEL_H))
 

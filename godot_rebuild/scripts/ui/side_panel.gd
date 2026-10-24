@@ -13,6 +13,8 @@ signal tactical_down(action: String)
 signal tactical_up(action: String)
 
 const Layout = preload("res://scripts/ui/side_panel_layout.gd")
+const HeroPanelLayout = preload("res://scripts/ui/hero_panel_layout.gd")
+const HeroPanelFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
 
 const STONE_BASE := Color8(16, 14, 24)
 const STONE_DARK := Color8(26, 23, 38)
@@ -32,6 +34,9 @@ var _built_at := -1
 var _state_key := ""
 var _held_action := ""
 var _bricks: Array = []
+var _hero_panel_round_box := StyleBoxFlat.new()
+var _hero_panel_shadow_box := StyleBoxFlat.new()
+var _hero_panel_radial_textures: Dictionary = {}
 
 
 func _ready() -> void:
@@ -69,7 +74,12 @@ func blocks(screen_pos: Vector2) -> bool:
 func update_snapshot(next: Dictionary, now_ms: int = Time.get_ticks_msec()) -> void:
 	if not is_active():
 		return
+	var previous_hero_state: Dictionary = snapshot.get("hero_panel_state", {})
+	var next_hero_state: Dictionary = next.get("hero_panel_state", {})
+	var hero_panel_active := not previous_hero_state.is_empty() or not next_hero_state.is_empty()
 	snapshot = next
+	if hero_panel_active:
+		queue_redraw()
 	popup_open = bool(next.get("popup_open", false))
 	if not Layout.in_gameplay(String(next.get("state", ""))):
 		# `_bersihkan_panel`: outside gameplay everything is hidden.
@@ -151,6 +161,7 @@ func _draw() -> void:
 		draw_line(Vector2(index + 0.5, 0), Vector2(index + 0.5, panel.size.y), shade, 1.0)
 	draw_line(Vector2(1.5, 0), Vector2(1.5, panel.size.y), STONE_GOLD, 2.0)
 	if layout.is_empty():
+		_draw_hero_panel_overlay()
 		return
 	_draw_pause_button()
 	for entry in layout["rects"]:
@@ -159,6 +170,7 @@ func _draw() -> void:
 		draw_circle(Vector2(entry["center"]), float(entry["radius"]), entry["color"])
 	var font := get_theme_default_font()
 	if font == null:
+		_draw_hero_panel_overlay()
 		return
 	for entry in layout["texts"]:
 		var font_size := int(entry["size"])
@@ -173,6 +185,175 @@ func _draw() -> void:
 			font_size,
 			entry["color"]
 		)
+	_draw_hero_panel_overlay()
+
+
+func _draw_hero_panel_overlay() -> void:
+	var state: Dictionary = snapshot.get("hero_panel_state", {})
+	if state.is_empty() or not state.has("panel_pos"):
+		return
+	var panel_pos: Array = state["panel_pos"]
+	if panel_pos.size() < 2 or int(panel_pos[0]) < panel.position.x:
+		return
+	var mouse := Vector2i(get_viewport().get_mouse_position())
+	var draw_state := state.duplicate(true)
+	draw_state["mouse"] = mouse
+	var metrics := Callable(self, "_measure_hero_panel")
+	var ops := HeroPanelLayout.ops(
+		draw_state, metrics, bool(draw_state.get("cheap_alpha", true)), Time.get_ticks_msec()
+	)
+	draw_set_transform(-Vector2(panel.position), 0.0, Vector2.ONE)
+	for op in ops:
+		_draw_hero_panel_op(op)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+func _measure_hero_panel(text: String, font_size: int) -> Vector2i:
+	var measured := HeroPanelFont.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+	return Vector2i(int(measured.x), font_size)
+
+
+func _draw_hero_panel_op(op: Dictionary) -> void:
+	var kind := String(op.get("kind", ""))
+	if kind == "radial":
+		_draw_hero_panel_radial(op)
+		return
+	if kind == "shadow":
+		var shadow_box: Array = op.get("rect", [0, 0, 0, 0])
+		_hero_panel_shadow_box.bg_color = Color(
+			0.0, 0.0, 0.0, float(op.get("alpha", 110)) / 255.0 * 0.5
+		)
+		_hero_panel_shadow_box.set_corner_radius_all(int(op.get("radius", 12)) + 4)
+		_hero_panel_shadow_box.shadow_color = Color(0.0, 0.0, 0.0, 0.25)
+		_hero_panel_shadow_box.shadow_size = 4
+		draw_style_box(
+			_hero_panel_shadow_box,
+			Rect2(
+				float(shadow_box[0]),
+				float(shadow_box[1]),
+				float(shadow_box[2]),
+				float(shadow_box[3])
+			)
+		)
+		return
+	if kind == "vgrad":
+		_draw_hero_panel_vgrad(op)
+		return
+	if kind == "text":
+		var pos: Array = op.get("pos", [0, 0])
+		var font_size := int(op.get("size", 16))
+		draw_string(
+			HeroPanelFont,
+			Vector2(float(pos[0]), float(pos[1]) + HeroPanelFont.get_ascent(font_size)),
+			String(op.get("text", "")),
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1,
+			font_size,
+			_hero_panel_op_color(op)
+		)
+		return
+	if kind == "line":
+		var a: Array = op.get("a", [0, 0])
+		var b: Array = op.get("b", [0, 0])
+		draw_line(
+			Vector2(float(a[0]), float(a[1])),
+			Vector2(float(b[0]), float(b[1])),
+			_hero_panel_op_color(op),
+			float(op.get("width", 1))
+		)
+		return
+	if kind == "polygon":
+		var points := PackedVector2Array()
+		for point in op.get("points", []):
+			points.append(Vector2(float(point[0]), float(point[1])))
+		if points.size() >= 3:
+			draw_colored_polygon(points, _hero_panel_op_color(op))
+		return
+	var box: Array = op.get("rect", [0, 0, 0, 0])
+	var rect := Rect2(float(box[0]), float(box[1]), float(box[2]), float(box[3]))
+	var color := _hero_panel_op_color(op)
+	if kind == "fill":
+		draw_rect(rect, color)
+	elif kind == "rect":
+		var width := int(op.get("width", 0))
+		_hero_panel_round_box.anti_aliasing = false
+		_hero_panel_round_box.set_corner_radius_all(int(op.get("radius", 0)))
+		_hero_panel_round_box.draw_center = width == 0
+		_hero_panel_round_box.bg_color = color
+		_hero_panel_round_box.set_border_width_all(width)
+		_hero_panel_round_box.border_color = color
+		draw_style_box(_hero_panel_round_box, rect)
+
+
+func _hero_panel_op_color(op: Dictionary) -> Color:
+	var rgba: Array = op.get("color", [255, 255, 255, 255])
+	var color_alpha := float(rgba[3]) if rgba.size() > 3 else 255.0
+	var alpha := color_alpha * float(op.get("mult", 255)) / 65025.0
+	return Color(float(rgba[0]) / 255.0, float(rgba[1]) / 255.0, float(rgba[2]) / 255.0, alpha)
+
+
+func _draw_hero_panel_radial(op: Dictionary) -> void:
+	var box: Array = op.get("rect", [0, 0, 8, 8])
+	var rgb: Array = op.get("color", [255, 255, 255])
+	var alpha := float(op.get("alpha", 0)) / 255.0
+	var key := "%s/%d" % [str(rgb), int(op.get("alpha", 0))]
+	if not _hero_panel_radial_textures.has(key):
+		var gradient := Gradient.new()
+		var offsets := PackedFloat32Array()
+		var colors := PackedColorArray()
+		for step in range(5):
+			var distance := float(step) / 4.0
+			offsets.append(distance)
+			var color := Color8(int(rgb[0]), int(rgb[1]), int(rgb[2]))
+			color.a = alpha * pow(1.0 - distance, 2.0)
+			colors.append(color)
+		gradient.offsets = offsets
+		gradient.colors = colors
+		var texture := GradientTexture2D.new()
+		texture.gradient = gradient
+		texture.fill = GradientTexture2D.FILL_RADIAL
+		texture.fill_from = Vector2(0.5, 0.5)
+		texture.fill_to = Vector2(1.0, 0.5)
+		texture.width = 128
+		texture.height = 128
+		_hero_panel_radial_textures[key] = texture
+	var width := float(box[2])
+	var height := float(box[3])
+	var scale_to_texture := 128.0 / sqrt(width * width + height * height)
+	var region := Rect2(
+		64.0 - width * 0.5 * scale_to_texture,
+		64.0 - height * 0.5 * scale_to_texture,
+		width * scale_to_texture,
+		height * scale_to_texture
+	)
+	draw_texture_rect_region(
+		_hero_panel_radial_textures[key], Rect2(float(box[0]), float(box[1]), width, height), region
+	)
+
+
+func _draw_hero_panel_vgrad(op: Dictionary) -> void:
+	var box: Array = op.get("rect", [0, 0, 0, 0])
+	var top: Array = op.get("top", [0, 0, 0])
+	var bottom: Array = op.get("bottom", [0, 0, 0])
+	var width := float(box[2])
+	var height := int(box[3])
+	var radius := float(op.get("radius", 0))
+	for row in range(height):
+		var t := float(row) / float(maxi(1, height - 1))
+		var color := Color8(
+			int(top[0] + (bottom[0] - top[0]) * t),
+			int(top[1] + (bottom[1] - top[1]) * t),
+			int(top[2] + (bottom[2] - top[2]) * t)
+		)
+		var inset := 0.0
+		var from_edge := minf(float(row) + 0.5, float(height) - float(row) - 0.5)
+		if radius > 0.0 and from_edge < radius:
+			var rise := radius - from_edge
+			inset = roundf(radius - sqrt(maxf(0.0, radius * radius - rise * rise)))
+		if width - inset * 2.0 > 0.0:
+			draw_rect(
+				Rect2(float(box[0]) + inset, float(box[1]) + row, width - inset * 2.0, 1.0), color
+			)
 
 
 func _draw_pause_button() -> void:

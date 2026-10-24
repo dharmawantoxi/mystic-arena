@@ -48,6 +48,18 @@ func run(check: Callable) -> void:
 		frames.size() == 6 and ops_total == 440,
 		"Hero panel oracle pins 6 source frames and 440 draw ops (got %d)" % ops_total
 	)
+	check.call(
+		Layout.mobile_panel_origin(Rect2i(1280, 0, 344, 720)) == Vector2i(1312, 324),
+		"Wide side-panel anchor matches panel_pos_bawah on a 344x720 dock"
+	)
+	check.call(
+		Layout.mobile_panel_origin(Rect2i(1280, 0, 287, 720)) == null,
+		"Narrow side dock keeps the hero panel in the arena"
+	)
+	check.call(
+		Layout.mobile_panel_origin(Rect2i(1280, 50, 344, 600)) == Vector2i(1312, 254),
+		"Short mobile dock clamps the hero panel above the bottom notification zone"
+	)
 	var colors: Dictionary = data["colors"]
 	check.call(
 		(

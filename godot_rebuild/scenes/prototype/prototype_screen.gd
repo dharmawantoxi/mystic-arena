@@ -10,6 +10,7 @@ const Structure = preload("res://scripts/combat/structure_state.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const HeroDefinition = preload("res://scripts/data/hero_definition.gd")
 const HeroItemInventory = preload("res://scripts/match/hero_item_inventory.gd")
+const HeroPanelLayout = preload("res://scripts/ui/hero_panel_layout.gd")
 const ItemForgePanel = preload("res://scripts/ui/item_forge_panel.gd")
 const HeroShopPanel = preload("res://scripts/ui/hero_shop_panel.gd")
 const SidePanel = preload("res://scripts/ui/side_panel.gd")
@@ -168,7 +169,8 @@ func _process(_delta: float) -> void:
 	)
 	_update_controller_hover()
 	_update_tactical_hud(world)
-	_update_side_panel(world)
+	var hero_panel_state := _hero_panel_state(world, match_session)
+	_update_side_panel(world, hero_panel_state)
 	if forge_panel != null and forge_panel.visible:
 		forge_panel.refresh()
 	if hero_shop_panel != null and hero_shop_panel.visible:
@@ -192,7 +194,7 @@ func _process(_delta: float) -> void:
 	# build-tower popup at the slot.
 	arena.set("build_popup_state", _build_popup_state(world, match_session))
 	# Layer 9bv8: the live selected hero's source panel is view-only; no commands are changed.
-	arena.set("hero_panel_state", _hero_panel_state(world, match_session))
+	arena.set("hero_panel_state", hero_panel_state)
 	# Layer 9bv5: once the match ends the arena paints the source victory / defeat overlay.
 	arena.set("end_overlay_state", {} if world.is_running() else _end_overlay_state(world))
 	%GoldLabel.tooltip_text = (
@@ -587,7 +589,7 @@ func _hero_panel_state(world: Prototype, match_session: PrototypeSession) -> Dic
 			String(controller_cursor.get_action_label("skill_e")),
 			String(controller_cursor.get_action_label("skill_r")),
 		]
-	return {
+	var state := {
 		"alive": true,
 		"name": String(definition.title),
 		"level": int(selected.level),
@@ -612,6 +614,11 @@ func _hero_panel_state(world: Prototype, match_session: PrototypeSession) -> Dic
 		"items": item_rows,
 		"cheap_alpha": true,
 	}
+	if side_panel != null and side_panel.is_active():
+		var mobile_origin: Variant = HeroPanelLayout.mobile_panel_origin(side_panel.panel)
+		if mobile_origin is Vector2i:
+			state["panel_pos"] = [mobile_origin.x, mobile_origin.y]
+	return state
 
 
 func _hero_panel_item_active(inventory: HeroItemInventory, item_id: String) -> bool:
@@ -846,10 +853,16 @@ func _set_command_dock_open(open: bool) -> void:
 	%CommandDockToggle.text = "Tutup" if open else "Kontrol"
 
 
-func _update_side_panel(world: Prototype) -> void:
+func _update_side_panel(world: Prototype, hero_panel_state: Dictionary) -> void:
 	if side_panel == null or not side_panel.is_active():
 		return
-	side_panel.update_snapshot(_side_panel_snapshot(world))
+	var snapshot := _side_panel_snapshot(world)
+	snapshot["hero_panel_state"] = hero_panel_state
+	# Match SidePanel.hit_test: the selected-hero panel covers its dock controls.
+	snapshot["popup_open"] = (
+		bool(snapshot.get("popup_open", false)) or not hero_panel_state.is_empty()
+	)
+	side_panel.update_snapshot(snapshot)
 
 
 ## Source `SidePanel.draw(game)` reads: gold, difficulty, level/wave, the

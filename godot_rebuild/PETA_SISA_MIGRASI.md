@@ -3775,8 +3775,11 @@ view-only; tidak mengubah command atau gameplay.
   `tests/run_all.gd`; guard 9bv8 di `validate_project.py` dan command oracle di workflow.
 
 Batas:
-- Tombol dan rect interaksi hanya digambar/dicek; handler input panel tidak diport agar gameplay
-  tidak berubah. Screen belum memberi `panel_pos` mobile sehingga live panel memakai fallback
-  kiri-bawah, walau layout/oracle mencakup anchor mobile.
+- Tombol dan rect HeroPanel hanya digambar/dicek; handler aksi HeroPanel tidak diport dan tidak
+  menjalankan gameplay. Saat overlay aktif di dock, flag popup menahan hit-test aksi taktis yang
+  tertutup di bawahnya (tombol pause tetap lolos), mengikuti routing SidePanel sumber.
+  `mobile_panel_origin` mengikuti `panel_pos_bawah(280, 276)` pada dock kanan yang lebarnya minimal
+  288 px; dock yang lebih sempit tetap memakai fallback kiri-bawah. Saat dock aktif, `SidePanel`
+  menggambar ulang panel di atas latar batu, mengikuti pulse/hover per frame.
 - Belum ada runtime atau review visual di Godot. Bukan klaim pixel parity.
 

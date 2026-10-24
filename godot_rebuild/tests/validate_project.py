@@ -5123,6 +5123,7 @@ _hp_layout = (ROOT / "scripts/ui/hero_panel_layout.gd").read_text(encoding="utf-
 _hp_checks = (ROOT / "tests/hero_panel_draw_checks.gd").read_text(encoding="utf-8")
 _hp_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
 _hp_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+_hp_side_panel = (ROOT / "scripts/ui/side_panel.gd").read_text(encoding="utf-8")
 _hp_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
 _hp_bundle = (ROOT.parent / "ui_components/_bundle.py").read_text(encoding="utf-8")
 _hp_items = (ROOT.parent / "hero_items.py").read_text(encoding="utf-8")
@@ -5153,6 +5154,7 @@ check("if self.selected_hero and self.selected_hero.alive:\n            self.ui.
       and "for i in range(MAX_ITEM_SLOTS):" in _hp_items,
       "9bv8 source must draw the live selected hero after the build popup and use all six item slots")
 check("static func panel_rect(state: Dictionary) -> Rect2i:" in _hp_layout
+      and "static func mobile_panel_origin(panel: Rect2i) -> Variant:" in _hp_layout
       and "static func item_slot_rect(state: Dictionary, index: int) -> Rect2i:" in _hp_layout
       and "static func upgrade_rect(state: Dictionary) -> Rect2i:" in _hp_layout
       and "const PANEL_W := 280" in _hp_layout and "const PANEL_H := 276" in _hp_layout,
@@ -5165,13 +5167,26 @@ check('const HeroPanelLayout = preload("res://scripts/ui/hero_panel_layout.gd")'
       and re.search(r'"build_popup",\s*"hero_panel",\s*"end_overlay"', _hp_view) is not None
       and bool(_hp_order) and _hp_order[-1] == "boss_death",
       "9bv8 view must paint after the build popup, before results, and leave boss death last")
-check('arena.set("hero_panel_state", _hero_panel_state(world, match_session))' in _hp_screen
+check('arena.set("hero_panel_state", hero_panel_state)' in _hp_screen
+      and "var hero_panel_state := _hero_panel_state(world, match_session)" in _hp_screen
       and "func _hero_panel_state(world: Prototype, match_session: PrototypeSession) -> Dictionary:" in _hp_screen
       and "selected == null or not selected.alive or selected.team != world.BLUE" in _hp_screen
+      and "HeroPanelLayout.mobile_panel_origin(side_panel.panel)" in _hp_screen
+      and 'state["panel_pos"] = [mobile_origin.x, mobile_origin.y]' in _hp_screen
       and "func _hero_panel_item_active(inventory: HeroItemInventory, item_id: String) -> bool:" in _hp_screen
       and "selected.upgrade_cost()" in _hp_screen,
-      "9bv8 screen must hand the selected live blue hero and item state to the view without commands")
+      "9bv8 screen must hand the live hero snapshot and source mobile anchor to the view")
+check('snapshot["hero_panel_state"] = hero_panel_state' in _hp_screen
+      and 'snapshot["popup_open"] = (' in _hp_screen
+      and "or not hero_panel_state.is_empty()" in _hp_screen
+      and "side_panel.update_snapshot(snapshot)" in _hp_screen
+      and "func _draw_hero_panel_overlay() -> void:" in _hp_side_panel
+      and "HeroPanelLayout.ops(" in _hp_side_panel
+      and "draw_set_transform(-Vector2(panel.position)" in _hp_side_panel
+      and "if hero_panel_active:" in _hp_side_panel,
+      "9bv8 wide-screen dock must redraw the source panel above its background at the mobile anchor")
 check("Hero panel oracle pins 6 source frames and 440 draw ops" in _hp_checks
+      and "mobile_panel_origin" in _hp_checks
       and "hero_panel_draw_ops" in _hp_checks
       and "for index in range(Layout.ITEM_COUNT):" in _hp_checks
       and 'order.back() == "boss_death"' in _hp_checks,
