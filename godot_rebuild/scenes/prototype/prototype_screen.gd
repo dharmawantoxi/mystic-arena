@@ -550,21 +550,7 @@ func _update_tactical_hud(world: Prototype) -> void:
 	]:
 		button.disabled = locked
 	%TacticalStatus.text = world.tactical.status_text(world)
-	var visible_feedback: bool = world.tactical.feedback_timer > 0
-	%TacticalFeedback.visible = visible_feedback
-	if not visible_feedback:
-		return
-	%TacticalFeedback.text = world.tactical.feedback_text
-	var alpha := 1.0
-	var y_offset := 0.0
-	if world.tactical.feedback_timer < 30:
-		alpha = float(world.tactical.feedback_timer) / 30.0
-	elif world.tactical.feedback_timer > 150:
-		var progress := float(180 - world.tactical.feedback_timer) / 30.0
-		alpha = clampf(progress, 0.0, 1.0)
-		y_offset = (1.0 - alpha) * 20.0
-	%TacticalFeedback.position.y = 78.0 + y_offset
-	%TacticalFeedback.modulate = Color(world.tactical.feedback_color, alpha)
+	# Layer 9bi2: the feedback banner is painted by the arena view (`draw_ui` order).
 
 
 func _build_side_panel() -> void:

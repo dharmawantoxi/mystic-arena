@@ -105,17 +105,6 @@ custom_minimum_size = Vector2(60, 36)
 layout_mode = 2
 text = "Menu"
 
-[node name="TacticalFeedback" type="Label" parent="HUD"]
-unique_name_in_owner = true
-visible = false
-offset_left = 380.0
-offset_top = 78.0
-offset_right = 900.0
-offset_bottom = 110.0
-theme_override_font_sizes/font_size = 18
-text = "TACTICAL COMMAND"
-horizontal_alignment = 1
-
 [node name="TacticalPanel" type="PanelContainer" parent="HUD"]
 unique_name_in_owner = true
 visible = false

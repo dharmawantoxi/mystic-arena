@@ -4783,6 +4783,69 @@ check("_check_frames(check, frames)" in _nr_checks and "_check_gate(check)" in _
       and "_check_view_wiring(check, frames)" in _nr_checks,
       "9bq3 the realm suite must replay the source frames, the gate and the view")
 
+# ── Layer 9bi2: tactical command visuals (gather marker, feedback banner, floating text) ──
+from tactical_draw_source_oracle import source_fixture as tactical_draw_fixture
+_td_path = ROOT / "tests/fixtures/tactical_draw_source.json"
+_td_layout = (ROOT / "scripts/ui/tactical_layout.gd").read_text(encoding="utf-8")
+_td_checks = (ROOT / "tests/tactical_draw_checks.gd").read_text(encoding="utf-8")
+_td_sim = (ROOT / "scripts/match/tactical_commands.gd").read_text(encoding="utf-8")
+_td_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+_td_scene = (ROOT / "scenes/prototype/PrototypeMatch.tscn").read_text(encoding="utf-8")
+_td_src = (ROOT.parent / "tactical_commands.py").read_text(encoding="utf-8")
+_td_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+check('const TacticalDrawChecks = preload("res://tests/tactical_draw_checks.gd")' in ai_tests
+      and "TacticalDrawChecks.new().run(_check)" in ai_tests,
+      "9bi2 tactical draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/tactical_draw_source_oracle.py" in workflow,
+      "9bi2 CI must run the tactical draw_world / draw_ui source oracle")
+check(_td_path.is_file(), "9bi2 tactical draw fixture must exist")
+if _td_path.is_file():
+    _td = json.loads(_td_path.read_text(encoding="utf-8"))
+    check(tactical_draw_fixture() == _td,
+          "9bi2 tactical draw fixture must not drift from tactical_commands.py")
+    _td_world, _td_banner = _td["world_frames"], _td["feedback_frames"]
+    check(len(_td_world) == 10 and len(_td_banner) == 8
+          and sum(len(frame["ops"]) for frame in _td_world + _td_banner) == 105,
+          "9bi2 oracle must pin 18 frames and 105 draw ops")
+    check(all(op["radius"] in (42, 34, 26) and op["width"] == 2
+              for frame in _td_world for op in frame["ops"]
+              if op["kind"] == "circle" and op["radius"] > 6),
+          "9bi2 oracle must pin the alpha-gated marker rings (r = 50 never shows)")
+    check([sum(op["kind"] == "line" for op in frame["ops"]) for frame in _td_world]
+          == [9, 9, 9, 3, 3, 6, 0, 0, 0, 0],
+          "9bi2 oracle must pin three dashes per far hero for gather/tower/castle/boss only")
+    check([frame["ops"][1]["color"][3] for frame in _td_banner if frame["ops"]]
+          == [0, 85, 246, 255, 255, 246, 8],
+          "9bi2 oracle must pin the banner sliding in over 30 ticks and fading out over 30")
+_td_ui = _td_core[_td_core.index("self.effects.draw_ui(self.screen"):]
+check(_td_ui.index("self.tactical.draw_ui(self.screen)")
+      < _td_ui.index("self.level_intro.draw(self.screen)"),
+      "9bi2 the source paints the tactical banner after effects.draw_ui, before the level intro")
+check(re.search(r"add_damage_number\(\s*640, 100, text, is_critical=True\s*\)", _td_src)
+      is not None
+      and all('"%s", (255, 150, 100)' % text in _td_src
+              for text in ("No tower to protect!", "No boss active!", "No enemy heroes!")),
+      "9bi2 the source must still float feedback and warn in orange when nothing is targetable")
+check("effects.add_damage_number(640.0, 100.0, text, true)" in _td_sim
+      and "const REFUSAL_ORANGE := Color8(255, 150, 100)" in _td_sim
+      and all('_refuse(world, "%s", silent, REFUSAL_ORANGE)' % text in _td_sim
+              for text in ("No tower to protect!", "No boss active!", "No enemy heroes!")),
+      "9bi2 feedback must float its text and keep the source refusal colours")
+check("const SOLID_DRAWS := true" in _td_layout and "static func world_ops(" in _td_layout
+      and "static func feedback_ops(" in _td_layout and "range(50, 20, -8)" in _td_layout
+      and "const FEEDBACK_FONT_SIZE := 28" in _td_layout,
+      "9bi2 the layout must mirror draw_world / draw_ui")
+check('\t"achievement",\n\t"tactical_feedback",\n\t"level_intro",' in _bs_view
+      and "TacticalLayout.world_ops(" in _bs_view and "TacticalLayout.feedback_ops(" in _bs_view
+      and "_draw_solid_op(op)" in _bs_view and "draw_style_box(" in _bs_view,
+      "9bi2 the view must paint the solid marker and the banner in the draw_ui slot")
+check("TacticalFeedback" not in _td_screen and "TacticalFeedback" not in _td_scene,
+      "9bi2 the old 18 px HUD label must not return")
+check("_check_world_frames(check" in _td_checks and "_check_feedback_frames(check" in _td_checks
+      and "_check_view_wiring(check, data)" in _td_checks
+      and "_check_feedback_side_effects(check)" in _td_checks,
+      "9bi2 the tactical draw suite must replay frames, the view and the feedback side effects")
+
 # ── Layer 9br: UI skin from ui_theme.py (bake/bake_ui_theme.py) ──
 _ui_path = ROOT / "data/art/ui_theme.json"
 _ui_src = (ROOT.parent / "ui_theme.py").read_text(encoding="utf-8")

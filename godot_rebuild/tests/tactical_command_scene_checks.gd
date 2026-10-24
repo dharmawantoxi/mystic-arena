@@ -55,12 +55,12 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		"Playable command publishes the source map-marker payload"
 	)
 	screen._process(0.0)
+	var banner: Array = screen.get_node("Arena").tactical_feedback_draw_ops(world)
 	check.call(
-		(
-			screen.get_node("%TacticalFeedback").visible
-			and "GATHER" in screen.get_node("%TacticalFeedback").text
+		banner.any(
+			func(op): return op["kind"] == "text" and "GATHER" in String(op.get("text", ""))
 		),
-		"Tactical feedback is visible in the playable HUD"
+		"Tactical feedback banner is painted over the playable arena"
 	)
 	check.call(
 		"GATHER" in screen.get_node("%TacticalStatus").text,

@@ -27,6 +27,7 @@ const HeroPainter = preload("res://scripts/ui/hero_painter.gd")
 const BossArt = preload("res://scripts/ui/boss_art.gd")
 const BossAnim = preload("res://scripts/ui/boss_anim.gd")
 const NyxarethRealmLayout = preload("res://scripts/ui/nyxareth_realm_layout.gd")
+const TacticalLayout = preload("res://scripts/ui/tactical_layout.gd")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
@@ -46,6 +47,7 @@ const OVERLAY_ORDER := [
 	"combo_counter",
 	"kill_feed",
 	"achievement",
+	"tactical_feedback",
 	"level_intro",
 	"boss_death",
 ]
@@ -62,6 +64,8 @@ var boss_sprite_draws := 0
 var boss_pose_draws: Dictionary = {}
 ## Screen-wide boss skill layers painted under the body (nyxareth's ultimate, layer 9bq3).
 var boss_screen_layer_draws := 0
+## The tactical banner border (layer 9bi2): 2 px, 6 px corners, drawn inside its box.
+var tactical_border := StyleBoxFlat.new()
 var dynamic_map := DynamicMapRenderer.new()
 ## Real DynamicRenderer paints; the scene suite proves this reaches `_draw`.
 var dynamic_map_draws := 0
@@ -233,6 +237,8 @@ func _draw_overlay_layer(layer: String, world: Prototype) -> void:
 			_draw_kill_feed(world)
 		"achievement":
 			_draw_achievement_popup(world)
+		"tactical_feedback":
+			_draw_tactical_feedback(world)
 		"level_intro":
 			_draw_level_intro(world)
 		"boss_death":
@@ -876,32 +882,72 @@ func _draw_intro_op(op: Dictionary) -> void:
 			)
 
 
+## Layer 9bi2: `TacticalCommandManager.draw_world`, the gather marker and hero dashes.
+## Every op is a `pygame.draw` call on the alpha-less render surface, so it is solid.
 func _draw_tactical(world: Prototype) -> void:
+	for op in tactical_world_draw_ops(world):
+		_draw_solid_op(op)
+
+
+## `ticks` defaults to the engine wall clock, as the source pulses with `get_ticks()`.
+func tactical_world_draw_ops(world: Prototype, ticks: int = -1) -> Array:
 	var tactical = world.tactical
-	if not tactical.gather_point_active or tactical.gather_point_timer <= 0:
-		return
-	var point: Vector2 = tactical.gather_point
-	var fade := clampf(float(tactical.gather_point_timer) / 150.0, 0.0, 1.0)
-	var pulse := (sin(float(world.tick_count) * 0.133) * 0.3 + 0.7) * fade
-	var color: Color = tactical.command_color()
-	for radius in range(50, 20, -8):
-		var alpha := float(50 - radius) * 4.0 * pulse / 255.0
-		if alpha > 0.0:
-			draw_arc(point, radius, 0, TAU, 40, Color(color, alpha), 2, true)
-	draw_circle(point, 6, color)
-	draw_circle(point, 2, Color.WHITE)
-	if tactical.active_command not in ["gather", "protect_castle", "attack_boss", "protect_tower"]:
-		return
+	var heroes: Array = []
 	for hero in world.player_roster():
-		if not hero.alive:
+		if hero.alive:
+			heroes.append(hero.position)
+	var clock: int = ticks if ticks >= 0 else Time.get_ticks_msec()
+	return TacticalLayout.world_ops(
+		String(tactical.active_command),
+		tactical.gather_point,
+		bool(tactical.gather_point_active),
+		int(tactical.gather_point_timer),
+		clock,
+		heroes
+	)
+
+
+## Layer 9bi2: `TacticalCommandManager.draw_ui`, the feedback banner. `measure` defaults to
+## the real HUD font; the checks pass the oracle's.
+func tactical_feedback_draw_ops(world: Prototype, measure: Callable = Callable()) -> Array:
+	var tactical = world.tactical
+	var metrics: Callable = _measure_intro_text
+	if measure.is_valid():
+		metrics = measure
+	var color: Color = tactical.feedback_color
+	return TacticalLayout.feedback_ops(
+		String(tactical.feedback_text),
+		[color.r8, color.g8, color.b8],
+		int(tactical.feedback_timer),
+		metrics
+	)
+
+
+## The box and both texts fade through their alpha; the border is a `pygame.draw.rect` on
+## the alpha-less screen, so it stays solid while the banner shows.
+func _draw_tactical_feedback(world: Prototype) -> void:
+	for op in tactical_feedback_draw_ops(world):
+		if String(op.get("kind", "")) != "rect":
+			_draw_intro_op(op)
 			continue
-		var delta: Vector2 = point - hero.position
-		if delta.length() <= 80.0:
-			continue
-		for segment in range(3):
-			var from: Vector2 = hero.position + delta * (float(segment) * 0.33)
-			var to: Vector2 = hero.position + delta * (float(segment) * 0.33 + 0.18)
-			draw_line(from, to, Color(color, 120.0 * pulse / 255.0), 2, true)
+		var box: Array = op.get("rect", [0, 0, 0, 0])
+		var rgba: Array = op.get("color", [255, 255, 255, 255])
+		tactical_border.draw_center = false
+		tactical_border.set_border_width_all(int(op.get("width", 2)))
+		tactical_border.set_corner_radius_all(int(op.get("radius", 6)))
+		tactical_border.border_color = Color8(int(rgba[0]), int(rgba[1]), int(rgba[2]))
+		draw_style_box(
+			tactical_border, Rect2(float(box[0]), float(box[1]), float(box[2]), float(box[3]))
+		)
+
+
+## A `pygame.draw` op on the XRGB render surface: same colour, alpha dropped.
+func _draw_solid_op(op: Dictionary) -> void:
+	var rgba: Array = op.get("color", [255, 255, 255, 255])
+	var solid := op.duplicate()
+	solid["color"] = [rgba[0], rgba[1], rgba[2], 255]
+	solid["mult"] = 255
+	_draw_intro_op(solid)
 
 
 func _draw_unit(unit: UnitState) -> void:

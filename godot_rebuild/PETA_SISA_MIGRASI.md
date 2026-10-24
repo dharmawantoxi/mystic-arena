@@ -3447,3 +3447,40 @@ contact sheet dari crop lossless dengan rumus penempatan runtime. Review interak
 
 Batas: bukan klaim pixel parity. Godot tidak tersedia di sandbox sesi ini, jadi lapisan belum
 dilihat langsung. Review interaktif tetap perlu.
+
+## Slice 9bi2 — paritas visual tactical commands
+
+Audit `tactical_commands.py` terhadap Godot (catatan lama: "audit paritas visualnya adalah pekerjaan
+terpisah"). Ada empat selisih nyata, semuanya sekarang terport:
+
+- **Penanda titik kumpul** (`draw_world`) sebelumnya digambar tembus pandang dengan alpha
+  sumber. Di sumber, semua `pygame.draw` ditulis ke render surface XRGB tanpa alpha, jadi cincin
+  r = 42/34/26 (muncul selama alpha `int((50 - r) * 4 * pulse)` > 0), cakram 6 px, inti putih,
+  dan tiga garis putus dari setiap hero yang berjarak > 80 px tampil **solid**. Tebal cincin kini
+  tumbuh ke dalam seperti pygame, dan denyutnya memakai jam dinding (`get_ticks() * 0.008`), bukan
+  tick simulasi.
+- **Banner feedback** (`draw_ui`) sebelumnya berupa `Label` HUD 18 px tanpa kotak. Sekarang
+  teksnya 28 px `body_bold` berpusat di (640, 90 + geser), dengan kotak hitam (`inflate(20, 8)`,
+  alpha 160·a/255), border 2 px bersudut 6 px berwarna feedback, dan bayangan hitam +2 px
+  ber-alpha a/2. Banner naik 20 px saat masuk selama 30 tick dan memudar di 30 tick terakhir.
+  Border tetap solid karena ditulis `pygame.draw` ke layar tanpa alpha. Urutannya kini di slot
+  `draw_ui`: setelah `effects.draw_ui` (popup achievement), sebelum level intro, tanpa goncangan.
+  `Label` `%TacticalFeedback` dihapus.
+- **Teks melayang**: `_set_feedback` juga memanggil `effects.add_damage_number(640, 100, text,
+  is_critical=True)`, jadi setiap feedback (termasuk penolakan yang tidak silent) melayang sebagai
+  angka kritis emas `teks + "!"`. Godot belum melakukannya; sekarang `_feedback` memanggilnya
+  lewat effect manager visual (RNG global visual, bukan RNG simulasi).
+- **Warna penolakan**: "No tower to protect!", "No boss active!", dan "No enemy heroes!" berwarna
+  oranye (255,150,100) di sumber, bukan merah. Godot sebelumnya memakai merah untuk semuanya.
+- Panggilan notifikasi UI dan toast side panel dari `_set_feedback` adalah no-op di sumber
+  (`add_notification` kosong, `beri_tahu_global` mengembalikan False), jadi tidak diport.
+- Oracle `tests/tactical_draw_source_oracle.py` menjalankan `TacticalCommand`,
+  `_get_command_color`, `draw_world`, dan `draw_ui` asli di bawah `draw_recorder.py` (yang kini
+  punya `Rect.inflate`/`topleft`). Hasilnya 18 frame dan 105 op. `tests/tactical_draw_checks.gd`
+  memutar ulang fixture tersebut serta menguji wiring view, teks melayang, warna penolakan, dan
+  perintah silent.
+
+Selisih yang tersisa: font banner memakai Barlow SemiBold milik view (font `body_bold` sumber
+tidak di-bake); garis dan cincin Godot ter-antialias. Panel taktis mengambang di layar 16:9 adalah
+tambahan rebuild (sumber hanya menampilkan tombol taktis di side panel); panel itu tidak diubah.
+Bukan klaim pixel parity, dan belum ada review interaktif.

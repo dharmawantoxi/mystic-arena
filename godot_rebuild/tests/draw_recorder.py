@@ -55,9 +55,14 @@ class Rect:
     centerx = property(lambda s: s.x + s.w // 2)
     centery = property(lambda s: s.y + s.h // 2)
     size = property(lambda s: (s.w, s.h))
+    topleft = property(lambda s: (s.x, s.y))
 
     def __iter__(self):
         return iter((self.x, self.y, self.w, self.h))
+
+    def inflate(self, dx, dy):
+        """pygame keeps the centre; its C code halves the growth with truncation."""
+        return Rect(self.x - int(dx / 2), self.y - int(dy / 2), self.w + dx, self.h + dy)
 
 
 class Surface:
