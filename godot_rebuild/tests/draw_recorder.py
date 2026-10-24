@@ -95,6 +95,8 @@ class Surface:
             y = int(anchors["center"][1]) - self.h // 2
         elif "topleft" in anchors:
             x, y = int(anchors["topleft"][0]), int(anchors["topleft"][1])
+        elif "topright" in anchors:
+            x, y = int(anchors["topright"][0]) - self.w, int(anchors["topright"][1])
         return Rect(x, y, self.w, self.h)
 
     def blit(self, src, dest, *_args, **_kwargs):

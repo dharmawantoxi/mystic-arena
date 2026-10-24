@@ -31,6 +31,8 @@ const TacticalLayout = preload("res://scripts/ui/tactical_layout.gd")
 const GoldHudLayout = preload("res://scripts/ui/gold_hud_layout.gd")
 const ShopHintLayout = preload("res://scripts/ui/shop_hint_layout.gd")
 const InputHintLayout = preload("res://scripts/ui/input_hint_layout.gd")
+const EndOverlayLayout = preload("res://scripts/ui/end_overlay_layout.gd")
+const TitleFont = preload("res://assets/fonts/Cinzel.ttf")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
@@ -53,6 +55,7 @@ const OVERLAY_ORDER := [
 	"kill_feed",
 	"achievement",
 	"tactical_feedback",
+	"end_overlay",
 	"input_hints",
 	"level_intro",
 	"boss_death",
@@ -80,11 +83,17 @@ var gold_hud_draws := 0
 ## Layer 9bv4: `get_hints(context)` pairs while a controller drives the match (the screen
 ## fills it every frame; empty in mouse / keyboard mode, like `_draw_input_hints`).
 var input_hints: Array = []
+## Layer 9bv5: the victory / defeat overlay state (title, colour, action line, stats,
+## achievements) the screen hands over once the match ends; empty while it runs.
+var end_overlay_state: Dictionary = {}
+var hud_shadow_box := StyleBoxFlat.new()
 ## Rounded chip/badge fills and borders (pygame `draw.rect(..., border_radius=r)`).
 var hud_round_box := StyleBoxFlat.new()
 var dynamic_map := DynamicMapRenderer.new()
 ## Real DynamicRenderer paints; the scene suite proves this reaches `_draw`.
 var dynamic_map_draws := 0
+var _end_backdrop: ImageTexture
+var _radial_textures: Dictionary = {}
 
 
 func _draw() -> void:
@@ -279,6 +288,8 @@ func _draw_overlay_layer(layer: String, world: Prototype) -> void:
 			_draw_gold_hud(world)
 		"tactical_feedback":
 			_draw_tactical_feedback(world)
+		"end_overlay":
+			_draw_end_overlay(world)
 		"input_hints":
 			_draw_input_hints(world)
 		"level_intro":
@@ -973,6 +984,165 @@ func input_hints_blocked(world: Prototype) -> bool:
 	)
 
 
+## Layer 9bv5: `Overlay.draw`, the victory / defeat screen, painted after the tactical banner
+## and before the hint bar once the screen hands over `end_overlay_state`.
+func _draw_end_overlay(world: Prototype) -> void:
+	for op in end_overlay_draw_ops(world):
+		match String(op.get("kind", "")):
+			"section", "unlock_popup":
+				continue
+			"end_gradient":
+				_draw_end_backdrop(op)
+			"radial":
+				_draw_radial_op(op)
+			"outline_text":
+				_draw_outline_text_op(op)
+			"shadow":
+				_draw_shadow_op(op)
+			"arc":
+				_draw_arc_op(op)
+			_:
+				_draw_hud_op(op)
+
+
+func end_overlay_draw_ops(
+	world: Prototype, measure: Callable = Callable(), ticks_msec: int = -1
+) -> Array:
+	if end_overlay_state.is_empty():
+		return []
+	var metrics: Callable = _measure_intro_text
+	var title_metrics: Callable = _measure_title_text
+	if measure.is_valid():
+		metrics = measure
+		title_metrics = measure
+	var state := end_overlay_state.duplicate()
+	state["animation_time"] = world.tick_count
+	var ticks := Time.get_ticks_msec() if ticks_msec < 0 else ticks_msec
+	return EndOverlayLayout.ops(state, metrics, ticks, title_metrics)
+
+
+func _measure_title_text(text: String, font_size: int) -> Vector2i:
+	var measured := TitleFont.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+	return Vector2i(int(measured.x), font_size)
+
+
+## The cached backdrop: a 1 px wide column of the per-row alphas, stretched over the screen.
+func _draw_end_backdrop(op: Dictionary) -> void:
+	if _end_backdrop == null:
+		var rows: Array = op.get("rows", [])
+		var rgb: Array = op.get("color", [10, 10, 20])
+		var image := Image.create(1, maxi(1, rows.size()), false, Image.FORMAT_RGBA8)
+		for row in range(rows.size()):
+			var color := Color8(int(rgb[0]), int(rgb[1]), int(rgb[2]), int(rows[row]))
+			image.set_pixel(0, row, color)
+		_end_backdrop = ImageTexture.create_from_image(image)
+	var box: Array = op.get("rect", [0, 0, 1280, 720])
+	draw_texture_rect(
+		_end_backdrop, Rect2(float(box[0]), float(box[1]), float(box[2]), float(box[3])), false
+	)
+
+
+## `ui_theme._radial`: alpha * (1 - d)^2 with d the distance over the half diagonal, so the
+## falloff is circular and cropped by the rect. A radial gradient square stands in for it.
+func _draw_radial_op(op: Dictionary) -> void:
+	var box: Array = op.get("rect", [0, 0, 8, 8])
+	var rgb: Array = op.get("color", [255, 255, 255])
+	var alpha := float(op.get("alpha", 0)) / 255.0
+	var key := "%s/%d" % [str(rgb), int(op.get("alpha", 0))]
+	if not _radial_textures.has(key):
+		var gradient := Gradient.new()
+		var offsets := PackedFloat32Array()
+		var colors := PackedColorArray()
+		for step in range(5):
+			var distance := step / 4.0
+			offsets.append(distance)
+			var color := Color8(int(rgb[0]), int(rgb[1]), int(rgb[2]))
+			color.a = alpha * pow(1.0 - distance, 2.0)
+			colors.append(color)
+		gradient.offsets = offsets
+		gradient.colors = colors
+		var texture := GradientTexture2D.new()
+		texture.gradient = gradient
+		texture.fill = GradientTexture2D.FILL_RADIAL
+		texture.fill_from = Vector2(0.5, 0.5)
+		texture.fill_to = Vector2(1.0, 0.5)
+		texture.width = 128
+		texture.height = 128
+		_radial_textures[key] = texture
+	var width := float(box[2])
+	var height := float(box[3])
+	var scale_to_texture := 128.0 / sqrt(width * width + height * height)
+	var region := Rect2(
+		64.0 - width * 0.5 * scale_to_texture,
+		64.0 - height * 0.5 * scale_to_texture,
+		width * scale_to_texture,
+		height * scale_to_texture
+	)
+	draw_texture_rect_region(
+		_radial_textures[key], Rect2(float(box[0]), float(box[1]), width, height), region
+	)
+
+
+## `ui_theme.outline_text`: eight outline copies at +-width, then the body. The source body
+## is a top -> bottom gradient; its mid colour stands in for it (as `RebuildTheme.title`).
+func _draw_outline_text_op(op: Dictionary) -> void:
+	var pos: Array = op.get("pos", [0, 0])
+	var size := int(op.get("size", 88))
+	var width := float(op.get("width", 2))
+	var text := String(op.get("text", ""))
+	var base := Vector2(float(pos[0]), float(pos[1]) + TitleFont.get_ascent(size))
+	var ink: Array = op.get("outline", [8, 9, 18])
+	var outline := Color8(int(ink[0]), int(ink[1]), int(ink[2]))
+	var offsets := [
+		Vector2(-width, 0),
+		Vector2(width, 0),
+		Vector2(0, -width),
+		Vector2(0, width),
+		Vector2(-width, -width),
+		Vector2(width, width),
+		Vector2(-width, width),
+		Vector2(width, -width),
+	]
+	for offset in offsets:
+		draw_string(TitleFont, base + offset, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, outline)
+	var top: Array = op.get("top", [255, 255, 255])
+	var bottom: Array = op.get("bottom", [255, 255, 255])
+	var body := Color8(
+		int((int(top[0]) + int(bottom[0])) * 0.5),
+		int((int(top[1]) + int(bottom[1])) * 0.5),
+		int((int(top[2]) + int(bottom[2])) * 0.5)
+	)
+	draw_string(TitleFont, base, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, body)
+
+
+## `ui_theme._shadow`: a soft dark rounded rect; a StyleBoxFlat shadow stands in for the blur.
+func _draw_shadow_op(op: Dictionary) -> void:
+	var box: Array = op.get("rect", [0, 0, 0, 0])
+	hud_shadow_box.bg_color = Color(0.0, 0.0, 0.0, float(op.get("alpha", 110)) / 255.0 * 0.5)
+	hud_shadow_box.set_corner_radius_all(int(op.get("radius", 12)) + 4)
+	hud_shadow_box.shadow_color = Color(0.0, 0.0, 0.0, 0.25)
+	hud_shadow_box.shadow_size = 4
+	draw_style_box(
+		hud_shadow_box, Rect2(float(box[0]), float(box[1]), float(box[2]), float(box[3]))
+	)
+
+
+## `pygame.draw.arc`: angles run counter-clockwise on screen, so they flip for `draw_arc`.
+func _draw_arc_op(op: Dictionary) -> void:
+	var box: Array = op.get("rect", [0, 0, 0, 0])
+	var center := Vector2(float(box[0]) + float(box[2]) * 0.5, float(box[1]) + float(box[3]) * 0.5)
+	var radius := maxf(0.5, (float(box[2]) + float(box[3])) * 0.25)
+	draw_arc(
+		center,
+		radius,
+		-float(op.get("end", 0.0)),
+		-float(op.get("start", 0.0)),
+		12,
+		_intro_color(op),
+		float(op.get("width", 1))
+	)
+
+
 ## Paints one source HUD op: `_vgrad` fills, rounded `draw.rect`s, then the shared painter.
 func _draw_hud_op(op: Dictionary) -> void:
 	match String(op.get("kind", "")):
@@ -1030,6 +1200,8 @@ func _draw_round_rect_op(op: Dictionary) -> void:
 	var rgba: Array = op.get("color", [0, 0, 0, 255])
 	var color := Color8(int(rgba[0]), int(rgba[1]), int(rgba[2]))
 	var width := int(op.get("width", 0))
+	if rgba.size() > 3:
+		color.a = float(rgba[3]) * float(op.get("mult", 255)) / 65025.0
 	hud_round_box.anti_aliasing = false
 	hud_round_box.set_corner_radius_all(int(op.get("radius", 0)))
 	hud_round_box.draw_center = width == 0

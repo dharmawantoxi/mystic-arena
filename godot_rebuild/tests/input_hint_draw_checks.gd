@@ -45,10 +45,10 @@ func _check_view_wiring(check: Callable) -> void:
 	var order: Array = view.overlay_paint_order()
 	check.call(
 		(
-			order.find("input_hints") == order.find("tactical_feedback") + 1
+			order.find("input_hints") == order.find("end_overlay") + 1
 			and order.find("input_hints") == order.find("level_intro") - 1
 		),
-		"The hint bar paints after the tactical banner and right before the level intro"
+		"The hint bar paints after the end overlay and right before the level intro"
 	)
 	var world := Prototype.new()
 	check.call(

@@ -5017,13 +5017,51 @@ check("if mgr is None or not mgr.is_controller_mode():" in _ih_draw
 check("var x := (SCREEN_WIDTH - total_w) >> 1" in _ih_layout and "const BAR_Y := 690" in _ih_layout,
       "9bv4 layout must keep the centred floor start and y = SCREEN_HEIGHT - 30")
 check('const InputHintLayout = preload("res://scripts/ui/input_hint_layout.gd")' in _ih_view
-      and re.search(r'"tactical_feedback",\s*"input_hints",\s*"level_intro",', _ih_view) is not None
+      and re.search(r'"tactical_feedback",\s*"end_overlay",\s*"input_hints",\s*"level_intro",',
+                    _ih_view) is not None
       and '"input_hints":\n\t\t\t_draw_input_hints(world)' in _ih_view
       and "func input_hints_blocked(" in _ih_view,
       "9bv4 view must paint the hint bar between the tactical banner and the level intro")
 check("controller_cursor.get_hints(hint_context) if controller_cursor.active else []" in _ih_screen
       and 'arena.set("input_hints", hints)' in _ih_screen,
       "9bv4 screen must feed the hint bar only in controller mode")
+
+# ── Layer 9bv5: the victory / defeat overlay (Overlay.draw) and the result layout ──
+from end_overlay_draw_source_oracle import source_fixture as end_overlay_draw_fixture
+_eo_path = ROOT / "tests/fixtures/end_overlay_draw_source.json"
+_eo_layout = (ROOT / "scripts/ui/end_overlay_layout.gd").read_text(encoding="utf-8")
+_eo_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_eo_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+_eo_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+check('const EndOverlayDrawChecks = preload("res://tests/end_overlay_draw_checks.gd")' in ai_tests
+      and "EndOverlayDrawChecks.new().run(_check)" in ai_tests,
+      "9bv5 end overlay draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/end_overlay_draw_source_oracle.py" in workflow,
+      "9bv5 CI must run the Overlay.draw source oracle")
+check(_eo_path.is_file(), "9bv5 end overlay fixture must exist")
+if _eo_path.is_file():
+    _eo = json.loads(_eo_path.read_text(encoding="utf-8"))
+    check(end_overlay_draw_fixture() == _eo, "9bv5 end overlay fixture must not drift from the source")
+    check(len(_eo["frames"]) == 4 and sum(len(f["ops"]) for f in _eo["frames"]) == 407
+          and _eo["colors"] == {"victory": [255, 200, 50], "defeat": [220, 50, 50]},
+          "9bv5 fixture must pin 4 frames / 407 ops and the GOLD / RED titles")
+check('self.ui.draw_overlay(\n                self.screen,\n                f"VICTORY! LV.{self.level_number}"'
+      in _eo_core and "self._draw_input_hints(self.screen)" in _eo_core
+      and _eo_core.index('f"DEFEAT LV.{self.level_number}"')
+      < _eo_core.index("self._draw_input_hints(self.screen)"),
+      "9bv5 source must still paint the overlay before the input hint bar")
+check("static func backdrop_rows()" in _eo_layout and "static func action_text(" in _eo_layout
+      and "const UNLOCK_POPUP" in _eo_layout,
+      "9bv5 layout must keep the backdrop rows, the action line and the unlock marker")
+check('const EndOverlayLayout = preload("res://scripts/ui/end_overlay_layout.gd")' in _eo_view
+      and re.search(r'"tactical_feedback",\s*"end_overlay",\s*"input_hints",', _eo_view) is not None
+      and '"end_overlay":\n\t\t\t_draw_end_overlay(world)' in _eo_view
+      and "state[\"animation_time\"] = world.tick_count" in _eo_view,
+      "9bv5 view must paint the overlay between the tactical banner and the hint bar")
+check('arena.set("end_overlay_state", {} if world.is_running() else _end_overlay_state(world))'
+      in _eo_screen and "_set_result_layout(true)" in _eo_screen
+      and "_set_result_layout(false)" in _eo_screen,
+      "9bv5 screen must hand the end state to the arena and switch the pause card layout")
 
 # ── Layer 9br: UI skin from ui_theme.py (bake/bake_ui_theme.py) ──
 _ui_path = ROOT / "data/art/ui_theme.json"

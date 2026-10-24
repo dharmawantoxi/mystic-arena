@@ -14,6 +14,9 @@ const SidePanel = preload("res://scripts/ui/side_panel.gd")
 const ProgressStore = preload("res://scripts/match/level_progress_store.gd")
 const SaveSlotStore = preload("res://scripts/match/save_slot_store.gd")
 const LevelCatalog = preload("res://scripts/match/level_catalog.gd")
+const EndOverlayLayout = preload("res://scripts/ui/end_overlay_layout.gd")
+## The pause card's dim (PrototypeMatch.tscn); the result layout clears it.
+const PAUSE_DIM := Color(0.0392, 0.0392, 0.0784, 0.7843)
 const GameSpeedStore = preload("res://scripts/simulation/game_speed_store.gd")
 const TouchGestureRuntime = preload("res://scripts/input/touch_gesture_runtime.gd")
 const TOUCH_TARGET_MIN := 48.0
@@ -31,6 +34,9 @@ var progress_path := ProgressStore.PATH
 var slot_path_template := SaveSlotStore.PATH_TEMPLATE
 var is_replay := false
 var result_shown := false
+## Layer 9bv5: NEW BEST flags of the saved result, for the overlay's stats panel.
+var end_new_best_score := false
+var end_new_best_time := false
 var forge_panel: ItemForgePanel
 var hero_shop_panel: HeroShopPanel
 var hero_shop_toggle: Button
@@ -178,6 +184,8 @@ func _process(_delta: float) -> void:
 		hint_context = "shop"
 	var hints: Array = controller_cursor.get_hints(hint_context) if controller_cursor.active else []
 	arena.set("input_hints", hints)
+	# Layer 9bv5: once the match ends the arena paints the source victory / defeat overlay.
+	arena.set("end_overlay_state", {} if world.is_running() else _end_overlay_state(world))
 	%GoldLabel.tooltip_text = (
 		"Emas: %d G · Lawan: %d G"
 		% [
@@ -505,6 +513,53 @@ func _save_result() -> void:
 		% [int(committed.match_stats.score), int(committed.reward)]
 	)
 	%SaveRetryButton.hide()
+	end_new_best_score = bool(committed.get("is_new_best_score", false))
+	end_new_best_time = bool(committed.get("is_new_best_time", false))
+
+
+## `Game.draw`'s arguments for `ui.draw_overlay`: title, colour and action line (input labels
+## follow the controller like `_input_label`), plus the stats `Overlay._draw_stats` reads.
+func _end_overlay_state(world: Prototype) -> Dictionary:
+	var victory := world.winner == world.BLUE
+	var labels := {"next_level": "N", "replay": "R", "to_menu": "ESC"}
+	if controller_cursor.active:
+		for action in labels.keys():
+			labels[action] = controller_cursor.get_action_label(action)
+	var has_next := LevelCatalog.get_next_level(world.level_number) >= 0
+	var stats := world.match_stats_snapshot()
+	return {
+		"title": ("VICTORY! LV.%d" if victory else "DEFEAT LV.%d") % world.level_number,
+		"victory": victory,
+		"color": EndOverlayLayout.VICTORY_COLOR if victory else EndOverlayLayout.DEFEAT_COLOR,
+		"action": EndOverlayLayout.action_text(victory, has_next, labels),
+		"stats":
+		[
+			int(stats.get("score", 0)),
+			int(stats.get("time_seconds", 0)),
+			world.wave_count,
+			int(stats.get("kills", 0)),
+			int(stats.get("combo", 0)),
+			end_new_best_score,
+			end_new_best_time,
+		],
+		"achievements": world.achievements_unlocked.size(),
+	}
+
+
+## Layer 9bv5: at the end the painted source overlay owns the screen, so the pause card loses
+## its dim and title and moves to the bottom-left as a compact button card (touch still works).
+func _set_result_layout(result: bool) -> void:
+	var dim := pause_overlay as ColorRect
+	if dim != null:
+		dim.color = Color(0.0, 0.0, 0.0, 0.0) if result else PAUSE_DIM
+	%PauseTitle.visible = not result
+	var center: Control = $HUD/PauseOverlay/Center
+	if result:
+		center.set_anchors_and_offsets_preset(
+			Control.PRESET_BOTTOM_LEFT, Control.PRESET_MODE_MINSIZE, 16
+		)
+	else:
+		center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 
 func _bind_tactical_button(button: Button, command_name: String) -> void:
@@ -1282,10 +1337,12 @@ func pause_match() -> void:
 	super.pause_match()
 	var world := simulation.world as Prototype
 	if world.is_running():
+		_set_result_layout(false)
 		%PauseTitle.text = "Permainan Dijeda"
 		%ResumeButton.show()
 		%NextLevelButton.hide()
 		return
+	_set_result_layout(true)
 	%PauseTitle.text = "BIRU MENANG" if world.winner == world.BLUE else "MERAH MENANG"
 	%ResumeButton.hide()
 	var has_next := (

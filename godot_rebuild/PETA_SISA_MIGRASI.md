@@ -3620,3 +3620,53 @@ selebrasi boss aktif. Konteksnya victory, defeat, shop (hero shop), atau game.
 Batas: tinggi font mengikuti metrik Godot (`font_h` = ukuran font), dan font yang dipakai Barlow
 SemiBold, bukan font body sumber. Belum ada review visual di Godot. Bukan klaim pixel parity.
 
+## Slice 9bv5 — overlay victory/defeat sumber dan tata letak hasil (layer 9bv5)
+
+Sumber: `ui_components/_bundle.py::Overlay.draw` (cabang cheap-alpha). `Game.draw` memanggil
+`ui.draw_overlay(screen, title, color, subtitle, action)` setelah popup dan sebelum hint bar
+tombol. Judul `VICTORY! LV.n` berwarna GOLD (255,200,50), dan `DEFEAT LV.n` berwarna RED
+(220,50,50). `Game.update` berhenti di luar state `playing`, jadi `animation_time` membeku.
+Akibatnya sinar, denyut judul, dan kilau diam di frame terakhir; yang tetap bergerak hanya
+bagian yang memakai `get_ticks`.
+
+- Oracle `tests/end_overlay_draw_source_oracle.py` menjalankan `draw` ASLI beserta semua
+  helper (`_draw_rays`, `_draw_central_glow`, `_draw_title`, `_draw_sparkles`, `_draw_stats`,
+  `_draw_action_hint`, `_draw_achievements`), `ui_theme.draw_icon`, dan `corner_ticks` di shim
+  perekam.
+  - `cached_render`, `_radial`, `_shadow`, `_vgrad`, dan `outline_text` direkam sebagai satu op.
+  - Setiap helper didahului op `section`.
+  - Popup level terbuka masih berupa penanda `unlock_popup` sampai 9bv6.
+  - Fixture berisi 4 frame dan 407 op: menang dengan level berikutnya, menang di level
+    terakhir, kalah, dan label controller.
+  - `draw_recorder` sekarang mendukung `get_rect(topright=...)`.
+- `scripts/ui/end_overlay_layout.gd` membangun op yang sama:
+  - latar per baris `int(180 * (1 - |y - 360| / 360 * 0.3))`;
+  - 12 sinar alpha 30 dan cahaya tengah r = 200..60;
+  - glow radial dan judul Cinzel bergaris tepi 3 px;
+  - kilau, lalu panel statistik 500 x 214 berisi bayangan, gradasi, tepi 2 px, sudut emas,
+    lima baris, dan badge NEW BEST;
+  - keycap petunjuk aksi dari pasangan `[KEY] Desc`, dan jumlah achievement dengan ikon piala;
+  - `action_text()` meniru baris aksi `Game.draw`.
+- `prototype_view.gd` melukis layer `end_overlay` setelah `tactical_feedback` dan sebelum
+  `input_hints`, memakai `end_overlay_state` dari layar.
+  - Painter baru: latar sebagai tekstur kolom 1 px, glow radial sebagai potongan
+    `GradientTexture2D` radial, judul sebagai 8 salinan garis tepi plus badan warna tengah
+    gradasi, bayangan sebagai `StyleBoxFlat`, dan busur dengan sudut dibalik.
+  - Rect bulat sekarang mengikuti alpha.
+- `prototype_screen.gd` mengisi state setiap frame setelah pertandingan selesai: judul, warna,
+  baris aksi (label N/R/ESC atau label controller), `match_stats_snapshot`, `wave_count`, flag
+  NEW BEST dari hasil yang tersimpan, dan jumlah achievement.
+  - Kartu jeda di akhir pertandingan masuk ke tata letak hasil: tanpa redup, tanpa judul, dan
+    pindah ke kiri bawah sebagai kartu tombol ringkas, supaya sentuh tetap bisa.
+  - Game tetap dijeda, `result_shown` tetap sama, dan teks `PauseTitle` tetap diisi.
+- Bukti: `tests/end_overlay_draw_checks.gd` (replay semua frame, warna, baris aksi, urutan
+  layer, kosong saat bermain, dan state hidup), blok 9bv5 di `validate_project.py`, dan baris
+  oracle di workflow.
+
+Batas:
+- Hanya cabang cheap-alpha yang diport; cabang darken untuk HP belum.
+- Gradasi badan judul diganti warna tengahnya. Glow radial dan bayangan adalah tiruan.
+- `Match Time` sumber terus bertambah selama overlay tampil (`time.time()` dihitung tiap
+  frame). Godot memakai waktu selesai pertandingan.
+- Belum ada review visual di Godot. Bukan klaim pixel parity.
+
