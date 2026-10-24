@@ -78,8 +78,23 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	check.call(view.structure_anim.tracked() > 0, "Structure clocks were tracked while drawing")
 	check.call(view.hero_anim.tracked() > 0, "Hero clocks were tracked while drawing")
 	check.call(view.hero_projectile_draws > 0, "Source-baked hero projectiles were drawn")
+	check.call(view.dynamic_map_draws > 0, "DynamicRenderer painted the live map")
+	check.call(view.dynamic_map.draw_count > 0, "DynamicRenderer advanced and painted its state")
 	if boss != null:
 		check.call(view.boss_sprite_draws > 0, "The baked boss body was drawn")
+		var painted: Array = view.boss_pose_draws.keys()
+		check.call(
+			painted.any(func(pose): return String(pose).begins_with("atk")),
+			"Boss attack poses drew"
+		)
+		check.call(
+			painted.any(func(pose): return String(pose).begins_with("skill_q_")),
+			"Boss Q skill poses drew"
+		)
+		check.call(
+			painted.any(func(pose): return String(pose).begins_with("skill_w_")),
+			"Boss W skill poses drew"
+		)
 	else:
 		check.call(false, "The suite could not spawn a boss to draw")
 	app.show_menu()
@@ -190,12 +205,23 @@ func _seed_boss(world):
 	return boss
 
 
-## Turn the boss each frame, flash it, and enrage it halfway so both facings, the hurt tint
-## and the enrage label draw.
+## Turn the boss and exercise idle/walk, attack and two source smart-skill families.
 func _poke_boss(boss, frame: int) -> void:
 	boss.direction = 1 if frame % 2 == 0 else -1
 	boss.hurt_flash_timer = 4 if frame % 3 == 0 else 0
 	boss.is_enraged = frame >= (FRAMES >> 1)
+	boss.active_skill = ""
+	boss.active_skill_timer = 0
+	boss.timer = 0
+	boss.moving_cached = frame < 4 and frame % 2 == 1
+	if frame >= 4 and frame < 8:
+		boss.timer = 30 - frame
+	elif frame >= 8 and frame < 12:
+		boss.active_skill = "q"
+		boss.active_skill_timer = 30 - (frame - 8) * 6
+	elif frame >= 12:
+		boss.active_skill = "w"
+		boss.active_skill_timer = 90 - (frame - 12) * 15
 
 
 func _towers(world) -> Array:

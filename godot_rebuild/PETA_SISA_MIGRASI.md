@@ -115,8 +115,9 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
   puncak sprite (`BOSS_LABEL_TOP`). Rincian di bagian "Slice 9bq".
 - Urutan bake berikutnya (user: "semuanya"): skin HUD/menu (9br: tema, 9bs: latar menu utama;
   HUD dan arena layar penuh belum), peluru hero, pose jalan/serang boss.
-  Sisanya di luar bake: `DynamicRenderer`
-  (partikel, kabut, obor, air bergerak) dan `tactical_commands.draw_world/draw_ui`.
+  `DynamicRenderer` **sudah terport (layer 9d0)**: partikel, kabut, obor,
+  rune air, glow/asap toko dan efek lingkungan boss. Tactical commands sudah
+  punya state dan render dasar; audit paritas visualnya adalah pekerjaan terpisah.
   Keputusan user: combo counter dan kill feed tetap tampil di Godot (walau tidak digambar
   pygame).
 
@@ -2133,7 +2134,8 @@ Batas yang diketahui:
 - Alas Godot (tile native dengan RNG visual tetap) bukan salinan piksel alas pygame; overlay
   menyalin warna akhir sumber di tiap piksel yang disentuh lapisan 4-5, termasuk bayangan
   yang di sumber transparan. Selisih hanya terlihat pada tepi bayangan.
-- Belum ada animasi peta (`DynamicRenderer`: partikel, kabut, obor, kilau toko, air).
+- Animasi peta (`DynamicRenderer`: partikel, kabut, obor, kilau/asap toko dan air)
+  **sudah ditutup oleh layer 9d0**; lihat bagian 9d0 di akhir dokumen.
 - Painter di view tidak dieksekusi suite headless; hanya pemuatan tekstur dan urutan hook
   yang diuji CI. Tampilan akhir harus dilihat di Godot.
 
@@ -3025,3 +3027,377 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
   static guardrails workflow lulus sekali setelah batch (`validate_project`,
   source contract/oracles, gdparse, gdlint, gdformat --check; 434 GDScript).
   Import/runtime native Godot 4.7.2 dijalankan lewat CI PR #337.
+
+
+## Batch slice 9c52–9c54 — Xarnathul, Zhyrakaan, Kaerissa
+
+- **9c52 Xarnathul — The Deathsinger**: metadata Boss/Deathsinger; veil
+  berpuncak ganda, wajah kurus dengan mulut bernyanyi, spectral notes,
+  song-wave halos, rib jewellery, throat seal dan bony conducting hand.
+- **9c53 Zhyrakaan — The Phantom Lancer**: metadata Boss/Phantom Lancer;
+  offset spectral silhouettes, broken halos, split riding cloak, closed
+  blue-silver helm, luminous eyes, layered pauldrons dan long diamond lance.
+- **9c54 Kaerissa — The Blood Assassin**: metadata Boss/Blood Assassin;
+  blood-moon backdrop, pointed crimson hood, red half-mask, fitted dark
+  leathers, split scarf serta twin outward-curved daggers dengan wrapped grips.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  61 custom. Seluruh 58 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 887 baris, belum perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  84 kanvas batch dipaginasi 72 + 12: setiap halaman diberi dua process
+  frame untuk draw, lalu batch node di-free sebelum slot dipakai ulang.
+  Kanvas lama non-batch tetap, tanpa overlap/out-of-viewport. Shared
+  `draw_pass_count` tetap; tanpa reset, increment atau assertion per hero.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Berikutnya: pilih metadata hero non-custom setelah Kaerissa.
+- Validasi lokal: 73 poligon baru tanpa edge silang; packing 84 kanvas
+  dalam dua halaman terbukti tanpa overlap/out-of-viewport. Seluruh blok
+  static guardrails workflow lulus sekali setelah batch (`validate_project`,
+  source contract/oracles, gdparse, gdlint, gdformat --check; 437 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR sesi.
+
+
+## Batch slice 9c55–9c57 — Thorgaruk, Zorathiel, Nyxallaria
+
+- **9c55 Thorgaruk — The Skyhorn Warrior**: metadata Boss/Skyhorn Warrior;
+  huge ivory skyward horns, storm clouds/lightning, cloud-fur mantle,
+  stormbird chevron, braided beard dan compact storm hammer.
+- **9c56 Zorathiel — The Arcane Mage**: metadata Boss/Arcane Mage; arcane
+  orbitals, prism satellites, silver hair, long ears, three-point circlet,
+  embroidered robe serta open hand yang mengangkat faceted focus.
+- **9c57 Nyxallaria — The Abyss Mage**: metadata Boss/Abyss Mage; broken
+  abyssal portal, curling tendrils, many-pointed crown, pearl sea fans,
+  shell cuirass dan clawed hand dengan dark focus bercahaya.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  64 custom. Seluruh 61 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 900 baris, belum perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  90 kanvas batch dipaginasi 72 + 18: setiap halaman diberi dua process
+  frame untuk draw, lalu batch node di-free sebelum slot dipakai ulang.
+  Kanvas lama non-batch tetap, tanpa overlap/out-of-viewport. Shared
+  `draw_pass_count` tetap; tanpa reset, increment atau assertion per hero.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Berikutnya: pilih metadata hero non-custom setelah Nyxallaria.
+- Validasi lokal: 75 poligon baru tanpa edge silang; packing 90 kanvas
+  dalam dua halaman terbukti tanpa overlap/out-of-viewport. Seluruh blok
+  static guardrails workflow lulus sekali setelah batch (`validate_project`,
+  source contract/oracles, gdparse, gdlint, gdformat --check; 440 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR sesi.
+
+
+## Batch slice 9c58–9c60 — Vhaerinth, Xharokh, Kazreth
+
+- **9c58 Vhaerinth — The Ink Mage**: metadata Boss/Ink Mage; parchment moon,
+  calligraphic strokes, broad tilted hat, round scholar lenses, inkpot clasp,
+  script-marked robe panels dan long calligraphy brush berujung dark bristles.
+- **9c59 Xharokh — The Void Mage**: metadata Boss/Void Mage; star field,
+  fractured event horizon, floating monoliths, faceted fractured mask,
+  angular armoured robes, chest singularity dan suspended void shard.
+- **9c60 Kazreth — The Blood Reaver**: metadata Boss/Blood Reaver; heavy red
+  plate, spiked pauldrons, trophy chain, bald scarred head, metal jaw guard,
+  single tusk serta long-hafted double reaver axe dengan opposing crescents.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  67 custom. Seluruh 64 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 920 baris, belum perlu ekstraksi tambahan.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  96 kanvas batch dipaginasi 72 + 24: setiap halaman diberi dua process
+  frame untuk draw, lalu batch node di-free sebelum slot dipakai ulang.
+  Kanvas lama non-batch tetap, tanpa overlap/out-of-viewport. Shared
+  `draw_pass_count` tetap; tanpa reset, increment atau assertion per hero.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Berikutnya: pilih metadata hero non-custom setelah Kazreth.
+- Validasi lokal: 69 poligon baru tanpa edge silang; packing 96 kanvas
+  dalam dua halaman terbukti tanpa overlap/out-of-viewport. Seluruh blok
+  static guardrails workflow lulus sekali setelah batch (`validate_project`,
+  source contract/oracles, gdparse, gdlint, gdformat --check; 443 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR sesi.
+
+
+## Batch slice 9c61–9c63 — Varkuthar, Zhyvrek, Thargoroth
+
+- Sebelum dispatch baru, painter lama Thorne diekstrak utuh ke
+  `scripts/ui/hero_portrait_thorne.gd`; normalized paint body terbukti sama,
+  termasuk geometri, palet dan urutan draw. Dispatch memakai `THORNE_PAINTER`,
+  sementara shared helpers tetap untuk painter inline lama lainnya.
+- **9c61 Varkuthar — The Bloodfire Zealot**: metadata Boss/Bloodfire Zealot;
+  bloodfire halo, flame-shaped mitre, ceremonial crimson robes, prayer beads,
+  bloodfire seal serta chained censer tanpa conventional weapon.
+- **9c62 Zhyvrek — The Void Reaper**: metadata Boss/Void Reaper; huge crescent
+  scythe, ragged cloak, tattered shoulder wings, pointed cowl, skull-like mask,
+  spectral claws dan luminous empty sockets.
+- **9c63 Thargoroth — The Primordial Colossus**: metadata Boss/Primordial
+  Colossus; primitive mountains, held cracked boulder, massive mossy stone
+  torso, amber core, slab brow, fossil teeth dan heavy stone fist.
+- Tiga painter native terpisah `scripts/ui/hero_portrait_{id}.gd`; total
+  70 custom. Seluruh 67 custom sebelumnya tetap, Raz generic fallback.
+  Dispatcher 871 baris setelah ekstraksi Thorne dan dispatch batch.
+- Tes daftar/dispatch dan draw ukuran kartu + 96 unit diperluas ke batch.
+  102 kanvas batch dipaginasi 72 + 30: setiap halaman diberi dua process
+  frame untuk draw, lalu batch node di-free sebelum slot dipakai ulang.
+  Kanvas lama non-batch termasuk Thorne tetap, tanpa overlap/out-of-viewport.
+  Shared `draw_pass_count` tetap; tanpa reset, increment atau assertion per hero.
+- Art-only: tanpa image assets atau perubahan Python, simulasi, gameplay.
+  Tidak mengklaim pixel parity; review visual akhir tetap perlu di Godot.
+- Berikutnya: pilih metadata hero non-custom setelah Thargoroth.
+- Validasi lokal: 72 poligon baru tanpa edge silang; packing 102 kanvas
+  dalam dua halaman terbukti tanpa overlap/out-of-viewport. Seluruh blok
+  static guardrails workflow lulus sekali setelah batch (`validate_project`,
+  source contract/oracles, gdparse, gdlint, gdformat --check; 447 GDScript).
+  Import/runtime native Godot 4.7.2 dijalankan lewat CI PR sesi.
+
+## Batch slice 9c64–9c214 — Semua sisa hero native
+
+- Penyelesaian terkonsolidasi untuk seluruh 151 hero non-custom tersisa;
+  70 painter sebelumnya tidak diubah. Setiap hero mempunyai wrapper
+  `scripts/ui/hero_portrait_{id}.gd` dengan role metadata, native family,
+  elemen/palet, varian dan sigil deterministik. Bukan image assets dan bukan
+  generic fallback.
+- Katalog eksplisit `hero_portrait_expansion.gd` menyimpan seluruh preload dan
+  dispatch. Renderer native dibagi menjadi core/humanoid/creature agar setiap
+  file tetap di bawah 1.000 baris; blok family draw dipertahankan saat split.
+  Dispatcher utama 877 baris; shared `draw_pass_count` tidak berubah.
+- Total **221 custom** dari 222 hero metadata. Raz sengaja tetap generic
+  fallback; unknown/empty ID juga tetap fallback. Tidak ada pixel parity claim.
+- Tes registry membandingkan seluruh roster kecuali Raz. Draw ukuran kartu dan
+  96 unit mencakup 221 hero = 442 kanvas, dipaginasi 72 x 6 + 10. Setiap
+  halaman diberi dua process frame lalu node di-free sebelum slot dipakai
+  ulang; kanvas lama tetap dan tidak keluar viewport/overlap.
+- Art-only: tanpa perubahan Python, simulasi, gameplay, balance atau fitur lain.
+
+### Daftar slice dan konfigurasi metadata
+
+- **9c64 Razak** — Boss/Fire Rider; native `rider` / `fire`, varian 5, sigil 6.
+- **9c65 Khalros** — Boss/Beast Commander; native `beast` / `neutral`, varian 3, sigil 3.
+- **9c66 Varkul** — Boss/Frost Sorcerer; native `mage` / `frost`, varian 1, sigil 4.
+- **9c67 Xerathis** — Boss/Crystal Sorceress; native `mage` / `crystal`, varian 5, sigil 2.
+- **9c68 Nyzrak** — Boss/Wyvern Rider; native `rider` / `neutral`, varian 2, sigil 3.
+- **9c69 Zharok** — Boss/Flaming Archer; native `archer` / `fire`, varian 0, sigil 1.
+- **9c70 Pyrenth** — Boss/Demon Lord; native `warrior` / `neutral`, varian 3, sigil 2.
+- **9c71 Vokrahn** — Boss/Chaos Knight; native `warrior` / `neutral`, varian 5, sigil 3.
+- **9c72 Nyxara** — Boss/Nether Caster; native `mage` / `void`, varian 2, sigil 0.
+- **9c73 Vhalzun** — Boss/Soul Reaper; native `reaper` / `shadow`, varian 5, sigil 1.
+- **9c74 Syrentha** — Boss/Naga Siren; native `serpent` / `neutral`, varian 4, sigil 1.
+- **9c75 Thalgryn** — Boss/Water Elemental; native `elemental` / `water`, varian 3, sigil 4.
+- **9c76 Malzareth** — Boss/Shadow Demon; native `warrior` / `shadow`, varian 0, sigil 4.
+- **9c77 Vorenmarr** — Boss/Warlock; native `mage` / `arcane`, varian 3, sigil 7.
+- **9c78 Vaerith** — Boss/Broodmother; native `beast` / `venom`, varian 3, sigil 4.
+- **9c79 Xir'thalis** — Boss/Weaver; native `beast` / `neutral`, varian 3, sigil 5.
+- **9c80 Vhyssarion** — Boss/Venomancer; native `beast` / `venom`, varian 4, sigil 7.
+- **9c81 Kenshiro** — Boss/Ronin; native `warrior` / `neutral`, varian 5, sigil 5.
+- **9c82 Khazan** — Boss/Executioner; native `warrior` / `neutral`, varian 0, sigil 4.
+- **9c83 Wiro** — Boss/Martial Artist; native `fighter` / `neutral`, varian 2, sigil 6.
+- **9c84 Krognarr** — Boss/Stone Golem; native `golem` / `neutral`, varian 4, sigil 4.
+- **9c85 Vraskhan** — Boss/Shadow Assassin; native `assassin` / `shadow`, varian 3, sigil 7.
+- **9c86 Nyxareva** — Boss/Fallen Queen; native `mage` / `neutral`, varian 0, sigil 7.
+- **9c87 Vargrath** — Boss/Demon Warlord; native `warrior` / `neutral`, varian 3, sigil 6.
+- **9c88 Kaeldris** — Boss/Commander; native `warrior` / `neutral`, varian 3, sigil 2.
+- **9c89 Pyraklos** — Boss/Spartan; native `warrior` / `neutral`, varian 5, sigil 0.
+- **9c90 Velmyrth** — Boss/Assassin; native `assassin` / `neutral`, varian 5, sigil 0.
+- **9c91 Luminar** — Boss/Light Custodian; native `mage` / `holy`, varian 0, sigil 7.
+- **9c92 Solara** — Boss/Dawnforged Sentinel; native `warrior` / `holy`, varian 4, sigil 3.
+- **9c93 Morvein** — Boss/Phantom Lancer; native `warrior` / `neutral`, varian 5, sigil 5.
+- **9c94 Thorvak** — Boss/Grovewarden Treant; native `treant` / `nature`, varian 3, sigil 3.
+- **9c95 Leoric** — Boss/Lionheart Guardian; native `beast` / `neutral`, varian 2, sigil 5.
+- **9c96 Shirotaka** — Boss/Tideborn Shinobi; native `assassin` / `water`, varian 3, sigil 2.
+- **9c97 Kaelthorn** — Boss/Azure Warrior; native `warrior` / `neutral`, varian 4, sigil 5.
+- **9c98 Solvanth** — Boss/Radiant Centaur; native `rider` / `holy`, varian 0, sigil 1.
+- **9c99 Xy'rael** — Boss/Cyan Assassin; native `assassin` / `neutral`, varian 1, sigil 1.
+- **9c100 Kaelthar** — Boss/Storm Martial; native `fighter` / `storm`, varian 3, sigil 2.
+- **9c101 Mor'khaera** — Boss/Dark Witch; native `mage` / `shadow`, varian 3, sigil 4.
+- **9c102 Nyxthrael** — Boss/Cursed Executioner; native `warrior` / `shadow`, varian 4, sigil 0.
+- **9c103 Sylvantheros** — Boss/Verdant Farseer; native `mage` / `nature`, varian 4, sigil 0.
+- **9c104 Morvaenthir** — Boss/Soul Reaper; native `reaper` / `shadow`, varian 1, sigil 2.
+- **9c105 Thornvaegrim** — Boss/Elderwood Treant; native `treant` / `nature`, varian 3, sigil 5.
+- **9c106 Kurogari** — Boss/Shadow Ninja Reaper; native `reaper` / `shadow`, varian 3, sigil 5.
+- **9c107 Morvekhar** — Boss/Iron Juggernaut; native `golem` / `neutral`, varian 5, sigil 2.
+- **9c108 Vorgath** — Boss/Demon Warden; native `warrior` / `neutral`, varian 0, sigil 0.
+- **9c109 Kryvoxar** — Boss/Crystal Wraith; native `wraith` / `crystal`, varian 1, sigil 2.
+- **9c110 Vargroth** — Boss/Bloodmoon Werewolf; native `beast` / `blood`, varian 3, sigil 1.
+- **9c111 Lyrienne** — Boss/Twilight Chorister; native `mage` / `moon`, varian 1, sigil 3.
+- **9c112 Valthar** — Boss/Golden Sentinel; native `warrior` / `holy`, varian 0, sigil 7.
+- **9c113 Khal'zaredh** — Boss/Sandborn Prince; native `warrior` / `sand`, varian 3, sigil 2.
+- **9c114 Nyxaroth** — Boss/Void-Starweaver; native `mage` / `void`, varian 2, sigil 3.
+- **9c115 Veshtrax** — Boss/Sapphire Executor; native `warrior` / `crystal`, varian 1, sigil 1.
+- **9c116 Morvaeth** — Boss/Crimson Assassin; native `assassin` / `blood`, varian 4, sigil 5.
+- **9c117 Vulkareth** — Boss/Ember Titan; native `golem` / `fire`, varian 0, sigil 1.
+- **9c118 Kaervosth** — Boss/Stormblade Knight; native `warrior` / `storm`, varian 4, sigil 5.
+- **9c119 Morvyssk** — Boss/Purple Ooze; native `elemental` / `venom`, varian 4, sigil 6.
+- **9c120 Kyumirra** — Boss/Nine-Tailed Fox; native `beast` / `neutral`, varian 4, sigil 2.
+- **9c121 Morvakhul** — Boss/Undead Executioner; native `warrior` / `shadow`, varian 5, sigil 0.
+- **9c122 Nyxariel** — Boss/Abyssal Trickster; native `assassin` / `void`, varian 5, sigil 4.
+- **9c123 Morthyrax** — Boss/Decay Prophet; native `mage` / `venom`, varian 5, sigil 4.
+- **9c124 Sanguiveth** — Boss/Blood Reaper; native `reaper` / `blood`, varian 5, sigil 7.
+- **9c125 Xerakhotep** — Boss/Sun Mage; native `mage` / `fire`, varian 1, sigil 6.
+- **9c126 Kazureth** — Boss/Thunder Samurai; native `warrior` / `storm`, varian 2, sigil 7.
+- **9c127 Seth'rakhaar** — Boss/Sunforged Butcher; native `warrior` / `fire`, varian 2, sigil 3.
+- **9c128 Kaelvyrn** — Boss/Gilded Marauder; native `warrior` / `holy`, varian 4, sigil 5.
+- **9c129 Thorvin** — Boss/Ironbound Warden; native `warrior` / `neutral`, varian 5, sigil 7.
+- **9c130 Xaerissa** — Boss/Crimson Weaver; native `mage` / `blood`, varian 0, sigil 6.
+- **9c131 Rynvara** — Boss/Primal Beast; native `beast` / `neutral`, varian 4, sigil 5.
+- **9c132 Syrindra** — Boss/Dark Mage; native `mage` / `shadow`, varian 1, sigil 5.
+- **9c133 Selunara** — Boss/Moon Archer; native `archer` / `moon`, varian 0, sigil 3.
+- **9c134 Vessyra** — Boss/Gorgon Queen; native `serpent` / `neutral`, varian 0, sigil 3.
+- **9c135 Rakzhan** — Boss/Emberfist Fighter; native `fighter` / `fire`, varian 4, sigil 1.
+- **9c136 Sirakzan** — Boss/Blade Duelist; native `warrior` / `neutral`, varian 4, sigil 0.
+- **9c137 Valekris** — Boss/Cyan Wraith; native `wraith` / `shadow`, varian 5, sigil 3.
+- **9c138 Zahkareth** — Boss/Golden Tyrant; native `warrior` / `holy`, varian 5, sigil 0.
+- **9c139 Mor'khelvis** — Boss/Necrogargoyle; native `beast` / `neutral`, varian 1, sigil 4.
+- **9c140 Vor'thakul** — Boss/Abyss Terror; native `beast` / `void`, varian 1, sigil 6.
+- **9c141 Ur'gharun** — Boss/Feral Beast; native `beast` / `neutral`, varian 1, sigil 2.
+- **9c142 Yh'oranth** — Boss/Unforgiven Wraith; native `wraith` / `shadow`, varian 1, sigil 5.
+- **9c143 Zul'khaven** — Boss/Devourer; native `beast` / `neutral`, varian 4, sigil 2.
+- **9c144 Xareth** — Boss/Time Voidwalker; native `assassin` / `void`, varian 5, sigil 3.
+- **9c145 Kaedrin** — Boss/Moonfang Bladebearer; native `warrior` / `moon`, varian 2, sigil 2.
+- **9c146 Morvaeth** — Boss/Mirrorborn Marauder; native `warrior` / `neutral`, varian 4, sigil 1.
+- **9c147 Vardrok** — Boss/Axe-King; native `warrior` / `neutral`, varian 5, sigil 6.
+- **9c148 Nixweaver** — Boss/Woodland Trickster; native `assassin` / `nature`, varian 4, sigil 7.
+- **9c149 Nyxraal** — Boss/Abyssal Prince; native `warrior` / `void`, varian 5, sigil 6.
+- **9c150 Xarn'thuul** — Boss/Void Sovereign; native `warrior` / `void`, varian 2, sigil 2.
+- **9c151 Lyrenya** — Boss/Nature Mage; native `mage` / `nature`, varian 4, sigil 1.
+- **9c152 Vyraeth** — Boss/Spectral Wraith; native `wraith` / `shadow`, varian 5, sigil 4.
+- **9c153 Zorothrax** — Boss/Rune Mage; native `mage` / `arcane`, varian 1, sigil 1.
+- **9c154 Zorashi** — Boss/Serpent Sage; native `serpent` / `neutral`, varian 5, sigil 0.
+- **9c155 Kassadin** — Boss/Void Walker; native `assassin` / `void`, varian 0, sigil 1.
+- **9c156 Shimorakh** — Boss/Shadow Root; native `warrior` / `shadow`, varian 2, sigil 5.
+- **9c157 Kaizoku Raijin** — Boss/Lightning Pirate; native `warrior` / `storm`, varian 0, sigil 4.
+- **9c158 Korokai** — Boss/Mirror Shinobi; native `assassin` / `neutral`, varian 2, sigil 7.
+- **9c159 Verdanix** — Boss/Nature Mage; native `mage` / `nature`, varian 3, sigil 1.
+- **9c160 Ursath** — Boss/Wildcaller; native `warrior` / `nature`, varian 4, sigil 3.
+- **9c161 Zhaeris** — Boss/Shadow Ninja; native `assassin` / `shadow`, varian 1, sigil 4.
+- **9c162 Kairenji** — Boss/Shadow Ninja; native `assassin` / `shadow`, varian 2, sigil 7.
+- **9c163 Karzhul** — Boss/Werewolf; native `beast` / `neutral`, varian 2, sigil 7.
+- **9c164 Xerakkuth** — Boss/Desert Scorpion; native `beast` / `sand`, varian 1, sigil 4.
+- **9c165 Kaelthys** — Boss/Water Swordsman; native `warrior` / `water`, varian 0, sigil 7.
+- **9c166 Kaoruken** — Boss/Chakra Prodigy; native `fighter` / `neutral`, varian 5, sigil 6.
+- **9c167 Vaelkorr** — Boss/Thread Mage; native `mage` / `arcane`, varian 5, sigil 5.
+- **9c168 Morvath** — Boss/Strength; native `fighter` / `neutral`, varian 4, sigil 3.
+- **9c169 Pyrhaan** — Boss/Agility; native `fighter` / `neutral`, varian 3, sigil 5.
+- **9c170 Thoraz** — Boss/Fighter-Charger; native `fighter` / `neutral`, varian 5, sigil 5.
+- **9c171 Vhaerith** — Boss/Magic; native `mage` / `neutral`, varian 3, sigil 6.
+- **9c172 Kazuren** — Boss/Shadow Ninja; native `assassin` / `shadow`, varian 4, sigil 3.
+- **9c173 Obanai** — Boss/Serpent Swordsman; native `serpent` / `neutral`, varian 0, sigil 0.
+- **9c174 Sanguire Voxthal** — Boss/Blood Mage; native `mage` / `blood`, varian 1, sigil 5.
+- **9c175 Sasori** — Boss/Puppeteer; native `mage` / `neutral`, varian 2, sigil 6.
+- **9c176 Krobellus** — Boss/Spirit Prophet; native `mage` / `neutral`, varian 2, sigil 2.
+- **9c177 Nyxarath** — True Boss/Shadow Fiend; native `warrior` / `shadow`, varian 0, sigil 7.
+- **9c178 Vhoreth'zir** — True Boss/Venom Drake; native `beast` / `venom`, varian 0, sigil 7.
+- **9c179 Naraka** — True Boss/Cursed Warrior; native `warrior` / `shadow`, varian 4, sigil 0.
+- **9c180 Thalakryon** — True Boss/Mermidon; native `warrior` / `water`, varian 4, sigil 3.
+- **9c181 Nazulmor** — True Boss/Eldritch; native `beast` / `void`, varian 0, sigil 0.
+- **9c182 Solvarin** — True Boss/Paladin; native `warrior` / `holy`, varian 2, sigil 3.
+- **9c183 Pyraethis** — True Boss/Firebird; native `beast` / `fire`, varian 0, sigil 4.
+- **9c184 Yamako** — True Boss/Woodshaper; native `treant` / `nature`, varian 3, sigil 7.
+- **9c185 Seiryukong** — True Boss/Celestial Simian; native `beast` / `holy`, varian 5, sigil 0.
+- **9c186 Nyxareth** — True Boss/Cosmic Mage; native `mage` / `void`, varian 4, sigil 3.
+- **9c187 Vaelindra** — True Boss/Violet Mage; native `mage` / `arcane`, varian 4, sigil 6.
+- **9c188 Nexthyrius** — True Boss/Spectral Chain Warden; native `wraith` / `shadow`, varian 5, sigil 2.
+- **9c189 Molgravar** — True Boss/Stone Golem; native `golem` / `neutral`, varian 4, sigil 0.
+- **9c190 Seraphienne** — True Boss/Angelic Warrior; native `warrior` / `holy`, varian 3, sigil 3.
+- **9c191 Solareth** — True Boss/Solar Warrior; native `warrior` / `fire`, varian 2, sigil 2.
+- **9c192 Vaelmyrra** — True Boss/Obsidian Warlord; native `warrior` / `neutral`, varian 5, sigil 3.
+- **9c193 Zarethyr** — True Boss/Cosmic Mage; native `mage` / `void`, varian 4, sigil 4.
+- **9c194 Nyreth'zalvarin** — True Boss/Shadow Empress; native `mage` / `shadow`, varian 2, sigil 3.
+- **9c195 Nyrellieth** — True Boss/Frost Archer; native `archer` / `frost`, varian 1, sigil 5.
+- **9c196 Nyxharr** — True Boss/Ghost Rider; native `rider` / `shadow`, varian 0, sigil 0.
+- **9c197 Ravokkar** — True Boss/Outlaw Gunslinger; native `gunner` / `neutral`, varian 1, sigil 2.
+- **9c198 Malzeroth** — True Boss/Hex Mage; native `mage` / `arcane`, varian 5, sigil 5.
+- **9c199 Zharakzuul** — True Boss/Void Mage; native `mage` / `void`, varian 2, sigil 0.
+- **9c200 Lyssarethys** — True Boss/Magenta Soul Mage; native `mage` / `shadow`, varian 5, sigil 2.
+- **9c201 Kaerinya** — True Boss/Fire Brawler; native `fighter` / `fire`, varian 2, sigil 7.
+- **9c202 Xel'Narath** — True Boss/Void Sovereign; native `warrior` / `void`, varian 0, sigil 7.
+- **9c203 Kyrenzai** — True Boss/Kagune Ghoul; native `beast` / `neutral`, varian 1, sigil 2.
+- **9c204 Xael'moran** — True Boss/Elemental Mage; native `elemental` / `arcane`, varian 4, sigil 2.
+- **9c205 Thal'ryndel** — True Boss/Storm Mage; native `mage` / `storm`, varian 4, sigil 2.
+- **9c206 Kaineroth** — True Boss/Crimson Prodigy; native `fighter` / `blood`, varian 4, sigil 7.
+- **9c207 Zyvareth** — True Boss/Crystal Storm Beast; native `beast` / `crystal`, varian 4, sigil 5.
+- **9c208 Kagetsuka** — True Boss/Sharingan Warlord; native `warrior` / `neutral`, varian 2, sigil 3.
+- **9c209 Sunakage** — True Boss/Sand Mage; native `mage` / `sand`, varian 0, sigil 5.
+- **9c210 Pyraena** — True Boss/Fire Mage; native `mage` / `fire`, varian 5, sigil 0.
+- **9c211 Yomigetsu** — True Boss/Moon Demon Swordsman; native `warrior` / `moon`, varian 2, sigil 2.
+- **9c212 Kaithros** — True Boss/Flame Swordsman; native `warrior` / `fire`, varian 1, sigil 3.
+- **9c213 Nyxaris** — True Boss/Marksman; native `archer` / `neutral`, varian 1, sigil 3.
+- **9c214 Tsukiyora** — True Boss/Moon Goddess; native `mage` / `moon`, varian 5, sigil 7.
+
+### Validasi dan sisa
+
+- Pemeriksaan changed-file: 151/151 wrapper, preload dan dispatch cocok dengan
+  metadata; 80 poligon renderer valid di seluruh varian terkait; paging
+  72 x 6 + 10 aman. Full static guardrails workflow **lulus**: 602 GDScript,
+  gdparse/gdlint bersih dan gdformat tidak mengubah file. Native import/runtime
+  Godot 4.7.2 diperiksa melalui CI PR sesi.
+- Berikutnya: **0 hero non-custom selain Raz**. Raz tetap fallback oleh keputusan
+  scope; tidak ada kandidat portrait tersisa dari metadata proyek.
+
+## Slice 9d0 — DynamicRenderer (animasi peta dan lingkungan boss)
+
+- `dynamic_renderer_source_oracle.py` memanen kelas sumber dan override
+  true-boss dengan AST, lalu menjalankannya di recorder pygame bersama. Surface
+  cache diratakan menjadi operasi screen-space dalam urutan sumber. Tidak ada
+  perubahan pada Python sumber dan tidak ada PNG full-map/frame baru.
+- `data/art/map_dynamic.json` memuat 54 tema, layout dekorasi seed-42 yang sama
+  dengan bake statis (61 titik sungai, 18 obor, tulang/batu/nisan), serta state
+  awal partikel dan kabut untuk LOW/MEDIUM/HIGH. Dua run oracle menghasilkan
+  byte yang identik.
+- `dynamic_map_renderer.gd` mem-port update partikel firefly/snow/sand/ember,
+  acid/ash/spirit, wrap/bounce, kabut, RNG deterministik runtime dan replay RNG
+  untuk tes. `dynamic_map_layout.gd` mem-port fog, rune sungai, glow/asap toko,
+  seluruh partikel, 15 cabang palet obor, dan efek Abaddon/Alchemist/
+  Ignis Drachorn/Krobellus. `dynamic_map_painter.gd` menerjemahkan op menjadi
+  rect/circle/ellipse/line/arc native.
+- Kuirk sumber dipertahankan: tipe `mist` tidak memiliki cabang painter dan
+  tetap tidak menggambar partikel. View memakai preset HIGH; konfigurasi LOW dan
+  MEDIUM tersedia pada renderer dan diuji tanpa menambah governor perangkat baru.
+- Hook `MinionView._draw_map_dynamic()` dipanggil sesudah border wall dan
+  sebelum ambient tint, sesuai `MapRenderer.draw`. `PrototypeView` memegang
+  state per tema dan counter draw; `painter_scene_checks.gd` membuktikan jalur
+  itu benar-benar masuk `_draw` pada scene hidup.
+- Fixture: 10 kasus, 30 frame dan 2.316 op untuk semua keluarga partikel, empat
+  efek boss, LOW/MEDIUM/HIGH, enam wrap dan random velocity firefly; ditambah
+  15 palet obor / 255 op. Suite native membandingkan state pasca-update, RNG
+  yang dikonsumsi, dan seluruh op, serta mengonfigurasi/menggambar 54 tema.
+
+Batas: ellipse/arc dan alpha digambar sebagai primitif vektor Godot, bukan
+rasterisasi pygame; ini bukan klaim pixel parity. Tampilan akhir tetap perlu
+review visual di Godot. Full static workflow **lulus**: 606 GDScript,
+validator dan seluruh source oracle sukses, gdparse/gdlint bersih, dan gdformat
+tidak mengubah file. Native import/runtime diperiksa melalui CI PR sesi.
+
+Berikutnya: DynamicRenderer tidak lagi menjadi sisa. Kandidat visual berikutnya
+adalah animasi boss (jalan/serang/skill dan fase idle) atau atlas hero arena.
+
+## Slice 9bo/9bq — Animasi boss dan atlas hero arena
+
+- **9bq boss:** seluruh 216 boss mempunyai delapan fase idle, empat sample attack,
+  walk bila renderer sumber menyediakannya, dan dua keyframe untuk setiap skill
+  Q/W/E/R yang benar-benar ditemukan pada smart-AI sumber. Manifest akhir memuat
+  **6.496 baris frame / 6.162 frame piksel unik**, empat rig walk, 312 family
+  skill, dan tidak ada pose yang belum ter-bake. Ukuran total 216 WebP lossless
+  adalah **40.676.706 byte**. Painter, skala, anchor, dan urutan overlay sumber
+  dipertahankan; death sequence dan intro yang sudah ada tidak diduplikasi.
+- **9bo hero arena:** seluruh 222 hero mempunyai atlas blue dan enam hero
+  non-boss juga mempunyai atlas red (**228 WebP**, **10.606 baris frame /
+  9.609 frame piksel unik**, **65.082.880 byte**). Sebanyak 216 red boss-hero
+  memakai frame boss pada `hero_scale`, bukan duplikasi gambar. Enam hero non-boss
+  mempunyai dua keyframe untuk masing-masing Q/W/E/R pada kedua tim; smart-skill
+  boss-hero juga resolve pada kedua tim. Hero tanpa skill khusus jatuh kembali ke
+  animasi normal, bukan marker generik. Portrait custom dan fallback Raz tidak
+  diubah oleh slice arena ini.
+- Bake memakai renderer dan timeline sumber, seed konstruksi, virtual wall clock
+  per frame, lossless WebP, deduplikasi piksel SHA-256, dan anchor per pose. Audit
+  independen memeriksa seluruh hash/dimensi WebP, himpunan pose, bounds, anchor,
+  unique-crop, dan non-overlap. Contact sheet dari crop lossless telah diperiksa
+  untuk komposisi idle/walk/attack/skill serta shared-scale; fit-to-cell pada
+  contact sheet bukan skala runtime.
+- `hero_anim.gd`, `boss_anim.gd`, `hero_art.gd`, `boss_art.gd`, dan
+  `prototype_view.gd` memilih state tanpa mengubah simulasi, cooldown, gameplay,
+  atau balance. Suite native mencakup seluruh atlas/facing/pose, nearest skill
+  keyframe, shared-scale, clock, non-overlap, serta draw nyata untuk attack/Q/W.
+
+Batas: ini bukan klaim pixel parity dengan pygame. Contact sheet bukan pengganti
+review komposisi/animasi interaktif di Godot; review native visual tetap perlu
+dilakukan. Full static workflow **lulus: 20.343 checks, 73 perintah, 607 GDScript**
+(validator, seluruh source oracle, gdparse/gdlint/gdformat). Native import/runtime
+Godot 4.7.2 dijalankan melalui CI PR #338.

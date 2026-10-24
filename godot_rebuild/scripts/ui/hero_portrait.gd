@@ -56,7 +56,21 @@ const HOLLOWBANE_PAINTER = preload("res://scripts/ui/hero_portrait_hollowbane.gd
 const IGNAKHOR_PAINTER = preload("res://scripts/ui/hero_portrait_ignakhor.gd")
 const IGNIRUS_PAINTER = preload("res://scripts/ui/hero_portrait_ignirus.gd")
 const INFRAKZAAR_PAINTER = preload("res://scripts/ui/hero_portrait_infrakzaar.gd")
+const KAERISSA_PAINTER = preload("res://scripts/ui/hero_portrait_kaerissa.gd")
+const XARNATHUL_PAINTER = preload("res://scripts/ui/hero_portrait_xarnathul.gd")
+const ZHYRAKAAN_PAINTER = preload("res://scripts/ui/hero_portrait_zhyrakaan.gd")
+const NYXALLARIA_PAINTER = preload("res://scripts/ui/hero_portrait_nyxallaria.gd")
+const THORGARUK_PAINTER = preload("res://scripts/ui/hero_portrait_thorgaruk.gd")
+const ZORATHIEL_PAINTER = preload("res://scripts/ui/hero_portrait_zorathiel.gd")
+const KAZRETH_PAINTER = preload("res://scripts/ui/hero_portrait_kazreth.gd")
+const VHAERINTH_PAINTER = preload("res://scripts/ui/hero_portrait_vhaerinth.gd")
+const XHAROKH_PAINTER = preload("res://scripts/ui/hero_portrait_xharokh.gd")
+const THORNE_PAINTER = preload("res://scripts/ui/hero_portrait_thorne.gd")
+const THARGOROTH_PAINTER = preload("res://scripts/ui/hero_portrait_thargoroth.gd")
+const VARKUTHAR_PAINTER = preload("res://scripts/ui/hero_portrait_varkuthar.gd")
+const ZHYVREK_PAINTER = preload("res://scripts/ui/hero_portrait_zhyvrek.gd")
 const OKEANORA_PAINTER = preload("res://scripts/ui/hero_portrait_okeanora.gd")
+const EXPANSION_PAINTER = preload("res://scripts/ui/hero_portrait_expansion.gd")
 const GORNAK := "gornak"
 const GRIMJAW := "grimjaw"
 const KAIZEN := "kaizen"
@@ -119,8 +133,28 @@ static func custom_ids() -> Array[String]:
 		"hollowbane"
 	]
 	ids.append_array(["ignakhor", "ignirus", "ignis_drachorn", "infrakzaar"])
-	ids.append_array([KAIZEN, "kunkka", "morgath", "morthraxis", "okeanora"])
-	ids.append_array([SYLARA, THORNE, VEX, ZEPHYR])
+	ids.append_array(
+		["kaerissa", KAIZEN, "kazreth", "kunkka", "morgath", "morthraxis", "nyxallaria", "okeanora"]
+	)
+	ids.append_array(
+		[
+			SYLARA,
+			"thargoroth",
+			"thorgaruk",
+			THORNE,
+			"varkuthar",
+			VEX,
+			"vhaerinth",
+			"xarnathul",
+			"xharokh",
+			ZEPHYR,
+			"zhyrakaan",
+			"zhyvrek",
+			"zorathiel"
+		]
+	)
+	ids.append_array(EXPANSION_PAINTER.ids())
+	ids.sort()
 	return ids
 
 
@@ -227,6 +261,30 @@ func _draw() -> void:
 			IGNIRUS_PAINTER.paint(self, box)
 		"infrakzaar":
 			INFRAKZAAR_PAINTER.paint(self, box)
+		"kaerissa":
+			KAERISSA_PAINTER.paint(self, box)
+		"xarnathul":
+			XARNATHUL_PAINTER.paint(self, box)
+		"zhyrakaan":
+			ZHYRAKAAN_PAINTER.paint(self, box)
+		"nyxallaria":
+			NYXALLARIA_PAINTER.paint(self, box)
+		"thorgaruk":
+			THORGARUK_PAINTER.paint(self, box)
+		"zorathiel":
+			ZORATHIEL_PAINTER.paint(self, box)
+		"kazreth":
+			KAZRETH_PAINTER.paint(self, box)
+		"vhaerinth":
+			VHAERINTH_PAINTER.paint(self, box)
+		"xharokh":
+			XHAROKH_PAINTER.paint(self, box)
+		"thargoroth":
+			THARGOROTH_PAINTER.paint(self, box)
+		"varkuthar":
+			VARKUTHAR_PAINTER.paint(self, box)
+		"zhyvrek":
+			ZHYVREK_PAINTER.paint(self, box)
 		"abaddon":
 			ABADDON_PAINTER.paint(self, box)
 		"ancient_apparition":
@@ -260,76 +318,17 @@ func _draw() -> void:
 		SYLARA:
 			_draw_sylara(box)
 		THORNE:
-			_draw_thorne(box)
+			THORNE_PAINTER.paint(self, box)
 		VEX:
 			_draw_vex(box)
 		ZEPHYR:
 			ZEPHYR_PAINTER.paint(self, box)
 		_:
-			GENERIC_PAINTER.paint(self, box, hue_for(hero_type), _accent())
+			if EXPANSION_PAINTER.has_custom(hero_type):
+				EXPANSION_PAINTER.paint(self, box, hero_type)
+			else:
+				GENERIC_PAINTER.paint(self, box, hue_for(hero_type), _accent())
 	draw_rect(box.grow(-1.0), Color8(10, 16, 24), false, 2.0)
-
-
-func _draw_thorne(box: Rect2) -> void:
-	var unit := _scale(box)
-	var outline := Color8(38, 26, 10)
-	var dark := Color8(96, 60, 14)
-	var body := Color8(215, 155, 30)
-	var shade := Color8(150, 95, 20)
-	var light := Color8(245, 205, 110)
-	var goop := Color8(120, 190, 90)
-
-	_backdrop(box, Color8(58, 40, 18), Color8(26, 20, 12))
-	var base := _p(box, 48.0, 52.0)
-	for index in 7:
-		var angle := -PI * 0.92 + PI * 0.84 * (float(index) / 6.0)
-		var direction := Vector2(cos(angle), sin(angle))
-		var tip := base + direction * 40.0 * unit
-		var side := Vector2(-direction.y, direction.x) * 3.5 * unit
-		draw_colored_polygon(PackedVector2Array([base - side, base + side, tip]), shade)
-	draw_colored_polygon(
-		_poly(
-			box,
-			[
-				Vector2(30.0, 38.0),
-				Vector2(66.0, 38.0),
-				Vector2(72.0, 62.0),
-				Vector2(66.0, 86.0),
-				Vector2(30.0, 86.0),
-				Vector2(24.0, 62.0)
-			]
-		),
-		dark
-	)
-	draw_colored_polygon(
-		_poly(
-			box,
-			[
-				Vector2(34.0, 42.0),
-				Vector2(62.0, 42.0),
-				Vector2(67.0, 62.0),
-				Vector2(62.0, 84.0),
-				Vector2(34.0, 84.0),
-				Vector2(29.0, 62.0)
-			]
-		),
-		body
-	)
-	draw_colored_polygon(
-		_poly(
-			box,
-			[Vector2(40.0, 50.0), Vector2(56.0, 50.0), Vector2(58.0, 66.0), Vector2(38.0, 66.0)]
-		),
-		light
-	)
-	draw_circle(_p(box, 48.0, 30.0), 11.0 * unit, body)
-	draw_colored_polygon(
-		_poly(box, [Vector2(54.0, 30.0), Vector2(72.0, 34.0), Vector2(54.0, 40.0)]), shade
-	)
-	draw_circle(_p(box, 43.0, 27.0), 2.2 * unit, outline)
-	draw_circle(_p(box, 51.0, 27.0), 2.2 * unit, outline)
-	draw_circle(_p(box, 77.0, 38.0), 3.0 * unit, goop)
-	draw_circle(_p(box, 85.0, 45.0), 2.0 * unit, goop)
 
 
 func _draw_grimjaw(box: Rect2) -> void:

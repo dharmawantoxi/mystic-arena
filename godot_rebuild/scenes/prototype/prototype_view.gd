@@ -19,11 +19,13 @@ const HitParticleLayout = preload("res://scripts/ui/hit_particle_layout.gd")
 const DeathExplosionLayout = preload("res://scripts/ui/death_explosion_layout.gd")
 const MapTintLayout = preload("res://scripts/ui/map_tint_layout.gd")
 const MapArt = preload("res://scripts/ui/map_art.gd")
+const DynamicMapRenderer = preload("res://scripts/ui/dynamic_map_renderer.gd")
 const SlotArt = preload("res://scripts/ui/slot_art.gd")
 const HeroArt = preload("res://scripts/ui/hero_art.gd")
 const HeroAnim = preload("res://scripts/ui/hero_anim.gd")
 const HeroPainter = preload("res://scripts/ui/hero_painter.gd")
 const BossArt = preload("res://scripts/ui/boss_art.gd")
+const BossAnim = preload("res://scripts/ui/boss_anim.gd")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
 const LaneTiles = preload("res://scripts/ui/lane_tiles.gd")
@@ -55,6 +57,11 @@ var hero_projectile_art = HeroProjectileArtScript.new()
 var hero_projectile_draws := 0
 ## Baked boss bodies drawn so far; the painter suite proves the sprite path runs.
 var boss_sprite_draws := 0
+## Resolved source keyframes painted by the live scene, including attack and skill poses.
+var boss_pose_draws: Dictionary = {}
+var dynamic_map := DynamicMapRenderer.new()
+## Real DynamicRenderer paints; the scene suite proves this reaches `_draw`.
+var dynamic_map_draws := 0
 
 
 func _draw() -> void:
@@ -171,6 +178,15 @@ func _draw_map_decor() -> void:
 	var overlay := MapArt.overlay_texture(cached_river_theme)
 	if overlay != null:
 		draw_texture(overlay, Vector2.ZERO)
+
+
+## Layer 9d0: source DynamicRenderer between the static map and ambient tint.
+func _draw_map_dynamic() -> void:
+	if dynamic_map.theme_name != cached_river_theme:
+		dynamic_map.configure(cached_river_theme)
+	var world := session.world as Prototype
+	dynamic_map.draw(self, world.tick_count)
+	dynamic_map_draws += 1
 
 
 ## Layer 9bh: the ambient tint `MapRenderer.draw()` lays over the map, under the
@@ -917,8 +933,16 @@ func _draw_unit(unit: UnitState) -> void:
 ## above still draws.
 func _draw_hero_sprite(hero: HeroState) -> bool:
 	var clocks := hero_anim.observe(hero, session.world.tick_count)
-	var pose := HeroAnim.pose_key(hero.attack_timer, bool(clocks["moving"]), float(clocks["pulse"]))
+	var moving := bool(clocks["moving"])
+	var pulse := float(clocks["pulse"])
+	var pose := HeroAnim.pose_key(
+		hero.attack_timer, moving, pulse, hero.active_skill, hero.active_skill_timer
+	)
 	var art := HeroArt.frame(hero.definition.id, hero.team, pose, hero.facing)
+	if art.is_empty() and not hero.active_skill.is_empty():
+		# A renderer without a special skill body keeps its normal source animation.
+		pose = HeroAnim.pose_key(hero.attack_timer, moving, pulse)
+		art = HeroArt.frame(hero.definition.id, hero.team, pose, hero.facing)
 	if art.is_empty():
 		return false
 	HeroPainter.paint(self, hero, art, hero.id == session.selected_id)
@@ -977,7 +1001,8 @@ func _draw_boss(boss: BossState) -> void:
 	var bar_width := 70.0 if is_true else 60.0
 	var bar_height := 10.0 if is_true else 8.0
 	var bar_top := point.y - radius - 16.0
-	var art := BossArt.frame(boss.boss_type, boss.direction)
+	var pose := BossAnim.from_boss(boss)
+	var art := BossArt.frame(boss.boss_type, boss.direction, pose)
 	if art.is_empty():
 		_draw_boss_plain(boss)
 	else:
@@ -1050,6 +1075,8 @@ func _draw_boss_plain(boss: BossState) -> void:
 ## `(int(x) - ax, int(y) - ay)`. A fresh hit brightens the body like the minion sprites.
 func _draw_boss_sprite(boss: BossState, art: Dictionary) -> void:
 	boss_sprite_draws += 1
+	var pose := String(art.get("pose", ""))
+	boss_pose_draws[pose] = int(boss_pose_draws.get(pose, 0)) + 1
 	var x := int(boss.position.x)
 	var y := int(boss.position.y)
 	var radius := int(boss.radius)

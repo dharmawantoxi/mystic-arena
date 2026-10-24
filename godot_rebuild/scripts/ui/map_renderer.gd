@@ -2,10 +2,11 @@ class_name MapRenderer
 extends RefCounted
 ## State-only port of `_render.py::MapRenderer`.
 ##
-## The source coordinator delegates static and dynamic pixel drawing to pygame
-## renderer components. That drawing is intentionally not ported. This class
-## keeps generated map data, theme/shop state, hit-testing and presentation
-## readiness available through getters.
+## The source coordinator delegates static and dynamic pixel drawing to renderer
+## components. Static layers live in the map/art views; DynamicRenderer now has a
+## native counterpart in `dynamic_map_renderer.gd`. This class keeps generated
+## map data, theme/shop state, hit-testing and presentation readiness available
+## through getters.
 
 const MAP_WIDTH := 1280
 const MAP_HEIGHT := 720

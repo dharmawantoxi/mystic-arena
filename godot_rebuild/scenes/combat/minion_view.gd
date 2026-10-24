@@ -89,6 +89,7 @@ func _draw() -> void:
 	_draw_map_decor()
 	if wall_texture != null:
 		draw_texture(wall_texture, Vector2.ZERO)
+	_draw_map_dynamic()
 	_draw_map_overlay()
 	_draw_base(Layout.BLUE_BASE, Color("73cbbb"))
 	_draw_base(Layout.RED_BASE, Color("d78579"))
@@ -114,6 +115,12 @@ func _draw_structures() -> void:
 ## Hook for the source's decoration and shop layers (map layers 4-5): painted over
 ## the lanes and under the border wall, like `MapRenderer._render_static_map`.
 func _draw_map_decor() -> void:
+	pass
+
+
+## Hook for the source DynamicRenderer: after the completed static map and
+## before the ambient tint, exactly like `MapRenderer.draw`.
+func _draw_map_dynamic() -> void:
 	pass
 
 

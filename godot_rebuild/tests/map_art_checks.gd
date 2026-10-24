@@ -77,8 +77,9 @@ func _check_view_wiring(check: Callable) -> void:
 	var lane := base.find("draw_texture(lane_texture")
 	var decor := base.find("_draw_map_decor()", lane)
 	var wall := base.find("draw_texture(wall_texture")
-	var tint := base.find("_draw_map_overlay()", wall)
+	var dynamic := base.find("_draw_map_dynamic()", wall)
+	var tint := base.find("_draw_map_overlay()", dynamic)
 	check.call(
-		lane != -1 and lane < decor and decor < wall and wall < tint,
-		"Decor sits over the lanes and under the border wall and the tint"
+		lane != -1 and lane < decor and decor < wall and wall < dynamic and dynamic < tint,
+		"Decor, wall, DynamicRenderer, then tint follow the source order"
 	)
