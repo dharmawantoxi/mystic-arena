@@ -3609,7 +3609,10 @@ dan `_aura_phase` supaya perubahan kunci/budget terdeteksi sebagai drift fixture
 
 Validasi lokal: `validate_project.py` -> PASS 21158 static checks; `gdparse`/`gdlint`/
 `gdformat --check` bersih (641 file); oracle deterministik; `git diff --check` OK. Godot tidak
-tersedia lokal; native suite dan review visual menunggu CI.
+tersedia lokal, jadi native suite lewat CI: run `40192115376` gagal (pin alpha frame
+`enrage_true` salah 25 vs 29, dan painter mengasumsikan tidak ada aura sebelum gerbangnya
+padahal boss hidup bisa sudah enrage) lalu diperbaiki; run `40193223973` (job `121168493421`)
+**pass 14m36s** dengan notice `PASS: 1505002 checks; fixed ticks and source parity`.
 
 Batas slice ini:
 - Cache LRU sumber tidak diport: ops dibangun ulang tiap frame (sama pikselnya, karena alpha dan
