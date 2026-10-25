@@ -6,18 +6,8 @@ const FOG := "res://assets/art/menu/menu_fog.png"
 const MANIFEST := "res://data/art/menu.json"
 const FIXTURE := "res://tests/fixtures/menu_ambient_source.json"
 
-
-class WrapReplay:
-	extends RefCounted
-	var values: Array = []
-	var index := 0
-
-	func next_x() -> float:
-		if index >= values.size():
-			return -1000.0
-		var result := float(values[index])
-		index += 1
-		return result
+var _wrap_values: Array = []
+var _wrap_index := 0
 
 
 func run(check: Callable) -> void:
@@ -27,6 +17,8 @@ func run(check: Callable) -> void:
 		return
 	var fog: Dictionary = menu_data.get("fog", {})
 	var fog_size: Array = fog.get("size", [0, 0])
+	var source_size: Array = fog.get("source_size", [])
+	var fog_frames: Dictionary = fog.get("frames", {})
 	var image := Image.load_from_file(FOG)
 	check.call(
 		image != null and image.get_size() == Vector2i(int(fog_size[0]), int(fog_size[1])),
@@ -34,9 +26,9 @@ func run(check: Callable) -> void:
 	)
 	check.call(
 		(
-			fog_size == [3000, 720]
-			and fog.get("source_size", []) == [1500, 720]
-			and fog.get("frames", {}).size() == 2
+			_same_integer_values(fog_size, [3000, 720])
+			and _same_integer_values(source_size, [1500, 720])
+			and fog_frames.size() == 2
 		),
 		"Each parallax layer is a source-sized 1500 by 720 frame"
 	)
@@ -105,13 +97,13 @@ func _check_fixture(check: Callable) -> void:
 			var operation: Dictionary = first_three[index * 2 + ring]
 			var expected_radius := int(particle.size) * (2 if ring == 0 else 1)
 			var expected_alpha := int(alpha / 4) if ring == 0 else alpha
+			var center: Array = operation.get("center", [])
+			var color: Array = operation.get("color", [])
+			var expected_color := [int(rgb[0]), int(rgb[1]), int(rgb[2]), expected_alpha]
 			draw_match = draw_match and operation.get("kind", "") == "circle"
-			draw_match = draw_match and operation.get("center", []) == position
+			draw_match = draw_match and _same_integer_values(center, position)
 			draw_match = draw_match and int(operation.get("radius", -1)) == expected_radius
-			draw_match = (
-				draw_match
-				and operation.get("color", []) == [rgb[0], rgb[1], rgb[2], expected_alpha]
-			)
+			draw_match = draw_match and _same_integer_values(color, expected_color)
 	check.call(
 		draw_match, "The source draw oracle pins both glow circles for the first three particles"
 	)
@@ -120,14 +112,13 @@ func _check_fixture(check: Callable) -> void:
 	var snapshots: Dictionary = {}
 	for snapshot in fixture.get("snapshots", []):
 		snapshots[int(snapshot.tick)] = snapshot.particles
-	var replay := WrapReplay.new()
 	var motion_match := updates.size() == 800
 	for tick in range(updates.size()):
-		replay.values = updates[tick]
-		replay.index = 0
-		var wraps := MenuAmbientLayout.advance(particles, 1.0, Callable(replay, "next_x"))
+		_wrap_values = updates[tick]
+		_wrap_index = 0
+		var wraps := MenuAmbientLayout.advance(particles, 1.0, Callable(self, "_next_wrap_x"))
 		motion_match = (
-			motion_match and wraps == replay.values.size() and replay.index == replay.values.size()
+			motion_match and wraps == _wrap_values.size() and _wrap_index == _wrap_values.size()
 		)
 		var source_tick := tick + 1
 		if snapshots.has(source_tick):
@@ -141,6 +132,23 @@ func _check_fixture(check: Callable) -> void:
 		),
 		"Fog scroll and pulse use the source tick equations"
 	)
+
+
+func _next_wrap_x() -> float:
+	if _wrap_index >= _wrap_values.size():
+		return -1000.0
+	var result := float(_wrap_values[_wrap_index])
+	_wrap_index += 1
+	return result
+
+
+func _same_integer_values(actual: Array, expected: Array) -> bool:
+	if actual.size() != expected.size():
+		return false
+	for index in range(actual.size()):
+		if int(actual[index]) != int(expected[index]):
+			return false
+	return true
 
 
 func _same_particles(actual: Array, expected: Array) -> bool:

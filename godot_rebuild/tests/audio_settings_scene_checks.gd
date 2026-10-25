@@ -127,7 +127,8 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	check.call(
 		app.current_screen.name == "PrototypeMatch", "updated mix survives into playable combat"
 	)
-	var simulation := app.current_screen.get_node("Simulation")
+	var current_screen: Node = app.get("current_screen") as Node
+	var simulation: Node = current_screen.get_node("Simulation")
 	var world: Variant = simulation.get("world")
 	var effects: Variant = world.get("effects") if world != null else null
 	check.call(
@@ -158,7 +159,7 @@ func _restore_presentation(had_file: bool, values: Dictionary) -> bool:
 	if had_file:
 		return PresentationStore.save_settings(values)
 	for suffix in ["", ".tmp", ".bak"]:
-		var path := PresentationStore.PATH + suffix
+		var path: String = PresentationStore.PATH + String(suffix)
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	return not FileAccess.file_exists(PresentationStore.PATH)

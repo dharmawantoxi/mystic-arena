@@ -115,8 +115,14 @@ func _check_controls(check: Callable, manifest: Dictionary) -> void:
 		),
 		"Starter and boss tabs have all source active/hover states"
 	)
+	var toggle_canvas: Array = toggles.get("canvas", [])
 	check.call(
-		toggles.get("frames", {}).size() == 4 and toggles.get("canvas", []) == [60, 26],
+		(
+			toggles.get("frames", {}).size() == 4
+			and toggle_canvas.size() == 2
+			and int(toggle_canvas[0]) == 60
+			and int(toggle_canvas[1]) == 26
+		),
 		"The switch sheet contains source ON/OFF and hover art"
 	)
 	check.call(icons.get("names", []).size() >= 28, "The vector icon bake covers source glyphs")
