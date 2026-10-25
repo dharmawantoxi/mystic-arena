@@ -3602,8 +3602,13 @@ Melengkapi FX urgharun yang terakhir. `draw_urgharun` membuka dengan
   di workflow, pin 9bq8 (37 cek) di `tests/validate_project.py`.
 
 Validasi lokal: `validate_project.py` -> PASS 21195 static checks (baseline 21158); `gdparse`/
-`gdlint`/`gdformat --check` bersih; oracle deterministik; `git diff --check` OK. Godot tidak
-tersedia lokal; native suite dan review visual menunggu CI.
+`gdlint`/`gdformat --check` bersih (643 file); oracle deterministik; `git diff --check` OK. Godot
+tidak tersedia lokal, jadi native suite lewat CI: run `40200697653` gagal pada dua asersi suite
+baru (indeks op tip busur 200 vs 40 - tip disisipkan setelah 40 garis busurnya sendiri - dan
+"disarm" dihitung dari langkah aktif terakhir padahal run fixture meng-arm ulang di ujungnya),
+lalu run `40202446923` gagal pada asersi disarm yang masih membaca langkah terakhir; setelah
+diperbaiki run `40203662319` (job `121199934380`) **pass 12m25s** dengan notice
+`PASS: 1505047 checks; fixed ticks and source parity`.
 
 Batas slice ini:
 - Jam sumber maju **satu kali per frame yang dilukis**; rebuild memanggilnya di awal `_draw_boss`
@@ -3613,9 +3618,10 @@ Batas slice ini:
 - Jam disimpan di view per instance bos (`boss_attack_clocks`), bukan di `BossState`, supaya
   state simulasi tidak berubah; entri tidak pernah dibuang (jumlahnya sebanyak bos yang pernah
   dilukis dalam satu sesi view).
-- Pose badan saat ayunan tetap memakai atlas (`BossAnim` memilih `atk*` dari `timer > 0`),
-  sedangkan sumber memilih pose dari `_urg_attack_active`; perbedaan pemilihan pose badan ini
-  bukan bagian slice FX dan belum diseragamkan.
+- Pose badan tetap dari atlas: `BossAnim` memilih `atk%d` dari `timer`, kunci yang sama dengan
+  `_boss_cache_key` sumber, dan frame `atk*` urgharun (`atk1`, `atk13`, `atk26`, `atk38`, ...)
+  sudah dipanggang termasuk pose ayunan yang dipilih sumber lewat jam ini. Jadi jam di view hanya
+  dipakai untuk layer FX; ia tidak ikut memilih pose badan.
 - Tidak termasuk: `_draw_entrance`, FX boss lain, `_LIVE_FX_HEROES`, rebake atlas, resep AI yang
   meng-cast skill urgharun. Alpha tetap ditulis apa adanya dengan blending normal Godot.
 
