@@ -131,11 +131,14 @@ func _check_realm(tree: SceneTree, view, boss, check: Callable) -> void:
 	boss.active_skill_timer = 0
 
 
-## Layer 9bq4: the live scene paints urgharun's R foreground layer over its baked body, on
-## every phase of the source cast window. The boss only wears urgharun's type for these
-## frames; no tick runs, so its AI never sees the swap.
+## Layer 9bq4/9bq5: the live scene paints urgharun's R ground layer under its baked body and
+## its foreground enrage layer over it, on every phase of the source cast window. The boss
+## only wears urgharun's type for these frames; no tick runs, so its AI never sees the swap.
 func _check_urgharun_enrage(tree: SceneTree, view, boss, check: Callable) -> void:
-	check.call(view.boss_enrage_fx_draws == 0, "No other boss skill painted an enrage layer")
+	check.call(
+		view.boss_enrage_fx_draws == 0 and view.boss_enrage_ground_draws == 0,
+		"No other boss skill painted an enrage layer"
+	)
 	var source_type: String = boss.boss_type
 	var source_skill: String = boss.active_skill
 	var source_timer: int = boss.active_skill_timer
@@ -144,11 +147,15 @@ func _check_urgharun_enrage(tree: SceneTree, view, boss, check: Callable) -> voi
 	boss.active_skill = "r"
 	var phases := [80, 60, 40, 20, 1]
 	var painted := 0
+	var ground_painted := 0
 	var op_deltas: Array = []
+	var ground_deltas: Array = []
 	for phase in phases:
 		boss.active_skill_timer = int(phase)
 		var draws_before: int = view.boss_enrage_fx_draws
 		var ops_before: int = view.boss_enrage_fx_ops
+		var ground_before: int = view.boss_enrage_ground_draws
+		var ground_ops_before: int = view.boss_enrage_ground_ops
 		for _frame in range(6):
 			await tree.process_frame
 			if view.boss_enrage_fx_draws > draws_before:
@@ -156,6 +163,9 @@ func _check_urgharun_enrage(tree: SceneTree, view, boss, check: Callable) -> voi
 		if view.boss_enrage_fx_draws > draws_before:
 			painted += 1
 			op_deltas.append(view.boss_enrage_fx_ops - ops_before)
+		if view.boss_enrage_ground_draws > ground_before:
+			ground_painted += 1
+			ground_deltas.append(view.boss_enrage_ground_ops - ground_ops_before)
 	check.call(
 		painted == phases.size(),
 		"Urgharun's R painted its enrage layer on %d/%d cast phases" % [painted, phases.size()]
@@ -166,6 +176,20 @@ func _check_urgharun_enrage(tree: SceneTree, view, boss, check: Callable) -> voi
 			and op_deltas.all(func(count): return int(count) > 0 and int(count) % 68 == 0)
 		),
 		"The live layer carries the source's 68 ops at every cast phase"
+	)
+	check.call(
+		ground_painted == phases.size(),
+		(
+			"Urgharun's R painted its ground layer on %d/%d cast phases"
+			% [ground_painted, phases.size()]
+		)
+	)
+	check.call(
+		(
+			ground_deltas.size() == phases.size()
+			and ground_deltas.all(func(count): return int(count) > 0 and int(count) % 26 == 0)
+		),
+		"The live ground layer carries the source's 26 ops at every cast phase"
 	)
 	boss.boss_type = source_type
 	boss.active_skill = source_skill

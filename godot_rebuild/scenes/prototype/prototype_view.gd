@@ -28,6 +28,7 @@ const BossArt = preload("res://scripts/ui/boss_art.gd")
 const BossAnim = preload("res://scripts/ui/boss_anim.gd")
 const NyxarethRealmLayout = preload("res://scripts/ui/nyxareth_realm_layout.gd")
 const UrgharunEnrageFxLayout = preload("res://scripts/ui/urgharun_enrage_fx_layout.gd")
+const UrgharunEnrageGroundLayout = preload("res://scripts/ui/urgharun_enrage_ground_layout.gd")
 const TacticalLayout = preload("res://scripts/ui/tactical_layout.gd")
 const GoldHudLayout = preload("res://scripts/ui/gold_hud_layout.gd")
 const ShopHintLayout = preload("res://scripts/ui/shop_hint_layout.gd")
@@ -82,6 +83,9 @@ var boss_screen_layer_draws := 0
 ## carried; `painter_scene_checks.gd` proves the live scene reaches this layer across the cast.
 var boss_enrage_fx_draws := 0
 var boss_enrage_fx_ops := 0
+## Layer 9bq5: urgharun R/enrage ground layers painted under the body and the ops they carried.
+var boss_enrage_ground_draws := 0
+var boss_enrage_ground_ops := 0
 ## The tactical banner border (layer 9bi2): 2 px, 6 px corners, drawn inside its box.
 var tactical_border := StyleBoxFlat.new()
 ## Layer 9bv2: pygame skips `_draw_gold_hud` while the wide-screen side panel shows the
@@ -933,6 +937,26 @@ func _draw_intro_op(op: Dictionary) -> void:
 				color,
 				float(op.get("width", 1))
 			)
+		"ellipse":
+			var ellipse_box: Array = op.get("rect", [0, 0, 0, 0])
+			var ellipse_rect := Rect2(
+				float(ellipse_box[0]),
+				float(ellipse_box[1]),
+				float(ellipse_box[2]),
+				float(ellipse_box[3])
+			)
+			if color.a <= 0.0 or ellipse_rect.size.x <= 0.0 or ellipse_rect.size.y <= 0.0:
+				return
+			var ellipse_width := int(op.get("width", 0))
+			if ellipse_width > 0:
+				# pygame strokes an ellipse border INSIDE its rect, so the path is pulled in
+				# by half the stroke width and the stroke straddles it.
+				var path_rect := ellipse_rect.grow(-float(ellipse_width) * 0.5)
+				var outline := _ellipse_outline(path_rect)
+				outline.append(outline[0])
+				draw_polyline(outline, color, float(ellipse_width), true)
+			else:
+				draw_colored_polygon(_ellipse_outline(ellipse_rect), color)
 		"polygon":
 			var points := PackedVector2Array()
 			for point in op.get("points", []):
@@ -954,6 +978,20 @@ func _draw_intro_op(op: Dictionary) -> void:
 				font_size,
 				color
 			)
+
+
+## pygame has no anti-aliased ellipse primitive, so the source strokes ellipses 1..3 px wide.
+## Godot has no `draw_ellipse` either: the rect is sampled into a closed polygon whose segment
+## count follows the larger radius, which keeps a 1 px ring smooth at ground-ring sizes.
+func _ellipse_outline(rect: Rect2) -> PackedVector2Array:
+	var center := rect.get_center()
+	var radii := rect.size * 0.5
+	var segments := clampi(int(maxf(radii.x, radii.y) * 2.0), 24, 128)
+	var points := PackedVector2Array()
+	for step in range(segments):
+		var angle := TAU * float(step) / float(segments)
+		points.append(center + Vector2(cos(angle) * radii.x, sin(angle) * radii.y))
+	return points
 
 
 ## Layer 9bv2: `Game._draw_gold_hud`, the gold chip and mode badge at the top-left, painted
@@ -1489,6 +1527,14 @@ func _draw_boss(boss: BossState) -> void:
 		boss_screen_layer_draws += 1
 		for op in realm_ops:
 			_draw_realm_op(op)
+	# Layer 9bq5: `draw_urgharun` paints LAYER 2 (the R ground runes) after the auras and the
+	# ground ring and before the body pose, so they stay behind the sprite and its bar.
+	var ground_ops := urgharun_enrage_ground_draw_ops(boss)
+	if not ground_ops.is_empty():
+		boss_enrage_ground_draws += 1
+		boss_enrage_ground_ops += ground_ops.size()
+		for op in ground_ops:
+			_draw_intro_op(op)
 
 	var bar_width := 70.0 if is_true else 60.0
 	var bar_height := 10.0 if is_true else 8.0
@@ -1543,6 +1589,16 @@ func nyxareth_realm_draw_ops(boss: BossState) -> Array:
 		return []
 	return NyxarethRealmLayout.ops(
 		boss.active_skill_timer, boss.pulse, NyxarethRealmLayout.SCREEN_SIZE
+	)
+
+
+## Layer 9bq5: `_draw_enrage_ground` ops while urgharun casts "r"; the source keeps the
+## elapsed cast time out of this layer too, so the anchor and the pulse carry it.
+func urgharun_enrage_ground_draw_ops(boss: BossState) -> Array:
+	if not UrgharunEnrageGroundLayout.active(boss.boss_type, boss.active_skill):
+		return []
+	return UrgharunEnrageGroundLayout.ops(
+		int(boss.position.x), int(boss.position.y), boss.active_skill_timer, boss.pulse
 	)
 
 

@@ -120,6 +120,12 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
   pygame perekam (7 frame, 476 op); `urgharun_enrage_fx_checks.gd` mereplay fixture, dan
   `painter_scene_checks.gd` membuktikan scene hidup melukisnya di lima fase cast. Rincian ada di
   bagian "Slice 9bq4".
+- 9bq5 memport LAYER 2 R/enrage urgharun (`_draw_enrage_ground`): dua cincin tanah bertumpuk
+  tiga outline (3/2/1 px) dan sepuluh rune 3x3 dengan inti 1 px, dilukis **di bawah badan**.
+  Painter op bersama kini mengenal `ellipse` (garis dalam rect pygame, fill polygon). Oracle
+  `urgharun_enrage_ground_source_oracle.py` menjalankan fungsi asli (8 frame, 208 op);
+  `urgharun_enrage_ground_checks.gd` mereplay fixture, dan `painter_scene_checks.gd`
+  membuktikan scene hidup melukisnya di lima fase cast. Rincian ada di bagian "Slice 9bq5".
 - Slice kontrol UI dan ambience menu 9br/9bs sudah diselesaikan di PR #341. HUD/arena layar penuh,
   peluru hero, dan pose jalan/serang boss tetap pekerjaan terpisah, tidak termasuk slice ini.
   `DynamicRenderer` **sudah terport (layer 9d0)**: partikel, kabut, obor,
@@ -3497,9 +3503,58 @@ Batas slice ini:
   urgharun; sumber juga tidak pernah menyetel `active_skill` untuknya). Lapisan aktif begitu state
   `active_skill == "r"` ada, dan suite scene menyetelnya langsung; menambah resep AI adalah slice
   lain.
-- Tidak termasuk: `_draw_enrage_ground` (LAYER 2), FX Q/W/E urgharun, `_draw_fury_aura`/
-  `_draw_ground_ring`, aura enrage ber-cache `_draw_enrage_aura` milik `Boss.draw`, perluasan ke
-  `_LIVE_FX_HEROES` atau boss lain, dan rebake atlas.
+- LAYER 2 (`_draw_enrage_ground`) dikerjakan sebagai slice terpisah 9bq5 di bawah.
+- Tidak termasuk: FX Q/W/E urgharun, `_draw_fury_aura`/`_draw_ground_ring`, aura enrage ber-cache
+  `_draw_enrage_aura` milik `Boss.draw`, perluasan ke `_LIVE_FX_HEROES` atau boss lain, dan
+  rebake atlas.
+
+## Slice 9bq5 — FX enrage tanah R urgharun (layer 9bq5)
+
+Sumber: `bosses/level40.py::_NS_urgharun._draw_enrage_ground`, dipanggil `draw_urgharun` di
+LAYER 2 (di belakang badan) hanya saat `active_skill == "r"`, sesudah `_draw_fury_aura` +
+`_draw_ground_ring` dan sebelum dispatch badan.
+
+- `scripts/ui/urgharun_enrage_ground_layout.gd` membangun 26 op per frame dalam urutan sumber:
+  - dua cincin tanah. Tiap cincin tiga outline bersarang pada keluarga rect yang sama -
+    `fury_dark` 3 px, `fury_mid` 2 px inset (3, 2), `fury_light` 1 px inset (6, 4) - dengan
+    `r = int(35 + i*8 + sin(phase*2)*3)`, rect `(x - r, y + 40 - r//3, 2r, 2r//3)` (Python `//`
+    = `floori` di Godot), dan alpha `_alpha(220 * pulse - i*40)` dengan
+    `pulse = sin(phase*3)*0.3 + 0.7`;
+  - sepuluh rune pada lingkaran 38 px yang dimampatkan 0.4 di sekitar `y + 42`: kotak 3x3
+    `fury_hot` alpha `_alpha(240 * pulse)` plus inti 1 px `fury_shine`.
+- Kuirk yang dipertahankan: `progress` dihitung dari `timer` lalu tidak dipakai (lapisan hanya
+  fungsi `phase`); inti rune memakai tuple palet mentah sehingga alpha-nya tetap 255 sementara
+  kotak 3x3 memudar; `r` bisa turun ke 32-33 saat `sin(phase*2)` negatif dan offset vertikal
+  cincin ikut bergeser karena pembagian floor.
+- `prototype_view._draw_intro_op` kini mengenal op `ellipse`: `pygame` tidak punya elips
+  anti-alias, dan Godot tidak punya `draw_ellipse`, jadi rect disampel menjadi polygon tertutup
+  (segmen mengikuti radius terbesar, 24-128) lalu digambar dengan `draw_polyline` untuk outline
+  atau `draw_colored_polygon` untuk fill. Karena pygame menebalkan border DI DALAM rect, jalur
+  outline ditarik masuk setengah lebar garis (konvensi sama dengan kotak kill feed 9bb).
+- `prototype_view.gd` melukis layer ini sesudah cincin aura/realm nyxareth dan **sebelum**
+  `BossArt.frame`/badan, dengan penghitung `boss_enrage_ground_draws` dan
+  `boss_enrage_ground_ops`. Layer foreground 9bq4 tetap dilukis sesudah badan.
+- Bukti: oracle `tests/urgharun_enrage_ground_source_oracle.py` (memanen `PALETTE`, `_alpha`,
+  `_draw_enrage_ground`) menghasilkan 8 frame / 208 op, termasuk frame dengan `sin` negatif,
+  anchor di tepi bawah layar (rect yang dipotong surface 720 px), dan frame `timer_ignored`
+  yang identik dengan `mid`. `tests/urgharun_enrage_ground_checks.gd` mereplay semua frame,
+  urutan 26 op, inset outline, alpha cincin/rune, kuirk timer, gate, dan wiring view; suite
+  terdaftar di `tests/run_all.gd`. `tests/painter_scene_checks.gd` memutar scene hidup dan
+  membuktikan layer tanah tergambar 26 op di lima fase cast. Pin 9bq5 (34 cek) ada di
+  `tests/validate_project.py` dan command oracle di workflow CI.
+
+Validasi lokal: `validate_project.py` -> PASS 21087 static checks; `gdparse`/`gdlint`/
+`gdformat --check` bersih; fixture deterministik; `git diff --check` OK. Godot tetap tidak
+tersedia lokal, jadi native suite dan review visual menunggu CI.
+
+Batas slice ini:
+- Geometri elips adalah aproksimasi polygon (24-128 segmen); pygame menggambar elips per piksel.
+  Ketebalan border diasumsikan ke dalam rect seperti pygame, tetapi ini bukan klaim pixel parity.
+- Alpha tetap ditulis apa adanya seperti 9bq4 (canvas SRCALPHA sumber) sementara Godot memakai
+  blending normal.
+- Tidak termasuk: FX Q/W/E urgharun, `_draw_fury_aura`/`_draw_ground_ring` (LAYER 1), aura
+  enrage ber-cache `Boss.draw`, perluasan ke `_LIVE_FX_HEROES`/boss lain, rebake atlas, dan
+  resep AI yang meng-cast `R` untuk urgharun.
 
 ## Slice 9bi2 — paritas visual tactical commands
 

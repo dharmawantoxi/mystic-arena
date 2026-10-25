@@ -4929,6 +4929,75 @@ check("_check_frames(check, frames)" in _ue_checks and "_check_timing(check, fra
       and "_check_gate(check)" in _ue_checks and "_check_view_wiring(check, frames)" in _ue_checks,
       "9bq4 the enrage suite must replay the source frames, the timing quirk, the gate and the view")
 
+# ── Layer 9bq5: urgharun's R/enrage ground FX (behind the body) ──
+from urgharun_enrage_ground_source_oracle import source_fixture as urgharun_ground_fixture
+_ug_path = ROOT / "tests/fixtures/urgharun_enrage_ground_source.json"
+_ug_layout = (ROOT / "scripts/ui/urgharun_enrage_ground_layout.gd").read_text(encoding="utf-8")
+_ug_checks = (ROOT / "tests/urgharun_enrage_ground_checks.gd").read_text(encoding="utf-8")
+_ug_painter = (ROOT / "tests/painter_scene_checks.gd").read_text(encoding="utf-8")
+_ug_src = (ROOT.parent / "bosses/level40.py").read_text(encoding="utf-8")
+_ug_fn = _ug_src[_ug_src.index("def _draw_enrage_ground("):_ug_src.index("def _draw_enrage_fx(")]
+check('const UrgharunEnrageGroundChecks = preload("res://tests/urgharun_enrage_ground_checks.gd")'
+      in ai_tests and "UrgharunEnrageGroundChecks.new().run(_check)" in ai_tests,
+      "9bq5 urgharun enrage ground suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/urgharun_enrage_ground_source_oracle.py" in workflow,
+      "9bq5 CI must run the _draw_enrage_ground source oracle")
+check(_ug_path.is_file(), "9bq5 urgharun enrage ground fixture must exist")
+if _ug_path.is_file():
+    _ug = json.loads(_ug_path.read_text(encoding="utf-8"))
+    check(urgharun_ground_fixture() == _ug,
+          "9bq5 urgharun enrage ground fixture must not drift from bosses/level40.py")
+    _ug_frames = _ug["frames"]
+    check(len(_ug_frames) == 8 and all(len(frame["ops"]) == 26 for frame in _ug_frames)
+          and sum(len(frame["ops"]) for frame in _ug_frames) == 208,
+          "9bq5 oracle must pin 8 frames of 26 ops (six ring outlines, ten rune pairs)")
+    _ug_mid = next(f for f in _ug_frames if f["label"] == "mid")
+    _ug_ignored = next(f for f in _ug_frames if f["label"] == "timer_ignored")
+    check(_ug_mid["timer"] != _ug_ignored["timer"]
+          and _ug_mid["ops"] == _ug_ignored["ops"],
+          "9bq5 oracle must pin the source quirk: the cast timer never changes an op")
+    check([op["width"] for op in _ug_mid["ops"][:6]] == [3, 2, 1, 3, 2, 1]
+          and [op["color"][3] for op in _ug_mid["ops"][:6]] == [218, 218, 218, 178, 178, 178]
+          and [op["color"][3] for op in _ug_mid["ops"][7:26:2]] == [255] * 10
+          and _ug["palette"]["fury_hot"] == [255, 180, 140],
+          "9bq5 oracle must pin the nested ring widths, the ring alpha and the opaque rune cores")
+check("def _draw_enrage_ground(surface, boss, x, y, timer, phase):" in _ug_src
+      and _ug_fn.count("progress") == 1 and "duration = 80" in _ug_fn
+      and "r = int(35 + i * 8 + math.sin(phase * 2) * 3)" in _ug_fn
+      and "alpha = _NS_urgharun._alpha(220 * pulse - i * 40)" in _ug_fn
+      and "rune_r = 38" in _ug_fn,
+      "9bq5 the source ground FX must still drop progress and use the recorded ring formula")
+check('const SKILL := "r"' in _ug_layout and "const RING_COUNT := 2" in _ug_layout
+      and "const RUNE_COUNT := 10" in _ug_layout and "const RUNE_RADIUS := 38" in _ug_layout
+      and "int(35.0 + float(index) * 8.0 + sin(pulse * 2.0) * 3.0)" in _ug_layout
+      and "_alpha(220.0 * ring_pulse - float(index) * 40.0)" in _ug_layout
+      and "floori(float(radius) / 3.0)" in _ug_layout and "floori(float(radius * 2) / 3.0)" in _ug_layout
+      and "int(sin(angle) * float(RUNE_RADIUS) * 0.4)" in _ug_layout
+      and "out.append(_rect([rune_x, rune_y, 1, 1], FURY_SHINE, 255))" in _ug_layout,
+      "9bq5 the ground layout must mirror the source ring, rune and core formulas")
+check("func urgharun_enrage_ground_draw_ops(boss: BossState) -> Array:" in _bs_view
+      and "UrgharunEnrageGroundLayout.active(boss.boss_type, boss.active_skill)" in _bs_view,
+      "9bq5 the view must gate the ground layer on urgharun's R")
+_ug_draw = _bs_view[_bs_view.index("func _draw_boss(boss: BossState)"):
+                    _bs_view.index("func _draw_boss_plain(")]
+check("var ground_ops := urgharun_enrage_ground_draw_ops(boss)" in _ug_draw
+      and _ug_draw.index("nyxareth_realm_draw_ops(boss)")
+      < _ug_draw.index("urgharun_enrage_ground_draw_ops(boss)")
+      < _ug_draw.index("var art := BossArt.frame(")
+      and "boss_enrage_ground_draws += 1" in _ug_draw and "boss_enrage_ground_ops += 1" not in _ug_draw,
+      "9bq5 the view must paint the ground FX after the aura rings and before the body")
+check('"ellipse":' in _bs_view and "func _ellipse_outline(rect: Rect2) -> PackedVector2Array:"
+      in _bs_view and "draw_polyline(outline, color, float(ellipse_width), true)" in _bs_view
+      and "draw_colored_polygon(_ellipse_outline(ellipse_rect), color)" in _bs_view,
+      "9bq5 the shared op painter must render the source's ellipse fill and outline")
+check("boss_enrage_ground_draws > ground_before" in _ug_painter
+      and "int(count) % 26 == 0" in _ug_painter,
+      "9bq5 the painter suite must paint the ground layer across the live cast phases")
+check("_check_frames(check, frames)" in _ug_checks and "_check_rings(check, frames)" in _ug_checks
+      and "_check_timing(check, frames)" in _ug_checks and "_check_view_wiring(check, frames)"
+      in _ug_checks,
+      "9bq5 the ground suite must replay the frames, the rings, the timing quirk and the view")
+
 # ── Layer 9bi2: tactical command visuals (gather marker, feedback banner, floating text) ──
 from tactical_draw_source_oracle import source_fixture as tactical_draw_fixture
 _td_path = ROOT / "tests/fixtures/tactical_draw_source.json"
