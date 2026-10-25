@@ -1505,7 +1505,7 @@ func _activate_hero_panel_action(action_id: String) -> void:
 					if raw_item != null:
 						var item_id := String(raw_item)
 						if not hero.items.item(item_id).is_empty():
-						inspect_item = item_id
+							inspect_item = item_id
 				_open_item_forge_for_hero(hero.id, inspect_item)
 
 
