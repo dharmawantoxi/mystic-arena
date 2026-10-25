@@ -1738,7 +1738,7 @@ func _controller_hover_button() -> Button:
 
 
 func _controller_activate_hover() -> bool:
-	var pointer := controller_cursor.cursor_position
+	var pointer: Vector2 = controller_cursor.cursor_position
 	if _overlay_action_rect_at(pointer) != null or _overlay_panel_captures_pointer(pointer):
 		_primary_action(pointer)
 		return true

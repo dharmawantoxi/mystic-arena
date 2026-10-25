@@ -26,7 +26,9 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		var state: Dictionary = screen.arena.get("build_popup_state")
 		var card: Rect2i = BuildLayout.state_button_rect(state, index)
 		var before_gold: int = world.economy.gold[world.BLUE]
-		var point := screen.arena.get_global_transform_with_canvas() * Vector2(card.get_center())
+		var point: Vector2 = (
+			screen.arena.get_global_transform_with_canvas() * Vector2(card.get_center())
+		)
 		match index:
 			0:
 				_mouse_press(screen, point, MOUSE_BUTTON_LEFT)
@@ -229,7 +231,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		HeroLayout.panel_rect(hero_state).position.x + 6,
 		HeroLayout.panel_rect(hero_state).position.y + 54
 	)
-	var blank_point := screen.arena.get_global_transform_with_canvas() * blank_local
+	var blank_point: Vector2 = screen.arena.get_global_transform_with_canvas() * blank_local
 	screen._primary_action(blank_point)
 	check.call(
 		session.selected_id == hero.id, "Blank HeroPanel click is consumed without deselecting"
