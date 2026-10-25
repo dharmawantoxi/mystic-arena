@@ -113,8 +113,8 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
 - 9bq membake badan 216 boss (pose diam fase 0, dua arah; satu PNG per boss, 2,6 MB) dan
   menggambarnya menggantikan lingkaran bermahkota, dengan bayangan, bar HP, dan papan nama di atas
   puncak sprite (`BOSS_LABEL_TOP`). Rincian di bagian "Slice 9bq".
-- Urutan bake berikutnya (user: "semuanya"): skin HUD/menu (9br: tema, 9bs: latar menu utama;
-  HUD dan arena layar penuh belum), peluru hero, pose jalan/serang boss.
+- Slice kontrol UI dan ambience menu 9br/9bs sudah diselesaikan di PR #341. HUD/arena layar penuh,
+  peluru hero, dan pose jalan/serang boss tetap pekerjaan terpisah, tidak termasuk slice ini.
   `DynamicRenderer` **sudah terport (layer 9d0)**: partikel, kabut, obor,
   rune air, glow/asap toko dan efek lingkungan boss. Tactical commands sudah
   punya state dan render dasar; audit paritas visualnya **sudah dikerjakan (layer 9bi2)**:
@@ -2392,74 +2392,64 @@ Batas yang diketahui: pose jalan, serang, skill, dan kilat luka bawaan sumber, 7
 aura hidup (`_LIVE_FX_HEROES`), serta aura enrage/ability ber-cache masih pendekatan Godot
 (busur) atau kosong; boss `entrance` tetap gambar lama.
 
-## Slice 9br — skin UI dari `ui_theme.py` (layer 9br)
+## Slice 9br — controls UI dari `ui_theme.py` (layer 9br) — selesai
 
-Latar: semua layar memakai satu `Theme` yang dibangun kode (`RebuildTheme.create_theme()`, dipasang
-di `app.gd` dan tiap layar). Palet dan bentuknya (teal gelap, kotak 10 px) tidak ada di pygame,
-yang memakai `ui_theme.py`: panel kaca gelap (gradasi, border emas, sudut emas, bayangan) dan
-tombol pil berwarna.
+Port ini melengkapi panel/pill skin yang sudah ada dengan presentasi tombol menu utama, ikon,
+toggle, slider, dan tab berdasarkan helper asli `ui_theme.py`.
 
-- `bake/bake_ui_theme.py` memanggil `ui_theme.panel()` dan `ui_theme.pill()` ASLI pada kanvas
-  transparan. `panels.png` (160x80) berisi dua panel 80x80 (`panel_bold` = panggilan dialog
-  `border_w=2`, `panel` = bawaan; rect 72x72 di (4, 4) sehingga bayangan 4 px ada di tepi kanvas).
-  `pills.png` (432x144) berisi 8 jenis pil x normal/hover (dengan glow radial)/disabled, kanvas
-  54x48, rect 24x24 di (15, 12). Hasil deterministik (dua run identik), 7,7 KB. `draw_text`
-  dimatikan saat bake karena teks digambar Godot.
-- `data/art/ui_theme.json`: palet (semua konstanta warna modul, 32), frame, margin nine-patch
-  (panel 20 px; pil 23x20), `expand` (bayangan 4 px; glow 15x12) dan tabel warna pil yang dibaca dari
-  literal `colors` di sumber `pill()` (fill atas/bawah, tepi, teks).
-- `scripts/ui/ui_skin.gd`: memotong `StyleBoxTexture` (`region_rect`, margin, expand) dari sheet
-  menurut frame manifest; mengembalikan null bila sheet belum diimpor.
-- `rebuild_theme.gd`: konstanta palet kini nilai `ui_theme.py` (INK = TEXT_WHITE, MUTED = TEXT_DIM,
-  GOLD, CYAN; `TEAL` tetap sebagai nama lama = CYAN). Button: normal = pil `neutral`, hover = pil
-  `neutral` hover, pressed = pil `gold` hover, disabled = pil `locked` disabled; teks
-  `TEXT_BODY`/`GOLD_TEXT`/`TEXT_FAINT`. `PanelContainer` = panel dialog. Variasi tipe
-  `GoldButton`, `SuccessButton`, `DangerButton`, `CyanButton`, `VioletButton` (jenis pil sumber).
-  ProgressBar (track `hp_bar`), scrollbar (track dan jempol emas `scroll_indicator`) dan
-  PopupMenu (panel + hover) memakai warna sumber. `create_theme(false)` memaksa fallback datar
-  dengan warna yang sama (juga yang tampil bila sheet belum diimpor). Baris Hero Shop memakai warna
-  kartu level sumber (`OPEN_*`, `LOCKED_*`). Warna kosong atau nama tak dikenal tampil magenta.
-- `project.godot`: warna clear = `BG_DEEP` (9, 12, 26).
-- `tests/ui_skin_checks.gd`: konstanta tema = konstanta `ui_theme.py` dari manifest, sheet terdekode
-  dengan ukuran manifest, 24 frame pil + 2 panel di dalam sheet, piksel kunci (tengah buram, cincin
-  bayangan tembus, sudut kanvas pil transparan), Button/Panel/variasi memakai frame yang benar
-  dengan margin hasil bake, fallback datar, dan warna baris Hero Shop. Validator memeriksa palet
-  manifest = setiap konstanta di `ui_theme.py`, hash PNG, tabel warna pil, tiap `Color8` tema
-  bertanda nama sumber, dan fragmen sumber. Workflow dipicu perubahan `ui_theme.py`.
+- `bake/bake_ui_theme.py` menjalankan fungsi asli `button()`, `toggle()`, `tab()`, dan
+  `draw_icon()`; glow slider memakai helper radial sumber yang sama, sedangkan track/gradasi
+  dinamis digambar native agar nilai bisa berubah saat volume diperbarui. Label sengaja
+  ditiadakan agar teks Godot tetap dapat diterjemahkan. Aset baru: `buttons.png` (8 aksen x normal/hover), `toggles.png` (ON/OFF x
+  normal/hover), `tabs.png` (starter/mini/true x aktif/tidak aktif/hover), `icons.png` (seluruh
+  glyph vektor sumber), dan `slider_glow.png`. Manifest mencatat ukuran, hash, frame, aksen,
+  margin nine-patch, dan keadaan setiap kontrol.
+- `ui_skin.gd` menyediakan loader frame/stylebox untuk kontrol tersebut. `source_ui_button.gd`
+  memasang latar premium, ikon badge dan label live pada tombol menu utama; Hero Shop permanen
+  dan in-match memakai tab aktif/inaktif dengan aksen sumber. Tombol tetap menerima input dan
+  label lokalisasi yang sama.
+- Settings menampilkan slider volume bergradasi dan dua toggle sumber: Screen Shake (default
+  mati) dan Damage Numbers (default hidup). `presentation_settings_store.gd` menyimpan keduanya
+  secara atomik; sebelum layar match dipasang, `PrototypeBattle.apply_presentation_settings()`
+  meneruskan nilai ke `EffectManager`.
+- Suite `ui_skin_checks.gd` memeriksa hash, dimensi, frame, aksen, glyph serta mapping stylebox;
+  `presentation_settings_checks.gd` memeriksa round-trip dan proteksi korupsi; cek scene audio
+  menekan toggle, slider dan memverifikasi preferensi benar-benar mencapai efek match.
+  `validate_project.py` memeriksa manifest terhadap konstanta dan helper sumber.
 
-Divergensi yang diterima: glow hover di-bake untuk satu ukuran lalu diregang (sumber menggambarnya
-elips sesuai ukuran tombol); bayangan panel sumber berupa cincin 4 px alpha 110 bersudut siku;
-tombol menu utama (`button()` dengan aksen kiri dan ikon), toggle, slider dan tab belum diport; font
-tetap Barlow Regular 20 dan SemiBold untuk tombol (sumber: Barlow Bold berspasi huruf).
+Divergensi yang diterima: slider nilai diubah lewat tombol +/- seperti panel sumber; ia bukan
+kontrol drag terpisah. Gradien slider dibangun native dari endpoint warna yang sama, sedangkan
+radial glow diambil dari helper sumber dan hit-test glow memakai radius knob 11 px. Tombol
+menampilkan label melalui font SemiBold Godot alih-alih font pygame `body_bold`; ikon dan geometri
+latar dibake dari fungsi vektor/paint sumber.
 
-## Slice 9bs — latar menu utama dan warna scene (layer 9bs)
+## Slice 9bs — latar dan ambience menu utama (layer 9bs) — selesai
 
-Latar: menu utama Godot memakai lukisan buatan sendiri (`menu_backdrop.gd`, "bukan port"), sedangkan
-pygame menampilkan satu surface 1280x720 hasil `Menu._build_main_background` (langit malam, nebula,
-170 bintang, bulan besar, cincin rune, dua lapis gunung, tiga lane bercahaya, dua portal, kristal rune,
-grid dan vignette). Kabut dan partikel animasi di atasnya belum diport.
+- `bake/bake_menu_background.py` menjalankan `Menu._build_main_background()` dan
+  `Menu._build_menu_fog()` yang asli. Latar statis tetap `main_background.png` 1280x720;
+  `menu_fog.png` berisi dua surface transparan 1500x720 dalam atlas 3000x720. `menu.json`
+  menyimpan hash, frame, kecepatan parallax 0,35/0,6, alpha sumber 26/18, dan probe piksel latar.
+- `menu_ambient_fx.gd` dilapis sesudah backdrop dan sebelum konten menu. Ia menggulir dua
+  lapis kabut (dua blit wrap per lapis), menggunakan skala/crop `cover_rect` yang sama dengan
+  background, lalu menggambar 64 partikel ember/arcane dengan ukuran, warna, drift, wrap,
+  denyut alpha dan fase arcane dari rumus `_core.py`. Aset fog ialah hasil bake sumber; partikel
+  tetap hidup/teranimasi, bukan satu frame statis.
+- `menu_ambient_layout.gd` mengisolasi rumus update, wrap, alpha fog dan denyut partikel.
+  Oracle `menu_ambient_source_oracle.py` memanen metode Menu asli dengan AST dan merekam
+  partikel awal, RNG wrap, snapshot sampai tick 800 serta lingkaran gambar sumber. Native
+  `menu_ambient_checks.gd` memutar fixture dan memeriksa tekstur; scene test memastikan node
+  ambience benar-benar menggambar, waktu maju, dua lapis fog dan 64 partikel tampak aktif.
+- Divergensi yang diterima: inisialisasi runtime menggunakan `RandomNumberGenerator` Godot,
+  bukan stream `random` Python; rentang, peluang, warna dan rumus gerak tetap sama. Replay CI
+  memasok nilai inisialisasi/wrap fixture yang diambil dari sumber, jadi update math diuji tanpa
+  mengklaim kedua RNG menghasilkan urutan acak identik. Sumber menggambar fog hanya ketika
+  `Quality.cheap_alpha` aktif; Godot membiarkan fog menu tetap hidup agar ambience port selalu
+  tampil. Lingkaran partikel digambar langsung oleh CanvasItem, bukan melalui surface sementara.
 
-- `bake/bake_menu_background.py` menjalankan `Menu._build_main_background` ASLI pada `Menu` hidup dan
-  menulis `assets/art/menu/main_background.png` (1280x720, 107 KB, deterministik: dua run identik).
-  `data/art/menu.json` memuat ukuran, hash, dan sembilan piksel kunci seperti yang dipegang surface
-  sumber (`probes`), sehingga Godot di-pin ke sumber, bukan ke salinan.
-- `menu_backdrop.gd`: menggambar PNG itu menutupi jendela (`cover_rect`: skala seragam, di tengah;
-  jendela lebih lebar atau tinggi dipotong, tidak diregang). Lukisan lama tetap sebagai cadangan
-  (`_draw_fallback`) bila sheet belum diimpor. `background_draws` membuktikan jalur baked jalan.
-- `rebuild_theme.title()`: judul layar = emas badan `outline_text` (tengah gradasi `GOLD_BRIGHT` ->
-  (196, 138, 40) = (225, 185, 99)) dengan outline gelap (8, 9, 18) selebar 2 px.
-- Scene: literal teal lama diganti warna `ui_theme.py` (label redup = `TEXT_DIM`, hitungan emas =
-  `GOLD`, eyebrow menu = `CYAN`) dan peredup jeda = (10, 10, 20, 200) seperti `_draw_pause_background`
-  (8 + 1 + 1 + 4 literal di `MinionArena`, `Match`, `MainMenu`, `PrototypeMatch`, `SiegeArena`).
-- `tests/menu_art_checks.gd`: sheet terdekode 1280x720, setiap piksel kunci sama dengan surface
-  sumber, `cover_rect` untuk jendela 16:9, lebar, tinggi dan acak selalu menutup, dan tak ada scene yang
-  masih memakai literal lama. `run_all.gd` membuktikan menu sungguhan menggambar jalur baked
-  (`Backdrop.background_draws > 0`). Validator memeriksa hash PNG, fragmen `_build_main_background`,
-  bake, backdrop, warna judul (dari `outline_text`) dan hitungan warna scene.
-
-Belum: arena layar penuh dan HUD ringkas. Arena tetap 0,7 di dalam bingkai HUD karena skala 1,0
-menaruh TopBar, BottomBar dan TacticalPanel (yang tombolnya ditekan tes lewat event mouse sungguhan)
-di atas lane; perubahan itu perlu desain ulang HUD dan tidak bisa diverifikasi tanpa engine lokal.
+Validasi visual/runtime lokal belum dilakukan: Godot tidak tersedia di sandbox. Validasi lokal
+`validate_project.py` lulus 21.017 static checks; `gdformat --check`, `gdlint`, dan kompilasi
+Python juga lulus. Suite native sudah terdaftar tetapi belum dijalankan lokal; status CI PR untuk
+perubahan ini dicatat setelah workflow selesai.
 
 ## Slice 9bt — tebasan serang dan animasi kematian minion
 
@@ -3721,33 +3711,100 @@ terisi (slot build kosong terpilih), setelah `draw_tactical_commands` dan sebelu
 
 - Oracle `tests/build_popup_draw_source_oracle.py` menjalankan `draw`, `_draw_tower_buttons`
   dan `_draw_close_button` (warisan `BaseUIComponent`) ASLI beserta `ui_theme.draw_icon`,
-  `ui_theme.corner_ticks` dan `ui_theme.fit_ellipsis` di shim perekam. `_shadow`, `_vgrad`,
-  `_radial` dan `outline_text` direkam sebagai satu op. Setiap helper yang di-harvest
-  didahului op `section`. `_popup_di_panel` dijalankan asli; fixture tidak mengaktifkan
-  panel samping mobile, jadi popup memakai posisi fallback di atas peta.
-  - Fixture berisi 9 frame dan 751 op: pusat, jepit atas/kiri/kanan, hover X, hover kartu,
-    emas tak cukup, panel flat, dan emas ribuan.
+  `ui_theme.corner_ticks`, `ui_theme.fit_ellipsis`, `_popup_di_panel`, dan helper asli
+  `platform_utils.panel_popup_pos` di shim perekam. `_shadow`, `_vgrad`, `_radial` dan
+  `outline_text` direkam sebagai satu op; setiap helper yang di-harvest didahului op `section`.
+  - Fixture berisi 11 frame / 891 op: sembilan kasus fallback lama, popup lebar 344 px dengan
+    hover tower di full surface, dan dock minimum 120 px dengan popup flat 104 px.
 - `scripts/ui/build_popup_layout.gd` membangun op yang sama:
-  - `origin` meniru urutan cek sumber (pusat di slot, 30 px di atas, jepit ke frame);
-  - garis konektor emas dari bawah-tengah kartu ke slot;
+  - `origin` fallback meniru urutan cek sumber (pusat di slot, 30 px di atas, jepit ke frame);
+  - `mobile_geometry` meniru `min(400, panel.width - 16)` dan `panel_popup_pos`, termasuk posisi
+    penuh di dock kanan; lebar popup dan semua rect tombol mengikuti hasil compact;
+  - garis konektor emas dari bawah-tengah kartu ke slot hanya di fallback arena;
   - bayangan, gradasi `(34,40,68)->(16,19,36)`, tepi 2 px `ui_theme.GOLD`, sudut emas;
   - judul Cinzel "BUILD TOWER", baris `Gold: n (Cost: 100)`;
   - tombol X (hover merah);
   - grid 2x2 empat kartu tower (archer, cannon, ice, mage) dengan ikon koin, biaya, glow
     hover, dan sudut emas bila emas mencukupi.
 - `prototype_view.gd` melukis layer `build_popup` setelah `tactical_feedback` dan sebelum
-  `end_overlay`, memakai `build_popup_state` dari layar.
-- `prototype_screen.gd` mengisi state setiap frame saat slot build kosong terpilih
-  (`selected_slot_id` dengan `structure_id == -1`): x, y dan emas.
-- Bukti: `tests/build_popup_draw_checks.gd` (replay semua frame, rect kartu dan X, urutan
-  layer, kosong bila tidak ada slot), blok 9bv7 di `validate_project.py`, dan baris oracle di
-  workflow.
+  `end_overlay` hanya untuk fallback arena; saat state membawa `panel_pos`, painter arena
+  melepasnya agar tidak digambar dua kali.
+- `prototype_screen.gd` mengisi state slot kosong (`selected_slot_id` dengan
+  `structure_id == -1`) setiap frame: x, y, emas, dan geometri compact jika SidePanel aktif.
+  Snapshot yang sama masuk ke `SidePanel`, yang melukis popup setelah latar/konten dock dan
+  sebelum HeroPanel, termasuk hover per frame. Flag popup juga menjaga hit-test agar command
+  dock yang tertutup tidak menerima tap (Pause tetap lolos), sesuai SidePanel sumber.
+- Bukti: `tests/build_popup_draw_checks.gd` replay semua frame dan rect kartu/X, anchor wide/narrow,
+  skip painter arena untuk state dock, urutan layer dan state kosong; guard 9bv7 di
+  `validate_project.py`; oracle tetap dijalankan di workflow.
 
 Batas:
-- Cabang panel samping lebar (`_popup_di_panel` mengembalikan surface) belum diport; popup
-  tetap memakai posisi fallback. Cabang cheap-alpha dan flat keduanya diport.
-- Deskripsi empat kartu tidak mencapai lebar pemotongan `fit_ellipsis` pada fixture, jadi
-  Godot belum meniru pemotongan bila deskripsi sumber berubah jadi lebih panjang.
-- Klik di popup tidak dilayani (tombol HUD yang memicu build); perilaku game tidak berubah.
+- Cabang cheap-alpha dan flat keduanya dicakup. Pada dock minimum 120 px, popup mengikuti sumber
+  dengan lebar 104 px, sehingga teks kartu rapat/berpotensi melampaui kartu sama seperti sumber.
+- Fixture compact kini menjalankan `fit_ellipsis`; shim recorder memaksa fallback `...` karena
+  tidak memodelkan glyph U+2026. SidePanel memilih `…` bila font Barlow memilikinya; metrik font
+  aktual tetap tidak dipatok pixel-per-pixel.
+- Interaksi belum masuk pada saat slice 9bv7; sudah ditambahkan lewat router 9bv9 di bawah.
 - Belum ada review visual di Godot. Bukan klaim pixel parity.
 
+## Slice 9bv8 — panel hero dan enam slot item (layer 9bv8)
+
+Sumber: `ui_components/_bundle.py::HeroPanel.draw` beserta helper panel/skill/tombolnya, dan
+`hero_items.py::HeroItemRenderer.draw`. `Game.draw` hanya memanggil panel untuk hero terpilih yang
+masih hidup, setelah popup build. Pada slice 9bv8 panel dikirim sebagai gambar dan snapshot
+view-only; router aksi ditambahkan di slice 9bv9 di bawah.
+
+- Oracle `tests/hero_panel_draw_source_oracle.py` menjalankan metode sumber asli bersama
+  `ui_theme` dan `HeroItemRenderer` di shim recorder. Fixture berisi 6 frame / 440 op:
+  fallback siap, HP rendah + auto-cast, panel flat dengan upgrade terkunci, anchor mobile + hover
+  tombol tutup, level maksimum dengan enam item, dan hover upgrade. Kedua cabang cheap-alpha
+  tercakup.
+- `scripts/ui/hero_panel_layout.gd` menyusun panel 280 x 276 di fallback kiri-bawah
+  (x = 20, y = 424 pada 1280 x 720), dengan opsi `panel_pos`, gradasi/bayangan dan sudut emas,
+  nama + level, HP, empat skill/cooldown, toggle auto-cast, enam slot item, tombol ITEM FORGE,
+  upgrade dan tutup. Helper geometri mengekspos rect panel serta semua tombol/slot.
+- `prototype_view.gd` melukis layer `hero_panel` setelah `build_popup` dan sebelum `end_overlay`;
+  `boss_death` tetap layer terakhir. `prototype_screen.gd` menyerahkan hanya snapshot hero biru
+  terpilih yang hidup, gold/upgrade, cooldown, dan metadata item melalui `arena.set()`.
+- Bukti: `tests/hero_panel_draw_checks.gd` replay frame, warna dan rect keenam slot/tombol,
+  memastikan panel kosong tanpa state, dan memeriksa urutan layer. Suite sudah terdaftar di
+  `tests/run_all.gd`; guard 9bv8 di `validate_project.py` dan command oracle di workflow.
+
+Batas:
+- Interaksi belum masuk pada saat slice 9bv8; sudah dilayani di 9bv9. Jalur right-click drop
+  pada HeroPanel tidak diport karena handler sumber lebih dulu mengembalikan false saat
+  `button != 1`; right-click drop yang hidup tetap tersedia di Item Forge.
+  `mobile_panel_origin` mengikuti `panel_pos_bawah(280, 276)` pada dock kanan yang lebarnya minimal
+  288 px; dock yang lebih sempit tetap memakai fallback kiri-bawah. Saat dock aktif, `SidePanel`
+  menggambar ulang panel di atas latar batu, mengikuti pulse/hover per frame.
+- Belum ada runtime atau review visual di Godot. Bukan klaim pixel parity.
+
+
+
+## Slice 9bv9 — interaksi BuildPopup dan HeroPanel (9bv9)
+
+Sumber: `_core.py::InputHandler.handle_click`, `handle_build_popup_click`, dan
+`handle_hero_panel_click`, dengan tombol/rect sumber dari `ui_components/_bundle.py`. Aksi melewati
+`PrototypeSession` dan `Forge`; painter hanya menampilkan snapshot.
+
+- Router input kini melayani mouse, tap/long-press sentuh, side dock, dan pointer controller. Hitbox
+  memakai target sumber 48 x 48 px dengan padding 6 px dan urutan tombol sumber, termasuk dock
+  sempit dan rect yang saling tumpang tindih. Klik kiri mouse di arena sekarang masuk ke dispatch
+  yang sama dengan tap/controller; klik kanan di luar HeroPanel tetap memakai jalur perintah bergerak
+  setelah routing popup (klik di dalam HeroPanel dikonsumsi sesuai handler sumber).
+- BuildPopup: tombol X menutup pilihan slot; empat kartu membuat request archer/cannon/ice/mage
+  untuk ID slot yang ditangkap snapshot. Klik yang bukan tombol menutup popup lalu meneruskan klik
+  ke pemilihan dunia; request build tetap menunggu fixed tick, sehingga validasi gold/slot dan debit
+  tidak dipindah ke view. Klik dock dikirim oleh `SidePanel.overlay_pressed`; tombol Pause tetap
+  memiliki prioritasnya.
+- HeroPanel: tombol tutup membatalkan pilihan; upgrade dan auto-cast memakai
+  `request_hero_upgrade` / `request_autocast`; ITEM FORGE dan slot inventori membuka panel forge
+  yang ada, menetapkan hero terpilih sebagai target, dan slot berisi membuka detail item. Slot kosong
+  membuka forge tanpa membuat detail palsu. Klik kosong di dalam panel tetap tertangkap.
+- Tidak ada mutasi langsung pada gold, level, item inventory, atau status autocast dari painter/input
+  view. Semua transaksi gameplay memakai jalur sesi/forge yang sudah ada.
+- Bukti: `tests/popup_interaction_scene_checks.gd` menguji empat jalur build, close/dismiss, mouse,
+  sentuh, controller, dock, autocast, upgrade, Forge target/detail, serta guard right-click sumber;
+  suite masuk `tests/run_all.gd`. Pin 9bv9 ada di `tests/validate_project.py`.
+
+Batas: tidak ada Godot lokal untuk runtime atau review visual. Tidak diklaim pixel parity.

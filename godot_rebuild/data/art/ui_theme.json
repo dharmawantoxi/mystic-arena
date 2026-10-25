@@ -1,4 +1,136 @@
 {
+ "controls": {
+  "buttons": {
+   "accents": {
+    "continue": [140,225,255],
+    "credits": [200,130,210],
+    "help": [110,180,255],
+    "hero": [255,220,100],
+    "input": [100,200,220],
+    "play": [100,220,110],
+    "quit": [225,90,90],
+    "settings": [205,180,105]
+   },
+   "bytes": 11058,
+   "canvas": [422,94],
+   "expands": {
+    "hover": [22,18],
+    "normal": [31,22]
+   },
+   "frames": {
+    "continue:hover": [0,94,422,94],
+    "continue:normal": [0,0,422,94],
+    "credits:hover": [2532,94,422,94],
+    "credits:normal": [2532,0,422,94],
+    "help:hover": [1688,94,422,94],
+    "help:normal": [1688,0,422,94],
+    "hero:hover": [844,94,422,94],
+    "hero:normal": [844,0,422,94],
+    "input:hover": [1266,94,422,94],
+    "input:normal": [1266,0,422,94],
+    "play:hover": [422,94,422,94],
+    "play:normal": [422,0,422,94],
+    "quit:hover": [2954,94,422,94],
+    "quit:normal": [2954,0,422,94],
+    "settings:hover": [2110,94,422,94],
+    "settings:normal": [2110,0,422,94]
+   },
+   "margins": {
+    "hover": [22,18],
+    "normal": [31,22]
+   },
+   "sha256": "a8cd8f0740ffd466d1636b11d8611b700ded2d2ade1576a9769062708c922648",
+   "size": [3376,188],
+   "states": ["normal","hover"],
+   "styles": ["continue","play","hero","input","help","settings","credits","quit"]
+  },
+  "icons": {
+   "bytes": 2042,
+   "frames": {
+    "back": [0,0,36,36],
+    "bolt": [36,0,36,36],
+    "check": [72,0,36,36],
+    "chevron_l": [108,0,36,36],
+    "chevron_r": [144,0,36,36],
+    "cloud": [180,0,36,36],
+    "coin": [0,36,36,36],
+    "continue": [36,36,36,36],
+    "crown": [72,36,36,36],
+    "download": [108,36,36,36],
+    "gear": [144,36,36,36],
+    "gem": [180,36,36,36],
+    "heart": [0,72,36,36],
+    "help": [36,72,36,36],
+    "lock": [72,72,36,36],
+    "minus": [108,72,36,36],
+    "monitor": [144,72,36,36],
+    "pad": [180,72,36,36],
+    "play": [0,108,36,36],
+    "plus": [36,108,36,36],
+    "quit": [72,108,36,36],
+    "shield": [108,108,36,36],
+    "skull": [144,108,36,36],
+    "speaker": [180,108,36,36],
+    "star": [0,144,36,36],
+    "swords": [36,144,36,36],
+    "trophy": [72,144,36,36],
+    "upload": [108,144,36,36],
+    "warn": [144,144,36,36]
+   },
+   "names": ["back","bolt","check","chevron_l","chevron_r","cloud","coin","continue","crown","download","gear","gem","heart","help","lock","minus","monitor","pad","play","plus","quit","shield","skull","speaker","star","swords","trophy","upload","warn"],
+   "sha256": "90082151b80c01f1ca15f18dd49b590c180df39a89b6050b98a3fc28b765206f",
+   "size": [216,180],
+   "tile": [36,36]
+  },
+  "slider_glow": {
+   "bytes": 356,
+   "frame": [0,0,36,36],
+   "sha256": "ee9e73a70b89a6e5b4c3e903ad3c778499415553622e7cfd94b0d9b6c78a82ad",
+   "size": [36,36],
+   "source": "ui_theme._radial(36, 36, GOLD, 80)"
+  },
+  "tabs": {
+   "accents": {
+    "mini": [255,150,100],
+    "starter": [100,200,255],
+    "true": [255,80,100]
+   },
+   "bytes": 2227,
+   "canvas": [320,40],
+   "expand": [0,0],
+   "frames": {
+    "mini:active": [320,0,320,40],
+    "mini:hover": [320,80,320,40],
+    "mini:inactive": [320,40,320,40],
+    "starter:active": [0,0,320,40],
+    "starter:hover": [0,80,320,40],
+    "starter:inactive": [0,40,320,40],
+    "true:active": [640,0,320,40],
+    "true:hover": [640,80,320,40],
+    "true:inactive": [640,40,320,40]
+   },
+   "margin": [10,10],
+   "sha256": "b7be82bce31eda92b0de1be8686c9eb755bf1caa937dec6bc6db8be1cce91c36",
+   "size": [960,120],
+   "states": ["active","inactive","hover"],
+   "styles": ["starter","mini","true"]
+  },
+  "toggles": {
+   "bytes": 1758,
+   "canvas": [60,26],
+   "expand": [0,0],
+   "frames": {
+    "off": [0,0,60,26],
+    "off_hover": [60,0,60,26],
+    "on": [0,26,60,26],
+    "on_hover": [60,26,60,26]
+   },
+   "margin": [13,13],
+   "sha256": "8471058747ad0f6e72358046b57d81ec459c25bbfa93bab7ed6a57c6ae1da096",
+   "size": [120,52],
+   "states": ["off","off_hover","on","on_hover"]
+  }
+ },
  "generator": "godot_rebuild/bake/bake_ui_theme.py",
  "palette": {
   "BG_DEEP": [9,12,26],
@@ -133,5 +265,5 @@
   "states": ["normal","hover","disabled"]
  },
  "pygame": "2.6.1",
- "source": "ui_theme.py panel / pill"
+ "source": "ui_theme.py panel / pill / button / toggle / slider glow / tab / draw_icon"
 }

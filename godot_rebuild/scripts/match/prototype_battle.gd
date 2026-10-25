@@ -39,6 +39,7 @@ const LevelProgress = preload("res://scripts/match/level_progress.gd")
 const LevelStats = preload("res://scripts/match/level_stats.gd")
 const LevelProgressStore = preload("res://scripts/match/level_progress_store.gd")
 const SaveSlotStore = preload("res://scripts/match/save_slot_store.gd")
+const PresentationStore = preload("res://scripts/settings/presentation_settings_store.gd")
 const BOSS_DATA := "res://data/bosses/boss_stats.json"
 const RANGED_BOSS_KITERS := [
 	"ancient_apparition",
@@ -686,6 +687,17 @@ func commit_level_result(
 
 func structure_limit() -> int:
 	return 20  # Nine slots per team plus two nexuses.
+
+
+func apply_presentation_settings() -> void:
+	var options := PresentationStore.load_settings()
+	effects.set_quality_settings(
+		bool(options.get("damage_numbers", true)),
+		effects.particles_enabled,
+		effects.particle_ratio,
+		effects.max_damage_numbers,
+		bool(options.get("screen_shake", false))
+	)
 
 
 func setup_arena() -> bool:

@@ -5017,7 +5017,7 @@ check("if mgr is None or not mgr.is_controller_mode():" in _ih_draw
 check("var x := (SCREEN_WIDTH - total_w) >> 1" in _ih_layout and "const BAR_Y := 690" in _ih_layout,
       "9bv4 layout must keep the centred floor start and y = SCREEN_HEIGHT - 30")
 check('const InputHintLayout = preload("res://scripts/ui/input_hint_layout.gd")' in _ih_view
-      and re.search(r'"tactical_feedback",\s*"build_popup",\s*"end_overlay",\s*"input_hints",\s*"level_intro",',
+      and re.search(r'"tactical_feedback",\s*"build_popup",\s*"hero_panel",\s*"end_overlay",\s*"input_hints",\s*"level_intro",',
                     _ih_view) is not None
       and '"input_hints":\n\t\t\t_draw_input_hints(world)' in _ih_view
       and "func input_hints_blocked(" in _ih_view,
@@ -5069,7 +5069,7 @@ check("if unlock_popup_timer < EndOverlayLayout.UNLOCK_DELAY:" in _eo_view
       and "Control.MOUSE_FILTER_IGNORE if result else Control.MOUSE_FILTER_STOP" in _eo_screen,
       "9bv6 view/screen must cap the timer like pygame and route PLAY NEXT LEVEL clicks")
 check('const EndOverlayLayout = preload("res://scripts/ui/end_overlay_layout.gd")' in _eo_view
-      and re.search(r'"tactical_feedback",\s*"build_popup",\s*"end_overlay",\s*"input_hints",',
+      and re.search(r'"tactical_feedback",\s*"build_popup",\s*"hero_panel",\s*"end_overlay",\s*"input_hints",',
                     _eo_view) is not None
       and '"end_overlay":\n\t\t\t_draw_end_overlay(world)' in _eo_view
       and "state[\"animation_time\"] = world.tick_count" in _eo_view,
@@ -5085,7 +5085,9 @@ _bp_path = ROOT / "tests/fixtures/build_popup_draw_source.json"
 _bp_layout = (ROOT / "scripts/ui/build_popup_layout.gd").read_text(encoding="utf-8")
 _bp_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
 _bp_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+_bp_side_panel = (ROOT / "scripts/ui/side_panel.gd").read_text(encoding="utf-8")
 _bp_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+_bp_platform_utils = (ROOT.parent / "mobile/platform_utils.py").read_text(encoding="utf-8")
 check('const BuildPopupDrawChecks = preload("res://tests/build_popup_draw_checks.gd")' in ai_tests
       and "BuildPopupDrawChecks.new().run(_check)" in ai_tests,
       "9bv7 build popup draw suite must be preloaded and run in the native suite")
@@ -5095,26 +5097,173 @@ check(_bp_path.is_file(), "9bv7 build popup fixture must exist")
 if _bp_path.is_file():
     _bp = json.loads(_bp_path.read_text(encoding="utf-8"))
     check(build_popup_draw_fixture() == _bp, "9bv7 build popup fixture must not drift from the source")
-    check(len(_bp["frames"]) == 9 and sum(len(f["ops"]) for f in _bp["frames"]) == 751
-          and {f["cheap_alpha"] for f in _bp["frames"]} == {True, False},
-          "9bv7 fixture must pin 9 frames / 751 ops over both the cheap-alpha and flat branches")
+    check(len(_bp["frames"]) == 11 and sum(len(f["ops"]) for f in _bp["frames"]) == 891
+          and {f["cheap_alpha"] for f in _bp["frames"]} == {True, False}
+          and any(f["label"] == "wide_panel_hover_tower" and f["target_surface"] == "side_panel"
+                  for f in _bp["frames"])
+          and any(f["label"] == "narrow_panel_flat" and f["panel"] == [1280, 0, 120, 720]
+                  for f in _bp["frames"]),
+          "9bv7 fixture must pin 11 frames / 891 ops, both fills, and compact mobile side-panel routes")
 check("if self.build_popup_slot is not None:\n            self.ui.draw_build_popup(self.screen)"
       in _bp_core, "9bv7 source must still paint the build popup while a build slot is set")
 check("static func origin(slot_x: int, slot_y: int) -> Vector2i:" in _bp_layout
+      and "static func mobile_geometry(panel: Rect2i) -> Dictionary:" in _bp_layout
+      and "static func state_button_rect(state: Dictionary, index: int) -> Rect2i:" in _bp_layout
+      and "static func state_close_rect(state: Dictionary) -> Rect2i:" in _bp_layout
+      and "func _fit_ellipsis(text: String, font_size: int, max_width: int) -> String:" in _bp_layout
       and "static func button_rect(slot_x: int, slot_y: int, index: int) -> Rect2i:" in _bp_layout
-      and "static func close_rect(slot_x: int, slot_y: int) -> Rect2i:" in _bp_layout
-      and "const TOWER_TYPES :=" in _bp_layout,
-      "9bv7 layout must keep the fallback origin, the card rects and the four tower types")
+      and "const TOWER_TYPES :=" in _bp_layout
+      and "def panel_popup_pos(w, h, atas=12):" in _bp_platform_utils,
+      "9bv7 layout must keep fallback geometry and match the compact mobile panel helper")
 check('const BuildPopupLayout = preload("res://scripts/ui/build_popup_layout.gd")' in _bp_view
-      and '"tactical_feedback",\n\t"build_popup",\n\t"end_overlay",' in _bp_view
+      and '"tactical_feedback",\n\t"build_popup",\n\t"hero_panel",\n\t"end_overlay",' in _bp_view
       and '"build_popup":\n\t\t\t_draw_build_popup(world)' in _bp_view
       and "func build_popup_draw_ops(" in _bp_view
-      and "if build_popup_state.is_empty() or not world.is_running():" in _bp_view,
-      "9bv7 view must paint the popup between the tactical banner and the end overlay")
-check('arena.set("build_popup_state", _build_popup_state(world, match_session))' in _bp_screen
+      and "build_popup_state.is_empty() or not world.is_running() or build_popup_state.has(\"panel_pos\")"
+      in _bp_view,
+      "9bv7 view must keep fallback order and leave the right-panel branch to SidePanel")
+check('arena.set("build_popup_state", build_popup_state)' in _bp_screen
+      and "var build_popup_state := _build_popup_state(world, match_session)" in _bp_screen
+      and "_update_side_panel(world, hero_panel_state, build_popup_state)" in _bp_screen
       and "func _build_popup_state(world: Prototype, match_session: PrototypeSession) -> Dictionary:" in _bp_screen
-      and "if slot == null or slot.structure_id != -1:" in _bp_screen,
-      "9bv7 screen must hand the selected empty build slot to the arena")
+      and "if not world.is_running():\n\t\treturn {}\n\tvar slot_id := match_session.selected_slot_id" in _bp_screen
+      and "if slot == null or slot.structure_id != -1:" in _bp_screen
+      and "BuildPopupLayout.mobile_geometry(side_panel.panel)" in _bp_screen,
+      "9bv7 screen must supply the selected empty build slot and compact mobile anchor to both painters")
+check('snapshot["build_popup_state"] = build_popup_state' in _bp_screen
+      and "or not build_popup_state.is_empty()" in _bp_screen
+      and 'var previous_build_state: Dictionary = snapshot.get("build_popup_state", {})' in _bp_side_panel
+      and "or not next_build_state.is_empty()" in _bp_side_panel
+      and "func _draw_build_popup_overlay() -> void:" in _bp_side_panel
+      and 'not state.has("panel_pos")' in _bp_side_panel
+      and 'String(snapshot.get("state", "")) != "playing"' in _bp_side_panel
+      and "BuildPopupLayout.ops(" in _bp_side_panel
+      and "BuildPopupBodyFont.has_char(0x2026)" in _bp_side_panel
+      and "func _draw_build_popup_text(op: Dictionary) -> void:" in _bp_side_panel
+      and 'if kind == "circle":' in _bp_side_panel
+      and "draw_set_transform(-Vector2(panel.position)" in _bp_side_panel
+      and "func _draw_build_popup_title(op: Dictionary) -> void:" in _bp_side_panel
+      and _bp_side_panel.index("_draw_build_popup_overlay()") < _bp_side_panel.index("_draw_hero_panel_overlay()"),
+      "9bv7 side dock must draw the compact popup above its opaque contents before HeroPanel")
+
+# ── Layer 9bv8: selected hero panel and its six inventory slots ──
+from hero_panel_draw_source_oracle import source_fixture as hero_panel_draw_fixture
+_hp_path = ROOT / "tests/fixtures/hero_panel_draw_source.json"
+_hp_layout = (ROOT / "scripts/ui/hero_panel_layout.gd").read_text(encoding="utf-8")
+_hp_checks = (ROOT / "tests/hero_panel_draw_checks.gd").read_text(encoding="utf-8")
+_hp_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_hp_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+_hp_side_panel = (ROOT / "scripts/ui/side_panel.gd").read_text(encoding="utf-8")
+_hp_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+_hp_bundle = (ROOT.parent / "ui_components/_bundle.py").read_text(encoding="utf-8")
+_hp_items = (ROOT.parent / "hero_items.py").read_text(encoding="utf-8")
+check('const HeroPanelDrawChecks = preload("res://tests/hero_panel_draw_checks.gd")' in ai_tests
+      and "HeroPanelDrawChecks.new().run(_check)" in ai_tests,
+      "9bv8 HeroPanel draw suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/hero_panel_draw_source_oracle.py" in workflow,
+      "9bv8 CI must run the HeroPanel and HeroItemRenderer source oracle")
+check(_hp_path.is_file(), "9bv8 HeroPanel source fixture must exist")
+if _hp_path.is_file():
+    _hp = json.loads(_hp_path.read_text(encoding="utf-8"))
+    _hp_frames = _hp["frames"]
+    check(hero_panel_draw_fixture() == _hp, "9bv8 HeroPanel fixture must not drift from its source")
+    check(len(_hp_frames) == 6 and sum(len(f["ops"]) for f in _hp_frames) == 440
+          and [f["label"] for f in _hp_frames] == [
+              "ready_fallback", "low_hp_autocast", "locked_flat", "mobile_anchor_hover_close",
+              "max_level_full_inventory_flat", "hover_upgrade"]
+          and _hp["source"] == "ui_components/_bundle.py::HeroPanel.draw + hero_items.py::HeroItemRenderer.draw",
+          "9bv8 fixture must pin the six representative source frames and 440 draw ops")
+    check({f["cheap_alpha"] for f in _hp_frames} == {True, False}
+          and any(f["state"].get("panel_pos") == [975, 420] for f in _hp_frames)
+          and all(f["buttons"].get("hero_item_slot_5") is not None for f in _hp_frames),
+          "9bv8 fixture must cover both panel fills, mobile anchoring, and all six item-slot rects")
+check("if self.selected_hero and self.selected_hero.alive:\n            self.ui.draw_hero_info(self.screen)" in _hp_core
+      and _hp_core.index("self.ui.draw_build_popup(self.screen)")
+      < _hp_core.index("self.ui.draw_hero_info(self.screen)")
+      and "HeroItemRenderer.draw(surface, h, px, y, panel_w)" in _hp_bundle
+      and "for i in range(MAX_ITEM_SLOTS):" in _hp_items,
+      "9bv8 source must draw the live selected hero after the build popup and use all six item slots")
+check("static func panel_rect(state: Dictionary) -> Rect2i:" in _hp_layout
+      and "static func mobile_panel_origin(panel: Rect2i) -> Variant:" in _hp_layout
+      and "static func item_slot_rect(state: Dictionary, index: int) -> Rect2i:" in _hp_layout
+      and "static func upgrade_rect(state: Dictionary) -> Rect2i:" in _hp_layout
+      and "const PANEL_W := 280" in _hp_layout and "const PANEL_H := 276" in _hp_layout,
+      "9bv8 layout must keep the source panel size and expose its panel, item, and upgrade geometry")
+_hp_order_match = re.search(r"const OVERLAY_ORDER := \[(.*?)\]", _hp_view, re.S)
+_hp_order = re.findall(r'"(\w+)"', _hp_order_match.group(1)) if _hp_order_match else []
+check('const HeroPanelLayout = preload("res://scripts/ui/hero_panel_layout.gd")' in _hp_view
+      and '"hero_panel":\n\t\t\t_draw_hero_panel(world)' in _hp_view
+      and "func hero_panel_draw_ops(" in _hp_view
+      and re.search(r'"build_popup",\s*"hero_panel",\s*"end_overlay"', _hp_view) is not None
+      and bool(_hp_order) and _hp_order[-1] == "boss_death",
+      "9bv8 view must paint after the build popup, before results, and leave boss death last")
+check('arena.set("hero_panel_state", hero_panel_state)' in _hp_screen
+      and "var hero_panel_state := _hero_panel_state(world, match_session)" in _hp_screen
+      and "func _hero_panel_state(world: Prototype, match_session: PrototypeSession) -> Dictionary:" in _hp_screen
+      and "selected == null or not selected.alive or selected.team != world.BLUE" in _hp_screen
+      and "HeroPanelLayout.mobile_panel_origin(side_panel.panel)" in _hp_screen
+      and 'state["panel_pos"] = [mobile_origin.x, mobile_origin.y]' in _hp_screen
+      and "func _hero_panel_item_active(inventory: HeroItemInventory, item_id: String) -> bool:" in _hp_screen
+      and "selected.upgrade_cost()" in _hp_screen,
+      "9bv8 screen must hand the live hero snapshot and source mobile anchor to the view")
+check('snapshot["hero_panel_state"] = hero_panel_state' in _hp_screen
+      and 'snapshot["popup_open"] = (' in _hp_screen
+      and "or not hero_panel_state.is_empty()" in _hp_screen
+      and "side_panel.update_snapshot(snapshot)" in _hp_screen
+      and "func _draw_hero_panel_overlay() -> void:" in _hp_side_panel
+      and "HeroPanelLayout.ops(" in _hp_side_panel
+      and "draw_set_transform(-Vector2(panel.position)" in _hp_side_panel
+      and "var overlay_active := (" in _hp_side_panel
+      and "or not previous_build_state.is_empty()" in _hp_side_panel
+      and "if overlay_active:" in _hp_side_panel,
+      "9bv8 wide-screen dock must redraw the source panel above its background at the mobile anchor")
+check("Hero panel oracle pins 6 source frames and 440 draw ops" in _hp_checks
+      and "mobile_panel_origin" in _hp_checks
+      and "hero_panel_draw_ops" in _hp_checks
+      and "for index in range(Layout.ITEM_COUNT):" in _hp_checks
+      and 'order.back() == "boss_death"' in _hp_checks,
+      "9bv8 draw checks must replay the fixture, pin all six slots, and keep the overlay order")
+
+# ── Layer 9bv9: interactive BuildPopup and HeroPanel ──
+_pi_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+_pi_side_panel = (ROOT / "scripts/ui/side_panel.gd").read_text(encoding="utf-8")
+_pi_checks = (ROOT / "tests/popup_interaction_scene_checks.gd").read_text(encoding="utf-8")
+check('const PopupInteractionSceneChecks = preload("res://tests/popup_interaction_scene_checks.gd")' in ai_tests
+      and "PopupInteractionSceneChecks.new().run(root.get_tree(), app, _check)" in ai_tests,
+      "9bv9 popup interaction suite must be preloaded and run in the native scene suite")
+check("side_panel.overlay_pressed.connect(_handle_side_panel_overlay_press)" in _pi_screen
+      and "signal overlay_pressed(screen_position: Vector2i, button_index: int)" in _pi_side_panel
+      and "overlay_pressed.emit(screen_position, button_index)" in _pi_side_panel
+      and "if action.is_empty() and popup_open:" in _pi_side_panel,
+      "9bv9 dock pointer events must route only after SidePanel pause/tactical hit testing")
+check("func _touch_target_rect(rect: Rect2i) -> Rect2i:" in _pi_screen
+      and "maxi(rect.size.x + int(TOUCH_PADDING * 2.0), int(TOUCH_TARGET_MIN))" in _pi_screen
+      and "BuildPopupLayout.state_button_rect(state, index)" in _pi_screen
+      and "HeroPanelLayout.item_slot_rect(state, index)" in _pi_screen
+      and "func _overlay_point(point: Vector2, state: Dictionary) -> Vector2i:" in _pi_screen,
+      "9bv9 input must use source-sized hitboxes and resolve arena versus dock coordinates")
+check('match_session.request_build(slot_id, action.replace("build_", ""))' in _pi_screen
+      and "match_session.request_hero_upgrade(hero.id)" in _pi_screen
+      and "match_session.request_autocast(hero.id)" in _pi_screen
+      and "world.forge.set_selected(hero_id)" in _pi_screen
+      and "world.forge.set_target(hero_id)" in _pi_screen
+      and "shop.inspect_item = inspect_item" in _pi_screen,
+      "9bv9 popup actions must reuse fixed-tick session and forge transactions")
+check("_primary_action(event.position)" in _pi_screen
+      and "_handle_overlay_pointer(event.position, MOUSE_BUTTON_RIGHT)" in _pi_screen
+      and "_handle_overlay_pointer(point, MOUSE_BUTTON_RIGHT)" in _pi_screen
+      and "func _overlay_target_screen_rect(entry: Dictionary, target: Rect2i) -> Rect2:" in _pi_screen
+      and "if _overlay_action_rect_at(point) != null or _overlay_panel_captures_pointer(point):" in _pi_screen
+      and "unreachable behind its button == 1 guard" in _pi_screen,
+      "9bv9 mouse/touch/controller routing must retain priority, transform targets, and preserve the HeroPanel drop guard")
+check('var paths := ["archer", "cannon", "ice", "mage"]' in _pi_checks
+      and "Controller confirm recognizes a painted BuildPopup card" in _pi_checks
+      and "SidePanel mouse input routes a docked BuildPopup card" in _pi_checks
+      and "Occupied HeroPanel slot opens Forge" in _pi_checks
+      and "HeroPanel ITEM FORGE button opens Forge" in _pi_checks
+      and "HeroPanel long-press preserves the same unreachable item-drop guard" in _pi_checks
+      and "Fixed tick activates HeroPanel autocast" in _pi_checks,
+      "9bv9 scene checks must exercise build paths, controller/dock input, touch, Forge and commands")
 
 # ── Layer 9br: UI skin from ui_theme.py (bake/bake_ui_theme.py) ──
 _ui_path = ROOT / "data/art/ui_theme.json"
@@ -5125,6 +5274,13 @@ _ui_skin = (ROOT / "scripts/ui/ui_skin.gd").read_text(encoding="utf-8")
 _ui_theme = (ROOT / "scripts/ui/rebuild_theme.gd").read_text(encoding="utf-8")
 _ui_card = (ROOT / "scripts/ui/hero_shop_card.gd").read_text(encoding="utf-8")
 _ui_project = (ROOT / "project.godot").read_text(encoding="utf-8")
+_ui_button = (ROOT / "scripts/ui/source_ui_button.gd").read_text(encoding="utf-8")
+_ui_toggle = (ROOT / "scripts/ui/ui_theme_toggle.gd").read_text(encoding="utf-8")
+_ui_slider = (ROOT / "scripts/ui/ui_theme_slider.gd").read_text(encoding="utf-8")
+_ui_audio = (ROOT / "scripts/ui/audio_settings_panel.gd").read_text(encoding="utf-8")
+_ui_prefs = (ROOT / "scripts/settings/presentation_settings_store.gd").read_text(encoding="utf-8")
+_ui_battle = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+_ui_app = (ROOT / "app/app.gd").read_text(encoding="utf-8")
 check('const UiSkinChecks = preload("res://tests/ui_skin_checks.gd")' in ai_tests
       and "UiSkinChecks.new().run(_check)" in ai_tests,
       "9br UI skin suite must be preloaded and run in the native suite")
@@ -5151,6 +5307,57 @@ if _ui_path.is_file():
         check(all(w > 0 and h > 0 and x >= 0 and y >= 0 and x + w <= _sheet["size"][0]
                   and y + h <= _sheet["size"][1] for x, y, w, h in _sheet["frames"].values()),
               f"9br every {_sheet_name} frame must lie inside its sheet")
+    _ui_controls = _ui.get("controls", {})
+    for _control_name, _png_name in (("buttons", "buttons.png"), ("tabs", "tabs.png"),
+                                    ("toggles", "toggles.png"), ("icons", "icons.png")):
+        _sheet = _ui_controls.get(_control_name, {})
+        _png = ROOT / "assets/art/ui" / _png_name
+        check(_png.is_file(), f"9br {_png_name} must ship")
+        if _png.is_file():
+            _raw = _png.read_bytes()
+            _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+            check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _sheet.get("size")
+                  and (_depth, _color) == (8, 6),
+                  f"9br {_png_name} must be RGBA8 and match the controls manifest")
+            check(len(_raw) == _sheet.get("bytes")
+                  and hashlib.sha256(_raw).hexdigest() == _sheet.get("sha256"),
+                  f"9br {_png_name} must match its recorded hash")
+        check(all(w > 0 and h > 0 and x >= 0 and y >= 0 and x + w <= _sheet.get("size", [0, 0])[0]
+                  and y + h <= _sheet.get("size", [0, 0])[1]
+                  for x, y, w, h in _sheet.get("frames", {}).values()),
+              f"9br every {_control_name} state lies in its texture sheet")
+    _glow = _ui_controls.get("slider_glow", {})
+    _glow_png = ROOT / "assets/art/ui/slider_glow.png"
+    check(_glow_png.is_file(), "9br the source radial slider glow must ship")
+    if _glow_png.is_file():
+        _raw = _glow_png.read_bytes()
+        _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+        check([_width, _height] == _glow.get("size") == [36, 36]
+              and (_depth, _color) == (8, 6)
+              and len(_raw) == _glow.get("bytes")
+              and hashlib.sha256(_raw).hexdigest() == _glow.get("sha256"),
+              "9br the 36px slider glow matches the source radial bake")
+    check(_ui_controls.get("buttons", {}).get("states") == ["normal", "hover"]
+          and len(_ui_controls.get("buttons", {}).get("frames", {})) == 16
+          and _ui_controls.get("tabs", {}).get("states") == ["active", "inactive", "hover"]
+          and len(_ui_controls.get("tabs", {}).get("frames", {})) == 9
+          and len(_ui_controls.get("toggles", {}).get("frames", {})) == 4,
+          "9br control atlas must contain menu button, toggle and tab state variants")
+    _button_accents = {
+        "continue": [140, 225, 255], "play": [100, 220, 110], "hero": [255, 220, 100],
+        "input": [100, 200, 220], "help": [110, 180, 255], "settings": [205, 180, 105],
+        "credits": [200, 130, 210], "quit": [225, 90, 90],
+    }
+    _tab_accents = {"starter": [100, 200, 255], "mini": [255, 150, 100], "true": [255, 80, 100]}
+    check(_ui_controls.get("buttons", {}).get("accents") == _button_accents
+          and _ui_controls.get("tabs", {}).get("accents") == _tab_accents,
+          "9br menu buttons and hero tabs retain the source accent colours")
+    _icon_source = _ui_src[_ui_src.index("def draw_icon("): _ui_src.index("# ═══════════════════════════════════════════════════════════\n# KOMPONEN")]
+    _icon_names = set(re.findall(r'name\s*==\s*"([^"]+)"', _icon_source))
+    for _group in re.findall(r'name\s+in\s+\(([^)]+)\)', _icon_source):
+        _icon_names.update(re.findall(r'"([^"]+)"', _group))
+    check(set(_ui_controls.get("icons", {}).get("names", [])) == _icon_names,
+          "9br the icon atlas contains every vector glyph in ui_theme.draw_icon")
     _ui_kinds = ["gold", "success", "danger", "locked", "owned", "neutral", "violet", "cyan"]
     check(sorted(_ui["panels"]["frames"]) == ["panel", "panel_bold"]
           and _ui["panels"]["rect"] == [4, 4, 72, 72] and _ui["panels"]["margin"] == 20
@@ -5224,6 +5431,33 @@ check("pill_style(\"gold\", \"hover\", use_skin)" in _ui_theme
       and "skin = UiSkin.panel_box(\"panel_bold\", PANEL_PAD)" in _ui_theme
       and "static func create_theme(use_skin: bool = true) -> Theme:" in _ui_theme,
       "9br the theme must map the pill states, variations and dialog panel with a flat fallback")
+check("static func button_box(" in _ui_skin and "static func tab_box(" in _ui_skin
+      and "static func toggle_box(" in _ui_skin and "static func icon_frame(" in _ui_skin
+      and all(f'ResourceLoader.exists({name})' in _ui_skin
+              for name in ("BUTTONS", "TABS", "TOGGLES", "ICONS", "SLIDER_GLOW")),
+      "9br the skin loader must expose each baked interactive control and icon frame")
+check("ui_theme.button(" in _ui_bake and "ui_theme.toggle(" in _ui_bake
+      and "ui_theme.tab(" in _ui_bake and "ui_theme.draw_icon(" in _ui_bake
+      and "ui_theme._radial(36, 36, ui_theme.GOLD, 80)" in _ui_bake,
+      "9br the source baker must execute the real button, toggle, tab, icon and slider helpers")
+check("UiSkin.button_box(source_style_key, \"normal\")" in _ui_button
+      and "UiSkin.tab_box(source_style_key, \"active\")" in _ui_button
+      and "_badge = IconBadge.new()" in _ui_button
+      and "set_source_active(active: bool)" in _ui_button,
+      "9br menu buttons and hero tabs must use the source frames and vector badge")
+check("UiSkin.toggle_box(\"off\")" in _ui_toggle and "UiSkin.toggle_box(\"on\")" in _ui_toggle
+      and "ThemeSlider.new()" in _ui_audio and "ThemeToggle.new()" in _ui_audio
+      and "_build_presentation_row(column, \"Screen Shake\", \"screen_shake\")" in _ui_audio
+      and "_build_presentation_row(column, \"Damage Numbers\", \"damage_numbers\")" in _ui_audio,
+      "9br settings must use the baked toggle and slider presentation")
+check("func apply_presentation_settings() -> void:" in _ui_battle
+      and "session.apply_presentation_settings()" in _ui_app
+      and "effects.set_quality_settings(" in _ui_battle,
+      "9br persisted screen-shake and damage-number toggles must reach playable combat")
+check('const PresentationSettingsChecks = preload("res://tests/presentation_settings_checks.gd")' in ai_tests
+      and "PresentationSettingsChecks.new().run(_check)" in ai_tests
+      and (ROOT / "tests/presentation_settings_checks.gd").is_file(),
+      "9br visual preferences require native persistence checks")
 check('UiSkin.palette("OPEN_BG_TOP")' in _ui_card and 'UiSkin.palette("LOCKED_EDGE")' in _ui_card
       and "162d34" not in _ui_card,
       "9br hero shop rows must use the source card colours instead of the old teal literals")
@@ -5244,9 +5478,18 @@ _mn_ui = (ROOT.parent / "ui_theme.py").read_text(encoding="utf-8")
 _mn_bake = (ROOT / "bake/bake_menu_background.py").read_text(encoding="utf-8")
 _mn_back = (ROOT / "scripts/ui/menu_backdrop.gd").read_text(encoding="utf-8")
 _mn_theme = (ROOT / "scripts/ui/rebuild_theme.gd").read_text(encoding="utf-8")
+_mn_ambient = (ROOT / "scripts/ui/menu_ambient_fx.gd").read_text(encoding="utf-8")
+_mn_layout = (ROOT / "scripts/ui/menu_ambient_layout.gd").read_text(encoding="utf-8")
+_mn_ambient_bake = (ROOT / "bake/bake_menu_background.py").read_text(encoding="utf-8")
+_mn_ambient_checks = (ROOT / "tests/menu_ambient_checks.gd").read_text(encoding="utf-8")
+_mn_scene = (ROOT / "scenes/menu/MainMenu.tscn").read_text(encoding="utf-8")
 check('const MenuArtChecks = preload("res://tests/menu_art_checks.gd")' in ai_tests
       and "MenuArtChecks.new().run(_check)" in ai_tests,
       "9bs menu art suite must be preloaded and run in the native suite")
+check('const MenuAmbientChecks = preload("res://tests/menu_ambient_checks.gd")' in ai_tests
+      and "MenuAmbientChecks.new().run(_check)" in ai_tests
+      and "MenuAmbientChecks.new().run_scene(root.get_tree(), app.current_screen, _check)" in ai_tests,
+      "9bs fog/particle source replay and live-scene suites must both run")
 check('var backdrop = app.current_screen.get_node("Backdrop")' in ai_tests
       and "backdrop.background_draws > 0" in ai_tests,
       "9bs the real main menu must prove it drew the baked background")
@@ -5264,6 +5507,23 @@ if _mn_path.is_file():
               "9bs the menu background must be a 1280x720 RGBA8 PNG")
         check(len(_raw) == _mn_bg["bytes"] and hashlib.sha256(_raw).hexdigest() == _mn_bg["sha256"],
               "9bs the menu background must match its manifest hash")
+    _mn_fog = _mn.get("fog", {})
+    _mn_fog_png = ROOT / "assets/art/menu/menu_fog.png"
+    check(_mn_fog_png.is_file(), "9bs the two baked source fog layers must ship")
+    if _mn_fog_png.is_file():
+        _raw = _mn_fog_png.read_bytes()
+        _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+        check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _mn_fog.get("size") == [3000, 720]
+              and (_depth, _color) == (8, 6),
+              "9bs the fog atlas is a transparent RGBA8 pair of source surfaces")
+        check(len(_raw) == _mn_fog.get("bytes")
+              and hashlib.sha256(_raw).hexdigest() == _mn_fog.get("sha256"),
+              "9bs the fog atlas must match its source-bake hash")
+    check(_mn_fog.get("source_size") == [1500, 720]
+          and _mn_fog.get("frames") == {"layer_0": [0, 0, 1500, 720],
+                                         "layer_1": [1500, 0, 1500, 720]}
+          and _mn_fog.get("layers") == [{"speed": 0.35, "alpha": 26}, {"speed": 0.6, "alpha": 18}],
+          "9bs the fog manifest keeps source parallax, alpha and frame bounds")
     check(len(_mn["probes"]) >= 8 and all(0 <= x < 1280 and 0 <= y < 720 and len(rgb) == 3
                                           and all(0 <= c <= 255 for c in rgb)
                                           for x, y, *rgb in _mn["probes"]),
@@ -5280,14 +5540,44 @@ for _fragment in (
 ):
     check(_fragment in _mn_core, f"9bs the source menu background must still read {_fragment!r}")
 check("menu = core.Menu(screen)" in _mn_bake and "menu._build_main_background()" in _mn_bake
+      and "menu._build_menu_fog()" in _mn_bake
       and 'pygame.image.tostring(surface, "RGB")' in _mn_bake and "surface.get_at((x, y))" in _mn_bake,
-      "9bs the bake must run the real Menu._build_main_background and record source pixels")
+      "9bs the bake must run the real static and fog builders and record source pixels")
+from menu_ambient_source_oracle import source_fixture as menu_ambient_source_fixture
+_mn_fixture_path = ROOT / "tests/fixtures/menu_ambient_source.json"
+check(_mn_fixture_path.is_file(), "9bs the menu particle source replay fixture must exist")
+if _mn_fixture_path.is_file():
+    check(menu_ambient_source_fixture() == json.loads(_mn_fixture_path.read_text(encoding="utf-8")),
+          "9bs the menu particle fixture must replay the live _core.py methods")
 check("ResourceLoader.exists(BACKGROUND)" in _mn_back
       and "draw_texture_rect(baked, cover_rect(size), false)" in _mn_back
       and "static func cover_rect(window: Vector2) -> Rect2:" in _mn_back
       and "var factor := maxf(window.x / SOURCE_SIZE.x, window.y / SOURCE_SIZE.y)" in _mn_back
       and "background_draws += 1" in _mn_back and "func _draw_fallback() -> void:" in _mn_back,
       "9bs the backdrop must cover the window with the baked frame and keep the old art as fallback")
+check('const MENU_MANIFEST := "res://data/art/menu.json"' in _mn_ambient
+      and "FileAccess.get_file_as_string(MENU_MANIFEST)" in _mn_ambient,
+      "9bs the live fog overlay must read the menu atlas metadata, not the UI theme manifest")
+check("func _draw_fog() -> void:" in _mn_ambient
+      and "draw_texture_rect_region(" in _mn_ambient
+      and "MenuAmbientLayout.advance(_particles, 1.0" in _mn_ambient
+      and "MenuAmbientLayout.particle_alpha(particle, animation_time)" in _mn_ambient
+      and "_draw_fog()\n\t_draw_particles()" in _mn_ambient,
+      "9bs the overlay must animate two wrapped fog layers and source-glow particles above the background")
+check("sin(phase) * 0.08" in _mn_layout and "phase += 0.01 * frames" in _mn_layout
+      and "SOURCE_HEIGHT + 10.0" in _mn_layout and "SOURCE_WIDTH + 10.0" in _mn_layout
+      and "tick * 0.05 + float(particle.get(\"ph\"" in _mn_layout
+      and "tick * 0.008 + layer_index * 2.0" in _mn_layout,
+      "9bs the native particle drift, wrapping and fog pulse mirror source equations")
+check("[node name=\"Ambient\" type=\"Control\" parent=\".\"]" in _mn_scene
+      and 'path="res://scripts/ui/menu_ambient_fx.gd" id="4"' in _mn_scene
+      and _mn_scene.index('[node name="Backdrop"') < _mn_scene.index('[node name="Ambient"')
+      < _mn_scene.index('[node name="Content"'),
+      "9bs the ambient node must layer over the static art and underneath interactive menu content")
+check("MenuAmbientChecks.new().run_scene(" in ai_tests
+      and "ambient_draws" in _mn_ambient_checks and "particle_draws" in _mn_ambient_checks
+      and "The live menu overlay draws" in _mn_ambient_checks,
+      "9bs native tests must prove the animated overlay is actually drawn")
 _mn_bright = [255, 233, 158]
 check("def outline_text(screen, font, text, color, center, outline=(8, 9, 18)," in _mn_ui
       and "body = gradient_text(font, text, GOLD_BRIGHT, (196, 138, 40))" in _mn_ui

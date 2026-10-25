@@ -12,8 +12,10 @@ The REAL `draw`, `_draw_tower_buttons` and `_draw_close_button` (the last inheri
 `BaseUIComponent`) plus `ui_theme.draw_icon`, `ui_theme.corner_ticks` and `ui_theme.fit_ellipsis`
 run under the recording pygame shim. `_shadow`, `_vgrad`, `_radial` and `outline_text` are
 recorded as one op each; every harvested helper call is preceded by a `section` op. The
-fixture leaves the mobile side panel unset, so `_popup_di_panel` returns None and the popup
-keeps the classic fallback position over the map (the wide-screen panel branch is not ported).
+fixture pins the classic fallback and the mobile right-panel branch. The latter runs the real
+`platform_utils.panel_popup_pos`, compact panel width, and full display surface. The recorder's
+`_has_glyph` shim intentionally exercises `fit_ellipsis`'s three-dot fallback; the live SidePanel
+selects the real font's U+2026 glyph when available.
 
 Run: python godot_rebuild/tests/build_popup_draw_source_oracle.py
 """
@@ -30,20 +32,23 @@ ROOT = Path(__file__).resolve().parents[2]
 BUNDLE = ROOT / "ui_components" / "_bundle.py"
 CORE = ROOT / "_core.py"
 UI_THEME = ROOT / "ui_theme.py"
+PLATFORM_UTILS = ROOT / "mobile" / "platform_utils.py"
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "build_popup_draw_source.json"
 SECTIONS = ("_draw_close_button", "_draw_tower_buttons")
 
-# (label, slot, gold, mouse, cheap_alpha)
+# (label, slot, gold, mouse, cheap_alpha, panel_rect)
 FRAMES = [
-    ("center", (640, 400), 500, (0, 0), True),
-    ("top_clamp", (640, 60), 500, (0, 0), True),
-    ("left_clamp", (20, 400), 500, (0, 0), True),
-    ("right_clamp", (1260, 400), 500, (0, 0), True),
-    ("hover_close", (640, 400), 500, (820, 80), True),
-    ("hover_tower", (640, 400), 500, (500, 150), True),
-    ("cant_afford", (640, 400), 50, (0, 0), True),
-    ("flat_panel", (640, 400), 500, (0, 0), False),
-    ("big_gold", (640, 400), 1234, (0, 0), True),
+    ("center", (640, 400), 500, (0, 0), True, None),
+    ("top_clamp", (640, 60), 500, (0, 0), True, None),
+    ("left_clamp", (20, 400), 500, (0, 0), True, None),
+    ("right_clamp", (1260, 400), 500, (0, 0), True, None),
+    ("hover_close", (640, 400), 500, (820, 80), True, None),
+    ("hover_tower", (640, 400), 500, (500, 150), True, None),
+    ("cant_afford", (640, 400), 50, (0, 0), True, None),
+    ("flat_panel", (640, 400), 500, (0, 0), False, None),
+    ("big_gold", (640, 400), 1234, (0, 0), True, None),
+    ("wide_panel_hover_tower", (640, 400), 500, (1310, 280), True, (1280, 0, 344, 720)),
+    ("narrow_panel_flat", (640, 400), 50, (0, 0), False, (1280, 0, 120, 720)),
 ]
 
 
@@ -146,9 +151,12 @@ def source_fixture():
     cheap_flag = {"cheap": True}
     mobile = types.ModuleType("mobile")
     platform_utils = types.ModuleType("mobile.platform_utils")
-    platform_utils.get_panel_rect = lambda: None
-    platform_utils.panel_popup_pos = lambda w, h, atas=12: None
-    platform_utils.get_full_surface = lambda: rec.Surface((1280, 720))
+    display_state = {"panel": None, "full": None}
+    platform_utils._display_state = display_state
+    platform_utils.get_panel_rect = lambda: display_state["panel"]
+    platform_utils.get_full_surface = lambda: display_state["full"]
+    for segment in rec.harvest(PLATFORM_UTILS, ["panel_popup_pos"]):
+        exec(compile(segment, PLATFORM_UTILS.name, "exec"), platform_utils.__dict__)
     mobile.platform_utils = platform_utils
     frames = []
     with rec.installed({"mobile": mobile, "mobile.platform_utils": platform_utils}):
@@ -169,7 +177,7 @@ def source_fixture():
         for segment in rec.harvest(BUNDLE, ["_popup_di_panel"]):
             exec(compile(segment, BUNDLE.name, "exec"), namespace)
         cls = _popup_class(namespace)
-        for label, slot, gold_value, mouse, cheap in FRAMES:
+        for label, slot, gold_value, mouse, cheap, panel_rect in FRAMES:
             cheap_flag["cheap"] = cheap
             pygame.mouse = SimpleNamespace(get_pos=lambda mouse=mouse: mouse)
             popup = cls.__new__(cls)
@@ -177,21 +185,32 @@ def source_fixture():
                 gold=gold_value, ui_buttons={},
                 build_popup_slot={"x": int(slot[0]), "y": int(slot[1])})
             screen = rec.Surface((1280, 720))
+            if panel_rect is None:
+                display_state["panel"] = None
+                full_surface = screen
+            else:
+                display_state["panel"] = pygame.Rect(panel_rect)
+                full_surface = rec.Surface((panel_rect[0] + panel_rect[2], panel_rect[1] + panel_rect[3]))
+            display_state["full"] = full_surface
             popup.draw(screen)
+            target_is_panel = full_surface is not screen and bool(full_surface.ops)
+            target = full_surface if target_is_panel else screen
             frames.append({
                 "label": label,
                 "slot": [int(slot[0]), int(slot[1])],
                 "gold": int(gold_value),
                 "mouse": [int(mouse[0]), int(mouse[1])],
                 "cheap_alpha": bool(cheap),
-                "ops": screen.ops,
+                "panel": list(panel_rect) if panel_rect is not None else None,
+                "target_surface": "side_panel" if target_is_panel else "arena",
+                "ops": target.ops,
                 "buttons": {
                     key: list(value)
                     for key, value in popup.game.ui_buttons.items()
                 },
             })
     return {
-        "source": "ui_components/_bundle.py::BuildPopup.draw (cheap-alpha branch)",
+        "source": "ui_components/_bundle.py::BuildPopup.draw + mobile/platform_utils.py::panel_popup_pos",
         "glyph_factor": rec.GLYPH_FACTOR,
         "colors": {
             "gold": list(gold),

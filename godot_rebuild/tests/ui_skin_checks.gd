@@ -4,6 +4,7 @@ extends RefCounted
 
 const UiSkin = preload("res://scripts/ui/ui_skin.gd")
 const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
+const ThemeSlider = preload("res://scripts/ui/ui_theme_slider.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
 const CLEAR_COLOR := "rendering/environment/defaults/default_clear_color"
 # Theme constant -> the ui_theme.py constant it must equal.
@@ -25,6 +26,7 @@ func run(check: Callable) -> void:
 	check.call(not manifest.is_empty(), "The UI skin manifest parses")
 	_check_palette(check)
 	_check_sheets(check, manifest)
+	_check_controls(check, manifest)
 	_check_buttons(check, manifest)
 	_check_panel(check, manifest)
 	_check_variations(check, manifest)
@@ -84,6 +86,99 @@ func _check_sheets(check: Callable, manifest: Dictionary) -> void:
 		check.call(pill_image.get_pixel(27, 24).a == 1.0, "A pill is opaque inside")
 
 
+func _check_controls(check: Callable, manifest: Dictionary) -> void:
+	var controls: Dictionary = manifest.get("controls", {})
+	var buttons: Dictionary = controls.get("buttons", {})
+	var tabs: Dictionary = controls.get("tabs", {})
+	var toggles: Dictionary = controls.get("toggles", {})
+	var icons: Dictionary = controls.get("icons", {})
+	for entry in [
+		[UiSkin.BUTTONS, buttons],
+		[UiSkin.TABS, tabs],
+		[UiSkin.TOGGLES, toggles],
+		[UiSkin.ICONS, icons],
+	]:
+		_check_sheet(check, String(entry[0]), entry[1])
+	check.call(
+		(
+			buttons.get("styles", []).size() == 8
+			and buttons.get("states", []) == ["normal", "hover"]
+			and buttons.get("frames", {}).size() == 16
+		),
+		"Eight source button accents each have normal and hover art"
+	)
+	check.call(
+		(
+			tabs.get("styles", []).size() == 3
+			and tabs.get("states", []) == ["active", "inactive", "hover"]
+			and tabs.get("frames", {}).size() == 9
+		),
+		"Starter and boss tabs have all source active/hover states"
+	)
+	var toggle_canvas: Array = toggles.get("canvas", [])
+	check.call(
+		(
+			toggles.get("frames", {}).size() == 4
+			and toggle_canvas.size() == 2
+			and int(toggle_canvas[0]) == 60
+			and int(toggle_canvas[1]) == 26
+		),
+		"The switch sheet contains source ON/OFF and hover art"
+	)
+	check.call(icons.get("names", []).size() >= 28, "The vector icon bake covers source glyphs")
+	var glow_image := Image.load_from_file(UiSkin.SLIDER_GLOW)
+	check.call(
+		glow_image != null and glow_image.get_size() == Vector2i(36, 36),
+		"The source slider's radial GOLD knob glow decodes"
+	)
+	var slider_texture := ThemeSlider._fill_gradient()
+	var slider_gradient: Gradient = slider_texture.gradient
+	check.call(
+		(
+			slider_texture.width == 1
+			and slider_texture.height == 8
+			and slider_gradient.get_color(0).is_equal_approx(UI_THEME.GOLD_BRIGHT)
+			and slider_gradient.get_color(1).is_equal_approx(Color8(196, 138, 40))
+		),
+		"The live source slider keeps the source vertical gold-gradient endpoints"
+	)
+	for style in buttons.get("styles", []):
+		check.call(
+			UiSkin.button_accent(String(style)).is_equal_approx(
+				Color8(
+					int(buttons.accents[style][0]),
+					int(buttons.accents[style][1]),
+					int(buttons.accents[style][2])
+				)
+			),
+			"%s keeps the source menu-button accent" % style
+		)
+		for state in buttons.get("states", []):
+			var box := UiSkin.button_box(String(style), String(state))
+			var want := _frame(manifest, "controls.buttons", "%s:%s" % [style, state])
+			check.call(
+				box != null and box.region_rect == want,
+				"Source button %s has its %s background" % [style, state]
+			)
+	for style in tabs.get("styles", []):
+		for state in tabs.get("states", []):
+			var box := UiSkin.tab_box(String(style), String(state))
+			var want := _frame(manifest, "controls.tabs", "%s:%s" % [style, state])
+			check.call(
+				box != null and box.region_rect == want,
+				"Source %s tab has its %s background" % [style, state]
+			)
+	for state in ["off", "off_hover", "on", "on_hover"]:
+		var box := UiSkin.toggle_box(state)
+		var want := _frame(manifest, "controls.toggles", state)
+		check.call(box != null and box.region_rect == want, "Toggle frame %s" % state)
+	check.call(
+		UiSkin.icon_frame("play") == Rect2(icons.frames.play[0], icons.frames.play[1], 36, 36),
+		"The play glyph has a source-vector atlas frame"
+	)
+	check.call(UiSkin.slider_glow_texture() != null, "The slider glow texture is loaded")
+
+
 func _check_sheet(check: Callable, path: String, sheet: Dictionary) -> void:
 	var size: Array = sheet.get("size", [0, 0])
 	var image := Image.load_from_file(path)
@@ -99,9 +194,10 @@ func _check_sheet(check: Callable, path: String, sheet: Dictionary) -> void:
 
 
 func _frame(manifest: Dictionary, sheet: String, key: String) -> Rect2:
-	var row: Array = (manifest.get(sheet, {}) as Dictionary).get("frames", {}).get(
-		key, [0, 0, 0, 0]
-	)
+	var data: Dictionary = manifest
+	for part in sheet.split("."):
+		data = data.get(part, {})
+	var row: Array = data.get("frames", {}).get(key, [0, 0, 0, 0])
 	return Rect2(float(row[0]), float(row[1]), float(row[2]), float(row[3]))
 
 

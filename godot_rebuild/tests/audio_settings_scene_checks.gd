@@ -3,6 +3,9 @@ extends RefCounted
 
 const AudioRuntime = preload("res://scripts/audio/audio_runtime.gd")
 const AudioManagerScript = preload("res://scripts/audio/audio_manager.gd")
+const PresentationStore = preload("res://scripts/settings/presentation_settings_store.gd")
+const ThemeToggle = preload("res://scripts/ui/ui_theme_toggle.gd")
+const ThemeSlider = preload("res://scripts/ui/ui_theme_slider.gd")
 
 
 func run(tree: SceneTree, app: Node, check: Callable) -> void:
@@ -15,6 +18,8 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		"sfx": manager.get_volume("sfx"),
 		"bgm": manager.get_volume("bgm"),
 	}
+	var had_presentation_file := FileAccess.file_exists(PresentationStore.PATH)
+	var original_presentation := PresentationStore.load_settings()
 	manager.set_mix_volume("master", AudioManagerScript.DEFAULT_MASTER_VOLUME)
 	manager.set_mix_volume("sfx", AudioManagerScript.DEFAULT_SFX_VOLUME)
 	manager.set_mix_volume("bgm", AudioManagerScript.DEFAULT_BGM_VOLUME)
@@ -43,6 +48,42 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		),
 		"open panel displays source mixer defaults"
 	)
+	var shake_toggle := panel.find_child("ScreenShakeToggle", true, false) as Button
+	var damage_toggle := panel.find_child("DamageNumbersToggle", true, false) as Button
+	var master_meter := panel.find_child("MasterMeter", true, false) as Control
+	check.call(
+		(
+			shake_toggle != null
+			and damage_toggle != null
+			and shake_toggle.get_script() == ThemeToggle
+			and damage_toggle.get_script() == ThemeToggle
+		),
+		"screen-shake and damage-number settings use the source toggle skin"
+	)
+	check.call(
+		(
+			master_meter != null
+			and master_meter.get_script() == ThemeSlider
+			and is_equal_approx(float(master_meter.get("value")), manager.get_volume("master"))
+		),
+		"volume uses the source gradient slider at the live mixer value"
+	)
+	if shake_toggle != null and damage_toggle != null:
+		check.call(
+			(
+				shake_toggle.button_pressed == bool(original_presentation.screen_shake)
+				and damage_toggle.button_pressed == bool(original_presentation.damage_numbers)
+			),
+			"open panel restores the persisted source toggle states"
+		)
+		shake_toggle.call("set_value", true)
+		shake_toggle.toggled.emit(true)
+		damage_toggle.call("set_value", false)
+		damage_toggle.toggled.emit(false)
+		check.call(
+			PresentationStore.load_settings() == {"screen_shake": true, "damage_numbers": false},
+			"the visible source toggles persist their changed values"
+		)
 
 	var master_plus := panel.find_child("MasterPlus", true, false) as Button
 	var sfx_minus := panel.find_child("SfxMinus", true, false) as Button
@@ -86,6 +127,14 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	check.call(
 		app.current_screen.name == "PrototypeMatch", "updated mix survives into playable combat"
 	)
+	var current_screen: Node = app.get("current_screen") as Node
+	var simulation: Node = current_screen.get_node("Simulation")
+	var world: Variant = simulation.get("world")
+	var effects: Variant = world.get("effects") if world != null else null
+	check.call(
+		effects != null and effects.screen_shake_enabled and not effects.damage_numbers_enabled,
+		"saved menu toggles configure the playable match effects"
+	)
 	AudioRuntime.play("hero_skill")
 	var skill_stream: AudioStream = load("res://assets/audio/hero_skill.wav")
 	check.call(
@@ -100,6 +149,20 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	check.call(app.current_screen.name == "MainMenu", "audio scene test returns cleanly to menu")
 
 	_restore_mix(manager, original)
+	check.call(
+		_restore_presentation(had_presentation_file, original_presentation),
+		"scene test restores the previous on-disk presentation preferences"
+	)
+
+
+func _restore_presentation(had_file: bool, values: Dictionary) -> bool:
+	if had_file:
+		return PresentationStore.save_settings(values)
+	for suffix in ["", ".tmp", ".bak"]:
+		var path: String = PresentationStore.PATH + String(suffix)
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	return not FileAccess.file_exists(PresentationStore.PATH)
 
 
 func _restore_mix(manager: Variant, values: Dictionary) -> void:

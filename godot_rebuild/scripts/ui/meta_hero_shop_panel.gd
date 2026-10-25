@@ -10,6 +10,7 @@ const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
 const PopupAnimation = preload("res://scripts/ui/popup_animation.gd")
 const HeroUnlockStore = preload("res://scripts/match/hero_unlock_store.gd")
+const SourceUiButton = preload("res://scripts/ui/source_ui_button.gd")
 
 var state: Dictionary = {}
 var is_open := false
@@ -121,9 +122,9 @@ func refresh() -> void:
 	_gold.text = "HERO GOLD  %d G" % int(state.get("meta_gold", 0))
 	_bosses.text = "BOSS DIKALAHKAN  %d" % defeated.size()
 	_notice.text = notice
-	_starter_tab.disabled = tab == "starter"
-	_mini_tab.disabled = tab == "mini"
-	_true_tab.disabled = tab == "true"
+	_starter_tab.call("set_source_active", tab == "starter")
+	_mini_tab.call("set_source_active", tab == "mini")
+	_true_tab.call("set_source_active", tab == "true")
 	_rebuild_cards(purchased, defeated)
 
 
@@ -210,7 +211,10 @@ func _build() -> void:
 
 
 func _tab_button(parent: Control, label: String, value: String) -> Button:
-	var button := Button.new()
+	var button: Button = SourceUiButton.new()
+	button.set("source_kind", "tab")
+	button.set("source_style_key", value)
+	button.set("label_font_size", 14)
 	button.text = label
 	button.custom_minimum_size = Vector2(190, 40)
 	button.pressed.connect(func() -> void: _select_tab(value))
