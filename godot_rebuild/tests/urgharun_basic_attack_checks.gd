@@ -169,13 +169,15 @@ func _check_phases(check: Callable, data: Dictionary) -> void:
 		int(windup["ops"][0]["color"][3]) == 0,
 		"The first wind-up frame is fully transparent, exactly like the source"
 	)
+	# The tip of each arc sits right after that arc's 40 line ops, so op 40 is the first tip ring.
 	var slash: Dictionary = _frame(data["fx_frames"], "fx_slash_mid")
-	var tip_ring: Dictionary = slash["ops"][200]
+	var tip_ring: Dictionary = slash["ops"][40]
 	check.call(
 		(
 			str(tip_ring["kind"]) == "circle"
 			and int(tip_ring["radius"]) == 4
 			and int(tip_ring["color"][3]) == 0
+			and int(slash["ops"][41]["color"][3]) == 60
 		),
 		"The slash tip starts with its invisible outermost ring"
 	)
@@ -250,8 +252,15 @@ func _check_clock(check: Callable, data: Dictionary) -> void:
 	for index in range(full["steps"].size()):
 		if bool(full["steps"][index]["active"]):
 			last_active = index
+	# The 28th advance disarms in the same step (`frame` reaches 28 -> active = false), so the
+	# last active step is the 27th.
 	check.call(
-		last_active == 27 and not bool(full["steps"][28]["active"]),
+		(
+			last_active == 26
+			and int(full["steps"][26]["frame"]) == 27
+			and not bool(full["steps"][27]["active"])
+			and int(full["steps"][27]["frame"]) == 0
+		),
 		"The swing disarms after exactly 28 frames"
 	)
 	check.call(
