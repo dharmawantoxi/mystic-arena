@@ -3544,8 +3544,13 @@ LAYER 2 (di belakang badan) hanya saat `active_skill == "r"`, sesudah `_draw_fur
   `tests/validate_project.py` dan command oracle di workflow CI.
 
 Validasi lokal: `validate_project.py` -> PASS 21087 static checks; `gdparse`/`gdlint`/
-`gdformat --check` bersih; fixture deterministik; `git diff --check` OK. Godot tetap tidak
-tersedia lokal, jadi native suite dan review visual menunggu CI.
+`gdformat --check` bersih (637 GDScript); fixture deterministik; `git diff --check` OK.
+
+CI PR #342 (`Godot Rebuild (native, fresh project)`, run `40180195871`): job `validate` **lulus**
+(12m11s) - langkah *Static guardrails and GDScript lint*, *Native import*, dan *Native
+simulation, input and screen lifecycle tests* semua success, dengan notice
+`PASS: 1504921 checks; fixed ticks and source parity`. Godot tetap tidak tersedia di sandbox,
+jadi review visual interaktif belum dilakukan.
 
 Batas slice ini:
 - Geometri elips adalah aproksimasi polygon (24-128 segmen); pygame menggambar elips per piksel.
