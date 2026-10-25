@@ -97,6 +97,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		)
 		await _check_realm(tree, view, boss, check)
 		await _check_urgharun_enrage(tree, view, boss, check)
+		await _check_boss_auras(tree, view, boss, check)
 	else:
 		check.call(false, "The suite could not spawn a boss to draw")
 	app.show_menu()
@@ -230,6 +231,65 @@ func _check_urgharun_enrage(tree: SceneTree, view, boss, check: Callable) -> voi
 	boss.boss_type = source_type
 	boss.active_skill = source_skill
 	boss.active_skill_timer = source_timer
+
+
+## Layer 9bq7: the live scene paints the three cached `Boss.draw` auras - the ability aura while
+## `ability_active`, the enrage aura once `is_enraged` and the extra true-boss aura - and none of
+## them paints before its source gate opens. No tick runs, so the sim never sees the swaps.
+func _check_boss_auras(tree: SceneTree, view, boss, check: Callable) -> void:
+	check.call(
+		(
+			view.boss_ability_aura_draws == 0
+			and view.boss_enrage_aura_draws == 0
+			and view.boss_true_aura_draws == 0
+		),
+		"No cached boss aura painted before its source gate opened"
+	)
+	var source_class: String = boss.boss_class
+	var source_range: float = boss.ability_range
+	var source_entrance: Color = boss.entrance_color
+	var source_ability: bool = boss.ability_active
+	var source_enraged: bool = boss.is_enraged
+	var source_enrage_pulse: float = boss.enrage_pulse
+	boss.ability_active = true
+	boss.ability_range = 350.0
+	boss.entrance_color = Color8(255, 200, 130)
+	var ability_before: int = view.boss_ability_aura_draws
+	for _frame in range(6):
+		await tree.process_frame
+		if view.boss_ability_aura_draws > ability_before:
+			break
+	check.call(
+		view.boss_ability_aura_draws > ability_before and view.boss_ability_aura_ops > 0,
+		"The ability aura painted its entrance-coloured rings"
+	)
+	boss.ability_active = source_ability
+	boss.ability_range = source_range
+	boss.entrance_color = source_entrance
+	var enrage_before: int = view.boss_enrage_aura_draws
+	boss.is_enraged = true
+	boss.enrage_pulse = 0.0
+	for _frame in range(6):
+		await tree.process_frame
+		if view.boss_enrage_aura_draws > enrage_before:
+			break
+	check.call(
+		view.boss_enrage_aura_draws > enrage_before and view.boss_enrage_aura_ops > 0,
+		"The enrage aura painted its width-2 rings"
+	)
+	boss.is_enraged = source_enraged
+	boss.enrage_pulse = source_enrage_pulse
+	var true_before: int = view.boss_true_aura_draws
+	boss.boss_class = "true"
+	for _frame in range(6):
+		await tree.process_frame
+		if view.boss_true_aura_draws > true_before:
+			break
+	check.call(
+		view.boss_true_aura_draws > true_before and view.boss_true_aura_ops > 0,
+		"The true-boss aura painted its filled rings"
+	)
+	boss.boss_class = source_class
 
 
 func _seed_hero_projectile(world, hero) -> bool:

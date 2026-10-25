@@ -4833,12 +4833,12 @@ check("static func ops(" in _nr_layout and "const DURATION := 120" in _nr_layout
 _nr_draw = _bs_view[_bs_view.index("func _draw_boss(boss: BossState)"):
                     _bs_view.index("func _draw_boss_plain(")]
 check("var realm_ops := nyxareth_realm_draw_ops(boss)" in _nr_draw
-      and _nr_draw.index("draw_arc(point, radius + 15.0")
+      and _nr_draw.index("boss_true_aura_draw_ops(boss)")
       < _nr_draw.index("nyxareth_realm_draw_ops(boss)")
       < _nr_draw.index("_draw_boss_sprite(boss, art)")
       and "boss_screen_layer_draws += 1" in _nr_draw
       and 'solid["color"] = [rgba[0], rgba[1], rgba[2], 255]' in _nr_draw,
-      "9bq3 the view must paint the realm after the boss rings and before the body")
+      "9bq3 the view must paint the realm after the boss auras and before the body")
 check('SCREEN_LAYERS = {"nyxareth": ("_draw_astro_realm_bg",)}' in _bs_bake,
       "9bq3 the atlas bake must keep the realm out of the body frames")
 check("await _check_realm(tree, view, boss, check)" in _bs_painter
@@ -5086,6 +5086,82 @@ check("_check_aura(check, data)" in _us_checks and "_check_ring(check, data)" in
       and "_check_view_wiring(check, data)" in _us_checks
       and "func _report(" in _us_checks,
       "9bq6 the skill suite must replay every group, the wiring and name a first mismatch")
+
+# ── Layer 9bq7: the cached `Boss.draw` aura block (ability, enrage, true boss) ──
+from boss_aura_fx_source_oracle import source_fixture as boss_aura_fixture
+_ba_path = ROOT / "tests/fixtures/boss_aura_fx_source.json"
+_ba_layout = (ROOT / "scripts/ui/boss_aura_fx_layout.gd").read_text(encoding="utf-8")
+_ba_checks = (ROOT / "tests/boss_aura_fx_checks.gd").read_text(encoding="utf-8")
+_ba_base = (ROOT.parent / "bosses/base_boss.py").read_text(encoding="utf-8")
+check('const BossAuraFxChecks = preload("res://tests/boss_aura_fx_checks.gd")' in ai_tests
+      and "BossAuraFxChecks.new().run(_check)" in ai_tests,
+      "9bq7 boss aura suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/boss_aura_fx_source_oracle.py" in workflow,
+      "9bq7 CI must run the cached aura source oracle")
+check(_ba_path.is_file(), "9bq7 boss aura fixture must exist")
+if _ba_path.is_file():
+    _ba = json.loads(_ba_path.read_text(encoding="utf-8"))
+    check(boss_aura_fixture() == _ba,
+          "9bq7 boss aura fixture must not drift from bosses/base_boss.py")
+    _ba_groups = ["ability_frames", "enrage_frames", "true_boss_frames"]
+    check(sum(len(_ba[key]) for key in _ba_groups) == 12
+          and sum(len(f["ops"]) for key in _ba_groups for f in _ba[key]) == 69,
+          "9bq7 oracle must pin 12 source frames and 69 draw ops")
+    check([len(f["ops"]) for f in _ba["ability_frames"]] == [6, 6, 6, 6]
+          and [len(f["ops"]) for f in _ba["enrage_frames"]] == [5, 5, 5, 5, 4]
+          and [len(f["ops"]) for f in _ba["true_boss_frames"]] == [7, 7, 7],
+          "9bq7 oracle must pin the three ring bands, including the clamped tiny boss")
+    check(all(_op["width"] == 2 for f in _ba["enrage_frames"] for _op in f["ops"])
+          and all(_op["width"] == 0
+                  for key in ("ability_frames", "true_boss_frames")
+                  for f in _ba[key] for _op in f["ops"]),
+          "9bq7 only the enrage aura strokes outlines; the other two fill their rings")
+check("def _draw_enrage_aura(self, surface, x, y):" in _ba_base
+      and "def _draw_true_boss_aura(self, surface, x, y):" in _ba_base
+      and "def _aura_surface(key, builder):" in _ba_base,
+      "9bq7 the source must still cache its three auras through `_aura_surface`")
+_ba_draw = _ba_base[_ba_base.index("    def draw(self, surface"):]
+_ba_draw = _ba_draw[:_ba_draw.index("    def _draw_enrage_aura(self")]
+check("if self.ability_active:" in _ba_draw
+      and _ba_draw.index("if self.ability_active:")
+      < _ba_draw.index("self._draw_enrage_aura(surface, x, y)")
+      < _ba_draw.index("self._draw_true_boss_aura(surface, x, y)"),
+      "9bq7 `Boss.draw` must keep the ability -> enrage -> true aura order")
+check("for radius in range(aura_radius, aura_radius - 20, -3):" in _ba_layout
+      and "for offset in range(aura_radius, maxi(ENRAGE_MIN_RADIUS, aura_radius - 18), -3):"
+      in _ba_layout
+      and "for offset in range(aura_radius, aura_radius - 15, -2):" in _ba_layout
+      and "* 8.0 * pulse), 0, 255)" in _ba_layout
+      and "* 12.0 * pulse), 0, 200)" in _ba_layout
+      and "* 5.0 * pulse), 0, 255)" in _ba_layout
+      and "var aura_radius := radius + int(14.0 * pulse)" in _ba_layout,
+      "9bq7 the aura layout must mirror the source bands, steps and alpha caps")
+check("func boss_ability_aura_draw_ops(boss: BossState) -> Array:" in _bs_view
+      and "func boss_enrage_aura_draw_ops(boss: BossState) -> Array:" in _bs_view
+      and "func boss_true_aura_draw_ops(boss: BossState) -> Array:" in _bs_view
+      and "boss.ability_active" in _bs_view and "boss.is_enraged" in _bs_view,
+      "9bq7 the view must build all three auras from live state")
+_ba_boss_draw = _bs_view[_bs_view.index("func _draw_boss(boss: BossState)"):
+                         _bs_view.index("func _draw_boss_plain(")]
+check(_ba_boss_draw.index("boss_ability_aura_draw_ops(boss)")
+      < _ba_boss_draw.index("boss_enrage_aura_draw_ops(boss)")
+      < _ba_boss_draw.index("boss_true_aura_draw_ops(boss)")
+      < _ba_boss_draw.index("urgharun_aura_draw_ops(boss)")
+      < _ba_boss_draw.index("var art := BossArt.frame("),
+      "9bq7 the view must paint the aura block before the body, in source order")
+check("draw_arc(point, enrage_radius" not in _bs_view
+      and "Color(boss.entrance_color, 0.30)" not in _bs_view
+      and "Color(boss.color, 0.28 * true_pulse)" not in _bs_view,
+      "9bq7 the flat one-arc aura approximations must be gone")
+check("view.boss_ability_aura_draws > ability_before" in _us_painter
+      and "view.boss_enrage_aura_draws > enrage_before" in _us_painter
+      and "view.boss_true_aura_draws > true_before" in _us_painter,
+      "9bq7 the painter suite must paint all three auras on the live boss")
+check("_check_ability(check, data)" in _ba_checks and "_check_enrage(check, data)" in _ba_checks
+      and "_check_true_boss(check, data)" in _ba_checks
+      and "_check_view_wiring(check, data)" in _ba_checks
+      and "func _report(" in _ba_checks,
+      "9bq7 the aura suite must replay each band, the wiring and name a first mismatch")
 
 # ── Layer 9bi2: tactical command visuals (gather marker, feedback banner, floating text) ──
 from tactical_draw_source_oracle import source_fixture as tactical_draw_fixture

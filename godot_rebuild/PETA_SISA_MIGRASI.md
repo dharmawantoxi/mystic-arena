@@ -3566,6 +3566,64 @@ Batas slice ini:
   ber-cache `Boss.draw`, perluasan ke `_LIVE_FX_HEROES`/boss lain, rebake atlas, dan resep AI
   yang meng-cast skill urgharun.
 
+## Slice 9bq7 — blok aura ber-cache `Boss.draw` (aura kemampuan, enrage, true boss)
+
+`bosses/base_boss.py::Boss.draw` membuka render boss dengan tiga aura cincin yang surface-nya
+di-cache `_aura_surface` (kunci `(jenis, warna/kelas, radius, _aura_phase(sin))`):
+
+- **Aura kemampuan** (`if self.ability_active:`) — cincin **terisi** warna `entrance_color`,
+  `pulse = sin(anim_time*0.2)*0.3 + 0.7`, `aura_r = int(ability_range * pulse)`, pita
+  `range(aura_r, aura_r - 20, -3)`, alpha `int((aura_r - ar) * 8 * pulse)` cap 255.
+- **Aura enrage** (`_draw_enrage_aura`) — cincin **outline 2 px**, `pulse =
+  sin(enrage_pulse)*0.3 + 0.7`, `aura_r = radius + int(14 * pulse)`, pita
+  `range(aura_r, max(5, aura_r - 18), -3)`, alpha `int((aura_r - r) * 12 * pulse)` cap 200,
+  warna `(255, 50, 40)` untuk true boss dan `(255, 140, 30)` untuk lainnya.
+- **Aura true boss** (`_draw_true_boss_aura`) — cincin terisi warna badan, `pulse =
+  sin(pulse)*0.3 + 0.7`, `aura_r = radius + 15`, pita `range(aura_r, aura_r - 15, -2)`,
+  alpha `int((aura_r - r) * 5 * pulse)` cap 255. Hanya `boss_class == "true"`.
+
+Ketiganya membuat surface lalu mem-blit sehingga pusat surface jatuh tepat di `(x, y)`, jadi
+ops sudah dalam koordinat layar. Cache hanya memoisation (geometri/alpha cuma bergantung pada
+radius), jadi layout membangun ops langsung tanpa cache; oracle tetap memanen `_aura_surface`
+dan `_aura_phase` supaya perubahan kunci/budget terdeteksi sebagai drift fixture.
+
+- `scripts/ui/boss_aura_fx_layout.gd`: `ability_aura_ops(x, y, ability_range, anim_time,
+  entrance_rgb)`, `enrage_aura_ops(x, y, radius, enrage_pulse, is_true)`,
+  `true_boss_aura_ops(x, y, radius, phase, rgb)`, plus `rgb8(Color)` dan `_circle`. Cincin
+  kosong pertama (alpha 0) dilewati seperti sumber; radius non-positif pada aura kemampuan
+  dijaga karena `draw_circle` Godot menolaknya (tidak pernah terjadi dengan `ability_range` asli).
+- `scenes/prototype/prototype_view.gd`: builder `boss_ability_aura_draw_ops`,
+  `boss_enrage_aura_draw_ops`, `boss_true_aura_draw_ops` (masing-masing bergerbang pada
+  `ability_active` / `is_enraged` / `boss_class == "true"`), dilukis **berurutan sebelum**
+  LAYER 1 urgharun, realm nyxareth, dan badan. Tiga aproksimasi lama (`draw_arc` tunggal dengan
+  alpha tetap) dihapus. Penghitung baru: `boss_ability_aura_draws/_ops`,
+  `boss_enrage_aura_draws/_ops`, `boss_true_aura_draws/_ops`.
+- Bukti: `tests/boss_aura_fx_source_oracle.py` memanen blok `if self.ability_active:` dari
+  `Boss.draw` (AST) plus `_draw_enrage_aura`, `_draw_true_boss_aura`, `_aura_surface`,
+  `_aura_phase` dan menjalankannya di shim `draw_recorder.py` -> **12 frame / 69 op**
+  (kemampuan 4x6, enrage `[5,5,5,5,4]` termasuk boss mungil yang kena clamp `max(5, ...)`,
+  true boss 3x7). `tests/boss_aura_fx_checks.gd` me-replay semuanya plus wiring view dan gate.
+  `tests/painter_scene_checks.gd` membuktikan scene hidup melukis ketiga aura (dan tidak ada
+  yang melukis sebelum gerbangnya terbuka). Suite terdaftar di `tests/run_all.gd`, command
+  oracle di workflow, pin 9bq7 (35 cek) di `tests/validate_project.py`.
+
+Validasi lokal: `validate_project.py` -> PASS 21158 static checks; `gdparse`/`gdlint`/
+`gdformat --check` bersih (641 file); oracle deterministik; `git diff --check` OK. Godot tidak
+tersedia lokal; native suite dan review visual menunggu CI.
+
+Batas slice ini:
+- Cache LRU sumber tidak diport: ops dibangun ulang tiap frame (sama pikselnya, karena alpha dan
+  geometri hanya bergantung pada radius). Kalau nanti terbukti terlalu mahal, cache bisa
+  ditambahkan tanpa mengubah fixture.
+- `_draw_entrance` (aura masuk panggung), bayangan ellips, indikator debuff menara, dan seluruh
+  FX boss lain tetap di luar cakupan; alpha tetap ditulis apa adanya dengan blending normal Godot
+  seperti slice sebelumnya, dan cincin outline 2 px digambar sebagai `draw_arc` pada
+  `radius - 1` (pygame menebalkan ke dalam). Konsekuensi khusus aura terisi: pygame menulis
+  ulang piksel surface (cincin dalam menimpa cincin luar), Godot menjumlahkan alpha bertingkat,
+  jadi pusat aura kemampuan/true boss tampak sedikit lebih pekat daripada sumber.
+- `_draw_basic_attack_fx` urgharun masih tertunda: butuh `_urg_attack_progress` (state swing yang
+  belum dibawa `BossState`), jadi slice tersendiri.
+
 ## Slice 9bq6 — LAYER 1 dan FX Q/W/E urgharun (layer 9bq6)
 
 Melengkapi seluruh FX urgharun selain basic attack. Sumber dan urutannya di `draw_urgharun`:

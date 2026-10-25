@@ -29,6 +29,7 @@ const BossAnim = preload("res://scripts/ui/boss_anim.gd")
 const NyxarethRealmLayout = preload("res://scripts/ui/nyxareth_realm_layout.gd")
 const UrgharunEnrageFxLayout = preload("res://scripts/ui/urgharun_enrage_fx_layout.gd")
 const UrgharunEnrageGroundLayout = preload("res://scripts/ui/urgharun_enrage_ground_layout.gd")
+const BossAuraFxLayout = preload("res://scripts/ui/boss_aura_fx_layout.gd")
 const UrgharunSkillFxLayout = preload("res://scripts/ui/urgharun_skill_fx_layout.gd")
 const TacticalLayout = preload("res://scripts/ui/tactical_layout.gd")
 const GoldHudLayout = preload("res://scripts/ui/gold_hud_layout.gd")
@@ -94,6 +95,13 @@ var boss_skill_ground_draws := 0
 var boss_skill_ground_ops := 0
 var boss_skill_fg_draws := 0
 var boss_skill_fg_ops := 0
+## Layer 9bq7: the three cached `Boss.draw` auras (ability, enrage, true boss) and their ops.
+var boss_ability_aura_draws := 0
+var boss_ability_aura_ops := 0
+var boss_enrage_aura_draws := 0
+var boss_enrage_aura_ops := 0
+var boss_true_aura_draws := 0
+var boss_true_aura_ops := 0
 ## The tactical banner border (layer 9bi2): 2 px, 6 px corners, drawn inside its box.
 var tactical_border := StyleBoxFlat.new()
 ## Layer 9bv2: pygame skips `_draw_gold_hud` while the wide-screen side panel shows the
@@ -1516,18 +1524,27 @@ func _draw_boss(boss: BossState) -> void:
 	if boss.entrance_timer > 0:
 		_draw_boss_entrance(boss)
 		return
-	if boss.ability_active:
-		var ability_pulse := sin(float(boss.anim_time) * 0.2) * 0.3 + 0.7
-		var ability_radius := boss.ability_range * ability_pulse
-		draw_arc(point, ability_radius, 0, TAU, 48, Color(boss.entrance_color, 0.30), 3, true)
-	if boss.is_enraged:
-		var enrage_pulse := sin(boss.enrage_pulse) * 0.3 + 0.7
-		var enrage_radius := radius + 14.0 * enrage_pulse
-		var enrage_color := Color("ff3228") if is_true else Color("ff8c1e")
-		draw_arc(point, enrage_radius, 0, TAU, 48, Color(enrage_color, 0.65), 3, true)
-	if is_true:
-		var true_pulse := sin(boss.pulse) * 0.3 + 0.7
-		draw_arc(point, radius + 15.0, 0, TAU, 48, Color(boss.color, 0.28 * true_pulse), 4, true)
+	# Layer 9bq7: `Boss.draw` opens with the cached aura block - the ability aura while
+	# `ability_active`, the enrage aura once `is_enraged`, then the extra true-boss aura - and all
+	# three sit under everything else the boss paints, so they keep the source order here.
+	var ability_aura_ops := boss_ability_aura_draw_ops(boss)
+	if not ability_aura_ops.is_empty():
+		boss_ability_aura_draws += 1
+		boss_ability_aura_ops += ability_aura_ops.size()
+		for op in ability_aura_ops:
+			_draw_intro_op(op)
+	var boss_aura_ops := boss_enrage_aura_draw_ops(boss)
+	if not boss_aura_ops.is_empty():
+		boss_enrage_aura_draws += 1
+		boss_enrage_aura_ops += boss_aura_ops.size()
+		for op in boss_aura_ops:
+			_draw_intro_op(op)
+	var true_aura_ops := boss_true_aura_draw_ops(boss)
+	if not true_aura_ops.is_empty():
+		boss_true_aura_draws += 1
+		boss_true_aura_ops += true_aura_ops.size()
+		for op in true_aura_ops:
+			_draw_intro_op(op)
 	# Layer 9bq6: `draw_urgharun` opens with `_draw_fury_aura` and `_draw_ground_ring(x, y + 50)`
 	# before any skill FX, so both land under everything else the boss paints.
 	var aura_ops := urgharun_aura_draw_ops(boss)
@@ -1619,6 +1636,47 @@ func nyxareth_realm_draw_ops(boss: BossState) -> Array:
 		return []
 	return NyxarethRealmLayout.ops(
 		boss.active_skill_timer, boss.pulse, NyxarethRealmLayout.SCREEN_SIZE
+	)
+
+
+## Layer 9bq7: `Boss.draw`'s ability aura - the filled `entrance_color` rings that pulse on the
+## `anim_time` clock while `ability_active`.
+func boss_ability_aura_draw_ops(boss: BossState) -> Array:
+	if not boss.ability_active:
+		return []
+	return BossAuraFxLayout.ability_aura_ops(
+		int(boss.position.x),
+		int(boss.position.y),
+		boss.ability_range,
+		int(boss.anim_time),
+		BossAuraFxLayout.rgb8(boss.entrance_color)
+	)
+
+
+## Layer 9bq7: the enrage/frenzy aura from `_draw_enrage_aura` (two-pixel rings, red for a true
+## boss and amber otherwise), live only after the one-shot enrage transition.
+func boss_enrage_aura_draw_ops(boss: BossState) -> Array:
+	if not boss.is_enraged:
+		return []
+	return BossAuraFxLayout.enrage_aura_ops(
+		int(boss.position.x),
+		int(boss.position.y),
+		int(boss.radius),
+		boss.enrage_pulse,
+		boss.boss_class == "true"
+	)
+
+
+## Layer 9bq7: `_draw_true_boss_aura`, the extra filled rings only a true boss wears.
+func boss_true_aura_draw_ops(boss: BossState) -> Array:
+	if boss.boss_class != "true":
+		return []
+	return BossAuraFxLayout.true_boss_aura_ops(
+		int(boss.position.x),
+		int(boss.position.y),
+		int(boss.radius),
+		boss.pulse,
+		BossAuraFxLayout.rgb8(boss.color)
 	)
 
 
