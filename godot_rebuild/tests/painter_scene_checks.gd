@@ -99,6 +99,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		await _check_urgharun_enrage(tree, view, boss, check)
 		await _check_boss_auras(tree, view, boss, check)
 		await _check_urgharun_basic_attack(tree, view, boss, check)
+		await _check_boss_debuff_fx(tree, view, boss, check)
 	else:
 		check.call(false, "The suite could not spawn a boss to draw")
 	app.show_menu()
@@ -145,6 +146,7 @@ func _check_urgharun_enrage(tree: SceneTree, view, boss, check: Callable) -> voi
 			and view.boss_skill_ground_draws == 0
 			and view.boss_skill_fg_draws == 0
 			and view.boss_basic_attack_fg_draws == 0
+			and view.boss_debuff_fx_draws == 0
 		),
 		"No other boss skill painted an urgharun FX layer"
 	)
@@ -345,6 +347,44 @@ func _check_urgharun_basic_attack(tree: SceneTree, view, boss, check: Callable) 
 	boss.active_skill = source_skill
 	boss.timer = source_timer
 	boss.attack_cooldown = source_cooldown
+
+
+## Layer 9bq9: the live scene paints the debuff indicator (`Boss.draw` slot after the auras) as
+## soon as one debuff timer runs, and stops once every timer is cleared.
+func _check_boss_debuff_fx(tree: SceneTree, view, boss, check: Callable) -> void:
+	var source_slow: int = boss.slow_timer
+	var source_atk_slow: int = boss.atk_slow_timer
+	var source_skill_down: int = boss.skill_down_timer
+	var source_anti_heal: int = boss.anti_heal_timer
+	var source_burn: int = boss.burn_timer
+	boss.slow_timer = 0
+	boss.atk_slow_timer = 0
+	boss.skill_down_timer = 0
+	boss.anti_heal_timer = 0
+	boss.burn_timer = 0
+	var clean_before: int = view.boss_debuff_fx_draws
+	for _frame in range(4):
+		await tree.process_frame
+	check.call(
+		view.boss_debuff_fx_draws == clean_before, "An undebuffed boss painted no debuff indicator"
+	)
+	boss.slow_timer = 30
+	boss.burn_timer = 20
+	var debuffed_before: int = view.boss_debuff_fx_draws
+	for _frame in range(6):
+		await tree.process_frame
+		if view.boss_debuff_fx_draws > debuffed_before:
+			break
+	check.call(
+		view.boss_debuff_fx_draws > debuffed_before,
+		"A slowed and burning boss painted its debuff indicator"
+	)
+	check.call(view.boss_debuff_fx_ops > 0, "The debuff ops reached the painter")
+	boss.slow_timer = source_slow
+	boss.atk_slow_timer = source_atk_slow
+	boss.skill_down_timer = source_skill_down
+	boss.anti_heal_timer = source_anti_heal
+	boss.burn_timer = source_burn
 
 
 func _seed_hero_projectile(world, hero) -> bool:

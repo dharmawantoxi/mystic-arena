@@ -3566,6 +3566,45 @@ Batas slice ini:
   ber-cache `Boss.draw`, perluasan ke `_LIVE_FX_HEROES`/boss lain, rebake atlas, dan resep AI
   yang meng-cast skill urgharun.
 
+## Slice 9bq9 — indikator debuff `Boss.draw` (`_draw_tower_debuff_fx`)
+
+`Boss.draw` memanggil `_core.py::TowerDebuffMixin._draw_tower_debuff_fx(surface, x, y, r)` setelah
+blok aura ber-cache dan bayangan, sebelum dispatch renderer per tipe. Sebelumnya tidak ada di
+rebuild, jadi boss yang kena slow/burn hanya berubah warna tanpa indikator.
+
+- `scripts/ui/boss_debuff_fx_layout.gd::ops(x, y, radius, slow, atk_slow, skill_down, anti_heal,
+  burn, anim_time, include_rings=true)`:
+  - `not alive` -> kosong.
+  - cincin slow: elips `(150, 220, 255)` 1 px pada `(x-r-2, y+r-7, (r+2)*2, 10)`.
+  - api burn: tiga lidah, `flick = int(1.5 + 1.5*sin(anim*0.6))`, tiap lidah lingkaran luar
+    `(255, 140, 40)` + inti `(255, 220, 90)` `max(1, r-1)`.
+  - pip: satu blok 5x5 `(10, 10, 14)` + blok 4x4 warna per debuff, jarak 5 px, mulai
+    `x - (n*5-1)//2` pada `y + r + 12`, urutan slow / attack-slow / skill-down / anti-heal / burn.
+  - Semua warna adalah tuple mentah sumber (alpha 255); `anim_time` menggantikan
+    `getattr(self, "anim_time", getattr(self, "pulse", 0))` karena `BossState` selalu punya
+    `anim_time`.
+- `prototype_view.gd`: `boss_debuff_draw_ops(boss)` (kosong bila `not boss.alive`) dilukis setelah
+  aura true-boss dan sebelum LAYER 1 urgharun, jadi tetap di bawah badan atlas. Penghitung baru:
+  `boss_debuff_fx_draws/_ops`.
+- Bukti: `tests/boss_debuff_fx_source_oracle.py` memanen `TowerDebuffMixin._draw_tower_debuff_fx`
+  dari `_core.py` dan menjalankannya di shim `draw_recorder.py` -> **8 frame / 69 op** (bersih,
+  slow saja, burn pada dua fase jam, semua debuff dengan `anim` pecahan dan bilangan bulat, tanpa
+  cincin, dan unit mati). `tests/boss_debuff_fx_checks.gd` me-replay semuanya plus bentuk dan
+  wiring view; `tests/painter_scene_checks.gd` membuktikan scene hidup melukis indikator saat ada
+  timer debuff dan diam saat semua timer nol. Terdaftar di `tests/run_all.gd`, command oracle di
+  workflow, pin 9bq9 (32 cek) di `tests/validate_project.py`.
+
+Validasi lokal: `validate_project.py` -> PASS 21227 static checks; `gdparse`/`gdlint`/
+`gdformat --check` bersih; oracle deterministik; `git diff --check` OK. Godot tidak tersedia
+lokal; native suite dan review visual menunggu CI.
+
+Batas slice ini:
+- Hanya call site `Boss.draw` yang diport. Sumber memakai fungsi yang sama dari `_entity.py` untuk
+  hero, menara, dan unit lain; wiring itu belum ada di rebuild dan menjadi slice lain.
+- `include_rings` hanya dipakai suite (call site boss memakai default `True`), sesuai sumber.
+- Tidak termasuk: `_draw_entrance`, bayangan/aura boss lain, `_LIVE_FX_HEROES`, rebake atlas.
+  Alpha tetap apa adanya dengan blending normal Godot.
+
 ## Slice 9bq8 — FX basic attack urgharun dan jam ayunan `_update_urg_attack_anim`
 
 Melengkapi FX urgharun yang terakhir. `draw_urgharun` membuka dengan

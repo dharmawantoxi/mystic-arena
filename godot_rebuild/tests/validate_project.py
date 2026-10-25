@@ -5240,6 +5240,61 @@ check("_check_frames(check, data)" in _ub_checks and "_check_phases(check, data)
       and "_check_view_wiring(check, data)" in _ub_checks and "func _report(" in _ub_checks,
       "9bq8 the basic-attack suite must replay the frames, the clock and the view")
 
+# ── Layer 9bq9: the debuff indicator `Boss.draw` paints (slow ring, flames, pips) ──
+from boss_debuff_fx_source_oracle import source_fixture as boss_debuff_fixture
+_bd_path = ROOT / "tests/fixtures/boss_debuff_fx_source.json"
+_bd_layout = (ROOT / "scripts/ui/boss_debuff_fx_layout.gd").read_text(encoding="utf-8")
+_bd_checks = (ROOT / "tests/boss_debuff_fx_checks.gd").read_text(encoding="utf-8")
+_bd_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+check('const BossDebuffFxChecks = preload("res://tests/boss_debuff_fx_checks.gd")' in ai_tests
+      and "BossDebuffFxChecks.new().run(_check)" in ai_tests,
+      "9bq9 boss debuff suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/boss_debuff_fx_source_oracle.py" in workflow,
+      "9bq9 CI must run the tower-debuff source oracle")
+check(_bd_path.is_file(), "9bq9 boss debuff fixture must exist")
+if _bd_path.is_file():
+    _bd = json.loads(_bd_path.read_text(encoding="utf-8"))
+    check(boss_debuff_fixture() == _bd,
+          "9bq9 boss debuff fixture must not drift from _core.py")
+    check(len(_bd["frames"]) == 8
+          and sum(len(frame["ops"]) for frame in _bd["frames"]) == 69
+          and [len(frame["ops"]) for frame in _bd["frames"]] == [0, 3, 8, 8, 17, 17, 16, 0],
+          "9bq9 oracle must pin 8 frames and 69 ops, one per debuff combination")
+    check(_bd["frames"][4]["ops"][0]["kind"] == "ellipse"
+          and any(float(frame["anim_time"]).is_integer() for frame in _bd["frames"]),
+          "9bq9 the slow ring must stay an ellipse and one frame must carry an integer clock")
+check("def _draw_tower_debuff_fx(self, surface, x, y, radius=14," in _bd_core
+      and "include_rings=True):" in _bd_core
+      and "self._draw_tower_debuff_fx(surface, x, y, r)" in
+      (ROOT.parent / "bosses/base_boss.py").read_text(encoding="utf-8"),
+      "9bq9 the source must still share the indicator with `Boss.draw`")
+check("const SLOW := [150, 220, 255]" in _bd_layout
+      and "const ATK_SLOW := [90, 160, 255]" in _bd_layout
+      and "const SKILL_DOWN := [200, 120, 255]" in _bd_layout
+      and "const ANTI_HEAL := [255, 90, 140]" in _bd_layout
+      and "const BURN_PIP := [255, 130, 40]" in _bd_layout
+      and "var flick := int(1.5 + 1.5 * sin(anim_time * 0.6))" in _bd_layout
+      and "var pip_y := y + radius + PIP_RADIUS_OFFSET" in _bd_layout
+      and "var px := x - floori(float(total_w) / 2.0)" in _bd_layout,
+      "9bq9 the layout must mirror the source ring, flames and pip row")
+check("func boss_debuff_draw_ops(boss: BossState) -> Array:" in _bs_view
+      and "boss.slow_timer," in _bs_view and "boss.anti_heal_timer," in _bs_view
+      and "float(boss.anim_time)" in _bs_view,
+      "9bq9 the view must build the indicator from the live debuff timers")
+_bd_draw = _bs_view[_bs_view.index("func _draw_boss(boss: BossState)"):
+                    _bs_view.index("func _draw_boss_plain(")]
+check(_bd_draw.index("boss_true_aura_draw_ops(boss)")
+      < _bd_draw.index("boss_debuff_draw_ops(boss)")
+      < _bd_draw.index("urgharun_aura_draw_ops(boss)")
+      and "boss_debuff_fx_ops += debuff_ops.size()" in _bd_draw,
+      "9bq9 the view must paint the indicator after the auras and before the per-type layers")
+check("view.boss_debuff_fx_draws > debuffed_before" in _us_painter
+      and "view.boss_debuff_fx_draws == clean_before" in _us_painter,
+      "9bq9 the painter suite must paint the indicator only while a debuff runs")
+check("_check_frames(check, data)" in _bd_checks and "_check_shape(check, data)" in _bd_checks
+      and "_check_view_wiring(check, data)" in _bd_checks and "func _report(" in _bd_checks,
+      "9bq9 the debuff suite must replay the frames, the shape and the view")
+
 # ── Layer 9bi2: tactical command visuals (gather marker, feedback banner, floating text) ──
 from tactical_draw_source_oracle import source_fixture as tactical_draw_fixture
 _td_path = ROOT / "tests/fixtures/tactical_draw_source.json"

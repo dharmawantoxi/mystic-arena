@@ -31,6 +31,7 @@ const UrgharunEnrageFxLayout = preload("res://scripts/ui/urgharun_enrage_fx_layo
 const UrgharunEnrageGroundLayout = preload("res://scripts/ui/urgharun_enrage_ground_layout.gd")
 const BossAuraFxLayout = preload("res://scripts/ui/boss_aura_fx_layout.gd")
 const UrgharunAttackClock = preload("res://scripts/ui/urgharun_attack_clock.gd")
+const BossDebuffFxLayout = preload("res://scripts/ui/boss_debuff_fx_layout.gd")
 const UrgharunSkillFxLayout = preload("res://scripts/ui/urgharun_skill_fx_layout.gd")
 const TacticalLayout = preload("res://scripts/ui/tactical_layout.gd")
 const GoldHudLayout = preload("res://scripts/ui/gold_hud_layout.gd")
@@ -106,6 +107,9 @@ var boss_true_aura_ops := 0
 ## Layer 9bq8: urgharun's basic-attack FX layer plus the per-boss swing clocks that drive it.
 var boss_basic_attack_fg_draws := 0
 var boss_basic_attack_fg_ops := 0
+## Layer 9bq9: the debuff indicator (slow ring, burn flames, pip row) `Boss.draw` paints.
+var boss_debuff_fx_draws := 0
+var boss_debuff_fx_ops := 0
 var boss_attack_clocks := {}
 ## The tactical banner border (layer 9bi2): 2 px, 6 px corners, drawn inside its box.
 var tactical_border := StyleBoxFlat.new()
@@ -1554,6 +1558,14 @@ func _draw_boss(boss: BossState) -> void:
 		boss_true_aura_ops += true_aura_ops.size()
 		for op in true_aura_ops:
 			_draw_intro_op(op)
+	# Layer 9bq9: `Boss.draw` paints the debuff indicator right after the shadow (the atlas already
+	# bakes the shadow) and before the per-type renderer, so it belongs here.
+	var debuff_ops := boss_debuff_draw_ops(boss)
+	if not debuff_ops.is_empty():
+		boss_debuff_fx_draws += 1
+		boss_debuff_fx_ops += debuff_ops.size()
+		for op in debuff_ops:
+			_draw_intro_op(op)
 	# Layer 9bq6: `draw_urgharun` opens with `_draw_fury_aura` and `_draw_ground_ring(x, y + 50)`
 	# before any skill FX, so both land under everything else the boss paints.
 	var aura_ops := urgharun_aura_draw_ops(boss)
@@ -1653,6 +1665,24 @@ func nyxareth_realm_draw_ops(boss: BossState) -> Array:
 		return []
 	return NyxarethRealmLayout.ops(
 		boss.active_skill_timer, boss.pulse, NyxarethRealmLayout.SCREEN_SIZE
+	)
+
+
+## Layer 9bq9: `_core.py::TowerDebuffMixin._draw_tower_debuff_fx` from the live boss timers.
+## `Boss.draw` calls it with its own radius and `include_rings` default true.
+func boss_debuff_draw_ops(boss: BossState) -> Array:
+	if not boss.alive:
+		return []
+	return BossDebuffFxLayout.ops(
+		int(boss.position.x),
+		int(boss.position.y),
+		int(boss.radius),
+		boss.slow_timer,
+		boss.atk_slow_timer,
+		boss.skill_down_timer,
+		boss.anti_heal_timer,
+		boss.burn_timer,
+		float(boss.anim_time)
 	)
 
 
