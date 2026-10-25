@@ -5004,6 +5004,7 @@ _us_path = ROOT / "tests/fixtures/urgharun_skill_fx_source.json"
 _us_layout = (ROOT / "scripts/ui/urgharun_skill_fx_layout.gd").read_text(encoding="utf-8")
 _us_checks = (ROOT / "tests/urgharun_skill_fx_checks.gd").read_text(encoding="utf-8")
 _us_painter = (ROOT / "tests/painter_scene_checks.gd").read_text(encoding="utf-8")
+_us_view_preloads_unit_state = ('const UnitState = preload(' in _bs_view)
 _us_battle = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
 _us_src = (ROOT.parent / "bosses/level40.py").read_text(encoding="utf-8")
 _us_urg = _us_src[_us_src.index("class _NS_urgharun:"):_us_src.index("class _NS_yhoranth:")]
@@ -5059,6 +5060,8 @@ check("func urgharun_aura_draw_ops(boss: BossState) -> Array:" in _bs_view
 check("func boss_presentation_target() -> UnitState:" in _us_battle
       and "return _boss_target(_boss_enemies())" in _us_battle,
       "9bq6 the world must expose a read-only boss target query for the W/E layers")
+check(not _us_view_preloads_unit_state,
+      "9bq6 the view must not re-declare the parent's UnitState preload")
 _us_draw = _bs_view[_bs_view.index("func _draw_boss(boss: BossState)"):
                     _bs_view.index("func _draw_boss_plain(")]
 check("var aura_ops := urgharun_aura_draw_ops(boss)" in _us_draw

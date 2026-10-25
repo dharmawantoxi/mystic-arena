@@ -5,7 +5,6 @@ const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const BossState = preload("res://scripts/match/boss_state.gd")
-const UnitState = preload("res://scripts/combat/unit_state.gd")
 const HeroMarker = preload("res://scripts/ui/hero_marker.gd")
 const PathPreview = preload("res://scripts/ui/path_preview.gd")
 const SpriteLighting = preload("res://scripts/ui/sprite_lighting.gd")
@@ -1680,6 +1679,7 @@ func urgharun_target_point() -> Array:
 	var world := session.world as Prototype
 	if world == null:
 		return []
+	# `UnitState` comes from the parent view's preload; declaring it here shadows the parent.
 	var target: UnitState = world.boss_presentation_target()
 	if target == null or not target.alive:
 		return []
