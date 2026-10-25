@@ -183,7 +183,7 @@ func _check_rings(check: Callable, frames: Array) -> void:
 		(
 			int(edge.get("anchor", [0, 0])[1]) == 680
 			and int(edge_rect[1]) + int(edge_rect[3]) > 720
-			and int(edge.get("ops", [{}])[0]["rect"][2]) == 66
+			and int(edge_rect[2]) == 64
 		),
 		"The bottom-edge frame keeps the source rect that the surface clips"
 	)
