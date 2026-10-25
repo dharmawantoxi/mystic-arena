@@ -195,7 +195,8 @@ func _process(_delta: float) -> void:
 	# Layer 9bv7: while an empty build slot is selected the arena paints the source
 	# build-tower popup at the slot.
 	arena.set("build_popup_state", build_popup_state)
-	# Layer 9bv8: the live selected hero's source panel is view-only; no commands are changed.
+	# Layer 9bv8/9bv9: the hero panel is drawn from this snapshot; pointer and controller
+	# actions are routed separately through PrototypeSession and the existing forge.
 	arena.set("hero_panel_state", hero_panel_state)
 	# Layer 9bv5: once the match ends the arena paints the source victory / defeat overlay.
 	arena.set("end_overlay_state", {} if world.is_running() else _end_overlay_state(world))
@@ -532,7 +533,7 @@ func _save_result() -> void:
 	end_completed_levels = saved.get("completed_levels", []).duplicate()
 
 
-## Layer 9bv7: `g.build_popup_slot` while an empty build slot is selected; empty otherwise.
+## Layer 9bv7/9bv9: popup snapshot for the selected empty slot, including its command id.
 func _build_popup_state(world: Prototype, match_session: PrototypeSession) -> Dictionary:
 	if not world.is_running():
 		return {}
@@ -543,6 +544,7 @@ func _build_popup_state(world: Prototype, match_session: PrototypeSession) -> Di
 	if slot == null or slot.structure_id != -1:
 		return {}
 	var state := {
+		"slot_id": slot_id,
 		"x": int(slot.position.x),
 		"y": int(slot.position.y),
 		"gold": int(world.economy.gold[0]),
@@ -552,8 +554,7 @@ func _build_popup_state(world: Prototype, match_session: PrototypeSession) -> Di
 	return state
 
 
-## Layer 9bv8: selected live hero snapshot for the arena painter.
-## This view-only state does not enqueue gameplay commands.
+## Layer 9bv8/9bv9: selected live hero snapshot shared by the arena painter and input router.
 func _hero_panel_state(world: Prototype, match_session: PrototypeSession) -> Dictionary:
 	var selected := world.get_unit(match_session.selected_id) as HeroState
 	if selected == null or not selected.alive or selected.team != world.BLUE:
@@ -835,6 +836,7 @@ func _build_side_panel() -> void:
 	side_panel.pause_requested.connect(pause_match)
 	side_panel.tactical_down.connect(_start_panel_tactical)
 	side_panel.tactical_up.connect(_finish_tactical)
+	side_panel.overlay_pressed.connect(_handle_side_panel_overlay_press)
 	$HUD.add_child(side_panel)
 	get_viewport().size_changed.connect(_layout_side_panel)
 	_layout_side_panel()
@@ -1150,6 +1152,9 @@ func _route_touch_actions(actions: Array[Dictionary]) -> void:
 
 
 func _touch_tap(point: Vector2) -> void:
+	if _overlay_action_rect_at(point) != null or _overlay_panel_captures_pointer(point):
+		_primary_action(point)
+		return
 	var button := _touch_button_at(point)
 	if button != null:
 		if not button.disabled:
@@ -1166,6 +1171,9 @@ func _touch_tap(point: Vector2) -> void:
 
 
 func _touch_long_press(point: Vector2) -> void:
+	if _overlay_panel_captures_pointer(point):
+		_handle_overlay_pointer(point, MOUSE_BUTTON_RIGHT)
+		return
 	var button := _touch_button_at(point)
 	if button != null:
 		if not button.disabled:
@@ -1179,6 +1187,8 @@ func _touch_long_press(point: Vector2) -> void:
 		_touch_forge_background(point, MOUSE_BUTTON_RIGHT)
 		return
 	if get_tree().paused or _controller_modal_open():
+		return
+	if _handle_overlay_pointer(point, MOUSE_BUTTON_RIGHT):
 		return
 	_command_move(point)
 
@@ -1254,7 +1264,274 @@ func _point_in_arena(point: Vector2) -> bool:
 	return Rect2(Vector2.ZERO, Vector2(1280, 720)).has_point(local)
 
 
+func _handle_side_panel_overlay_press(screen_position: Vector2i, button_index: int) -> void:
+	_handle_overlay_pointer(Vector2(screen_position), button_index)
+
+
+func _touch_target_rect(rect: Rect2i) -> Rect2i:
+	# Source InputHandler._touch_rect: minimum 48 px, centred on the visual rect,
+	# with 6 px padding for larger controls. It is used by mouse and touch alike.
+	var target_size := Vector2i(
+		maxi(rect.size.x + int(TOUCH_PADDING * 2.0), int(TOUCH_TARGET_MIN)),
+		maxi(rect.size.y + int(TOUCH_PADDING * 2.0), int(TOUCH_TARGET_MIN))
+	)
+	var center := rect.position + Vector2i(rect.size.x >> 1, rect.size.y >> 1)
+	var half := Vector2i(target_size.x >> 1, target_size.y >> 1)
+	return Rect2i(center - half, target_size)
+
+
+func _hero_panel_action_entries(state: Dictionary) -> Array[Dictionary]:
+	var screen_space := state.has("panel_pos")
+	var entries: Array[Dictionary] = [
+		{
+			"id": "hero_close",
+			"rect": HeroPanelLayout.close_rect(state),
+			"screen_space": screen_space,
+		},
+		{
+			"id": "toggle_autocast",
+			"rect": HeroPanelLayout.autocast_rect(state),
+			"screen_space": screen_space,
+		},
+	]
+	for index in range(HeroPanelLayout.ITEM_COUNT):
+		(
+			entries
+			. append(
+				{
+					"id": "hero_item_slot_%d" % index,
+					"rect": HeroPanelLayout.item_slot_rect(state, index),
+					"screen_space": screen_space,
+				}
+			)
+		)
+	(
+		entries
+		. append(
+			{
+				"id": "hero_open_items",
+				"rect": HeroPanelLayout.item_shop_rect(state),
+				"screen_space": screen_space,
+			}
+		)
+	)
+	if int(state.get("level", 1)) < int(state.get("max_level", HeroDefinition.MAX_HERO_LEVEL)):
+		(
+			entries
+			. append(
+				{
+					"id": "popup_upgrade_hero",
+					"rect": HeroPanelLayout.upgrade_rect(state),
+					"screen_space": screen_space,
+				}
+			)
+		)
+	return entries
+
+
+func _build_popup_action_entries(state: Dictionary) -> Array[Dictionary]:
+	var screen_space := state.has("panel_pos")
+	var entries: Array[Dictionary] = [
+		{
+			"id": "build_close",
+			"rect": BuildPopupLayout.state_close_rect(state),
+			"screen_space": screen_space,
+		}
+	]
+	for index in range(4):
+		var path: String = ["archer", "cannon", "ice", "mage"][index]
+		(
+			entries
+			. append(
+				{
+					"id": "build_" + path,
+					"rect": BuildPopupLayout.state_button_rect(state, index),
+					"screen_space": screen_space,
+				}
+			)
+		)
+	return entries
+
+
+func _overlay_action_entries() -> Array[Dictionary]:
+	var entries: Array[Dictionary] = []
+	if get_tree().paused or _controller_modal_open():
+		return entries
+	var world := match_session.world as Prototype
+	if world == null or not world.is_running():
+		return entries
+	var hero_state: Dictionary = arena.get("hero_panel_state")
+	if not hero_state.is_empty():
+		entries.append_array(_hero_panel_action_entries(hero_state))
+	var build_state: Dictionary = arena.get("build_popup_state")
+	if not build_state.is_empty():
+		entries.append_array(_build_popup_action_entries(build_state))
+	return entries
+
+
+func _overlay_point(point: Vector2, state: Dictionary) -> Vector2i:
+	if state.has("panel_pos"):
+		return Vector2i(point)
+	return Vector2i(arena.get_global_transform_with_canvas().affine_inverse() * point)
+
+
+func _overlay_target_screen_rect(entry: Dictionary, target: Rect2i) -> Rect2:
+	if bool(entry.get("screen_space", false)):
+		return Rect2(Vector2(target.position), Vector2(target.size))
+	var transform := arena.get_global_transform_with_canvas()
+	var corners: Array[Vector2] = [
+		transform * Vector2(target.position),
+		transform * Vector2(target.position + Vector2i(target.size.x, 0)),
+		transform * Vector2(target.position + target.size),
+		transform * Vector2(target.position + Vector2i(0, target.size.y)),
+	]
+	var left := corners[0].x
+	var top := corners[0].y
+	var right := corners[0].x
+	var bottom := corners[0].y
+	for corner in corners:
+		left = minf(left, corner.x)
+		top = minf(top, corner.y)
+		right = maxf(right, corner.x)
+		bottom = maxf(bottom, corner.y)
+	return Rect2(Vector2(left, top), Vector2(right - left, bottom - top))
+
+
+func _overlay_action_rect_at(point: Vector2) -> Variant:
+	for entry in _overlay_action_entries():
+		var state_point := Vector2i(point)
+		if not bool(entry.get("screen_space", false)):
+			state_point = Vector2i(
+				arena.get_global_transform_with_canvas().affine_inverse() * point
+			)
+		var target: Rect2i = _touch_target_rect(entry["rect"])
+		if target.has_point(state_point):
+			return _overlay_target_screen_rect(entry, target)
+	return null
+
+
+func _overlay_panel_captures_pointer(point: Vector2) -> bool:
+	if get_tree().paused or _controller_modal_open():
+		return false
+	var world := match_session.world as Prototype
+	if world == null or not world.is_running():
+		return false
+	var hero_state: Dictionary = arena.get("hero_panel_state")
+	if (
+		not hero_state.is_empty()
+		and HeroPanelLayout.panel_rect(hero_state).has_point(_overlay_point(point, hero_state))
+	):
+		return true
+	var build_state: Dictionary = arena.get("build_popup_state")
+	if not build_state.is_empty():
+		var panel_rect := Rect2i(
+			BuildPopupLayout.state_origin(build_state),
+			Vector2i(BuildPopupLayout.state_width(build_state), BuildPopupLayout.POPUP_H)
+		)
+		return panel_rect.has_point(_overlay_point(point, build_state))
+	return false
+
+
+func _overlay_captures_pointer(point: Vector2) -> bool:
+	if _overlay_panel_captures_pointer(point):
+		return true
+	# BuildPopup closes on an unclaimed click before the source dispatches the world click.
+	var build_state: Dictionary = arena.get("build_popup_state")
+	return not build_state.is_empty() and not get_tree().paused and not _controller_modal_open()
+
+
+func _handle_overlay_pointer(point: Vector2, button_index: int) -> bool:
+	if get_tree().paused or _controller_modal_open():
+		return false
+	var world := match_session.world as Prototype
+	if world == null or not world.is_running():
+		return false
+	var hero_state: Dictionary = arena.get("hero_panel_state")
+	if not hero_state.is_empty():
+		var hero_point := _overlay_point(point, hero_state)
+		if button_index == MOUSE_BUTTON_LEFT:
+			for entry in _hero_panel_action_entries(hero_state):
+				var rect: Rect2i = entry["rect"]
+				if _touch_target_rect(rect).has_point(hero_point):
+					_activate_hero_panel_action(String(entry["id"]))
+					return true
+		if HeroPanelLayout.panel_rect(hero_state).has_point(hero_point):
+			# The source handler consumes every click inside HeroPanel. Its intended
+			# right-click item-drop branch is unreachable behind its button == 1 guard.
+			return true
+
+	var build_state: Dictionary = arena.get("build_popup_state")
+	if build_state.is_empty():
+		return false
+	if button_index == MOUSE_BUTTON_LEFT:
+		var build_point := _overlay_point(point, build_state)
+		for entry in _build_popup_action_entries(build_state):
+			var rect: Rect2i = entry["rect"]
+			if not _touch_target_rect(rect).has_point(build_point):
+				continue
+			var action := String(entry["id"])
+			if action == "build_close":
+				match_session.selected_slot_id = -1
+			else:
+				var slot_id := int(build_state.get("slot_id", match_session.selected_slot_id))
+				match_session.request_build(slot_id, action.replace("build_", ""))
+			return true
+	# Source closes an unclaimed build popup and continues dispatching the click to the world.
+	match_session.selected_slot_id = -1
+	return false
+
+
+func _activate_hero_panel_action(action_id: String) -> void:
+	if action_id == "hero_close":
+		match_session.selected_id = -1
+		return
+	var world := match_session.world as Prototype
+	var hero := world.get_unit(match_session.selected_id) as HeroState
+	if hero == null or not hero.alive or hero.team != world.BLUE:
+		return
+	match action_id:
+		"popup_upgrade_hero":
+			match_session.request_hero_upgrade(hero.id)
+		"toggle_autocast":
+			match_session.request_autocast(hero.id)
+		"hero_open_items":
+			_open_item_forge_for_hero(hero.id)
+		_:
+			if action_id.begins_with("hero_item_slot_"):
+				var slot_index := int(action_id.substr("hero_item_slot_".length()))
+				var inspect_item := ""
+				if slot_index >= 0 and slot_index < hero.items.slots.size():
+					var raw_item: Variant = hero.items.slots[slot_index]
+					if raw_item != null:
+						var item_id := String(raw_item)
+						if not hero.items.item(item_id).is_empty():
+						inspect_item = item_id
+				_open_item_forge_for_hero(hero.id, inspect_item)
+
+
+func _open_item_forge_for_hero(hero_id: int, inspect_item: String = "") -> void:
+	var world := match_session.world as Prototype
+	if forge_panel == null or world.forge == null:
+		return
+	if hero_shop_panel != null and hero_shop_panel.is_open:
+		hero_shop_panel.set_open(false)
+		if hero_shop_toggle != null:
+			hero_shop_toggle.button_pressed = false
+	world.forge.set_selected(hero_id)
+	world.forge.set_target(hero_id)
+	var shop: Object = forge_panel.shop()
+	if shop == null:
+		return
+	if not inspect_item.is_empty():
+		shop.inspect_item = inspect_item
+	forge_panel.set_open(true)
+
+
 func _primary_action(point: Vector2) -> void:
+	if get_tree().paused or _controller_modal_open():
+		return
+	if _handle_overlay_pointer(point, MOUSE_BUTTON_LEFT):
+		return
 	var world := simulation.world as Prototype
 	if not world.is_running() or not _point_in_arena(point):
 		return
@@ -1461,17 +1738,30 @@ func _controller_hover_button() -> Button:
 
 
 func _controller_activate_hover() -> bool:
+	var pointer := controller_cursor.cursor_position
+	if _overlay_action_rect_at(pointer) != null or _overlay_panel_captures_pointer(pointer):
+		_primary_action(pointer)
+		return true
 	var button := _controller_hover_button()
-	if button == null:
-		return false
-	button.pressed.emit()
-	return true
+	if button != null:
+		button.pressed.emit()
+		return true
+	if _overlay_captures_pointer(pointer):
+		_primary_action(pointer)
+		return true
+	return false
 
 
 func _controller_snap() -> void:
 	var rects: Array[Rect2] = []
 	for button in _controller_buttons():
-		rects.append(button.get_global_rect())
+		var button_rect := button.get_global_rect()
+		if _overlay_panel_captures_pointer(button_rect.get_center()):
+			continue
+		rects.append(button_rect)
+	for entry in _overlay_action_entries():
+		var target: Rect2i = _touch_target_rect(entry["rect"])
+		rects.append(_overlay_target_screen_rect(entry, target))
 	controller_cursor.snap_to_nearest(rects)
 	_update_controller_hover()
 
@@ -1498,6 +1788,13 @@ func _scroll_ui(amount: int, point: Vector2) -> void:
 
 func _update_controller_hover() -> void:
 	if not controller_cursor.active:
+		controller_cursor.set_hover_rect(Rect2(), false)
+		return
+	var overlay_rect: Variant = _overlay_action_rect_at(controller_cursor.cursor_position)
+	if overlay_rect is Rect2:
+		controller_cursor.set_hover_rect(overlay_rect, true)
+		return
+	if _overlay_panel_captures_pointer(controller_cursor.cursor_position):
 		controller_cursor.set_hover_rect(Rect2(), false)
 		return
 	var button := _controller_hover_button()
@@ -1529,17 +1826,29 @@ func _unhandled_input(event: InputEvent) -> void:
 	if (
 		event is InputEventMouseButton
 		and event.pressed
-		and event.button_index == MOUSE_BUTTON_RIGHT
 		and event.device != InputEvent.DEVICE_ID_EMULATION
 	):
-		_command_move(event.position)
-		return
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			_primary_action(event.position)
+			get_viewport().set_input_as_handled()
+			return
+		if event.button_index == MOUSE_BUTTON_RIGHT:
+			if _handle_overlay_pointer(event.position, MOUSE_BUTTON_RIGHT):
+				get_viewport().set_input_as_handled()
+				return
+			_command_move(event.position)
+			return
 	super._unhandled_input(event)
 
 
 func _command_move(point: Vector2) -> void:
 	var world := simulation.world as Prototype
-	if not world.is_running() or not _point_in_arena(point):
+	if (
+		get_tree().paused
+		or _controller_modal_open()
+		or not world.is_running()
+		or not _point_in_arena(point)
+	):
 		return
 	var selected := world.get_unit(match_session.selected_id) as HeroState
 	if selected == null or not selected.alive or selected.team != world.BLUE:

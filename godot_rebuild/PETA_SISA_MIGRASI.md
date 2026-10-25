@@ -3754,15 +3754,15 @@ Batas:
 - Fixture compact kini menjalankan `fit_ellipsis`; shim recorder memaksa fallback `...` karena
   tidak memodelkan glyph U+2026. SidePanel memilih `…` bila font Barlow memilikinya; metrik font
   aktual tetap tidak dipatok pixel-per-pixel.
-- Klik di popup tidak dilayani (tombol HUD yang memicu build); perilaku game tidak berubah.
+- Interaksi belum masuk pada saat slice 9bv7; sudah ditambahkan lewat router 9bv9 di bawah.
 - Belum ada review visual di Godot. Bukan klaim pixel parity.
 
 ## Slice 9bv8 — panel hero dan enam slot item (layer 9bv8)
 
 Sumber: `ui_components/_bundle.py::HeroPanel.draw` beserta helper panel/skill/tombolnya, dan
 `hero_items.py::HeroItemRenderer.draw`. `Game.draw` hanya memanggil panel untuk hero terpilih yang
-masih hidup, setelah popup build. Port ini mempertahankan panel sebagai gambar dan snapshot
-view-only; tidak mengubah command atau gameplay.
+masih hidup, setelah popup build. Pada slice 9bv8 panel dikirim sebagai gambar dan snapshot
+view-only; router aksi ditambahkan di slice 9bv9 di bawah.
 
 - Oracle `tests/hero_panel_draw_source_oracle.py` menjalankan metode sumber asli bersama
   `ui_theme` dan `HeroItemRenderer` di shim recorder. Fixture berisi 6 frame / 440 op:
@@ -3781,11 +3781,40 @@ view-only; tidak mengubah command atau gameplay.
   `tests/run_all.gd`; guard 9bv8 di `validate_project.py` dan command oracle di workflow.
 
 Batas:
-- Tombol dan rect HeroPanel hanya digambar/dicek; handler aksi HeroPanel tidak diport dan tidak
-  menjalankan gameplay. Saat overlay aktif di dock, flag popup menahan hit-test aksi taktis yang
-  tertutup di bawahnya (tombol pause tetap lolos), mengikuti routing SidePanel sumber.
+- Interaksi belum masuk pada saat slice 9bv8; sudah dilayani di 9bv9. Jalur right-click drop
+  pada HeroPanel tidak diport karena handler sumber lebih dulu mengembalikan false saat
+  `button != 1`; right-click drop yang hidup tetap tersedia di Item Forge.
   `mobile_panel_origin` mengikuti `panel_pos_bawah(280, 276)` pada dock kanan yang lebarnya minimal
   288 px; dock yang lebih sempit tetap memakai fallback kiri-bawah. Saat dock aktif, `SidePanel`
   menggambar ulang panel di atas latar batu, mengikuti pulse/hover per frame.
 - Belum ada runtime atau review visual di Godot. Bukan klaim pixel parity.
 
+
+
+## Slice 9bv9 — interaksi BuildPopup dan HeroPanel (9bv9)
+
+Sumber: `_core.py::InputHandler.handle_click`, `handle_build_popup_click`, dan
+`handle_hero_panel_click`, dengan tombol/rect sumber dari `ui_components/_bundle.py`. Aksi melewati
+`PrototypeSession` dan `Forge`; painter hanya menampilkan snapshot.
+
+- Router input kini melayani mouse, tap/long-press sentuh, side dock, dan pointer controller. Hitbox
+  memakai target sumber 48 x 48 px dengan padding 6 px dan urutan tombol sumber, termasuk dock
+  sempit dan rect yang saling tumpang tindih. Klik kiri mouse di arena sekarang masuk ke dispatch
+  yang sama dengan tap/controller; klik kanan di luar HeroPanel tetap memakai jalur perintah bergerak
+  setelah routing popup (klik di dalam HeroPanel dikonsumsi sesuai handler sumber).
+- BuildPopup: tombol X menutup pilihan slot; empat kartu membuat request archer/cannon/ice/mage
+  untuk ID slot yang ditangkap snapshot. Klik yang bukan tombol menutup popup lalu meneruskan klik
+  ke pemilihan dunia; request build tetap menunggu fixed tick, sehingga validasi gold/slot dan debit
+  tidak dipindah ke view. Klik dock dikirim oleh `SidePanel.overlay_pressed`; tombol Pause tetap
+  memiliki prioritasnya.
+- HeroPanel: tombol tutup membatalkan pilihan; upgrade dan auto-cast memakai
+  `request_hero_upgrade` / `request_autocast`; ITEM FORGE dan slot inventori membuka panel forge
+  yang ada, menetapkan hero terpilih sebagai target, dan slot berisi membuka detail item. Slot kosong
+  membuka forge tanpa membuat detail palsu. Klik kosong di dalam panel tetap tertangkap.
+- Tidak ada mutasi langsung pada gold, level, item inventory, atau status autocast dari painter/input
+  view. Semua transaksi gameplay memakai jalur sesi/forge yang sudah ada.
+- Bukti: `tests/popup_interaction_scene_checks.gd` menguji empat jalur build, close/dismiss, mouse,
+  sentuh, controller, dock, autocast, upgrade, Forge target/detail, serta guard right-click sumber;
+  suite masuk `tests/run_all.gd`. Pin 9bv9 ada di `tests/validate_project.py`.
+
+Batas: tidak ada Godot lokal untuk runtime atau review visual. Tidak diklaim pixel parity.

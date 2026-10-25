@@ -5224,6 +5224,47 @@ check("Hero panel oracle pins 6 source frames and 440 draw ops" in _hp_checks
       and 'order.back() == "boss_death"' in _hp_checks,
       "9bv8 draw checks must replay the fixture, pin all six slots, and keep the overlay order")
 
+# ── Layer 9bv9: interactive BuildPopup and HeroPanel ──
+_pi_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+_pi_side_panel = (ROOT / "scripts/ui/side_panel.gd").read_text(encoding="utf-8")
+_pi_checks = (ROOT / "tests/popup_interaction_scene_checks.gd").read_text(encoding="utf-8")
+check('const PopupInteractionSceneChecks = preload("res://tests/popup_interaction_scene_checks.gd")' in ai_tests
+      and "PopupInteractionSceneChecks.new().run(root.get_tree(), app, _check)" in ai_tests,
+      "9bv9 popup interaction suite must be preloaded and run in the native scene suite")
+check("side_panel.overlay_pressed.connect(_handle_side_panel_overlay_press)" in _pi_screen
+      and "signal overlay_pressed(screen_position: Vector2i, button_index: int)" in _pi_side_panel
+      and "overlay_pressed.emit(screen_position, button_index)" in _pi_side_panel
+      and "if action.is_empty() and popup_open:" in _pi_side_panel,
+      "9bv9 dock pointer events must route only after SidePanel pause/tactical hit testing")
+check("func _touch_target_rect(rect: Rect2i) -> Rect2i:" in _pi_screen
+      and "maxi(rect.size.x + int(TOUCH_PADDING * 2.0), int(TOUCH_TARGET_MIN))" in _pi_screen
+      and "BuildPopupLayout.state_button_rect(state, index)" in _pi_screen
+      and "HeroPanelLayout.item_slot_rect(state, index)" in _pi_screen
+      and "func _overlay_point(point: Vector2, state: Dictionary) -> Vector2i:" in _pi_screen,
+      "9bv9 input must use source-sized hitboxes and resolve arena versus dock coordinates")
+check('match_session.request_build(slot_id, action.replace("build_", ""))' in _pi_screen
+      and "match_session.request_hero_upgrade(hero.id)" in _pi_screen
+      and "match_session.request_autocast(hero.id)" in _pi_screen
+      and "world.forge.set_selected(hero_id)" in _pi_screen
+      and "world.forge.set_target(hero_id)" in _pi_screen
+      and "shop.inspect_item = inspect_item" in _pi_screen,
+      "9bv9 popup actions must reuse fixed-tick session and forge transactions")
+check("_primary_action(event.position)" in _pi_screen
+      and "_handle_overlay_pointer(event.position, MOUSE_BUTTON_RIGHT)" in _pi_screen
+      and "_handle_overlay_pointer(point, MOUSE_BUTTON_RIGHT)" in _pi_screen
+      and "func _overlay_target_screen_rect(entry: Dictionary, target: Rect2i) -> Rect2:" in _pi_screen
+      and "if _overlay_action_rect_at(point) != null or _overlay_panel_captures_pointer(point):" in _pi_screen
+      and "unreachable behind its button == 1 guard" in _pi_screen,
+      "9bv9 mouse/touch/controller routing must retain priority, transform targets, and preserve the HeroPanel drop guard")
+check('var paths := ["archer", "cannon", "ice", "mage"]' in _pi_checks
+      and "Controller confirm recognizes a painted BuildPopup card" in _pi_checks
+      and "SidePanel mouse input routes a docked BuildPopup card" in _pi_checks
+      and "Occupied HeroPanel slot opens Forge" in _pi_checks
+      and "HeroPanel ITEM FORGE button opens Forge" in _pi_checks
+      and "HeroPanel long-press preserves the same unreachable item-drop guard" in _pi_checks
+      and "Fixed tick activates HeroPanel autocast" in _pi_checks,
+      "9bv9 scene checks must exercise build paths, controller/dock input, touch, Forge and commands")
+
 # ── Layer 9br: UI skin from ui_theme.py (bake/bake_ui_theme.py) ──
 _ui_path = ROOT / "data/art/ui_theme.json"
 _ui_src = (ROOT.parent / "ui_theme.py").read_text(encoding="utf-8")

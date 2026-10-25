@@ -11,6 +11,7 @@ extends Control
 signal pause_requested
 signal tactical_down(action: String)
 signal tactical_up(action: String)
+signal overlay_pressed(screen_position: Vector2i, button_index: int)
 
 const Layout = preload("res://scripts/ui/side_panel_layout.gd")
 const BuildPopupLayout = preload("res://scripts/ui/build_popup_layout.gd")
@@ -520,20 +521,30 @@ func _gui_input(event: InputEvent) -> void:
 	var pressed := false
 	var released := false
 	var local := Vector2.ZERO
+	var button_index := MOUSE_BUTTON_LEFT
 	if event is InputEventScreenTouch:
 		pressed = event.pressed
 		released = not event.pressed
 		local = event.position
-	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		pressed = event.pressed
-		released = not event.pressed
-		local = event.position
+	elif event is InputEventMouseButton:
+		var mouse := event as InputEventMouseButton
+		if mouse.button_index not in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT]:
+			return
+		button_index = mouse.button_index
+		if button_index == MOUSE_BUTTON_RIGHT and not popup_open:
+			return
+		pressed = mouse.pressed
+		released = not mouse.pressed
+		local = mouse.position
 	else:
 		return
 	accept_event()
 	if pressed:
-		_press_at(Vector2i(local) + panel.position)
-	elif released and not _held_action.is_empty():
+		var screen_position := Vector2i(local) + panel.position
+		var action := _press_at(screen_position) if button_index == MOUSE_BUTTON_LEFT else ""
+		if action.is_empty() and popup_open:
+			overlay_pressed.emit(screen_position, button_index)
+	elif released and button_index == MOUSE_BUTTON_LEFT and not _held_action.is_empty():
 		var action := _held_action
 		_held_action = ""
 		tactical_up.emit(action)
