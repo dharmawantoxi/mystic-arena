@@ -3616,9 +3616,17 @@ foreground skill (Q/W/E/R).
   layer Q (ground + foreground). Suite terdaftar di `tests/run_all.gd`, command oracle di
   workflow, pin 9bq6 (34 cek) di `tests/validate_project.py`.
 
-Validasi lokal: `validate_project.py` -> PASS 21125 static checks; `gdparse`/`gdlint`/
+Validasi lokal: `validate_project.py` -> PASS 21123 static checks; `gdparse`/`gdlint`/
 `gdformat --check` bersih; oracle deterministik; `git diff --check` OK. Godot tidak tersedia
 lokal; native suite dan review visual menunggu CI.
+
+CI (dipakai sebagai pengganti Godot lokal): dua kegagalan pertama berasal dari skrip baru dan
+sudah diperbaiki - `prototype_view.gd` mendeklarasikan ulang `const UnitState` yang sudah ada di
+`minion_view.gd` (parse error "member already exists in parent class"; kini memakai milik parent
+dan validator mem-pin agar tidak kembali), dan `_report()` memakai `:=` atas
+`Array[index] if ... else {}` yang tidak bisa diinferensi (kini bertipe `Variant`). Run
+`40186732016` (job `121149006132`) **pass 15m16s** dengan notice
+`PASS: 1504971 checks; fixed ticks and source parity`; validator lokal PASS 21123.
 
 Batas slice ini:
 - Elips tetap aproksimasi polygon dan alpha tetap ditulis apa adanya (blending normal di
