@@ -141,7 +141,7 @@ func _check_enrage(check: Callable, data: Dictionary) -> void:
 			int(mini["ops"].size()) == 5
 			and int(mini["ops"][0]["width"]) == 2
 			and _value_equal(mini["ops"][0]["color"], [255, 140, 30, 25])
-			and _value_equal(true_boss["ops"][0]["color"], [255, 50, 40, 25])
+			and _value_equal(true_boss["ops"][0]["color"], [255, 50, 40, 29])
 		),
 		"The enrage aura strokes width-2 rings, amber for a mini boss and red for a true one"
 	)

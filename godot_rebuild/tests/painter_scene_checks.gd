@@ -234,23 +234,23 @@ func _check_urgharun_enrage(tree: SceneTree, view, boss, check: Callable) -> voi
 
 
 ## Layer 9bq7: the live scene paints the three cached `Boss.draw` auras - the ability aura while
-## `ability_active`, the enrage aura once `is_enraged` and the extra true-boss aura - and none of
-## them paints before its source gate opens. No tick runs, so the sim never sees the swaps.
+## `ability_active`, the enrage aura once `is_enraged` and the extra true-boss aura - and each one
+## stays off while its source gate is closed. No tick runs, so the sim never sees the swaps.
 func _check_boss_auras(tree: SceneTree, view, boss, check: Callable) -> void:
-	check.call(
-		(
-			view.boss_ability_aura_draws == 0
-			and view.boss_enrage_aura_draws == 0
-			and view.boss_true_aura_draws == 0
-		),
-		"No cached boss aura painted before its source gate opened"
-	)
 	var source_class: String = boss.boss_class
 	var source_range: float = boss.ability_range
 	var source_entrance: Color = boss.entrance_color
 	var source_ability: bool = boss.ability_active
 	var source_enraged: bool = boss.is_enraged
 	var source_enrage_pulse: float = boss.enrage_pulse
+	boss.ability_active = false
+	var ability_closed: int = view.boss_ability_aura_draws
+	for _frame in range(4):
+		await tree.process_frame
+	check.call(
+		view.boss_ability_aura_draws == ability_closed,
+		"No ability aura painted while the ability gate was closed"
+	)
 	boss.ability_active = true
 	boss.ability_range = 350.0
 	boss.entrance_color = Color8(255, 200, 130)
@@ -266,9 +266,17 @@ func _check_boss_auras(tree: SceneTree, view, boss, check: Callable) -> void:
 	boss.ability_active = source_ability
 	boss.ability_range = source_range
 	boss.entrance_color = source_entrance
-	var enrage_before: int = view.boss_enrage_aura_draws
+	boss.is_enraged = false
+	var enrage_closed: int = view.boss_enrage_aura_draws
+	for _frame in range(4):
+		await tree.process_frame
+	check.call(
+		view.boss_enrage_aura_draws == enrage_closed,
+		"No enrage aura painted before the enrage transition"
+	)
 	boss.is_enraged = true
 	boss.enrage_pulse = 0.0
+	var enrage_before: int = view.boss_enrage_aura_draws
 	for _frame in range(6):
 		await tree.process_frame
 		if view.boss_enrage_aura_draws > enrage_before:
@@ -279,8 +287,13 @@ func _check_boss_auras(tree: SceneTree, view, boss, check: Callable) -> void:
 	)
 	boss.is_enraged = source_enraged
 	boss.enrage_pulse = source_enrage_pulse
-	var true_before: int = view.boss_true_aura_draws
+	boss.boss_class = "mini"
+	var true_closed: int = view.boss_true_aura_draws
+	for _frame in range(4):
+		await tree.process_frame
+	check.call(view.boss_true_aura_draws == true_closed, "Only a true boss paints the extra aura")
 	boss.boss_class = "true"
+	var true_before: int = view.boss_true_aura_draws
 	for _frame in range(6):
 		await tree.process_frame
 		if view.boss_true_aura_draws > true_before:
