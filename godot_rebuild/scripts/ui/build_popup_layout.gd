@@ -12,10 +12,9 @@ extends RefCounted
 ##   * a 2x2 grid of four tower cards (archer, cannon, ice, mage) with a coin icon, cost
 ##     and hover glow; a card is hovered only while the gold covers the 100 cost.
 ##
-## `state`: x, y (slot), gold and mouse (Vector2i). `cheap_alpha` mirrors
-## `mobile.perf.Quality.cheap_alpha`: true draws the gradient card and the card glow, false
-## draws the flat `(25, 30, 45)` panel and flat card fills. The wide-screen side-panel branch
-## of `_popup_di_panel` is not ported; the popup keeps the classic fallback position.
+## `state`: x, y (slot), gold and mouse (Vector2i), with optional panel_pos and popup_w for the
+## wide-screen side panel. `cheap_alpha` mirrors `mobile.perf.Quality.cheap_alpha`: true draws the
+## gradient card and the card glow, false draws the flat `(25, 30, 45)` panel and flat card fills.
 
 const POPUP_W := 400
 const POPUP_H := 300
@@ -59,12 +58,16 @@ static func ops(state: Dictionary, measure: Callable, cheap_alpha: bool = true) 
 ## `BuildPopup.draw`'s fallback position: centred on the slot, 30 px above it, clamped to
 ## the frame with the source's exact order of checks.
 static func origin(slot_x: int, slot_y: int) -> Vector2i:
-	var px := slot_x - (POPUP_W >> 1)
+	return origin_for_width(slot_x, slot_y, POPUP_W)
+
+
+static func origin_for_width(slot_x: int, slot_y: int, popup_width: int) -> Vector2i:
+	var px := slot_x - (popup_width >> 1)
 	var py := slot_y - POPUP_H - 30
 	if px < 10:
 		px = 10
-	if px + POPUP_W > SCREEN_W - 10:
-		px = SCREEN_W - POPUP_W - 10
+	if px + popup_width > SCREEN_W - 10:
+		px = SCREEN_W - popup_width - 10
 	if py < 10:
 		py = slot_y + 30
 	if py + POPUP_H > SCREEN_H - 10:
@@ -74,10 +77,41 @@ static func origin(slot_x: int, slot_y: int) -> Vector2i:
 	return Vector2i(px, py)
 
 
+## Mirrors BuildPopup's compact width and `platform_utils.panel_popup_pos` on the full surface.
+static func mobile_geometry(panel: Rect2i) -> Dictionary:
+	if panel.size.x <= 0:
+		return {}
+	var popup_width := mini(POPUP_W, maxi(1, panel.size.x - 16))
+	if popup_width > panel.size.x - 8:
+		return {}
+	var centered_y := floori(float(panel.size.y - POPUP_H) / 2.0)
+	var py := maxi(12, mini(panel.size.y - POPUP_H - 12, centered_y))
+	var px := panel.position.x + int((panel.size.x - popup_width) / 2)
+	return {"panel_pos": [px, py], "popup_w": popup_width}
+
+
+static func state_width(state: Dictionary) -> int:
+	return clampi(int(state.get("popup_w", POPUP_W)), 1, POPUP_W)
+
+
+static func state_origin(state: Dictionary) -> Vector2i:
+	var supplied: Variant = state.get("panel_pos", null)
+	if supplied is Array and supplied.size() >= 2:
+		return Vector2i(int(supplied[0]), int(supplied[1]))
+	if supplied is Vector2i:
+		return supplied
+	return origin_for_width(int(state.get("x", 0)), int(state.get("y", 0)), state_width(state))
+
+
 ## `g.ui_buttons['build_<type>']`: the card rect the source registers.
 static func button_rect(slot_x: int, slot_y: int, index: int) -> Rect2i:
-	var origin_at := origin(slot_x, slot_y)
-	var btn_w := (POPUP_W - 50) >> 1
+	return state_button_rect({"x": slot_x, "y": slot_y}, index)
+
+
+static func state_button_rect(state: Dictionary, index: int) -> Rect2i:
+	var origin_at := state_origin(state)
+	var popup_width := state_width(state)
+	var btn_w := (popup_width - 50) >> 1
 	var col := index % 2
 	var row := index >> 1
 	var bx := origin_at.x + 15 + col * (btn_w + 12)
@@ -87,8 +121,12 @@ static func button_rect(slot_x: int, slot_y: int, index: int) -> Rect2i:
 
 ## `g.ui_buttons['build_close']`: the X button rect the source registers.
 static func close_rect(slot_x: int, slot_y: int) -> Rect2i:
-	var origin_at := origin(slot_x, slot_y)
-	return Rect2i(origin_at.x + POPUP_W - 26, origin_at.y + 6, 22, 22)
+	return state_close_rect({"x": slot_x, "y": slot_y})
+
+
+static func state_close_rect(state: Dictionary) -> Rect2i:
+	var origin_at := state_origin(state)
+	return Rect2i(origin_at.x + state_width(state) - 26, origin_at.y + 6, 22, 22)
 
 
 func _draw(state: Dictionary, cheap_alpha: bool) -> void:
@@ -96,35 +134,39 @@ func _draw(state: Dictionary, cheap_alpha: bool) -> void:
 	var slot_y := int(state.get("y", 0))
 	var gold := int(state.get("gold", 0))
 	var mouse: Vector2i = state.get("mouse", Vector2i())
-	var origin_at := origin(slot_x, slot_y)
+	var popup_width := state_width(state)
+	var origin_at := state_origin(state)
 	var px := origin_at.x
 	var py := origin_at.y
-	_ops.append(
-		_line([px + (POPUP_W >> 1), py + POPUP_H], [slot_x, slot_y - 10], _rgba(GOLD, 255), 2)
-	)
-	_panel(px, py, cheap_alpha)
-	_title(px, py)
+	if not state.has("panel_pos"):
+		_ops.append(
+			_line(
+				[px + (popup_width >> 1), py + POPUP_H], [slot_x, slot_y - 10], _rgba(GOLD, 255), 2
+			)
+		)
+	_panel(px, py, popup_width, cheap_alpha)
+	_title(px, py, popup_width)
 	_gold_info(px, py, gold)
 	_section("_draw_close_button")
-	_close_button(px, py, mouse)
+	_close_button(px, py, mouse, popup_width)
 	_section("_draw_tower_buttons")
-	_tower_buttons(px, py, gold, mouse, cheap_alpha)
+	_tower_buttons(px, py, gold, mouse, popup_width, cheap_alpha)
 
 
 ## Shadow + gradient card (or the flat panel), 2 px gold border and the gold corner ticks.
-func _panel(px: int, py: int, cheap_alpha: bool) -> void:
+func _panel(px: int, py: int, popup_width: int, cheap_alpha: bool) -> void:
 	if cheap_alpha:
-		_ops.append(_shadow(POPUP_W, POPUP_H, 10, 150, px - 3, py - 3))
-		_ops.append(_vgrad([px, py, POPUP_W, POPUP_H], PANEL_TOP, PANEL_BOTTOM, 10))
+		_ops.append(_shadow(popup_width, POPUP_H, 10, 150, px - 3, py - 3))
+		_ops.append(_vgrad([px, py, popup_width, POPUP_H], PANEL_TOP, PANEL_BOTTOM, 10))
 	else:
-		_ops.append(_rect([px, py, POPUP_W, POPUP_H], _rgba(PANEL_SOLID, 255), 0, 10))
-	_ops.append(_rect([px, py, POPUP_W, POPUP_H], _rgba(UI_GOLD, 255), 2, 10))
-	_corner_ticks([px, py, POPUP_W, POPUP_H], GOLD_BRIGHT, 12)
+		_ops.append(_rect([px, py, popup_width, POPUP_H], _rgba(PANEL_SOLID, 255), 0, 10))
+	_ops.append(_rect([px, py, popup_width, POPUP_H], _rgba(UI_GOLD, 255), 2, 10))
+	_corner_ticks([px, py, popup_width, POPUP_H], GOLD_BRIGHT, 12)
 
 
 ## `ui_theme.outline_text` with the default gold gradient body (`GOLD_BRIGHT` -> deep gold).
-func _title(px: int, py: int) -> void:
-	var cx_t := px + (POPUP_W >> 1)
+func _title(px: int, py: int, popup_width: int) -> void:
+	var cx_t := px + (popup_width >> 1)
 	var metrics: Vector2i = _measure.call("BUILD TOWER", 30)
 	var op := {
 		"kind": "outline_text",
@@ -147,9 +189,9 @@ func _gold_info(px: int, py: int, gold: int) -> void:
 
 
 ## `BaseUIComponent._draw_close_button(..., size=22, style='rect')`.
-func _close_button(px: int, py: int, mouse: Vector2i) -> void:
+func _close_button(px: int, py: int, mouse: Vector2i, popup_width: int) -> void:
 	var size := 22
-	var x := px + POPUP_W - 26
+	var x := px + popup_width - 26
 	var y := py + 6
 	var hover := Rect2i(x, y, size, size).has_point(mouse)
 	if hover:
@@ -167,9 +209,11 @@ func _close_button(px: int, py: int, mouse: Vector2i) -> void:
 
 
 ## `BuildPopup._draw_tower_buttons`: the 2x2 grid of premium tower cards.
-func _tower_buttons(px: int, py: int, gold: int, mouse: Vector2i, cheap_alpha: bool) -> void:
+func _tower_buttons(
+	px: int, py: int, gold: int, mouse: Vector2i, popup_width: int, cheap_alpha: bool
+) -> void:
 	var can_afford := gold >= COST
-	var btn_w := (POPUP_W - 50) >> 1
+	var btn_w := (popup_width - 50) >> 1
 	var start_y := py + 62
 	for index in range(TOWER_TYPES.size()):
 		var col := index % 2

@@ -20,12 +20,21 @@ static func _fake_measure(text: String, font_size: int) -> Vector2i:
 
 static func _state(frame: Dictionary) -> Dictionary:
 	var mouse: Array = frame["mouse"]
-	return {
+	var state := {
 		"x": int(frame["slot"][0]),
 		"y": int(frame["slot"][1]),
 		"gold": int(frame["gold"]),
 		"mouse": Vector2i(int(mouse[0]), int(mouse[1])),
 	}
+	var panel: Variant = frame.get("panel", null)
+	if panel is Array and panel.size() >= 4:
+		state.merge(
+			Layout.mobile_geometry(
+				Rect2i(int(panel[0]), int(panel[1]), int(panel[2]), int(panel[3]))
+			),
+			true
+		)
+	return state
 
 
 ## `_first_mismatch` plus the keys only these ops carry.
@@ -54,8 +63,26 @@ func run(check: Callable) -> void:
 	for frame in frames:
 		ops_total += frame["ops"].size()
 	check.call(
-		frames.size() == 9 and ops_total == 751,
-		"Build popup oracle pins 9 source frames and 751 draw ops (got %d)" % ops_total
+		frames.size() == 11 and ops_total == 891,
+		"Build popup oracle pins 11 source frames and 891 draw ops (got %d)" % ops_total
+	)
+	var wide_geometry := Layout.mobile_geometry(Rect2i(1280, 0, 344, 720))
+	check.call(
+		GoldHudChecks._value_equal(wide_geometry, {"panel_pos": [1288, 210], "popup_w": 328}),
+		"Wide dock popup matches panel_popup_pos with the source's compact width"
+	)
+	var narrow_geometry := Layout.mobile_geometry(Rect2i(1280, 0, 120, 720))
+	check.call(
+		GoldHudChecks._value_equal(narrow_geometry, {"panel_pos": [1288, 210], "popup_w": 104}),
+		"Minimum-width side dock still receives a compact build popup"
+	)
+	var mobile_frame: Dictionary = {}
+	for frame in frames:
+		if frame["label"] == "wide_panel_hover_tower":
+			mobile_frame = frame
+	check.call(
+		not mobile_frame.is_empty() and mobile_frame["target_surface"] == "side_panel",
+		"BuildPopup source routes mobile frames to the full display surface"
 	)
 	var colors: Dictionary = data["colors"]
 	check.call(
@@ -77,7 +104,8 @@ func run(check: Callable) -> void:
 	for frame in frames:
 		var slot: Array = frame["slot"]
 		var buttons: Dictionary = frame["buttons"]
-		var want_close := Layout.close_rect(int(slot[0]), int(slot[1]))
+		var state := _state(frame)
+		var want_close := Layout.state_close_rect(state)
 		check.call(
 			GoldHudChecks._value_equal(
 				[
@@ -91,7 +119,7 @@ func run(check: Callable) -> void:
 			"X close rect %s matches g.ui_buttons for %s" % [want_close, frame["label"]]
 		)
 		for index in range(4):
-			var want := Layout.button_rect(int(slot[0]), int(slot[1]), index)
+			var want := Layout.state_button_rect(state, index)
 			var key := "build_%s" % Layout.TOWER_TYPES[index][0]
 			check.call(
 				GoldHudChecks._value_equal(
@@ -99,10 +127,10 @@ func run(check: Callable) -> void:
 				),
 				"%s card rect matches g.ui_buttons for %s" % [key, frame["label"]]
 			)
-	_check_view_wiring(check, frames[0])
+	_check_view_wiring(check, frames[0], mobile_frame)
 
 
-func _check_view_wiring(check: Callable, frame: Dictionary) -> void:
+func _check_view_wiring(check: Callable, frame: Dictionary, mobile_frame: Dictionary) -> void:
 	var view := PrototypeView.new()
 	var order: Array = view.overlay_paint_order()
 	check.call(
@@ -123,4 +151,11 @@ func _check_view_wiring(check: Callable, frame: Dictionary) -> void:
 		),
 		"The view builds the popup from the screen state"
 	)
+	if not mobile_frame.is_empty():
+		var mobile_state := _state(mobile_frame)
+		view.build_popup_state = mobile_state
+		check.call(
+			view.build_popup_draw_ops(world, _fake_measure, mobile_state["mouse"]).is_empty(),
+			"Arena painter skips the popup anchored to the side dock"
+		)
 	view.free()

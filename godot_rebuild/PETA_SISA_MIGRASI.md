@@ -3721,31 +3721,36 @@ terisi (slot build kosong terpilih), setelah `draw_tactical_commands` dan sebelu
 
 - Oracle `tests/build_popup_draw_source_oracle.py` menjalankan `draw`, `_draw_tower_buttons`
   dan `_draw_close_button` (warisan `BaseUIComponent`) ASLI beserta `ui_theme.draw_icon`,
-  `ui_theme.corner_ticks` dan `ui_theme.fit_ellipsis` di shim perekam. `_shadow`, `_vgrad`,
-  `_radial` dan `outline_text` direkam sebagai satu op. Setiap helper yang di-harvest
-  didahului op `section`. `_popup_di_panel` dijalankan asli; fixture tidak mengaktifkan
-  panel samping mobile, jadi popup memakai posisi fallback di atas peta.
-  - Fixture berisi 9 frame dan 751 op: pusat, jepit atas/kiri/kanan, hover X, hover kartu,
-    emas tak cukup, panel flat, dan emas ribuan.
+  `ui_theme.corner_ticks`, `ui_theme.fit_ellipsis`, `_popup_di_panel`, dan helper asli
+  `platform_utils.panel_popup_pos` di shim perekam. `_shadow`, `_vgrad`, `_radial` dan
+  `outline_text` direkam sebagai satu op; setiap helper yang di-harvest didahului op `section`.
+  - Fixture berisi 11 frame / 891 op: sembilan kasus fallback lama, popup lebar 344 px dengan
+    hover tower di full surface, dan dock minimum 120 px dengan popup flat 104 px.
 - `scripts/ui/build_popup_layout.gd` membangun op yang sama:
-  - `origin` meniru urutan cek sumber (pusat di slot, 30 px di atas, jepit ke frame);
-  - garis konektor emas dari bawah-tengah kartu ke slot;
+  - `origin` fallback meniru urutan cek sumber (pusat di slot, 30 px di atas, jepit ke frame);
+  - `mobile_geometry` meniru `min(400, panel.width - 16)` dan `panel_popup_pos`, termasuk posisi
+    penuh di dock kanan; lebar popup dan semua rect tombol mengikuti hasil compact;
+  - garis konektor emas dari bawah-tengah kartu ke slot hanya di fallback arena;
   - bayangan, gradasi `(34,40,68)->(16,19,36)`, tepi 2 px `ui_theme.GOLD`, sudut emas;
   - judul Cinzel "BUILD TOWER", baris `Gold: n (Cost: 100)`;
   - tombol X (hover merah);
   - grid 2x2 empat kartu tower (archer, cannon, ice, mage) dengan ikon koin, biaya, glow
     hover, dan sudut emas bila emas mencukupi.
 - `prototype_view.gd` melukis layer `build_popup` setelah `tactical_feedback` dan sebelum
-  `end_overlay`, memakai `build_popup_state` dari layar.
-- `prototype_screen.gd` mengisi state setiap frame saat slot build kosong terpilih
-  (`selected_slot_id` dengan `structure_id == -1`): x, y dan emas.
-- Bukti: `tests/build_popup_draw_checks.gd` (replay semua frame, rect kartu dan X, urutan
-  layer, kosong bila tidak ada slot), blok 9bv7 di `validate_project.py`, dan baris oracle di
-  workflow.
+  `end_overlay` hanya untuk fallback arena; saat state membawa `panel_pos`, painter arena
+  melepasnya agar tidak digambar dua kali.
+- `prototype_screen.gd` mengisi state slot kosong (`selected_slot_id` dengan
+  `structure_id == -1`) setiap frame: x, y, emas, dan geometri compact jika SidePanel aktif.
+  Snapshot yang sama masuk ke `SidePanel`, yang melukis popup setelah latar/konten dock dan
+  sebelum HeroPanel, termasuk hover per frame. Flag popup juga menjaga hit-test agar command
+  dock yang tertutup tidak menerima tap (Pause tetap lolos), sesuai SidePanel sumber.
+- Bukti: `tests/build_popup_draw_checks.gd` replay semua frame dan rect kartu/X, anchor wide/narrow,
+  skip painter arena untuk state dock, urutan layer dan state kosong; guard 9bv7 di
+  `validate_project.py`; oracle tetap dijalankan di workflow.
 
 Batas:
-- Cabang panel samping lebar (`_popup_di_panel` mengembalikan surface) belum diport; popup
-  tetap memakai posisi fallback. Cabang cheap-alpha dan flat keduanya diport.
+- Cabang cheap-alpha dan flat keduanya dicakup. Pada dock minimum 120 px, popup mengikuti sumber
+  dengan lebar 104 px, sehingga teks kartu rapat/berpotensi melampaui kartu sama seperti sumber.
 - Deskripsi empat kartu tidak mencapai lebar pemotongan `fit_ellipsis` pada fixture, jadi
   Godot belum meniru pemotongan bila deskripsi sumber berubah jadi lebih panjang.
 - Klik di popup tidak dilayani (tombol HUD yang memicu build); perilaku game tidak berubah.

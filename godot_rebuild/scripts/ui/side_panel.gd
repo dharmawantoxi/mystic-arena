@@ -13,8 +13,10 @@ signal tactical_down(action: String)
 signal tactical_up(action: String)
 
 const Layout = preload("res://scripts/ui/side_panel_layout.gd")
+const BuildPopupLayout = preload("res://scripts/ui/build_popup_layout.gd")
 const HeroPanelLayout = preload("res://scripts/ui/hero_panel_layout.gd")
 const HeroPanelFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
+const BuildPopupTitleFont = preload("res://assets/fonts/Cinzel.ttf")
 
 const STONE_BASE := Color8(16, 14, 24)
 const STONE_DARK := Color8(26, 23, 38)
@@ -76,9 +78,16 @@ func update_snapshot(next: Dictionary, now_ms: int = Time.get_ticks_msec()) -> v
 		return
 	var previous_hero_state: Dictionary = snapshot.get("hero_panel_state", {})
 	var next_hero_state: Dictionary = next.get("hero_panel_state", {})
-	var hero_panel_active := not previous_hero_state.is_empty() or not next_hero_state.is_empty()
+	var previous_build_state: Dictionary = snapshot.get("build_popup_state", {})
+	var next_build_state: Dictionary = next.get("build_popup_state", {})
+	var overlay_active := (
+		not previous_hero_state.is_empty()
+		or not next_hero_state.is_empty()
+		or not previous_build_state.is_empty()
+		or not next_build_state.is_empty()
+	)
 	snapshot = next
-	if hero_panel_active:
+	if overlay_active:
 		queue_redraw()
 	popup_open = bool(next.get("popup_open", false))
 	if not Layout.in_gameplay(String(next.get("state", ""))):
@@ -161,6 +170,7 @@ func _draw() -> void:
 		draw_line(Vector2(index + 0.5, 0), Vector2(index + 0.5, panel.size.y), shade, 1.0)
 	draw_line(Vector2(1.5, 0), Vector2(1.5, panel.size.y), STONE_GOLD, 2.0)
 	if layout.is_empty():
+		_draw_build_popup_overlay()
 		_draw_hero_panel_overlay()
 		return
 	_draw_pause_button()
@@ -170,6 +180,7 @@ func _draw() -> void:
 		draw_circle(Vector2(entry["center"]), float(entry["radius"]), entry["color"])
 	var font := get_theme_default_font()
 	if font == null:
+		_draw_build_popup_overlay()
 		_draw_hero_panel_overlay()
 		return
 	for entry in layout["texts"]:
@@ -185,7 +196,74 @@ func _draw() -> void:
 			font_size,
 			entry["color"]
 		)
+	_draw_build_popup_overlay()
 	_draw_hero_panel_overlay()
+
+
+func _draw_build_popup_overlay() -> void:
+	var state: Dictionary = snapshot.get("build_popup_state", {})
+	if (
+		state.is_empty()
+		or not state.has("panel_pos")
+		or String(snapshot.get("state", "")) != "playing"
+	):
+		return
+	var panel_pos: Array = state["panel_pos"]
+	if panel_pos.size() < 2 or int(panel_pos[0]) < panel.position.x:
+		return
+	var mouse := Vector2i(get_viewport().get_mouse_position())
+	var draw_state := state.duplicate(true)
+	draw_state["mouse"] = mouse
+	var metrics := Callable(self, "_measure_build_popup")
+	var ops := BuildPopupLayout.ops(draw_state, metrics, bool(draw_state.get("cheap_alpha", true)))
+	draw_set_transform(-Vector2(panel.position), 0.0, Vector2.ONE)
+	for op in ops:
+		var kind := String(op.get("kind", ""))
+		if kind == "section":
+			continue
+		if kind == "outline_text":
+			_draw_build_popup_title(op)
+		else:
+			_draw_hero_panel_op(op)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+func _measure_build_popup(text: String, font_size: int) -> Vector2i:
+	var font: Font = BuildPopupTitleFont if font_size == 30 else HeroPanelFont
+	var measured := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+	return Vector2i(int(measured.x), font_size)
+
+
+func _draw_build_popup_title(op: Dictionary) -> void:
+	var pos: Array = op.get("pos", [0, 0])
+	var size := int(op.get("size", 30))
+	var width := float(op.get("width", 2))
+	var text := String(op.get("text", ""))
+	var base := Vector2(float(pos[0]), float(pos[1]) + BuildPopupTitleFont.get_ascent(size))
+	var ink: Array = op.get("outline", [8, 9, 18])
+	var outline := Color8(int(ink[0]), int(ink[1]), int(ink[2]))
+	var offsets := [
+		Vector2(-width, 0),
+		Vector2(width, 0),
+		Vector2(0, -width),
+		Vector2(0, width),
+		Vector2(-width, -width),
+		Vector2(width, width),
+		Vector2(-width, width),
+		Vector2(width, -width),
+	]
+	for offset in offsets:
+		draw_string(
+			BuildPopupTitleFont, base + offset, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, outline
+		)
+	var top: Array = op.get("top", [255, 255, 255])
+	var bottom: Array = op.get("bottom", [255, 255, 255])
+	var body := Color8(
+		int((int(top[0]) + int(bottom[0])) * 0.5),
+		int((int(top[1]) + int(bottom[1])) * 0.5),
+		int((int(top[2]) + int(bottom[2])) * 0.5)
+	)
+	draw_string(BuildPopupTitleFont, base, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, body)
 
 
 func _draw_hero_panel_overlay() -> void:
@@ -262,27 +340,45 @@ func _draw_hero_panel_op(op: Dictionary) -> void:
 			float(op.get("width", 1))
 		)
 		return
-	if kind == "polygon":
+	if kind == "circle":
+		var center: Array = op.get("center", [0, 0])
+		var radius := float(op.get("radius", 1))
+		var circle_width := int(op.get("width", 0))
+		var circle_color := _hero_panel_op_color(op)
+		if circle_width > 0:
+			draw_arc(
+				Vector2(float(center[0]), float(center[1])),
+				radius - float(circle_width) * 0.5,
+				0.0,
+				TAU,
+				48,
+				circle_color,
+				float(circle_width),
+				true
+			)
+		else:
+			draw_circle(Vector2(float(center[0]), float(center[1])), radius, circle_color)
+	elif kind == "polygon":
 		var points := PackedVector2Array()
 		for point in op.get("points", []):
 			points.append(Vector2(float(point[0]), float(point[1])))
 		if points.size() >= 3:
 			draw_colored_polygon(points, _hero_panel_op_color(op))
-		return
-	var box: Array = op.get("rect", [0, 0, 0, 0])
-	var rect := Rect2(float(box[0]), float(box[1]), float(box[2]), float(box[3]))
-	var color := _hero_panel_op_color(op)
-	if kind == "fill":
-		draw_rect(rect, color)
-	elif kind == "rect":
-		var width := int(op.get("width", 0))
-		_hero_panel_round_box.anti_aliasing = false
-		_hero_panel_round_box.set_corner_radius_all(int(op.get("radius", 0)))
-		_hero_panel_round_box.draw_center = width == 0
-		_hero_panel_round_box.bg_color = color
-		_hero_panel_round_box.set_border_width_all(width)
-		_hero_panel_round_box.border_color = color
-		draw_style_box(_hero_panel_round_box, rect)
+	elif kind == "fill" or kind == "rect":
+		var box: Array = op.get("rect", [0, 0, 0, 0])
+		var rect := Rect2(float(box[0]), float(box[1]), float(box[2]), float(box[3]))
+		var rect_color := _hero_panel_op_color(op)
+		if kind == "fill":
+			draw_rect(rect, rect_color)
+		else:
+			var rect_width := int(op.get("width", 0))
+			_hero_panel_round_box.anti_aliasing = false
+			_hero_panel_round_box.set_corner_radius_all(int(op.get("radius", 0)))
+			_hero_panel_round_box.draw_center = rect_width == 0
+			_hero_panel_round_box.bg_color = rect_color
+			_hero_panel_round_box.set_border_width_all(rect_width)
+			_hero_panel_round_box.border_color = rect_color
+			draw_style_box(_hero_panel_round_box, rect)
 
 
 func _hero_panel_op_color(op: Dictionary) -> Color:

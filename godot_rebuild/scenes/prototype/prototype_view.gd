@@ -1022,7 +1022,7 @@ func _draw_build_popup(world: Prototype) -> void:
 func build_popup_draw_ops(
 	world: Prototype, measure: Callable = Callable(), mouse: Vector2i = Vector2i()
 ) -> Array:
-	if build_popup_state.is_empty() or not world.is_running():
+	if build_popup_state.is_empty() or not world.is_running() or build_popup_state.has("panel_pos"):
 		return []
 	var metrics: Callable = _measure_intro_text
 	if measure.is_valid():

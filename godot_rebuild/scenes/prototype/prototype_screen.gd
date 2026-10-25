@@ -11,6 +11,7 @@ const HeroState = preload("res://scripts/combat/hero_state.gd")
 const HeroDefinition = preload("res://scripts/data/hero_definition.gd")
 const HeroItemInventory = preload("res://scripts/match/hero_item_inventory.gd")
 const HeroPanelLayout = preload("res://scripts/ui/hero_panel_layout.gd")
+const BuildPopupLayout = preload("res://scripts/ui/build_popup_layout.gd")
 const ItemForgePanel = preload("res://scripts/ui/item_forge_panel.gd")
 const HeroShopPanel = preload("res://scripts/ui/hero_shop_panel.gd")
 const SidePanel = preload("res://scripts/ui/side_panel.gd")
@@ -170,7 +171,8 @@ func _process(_delta: float) -> void:
 	_update_controller_hover()
 	_update_tactical_hud(world)
 	var hero_panel_state := _hero_panel_state(world, match_session)
-	_update_side_panel(world, hero_panel_state)
+	var build_popup_state := _build_popup_state(world, match_session)
+	_update_side_panel(world, hero_panel_state, build_popup_state)
 	if forge_panel != null and forge_panel.visible:
 		forge_panel.refresh()
 	if hero_shop_panel != null and hero_shop_panel.visible:
@@ -192,7 +194,7 @@ func _process(_delta: float) -> void:
 	arena.set("input_hints", hints)
 	# Layer 9bv7: while an empty build slot is selected the arena paints the source
 	# build-tower popup at the slot.
-	arena.set("build_popup_state", _build_popup_state(world, match_session))
+	arena.set("build_popup_state", build_popup_state)
 	# Layer 9bv8: the live selected hero's source panel is view-only; no commands are changed.
 	arena.set("hero_panel_state", hero_panel_state)
 	# Layer 9bv5: once the match ends the arena paints the source victory / defeat overlay.
@@ -532,17 +534,22 @@ func _save_result() -> void:
 
 ## Layer 9bv7: `g.build_popup_slot` while an empty build slot is selected; empty otherwise.
 func _build_popup_state(world: Prototype, match_session: PrototypeSession) -> Dictionary:
+	if not world.is_running():
+		return {}
 	var slot_id := match_session.selected_slot_id
 	if slot_id < 0:
 		return {}
 	var slot := world.get_slot(slot_id)
 	if slot == null or slot.structure_id != -1:
 		return {}
-	return {
+	var state := {
 		"x": int(slot.position.x),
 		"y": int(slot.position.y),
 		"gold": int(world.economy.gold[0]),
 	}
+	if side_panel != null and side_panel.is_active():
+		state.merge(BuildPopupLayout.mobile_geometry(side_panel.panel), true)
+	return state
 
 
 ## Layer 9bv8: selected live hero snapshot for the arena painter.
@@ -853,14 +860,19 @@ func _set_command_dock_open(open: bool) -> void:
 	%CommandDockToggle.text = "Tutup" if open else "Kontrol"
 
 
-func _update_side_panel(world: Prototype, hero_panel_state: Dictionary) -> void:
+func _update_side_panel(
+	world: Prototype, hero_panel_state: Dictionary, build_popup_state: Dictionary
+) -> void:
 	if side_panel == null or not side_panel.is_active():
 		return
 	var snapshot := _side_panel_snapshot(world)
 	snapshot["hero_panel_state"] = hero_panel_state
-	# Match SidePanel.hit_test: the selected-hero panel covers its dock controls.
+	snapshot["build_popup_state"] = build_popup_state
+	# Match SidePanel.hit_test: visible popups cover dock tactical controls.
 	snapshot["popup_open"] = (
-		bool(snapshot.get("popup_open", false)) or not hero_panel_state.is_empty()
+		bool(snapshot.get("popup_open", false))
+		or not hero_panel_state.is_empty()
+		or not build_popup_state.is_empty()
 	)
 	side_panel.update_snapshot(snapshot)
 

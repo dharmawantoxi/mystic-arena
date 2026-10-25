@@ -5085,7 +5085,9 @@ _bp_path = ROOT / "tests/fixtures/build_popup_draw_source.json"
 _bp_layout = (ROOT / "scripts/ui/build_popup_layout.gd").read_text(encoding="utf-8")
 _bp_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
 _bp_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+_bp_side_panel = (ROOT / "scripts/ui/side_panel.gd").read_text(encoding="utf-8")
 _bp_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+_bp_platform_utils = (ROOT.parent / "mobile/platform_utils.py").read_text(encoding="utf-8")
 check('const BuildPopupDrawChecks = preload("res://tests/build_popup_draw_checks.gd")' in ai_tests
       and "BuildPopupDrawChecks.new().run(_check)" in ai_tests,
       "9bv7 build popup draw suite must be preloaded and run in the native suite")
@@ -5095,26 +5097,51 @@ check(_bp_path.is_file(), "9bv7 build popup fixture must exist")
 if _bp_path.is_file():
     _bp = json.loads(_bp_path.read_text(encoding="utf-8"))
     check(build_popup_draw_fixture() == _bp, "9bv7 build popup fixture must not drift from the source")
-    check(len(_bp["frames"]) == 9 and sum(len(f["ops"]) for f in _bp["frames"]) == 751
-          and {f["cheap_alpha"] for f in _bp["frames"]} == {True, False},
-          "9bv7 fixture must pin 9 frames / 751 ops over both the cheap-alpha and flat branches")
+    check(len(_bp["frames"]) == 11 and sum(len(f["ops"]) for f in _bp["frames"]) == 891
+          and {f["cheap_alpha"] for f in _bp["frames"]} == {True, False}
+          and any(f["label"] == "wide_panel_hover_tower" and f["target_surface"] == "side_panel"
+                  for f in _bp["frames"])
+          and any(f["label"] == "narrow_panel_flat" and f["panel"] == [1280, 0, 120, 720]
+                  for f in _bp["frames"]),
+          "9bv7 fixture must pin 11 frames / 891 ops, both fills, and compact mobile side-panel routes")
 check("if self.build_popup_slot is not None:\n            self.ui.draw_build_popup(self.screen)"
       in _bp_core, "9bv7 source must still paint the build popup while a build slot is set")
 check("static func origin(slot_x: int, slot_y: int) -> Vector2i:" in _bp_layout
+      and "static func mobile_geometry(panel: Rect2i) -> Dictionary:" in _bp_layout
+      and "static func state_button_rect(state: Dictionary, index: int) -> Rect2i:" in _bp_layout
+      and "static func state_close_rect(state: Dictionary) -> Rect2i:" in _bp_layout
       and "static func button_rect(slot_x: int, slot_y: int, index: int) -> Rect2i:" in _bp_layout
-      and "static func close_rect(slot_x: int, slot_y: int) -> Rect2i:" in _bp_layout
-      and "const TOWER_TYPES :=" in _bp_layout,
-      "9bv7 layout must keep the fallback origin, the card rects and the four tower types")
+      and "const TOWER_TYPES :=" in _bp_layout
+      and "def panel_popup_pos(w, h, atas=12):" in _bp_platform_utils,
+      "9bv7 layout must keep fallback geometry and match the compact mobile panel helper")
 check('const BuildPopupLayout = preload("res://scripts/ui/build_popup_layout.gd")' in _bp_view
       and '"tactical_feedback",\n\t"build_popup",\n\t"hero_panel",\n\t"end_overlay",' in _bp_view
       and '"build_popup":\n\t\t\t_draw_build_popup(world)' in _bp_view
       and "func build_popup_draw_ops(" in _bp_view
-      and "if build_popup_state.is_empty() or not world.is_running():" in _bp_view,
-      "9bv7 view must paint the popup between the tactical banner and the end overlay")
-check('arena.set("build_popup_state", _build_popup_state(world, match_session))' in _bp_screen
+      and "build_popup_state.is_empty() or not world.is_running() or build_popup_state.has(\"panel_pos\")"
+      in _bp_view,
+      "9bv7 view must keep fallback order and leave the right-panel branch to SidePanel")
+check('arena.set("build_popup_state", build_popup_state)' in _bp_screen
+      and "var build_popup_state := _build_popup_state(world, match_session)" in _bp_screen
+      and "_update_side_panel(world, hero_panel_state, build_popup_state)" in _bp_screen
       and "func _build_popup_state(world: Prototype, match_session: PrototypeSession) -> Dictionary:" in _bp_screen
-      and "if slot == null or slot.structure_id != -1:" in _bp_screen,
-      "9bv7 screen must hand the selected empty build slot to the arena")
+      and "if not world.is_running():\n\t\treturn {}\n\tvar slot_id := match_session.selected_slot_id" in _bp_screen
+      and "if slot == null or slot.structure_id != -1:" in _bp_screen
+      and "BuildPopupLayout.mobile_geometry(side_panel.panel)" in _bp_screen,
+      "9bv7 screen must supply the selected empty build slot and compact mobile anchor to both painters")
+check('snapshot["build_popup_state"] = build_popup_state' in _bp_screen
+      and "or not build_popup_state.is_empty()" in _bp_screen
+      and 'var previous_build_state: Dictionary = snapshot.get("build_popup_state", {})' in _bp_side_panel
+      and "or not next_build_state.is_empty()" in _bp_side_panel
+      and "func _draw_build_popup_overlay() -> void:" in _bp_side_panel
+      and 'not state.has("panel_pos")' in _bp_side_panel
+      and 'String(snapshot.get("state", "")) != "playing"' in _bp_side_panel
+      and "BuildPopupLayout.ops(" in _bp_side_panel
+      and 'if kind == "circle":' in _bp_side_panel
+      and "draw_set_transform(-Vector2(panel.position)" in _bp_side_panel
+      and "func _draw_build_popup_title(op: Dictionary) -> void:" in _bp_side_panel
+      and _bp_side_panel.index("_draw_build_popup_overlay()") < _bp_side_panel.index("_draw_hero_panel_overlay()"),
+      "9bv7 side dock must draw the compact popup above its opaque contents before HeroPanel")
 
 # ── Layer 9bv8: selected hero panel and its six inventory slots ──
 from hero_panel_draw_source_oracle import source_fixture as hero_panel_draw_fixture
@@ -5183,7 +5210,9 @@ check('snapshot["hero_panel_state"] = hero_panel_state' in _hp_screen
       and "func _draw_hero_panel_overlay() -> void:" in _hp_side_panel
       and "HeroPanelLayout.ops(" in _hp_side_panel
       and "draw_set_transform(-Vector2(panel.position)" in _hp_side_panel
-      and "if hero_panel_active:" in _hp_side_panel,
+      and "var overlay_active := (" in _hp_side_panel
+      and "or not previous_build_state.is_empty()" in _hp_side_panel
+      and "if overlay_active:" in _hp_side_panel,
       "9bv8 wide-screen dock must redraw the source panel above its background at the mobile anchor")
 check("Hero panel oracle pins 6 source frames and 440 draw ops" in _hp_checks
       and "mobile_panel_origin" in _hp_checks
