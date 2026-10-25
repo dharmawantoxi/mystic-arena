@@ -248,18 +248,20 @@ func _check_clock(check: Callable, data: Dictionary) -> void:
 		"A slowed boss arms early because the clock reads the raw attack cooldown"
 	)
 	var full: Dictionary = _run(data["clock_runs"], "clock_full_window")
-	var last_active := -1
-	for index in range(full["steps"].size()):
-		if bool(full["steps"][index]["active"]):
-			last_active = index
 	# The 28th advance disarms in the same step (`frame` reaches 28 -> active = false), so the
-	# last active step is the 27th.
+	# first step that drops out of the swing is index 27, carrying frame 0. The run then re-arms
+	# on the next top-of-window timer, which is the source's own re-trigger behaviour.
+	var disarm := -1
+	for index in range(1, full["steps"].size()):
+		if bool(full["steps"][index - 1]["active"]) and not bool(full["steps"][index]["active"]):
+			disarm = index
+			break
 	check.call(
 		(
-			last_active == 26
+			disarm == 27
 			and int(full["steps"][26]["frame"]) == 27
-			and not bool(full["steps"][27]["active"])
 			and int(full["steps"][27]["frame"]) == 0
+			and bool(full["steps"][-1]["active"])
 		),
 		"The swing disarms after exactly 28 frames"
 	)
