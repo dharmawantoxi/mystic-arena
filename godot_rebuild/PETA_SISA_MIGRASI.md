@@ -3595,8 +3595,9 @@ rebuild, jadi boss yang kena slow/burn hanya berubah warna tanpa indikator.
   workflow, pin 9bq9 (32 cek) di `tests/validate_project.py`.
 
 Validasi lokal: `validate_project.py` -> PASS 21227 static checks; `gdparse`/`gdlint`/
-`gdformat --check` bersih; oracle deterministik; `git diff --check` OK. Godot tidak tersedia
-lokal; native suite dan review visual menunggu CI.
+`gdformat --check` bersih (645 file); oracle deterministik; `git diff --check` OK. CI run
+`40207671281` (job `121211995053`) **pass 15m9s** dengan notice
+`PASS: 1505070 checks; fixed ticks and source parity`; review visual tetap tidak dilakukan.
 
 Batas slice ini:
 - Hanya call site `Boss.draw` yang diport. Sumber memakai fungsi yang sama dari `_entity.py` untuk
