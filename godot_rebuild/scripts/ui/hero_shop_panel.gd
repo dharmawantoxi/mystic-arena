@@ -8,6 +8,7 @@ signal hero_requested(hero_type: String)
 const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
 const PopupAnimation = preload("res://scripts/ui/popup_animation.gd")
+const SourceUiButton = preload("res://scripts/ui/source_ui_button.gd")
 const HERO_ROSTER = preload("res://scripts/data/hero_roster.gd").DEFINITIONS
 const STARTERS: Array[String] = ["thorne", "grimjaw", "vex", "sylara", "kaizen", "zephyr"]
 
@@ -115,8 +116,8 @@ func refresh() -> void:
 	_signature = signature
 	_gold.text = "MATCH GOLD  %d G" % world.economy.gold[world.BLUE]
 	_roster.text = "%d / %d HERO" % [roster.size(), world.MAX_HEROES_OWNED]
-	_starter_tab.disabled = tab == "starter"
-	_boss_tab.disabled = tab == "boss"
+	_starter_tab.call("set_source_active", tab == "starter")
+	_boss_tab.call("set_source_active", tab == "boss")
 	_rebuild_cards(roster, owned_ids)
 
 
@@ -162,14 +163,10 @@ func _build() -> void:
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", 10)
 	column.add_child(tabs)
-	_starter_tab = Button.new()
-	_starter_tab.text = "STARTER"
-	_starter_tab.custom_minimum_size = Vector2(170, 40)
+	_starter_tab = _new_source_tab("STARTER", "starter", Vector2(170, 40))
 	_starter_tab.pressed.connect(func() -> void: _select_tab("starter"))
 	tabs.add_child(_starter_tab)
-	_boss_tab = Button.new()
-	_boss_tab.text = "BOSS HEROES"
-	_boss_tab.custom_minimum_size = Vector2(190, 40)
+	_boss_tab = _new_source_tab("BOSS HEROES", "mini", Vector2(190, 40))
 	_boss_tab.pressed.connect(func() -> void: _select_tab("boss"))
 	tabs.add_child(_boss_tab)
 
@@ -196,6 +193,16 @@ func _build() -> void:
 	hint.text = "Summon memakai gold pertandingan; hero mati tetap ACTIVE dan tetap memakai slot."
 	UI_THEME.muted(hint)
 	column.add_child(hint)
+
+
+func _new_source_tab(label: String, style_key: String, minimum: Vector2) -> Button:
+	var button: Button = SourceUiButton.new()
+	button.set("source_kind", "tab")
+	button.set("source_style_key", style_key)
+	button.set("label_font_size", 14)
+	button.text = label
+	button.custom_minimum_size = minimum
+	return button
 
 
 func _select_tab(value: String) -> void:

@@ -115,6 +115,8 @@ func _install_screen(scene: PackedScene) -> void:
 			current_screen.free()
 			current_screen = MENU.instantiate()
 			scene = MENU
+		else:
+			session.apply_presentation_settings()
 	if scene == MENU:
 		current_screen.set("slot_path_template", slot_path_template)
 		current_screen.set("active_slot", active_slot)

@@ -4,6 +4,9 @@ extends Control
 const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
 const AudioManagerScript = preload("res://scripts/audio/audio_manager.gd")
 const AudioRuntime = preload("res://scripts/audio/audio_runtime.gd")
+const PresentationStore = preload("res://scripts/settings/presentation_settings_store.gd")
+const ThemeToggle = preload("res://scripts/ui/ui_theme_toggle.gd")
+const ThemeSlider = preload("res://scripts/ui/ui_theme_slider.gd")
 const CHANNELS := [
 	{"id": "master", "label_key": "set_volume_master"},
 	{"id": "sfx", "label_key": "set_volume_sfx"},
@@ -18,6 +21,8 @@ var _settings_title: Label
 var _frame_limit_value: Label
 var _language_label: Label
 var _language_value: Label
+var _screen_shake_toggle: Button
+var _damage_numbers_toggle: Button
 var _frame_rate_runtime: Node
 var _localization_runtime: Node
 
@@ -52,9 +57,10 @@ func refresh() -> void:
 		var volume := clampf(AudioRuntime.get_volume(channel), 0.0, 1.0)
 		var percent := roundi(volume * 100.0)
 		var label: Label = _value_labels[channel]
-		var meter: ProgressBar = _meters[channel]
+		var meter: ThemeSlider = _meters[channel]
 		label.text = "%d%%" % percent
-		meter.value = percent
+		meter.value = volume
+	_refresh_presentation_settings()
 	_refresh_localized_labels()
 	_refresh_frame_limit()
 
@@ -72,7 +78,7 @@ func _build() -> void:
 	add_child(center)
 
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(640, 580)
+	card.custom_minimum_size = Vector2(640, 640)
 	center.add_child(card)
 
 	var margin := MarginContainer.new()
@@ -81,7 +87,7 @@ func _build() -> void:
 	card.add_child(margin)
 
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 18)
+	column.add_theme_constant_override("separation", 12)
 	margin.add_child(column)
 
 	var header := HBoxContainer.new()
@@ -102,7 +108,7 @@ func _build() -> void:
 	header.add_child(_close_button)
 
 	var rows := VBoxContainer.new()
-	rows.add_theme_constant_override("separation", 12)
+	rows.add_theme_constant_override("separation", 8)
 	rows.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(rows)
 	for entry in CHANNELS:
@@ -137,6 +143,33 @@ func _build() -> void:
 	next.pressed.connect(_cycle_frame_limit.bind(1))
 	frame_rate_row.add_child(next)
 	_build_language_row(column)
+	var gameplay_title := Label.new()
+	gameplay_title.text = "VISUAL EFFECTS"
+	UI_THEME.muted(gameplay_title)
+	column.add_child(gameplay_title)
+	_build_presentation_row(column, "Screen Shake", "screen_shake")
+	_build_presentation_row(column, "Damage Numbers", "damage_numbers")
+
+
+func _build_presentation_row(parent: VBoxContainer, label_text: String, key: String) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	parent.add_child(row)
+	var label := Label.new()
+	label.text = label_text
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(label)
+	var toggle := ThemeToggle.new()
+	toggle.toggle_mode = true
+	toggle.name = "ScreenShakeToggle" if key == "screen_shake" else "DamageNumbersToggle"
+	var options := PresentationStore.load_settings()
+	toggle.set_pressed_no_signal(bool(options.get(key, false)))
+	toggle.toggled.connect(_on_presentation_toggled.bind(key))
+	row.add_child(toggle)
+	if key == "screen_shake":
+		_screen_shake_toggle = toggle
+	else:
+		_damage_numbers_toggle = toggle
 
 
 func _build_language_row(parent: VBoxContainer) -> void:
@@ -197,13 +230,10 @@ func _build_volume_row(parent: VBoxContainer, channel: String, label_key: String
 	minus.pressed.connect(_adjust.bind(channel, -AudioManagerScript.VOLUME_STEP))
 	controls.add_child(minus)
 
-	var meter := ProgressBar.new()
+	var meter := ThemeSlider.new()
 	meter.name = _node_name(channel, "Meter")
-	meter.min_value = 0.0
-	meter.max_value = 100.0
-	meter.show_percentage = false
 	meter.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	meter.custom_minimum_size = Vector2(0, 18)
+	meter.custom_minimum_size = Vector2(0, 24)
 	controls.add_child(meter)
 	_meters[channel] = meter
 
@@ -246,6 +276,22 @@ func _refresh_localized_labels(_language: String = "") -> void:
 			_language_value.text = String(_localization_runtime.call("get_language_label"))
 		else:
 			_language_value.text = "Bahasa Indonesia"
+
+
+func _on_presentation_toggled(value: bool, key: String) -> void:
+	var options := PresentationStore.load_settings()
+	options[key] = value
+	if not PresentationStore.save_settings(options):
+		_refresh_presentation_settings()
+		AudioRuntime.play("ui_error")
+
+
+func _refresh_presentation_settings() -> void:
+	var options := PresentationStore.load_settings()
+	if is_instance_valid(_screen_shake_toggle):
+		_screen_shake_toggle.call("set_value", bool(options.get("screen_shake", false)))
+	if is_instance_valid(_damage_numbers_toggle):
+		_damage_numbers_toggle.call("set_value", bool(options.get("damage_numbers", true)))
 
 
 func _cycle_language(direction: int) -> void:

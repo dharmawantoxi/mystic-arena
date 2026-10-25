@@ -5274,6 +5274,13 @@ _ui_skin = (ROOT / "scripts/ui/ui_skin.gd").read_text(encoding="utf-8")
 _ui_theme = (ROOT / "scripts/ui/rebuild_theme.gd").read_text(encoding="utf-8")
 _ui_card = (ROOT / "scripts/ui/hero_shop_card.gd").read_text(encoding="utf-8")
 _ui_project = (ROOT / "project.godot").read_text(encoding="utf-8")
+_ui_button = (ROOT / "scripts/ui/source_ui_button.gd").read_text(encoding="utf-8")
+_ui_toggle = (ROOT / "scripts/ui/ui_theme_toggle.gd").read_text(encoding="utf-8")
+_ui_slider = (ROOT / "scripts/ui/ui_theme_slider.gd").read_text(encoding="utf-8")
+_ui_audio = (ROOT / "scripts/ui/audio_settings_panel.gd").read_text(encoding="utf-8")
+_ui_prefs = (ROOT / "scripts/settings/presentation_settings_store.gd").read_text(encoding="utf-8")
+_ui_battle = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+_ui_app = (ROOT / "app/app.gd").read_text(encoding="utf-8")
 check('const UiSkinChecks = preload("res://tests/ui_skin_checks.gd")' in ai_tests
       and "UiSkinChecks.new().run(_check)" in ai_tests,
       "9br UI skin suite must be preloaded and run in the native suite")
@@ -5300,6 +5307,57 @@ if _ui_path.is_file():
         check(all(w > 0 and h > 0 and x >= 0 and y >= 0 and x + w <= _sheet["size"][0]
                   and y + h <= _sheet["size"][1] for x, y, w, h in _sheet["frames"].values()),
               f"9br every {_sheet_name} frame must lie inside its sheet")
+    _ui_controls = _ui.get("controls", {})
+    for _control_name, _png_name in (("buttons", "buttons.png"), ("tabs", "tabs.png"),
+                                    ("toggles", "toggles.png"), ("icons", "icons.png")):
+        _sheet = _ui_controls.get(_control_name, {})
+        _png = ROOT / "assets/art/ui" / _png_name
+        check(_png.is_file(), f"9br {_png_name} must ship")
+        if _png.is_file():
+            _raw = _png.read_bytes()
+            _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+            check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _sheet.get("size")
+                  and (_depth, _color) == (8, 6),
+                  f"9br {_png_name} must be RGBA8 and match the controls manifest")
+            check(len(_raw) == _sheet.get("bytes")
+                  and hashlib.sha256(_raw).hexdigest() == _sheet.get("sha256"),
+                  f"9br {_png_name} must match its recorded hash")
+        check(all(w > 0 and h > 0 and x >= 0 and y >= 0 and x + w <= _sheet.get("size", [0, 0])[0]
+                  and y + h <= _sheet.get("size", [0, 0])[1]
+                  for x, y, w, h in _sheet.get("frames", {}).values()),
+              f"9br every {_control_name} state lies in its texture sheet")
+    _glow = _ui_controls.get("slider_glow", {})
+    _glow_png = ROOT / "assets/art/ui/slider_glow.png"
+    check(_glow_png.is_file(), "9br the source radial slider glow must ship")
+    if _glow_png.is_file():
+        _raw = _glow_png.read_bytes()
+        _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+        check([_width, _height] == _glow.get("size") == [36, 36]
+              and (_depth, _color) == (8, 6)
+              and len(_raw) == _glow.get("bytes")
+              and hashlib.sha256(_raw).hexdigest() == _glow.get("sha256"),
+              "9br the 36px slider glow matches the source radial bake")
+    check(_ui_controls.get("buttons", {}).get("states") == ["normal", "hover"]
+          and len(_ui_controls.get("buttons", {}).get("frames", {})) == 16
+          and _ui_controls.get("tabs", {}).get("states") == ["active", "inactive", "hover"]
+          and len(_ui_controls.get("tabs", {}).get("frames", {})) == 9
+          and len(_ui_controls.get("toggles", {}).get("frames", {})) == 4,
+          "9br control atlas must contain menu button, toggle and tab state variants")
+    _button_accents = {
+        "continue": [140, 225, 255], "play": [100, 220, 110], "hero": [255, 220, 100],
+        "input": [100, 200, 220], "help": [110, 180, 255], "settings": [205, 180, 105],
+        "credits": [200, 130, 210], "quit": [225, 90, 90],
+    }
+    _tab_accents = {"starter": [100, 200, 255], "mini": [255, 150, 100], "true": [255, 80, 100]}
+    check(_ui_controls.get("buttons", {}).get("accents") == _button_accents
+          and _ui_controls.get("tabs", {}).get("accents") == _tab_accents,
+          "9br menu buttons and hero tabs retain the source accent colours")
+    _icon_source = _ui_src[_ui_src.index("def draw_icon("): _ui_src.index("# ═══════════════════════════════════════════════════════════\n# KOMPONEN")]
+    _icon_names = set(re.findall(r'name\s*==\s*"([^"]+)"', _icon_source))
+    for _group in re.findall(r'name\s+in\s+\(([^)]+)\)', _icon_source):
+        _icon_names.update(re.findall(r'"([^"]+)"', _group))
+    check(set(_ui_controls.get("icons", {}).get("names", [])) == _icon_names,
+          "9br the icon atlas contains every vector glyph in ui_theme.draw_icon")
     _ui_kinds = ["gold", "success", "danger", "locked", "owned", "neutral", "violet", "cyan"]
     check(sorted(_ui["panels"]["frames"]) == ["panel", "panel_bold"]
           and _ui["panels"]["rect"] == [4, 4, 72, 72] and _ui["panels"]["margin"] == 20
@@ -5373,6 +5431,33 @@ check("pill_style(\"gold\", \"hover\", use_skin)" in _ui_theme
       and "skin = UiSkin.panel_box(\"panel_bold\", PANEL_PAD)" in _ui_theme
       and "static func create_theme(use_skin: bool = true) -> Theme:" in _ui_theme,
       "9br the theme must map the pill states, variations and dialog panel with a flat fallback")
+check("static func button_box(" in _ui_skin and "static func tab_box(" in _ui_skin
+      and "static func toggle_box(" in _ui_skin and "static func icon_frame(" in _ui_skin
+      and all(f'ResourceLoader.exists({name})' in _ui_skin
+              for name in ("BUTTONS", "TABS", "TOGGLES", "ICONS", "SLIDER_GLOW")),
+      "9br the skin loader must expose each baked interactive control and icon frame")
+check("ui_theme.button(" in _ui_bake and "ui_theme.toggle(" in _ui_bake
+      and "ui_theme.tab(" in _ui_bake and "ui_theme.draw_icon(" in _ui_bake
+      and "ui_theme._radial(36, 36, ui_theme.GOLD, 80)" in _ui_bake,
+      "9br the source baker must execute the real button, toggle, tab, icon and slider helpers")
+check("UiSkin.button_box(source_style_key, \"normal\")" in _ui_button
+      and "UiSkin.tab_box(source_style_key, \"active\")" in _ui_button
+      and "_badge = IconBadge.new()" in _ui_button
+      and "set_source_active(active: bool)" in _ui_button,
+      "9br menu buttons and hero tabs must use the source frames and vector badge")
+check("UiSkin.toggle_box(\"off\")" in _ui_toggle and "UiSkin.toggle_box(\"on\")" in _ui_toggle
+      and "ThemeSlider.new()" in _ui_audio and "ThemeToggle.new()" in _ui_audio
+      and "_build_presentation_row(column, \"Screen Shake\", \"screen_shake\")" in _ui_audio
+      and "_build_presentation_row(column, \"Damage Numbers\", \"damage_numbers\")" in _ui_audio,
+      "9br settings must use the baked toggle and slider presentation")
+check("func apply_presentation_settings() -> void:" in _ui_battle
+      and "session.apply_presentation_settings()" in _ui_app
+      and "effects.set_quality_settings(" in _ui_battle,
+      "9br persisted screen-shake and damage-number toggles must reach playable combat")
+check('const PresentationSettingsChecks = preload("res://tests/presentation_settings_checks.gd")' in ai_tests
+      and "PresentationSettingsChecks.new().run(_check)" in ai_tests
+      and (ROOT / "tests/presentation_settings_checks.gd").is_file(),
+      "9br visual preferences require native persistence checks")
 check('UiSkin.palette("OPEN_BG_TOP")' in _ui_card and 'UiSkin.palette("LOCKED_EDGE")' in _ui_card
       and "162d34" not in _ui_card,
       "9br hero shop rows must use the source card colours instead of the old teal literals")
@@ -5393,9 +5478,18 @@ _mn_ui = (ROOT.parent / "ui_theme.py").read_text(encoding="utf-8")
 _mn_bake = (ROOT / "bake/bake_menu_background.py").read_text(encoding="utf-8")
 _mn_back = (ROOT / "scripts/ui/menu_backdrop.gd").read_text(encoding="utf-8")
 _mn_theme = (ROOT / "scripts/ui/rebuild_theme.gd").read_text(encoding="utf-8")
+_mn_ambient = (ROOT / "scripts/ui/menu_ambient_fx.gd").read_text(encoding="utf-8")
+_mn_layout = (ROOT / "scripts/ui/menu_ambient_layout.gd").read_text(encoding="utf-8")
+_mn_ambient_bake = (ROOT / "bake/bake_menu_background.py").read_text(encoding="utf-8")
+_mn_ambient_checks = (ROOT / "tests/menu_ambient_checks.gd").read_text(encoding="utf-8")
+_mn_scene = (ROOT / "scenes/menu/MainMenu.tscn").read_text(encoding="utf-8")
 check('const MenuArtChecks = preload("res://tests/menu_art_checks.gd")' in ai_tests
       and "MenuArtChecks.new().run(_check)" in ai_tests,
       "9bs menu art suite must be preloaded and run in the native suite")
+check('const MenuAmbientChecks = preload("res://tests/menu_ambient_checks.gd")' in ai_tests
+      and "MenuAmbientChecks.new().run(_check)" in ai_tests
+      and "MenuAmbientChecks.new().run_scene(root.get_tree(), app.current_screen, _check)" in ai_tests,
+      "9bs fog/particle source replay and live-scene suites must both run")
 check('var backdrop = app.current_screen.get_node("Backdrop")' in ai_tests
       and "backdrop.background_draws > 0" in ai_tests,
       "9bs the real main menu must prove it drew the baked background")
@@ -5413,6 +5507,23 @@ if _mn_path.is_file():
               "9bs the menu background must be a 1280x720 RGBA8 PNG")
         check(len(_raw) == _mn_bg["bytes"] and hashlib.sha256(_raw).hexdigest() == _mn_bg["sha256"],
               "9bs the menu background must match its manifest hash")
+    _mn_fog = _mn.get("fog", {})
+    _mn_fog_png = ROOT / "assets/art/menu/menu_fog.png"
+    check(_mn_fog_png.is_file(), "9bs the two baked source fog layers must ship")
+    if _mn_fog_png.is_file():
+        _raw = _mn_fog_png.read_bytes()
+        _width, _height, _depth, _color = struct.unpack(">IIBB", _raw[16:26])
+        check(_raw[:8] == b"\x89PNG\r\n\x1a\n" and [_width, _height] == _mn_fog.get("size") == [3000, 720]
+              and (_depth, _color) == (8, 6),
+              "9bs the fog atlas is a transparent RGBA8 pair of source surfaces")
+        check(len(_raw) == _mn_fog.get("bytes")
+              and hashlib.sha256(_raw).hexdigest() == _mn_fog.get("sha256"),
+              "9bs the fog atlas must match its source-bake hash")
+    check(_mn_fog.get("source_size") == [1500, 720]
+          and _mn_fog.get("frames") == {"layer_0": [0, 0, 1500, 720],
+                                         "layer_1": [1500, 0, 1500, 720]}
+          and _mn_fog.get("layers") == [{"speed": 0.35, "alpha": 26}, {"speed": 0.6, "alpha": 18}],
+          "9bs the fog manifest keeps source parallax, alpha and frame bounds")
     check(len(_mn["probes"]) >= 8 and all(0 <= x < 1280 and 0 <= y < 720 and len(rgb) == 3
                                           and all(0 <= c <= 255 for c in rgb)
                                           for x, y, *rgb in _mn["probes"]),
@@ -5429,14 +5540,44 @@ for _fragment in (
 ):
     check(_fragment in _mn_core, f"9bs the source menu background must still read {_fragment!r}")
 check("menu = core.Menu(screen)" in _mn_bake and "menu._build_main_background()" in _mn_bake
+      and "menu._build_menu_fog()" in _mn_bake
       and 'pygame.image.tostring(surface, "RGB")' in _mn_bake and "surface.get_at((x, y))" in _mn_bake,
-      "9bs the bake must run the real Menu._build_main_background and record source pixels")
+      "9bs the bake must run the real static and fog builders and record source pixels")
+from menu_ambient_source_oracle import source_fixture as menu_ambient_source_fixture
+_mn_fixture_path = ROOT / "tests/fixtures/menu_ambient_source.json"
+check(_mn_fixture_path.is_file(), "9bs the menu particle source replay fixture must exist")
+if _mn_fixture_path.is_file():
+    check(menu_ambient_source_fixture() == json.loads(_mn_fixture_path.read_text(encoding="utf-8")),
+          "9bs the menu particle fixture must replay the live _core.py methods")
 check("ResourceLoader.exists(BACKGROUND)" in _mn_back
       and "draw_texture_rect(baked, cover_rect(size), false)" in _mn_back
       and "static func cover_rect(window: Vector2) -> Rect2:" in _mn_back
       and "var factor := maxf(window.x / SOURCE_SIZE.x, window.y / SOURCE_SIZE.y)" in _mn_back
       and "background_draws += 1" in _mn_back and "func _draw_fallback() -> void:" in _mn_back,
       "9bs the backdrop must cover the window with the baked frame and keep the old art as fallback")
+check('const MENU_MANIFEST := "res://data/art/menu.json"' in _mn_ambient
+      and "FileAccess.get_file_as_string(MENU_MANIFEST)" in _mn_ambient,
+      "9bs the live fog overlay must read the menu atlas metadata, not the UI theme manifest")
+check("func _draw_fog() -> void:" in _mn_ambient
+      and "draw_texture_rect_region(" in _mn_ambient
+      and "MenuAmbientLayout.advance(_particles, 1.0" in _mn_ambient
+      and "MenuAmbientLayout.particle_alpha(particle, animation_time)" in _mn_ambient
+      and "_draw_fog()\n\t_draw_particles()" in _mn_ambient,
+      "9bs the overlay must animate two wrapped fog layers and source-glow particles above the background")
+check("sin(phase) * 0.08" in _mn_layout and "phase += 0.01 * frames" in _mn_layout
+      and "SOURCE_HEIGHT + 10.0" in _mn_layout and "SOURCE_WIDTH + 10.0" in _mn_layout
+      and "tick * 0.05 + float(particle.get(\"ph\"" in _mn_layout
+      and "tick * 0.008 + layer_index * 2.0" in _mn_layout,
+      "9bs the native particle drift, wrapping and fog pulse mirror source equations")
+check("[node name=\"Ambient\" type=\"Control\" parent=\".\"]" in _mn_scene
+      and 'path="res://scripts/ui/menu_ambient_fx.gd" id="4"' in _mn_scene
+      and _mn_scene.index('[node name="Backdrop"') < _mn_scene.index('[node name="Ambient"')
+      < _mn_scene.index('[node name="Content"'),
+      "9bs the ambient node must layer over the static art and underneath interactive menu content")
+check("MenuAmbientChecks.new().run_scene(" in ai_tests
+      and "ambient_draws" in _mn_ambient_checks and "particle_draws" in _mn_ambient_checks
+      and "The live menu overlay draws" in _mn_ambient_checks,
+      "9bs native tests must prove the animated overlay is actually drawn")
 _mn_bright = [255, 233, 158]
 check("def outline_text(screen, font, text, color, center, outline=(8, 9, 18)," in _mn_ui
       and "body = gradient_text(font, text, GOLD_BRIGHT, (196, 138, 40))" in _mn_ui

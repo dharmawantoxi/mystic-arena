@@ -1,17 +1,25 @@
 extends RefCounted
-## Layer 9br: the nine-patch skin baked from `ui_theme.py` (`bake/bake_ui_theme.py`).
-## `panel()` and `pill()` were drawn by the real pygame code onto transparent canvases;
-## here they become `StyleBoxTexture`s cut from two sheets. A getter returns null while
-## its sheet is not imported, so the caller keeps its flat fallback.
+## Layer 9br: source-baked `ui_theme.py` panels, pills and controls. Nine-patches are cut from
+## manifest frames; a missing imported sheet returns null so flat theme fallbacks remain safe.
 
 const PANELS := "res://assets/art/ui/panels.png"
 const PILLS := "res://assets/art/ui/pills.png"
+const BUTTONS := "res://assets/art/ui/buttons.png"
+const TABS := "res://assets/art/ui/tabs.png"
+const TOGGLES := "res://assets/art/ui/toggles.png"
+const ICONS := "res://assets/art/ui/icons.png"
+const SLIDER_GLOW := "res://assets/art/ui/slider_glow.png"
 const MANIFEST := "res://data/art/ui_theme.json"
 const NEUTRAL := "neutral"
 const NO_COLOR := Color(1.0, 0.0, 1.0)
 static var _manifest: Dictionary = {}
 static var _panels: Texture2D = null
 static var _pills: Texture2D = null
+static var _buttons: Texture2D = null
+static var _tabs: Texture2D = null
+static var _toggles: Texture2D = null
+static var _icons: Texture2D = null
+static var _slider_glow: Texture2D = null
 
 
 static func manifest() -> Dictionary:
@@ -40,6 +48,21 @@ static func pill_color(kind: String, part: String) -> Color:
 	return _color(row[part])
 
 
+static func button_accent(key: String) -> Color:
+	return _accent("buttons", key)
+
+
+static func tab_accent(key: String) -> Color:
+	return _accent("tabs", key)
+
+
+static func _accent(sheet_name: String, key: String) -> Color:
+	var controls: Dictionary = manifest().get("controls", {})
+	var sheet: Dictionary = controls.get(sheet_name, {})
+	var accents: Dictionary = sheet.get("accents", {})
+	return _color(accents[key]) if accents.has(key) else NO_COLOR
+
+
 static func panels_texture() -> Texture2D:
 	if _panels == null and ResourceLoader.exists(PANELS):
 		_panels = load(PANELS) as Texture2D
@@ -50,6 +73,36 @@ static func pills_texture() -> Texture2D:
 	if _pills == null and ResourceLoader.exists(PILLS):
 		_pills = load(PILLS) as Texture2D
 	return _pills
+
+
+static func buttons_texture() -> Texture2D:
+	if _buttons == null and ResourceLoader.exists(BUTTONS):
+		_buttons = load(BUTTONS) as Texture2D
+	return _buttons
+
+
+static func tabs_texture() -> Texture2D:
+	if _tabs == null and ResourceLoader.exists(TABS):
+		_tabs = load(TABS) as Texture2D
+	return _tabs
+
+
+static func toggles_texture() -> Texture2D:
+	if _toggles == null and ResourceLoader.exists(TOGGLES):
+		_toggles = load(TOGGLES) as Texture2D
+	return _toggles
+
+
+static func icons_texture() -> Texture2D:
+	if _icons == null and ResourceLoader.exists(ICONS):
+		_icons = load(ICONS) as Texture2D
+	return _icons
+
+
+static func slider_glow_texture() -> Texture2D:
+	if _slider_glow == null and ResourceLoader.exists(SLIDER_GLOW):
+		_slider_glow = load(SLIDER_GLOW) as Texture2D
+	return _slider_glow
 
 
 ## Nine-patch panel (`panel_bold` = dialog border, `panel` = default border) or null.
@@ -74,9 +127,92 @@ static func pill_box(kind: String, state: String, content: Vector2) -> StyleBoxT
 		return null
 	var margin: Array = sheet.get("margin", [23, 20])
 	var expand: Array = sheet.get("expand", [15, 12])
-	var margins := Vector2(float(margin[0]), float(margin[1]))
-	var grow := Vector2(float(expand[0]), float(expand[1]))
-	return _box(pills_texture(), frames[key], margins, grow, content)
+	return _box(
+		pills_texture(),
+		frames[key],
+		Vector2(float(margin[0]), float(margin[1])),
+		Vector2(float(expand[0]), float(expand[1])),
+		content
+	)
+
+
+## Main-menu `button()` background in the source accent; the hover frame carries its glow.
+static func button_box(
+	style: String, state: String, content: Vector2 = Vector2.ZERO
+) -> StyleBoxTexture:
+	var controls: Dictionary = manifest().get("controls", {})
+	var sheet: Dictionary = controls.get("buttons", {})
+	var frames: Dictionary = sheet.get("frames", {})
+	var key := "%s:%s" % [style, state]
+	if not frames.has(key) or buttons_texture() == null:
+		return null
+	var margins: Dictionary = sheet.get("margins", {})
+	var expands: Dictionary = sheet.get("expands", {})
+	var margin: Array = margins.get(state, [0, 0])
+	var expand: Array = expands.get(state, [0, 0])
+	return _box(
+		buttons_texture(),
+		frames[key],
+		Vector2(float(margin[0]), float(margin[1])),
+		Vector2(float(expand[0]), float(expand[1])),
+		content
+	)
+
+
+## Source `tab()` active/inactive/hover variants, with source-specific accent colours.
+static func tab_box(
+	style: String, state: String, content: Vector2 = Vector2.ZERO
+) -> StyleBoxTexture:
+	var controls: Dictionary = manifest().get("controls", {})
+	var sheet: Dictionary = controls.get("tabs", {})
+	var frames: Dictionary = sheet.get("frames", {})
+	var key := "%s:%s" % [style, state]
+	if not frames.has(key) or tabs_texture() == null:
+		return null
+	var margin: Array = sheet.get("margin", [0, 0])
+	var expand: Array = sheet.get("expand", [0, 0])
+	return _box(
+		tabs_texture(),
+		frames[key],
+		Vector2(float(margin[0]), float(margin[1])),
+		Vector2(float(expand[0]), float(expand[1])),
+		content
+	)
+
+
+## Toggle background (`off`, `off_hover`, `on`, `on_hover`); label is kept live in Godot.
+static func toggle_box(state: String, content: Vector2 = Vector2.ZERO) -> StyleBoxTexture:
+	var controls: Dictionary = manifest().get("controls", {})
+	var sheet: Dictionary = controls.get("toggles", {})
+	var frames: Dictionary = sheet.get("frames", {})
+	if not frames.has(state) or toggles_texture() == null:
+		return null
+	var margin: Array = sheet.get("margin", [0, 0])
+	var expand: Array = sheet.get("expand", [0, 0])
+	return _box(
+		toggles_texture(),
+		frames[state],
+		Vector2(float(margin[0]), float(margin[1])),
+		Vector2(float(expand[0]), float(expand[1])),
+		content
+	)
+
+
+static func icon_frame(name: String) -> Rect2:
+	var controls: Dictionary = manifest().get("controls", {})
+	var sheet: Dictionary = controls.get("icons", {})
+	var frames: Dictionary = sheet.get("frames", {})
+	if not frames.has(name):
+		return Rect2()
+	var row: Array = frames[name]
+	return Rect2(float(row[0]), float(row[1]), float(row[2]), float(row[3]))
+
+
+static func control_sheet_size(name: String) -> Vector2i:
+	var controls: Dictionary = manifest().get("controls", {})
+	var sheet: Dictionary = controls.get(name, {})
+	var size: Array = sheet.get("size", [0, 0])
+	return Vector2i(int(size[0]), int(size[1]))
 
 
 static func _color(row: Array) -> Color:

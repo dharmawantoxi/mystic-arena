@@ -44,6 +44,10 @@ func enable_balance_overrides() -> void:
 	(world as Prototype).balance_overrides_enabled = true
 
 
+func apply_presentation_settings() -> void:
+	(world as Prototype).apply_presentation_settings()
+
+
 func _ready() -> void:
 	get_node("/root/GameSpeed").call("reset_match_clock")
 	super._ready()

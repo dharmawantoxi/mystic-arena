@@ -1,7 +1,9 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scenes/menu/main_menu.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/ui/menu_backdrop.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/ui/source_ui_button.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/ui/menu_ambient_fx.gd" id="4"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -21,6 +23,16 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("2")
+
+[node name="Ambient" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("4")
 
 [node name="Content" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -96,39 +108,63 @@ mouse_filter = 2
 
 [node name="HeroShopButton" type="Button" parent="Content/Column/Actions"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(175, 60)
+custom_minimum_size = Vector2(155, 60)
 layout_mode = 2
 text = "Hero Shop"
+script = ExtResource("3")
+source_style_key = "hero"
+icon_name = "coin"
+label_font_size = 18
 
 [node name="PrototypeButton" type="Button" parent="Content/Column/Actions"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(225, 60)
 layout_mode = 2
 text = "Pertandingan awal  →"
+script = ExtResource("3")
+source_style_key = "continue"
+icon_name = "continue"
+label_font_size = 15
 
 [node name="SiegeButton" type="Button" parent="Content/Column/Actions"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(175, 60)
 layout_mode = 2
 text = "Tower & nexus  →"
+script = ExtResource("3")
+source_style_key = "help"
+icon_name = "help"
+label_font_size = 15
 
 [node name="CombatButton" type="Button" parent="Content/Column/Actions"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(205, 60)
+custom_minimum_size = Vector2(235, 60)
 layout_mode = 2
 text = "Laboratorium minion  →"
+script = ExtResource("3")
+source_style_key = "input"
+icon_name = "pad"
+label_font_size = 12
 
 [node name="PlayButton" type="Button" parent="Content/Column/Actions"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(105, 60)
+custom_minimum_size = Vector2(150, 60)
 layout_mode = 2
 text = "Uji input"
+script = ExtResource("3")
+source_style_key = "play"
+icon_name = "play"
+label_font_size = 15
 
 [node name="QuitButton" type="Button" parent="Content/Column/Actions"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(100, 60)
+custom_minimum_size = Vector2(130, 60)
 layout_mode = 2
 text = "Keluar"
+script = ExtResource("3")
+source_style_key = "quit"
+icon_name = "quit"
+label_font_size = 16
 
 [node name="SaveRow" type="HBoxContainer" parent="Content/Column"]
 layout_mode = 2
@@ -139,12 +175,20 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(190, 48)
 layout_mode = 2
 text = "Save Games"
+script = ExtResource("3")
+source_style_key = "input"
+icon_name = "cloud"
+label_font_size = 15
 
 [node name="SettingsButton" type="Button" parent="Content/Column/SaveRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(145, 48)
 layout_mode = 2
 text = "Settings"
+script = ExtResource("3")
+source_style_key = "settings"
+icon_name = "gear"
+label_font_size = 16
 
 [node name="ActiveSlotLabel" type="Label" parent="Content/Column/SaveRow"]
 unique_name_in_owner = true

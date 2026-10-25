@@ -113,8 +113,8 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
 - 9bq membake badan 216 boss (pose diam fase 0, dua arah; satu PNG per boss, 2,6 MB) dan
   menggambarnya menggantikan lingkaran bermahkota, dengan bayangan, bar HP, dan papan nama di atas
   puncak sprite (`BOSS_LABEL_TOP`). Rincian di bagian "Slice 9bq".
-- Urutan bake berikutnya (user: "semuanya"): skin HUD/menu (9br: tema, 9bs: latar menu utama;
-  HUD dan arena layar penuh belum), peluru hero, pose jalan/serang boss.
+- Slice kontrol UI dan ambience menu 9br/9bs sudah diselesaikan di PR #341. HUD/arena layar penuh,
+  peluru hero, dan pose jalan/serang boss tetap pekerjaan terpisah, tidak termasuk slice ini.
   `DynamicRenderer` **sudah terport (layer 9d0)**: partikel, kabut, obor,
   rune air, glow/asap toko dan efek lingkungan boss. Tactical commands sudah
   punya state dan render dasar; audit paritas visualnya **sudah dikerjakan (layer 9bi2)**:
@@ -2392,74 +2392,64 @@ Batas yang diketahui: pose jalan, serang, skill, dan kilat luka bawaan sumber, 7
 aura hidup (`_LIVE_FX_HEROES`), serta aura enrage/ability ber-cache masih pendekatan Godot
 (busur) atau kosong; boss `entrance` tetap gambar lama.
 
-## Slice 9br — skin UI dari `ui_theme.py` (layer 9br)
+## Slice 9br — controls UI dari `ui_theme.py` (layer 9br) — selesai
 
-Latar: semua layar memakai satu `Theme` yang dibangun kode (`RebuildTheme.create_theme()`, dipasang
-di `app.gd` dan tiap layar). Palet dan bentuknya (teal gelap, kotak 10 px) tidak ada di pygame,
-yang memakai `ui_theme.py`: panel kaca gelap (gradasi, border emas, sudut emas, bayangan) dan
-tombol pil berwarna.
+Port ini melengkapi panel/pill skin yang sudah ada dengan presentasi tombol menu utama, ikon,
+toggle, slider, dan tab berdasarkan helper asli `ui_theme.py`.
 
-- `bake/bake_ui_theme.py` memanggil `ui_theme.panel()` dan `ui_theme.pill()` ASLI pada kanvas
-  transparan. `panels.png` (160x80) berisi dua panel 80x80 (`panel_bold` = panggilan dialog
-  `border_w=2`, `panel` = bawaan; rect 72x72 di (4, 4) sehingga bayangan 4 px ada di tepi kanvas).
-  `pills.png` (432x144) berisi 8 jenis pil x normal/hover (dengan glow radial)/disabled, kanvas
-  54x48, rect 24x24 di (15, 12). Hasil deterministik (dua run identik), 7,7 KB. `draw_text`
-  dimatikan saat bake karena teks digambar Godot.
-- `data/art/ui_theme.json`: palet (semua konstanta warna modul, 32), frame, margin nine-patch
-  (panel 20 px; pil 23x20), `expand` (bayangan 4 px; glow 15x12) dan tabel warna pil yang dibaca dari
-  literal `colors` di sumber `pill()` (fill atas/bawah, tepi, teks).
-- `scripts/ui/ui_skin.gd`: memotong `StyleBoxTexture` (`region_rect`, margin, expand) dari sheet
-  menurut frame manifest; mengembalikan null bila sheet belum diimpor.
-- `rebuild_theme.gd`: konstanta palet kini nilai `ui_theme.py` (INK = TEXT_WHITE, MUTED = TEXT_DIM,
-  GOLD, CYAN; `TEAL` tetap sebagai nama lama = CYAN). Button: normal = pil `neutral`, hover = pil
-  `neutral` hover, pressed = pil `gold` hover, disabled = pil `locked` disabled; teks
-  `TEXT_BODY`/`GOLD_TEXT`/`TEXT_FAINT`. `PanelContainer` = panel dialog. Variasi tipe
-  `GoldButton`, `SuccessButton`, `DangerButton`, `CyanButton`, `VioletButton` (jenis pil sumber).
-  ProgressBar (track `hp_bar`), scrollbar (track dan jempol emas `scroll_indicator`) dan
-  PopupMenu (panel + hover) memakai warna sumber. `create_theme(false)` memaksa fallback datar
-  dengan warna yang sama (juga yang tampil bila sheet belum diimpor). Baris Hero Shop memakai warna
-  kartu level sumber (`OPEN_*`, `LOCKED_*`). Warna kosong atau nama tak dikenal tampil magenta.
-- `project.godot`: warna clear = `BG_DEEP` (9, 12, 26).
-- `tests/ui_skin_checks.gd`: konstanta tema = konstanta `ui_theme.py` dari manifest, sheet terdekode
-  dengan ukuran manifest, 24 frame pil + 2 panel di dalam sheet, piksel kunci (tengah buram, cincin
-  bayangan tembus, sudut kanvas pil transparan), Button/Panel/variasi memakai frame yang benar
-  dengan margin hasil bake, fallback datar, dan warna baris Hero Shop. Validator memeriksa palet
-  manifest = setiap konstanta di `ui_theme.py`, hash PNG, tabel warna pil, tiap `Color8` tema
-  bertanda nama sumber, dan fragmen sumber. Workflow dipicu perubahan `ui_theme.py`.
+- `bake/bake_ui_theme.py` menjalankan fungsi asli `button()`, `toggle()`, `tab()`, dan
+  `draw_icon()`; glow slider memakai helper radial sumber yang sama, sedangkan track/gradasi
+  dinamis digambar native agar nilai bisa berubah saat volume diperbarui. Label sengaja
+  ditiadakan agar teks Godot tetap dapat diterjemahkan. Aset baru: `buttons.png` (8 aksen x normal/hover), `toggles.png` (ON/OFF x
+  normal/hover), `tabs.png` (starter/mini/true x aktif/tidak aktif/hover), `icons.png` (seluruh
+  glyph vektor sumber), dan `slider_glow.png`. Manifest mencatat ukuran, hash, frame, aksen,
+  margin nine-patch, dan keadaan setiap kontrol.
+- `ui_skin.gd` menyediakan loader frame/stylebox untuk kontrol tersebut. `source_ui_button.gd`
+  memasang latar premium, ikon badge dan label live pada tombol menu utama; Hero Shop permanen
+  dan in-match memakai tab aktif/inaktif dengan aksen sumber. Tombol tetap menerima input dan
+  label lokalisasi yang sama.
+- Settings menampilkan slider volume bergradasi dan dua toggle sumber: Screen Shake (default
+  mati) dan Damage Numbers (default hidup). `presentation_settings_store.gd` menyimpan keduanya
+  secara atomik; sebelum layar match dipasang, `PrototypeBattle.apply_presentation_settings()`
+  meneruskan nilai ke `EffectManager`.
+- Suite `ui_skin_checks.gd` memeriksa hash, dimensi, frame, aksen, glyph serta mapping stylebox;
+  `presentation_settings_checks.gd` memeriksa round-trip dan proteksi korupsi; cek scene audio
+  menekan toggle, slider dan memverifikasi preferensi benar-benar mencapai efek match.
+  `validate_project.py` memeriksa manifest terhadap konstanta dan helper sumber.
 
-Divergensi yang diterima: glow hover di-bake untuk satu ukuran lalu diregang (sumber menggambarnya
-elips sesuai ukuran tombol); bayangan panel sumber berupa cincin 4 px alpha 110 bersudut siku;
-tombol menu utama (`button()` dengan aksen kiri dan ikon), toggle, slider dan tab belum diport; font
-tetap Barlow Regular 20 dan SemiBold untuk tombol (sumber: Barlow Bold berspasi huruf).
+Divergensi yang diterima: slider nilai diubah lewat tombol +/- seperti panel sumber; ia bukan
+kontrol drag terpisah. Gradien slider dibangun native dari endpoint warna yang sama, sedangkan
+radial glow diambil dari helper sumber dan hit-test glow memakai radius knob 11 px. Tombol
+menampilkan label melalui font SemiBold Godot alih-alih font pygame `body_bold`; ikon dan geometri
+latar dibake dari fungsi vektor/paint sumber.
 
-## Slice 9bs — latar menu utama dan warna scene (layer 9bs)
+## Slice 9bs — latar dan ambience menu utama (layer 9bs) — selesai
 
-Latar: menu utama Godot memakai lukisan buatan sendiri (`menu_backdrop.gd`, "bukan port"), sedangkan
-pygame menampilkan satu surface 1280x720 hasil `Menu._build_main_background` (langit malam, nebula,
-170 bintang, bulan besar, cincin rune, dua lapis gunung, tiga lane bercahaya, dua portal, kristal rune,
-grid dan vignette). Kabut dan partikel animasi di atasnya belum diport.
+- `bake/bake_menu_background.py` menjalankan `Menu._build_main_background()` dan
+  `Menu._build_menu_fog()` yang asli. Latar statis tetap `main_background.png` 1280x720;
+  `menu_fog.png` berisi dua surface transparan 1500x720 dalam atlas 3000x720. `menu.json`
+  menyimpan hash, frame, kecepatan parallax 0,35/0,6, alpha sumber 26/18, dan probe piksel latar.
+- `menu_ambient_fx.gd` dilapis sesudah backdrop dan sebelum konten menu. Ia menggulir dua
+  lapis kabut (dua blit wrap per lapis), menggunakan skala/crop `cover_rect` yang sama dengan
+  background, lalu menggambar 64 partikel ember/arcane dengan ukuran, warna, drift, wrap,
+  denyut alpha dan fase arcane dari rumus `_core.py`. Aset fog ialah hasil bake sumber; partikel
+  tetap hidup/teranimasi, bukan satu frame statis.
+- `menu_ambient_layout.gd` mengisolasi rumus update, wrap, alpha fog dan denyut partikel.
+  Oracle `menu_ambient_source_oracle.py` memanen metode Menu asli dengan AST dan merekam
+  partikel awal, RNG wrap, snapshot sampai tick 800 serta lingkaran gambar sumber. Native
+  `menu_ambient_checks.gd` memutar fixture dan memeriksa tekstur; scene test memastikan node
+  ambience benar-benar menggambar, waktu maju, dua lapis fog dan 64 partikel tampak aktif.
+- Divergensi yang diterima: inisialisasi runtime menggunakan `RandomNumberGenerator` Godot,
+  bukan stream `random` Python; rentang, peluang, warna dan rumus gerak tetap sama. Replay CI
+  memasok nilai inisialisasi/wrap fixture yang diambil dari sumber, jadi update math diuji tanpa
+  mengklaim kedua RNG menghasilkan urutan acak identik. Sumber menggambar fog hanya ketika
+  `Quality.cheap_alpha` aktif; Godot membiarkan fog menu tetap hidup agar ambience port selalu
+  tampil. Lingkaran partikel digambar langsung oleh CanvasItem, bukan melalui surface sementara.
 
-- `bake/bake_menu_background.py` menjalankan `Menu._build_main_background` ASLI pada `Menu` hidup dan
-  menulis `assets/art/menu/main_background.png` (1280x720, 107 KB, deterministik: dua run identik).
-  `data/art/menu.json` memuat ukuran, hash, dan sembilan piksel kunci seperti yang dipegang surface
-  sumber (`probes`), sehingga Godot di-pin ke sumber, bukan ke salinan.
-- `menu_backdrop.gd`: menggambar PNG itu menutupi jendela (`cover_rect`: skala seragam, di tengah;
-  jendela lebih lebar atau tinggi dipotong, tidak diregang). Lukisan lama tetap sebagai cadangan
-  (`_draw_fallback`) bila sheet belum diimpor. `background_draws` membuktikan jalur baked jalan.
-- `rebuild_theme.title()`: judul layar = emas badan `outline_text` (tengah gradasi `GOLD_BRIGHT` ->
-  (196, 138, 40) = (225, 185, 99)) dengan outline gelap (8, 9, 18) selebar 2 px.
-- Scene: literal teal lama diganti warna `ui_theme.py` (label redup = `TEXT_DIM`, hitungan emas =
-  `GOLD`, eyebrow menu = `CYAN`) dan peredup jeda = (10, 10, 20, 200) seperti `_draw_pause_background`
-  (8 + 1 + 1 + 4 literal di `MinionArena`, `Match`, `MainMenu`, `PrototypeMatch`, `SiegeArena`).
-- `tests/menu_art_checks.gd`: sheet terdekode 1280x720, setiap piksel kunci sama dengan surface
-  sumber, `cover_rect` untuk jendela 16:9, lebar, tinggi dan acak selalu menutup, dan tak ada scene yang
-  masih memakai literal lama. `run_all.gd` membuktikan menu sungguhan menggambar jalur baked
-  (`Backdrop.background_draws > 0`). Validator memeriksa hash PNG, fragmen `_build_main_background`,
-  bake, backdrop, warna judul (dari `outline_text`) dan hitungan warna scene.
-
-Belum: arena layar penuh dan HUD ringkas. Arena tetap 0,7 di dalam bingkai HUD karena skala 1,0
-menaruh TopBar, BottomBar dan TacticalPanel (yang tombolnya ditekan tes lewat event mouse sungguhan)
-di atas lane; perubahan itu perlu desain ulang HUD dan tidak bisa diverifikasi tanpa engine lokal.
+Validasi visual/runtime lokal belum dilakukan: Godot tidak tersedia di sandbox. Validasi lokal
+`validate_project.py` lulus 21.017 static checks; `gdformat --check`, `gdlint`, dan kompilasi
+Python juga lulus. Suite native sudah terdaftar tetapi belum dijalankan lokal; status CI PR untuk
+perubahan ini dicatat setelah workflow selesai.
 
 ## Slice 9bt — tebasan serang dan animasi kematian minion
 
