@@ -3626,7 +3626,8 @@ sudah diperbaiki - `prototype_view.gd` mendeklarasikan ulang `const UnitState` y
 dan validator mem-pin agar tidak kembali), dan `_report()` memakai `:=` atas
 `Array[index] if ... else {}` yang tidak bisa diinferensi (kini bertipe `Variant`). Run
 `40186732016` (job `121149006132`) **pass 15m16s** dengan notice
-`PASS: 1504971 checks; fixed ticks and source parity`; validator lokal PASS 21123.
+`PASS: 1504971 checks; fixed ticks and source parity`, dan run `40187825038` (job `121152261750`,
+commit catatan PETA) **pass 15m57s**; validator lokal PASS 21123.
 
 Batas slice ini:
 - Elips tetap aproksimasi polygon dan alpha tetap ditulis apa adanya (blending normal di
