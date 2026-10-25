@@ -4849,6 +4849,86 @@ check("_check_frames(check, frames)" in _nr_checks and "_check_gate(check)" in _
       and "_check_view_wiring(check, frames)" in _nr_checks,
       "9bq3 the realm suite must replay the source frames, the gate and the view")
 
+# ── Layer 9bq4: urgharun's R/enrage foreground FX as a native op layer ──
+from urgharun_enrage_fx_source_oracle import source_fixture as urgharun_enrage_fixture
+_ue_path = ROOT / "tests/fixtures/urgharun_enrage_fx_source.json"
+_ue_layout = (ROOT / "scripts/ui/urgharun_enrage_fx_layout.gd").read_text(encoding="utf-8")
+_ue_checks = (ROOT / "tests/urgharun_enrage_fx_checks.gd").read_text(encoding="utf-8")
+_ue_src = (ROOT.parent / "bosses/level40.py").read_text(encoding="utf-8")
+_ue_fn = _ue_src[_ue_src.index("def _draw_enrage_fx("):_ue_src.index("# YHORANTH")]
+_ue_order = _ue_src[_ue_src.index("def draw_urgharun("):_ue_src.index("def _update_urg_attack_anim(")]
+_ue_painter = (ROOT / "tests/painter_scene_checks.gd").read_text(encoding="utf-8")
+check('const UrgharunEnrageFxChecks = preload("res://tests/urgharun_enrage_fx_checks.gd")'
+      in ai_tests and "UrgharunEnrageFxChecks.new().run(_check)" in ai_tests,
+      "9bq4 urgharun enrage FX suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/urgharun_enrage_fx_source_oracle.py" in workflow,
+      "9bq4 CI must run the _draw_enrage_fx source oracle")
+check(_ue_path.is_file(), "9bq4 urgharun enrage FX fixture must exist")
+if _ue_path.is_file():
+    _ue = json.loads(_ue_path.read_text(encoding="utf-8"))
+    check(urgharun_enrage_fixture() == _ue,
+          "9bq4 urgharun enrage FX fixture must not drift from bosses/level40.py")
+    _ue_frames = _ue["frames"]
+    check(len(_ue_frames) == 7 and all(len(frame["ops"]) == 68 for frame in _ue_frames)
+          and sum(len(frame["ops"]) for frame in _ue_frames) == 476,
+          "9bq4 oracle must pin 7 frames of 68 ops (ten flames, the aura ring, six embers)")
+    _ue_mid = next(f for f in _ue_frames if f["label"] == "mid")
+    _ue_ignored = next(f for f in _ue_frames if f["label"] == "timer_ignored")
+    check(_ue_mid["timer"] != _ue_ignored["timer"]
+          and _ue_mid["ops"] == _ue_ignored["ops"],
+          "9bq4 oracle must pin the source quirk: the cast timer never changes an op")
+    _ue_cast = next(f for f in _ue_frames if f["label"] == "cast")
+    check([op["radius"] for op in _ue_mid["ops"][50:56]] == [38, 37, 36, 35, 34, 33]
+          and [op["color"][3] for op in _ue_cast["ops"][0:50:5]]
+          == [220, 187, 154, 121, 88, 55, 22, 209, 176, 143]
+          and [op["color"][3] for op in _ue_mid["ops"][56:68:2]] == [211, 175, 139, 103, 67, 31]
+          and _ue["palette"]["fury_light"] == [255, 110, 90],
+          "9bq4 oracle must pin the aura ring radii, the flame/ember alpha decay and the palette")
+    check(_ue["boss_type"] == "urgharun" and _ue["skill"] == "r" and _ue["duration"] == 80,
+          "9bq4 the layer belongs to urgharun's R cast normalised by 80 ticks")
+check("def _draw_enrage_fx(surface, boss, x, y, timer, pulse):" in _ue_src
+      and "def _draw_enrage_ground(surface, boss, x, y, timer, phase):" in _ue_src,
+      "9bq4 the source must still split the R ground FX from its foreground FX")
+check(_ue_fn.count("progress") == 1 and "duration = 80" in _ue_fn
+      and "flame_h = int(6 + flame_t * 4)" in _ue_fn,
+      "9bq4 the source foreground FX must still drop progress and flame_h")
+check(_ue_order.index("_draw_enrage_ground(surface, boss, x, y, skill_timer, pulse)")
+      < _ue_order.index("_draw_urg_attack(surface, boss, x, y, active_skill)")
+      < _ue_order.index("_draw_enrage_fx(surface, boss, x, y, skill_timer, pulse)"),
+      "9bq4 the source must paint the enrage foreground after the body and the ground FX")
+check('const SKILL := "r"' in _ue_layout and "const DURATION := 80" in _ue_layout
+      and "const FLAME_COUNT := 10" in _ue_layout and "const AURA_TOP := 38" in _ue_layout
+      and "const AURA_BOTTOM := 32" in _ue_layout and "const EMBER_COUNT := 6" in _ue_layout
+      and "int(cos(angle) * float(FLAME_RADIUS))" in _ue_layout
+      and "fposmod(pulse * 0.6 + float(index) * 0.15, 1.0)" in _ue_layout
+      and "int(flame_t * 20.0)" in _ue_layout
+      and "range(AURA_TOP, AURA_BOTTOM, -1)" in _ue_layout
+      and "_alpha(180.0 * aura_pulse * float(AURA_TOP - radius) / float(AURA_STEPS))" in _ue_layout
+      and "_alpha(240.0 * (1.0 - ember_t))" in _ue_layout,
+      "9bq4 the enrage layout must mirror the source flame, aura and ember formulas")
+_ue_draw = _bs_view[_bs_view.index("func _draw_boss(boss: BossState)"):
+                    _bs_view.index("func _draw_boss_plain(")]
+check("func urgharun_enrage_draw_ops(boss: BossState) -> Array:" in _bs_view
+      and "UrgharunEnrageFxLayout.active(boss.boss_type, boss.active_skill)" in _bs_view
+      and "int(boss.position.x), int(boss.position.y), boss.active_skill_timer, boss.pulse"
+      in _bs_view,
+      "9bq4 the view must build the layer from the live anchor, cast timer and pulse")
+check("var enrage_ops := urgharun_enrage_draw_ops(boss)" in _ue_draw
+      and _ue_draw.index("_draw_boss_sprite(boss, art)")
+      < _ue_draw.index("urgharun_enrage_draw_ops(boss)")
+      < _ue_draw.index("var bar_position := Vector2(")
+      and "boss_enrage_fx_draws += 1" in _ue_draw
+      and "boss_enrage_fx_ops += enrage_ops.size()" in _ue_draw,
+      "9bq4 the view must paint the enrage layer over the body and under the HP bar")
+check("await _check_urgharun_enrage(tree, view, boss, check)" in _ue_painter
+      and "view.boss_enrage_fx_draws > draws_before" in _ue_painter
+      and 'boss.boss_type = "urgharun"' in _ue_painter
+      and "int(count) % 68 == 0" in _ue_painter,
+      "9bq4 the painter suite must paint the enrage layer across the live cast phases")
+check("_check_frames(check, frames)" in _ue_checks and "_check_timing(check, frames)" in _ue_checks
+      and "_check_gate(check)" in _ue_checks and "_check_view_wiring(check, frames)" in _ue_checks,
+      "9bq4 the enrage suite must replay the source frames, the timing quirk, the gate and the view")
+
 # ── Layer 9bi2: tactical command visuals (gather marker, feedback banner, floating text) ──
 from tactical_draw_source_oracle import source_fixture as tactical_draw_fixture
 _td_path = ROOT / "tests/fixtures/tactical_draw_source.json"

@@ -96,6 +96,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 			"Boss W skill poses drew"
 		)
 		await _check_realm(tree, view, boss, check)
+		await _check_urgharun_enrage(tree, view, boss, check)
 	else:
 		check.call(false, "The suite could not spawn a boss to draw")
 	app.show_menu()
@@ -128,6 +129,47 @@ func _check_realm(tree: SceneTree, view, boss, check: Callable) -> void:
 	boss.boss_type = source_type
 	boss.active_skill = ""
 	boss.active_skill_timer = 0
+
+
+## Layer 9bq4: the live scene paints urgharun's R foreground layer over its baked body, on
+## every phase of the source cast window. The boss only wears urgharun's type for these
+## frames; no tick runs, so its AI never sees the swap.
+func _check_urgharun_enrage(tree: SceneTree, view, boss, check: Callable) -> void:
+	check.call(view.boss_enrage_fx_draws == 0, "No other boss skill painted an enrage layer")
+	var source_type: String = boss.boss_type
+	var source_skill: String = boss.active_skill
+	var source_timer: int = boss.active_skill_timer
+	boss.boss_type = "urgharun"
+	boss.timer = 0
+	boss.active_skill = "r"
+	var phases := [80, 60, 40, 20, 1]
+	var painted := 0
+	var op_deltas: Array = []
+	for phase in phases:
+		boss.active_skill_timer = int(phase)
+		var draws_before: int = view.boss_enrage_fx_draws
+		var ops_before: int = view.boss_enrage_fx_ops
+		for _frame in range(6):
+			await tree.process_frame
+			if view.boss_enrage_fx_draws > draws_before:
+				break
+		if view.boss_enrage_fx_draws > draws_before:
+			painted += 1
+			op_deltas.append(view.boss_enrage_fx_ops - ops_before)
+	check.call(
+		painted == phases.size(),
+		"Urgharun's R painted its enrage layer on %d/%d cast phases" % [painted, phases.size()]
+	)
+	check.call(
+		(
+			op_deltas.size() == phases.size()
+			and op_deltas.all(func(count): return int(count) > 0 and int(count) % 68 == 0)
+		),
+		"The live layer carries the source's 68 ops at every cast phase"
+	)
+	boss.boss_type = source_type
+	boss.active_skill = source_skill
+	boss.active_skill_timer = source_timer
 
 
 func _seed_hero_projectile(world, hero) -> bool:

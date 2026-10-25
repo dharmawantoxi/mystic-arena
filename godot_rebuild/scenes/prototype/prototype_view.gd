@@ -27,6 +27,7 @@ const HeroPainter = preload("res://scripts/ui/hero_painter.gd")
 const BossArt = preload("res://scripts/ui/boss_art.gd")
 const BossAnim = preload("res://scripts/ui/boss_anim.gd")
 const NyxarethRealmLayout = preload("res://scripts/ui/nyxareth_realm_layout.gd")
+const UrgharunEnrageFxLayout = preload("res://scripts/ui/urgharun_enrage_fx_layout.gd")
 const TacticalLayout = preload("res://scripts/ui/tactical_layout.gd")
 const GoldHudLayout = preload("res://scripts/ui/gold_hud_layout.gd")
 const ShopHintLayout = preload("res://scripts/ui/shop_hint_layout.gd")
@@ -77,6 +78,10 @@ var boss_sprite_draws := 0
 var boss_pose_draws: Dictionary = {}
 ## Screen-wide boss skill layers painted under the body (nyxareth's ultimate, layer 9bq3).
 var boss_screen_layer_draws := 0
+## Layer 9bq4: urgharun R/enrage foreground layers painted over the body and the ops they
+## carried; `painter_scene_checks.gd` proves the live scene reaches this layer across the cast.
+var boss_enrage_fx_draws := 0
+var boss_enrage_fx_ops := 0
 ## The tactical banner border (layer 9bi2): 2 px, 6 px corners, drawn inside its box.
 var tactical_border := StyleBoxFlat.new()
 ## Layer 9bv2: pygame skips `_draw_gold_hud` while the wide-screen side panel shows the
@@ -1497,6 +1502,14 @@ func _draw_boss(boss: BossState) -> void:
 		# `Boss.draw`: the bar sits 6 px above the sprite top (`BOSS_LABEL_TOP`).
 		var head_top := float(BossArt.label_top(boss.boss_type, int(radius)))
 		bar_top = point.y - head_top - 6.0 - bar_height
+	# Layer 9bq4: the source paints the R foreground FX inside the boss draw function, so the
+	# layer lands over the body and under the HP bar and name plate that `Boss.draw` adds next.
+	var enrage_ops := urgharun_enrage_draw_ops(boss)
+	if not enrage_ops.is_empty():
+		boss_enrage_fx_draws += 1
+		boss_enrage_fx_ops += enrage_ops.size()
+		for op in enrage_ops:
+			_draw_intro_op(op)
 	var bar_position := Vector2(point.x - bar_width * 0.5, bar_top)
 	var health := clampf(float(boss.hp) / maxf(1.0, float(boss.max_hp)), 0.0, 1.0)
 	draw_rect(Rect2(bar_position, Vector2(bar_width, bar_height)), Color("280000"))
@@ -1530,6 +1543,17 @@ func nyxareth_realm_draw_ops(boss: BossState) -> Array:
 		return []
 	return NyxarethRealmLayout.ops(
 		boss.active_skill_timer, boss.pulse, NyxarethRealmLayout.SCREEN_SIZE
+	)
+
+
+## Layer 9bq4: `_draw_enrage_fx` ops while urgharun casts "r", from the live anchor, cast
+## timer and pulse; empty for every other boss and skill. The source keeps the elapsed cast
+## time out of the picture (its `progress` is never read), so a frame only needs those.
+func urgharun_enrage_draw_ops(boss: BossState) -> Array:
+	if not UrgharunEnrageFxLayout.active(boss.boss_type, boss.active_skill):
+		return []
+	return UrgharunEnrageFxLayout.ops(
+		int(boss.position.x), int(boss.position.y), boss.active_skill_timer, boss.pulse
 	)
 
 
