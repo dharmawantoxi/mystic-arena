@@ -59,8 +59,8 @@ static func _report(label: String, actual: Array, expected: Array) -> String:
 	var index := _first_mismatch(actual, expected)
 	if index == -1:
 		return "%s matches the source ops" % label
-	var mine := actual[index] if index < actual.size() else {}
-	var theirs := expected[index] if index < expected.size() else {}
+	var mine: Variant = actual[index] if index < actual.size() else {}
+	var theirs: Variant = expected[index] if index < expected.size() else {}
 	return (
 		"%s differs at op %d/%d: %s vs source %s"
 		% [label, index, expected.size(), str(mine), str(theirs)]
