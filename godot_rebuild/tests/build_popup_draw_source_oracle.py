@@ -13,7 +13,9 @@ The REAL `draw`, `_draw_tower_buttons` and `_draw_close_button` (the last inheri
 run under the recording pygame shim. `_shadow`, `_vgrad`, `_radial` and `outline_text` are
 recorded as one op each; every harvested helper call is preceded by a `section` op. The
 fixture pins the classic fallback and the mobile right-panel branch. The latter runs the real
-`platform_utils.panel_popup_pos`, compact panel width, and full display surface.
+`platform_utils.panel_popup_pos`, compact panel width, and full display surface. The recorder's
+`_has_glyph` shim intentionally exercises `fit_ellipsis`'s three-dot fallback; the live SidePanel
+selects the real font's U+2026 glyph when available.
 
 Run: python godot_rebuild/tests/build_popup_draw_source_oracle.py
 """

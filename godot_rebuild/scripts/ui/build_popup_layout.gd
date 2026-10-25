@@ -45,12 +45,17 @@ const TOWER_TYPES := [
 
 var _ops: Array = []
 var _measure: Callable
+var _ellipsis := "..."
 
 
-## `state`: x, y, gold and mouse; `measure` measures the Cinzel title and the X glyph.
-static func ops(state: Dictionary, measure: Callable, cheap_alpha: bool = true) -> Array:
+## `state`: x, y, gold and mouse; `measure` supplies source font metrics. `ellipsis` is the
+## source helper's selected fallback glyph (the oracle defaults to `...`).
+static func ops(
+	state: Dictionary, measure: Callable, cheap_alpha: bool = true, ellipsis: String = "..."
+) -> Array:
 	var layout := new()
 	layout._measure = measure
+	layout._ellipsis = ellipsis
 	layout._draw(state, cheap_alpha)
 	return layout._ops
 
@@ -245,9 +250,10 @@ func _tower_buttons(
 				"body_bold"
 			)
 		)
+		var description := _fit_ellipsis(String(TOWER_TYPES[index][2]), 17, btn_w - 18)
 		_ops.append(
 			_text(
-				TOWER_TYPES[index][2],
+				description,
 				17,
 				DESC_TEXT if can_afford else GRAY,
 				[bx + 10, by + 32],
@@ -264,6 +270,20 @@ func _tower_buttons(
 				"body_bold"
 			)
 		)
+
+
+## `ui_theme.fit_ellipsis`: truncate to the measured width with its configured fallback glyph.
+func _fit_ellipsis(text: String, font_size: int, max_width: int) -> String:
+	var measured: Vector2i = _measure.call(text, font_size)
+	if measured.x <= max_width:
+		return text
+	var candidate := text
+	while candidate.length() > 1:
+		candidate = candidate.substr(0, candidate.length() - 1)
+		measured = _measure.call(candidate + _ellipsis, font_size)
+		if measured.x <= max_width:
+			return candidate + _ellipsis
+	return _ellipsis
 
 
 ## `ui_theme.draw_icon(surf, "coin", cx, cy, color, s=0.5)`; the coin ignores `color`.

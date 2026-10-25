@@ -5110,6 +5110,7 @@ check("static func origin(slot_x: int, slot_y: int) -> Vector2i:" in _bp_layout
       and "static func mobile_geometry(panel: Rect2i) -> Dictionary:" in _bp_layout
       and "static func state_button_rect(state: Dictionary, index: int) -> Rect2i:" in _bp_layout
       and "static func state_close_rect(state: Dictionary) -> Rect2i:" in _bp_layout
+      and "func _fit_ellipsis(text: String, font_size: int, max_width: int) -> String:" in _bp_layout
       and "static func button_rect(slot_x: int, slot_y: int, index: int) -> Rect2i:" in _bp_layout
       and "const TOWER_TYPES :=" in _bp_layout
       and "def panel_popup_pos(w, h, atas=12):" in _bp_platform_utils,
@@ -5137,6 +5138,8 @@ check('snapshot["build_popup_state"] = build_popup_state' in _bp_screen
       and 'not state.has("panel_pos")' in _bp_side_panel
       and 'String(snapshot.get("state", "")) != "playing"' in _bp_side_panel
       and "BuildPopupLayout.ops(" in _bp_side_panel
+      and "BuildPopupBodyFont.has_char(0x2026)" in _bp_side_panel
+      and "func _draw_build_popup_text(op: Dictionary) -> void:" in _bp_side_panel
       and 'if kind == "circle":' in _bp_side_panel
       and "draw_set_transform(-Vector2(panel.position)" in _bp_side_panel
       and "func _draw_build_popup_title(op: Dictionary) -> void:" in _bp_side_panel

@@ -3751,8 +3751,9 @@ terisi (slot build kosong terpilih), setelah `draw_tactical_commands` dan sebelu
 Batas:
 - Cabang cheap-alpha dan flat keduanya dicakup. Pada dock minimum 120 px, popup mengikuti sumber
   dengan lebar 104 px, sehingga teks kartu rapat/berpotensi melampaui kartu sama seperti sumber.
-- Deskripsi empat kartu tidak mencapai lebar pemotongan `fit_ellipsis` pada fixture, jadi
-  Godot belum meniru pemotongan bila deskripsi sumber berubah jadi lebih panjang.
+- Fixture compact kini menjalankan `fit_ellipsis`; shim recorder memaksa fallback `...` karena
+  tidak memodelkan glyph U+2026. SidePanel memilih `…` bila font Barlow memilikinya; metrik font
+  aktual tetap tidak dipatok pixel-per-pixel.
 - Klik di popup tidak dilayani (tombol HUD yang memicu build); perilaku game tidak berubah.
 - Belum ada review visual di Godot. Bukan klaim pixel parity.
 

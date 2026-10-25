@@ -16,6 +16,7 @@ const Layout = preload("res://scripts/ui/side_panel_layout.gd")
 const BuildPopupLayout = preload("res://scripts/ui/build_popup_layout.gd")
 const HeroPanelLayout = preload("res://scripts/ui/hero_panel_layout.gd")
 const HeroPanelFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
+const BuildPopupBodyFont = preload("res://assets/fonts/Barlow-Regular.ttf")
 const BuildPopupTitleFont = preload("res://assets/fonts/Cinzel.ttf")
 
 const STONE_BASE := Color8(16, 14, 24)
@@ -215,7 +216,12 @@ func _draw_build_popup_overlay() -> void:
 	var draw_state := state.duplicate(true)
 	draw_state["mouse"] = mouse
 	var metrics := Callable(self, "_measure_build_popup")
-	var ops := BuildPopupLayout.ops(draw_state, metrics, bool(draw_state.get("cheap_alpha", true)))
+	var ellipsis := "..."
+	if BuildPopupBodyFont.has_char(0x2026):
+		ellipsis = "…"
+	var ops := BuildPopupLayout.ops(
+		draw_state, metrics, bool(draw_state.get("cheap_alpha", true)), ellipsis
+	)
 	draw_set_transform(-Vector2(panel.position), 0.0, Vector2.ONE)
 	for op in ops:
 		var kind := String(op.get("kind", ""))
@@ -223,15 +229,38 @@ func _draw_build_popup_overlay() -> void:
 			continue
 		if kind == "outline_text":
 			_draw_build_popup_title(op)
+		elif kind == "text":
+			_draw_build_popup_text(op)
 		else:
 			_draw_hero_panel_op(op)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 func _measure_build_popup(text: String, font_size: int) -> Vector2i:
-	var font: Font = BuildPopupTitleFont if font_size == 30 else HeroPanelFont
+	var font: Font = BuildPopupTitleFont
+	if font_size == 17:
+		font = BuildPopupBodyFont
+	elif font_size != 30:
+		font = HeroPanelFont
 	var measured := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
 	return Vector2i(int(measured.x), font_size)
+
+
+func _draw_build_popup_text(op: Dictionary) -> void:
+	var pos: Array = op.get("pos", [0, 0])
+	var size := int(op.get("size", 16))
+	var text := String(op.get("text", ""))
+	var style := String(op.get("style", ""))
+	var font: Font = BuildPopupBodyFont if style == "body_medium" else HeroPanelFont
+	draw_string(
+		font,
+		Vector2(float(pos[0]), float(pos[1]) + font.get_ascent(size)),
+		text,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1,
+		size,
+		_hero_panel_op_color(op)
+	)
 
 
 func _draw_build_popup_title(op: Dictionary) -> void:
