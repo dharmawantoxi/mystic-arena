@@ -4998,6 +4998,92 @@ check("_check_frames(check, frames)" in _ug_checks and "_check_rings(check, fram
       in _ug_checks,
       "9bq5 the ground suite must replay the frames, the rings, the timing quirk and the view")
 
+# ── Layer 9bq6: urgharun LAYER 1 (fury aura + ground ring) and the Q/W/E skill FX ──
+from urgharun_skill_fx_source_oracle import source_fixture as urgharun_skill_fixture
+_us_path = ROOT / "tests/fixtures/urgharun_skill_fx_source.json"
+_us_layout = (ROOT / "scripts/ui/urgharun_skill_fx_layout.gd").read_text(encoding="utf-8")
+_us_checks = (ROOT / "tests/urgharun_skill_fx_checks.gd").read_text(encoding="utf-8")
+_us_painter = (ROOT / "tests/painter_scene_checks.gd").read_text(encoding="utf-8")
+_us_battle = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+_us_src = (ROOT.parent / "bosses/level40.py").read_text(encoding="utf-8")
+_us_urg = _us_src[_us_src.index("class _NS_urgharun:"):_us_src.index("class _NS_yhoranth:")]
+check('const UrgharunSkillFxChecks = preload("res://tests/urgharun_skill_fx_checks.gd")'
+      in ai_tests and "UrgharunSkillFxChecks.new().run(_check)" in ai_tests,
+      "9bq6 urgharun skill FX suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/urgharun_skill_fx_source_oracle.py" in workflow,
+      "9bq6 CI must run the layer 1 / Q-W-E source oracle")
+check(_us_path.is_file(), "9bq6 urgharun skill FX fixture must exist")
+if _us_path.is_file():
+    _us = json.loads(_us_path.read_text(encoding="utf-8"))
+    check(urgharun_skill_fixture() == _us,
+          "9bq6 urgharun skill FX fixture must not drift from bosses/level40.py")
+    _us_groups = ["aura_frames", "ring_frames", "earthshock_ground_frames",
+                  "earthshock_fx_frames", "overpower_frames", "furyswipes_frames"]
+    check(sum(len(_us[key]) for key in _us_groups) == 27
+          and sum(len(f["ops"]) for key in _us_groups for f in _us[key]) == 1236,
+          "9bq6 oracle must pin 27 frames and 1236 draw ops")
+    check([len(f["ops"]) for f in _us["aura_frames"]] == [54, 54, 62, 62, 62]
+          and [len(f["ops"]) for f in _us["ring_frames"]] == [13, 13, 14, 14, 14],
+          "9bq6 oracle must pin the 12/16-ember aura and the optional ring ellipse")
+    check(len(_us["earthshock_ground_frames"][0]["ops"]) == 0
+          and len(_us["furyswipes_frames"][0]["ops"]) == 0
+          and len(_us["furyswipes_frames"][-1]["ops"]) == 0,
+          "9bq6 oracle must pin the Q and E frames that draw nothing")
+    check(all(f["target"] is None for f in _us["overpower_frames"]
+              if f["label"] == "w_no_target")
+          and any(f["target"] is not None for f in _us["overpower_frames"]),
+          "9bq6 oracle must cover both source branches of the W/E target lookup")
+check("def _draw_fury_aura(surface, x, y, phase, enraged=False):" in _us_urg
+      and "def _draw_ground_ring(surface, x, y, phase, skill):" in _us_urg
+      and "_NS_urgharun._draw_ground_ring(surface, x, y + 50, pulse, active_skill)"
+      in _us_urg
+      and "_NS_urgharun._draw_fury_aura(surface, x, y, pulse,\n                                      enraged=(active_skill == \"r\"))" in _us_urg,
+      "9bq6 the source must still paint LAYER 1 first, with the ring 50 px below the anchor")
+check("const Q_DURATION := 55" in _us_layout and "const W_DURATION := 50" in _us_layout
+      and "const E_DURATION := 40" in _us_layout and "const RING_Y_OFFSET := 50" in _us_layout
+      and "const RING_BLIT := [85, 27]" in _us_layout
+      and "for radius in range(90, 5, -5)" in _us_layout
+      and "float(index) * PI / half" in _us_layout
+      and "_ellipse([left + 15, top + 12, 140, 38], FURY_HOT, _alpha(150.0 * pulse), 1)"
+      in _us_layout
+      and "while step < crack_len" in _us_layout
+      and "fposmod(" in _us_layout and "if progress > 0.5 and target.size() >= 2:" in _us_layout
+      and "if slash_t <= 0.0 or slash_t > 1.2:" in _us_layout,
+      "9bq6 the skill layout must mirror the source aura, ring, Q, W and E formulas")
+check("func urgharun_aura_draw_ops(boss: BossState) -> Array:" in _bs_view
+      and "func urgharun_skill_ground_draw_ops(boss: BossState) -> Array:" in _bs_view
+      and "func urgharun_skill_fg_draw_ops(boss: BossState) -> Array:" in _bs_view
+      and "func urgharun_target_point() -> Array:" in _bs_view
+      and "world.boss_presentation_target()" in _bs_view,
+      "9bq6 the view must build LAYER 1 and the Q/W/E layers from live state")
+check("func boss_presentation_target() -> UnitState:" in _us_battle
+      and "return _boss_target(_boss_enemies())" in _us_battle,
+      "9bq6 the world must expose a read-only boss target query for the W/E layers")
+_us_draw = _bs_view[_bs_view.index("func _draw_boss(boss: BossState)"):
+                    _bs_view.index("func _draw_boss_plain(")]
+check("var aura_ops := urgharun_aura_draw_ops(boss)" in _us_draw
+      and _us_draw.index("urgharun_aura_draw_ops(boss)")
+      < _us_draw.index("nyxareth_realm_draw_ops(boss)")
+      < _us_draw.index("urgharun_skill_ground_draw_ops(boss)")
+      and _us_draw.index("urgharun_skill_ground_draw_ops(boss)")
+      < _us_draw.index("var art := BossArt.frame(")
+      and "var skill_fg_ops := urgharun_skill_fg_draw_ops(boss)" in _us_draw
+      and _us_draw.index("urgharun_skill_fg_draw_ops(boss)")
+      < _us_draw.index("urgharun_enrage_draw_ops(boss)")
+      < _us_draw.index("var bar_position := Vector2("),
+      "9bq6 the view must paint LAYER 1 below everything and the skill layers around the body")
+check("view.boss_aura_fx_draws > aura_before" in _us_painter
+      and "view.boss_skill_ground_draws > q_ground_before" in _us_painter
+      and "view.boss_skill_fg_draws > q_fg_before" in _us_painter,
+      "9bq6 the painter suite must paint the LAYER 1 and Q layers on the live boss")
+check("_check_aura(check, data)" in _us_checks and "_check_ring(check, data)" in _us_checks
+      and "_check_earthshock(check, data)" in _us_checks
+      and "_check_overpower(check, data)" in _us_checks
+      and "_check_furyswipes(check, data)" in _us_checks
+      and "_check_view_wiring(check, data)" in _us_checks
+      and "func _report(" in _us_checks,
+      "9bq6 the skill suite must replay every group, the wiring and name a first mismatch")
+
 # ── Layer 9bi2: tactical command visuals (gather marker, feedback banner, floating text) ──
 from tactical_draw_source_oracle import source_fixture as tactical_draw_fixture
 _td_path = ROOT / "tests/fixtures/tactical_draw_source.json"

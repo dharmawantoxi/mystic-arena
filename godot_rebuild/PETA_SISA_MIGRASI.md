@@ -126,6 +126,10 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
   `urgharun_enrage_ground_source_oracle.py` menjalankan fungsi asli (8 frame, 208 op);
   `urgharun_enrage_ground_checks.gd` mereplay fixture, dan `painter_scene_checks.gd`
   membuktikan scene hidup melukisnya di lima fase cast. Rincian ada di bagian "Slice 9bq5".
+- 9bq6 melengkapi sisa FX urgharun: LAYER 1 (`_draw_fury_aura` + `_draw_ground_ring` pada
+  `y + 50`) dan FX Q/W/E (`_draw_earthshock_ground`, `_draw_earthshock_fx`,
+  `_draw_overpower_fx`, `_draw_furyswipes_fx`). Oracle menjalankan keenam fungsi asli
+  (27 frame, 1236 op) termasuk cabang target hidup/mati W/E. Rincian ada di bagian "Slice 9bq6".
 - Slice kontrol UI dan ambience menu 9br/9bs sudah diselesaikan di PR #341. HUD/arena layar penuh,
   peluru hero, dan pose jalan/serang boss tetap pekerjaan terpisah, tidak termasuk slice ini.
   `DynamicRenderer` **sudah terport (layer 9d0)**: partikel, kabut, obor,
@@ -3557,9 +3561,74 @@ Batas slice ini:
   Ketebalan border diasumsikan ke dalam rect seperti pygame, tetapi ini bukan klaim pixel parity.
 - Alpha tetap ditulis apa adanya seperti 9bq4 (canvas SRCALPHA sumber) sementara Godot memakai
   blending normal.
-- Tidak termasuk: FX Q/W/E urgharun, `_draw_fury_aura`/`_draw_ground_ring` (LAYER 1), aura
-  enrage ber-cache `Boss.draw`, perluasan ke `_LIVE_FX_HEROES`/boss lain, rebake atlas, dan
-  resep AI yang meng-cast `R` untuk urgharun.
+- LAYER 1 dan FX Q/W/E dikerjakan sebagai slice 9bq6 di bawah.
+- Tidak termasuk: `_draw_basic_attack_fx` (butuh state `_urg_attack_progress`), aura enrage
+  ber-cache `Boss.draw`, perluasan ke `_LIVE_FX_HEROES`/boss lain, rebake atlas, dan resep AI
+  yang meng-cast skill urgharun.
+
+## Slice 9bq6 — LAYER 1 dan FX Q/W/E urgharun (layer 9bq6)
+
+Melengkapi seluruh FX urgharun selain basic attack. Sumber dan urutannya di `draw_urgharun`:
+`_draw_fury_aura(x, y, pulse, enraged=active_skill == "r")`, lalu
+`_draw_ground_ring(x, y + 50, pulse, active_skill)`, lalu ground FX skill (Q/R), badan, lalu
+foreground skill (Q/W/E/R).
+
+- `scripts/ui/urgharun_skill_fx_layout.gd`:
+  - `aura_ops`: `pulse = sin(phase*0.5)*0.25 + 0.75`, `strength = 1.6` saat enrage. Dua
+    rangkaian cincin `fury_darkest` (r 90..10 langkah 5, alpha `(90-r)*1.2*pulse*strength`)
+    dan `fury_dark` (r 50..8 langkah 3, alpha `(50-r)*1.4*...`), semuanya berpusat di anchor
+    (surface 220x180 di-blit `(x-110, y-90)`), lalu 12 (16 saat enrage) bara
+    `fury_mid` 2x2 + `fury_hot` 1x1 di ring 40 px yang dimampatkan 0.4.
+  - `ground_ring_ops`: surface 170x54 di-blit `(x-85, y-27)` berisi tiga elips
+    (`fury_darkest` 3 px, `fur_darkest` 2 px, `fury_dark` 1 px), sepuluh rune garis
+    `fury_mid` dari jari-jari 46 ke 72 (vertikal 8/12), plus elips `fury_hot` 1 px
+    alpha `150*pulse` hanya saat ada cast aktif.
+  - `earthshock_ground_ops` (Q): tiga cincin `r = int(max(0, progress - i*0.15) * 90)` yang
+    hanya muncul bila `r > 5`, alpha `220*(1-ring_t)`.
+  - `earthshock_fx_ops` (Q): delapan batu (tiga polygon `shadow_deep`/`fur_darkest`/`fur_mid`
+    per batu, tinggi 0 -> 22 -> 0 px per `local_t`), glow api di bawahnya, dan retakan
+    delapan arah yang hanya ada selama `progress < 0.5`.
+  - `overpower_ops` (W): empat jejak cakar melengkung per tangan (7 sampel, garis
+    `fury_dark` 2 px + `fury_light` 1 px), 12 partikel kecepatan, dan empat bintang "+" di
+    atas target hanya bila `progress > 0.5` dan target ada.
+  - `furyswipes_ops` (E): lima slash berurutan (`slash_t > 1.2` dilewati), tiga garis
+    paralel 3/2/1 px + garis `fury_light` 1 px yang digeser 2 px, plus tip 2x2; target
+    dijepit ke 80 px bila lebih dari 100 px, dan tanpa target sumber memakai
+    `(x + facing*80, y)`.
+- `prototype_view.gd`: `urgharun_aura_draw_ops` (dilukis **paling awal**, sebelum realm
+  nyxareth dan semua layer boss lain), `urgharun_skill_ground_draw_ops` (Q, di bawah badan),
+  `urgharun_skill_fg_draw_ops` (Q/W/E, sesudah badan dan sebelum HP bar). `urgharun_target_point`
+  membaca `world.boss_presentation_target()` - helper read-only baru di `prototype_battle.gd`
+  yang menjalankan pemilihan target AI yang sama tanpa memutasi apa pun - agar layer W/E
+  memakai cabang target hidup seperti sumber. Penghitung baru: `boss_aura_fx_draws/_ops`,
+  `boss_skill_ground_draws/_ops`, `boss_skill_fg_draws/_ops`.
+- Kuirk yang dipertahankan: bara, rune cincin, dan tip W/E memakai tuple palet mentah
+  (alpha 255); Q tidak menggambar apa pun pada tick pertama; E tidak menggambar apa pun di
+  awal maupun ekor cast; bintang W hanya muncul pada paruh kedua cast.
+- Bukti: oracle `tests/urgharun_skill_fx_source_oracle.py` (memanen `HAS_AACIRCLE`,
+  `HAS_AALINES`, `PALETTE`, `_clamp`, `_alpha`, `_aacircle`, `_poly`, dan keenam fungsi) ->
+  27 frame / 1236 op: aura 5 frame (54 op tenang, 62 op enrage), ring 5 frame (13/14 op),
+  Q ground 4, Q foreground 4 (0..168 op), W 4 (dengan dan tanpa target), E 5 (0..39 op,
+  termasuk target jauh yang dijepit). `tests/urgharun_skill_fx_checks.gd` mereplay semuanya,
+  memeriksa struktur (jumlah ember, elips ekstra saat cast, polygon batu, frame kosong),
+  gate, dan wiring view; pesan gagal menyebut label frame + indeks op + kedua op.
+  `tests/painter_scene_checks.gd` membuktikan scene hidup melukis LAYER 1 tanpa cast dan
+  layer Q (ground + foreground). Suite terdaftar di `tests/run_all.gd`, command oracle di
+  workflow, pin 9bq6 (34 cek) di `tests/validate_project.py`.
+
+Validasi lokal: `validate_project.py` -> PASS 21125 static checks; `gdparse`/`gdlint`/
+`gdformat --check` bersih; oracle deterministik; `git diff --check` OK. Godot tidak tersedia
+lokal; native suite dan review visual menunggu CI.
+
+Batas slice ini:
+- Elips tetap aproksimasi polygon dan alpha tetap ditulis apa adanya (blending normal di
+  Godot) seperti slice sebelumnya; bukan klaim pixel parity.
+- `boss_presentation_target()` menjalankan pemilihan target yang sama dengan AI, tetapi
+  dipanggil dari painter: bila AI memakai target lain pada frame itu (mis. target skill
+  khusus), W/E bisa memakai titik yang sedikit berbeda. Tidak ada mutasi state.
+- Tidak termasuk: `_draw_basic_attack_fx` (swing basic attack butuh state
+  `_urg_attack_progress` yang belum dibawa `BossState`), aura enrage ber-cache `Boss.draw`,
+  boss lain, `_LIVE_FX_HEROES`, rebake atlas, dan resep AI yang meng-cast skill urgharun.
 
 ## Slice 9bi2 — paritas visual tactical commands
 

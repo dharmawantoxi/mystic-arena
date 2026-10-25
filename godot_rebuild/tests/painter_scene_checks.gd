@@ -136,14 +136,50 @@ func _check_realm(tree: SceneTree, view, boss, check: Callable) -> void:
 ## only wears urgharun's type for these frames; no tick runs, so its AI never sees the swap.
 func _check_urgharun_enrage(tree: SceneTree, view, boss, check: Callable) -> void:
 	check.call(
-		view.boss_enrage_fx_draws == 0 and view.boss_enrage_ground_draws == 0,
-		"No other boss skill painted an enrage layer"
+		(
+			view.boss_enrage_fx_draws == 0
+			and view.boss_enrage_ground_draws == 0
+			and view.boss_aura_fx_draws == 0
+			and view.boss_skill_ground_draws == 0
+			and view.boss_skill_fg_draws == 0
+		),
+		"No other boss skill painted an urgharun FX layer"
 	)
 	var source_type: String = boss.boss_type
 	var source_skill: String = boss.active_skill
 	var source_timer: int = boss.active_skill_timer
 	boss.boss_type = "urgharun"
 	boss.timer = 0
+	# Layer 9bq6: LAYER 1 (fury aura + ground ring) draws on every urgharun frame, casting or
+	# not, and the Q cast adds its ground rings and debris.
+	boss.active_skill = ""
+	var aura_before: int = view.boss_aura_fx_draws
+	for _frame in range(6):
+		await tree.process_frame
+		if view.boss_aura_fx_draws > aura_before:
+			break
+	check.call(
+		view.boss_aura_fx_draws > aura_before,
+		"Urgharun painted its fury aura and ground ring without a cast"
+	)
+	check.call(view.boss_aura_fx_ops > 0, "The LAYER 1 ops reached the painter")
+	boss.active_skill = "q"
+	var q_ground_before: int = view.boss_skill_ground_draws
+	var q_fg_before: int = view.boss_skill_fg_draws
+	for phase in [55, 30, 12, 1]:
+		boss.active_skill_timer = int(phase)
+		for _frame in range(4):
+			await tree.process_frame
+			if view.boss_skill_fg_draws > q_fg_before:
+				break
+	check.call(
+		view.boss_skill_ground_draws > q_ground_before,
+		"Urgharun's Q painted its ground shockwave layer"
+	)
+	check.call(
+		view.boss_skill_fg_draws > q_fg_before and view.boss_skill_fg_ops > 0,
+		"Urgharun's Q painted its debris foreground layer"
+	)
 	boss.active_skill = "r"
 	var phases := [80, 60, 40, 20, 1]
 	var painted := 0
