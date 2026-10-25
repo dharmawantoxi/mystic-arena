@@ -5163,6 +5163,83 @@ check("_check_ability(check, data)" in _ba_checks and "_check_enrage(check, data
       and "func _report(" in _ba_checks,
       "9bq7 the aura suite must replay each band, the wiring and name a first mismatch")
 
+# ── Layer 9bq8: urgharun's basic-attack FX and the per-frame swing clock ──
+from urgharun_basic_attack_source_oracle import source_fixture as urgharun_basic_fixture
+_ub_path = ROOT / "tests/fixtures/urgharun_basic_attack_source.json"
+_ub_checks = (ROOT / "tests/urgharun_basic_attack_checks.gd").read_text(encoding="utf-8")
+_ub_clock = (ROOT / "scripts/ui/urgharun_attack_clock.gd").read_text(encoding="utf-8")
+_ub_src = (ROOT.parent / "bosses/level40.py").read_text(encoding="utf-8")
+_ub_urg = _ub_src[_ub_src.index("class _NS_urgharun:"):_ub_src.index("class _NS_yhoranth:")]
+check('const UrgharunBasicAttackChecks = preload("res://tests/urgharun_basic_attack_checks.gd")'
+      in ai_tests and "UrgharunBasicAttackChecks.new().run(_check)" in ai_tests,
+      "9bq8 urgharun basic-attack suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/urgharun_basic_attack_source_oracle.py" in workflow,
+      "9bq8 CI must run the basic-attack / swing-clock source oracle")
+check(_ub_path.is_file(), "9bq8 urgharun basic-attack fixture must exist")
+if _ub_path.is_file():
+    _ub = json.loads(_ub_path.read_text(encoding="utf-8"))
+    check(urgharun_basic_fixture() == _ub,
+          "9bq8 urgharun basic-attack fixture must not drift from bosses/level40.py")
+    _ub_frames = _ub["fx_frames"]
+    _ub_steps = sum(len(run["steps"]) for run in _ub["clock_runs"])
+    check(len(_ub_frames) == 11
+          and sum(len(frame["ops"]) for frame in _ub_frames) == 1132
+          and len(_ub["clock_runs"]) == 5 and _ub_steps == 52
+          and _ub["attack_duration"] == 28,
+          "9bq8 oracle must pin 11 frames / 1132 ops and 5 clock runs / 52 steps")
+    check([len(frame["ops"]) for frame in _ub_frames]
+          == [6, 8, 10, 246, 246, 246, 31, 31, 31, 31, 246],
+          "9bq8 oracle must pin the wind-up, slash and impact op counts")
+    check(_ub_frames[0]["ops"][0]["color"][3] == 0
+          and any(frame["target"] is None for frame in _ub_frames)
+          and any(frame["target"] is not None for frame in _ub_frames),
+          "9bq8 oracle must pin the transparent first wind-up frame and both target branches")
+check("def _draw_basic_attack_fx(surface, boss, x, y):" in _ub_urg
+      and "def _update_urg_attack_anim(boss):" in _ub_urg
+      and "if attacking and not active_skill:" in _ub_urg
+      and "_NS_urgharun._update_urg_attack_anim(boss)" in _ub_urg,
+      "9bq8 the source must still advance the clock in draw and gate the FX on no cast")
+_ub_layout = (ROOT / "scripts/ui/urgharun_skill_fx_layout.gd").read_text(encoding="utf-8")
+check("const ATTACK_DURATION := 28" in _ub_layout
+      and "const WHITE := [255, 255, 255]" in _ub_layout
+      and "static func basic_attack_ops(" in _ub_layout
+      and "if progress < 0.3:" in _ub_layout and "elif progress < 0.7:" in _ub_layout
+      and "var rings := int(3.0 + windup * 3.0)" in _ub_layout
+      and "var start_angle := deg_to_rad(-70.0 if facing == 1 else -110.0)" in _ub_layout
+      and "for radius in range(4, 0, -1):" in _ub_layout
+      and "var spark_r := float(arc_radius) + sin(phase * 3.0 + float(index)) * 8.0" in _ub_layout
+      and "if distance > 80.0:" in _ub_layout,
+      "9bq8 the layout must mirror the source wind-up, slash arc, sparks and melee clamp")
+check("const ATTACK_DURATION := 28" in _ub_clock and "const MIN_COOLDOWN := 2" in _ub_clock
+      and "var just_reset := previous > cooldown - 5 and timer < 3" in _ub_clock
+      and "var near_max := timer >= cooldown - 1" in _ub_clock
+      and "if (just_reset or near_max) and not active:" in _ub_clock
+      and "if frame >= ATTACK_DURATION:" in _ub_clock,
+      "9bq8 the swing clock must mirror `_update_urg_attack_anim`")
+check("func urgharun_attack_clock(boss: BossState) -> UrgharunAttackClock:" in _bs_view
+      and "func urgharun_attack_clock_step(boss: BossState) -> void:" in _bs_view
+      and "func urgharun_basic_attack_draw_ops(boss: BossState) -> Array:" in _bs_view
+      and "urgharun_attack_clock(boss).advance(boss.timer, boss.attack_cooldown)" in _bs_view
+      and "clock.active or not boss.active_skill.is_empty()" in _bs_view,
+      "9bq8 the view must advance the clock and gate the FX from live state")
+_ub_draw = _bs_view[_bs_view.index("func _draw_boss(boss: BossState)"):
+                    _bs_view.index("func _draw_boss_plain(")]
+check(_ub_draw.index("urgharun_attack_clock_step(boss)")
+      < _ub_draw.index("boss_ability_aura_draw_ops(boss)")
+      and "var basic_attack_ops := urgharun_basic_attack_draw_ops(boss)" in _ub_draw
+      and _ub_draw.index("urgharun_basic_attack_draw_ops(boss)")
+      < _ub_draw.index("urgharun_skill_fg_draw_ops(boss)")
+      < _ub_draw.index("urgharun_enrage_draw_ops(boss)")
+      and "boss_basic_attack_fg_ops += basic_attack_ops.size()" in _ub_draw,
+      "9bq8 the view must advance the clock first and paint the FX before the skill layers")
+check("view.boss_basic_attack_fg_draws > draws_before" in _us_painter
+      and "view.boss_basic_attack_fg_draws == gated_before" in _us_painter,
+      "9bq8 the painter suite must paint the swing and honour the cast gate")
+check("_check_frames(check, data)" in _ub_checks and "_check_phases(check, data)" in _ub_checks
+      and "_check_clock(check, data)" in _ub_checks
+      and "_check_view_wiring(check, data)" in _ub_checks and "func _report(" in _ub_checks,
+      "9bq8 the basic-attack suite must replay the frames, the clock and the view")
+
 # ── Layer 9bi2: tactical command visuals (gather marker, feedback banner, floating text) ──
 from tactical_draw_source_oracle import source_fixture as tactical_draw_fixture
 _td_path = ROOT / "tests/fixtures/tactical_draw_source.json"

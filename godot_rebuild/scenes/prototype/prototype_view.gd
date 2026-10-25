@@ -30,6 +30,7 @@ const NyxarethRealmLayout = preload("res://scripts/ui/nyxareth_realm_layout.gd")
 const UrgharunEnrageFxLayout = preload("res://scripts/ui/urgharun_enrage_fx_layout.gd")
 const UrgharunEnrageGroundLayout = preload("res://scripts/ui/urgharun_enrage_ground_layout.gd")
 const BossAuraFxLayout = preload("res://scripts/ui/boss_aura_fx_layout.gd")
+const UrgharunAttackClock = preload("res://scripts/ui/urgharun_attack_clock.gd")
 const UrgharunSkillFxLayout = preload("res://scripts/ui/urgharun_skill_fx_layout.gd")
 const TacticalLayout = preload("res://scripts/ui/tactical_layout.gd")
 const GoldHudLayout = preload("res://scripts/ui/gold_hud_layout.gd")
@@ -102,6 +103,10 @@ var boss_enrage_aura_draws := 0
 var boss_enrage_aura_ops := 0
 var boss_true_aura_draws := 0
 var boss_true_aura_ops := 0
+## Layer 9bq8: urgharun's basic-attack FX layer plus the per-boss swing clocks that drive it.
+var boss_basic_attack_fg_draws := 0
+var boss_basic_attack_fg_ops := 0
+var boss_attack_clocks := {}
 ## The tactical banner border (layer 9bi2): 2 px, 6 px corners, drawn inside its box.
 var tactical_border := StyleBoxFlat.new()
 ## Layer 9bv2: pygame skips `_draw_gold_hud` while the wide-screen side panel shows the
@@ -1524,6 +1529,10 @@ func _draw_boss(boss: BossState) -> void:
 	if boss.entrance_timer > 0:
 		_draw_boss_entrance(boss)
 		return
+	# Layer 9bq8: `draw_urgharun` advances the swing clock before it paints anything, and only
+	# when the renderer runs (the entrance branch above returns before it), so this stays in the
+	# same place: once per painted frame, before every layer of the boss.
+	urgharun_attack_clock_step(boss)
 	# Layer 9bq7: `Boss.draw` opens with the cached aura block - the ability aura while
 	# `ability_active`, the enrage aura once `is_enraged`, then the extra true-boss aura - and all
 	# three sit under everything else the boss paints, so they keep the source order here.
@@ -1587,6 +1596,14 @@ func _draw_boss(boss: BossState) -> void:
 		# `Boss.draw`: the bar sits 6 px above the sprite top (`BOSS_LABEL_TOP`).
 		var head_top := float(BossArt.label_top(boss.boss_type, int(radius)))
 		bar_top = point.y - head_top - 6.0 - bar_height
+	# Layer 9bq8: `_draw_basic_attack_fx` is the first LAYER 4 entry, gated on
+	# `attacking and not active_skill`, so it lands above the body and below the skill FX.
+	var basic_attack_ops := urgharun_basic_attack_draw_ops(boss)
+	if not basic_attack_ops.is_empty():
+		boss_basic_attack_fg_draws += 1
+		boss_basic_attack_fg_ops += basic_attack_ops.size()
+		for op in basic_attack_ops:
+			_draw_intro_op(op)
 	# Layer 9bq6: the Q/W/E foreground FX sit in the same source slot as the R layer below,
 	# over the body and under the HP bar and name plate that `Boss.draw` adds next.
 	var skill_fg_ops := urgharun_skill_fg_draw_ops(boss)
@@ -1636,6 +1653,41 @@ func nyxareth_realm_draw_ops(boss: BossState) -> Array:
 		return []
 	return NyxarethRealmLayout.ops(
 		boss.active_skill_timer, boss.pulse, NyxarethRealmLayout.SCREEN_SIZE
+	)
+
+
+## Layer 9bq8: the swing clock of one boss (`_update_urg_attack_anim` state). Created on demand;
+## a fresh clock is idle and reports progress 0.
+func urgharun_attack_clock(boss: BossState) -> UrgharunAttackClock:
+	var key := boss.get_instance_id()
+	if not boss_attack_clocks.has(key):
+		boss_attack_clocks[key] = UrgharunAttackClock.new()
+	return boss_attack_clocks[key]
+
+
+## Layer 9bq8: advance that clock once for the frame about to be painted. Only urgharun owns the
+## source clock, so other boss types keep no state.
+func urgharun_attack_clock_step(boss: BossState) -> void:
+	if not UrgharunSkillFxLayout.active(boss.boss_type):
+		return
+	urgharun_attack_clock(boss).advance(boss.timer, boss.attack_cooldown)
+
+
+## Layer 9bq8: `_draw_basic_attack_fx` while the clock says the source is `attacking` and no
+## `active_skill` is casting. The target comes from the same read-only query as the W/E layers.
+func urgharun_basic_attack_draw_ops(boss: BossState) -> Array:
+	if not UrgharunSkillFxLayout.active(boss.boss_type):
+		return []
+	var clock: UrgharunAttackClock = boss_attack_clocks.get(boss.get_instance_id())
+	if clock == null or not clock.active or not boss.active_skill.is_empty():
+		return []
+	return UrgharunSkillFxLayout.basic_attack_ops(
+		int(boss.position.x),
+		int(boss.position.y),
+		boss.direction,
+		clock.progress,
+		urgharun_target_point(),
+		boss.pulse
 	)
 
 

@@ -98,6 +98,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		await _check_realm(tree, view, boss, check)
 		await _check_urgharun_enrage(tree, view, boss, check)
 		await _check_boss_auras(tree, view, boss, check)
+		await _check_urgharun_basic_attack(tree, view, boss, check)
 	else:
 		check.call(false, "The suite could not spawn a boss to draw")
 	app.show_menu()
@@ -143,6 +144,7 @@ func _check_urgharun_enrage(tree: SceneTree, view, boss, check: Callable) -> voi
 			and view.boss_aura_fx_draws == 0
 			and view.boss_skill_ground_draws == 0
 			and view.boss_skill_fg_draws == 0
+			and view.boss_basic_attack_fg_draws == 0
 		),
 		"No other boss skill painted an urgharun FX layer"
 	)
@@ -303,6 +305,46 @@ func _check_boss_auras(tree: SceneTree, view, boss, check: Callable) -> void:
 		"The true-boss aura painted its filled rings"
 	)
 	boss.boss_class = source_class
+
+
+## Layer 9bq8: the live scene arms urgharun's swing clock from `boss.timer`/`attack_cooldown`
+## and paints `_draw_basic_attack_fx` while no skill is casting - the source gate is
+## `attacking and not active_skill`. No tick runs, so the boss keeps the timer set here.
+func _check_urgharun_basic_attack(tree: SceneTree, view, boss, check: Callable) -> void:
+	var source_type: String = boss.boss_type
+	var source_skill: String = boss.active_skill
+	var source_timer: int = boss.timer
+	var source_cooldown: int = boss.attack_cooldown
+	boss.boss_type = "urgharun"
+	boss.active_skill = ""
+	boss.attack_cooldown = 38
+	# `near_max = timer >= cooldown - 1` arms the swing on the next painted frame.
+	boss.timer = 37
+	var draws_before: int = view.boss_basic_attack_fg_draws
+	for _frame in range(6):
+		await tree.process_frame
+		if view.boss_basic_attack_fg_draws > draws_before:
+			break
+	check.call(
+		view.boss_basic_attack_fg_draws > draws_before,
+		"Urgharun's armed basic attack painted its claw-swing layer"
+	)
+	check.call(view.boss_basic_attack_fg_ops > 0, "The basic-attack ops reached the painter")
+	# The clock keeps ticking during a cast (the source advances it before choosing a pose) but
+	# the FX layer is gated on `not active_skill`.
+	boss.active_skill = "q"
+	boss.active_skill_timer = 30
+	var gated_before: int = view.boss_basic_attack_fg_draws
+	for _frame in range(4):
+		await tree.process_frame
+	check.call(
+		view.boss_basic_attack_fg_draws == gated_before,
+		"A skill cast suppresses the basic-attack FX in the live scene"
+	)
+	boss.boss_type = source_type
+	boss.active_skill = source_skill
+	boss.timer = source_timer
+	boss.attack_cooldown = source_cooldown
 
 
 func _seed_hero_projectile(world, hero) -> bool:

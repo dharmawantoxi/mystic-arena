@@ -21,6 +21,8 @@ extends RefCounted
 ## nothing on its first tick (`progress == 0`), and E draws nothing once `slash_t > 1.2`.
 
 const BOSS_TYPE := "urgharun"
+## `_update_urg_attack_anim` counts a swing down from 28 frames.
+const ATTACK_DURATION := 28
 const SKILL_Q := "q"
 const SKILL_W := "w"
 const SKILL_E := "e"
@@ -44,6 +46,7 @@ const FURY_SHINE := [255, 230, 200]
 const FUR_DARKEST := [8, 8, 12]
 const FUR_MID := [55, 55, 65]
 const SHADOW_DEEP := [2, 1, 1]
+const WHITE := [255, 255, 255]
 
 
 static func active(boss_type: String) -> bool:
@@ -310,6 +313,115 @@ static func furyswipes_ops(
 			out.append(_line([start_x, start_y], [end_x, end_y], FURY_MID, alpha, 1))
 			out.append(_line([start_x + 2, start_y], [end_x - 2, end_y], FURY_LIGHT, alpha, 1))
 		out.append(_rect([slash_cx + facing * 8, slash_cy, 2, 2], FURY_SHINE, alpha))
+	return out
+
+
+## LAYER 4 (basic attack): `_draw_basic_attack_fx`, gated in the source on
+## `attacking and not active_skill`. `progress` comes from the swing clock
+## (`urgharun_attack_clock.gd`), `target` is the source `boss.target` as `[x, y]` (empty when the
+## boss has none, which falls back to `x + facing * 60`), and a target farther than 80 px is
+## pulled back to 60 px on the same bearing.
+static func basic_attack_ops(
+	x: int, y: int, direction: int, progress_value: float, target: Array, phase: float
+) -> Array:
+	var progress := clampf(progress_value, 0.0, 1.0)
+	var facing := direction
+	var tx := x + facing * 60
+	var ty := y
+	if target.size() >= 2:
+		tx = int(target[0])
+		ty = int(target[1])
+	# Melee range clamp: `if dist > 80: tx = x + int(dx / dist * 60)`.
+	var dx := tx - x
+	var dy := ty - y
+	var distance := sqrt(float(dx * dx + dy * dy))
+	if distance > 80.0:
+		tx = x + int(float(dx) / distance * 60.0)
+		ty = y + int(float(dy) / distance * 60.0)
+	var out: Array = []
+	if progress < 0.3:
+		# Wind-up: `_aacircle` rings building at both claws, alpha `150 * t * r / 5`.
+		var windup := progress / 0.3
+		for x_offset in [-8, 12]:
+			var claw_x := x + int(x_offset) * facing
+			var claw_y := y + 8
+			var rings := int(3.0 + windup * 3.0)
+			for radius in range(rings, 0, -1):
+				var alpha := _alpha(150.0 * windup * float(radius) / 5.0)
+				out.append(_circle([claw_x, claw_y], radius, FURY_LIGHT, alpha, 0))
+	elif progress < 0.7:
+		# Slash: five nested arcs, each ten segments of four stacked lines, then the bright tip
+		# and eight blood sparks.
+		var slash := (progress - 0.3) / 0.4
+		var slash_cx := x + facing * 25
+		var slash_cy := y - 2
+		var arc_radius := 32
+		var start_angle := deg_to_rad(-70.0 if facing == 1 else -110.0)
+		var end_angle := deg_to_rad(70.0 if facing == 1 else 250.0)
+		var current_angle := start_angle + (end_angle - start_angle) * slash
+		for offset in [-12, -6, 0, 6, 12]:
+			var num_pts := 10
+			var arc_radius_here := float(arc_radius + int(offset))
+			var previous: Array = []
+			for step in range(num_pts + 1):
+				var step_t := float(step) / float(num_pts)
+				var angle := start_angle + (current_angle - start_angle) * step_t
+				var px := slash_cx + int(cos(angle) * arc_radius_here) * facing
+				var py := slash_cy + int(sin(angle) * arc_radius_here)
+				if not previous.is_empty():
+					var alpha := _alpha(230.0 * step_t * (1.0 - slash * 0.3))
+					out.append(_line(previous, [px, py], FURY_DARK, alpha, 3))
+					out.append(_line(previous, [px, py], FURY_MID, alpha, 2))
+					out.append(_line(previous, [px, py], FURY_LIGHT, alpha, 1))
+					out.append(_line(previous, [px, py], FURY_SHINE, alpha, 1))
+				previous = [px, py]
+			var tip_x := slash_cx + int(cos(current_angle) * arc_radius_here) * facing
+			var tip_y := slash_cy + int(sin(current_angle) * arc_radius_here)
+			# `for r in range(4, 0, -1)` starts at alpha 0: the outermost tip ring is invisible
+			# but still drawn, exactly like the source.
+			for radius in range(4, 0, -1):
+				out.append(
+					_circle([tip_x, tip_y], radius, FURY_HOT, _alpha(240.0 * (4 - radius) / 4.0), 0)
+				)
+			out.append(_rect([tip_x, tip_y, 1, 1], FURY_SHINE, 255))
+			out.append(_rect([tip_x, tip_y, 1, 1], WHITE, 255))
+		for index in range(8):
+			var spark_angle := (
+				start_angle + (current_angle - start_angle) * (0.3 + float(index % 5) * 0.15)
+			)
+			var spark_r := float(arc_radius) + sin(phase * 3.0 + float(index)) * 8.0
+			var sx := slash_cx + int(cos(spark_angle) * spark_r) * facing
+			var sy := slash_cy + int(sin(spark_angle) * spark_r)
+			out.append(_rect([sx, sy, 2, 2], FURY_HOT, 255))
+			out.append(_rect([sx, sy, 1, 1], FURY_SHINE, 255))
+	else:
+		# Impact: three rings, the hot core, five scratch marks and ten burst particles.
+		var impact := (progress - 0.7) / 0.3
+		var impact_r := int(8.0 + impact * 22.0)
+		var alpha := _alpha(240.0 * (1.0 - impact))
+		out.append(_circle([tx, ty], impact_r + 2, FURY_DARK, alpha, 3))
+		out.append(_circle([tx, ty], impact_r, FURY_MID, alpha, 2))
+		out.append(_circle([tx, ty], maxi(1, impact_r - 5), FURY_LIGHT, alpha, 1))
+		var core_r := maxi(1, int(6.0 * (1.0 - impact)))
+		out.append(_circle([tx, ty], core_r + 2, FURY_HOT, alpha, 0))
+		out.append(_circle([tx, ty], maxi(1, core_r), FURY_SHINE, alpha, 0))
+		out.append(_rect([tx, ty, 1, 1], WHITE, 255))
+		var scratch_len := int(16.0 * (1.0 - impact * 0.3))
+		var half_scratch := floori(float(scratch_len) / 2.0)
+		var offsets := [-12, -6, 0, 6, 12]
+		for index in range(offsets.size()):
+			var start_sx := tx - half_scratch * facing
+			var end_sx := tx + half_scratch * facing
+			var sy_pos := ty + int(offsets[index]) + int(sin(float(index)) * 2.0)
+			out.append(_line([start_sx, sy_pos - 1], [end_sx, sy_pos - 1], FURY_DARKEST, alpha, 2))
+			out.append(_line([start_sx, sy_pos], [end_sx, sy_pos], FURY_LIGHT, alpha, 1))
+			out.append(_line([start_sx + 2, sy_pos], [end_sx - 2, sy_pos], FURY_SHINE, alpha, 1))
+		for index in range(10):
+			var particle_angle := float(index) * PI / 5.0
+			var particle_radius := int(float(impact_r) * (0.6 + float(index % 3) * 0.2))
+			var px := tx + int(cos(particle_angle) * float(particle_radius))
+			var py := ty + int(sin(particle_angle) * float(particle_radius) * 0.8)
+			out.append(_rect([px, py, 2, 2], FURY_HOT, alpha))
 	return out
 
 

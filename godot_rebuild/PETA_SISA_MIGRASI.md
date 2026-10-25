@@ -3566,6 +3566,59 @@ Batas slice ini:
   ber-cache `Boss.draw`, perluasan ke `_LIVE_FX_HEROES`/boss lain, rebake atlas, dan resep AI
   yang meng-cast skill urgharun.
 
+## Slice 9bq8 — FX basic attack urgharun dan jam ayunan `_update_urg_attack_anim`
+
+Melengkapi FX urgharun yang terakhir. `draw_urgharun` membuka dengan
+`_update_urg_attack_anim(boss)` — jam presentasi yang disimpan di bos (`_urg_attack_active`,
+`_urg_attack_frame`, `_urg_previous_timer`, `_urg_attack_progress`) — lalu LAYER 4 memanggil
+`_draw_basic_attack_fx` **hanya bila** `attacking and not active_skill`.
+
+- `scripts/ui/urgharun_attack_clock.gd`: port `_update_urg_attack_anim`. `cooldown =
+  max(2, attack_cooldown)` (**mentah**, bukan yang sudah diperlambat), `just_reset = previous >
+  cooldown - 5 and timer < 3`, `near_max = timer >= cooldown - 1`, arm saat salah satunya benar
+  dan belum aktif, `frame += 1` lalu lepas di 28 frame, `previous_timer` selalu diperbarui,
+  `progress = min(1.0, frame / 28)` saat aktif. Karena `timer` diisi dari cooldown efektif
+  sementara pembandingnya mentah, bos yang diperlambat meng-arm lebih awal - kuirk sumber yang
+  dipaku oracle.
+- `scripts/ui/urgharun_skill_fx_layout.gd::basic_attack_ops` (ditambah `ATTACK_DURATION = 28`,
+  `WHITE`): tiga fase sumber — wind-up `< 0.3` (cincin `fury_light` di kedua cakar, alpha
+  `150*t*r/5`, frame pertama transparan), slash `0.3..0.7` (5 busur x 10 segmen x 4 garis
+  bertumpuk 3/2/1/1 px, tip 4 cincin `fury_hot` + 2 kotak, 8 percikan), impact `>= 0.7`
+  (3 cincin, inti panas, 5 goresan, 10 partikel). Target `boss.target` bila hidup, jika tidak
+  `(x + facing*60, y)`, dan target > 80 px ditarik ke 60 px pada arah yang sama.
+- `prototype_view.gd`: `urgharun_attack_clock(boss)` (satu jam per instance bos),
+  `urgharun_attack_clock_step(boss)` dipanggil di awal `_draw_boss` **setelah** cabang entrance
+  (sumber melewati renderer saat entrance, jadi jamnya pun tidak maju), dan
+  `urgharun_basic_attack_draw_ops(boss)` yang membaca jam + gerbang `not active_skill`. Layer
+  dilukis sebelum FX skill Q/W/E/R. Penghitung baru: `boss_basic_attack_fg_draws/_ops`.
+- Bukti: `tests/urgharun_basic_attack_source_oracle.py` memanen `_draw_basic_attack_fx`,
+  `_update_urg_attack_anim`, `_alpha`, `_aacircle`, PALETTE dan menjalankannya di shim
+  `draw_recorder.py` -> **11 frame / 1132 op** (wind-up 6/8/10, slash 3x246, impact 4x31, plus
+  target jauh dan tanpa target) dan **5 run jam / 52 langkah** (siklus serangan, arm dini karena
+  slow, `just_reset`, jendela penuh 28 frame, cooldown `max(2, ...)`).
+  `tests/urgharun_basic_attack_checks.gd` me-replay semuanya plus gerbang dan wiring view;
+  `tests/painter_scene_checks.gd` membuktikan scene hidup melukis ayunan setelah jam di-arm dari
+  `boss.timer` dan berhenti saat ada cast. Suite terdaftar di `tests/run_all.gd`, command oracle
+  di workflow, pin 9bq8 (37 cek) di `tests/validate_project.py`.
+
+Validasi lokal: `validate_project.py` -> PASS 21195 static checks (baseline 21158); `gdparse`/
+`gdlint`/`gdformat --check` bersih; oracle deterministik; `git diff --check` OK. Godot tidak
+tersedia lokal; native suite dan review visual menunggu CI.
+
+Batas slice ini:
+- Jam sumber maju **satu kali per frame yang dilukis**; rebuild memanggilnya di awal `_draw_boss`
+  dengan aturan yang sama (sekali per frame, sebelum semua layer, dan tidak saat entrance).
+  Kalau `_draw` dipanggil lebih dari sekali dalam satu frame, jamnya akan maju lebih cepat
+  daripada sumber; tidak ada mekanisme penjaga.
+- Jam disimpan di view per instance bos (`boss_attack_clocks`), bukan di `BossState`, supaya
+  state simulasi tidak berubah; entri tidak pernah dibuang (jumlahnya sebanyak bos yang pernah
+  dilukis dalam satu sesi view).
+- Pose badan saat ayunan tetap memakai atlas (`BossAnim` memilih `atk*` dari `timer > 0`),
+  sedangkan sumber memilih pose dari `_urg_attack_active`; perbedaan pemilihan pose badan ini
+  bukan bagian slice FX dan belum diseragamkan.
+- Tidak termasuk: `_draw_entrance`, FX boss lain, `_LIVE_FX_HEROES`, rebake atlas, resep AI yang
+  meng-cast skill urgharun. Alpha tetap ditulis apa adanya dengan blending normal Godot.
+
 ## Slice 9bq7 — blok aura ber-cache `Boss.draw` (aura kemampuan, enrage, true boss)
 
 `bosses/base_boss.py::Boss.draw` membuka render boss dengan tiga aura cincin yang surface-nya
