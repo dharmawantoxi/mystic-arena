@@ -5405,6 +5405,36 @@ check("_check_frames(check, data)" in _be_checks and "_check_shape(check, data)"
       and "_check_view_wiring(check, data)" in _be_checks and "func _report(" in _be_checks,
       "9bq11 the entrance suite must replay the frames, the shape and the view")
 
+# ── Layer 9bq12: no source recipe casts Urgharun's skills, so its FX stay unreachable ──
+from urgharun_ai_reach_source_oracle import source_fixture as urgharun_reach_fixture
+_ua_path = ROOT / "tests/fixtures/urgharun_ai_reach_source.json"
+_ua_checks = (ROOT / "tests/urgharun_ai_reach_checks.gd").read_text(encoding="utf-8")
+_ua_ai = (ROOT / "scripts/match/boss_ai.gd").read_text(encoding="utf-8")
+check('const UrgharunAiReachChecks = preload("res://tests/urgharun_ai_reach_checks.gd")' in ai_tests
+      and "UrgharunAiReachChecks.new().run(_check)" in ai_tests,
+      "9bq12 urgharun reach suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/urgharun_ai_reach_source_oracle.py" in workflow,
+      "9bq12 CI must run the urgharun reach source oracle")
+check(_ua_path.is_file(), "9bq12 urgharun reach fixture must exist")
+if _ua_path.is_file():
+    _ua = json.loads(_ua_path.read_text(encoding="utf-8"))
+    check(urgharun_reach_fixture() == _ua,
+          "9bq12 urgharun reach fixture must not drift from base_boss.py and boss_data.py")
+    check(int(_ua["dispatch_count"]) == 79
+          and int(_ua["smart_ai_method_count"]) == 79
+          and not _ua["dispatch_has_subject"]
+          and not _ua["smart_ai_has_subject"],
+          "9bq12 urgharun must stay outside the 79 arm dispatch chain and its recipes")
+    check(_ua["subject_writers"] == []
+          and int(_ua["subject_reset_count"]) == 2
+          and _ua["stats"]["skill_count"] == 8,
+          "9bq12 the boss must own skill stats but no active_skill writer")
+check("urgharun" not in _ua_ai and "_generic(world, boss, enemies)" in _ua_ai,
+      "9bq12 the native AI must keep the generic fallback and no urgharun arm")
+check("BossAI.tick(world, boss, enemies, enemy, 40.0)" in _ua_checks
+      and "casts == 0" in _ua_checks and "generic" in _ua_checks,
+      "9bq12 the suite must run the live AI and prove it never casts")
+
 # ── Layer 9bi2: tactical command visuals (gather marker, feedback banner, floating text) ──
 from tactical_draw_source_oracle import source_fixture as tactical_draw_fixture
 _td_path = ROOT / "tests/fixtures/tactical_draw_source.json"

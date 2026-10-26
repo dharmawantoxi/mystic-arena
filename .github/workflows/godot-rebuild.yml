@@ -152,6 +152,7 @@ jobs:
           python godot_rebuild/tests/boss_debuff_fx_source_oracle.py
           python godot_rebuild/tests/entity_debuff_fx_source_oracle.py
           python godot_rebuild/tests/boss_entrance_draw_source_oracle.py
+          python godot_rebuild/tests/urgharun_ai_reach_source_oracle.py
           python godot_rebuild/tests/tactical_draw_source_oracle.py
           python godot_rebuild/tests/gold_hud_draw_source_oracle.py
           python godot_rebuild/tests/shop_hint_draw_source_oracle.py

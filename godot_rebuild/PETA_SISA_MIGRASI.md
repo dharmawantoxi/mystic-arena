@@ -3687,6 +3687,38 @@ Batas slice ini: `measure` tetap menjadi parameter karena metrik font Godot tida
 pygame, jadi posisi vertikal teks bisa bergeser beberapa piksel dari sumber;
 `entrance_presentation_state` di `BossState` dibiarkan (kontrak state, bukan jalur gambar baru).
 
+----
+
+## Slice 9bq12 - capaian FX skill urgharun (resep AI: tidak ada di sumber)
+
+Pertanyaan yang tersisa setelah 9bq4-9bq9: siapa yang boleh meng-cast Q/W/E/R urgharun? Jawabannya
+datang dari sumber, bukan dari selera: `bosses/level40.py::draw_urgharun` hanya melukis lapisan itu
+saat `active_skill` berisi kuncinya, dan satu-satunya penulis `Boss.active_skill` di
+`bosses/base_boss.py` adalah 79 resep `_smart_ai_*` yang dipanggil dari rantai
+`if/elif self.boss_type == ...` di `Boss.update`. `urgharun` tidak ada di rantai itu dan tidak punya
+resep, jadi di sumber pun keempat lapisan skill-nya tidak pernah tergambar. Menambah resep berarti
+mengarang damage/cooldown baru, bukan migrasi.
+
+- Bukti: `tests/urgharun_ai_reach_source_oracle.py` memanen dengan `ast` (a) rantai dispatch
+  `Boss.update` (79 arm, urutan sumber), (b) daftar metode `_smart_ai_*` (79), (c) semua penulis
+  literal `self.active_skill` (193 fungsi, kunci `q/w/e/r` plus indeks `1-4`), dan (d) statistik
+  urgharun dari `bosses/boss_data.py` (8 kunci skill, `skill_q_cooldown = 425`,
+  `skill_r_damage = 2275`). Oracle gagal keras bila `urgharun` masuk rantai, punya resep, atau ada
+  fungsi `*urg*` yang menulis `active_skill` -> fixture 1 halaman.
+- `tests/urgharun_ai_reach_checks.gd` memaku fakta sumber itu dan menjalankan AI native sungguhan:
+  `BossState.setup("urgharun", ...)` dari `world.boss_table`, target goblin ber-HP besar di 40 px,
+  lalu `BossAI.tick` 900 kali -> `active_skill`/`active_skill_timer` tetap kosong (0 frame cast),
+  `ability_timer` tetap terisi (arm generik `_generic` jalan, boss tidak mati kutu), dan
+  `q_timer` tetap 0 karena tidak ada resep yang mengonsumsinya. Sisi teks memastikan `boss_ai.gd`
+  tidak memuat `"urgharun"` dan tetap punya fallback `_:` -> `_generic`.
+- Terdaftar di `tests/run_all.gd`, command oracle di workflow, pin 9bq12 di
+  `tests/validate_project.py`. Tidak ada perubahan simulasi: slice ini hanya membuktikan dan memaku
+  status "tidak terjangkau" (pola yang sama dengan penutupan 9af -> 9ai).
+
+Konsekuensi: lapisan FX Q/W/E/R urgharun tetap hanya bisa dilihat lewat suite scene yang menyetel
+`active_skill` langsung (sudah ada sejak 9bq6). Kalau nanti resep AI urgharun memang diinginkan
+sebagai fitur baru (bukan paritas), itu perubahan balance terpisah dan harus disetujui eksplisit.
+
 Batas slice ini: jalur fallback marker hero (atlas hero tidak ter-import) dan fallback lingkaran
 minion (atlas minion tidak ter-import) belum melukis indikator, karena keduanya tidak melewati
 painter/sprite yang membawa jam animasi. `_draw_entrance` boss dan resep AI urgharun tetap di luar
