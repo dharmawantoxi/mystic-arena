@@ -3355,8 +3355,9 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
   tanpa rebake atlas, perubahan gameplay atau simulasi.
 - Validasi lokal: `validate_project.py` **PASS 21377**; `gdparse`, `gdlint`,
   `gdformat --check` pada tiga `.gd` yang berubah, dan `git diff --check` **PASS**.
-  CI native dan status review visual dicatat setelah push. Tidak ada Godot lokal;
-  belum mengklaim review visual atau pixel parity.
+  CI native PR #343 run **40338170467**, job **121625247053**, **PASS 15m24s**
+  (`PASS: 1505148 checks; fixed ticks and source parity`). Godot lokal/review visual
+  tidak tersedia; belum mengklaim review visual atau pixel parity.
 
 ## Slice 9d0 — DynamicRenderer (animasi peta dan lingkungan boss)
 
