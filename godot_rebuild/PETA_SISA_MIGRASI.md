@@ -4358,5 +4358,6 @@ Batas: tidak ada Godot lokal untuk runtime atau review visual. Tidak diklaim pix
 - Art/UI-only: tanpa perubahan gameplay, input, cooldown, atlas atau aset.
 - Validasi lokal: `validate_project.py` **PASS 21381**; `gdparse`, `gdlint`,
   `gdformat --check` pada empat `.gd` yang berubah, dan `git diff --check` **PASS**.
-  CI native dicatat setelah push. Godot lokal/review visual tidak tersedia; bukan klaim
-  pixel parity.
+  CI native PR #343 run **40351230732**, job **121671509139**, **PASS 15m1s**
+  (`PASS: 1505161 checks; fixed ticks and source parity`). Godot lokal/review visual
+  tidak tersedia; bukan klaim pixel parity.
