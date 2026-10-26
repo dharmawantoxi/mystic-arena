@@ -112,13 +112,13 @@ func _check_no_cast(check: Callable, data: Dictionary) -> void:
 		return
 	enemy.position = boss.position + Vector2(40, 0)
 	enemy.hp = 1000000.0
-	enemy.max_hp = 1000000
 	var enemies: Array[UnitState] = [enemy]
 	var casts := 0
 	var generic := false
 	for tick in range(TICKS):
 		if not enemy.alive:
 			enemy.alive = true
+			enemy.hp = 1000000.0
 		BossAI.tick(world, boss, enemies, enemy, 40.0)
 		if boss.active_skill != "" or boss.active_skill_timer != 0:
 			casts += 1
