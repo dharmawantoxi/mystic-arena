@@ -10,11 +10,31 @@ static func _fake_measure(text: String, font_size: int) -> Vector2i:
 	return Vector2i(int(font_size * 0.55) * text.length(), font_size)
 
 
+static func _value_equal(actual: Variant, expected: Variant) -> bool:
+	if expected is Dictionary:
+		if not (actual is Dictionary) or actual.size() != expected.size():
+			return false
+		for key in expected:
+			if not actual.has(key) or not _value_equal(actual[key], expected[key]):
+				return false
+		return true
+	if expected is Array:
+		if not (actual is Array) or actual.size() != expected.size():
+			return false
+		for index in range(expected.size()):
+			if not _value_equal(actual[index], expected[index]):
+				return false
+		return true
+	if expected is float or expected is int:
+		return (actual is float or actual is int) and absf(float(actual) - float(expected)) < 1e-6
+	return actual == expected
+
+
 static func _mismatch_detail(actual: Array, expected: Array) -> String:
 	if actual.size() != expected.size():
 		return "size %d != %d" % [actual.size(), expected.size()]
 	for index in range(expected.size()):
-		if actual[index] != expected[index]:
+		if not _value_equal(actual[index], expected[index]):
 			return "op %d got %s, expected %s" % [index, str(actual[index]), str(expected[index])]
 	return "none"
 
