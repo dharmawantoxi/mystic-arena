@@ -114,7 +114,7 @@ static func ops(
 	var beat := pulse(anim_time)
 	var alpha := clampi(int(float(TEXT_ALPHA) * beat), 0, 255)
 	var shadow := clampi(int(float(SHADOW_ALPHA) * beat), 0, 255)
-	var lines: Array = wrap(entrance_text, size_px, measure)
+	var lines: Array = wrap_lines(entrance_text, size_px, measure)
 	var start_y: int = TEXT_START_Y - (lines.size() - 1) * LINE_PACK
 	var index := 0
 	for line in lines:
@@ -132,7 +132,8 @@ static func ops(
 
 ## Greedy word wrap from the source: a word joins the current line while the trial line still
 ## measures at most 1000 px; any remaining word starts a new one.
-static func wrap(text: String, size_px: int, measure: Callable) -> Array:
+## Named `wrap_lines` because `wrap` is a GDScript global utility (value, min, max).
+static func wrap_lines(text: String, size_px: int, measure: Callable) -> Array:
 	var lines: Array = []
 	var current := ""
 	for word in text.split(" ", false):
