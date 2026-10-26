@@ -3742,7 +3742,8 @@ angka data damage atau cooldown.
 
 Validasi lokal: oracle sumber deterministik, `validate_project.py` PASS 21357 static checks,
 `gdparse`/`gdlint`/`gdformat --check` untuk semua GDScript berubah bersih, `git diff --check` OK.
-Godot tidak tersedia lokal; native runtime menunggu CI.
+CI run `40306764441` (job `121517675776`) **pass 15m10s**, notice `PASS: 1505141 checks; fixed
+ticks and source parity`. Godot tidak tersedia lokal; runtime visual tidak dijalankan.
 
 Batas slice ini: resep R-only baru ini satu-satunya perubahan simulasi yang diizinkan; Q/W/E dan
 semua aturan damage/cooldown di luar pemakaian nilai katalog tetap tidak disentuh. Godot tidak ada
