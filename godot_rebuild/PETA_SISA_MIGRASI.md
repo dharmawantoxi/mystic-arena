@@ -4372,10 +4372,13 @@ Batas: tidak ada Godot lokal untuk runtime atau review visual. Tidak diklaim pix
   `TowerHoverLayout` menyusun operasi; `PrototypeView` melukisnya setelah lapisan dunia, sebelum
   overlay HUD. Screen hanya membuat snapshot hover view-only dari posisi mouse dan struktur hidup;
   tidak mengubah pilihan, command, input routing atau simulasi.
-- `TowerHoverDrawChecks` membandingkan semua op dari fixture dan memeriksa view wiring; suite native
-  terdaftar di `run_all.gd`, oracle dipanggil di workflow, dan `validate_project.py` mem-pin sumber,
-  fixture, serta pemanggil layer.
+- `TowerHoverDrawChecks` membandingkan semua op dari fixture (dengan toleransi numerik karena JSON
+  memuat angka sebagai float) dan memeriksa view wiring; suite native terdaftar di `run_all.gd`,
+  oracle dipanggil di workflow, dan `validate_project.py` mem-pin sumber, fixture, serta pemanggil
+  layer.
 - Validasi lokal: `validate_project.py` **PASS 21406**; `gdparse`, `gdlint`,
   `gdformat --check` pada lima `.gd` yang berubah, oracle/`py_compile`, dan `git diff --check`
-  **PASS**. CI native dicatat setelah push. Godot lokal/review visual tidak tersedia; bukan klaim
-  pixel parity.
+  **PASS**. CI native PR #343 run **40370465683**, job **121739503166**, **PASS 15m8s**
+  (`PASS: 1505168 checks; fixed ticks and source parity`). Percobaan CI pertama gagal hanya pada
+  equality int/float fixture; perbandingan tes diperbaiki. Godot lokal/review visual tidak tersedia;
+  bukan klaim pixel parity.
