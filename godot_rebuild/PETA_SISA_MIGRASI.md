@@ -3639,7 +3639,9 @@ bersama:
 Validasi lokal: `validate_project.py` -> PASS 21275 static checks; `gdparse`/`gdlint`/
 `gdformat --check` bersih; oracle deterministik; `git diff --check` OK. Langkah native test di
 workflow memakai `timeout 180`, sedangkan baseline hijau 9bq9 sudah 178 detik, jadi batas itu
-dinaikkan ke `timeout 600` agar suite yang bertambah tidak dipotong di tengah jalan.
+dinaikkan ke `timeout 600` agar suite yang bertambah tidak dipotong di tengah jalan. CI run
+`40265306356` (job `121386299127`) **pass 12m32s** dengan notice
+`PASS: 1505098 checks; fixed ticks and source parity`.
 
 Batas slice ini: jalur fallback marker hero (atlas hero tidak ter-import) dan fallback lingkaran
 minion (atlas minion tidak ter-import) belum melukis indikator, karena keduanya tidak melewati
