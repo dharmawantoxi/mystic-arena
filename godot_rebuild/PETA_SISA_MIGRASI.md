@@ -3675,6 +3675,9 @@ lingkaran aura dan satu `draw_string` tanpa wrap/bayangan pada `(180, 100)`.
   `tests/boss_entrance_draw_checks.gd` me-replay semuanya plus bentuk dan wiring view; terdaftar di
   `tests/run_all.gd`, command oracle di workflow, pin 9bq11 di `tests/validate_project.py`.
 
+Penjaga tambahan: `entrance_timer == 0` menghasilkan op kosong, karena `Boss.draw` hanya memanggil
+`_draw_entrance` selama timer berjalan (tanpa penjaga ini `progress = 1` akan melukis aura alpha 0).
+
 Batas slice ini: `measure` tetap menjadi parameter karena metrik font Godot tidak identik dengan
 pygame, jadi posisi vertikal teks bisa bergeser beberapa piksel dari sumber;
 `entrance_presentation_state` di `BossState` dibiarkan (kontrak state, bukan jalur gambar baru).

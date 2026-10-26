@@ -86,6 +86,10 @@ static func ops(
 	measure: Callable
 ) -> Array:
 	var out: Array = []
+	# `Boss.draw` only reaches `_draw_entrance` while `entrance_timer > 0`; with the timer spent
+	# the boss paints its normal layers instead, so no entrance op exists at all.
+	if entrance_timer <= 0:
+		return out
 	var entrance_progress := progress(entrance_timer, max_timer)
 	var size := aura_radius(radius, entrance_progress)
 	if size > 0:
