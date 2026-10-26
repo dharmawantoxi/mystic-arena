@@ -184,9 +184,10 @@ func _check_view_wiring(check: Callable, data: Dictionary) -> void:
 		_report("Entrance wiring", actual, quarter["ops"])
 	)
 	boss.boss_class = "true"
+	# Same timer against the longer 180 tick entrance: progress 0.5 of a 32 px body.
 	check.call(
 		(
-			int(view.boss_entrance_draw_ops(boss, measure)[0]["radius"]) == 16
+			int(view.boss_entrance_draw_ops(boss, measure)[0]["radius"]) == 32
 			and Layout.max_entrance(true) == 180
 			and Layout.max_entrance(false) == 120
 		),
