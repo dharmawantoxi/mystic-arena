@@ -114,14 +114,14 @@ static func ops(
 	var beat := pulse(anim_time)
 	var alpha := clampi(int(float(TEXT_ALPHA) * beat), 0, 255)
 	var shadow := clampi(int(float(SHADOW_ALPHA) * beat), 0, 255)
-	var lines := wrap(entrance_text, size_px, measure)
-	var start_y := TEXT_START_Y - (lines.size() - 1) * LINE_PACK
+	var lines: Array = wrap(entrance_text, size_px, measure)
+	var start_y: int = TEXT_START_Y - (lines.size() - 1) * LINE_PACK
 	var index := 0
 	for line in lines:
-		var ly := start_y + index * LINE_STEP
+		var ly: int = start_y + index * LINE_STEP
 		var metrics: Vector2 = measure.call(line, size_px)
-		var left := (SCREEN_WIDTH >> 1) - (int(metrics.x) >> 1)
-		var top := ly - (int(metrics.y) >> 1)
+		var left: int = (SCREEN_WIDTH >> 1) - (int(metrics.x) >> 1)
+		var top: int = ly - (int(metrics.y) >> 1)
 		out.append(
 			_text(line, size_px, SHADOW_COLOR, [left + SHADOW_OFFSET, top + SHADOW_OFFSET], shadow)
 		)
@@ -136,7 +136,7 @@ static func wrap(text: String, size_px: int, measure: Callable) -> Array:
 	var lines: Array = []
 	var current := ""
 	for word in text.split(" ", false):
-		var trial := current + " " + word if not current.is_empty() else word
+		var trial: String = current + " " + word if not current.is_empty() else word
 		var metrics: Vector2 = measure.call(trial, size_px)
 		if metrics.x <= float(TEXT_MAX_WIDTH):
 			current = trial
