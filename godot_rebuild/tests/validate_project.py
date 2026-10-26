@@ -5440,6 +5440,7 @@ check("_check_source(check, data)" in _ua_checks
 from urgharun_ai_skill_source_oracle import source_fixture as urgharun_skill_fixture
 _uk_path = ROOT / "tests/fixtures/urgharun_ai_skill_source.json"
 _uk_ai = (ROOT / "scripts/match/boss_ai.gd").read_text(encoding="utf-8")
+_uk_recipe = _uk_ai[_uk_ai.index("static func _urgharun("): _uk_ai.index("static func _vhalzun(")]
 _uk_checks = (ROOT / "tests/urgharun_ai_skill_checks.gd").read_text(encoding="utf-8")
 check('const UrgharunAiSkillChecks = preload("res://tests/urgharun_ai_skill_checks.gd")' in ai_tests
       and "UrgharunAiSkillChecks.new().run(_check)" in ai_tests,
@@ -5465,9 +5466,11 @@ check('"urgharun":\n\t\t\t_urgharun(world, boss, enemies, target, target_distanc
       and "nearby >= 3 or hp_ratio < 0.35" in _uk_ai
       and "boss.r_timer = boss.skill_r_cooldown" in _uk_ai
       and '_set_skill(boss, "r", 100)' in _uk_ai
-      and "_skill_damage(boss, boss.skill_r_damage)" in _uk_ai,
+      and "_skill_damage(boss, boss.skill_r_damage)" in _uk_ai
+      and "_generic(world, boss, enemies)" in _uk_recipe,
       "9bq13 native AI must cast R with the user-approved, source-informed trigger and catalog payload")
 check("_check_no_trigger(check)" in _uk_checks
+      and "boss.ability_timer == boss.ability_cooldown" in _uk_checks
       and "_check_crowd_cast(check)" in _uk_checks
       and "_check_low_hp_cast(check)" in _uk_checks
       and "_check_cooldown_gate(check)" in _uk_checks,

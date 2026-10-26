@@ -3729,7 +3729,8 @@ angka data damage atau cooldown.
   sumber: cast saat sedikitnya 3 musuh berada dalam 180 px **atau** HP di bawah 35%, dengan
   `r_timer == 0`; set timer dari `boss.skill_r_cooldown`, `active_skill = "r"` selama 100 tick,
   lalu damage setiap target dalam radius 180 menggunakan `_skill_damage(boss, boss.skill_r_damage)`.
-  Q/W/E sengaja tidak ditambah.
+  Q/W/E sengaja tidak ditambah; di tick tanpa cast R, jalur `_generic` lama tetap dipanggil agar
+  ability generik urgharun tidak hilang.
 - Oracle `tests/urgharun_ai_skill_source_oracle.py` memanen ketiadaan recipe Python, statistik R
   urgharun (damage 2275, cooldown 1020 setelah normalisasi sumber), dan ambang/radius/durasi dari
   `_smart_ai_gravefang` sebagai referensi. Fixture menyatakan terang bahwa resep ini bukan perilaku

@@ -49,20 +49,22 @@ func _check_source_contract(check: Callable, data: Dictionary) -> void:
 		),
 		"The R recipe uses Urgharun's existing normalized damage and cooldown data"
 	)
-	(
-		check
-		. call(
-			(
-				String(reference["boss"]) == "gravefang"
-				and bool(reference["crowd_shape_found"])
-				and bool(reference["low_hp_shape_found"])
-				and int(reference["crowd_threshold"]) == CROWD_THRESHOLD
-				and is_equal_approx(float(reference["low_hp_ratio"]), HP_THRESHOLD)
-				and (reference["r_radii_found"] as Array) == [180]
-				and int(reference["active_skill_timer"]) == CAST_DURATION
-			),
-			"The trigger, 180 px radius and 100-tick cast window come from the source-backed Gravefang R"
-		)
+	var radii: Array = reference["r_radii_found"]
+	var radius_matches := radii.size() == 1 and int(radii[0]) == int(RADIUS)
+	check.call(
+		(
+			String(reference["boss"]) == "gravefang"
+			and bool(reference["crowd_shape_found"])
+			and bool(reference["low_hp_shape_found"])
+			and int(reference["crowd_threshold"]) == CROWD_THRESHOLD
+			and is_equal_approx(float(reference["low_hp_ratio"]), HP_THRESHOLD)
+		),
+		"The crowd and low-HP triggers come from the source-backed Gravefang R"
+	)
+	check.call(radius_matches, "The source-backed R radius is 180 px")
+	check.call(
+		int(reference["active_skill_timer"]) == CAST_DURATION,
+		"The source-backed R cast window is 100 ticks"
 	)
 
 
@@ -121,6 +123,10 @@ func _check_no_trigger(check: Callable) -> void:
 	check.call(
 		boss.active_skill == "" and boss.r_timer == 0,
 		"One nearby target at full HP does not spend the ultimate"
+	)
+	check.call(
+		boss.ability_timer == boss.ability_cooldown,
+		"The previous generic ability still runs when the new R recipe does not cast"
 	)
 
 
