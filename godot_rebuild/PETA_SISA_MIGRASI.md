@@ -3636,6 +3636,11 @@ bersama:
   view hero dan minion; suite terdaftar di `tests/run_all.gd`, command oracle di workflow, pin
   9bq10 di `tests/validate_project.py`.
 
+Validasi lokal: `validate_project.py` -> PASS 21275 static checks; `gdparse`/`gdlint`/
+`gdformat --check` bersih; oracle deterministik; `git diff --check` OK. Langkah native test di
+workflow memakai `timeout 180`, sedangkan baseline hijau 9bq9 sudah 178 detik, jadi batas itu
+dinaikkan ke `timeout 600` agar suite yang bertambah tidak dipotong di tengah jalan.
+
 Batas slice ini: jalur fallback marker hero (atlas hero tidak ter-import) dan fallback lingkaran
 minion (atlas minion tidak ter-import) belum melukis indikator, karena keduanya tidak melewati
 painter/sprite yang membawa jam animasi. `_draw_entrance` boss dan resep AI urgharun tetap di luar
