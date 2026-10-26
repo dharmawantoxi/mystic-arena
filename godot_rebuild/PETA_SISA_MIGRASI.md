@@ -3503,10 +3503,10 @@ fixture identik; `git diff --check` OK. Godot tidak tersedia di sandbox, jadi ru
 dan review visual menunggu CI.
 
 Batas slice ini:
-- AI produksi belum punya resep yang meng-cast `R` untuk urgharun (`boss_ai.gd` tidak memuat
-  urgharun; sumber juga tidak pernah menyetel `active_skill` untuknya). Lapisan aktif begitu state
-  `active_skill == "r"` ada, dan suite scene menyetelnya langsung; menambah resep AI adalah slice
-  lain.
+- Sumber Python memang tidak punya recipe yang meng-cast `R` untuk urgharun (`Boss.update` tidak
+  memuatnya dan tak ada writer `active_skill` miliknya). Lapisan aktif saat state
+  `active_skill == "r"` ada; saat slice ini ditulis suite scene menyetelnya langsung. Setelah izin
+  pengguna, ekstensi AI R-only native ditambahkan terpisah di slice 9bq13 (bukan klaim paritas).
 - LAYER 2 (`_draw_enrage_ground`) dikerjakan sebagai slice terpisah 9bq5 di bawah.
 - Tidak termasuk: FX Q/W/E urgharun, `_draw_fury_aura`/`_draw_ground_ring`, aura enrage ber-cache
   `_draw_enrage_aura` milik `Boss.draw`, perluasan ke `_LIVE_FX_HEROES` atau boss lain, dan
@@ -3693,11 +3693,12 @@ pygame, jadi posisi vertikal teks bisa bergeser beberapa piksel dari sumber;
 
 Pertanyaan yang tersisa setelah 9bq4-9bq9: siapa yang boleh meng-cast Q/W/E/R urgharun? Jawabannya
 datang dari sumber, bukan dari selera: `bosses/level40.py::draw_urgharun` hanya melukis lapisan itu
-saat `active_skill` berisi kuncinya, dan satu-satunya penulis `Boss.active_skill` di
-`bosses/base_boss.py` adalah 79 resep `_smart_ai_*` yang dipanggil dari rantai
-`if/elif self.boss_type == ...` di `Boss.update`. `urgharun` tidak ada di rantai itu dan tidak punya
-resep, jadi di sumber pun keempat lapisan skill-nya tidak pernah tergambar. Menambah resep berarti
-mengarang damage/cooldown baru, bukan migrasi.
+saat `active_skill` berisi kuncinya. Rantai `if/elif self.boss_type == ...` di `Boss.update`
+memanggil 79 resep `_smart_ai_*`, tetapi `urgharun` tidak ada di rantai itu dan tidak punya
+`_smart_ai_urgharun`; jadi di sumber pun keempat lapisan skill-nya tidak pernah tergambar. Menambah
+resep mengubah
+simulasi dan bukan lagi paritas literal; nilai R yang sudah tersedia bisa dipakai tanpa mengubah
+angka damage/cooldown. Pengguna kemudian mengizinkan ekstensi native R-only ini di slice 9bq13.
 
 - Bukti: `tests/urgharun_ai_reach_source_oracle.py` memanen dengan `ast` (a) rantai dispatch
   `Boss.update` (79 arm, urutan sumber), (b) daftar metode `_smart_ai_*` (79), (c) semua penulis
@@ -3705,24 +3706,51 @@ mengarang damage/cooldown baru, bukan migrasi.
   urgharun dari `bosses/boss_data.py` (8 kunci skill, `skill_q_cooldown = 425`,
   `skill_r_damage = 2275`). Oracle gagal keras bila `urgharun` masuk rantai, punya resep, atau ada
   fungsi `*urg*` yang menulis `active_skill` -> fixture 1 halaman.
-- `tests/urgharun_ai_reach_checks.gd` memaku fakta sumber itu dan menjalankan AI native sungguhan:
-  `BossState.setup("urgharun", ...)` dari `world.boss_table`, target goblin ber-HP besar di 40 px,
-  lalu `BossAI.tick` 900 kali -> `active_skill`/`active_skill_timer` tetap kosong (0 frame cast),
-  `ability_timer` tetap terisi (arm generik `_generic` jalan, boss tidak mati kutu), dan
-  `q_timer` tetap 0 karena tidak ada resep yang mengonsumsinya. Sisi teks memastikan `boss_ai.gd`
-  tidak memuat `"urgharun"` dan tetap punya fallback `_:` -> `_generic`.
+- `tests/urgharun_ai_reach_checks.gd` memaku fakta sumber (79 dispatch/method, 8 statistik skill)
+  dan membedakan sumber dari ekstensi native yang kemudian diizinkan: Python tetap tidak punya
+  recipe, sementara `boss_ai.gd` mempunyai arm khusus yang diuji secara terpisah di 9bq13.
 - Terdaftar di `tests/run_all.gd`, command oracle di workflow, pin 9bq12 di
-  `tests/validate_project.py`. Tidak ada perubahan simulasi: slice ini hanya membuktikan dan memaku
-  status "tidak terjangkau" (pola yang sama dengan penutupan 9af -> 9ai).
+  `tests/validate_project.py`. Slice 9bq12 hanya memaku temuan sumber; perubahan simulasi ditunda
+  sampai ada izin, lalu dikerjakan sebagai ekstensi native terpisah di slice 9bq13.
 
-Konsekuensi: lapisan FX Q/W/E/R urgharun tetap hanya bisa dilihat lewat suite scene yang menyetel
-`active_skill` langsung (sudah ada sejak 9bq6). Kalau nanti resep AI urgharun memang diinginkan
-sebagai fitur baru (bukan paritas), itu perubahan balance terpisah dan harus disetujui eksplisit.
+Status setelah izin pengguna: lapisan FX Q/W/E/R lain tetap hanya bisa dilihat lewat suite scene
+yang menyetel `active_skill` langsung; resep R-only yang diizinkan di 9bq13 mengaktifkan lapisan R
+pada simulasi native, tanpa mengklaim bahwa Python source sudah melakukan hal yang sama.
+
+## Slice 9bq13 — resep AI R-only Urgharun (ekstensi native diizinkan pengguna)
+
+Pengguna mengizinkan slice AI yang menyentuh simulasi. Fakta penting: Python memang tidak memiliki
+`_smart_ai_urgharun`, jadi perubahan ini **ekstensi native yang disengaja**, bukan paritas gameplay
+terhadap sumber. Pilihan minimum: hanya R `Feral Cataclysm`, sebab itu lapisan FX yang masih tak
+terjangkau dan data `skill_r_damage`/`skill_r_cooldown` sudah tersedia. Tidak menambah/mengubah
+angka data damage atau cooldown.
+
+- `boss_ai.gd`: arm `urgharun` menuju `_urgharun`. Menggunakan pola R `gravefang` yang dipanen dari
+  sumber: cast saat sedikitnya 3 musuh berada dalam 180 px **atau** HP di bawah 35%, dengan
+  `r_timer == 0`; set timer dari `boss.skill_r_cooldown`, `active_skill = "r"` selama 100 tick,
+  lalu damage setiap target dalam radius 180 menggunakan `_skill_damage(boss, boss.skill_r_damage)`.
+  Q/W/E sengaja tidak ditambah.
+- Oracle `tests/urgharun_ai_skill_source_oracle.py` memanen ketiadaan recipe Python, statistik R
+  urgharun (damage 2275, cooldown 1020 setelah normalisasi sumber), dan ambang/radius/durasi dari
+  `_smart_ai_gravefang` sebagai referensi. Fixture menyatakan terang bahwa resep ini bukan perilaku
+  yang ada di Python.
+- Suite native `tests/urgharun_ai_skill_checks.gd`: tidak cast pada satu target/HP penuh; crowd
+  cast 3 target (target 181 px tidak kena); cast saat HP <35%; timer cooldown memblokir cast.
+  Mencocokkan juga data boss hidup dan wiring dispatch. Fixture/suite terdaftar di `run_all.gd`,
+  command oracle pada workflow, pin 9bq13 di `validate_project.py`.
+
+Validasi lokal: oracle sumber deterministik, `validate_project.py` PASS 21357 static checks,
+`gdparse`/`gdlint`/`gdformat --check` untuk semua GDScript berubah bersih, `git diff --check` OK.
+Godot tidak tersedia lokal; native runtime menunggu CI.
+
+Batas slice ini: resep R-only baru ini satu-satunya perubahan simulasi yang diizinkan; Q/W/E dan
+semua aturan damage/cooldown di luar pemakaian nilai katalog tetap tidak disentuh. Godot tidak ada
+di sandbox, jadi bukti runtime/native menunggu CI.
 
 Batas slice ini: jalur fallback marker hero (atlas hero tidak ter-import) dan fallback lingkaran
 minion (atlas minion tidak ter-import) belum melukis indikator, karena keduanya tidak melewati
-painter/sprite yang membawa jam animasi. `_draw_entrance` boss dan resep AI urgharun tetap di luar
-cakupan.
+painter/sprite yang membawa jam animasi. `_draw_entrance` boss selesai di slice 9bq11; ekstensi AI
+R-only urgharun selesai di slice 9bq13.
 
 Batas slice ini:
 - Hanya call site `Boss.draw` yang diport. Sumber memakai fungsi yang sama dari `_entity.py` untuk

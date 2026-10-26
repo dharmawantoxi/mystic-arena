@@ -12,10 +12,10 @@ recipe may be added without inventing gameplay.
     elif self.boss_type == "alchemist":
         ...
 
-and every `self.active_skill = 'q'/'w'/'e'/'r'` in the file lives inside one of those
-`_smart_ai_*` methods. This oracle harvests the chain and the writers with `ast` and pins the fact
-that `"urgharun"` appears in neither: the boss owns skill stats but no recipe, so its four skill
-layers are unreachable in the source as well, and the rebuild must stay equally quiet.
+and the recipes (plus their cast helpers) are what set `active_skill`. This oracle harvests the
+chain, all literal writers and the boss data with `ast`; it pins that `"urgharun"` is absent from
+the dispatch and recipe list and that no Urgharun-named function writes `active_skill`. The source
+gap was recorded in 9bq12; 9bq13 is the user-authorized native R-only extension, not Python parity.
 
 Run: python godot_rebuild/tests/urgharun_ai_reach_source_oracle.py
 """

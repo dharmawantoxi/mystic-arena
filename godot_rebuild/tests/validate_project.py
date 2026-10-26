@@ -5429,11 +5429,49 @@ if _ua_path.is_file():
           and int(_ua["subject_reset_count"]) == 2
           and _ua["stats"]["skill_count"] == 8,
           "9bq12 the boss must own skill stats but no active_skill writer")
-check("urgharun" not in _ua_ai and "_generic(world, boss, enemies)" in _ua_ai,
-      "9bq12 the native AI must keep the generic fallback and no urgharun arm")
-check("BossAI.tick(world, boss, enemies, enemy, 40.0)" in _ua_checks
-      and "casts == 0" in _ua_checks and "generic" in _ua_checks,
-      "9bq12 the suite must run the live AI and prove it never casts")
+check("urgharun" in _ua_ai and "_generic(world, boss, enemies)" in _ua_ai,
+      "9bq12 must preserve the generic fallback while 9bq13 fills the source gap")
+check("_check_source(check, data)" in _ua_checks
+      and "_check_native_extension(check)" in _ua_checks
+      and "casts == 0" not in _ua_checks,
+      "9bq12 must pin the Python source gap without asserting the later authorized AI is silent")
+
+# ── Layer 9bq13: user-authorized Urgharun R recipe using existing catalog stats ──
+from urgharun_ai_skill_source_oracle import source_fixture as urgharun_skill_fixture
+_uk_path = ROOT / "tests/fixtures/urgharun_ai_skill_source.json"
+_uk_ai = (ROOT / "scripts/match/boss_ai.gd").read_text(encoding="utf-8")
+_uk_checks = (ROOT / "tests/urgharun_ai_skill_checks.gd").read_text(encoding="utf-8")
+check('const UrgharunAiSkillChecks = preload("res://tests/urgharun_ai_skill_checks.gd")' in ai_tests
+      and "UrgharunAiSkillChecks.new().run(_check)" in ai_tests,
+      "9bq13 Urgharun R suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/urgharun_ai_skill_source_oracle.py" in workflow,
+      "9bq13 CI must run the Urgharun R source oracle")
+check(_uk_path.is_file(), "9bq13 Urgharun R source fixture must exist")
+if _uk_path.is_file():
+    _uk = json.loads(_uk_path.read_text(encoding="utf-8"))
+    check(urgharun_skill_fixture() == _uk,
+          "9bq13 fixture must harvest Urgharun data and the Gravefang source R reference")
+    check(not bool(_uk["python_recipe_exists"])
+          and int(_uk["urgharun_r"]["damage"]) == 2275
+          and int(_uk["urgharun_r"]["cooldown"]) == 1020,
+          "9bq13 extension must use existing R data while documenting the source gap")
+    check(bool(_uk["reference"]["crowd_shape_found"])
+          and bool(_uk["reference"]["low_hp_shape_found"])
+          and _uk["reference"]["r_radii_found"] == [180]
+          and int(_uk["reference"]["active_skill_timer"]) == 100,
+          "9bq13 trigger/area/window must stay source-informed by Gravefang R")
+check('"urgharun":\n\t\t\t_urgharun(world, boss, enemies, target, target_distance)' in _uk_ai
+      and "static func _urgharun(" in _uk_ai
+      and "nearby >= 3 or hp_ratio < 0.35" in _uk_ai
+      and "boss.r_timer = boss.skill_r_cooldown" in _uk_ai
+      and '_set_skill(boss, "r", 100)' in _uk_ai
+      and "_skill_damage(boss, boss.skill_r_damage)" in _uk_ai,
+      "9bq13 native AI must cast R with the user-approved, source-informed trigger and catalog payload")
+check("_check_no_trigger(check)" in _uk_checks
+      and "_check_crowd_cast(check)" in _uk_checks
+      and "_check_low_hp_cast(check)" in _uk_checks
+      and "_check_cooldown_gate(check)" in _uk_checks,
+      "9bq13 native suite must cover no-trigger, crowd, low-HP and cooldown gates")
 
 # ── Layer 9bi2: tactical command visuals (gather marker, feedback banner, floating text) ──
 from tactical_draw_source_oracle import source_fixture as tactical_draw_fixture

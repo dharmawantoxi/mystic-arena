@@ -1,0 +1,24 @@
+{
+ "subject": "urgharun",
+ "python_recipe_exists": false,
+ "urgharun_r": {
+  "damage": 2275,
+  "cooldown": 1020,
+  "boss_class": "mini"
+ },
+ "reference": {
+  "boss": "gravefang",
+  "crowd_threshold": 3,
+  "crowd_shape_found": true,
+  "low_hp_ratio": 0.35,
+  "low_hp_shape_found": true,
+  "radius": 180,
+  "r_radii_found": [
+   180
+  ],
+  "active_skill": "r",
+  "active_skill_timer": 100,
+  "r_cooldown_default": 620,
+  "r_damage_default": 380
+ }
+}

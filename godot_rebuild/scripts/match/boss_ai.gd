@@ -181,6 +181,8 @@ static func tick(
 			_gravefang(world, boss, enemies, target, target_distance)
 		"vhalzun":
 			_vhalzun(world, boss, enemies, target, target_distance)
+		"urgharun":
+			_urgharun(world, boss, enemies, target, target_distance)
 		_:
 			_generic(world, boss, enemies)
 
@@ -3826,6 +3828,21 @@ static func _gravefang(
 		for enemy in enemies:
 			if boss.position.distance_to(enemy.position) <= 120.0:
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_q_damage))
+
+
+static func _urgharun(
+	world, boss: BossState, enemies: Array[UnitState], target: UnitState, distance: float
+) -> void:
+	# User-authorized extension (9bq13): the Python source has no Urgharun recipe. Reuse the
+	# source-backed Gravefang R trigger and area, but consume Urgharun's existing catalog R data.
+	var nearby := _count_near(boss, enemies, 180.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if (nearby >= 3 or hp_ratio < 0.35) and boss.r_timer == 0:
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 100)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 180.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
 
 
 static func _vhalzun(
