@@ -4361,3 +4361,21 @@ Batas: tidak ada Godot lokal untuk runtime atau review visual. Tidak diklaim pix
   CI native PR #343 run **40351230732**, job **121671509139**, **PASS 15m1s**
   (`PASS: 1505161 checks; fixed ticks and source parity`). Godot lokal/review visual
   tidak tersedia; bukan klaim pixel parity.
+
+## Slice 9bv11 — indikator hover menara: range dan tooltip
+
+- Memport cabang menara dari `HoverIndicators.draw`: cincin range berdenyut dengan 24 titik dash
+  berputar, tooltip tiga baris (nama/level, damage/range, kills), bayangan, border warna tipe dan
+  panah penunjuk. Slot hover sengaja tetap slice terpisah.
+- `tower_hover_source_oracle.py` menjalankan `HoverIndicators.draw` dan helper sumber asli di
+  recorder pygame. Fixture mematok dua tipe menara dan cabang tanpa hover: **3 frame / 66 op**.
+  `TowerHoverLayout` menyusun operasi; `PrototypeView` melukisnya setelah lapisan dunia, sebelum
+  overlay HUD. Screen hanya membuat snapshot hover view-only dari posisi mouse dan struktur hidup;
+  tidak mengubah pilihan, command, input routing atau simulasi.
+- `TowerHoverDrawChecks` membandingkan semua op dari fixture dan memeriksa view wiring; suite native
+  terdaftar di `run_all.gd`, oracle dipanggil di workflow, dan `validate_project.py` mem-pin sumber,
+  fixture, serta pemanggil layer.
+- Validasi lokal: `validate_project.py` **PASS 21406**; `gdparse`, `gdlint`,
+  `gdformat --check` pada lima `.gd` yang berubah, oracle/`py_compile`, dan `git diff --check`
+  **PASS**. CI native dicatat setelah push. Godot lokal/review visual tidak tersedia; bukan klaim
+  pixel parity.

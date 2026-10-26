@@ -41,6 +41,7 @@ const InputHintLayout = preload("res://scripts/ui/input_hint_layout.gd")
 const EndOverlayLayout = preload("res://scripts/ui/end_overlay_layout.gd")
 const BuildPopupLayout = preload("res://scripts/ui/build_popup_layout.gd")
 const HeroPanelLayout = preload("res://scripts/ui/hero_panel_layout.gd")
+const TowerHoverLayout = preload("res://scripts/ui/tower_hover_layout.gd")
 const TitleFont = preload("res://assets/fonts/Cinzel.ttf")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
@@ -136,6 +137,8 @@ var end_overlay_state: Dictionary = {}
 var build_popup_state: Dictionary = {}
 ## Layer 9bv8: selected live hero snapshot used by the screen-space panel painter.
 var hero_panel_state: Dictionary = {}
+## Layer 9bv11: view-only hovered tower snapshot from `HoverIndicators.draw`.
+var tower_hover_state: Dictionary = {}
 var hud_shadow_box := StyleBoxFlat.new()
 ## Layer 9bv6: `Overlay.unlock_popup_timer`, advanced once per victory overlay draw and
 ## stopped AT the 90-call delay exactly like `_update_unlock_popup`.
@@ -203,6 +206,7 @@ func _draw() -> void:
 		draw_arc(mark, 8, 0, TAU, 20, color, 1.5, true)
 		draw_line(mark - Vector2(5, 5), mark + Vector2(5, 5), color, 1.5, true)
 		draw_line(mark + Vector2(-5, 5), mark + Vector2(5, -5), color, 1.5, true)
+	_draw_tower_hover()
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	for layer in OVERLAY_ORDER:
 		_draw_overlay_layer(String(layer), world)
@@ -1073,6 +1077,21 @@ func input_hints_blocked(world: Prototype) -> bool:
 		or bool(world.boss_intro_state().get("active", false))
 		or bool(world.boss_death_state().get("celebration_active", false))
 	)
+
+
+## Layer 9bv11: range and tooltip for the read-only hovered tower snapshot.
+func _draw_tower_hover() -> void:
+	for op in tower_hover_draw_ops():
+		_draw_hud_op(op)
+
+
+func tower_hover_draw_ops(measure: Callable = Callable()) -> Array:
+	if tower_hover_state.is_empty():
+		return []
+	var metrics: Callable = _measure_intro_text
+	if measure.is_valid():
+		metrics = measure
+	return TowerHoverLayout.ops(tower_hover_state, metrics)
 
 
 ## Layer 9bv7: `BuildPopup.draw`, the build-tower popup painted right after the tactical banner

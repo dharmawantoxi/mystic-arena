@@ -5873,6 +5873,65 @@ check("Hero panel oracle pins 6 source frames and 440 draw ops" in _hp_checks
       and 'order.back() == "boss_death"' in _hp_checks,
       "9bv8 draw checks must replay the fixture, pin all six slots, and keep the overlay order")
 
+# ── Layer 9bv11: read-only tower hover range and tooltip ──
+from tower_hover_source_oracle import source_fixture as tower_hover_fixture
+_th_path = ROOT / "tests/fixtures/tower_hover_source.json"
+_th_layout = (ROOT / "scripts/ui/tower_hover_layout.gd").read_text(encoding="utf-8")
+_th_checks = (ROOT / "tests/tower_hover_draw_checks.gd").read_text(encoding="utf-8")
+_th_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_th_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+_th_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+check('const TowerHoverDrawChecks = preload("res://tests/tower_hover_draw_checks.gd")' in ai_tests
+      and "TowerHoverDrawChecks.new().run(_check)" in ai_tests,
+      "9bv11 tower-hover source parity suite must run in the native suite")
+check("python godot_rebuild/tests/tower_hover_source_oracle.py" in workflow,
+      "9bv11 CI must record the source tower-hover painter")
+check(_th_path.is_file(), "9bv11 tower-hover fixture must exist")
+if _th_path.is_file():
+    _th_fixture = json.loads(_th_path.read_text(encoding="utf-8"))
+    _th_frames = _th_fixture["frames"]
+    check(tower_hover_fixture() == _th_fixture,
+          "9bv11 tower-hover fixture must not drift from HoverIndicators.draw")
+    check(len(_th_frames) == 3 and sum(len(frame["ops"]) for frame in _th_frames) == 66
+          and [frame["name"] for frame in _th_frames] == [
+              "archer_tower_hover", "cannon_tower_hover", "no_tower_hover"]
+          and _th_fixture["source"] == "ui_components/_bundle.py::HoverIndicators",
+          "9bv11 fixture must pin two live tower-hover cases and the empty branch (66 ops)")
+check("static func ops(state: Dictionary, measure: Callable) -> Array:" in _th_layout
+      and 'const FONT_STYLE := "body_medium"' in _th_layout
+      and 'self.font_small = get_font(24, "body_medium")' in _th_core
+      and "const DASH_COUNT := 24" in _th_layout
+      and "Kills: %d" in _th_layout
+      and "static func _tooltip_ops(" in _th_layout,
+      "9bv11 layout must preserve the pulsing 24-dash range ring and three-line tooltip")
+_th_draw_start = _th_view.find("func _draw() -> void:")
+_th_draw_end = _th_view.find("func _draw_structures() -> void:", _th_draw_start)
+_th_draw = _th_view[_th_draw_start:_th_draw_end] if _th_draw_start >= 0 else ""
+check('const TowerHoverLayout = preload("res://scripts/ui/tower_hover_layout.gd")' in _th_view
+      and "var tower_hover_state: Dictionary = {}" in _th_view
+      and "func tower_hover_draw_ops(" in _th_view
+      and "TowerHoverLayout.ops(tower_hover_state, metrics)" in _th_view
+      and "_draw_tower_hover()" in _th_draw
+      and _th_draw.index("for layer in WORLD_LAYER_ORDER:")
+      < _th_draw.index("_draw_tower_hover()")
+      < _th_draw.index("draw_set_transform(Vector2.ZERO"),
+      "9bv11 PrototypeView must paint only the read-only tower-hover snapshot")
+_th_state_start = _th_screen.find("func _tower_hover_state(")
+_th_state_end = _th_screen.find("func _build_popup_state(", _th_state_start)
+_th_state = _th_screen[_th_state_start:_th_state_end] if _th_state_start >= 0 else ""
+check('arena.set("tower_hover_state", _tower_hover_state(world, match_session, build_popup_state))' in _th_screen
+      and "for value in world.structures:" in _th_state
+      and "tower.position.distance_to(mouse) > 25.0" in _th_state
+      and "color = [100, 220, 120]" in _th_state
+      and "color = [200, 100, 60]" in _th_state
+      and "color = [120, 200, 255]" in _th_state
+      and "color = [180, 80, 220]" in _th_state
+      and "tower_hover_state" in _th_checks
+      and "Layout.ops(state, _fake_measure)" in _th_checks
+      and "request_" not in _th_state
+      and "set_tactical_cursor" not in _th_state,
+      "9bv11 screen/test must wire mouse-only hover drawing without commands or simulation writes")
+
 # ── Layer 9bv9: interactive BuildPopup and HeroPanel ──
 _pi_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
 _pi_side_panel = (ROOT / "scripts/ui/side_panel.gd").read_text(encoding="utf-8")
