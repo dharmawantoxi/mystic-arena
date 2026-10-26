@@ -96,6 +96,10 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 			"Boss W skill poses drew"
 		)
 		await _check_realm(tree, view, boss, check)
+		await _check_urgharun_enrage(tree, view, boss, check)
+		await _check_boss_auras(tree, view, boss, check)
+		await _check_urgharun_basic_attack(tree, view, boss, check)
+		await _check_boss_debuff_fx(tree, view, boss, check)
 	else:
 		check.call(false, "The suite could not spawn a boss to draw")
 	app.show_menu()
@@ -128,6 +132,259 @@ func _check_realm(tree: SceneTree, view, boss, check: Callable) -> void:
 	boss.boss_type = source_type
 	boss.active_skill = ""
 	boss.active_skill_timer = 0
+
+
+## Layer 9bq4/9bq5: the live scene paints urgharun's R ground layer under its baked body and
+## its foreground enrage layer over it, on every phase of the source cast window. The boss
+## only wears urgharun's type for these frames; no tick runs, so its AI never sees the swap.
+func _check_urgharun_enrage(tree: SceneTree, view, boss, check: Callable) -> void:
+	check.call(
+		(
+			view.boss_enrage_fx_draws == 0
+			and view.boss_enrage_ground_draws == 0
+			and view.boss_aura_fx_draws == 0
+			and view.boss_skill_ground_draws == 0
+			and view.boss_skill_fg_draws == 0
+			and view.boss_basic_attack_fg_draws == 0
+			and view.boss_debuff_fx_draws == 0
+		),
+		"No other boss skill painted an urgharun FX layer"
+	)
+	var source_type: String = boss.boss_type
+	var source_skill: String = boss.active_skill
+	var source_timer: int = boss.active_skill_timer
+	boss.boss_type = "urgharun"
+	boss.timer = 0
+	# Layer 9bq6: LAYER 1 (fury aura + ground ring) draws on every urgharun frame, casting or
+	# not, and the Q cast adds its ground rings and debris.
+	boss.active_skill = ""
+	var aura_before: int = view.boss_aura_fx_draws
+	for _frame in range(6):
+		await tree.process_frame
+		if view.boss_aura_fx_draws > aura_before:
+			break
+	check.call(
+		view.boss_aura_fx_draws > aura_before,
+		"Urgharun painted its fury aura and ground ring without a cast"
+	)
+	check.call(view.boss_aura_fx_ops > 0, "The LAYER 1 ops reached the painter")
+	boss.active_skill = "q"
+	var q_ground_before: int = view.boss_skill_ground_draws
+	var q_fg_before: int = view.boss_skill_fg_draws
+	for phase in [55, 30, 12, 1]:
+		boss.active_skill_timer = int(phase)
+		for _frame in range(4):
+			await tree.process_frame
+			if view.boss_skill_fg_draws > q_fg_before:
+				break
+	check.call(
+		view.boss_skill_ground_draws > q_ground_before,
+		"Urgharun's Q painted its ground shockwave layer"
+	)
+	check.call(
+		view.boss_skill_fg_draws > q_fg_before and view.boss_skill_fg_ops > 0,
+		"Urgharun's Q painted its debris foreground layer"
+	)
+	boss.active_skill = "r"
+	var phases := [80, 60, 40, 20, 1]
+	var painted := 0
+	var ground_painted := 0
+	var op_deltas: Array = []
+	var ground_deltas: Array = []
+	for phase in phases:
+		boss.active_skill_timer = int(phase)
+		var draws_before: int = view.boss_enrage_fx_draws
+		var ops_before: int = view.boss_enrage_fx_ops
+		var ground_before: int = view.boss_enrage_ground_draws
+		var ground_ops_before: int = view.boss_enrage_ground_ops
+		for _frame in range(6):
+			await tree.process_frame
+			if view.boss_enrage_fx_draws > draws_before:
+				break
+		if view.boss_enrage_fx_draws > draws_before:
+			painted += 1
+			op_deltas.append(view.boss_enrage_fx_ops - ops_before)
+		if view.boss_enrage_ground_draws > ground_before:
+			ground_painted += 1
+			ground_deltas.append(view.boss_enrage_ground_ops - ground_ops_before)
+	check.call(
+		painted == phases.size(),
+		"Urgharun's R painted its enrage layer on %d/%d cast phases" % [painted, phases.size()]
+	)
+	check.call(
+		(
+			op_deltas.size() == phases.size()
+			and op_deltas.all(func(count): return int(count) > 0 and int(count) % 68 == 0)
+		),
+		"The live layer carries the source's 68 ops at every cast phase"
+	)
+	check.call(
+		ground_painted == phases.size(),
+		(
+			"Urgharun's R painted its ground layer on %d/%d cast phases"
+			% [ground_painted, phases.size()]
+		)
+	)
+	check.call(
+		(
+			ground_deltas.size() == phases.size()
+			and ground_deltas.all(func(count): return int(count) > 0 and int(count) % 26 == 0)
+		),
+		"The live ground layer carries the source's 26 ops at every cast phase"
+	)
+	boss.boss_type = source_type
+	boss.active_skill = source_skill
+	boss.active_skill_timer = source_timer
+
+
+## Layer 9bq7: the live scene paints the three cached `Boss.draw` auras - the ability aura while
+## `ability_active`, the enrage aura once `is_enraged` and the extra true-boss aura - and each one
+## stays off while its source gate is closed. No tick runs, so the sim never sees the swaps.
+func _check_boss_auras(tree: SceneTree, view, boss, check: Callable) -> void:
+	var source_class: String = boss.boss_class
+	var source_range: float = boss.ability_range
+	var source_entrance: Color = boss.entrance_color
+	var source_ability: bool = boss.ability_active
+	var source_enraged: bool = boss.is_enraged
+	var source_enrage_pulse: float = boss.enrage_pulse
+	boss.ability_active = false
+	var ability_closed: int = view.boss_ability_aura_draws
+	for _frame in range(4):
+		await tree.process_frame
+	check.call(
+		view.boss_ability_aura_draws == ability_closed,
+		"No ability aura painted while the ability gate was closed"
+	)
+	boss.ability_active = true
+	boss.ability_range = 350.0
+	boss.entrance_color = Color8(255, 200, 130)
+	var ability_before: int = view.boss_ability_aura_draws
+	for _frame in range(6):
+		await tree.process_frame
+		if view.boss_ability_aura_draws > ability_before:
+			break
+	check.call(
+		view.boss_ability_aura_draws > ability_before and view.boss_ability_aura_ops > 0,
+		"The ability aura painted its entrance-coloured rings"
+	)
+	boss.ability_active = source_ability
+	boss.ability_range = source_range
+	boss.entrance_color = source_entrance
+	boss.is_enraged = false
+	var enrage_closed: int = view.boss_enrage_aura_draws
+	for _frame in range(4):
+		await tree.process_frame
+	check.call(
+		view.boss_enrage_aura_draws == enrage_closed,
+		"No enrage aura painted before the enrage transition"
+	)
+	boss.is_enraged = true
+	boss.enrage_pulse = 0.0
+	var enrage_before: int = view.boss_enrage_aura_draws
+	for _frame in range(6):
+		await tree.process_frame
+		if view.boss_enrage_aura_draws > enrage_before:
+			break
+	check.call(
+		view.boss_enrage_aura_draws > enrage_before and view.boss_enrage_aura_ops > 0,
+		"The enrage aura painted its width-2 rings"
+	)
+	boss.is_enraged = source_enraged
+	boss.enrage_pulse = source_enrage_pulse
+	boss.boss_class = "mini"
+	var true_closed: int = view.boss_true_aura_draws
+	for _frame in range(4):
+		await tree.process_frame
+	check.call(view.boss_true_aura_draws == true_closed, "Only a true boss paints the extra aura")
+	boss.boss_class = "true"
+	var true_before: int = view.boss_true_aura_draws
+	for _frame in range(6):
+		await tree.process_frame
+		if view.boss_true_aura_draws > true_before:
+			break
+	check.call(
+		view.boss_true_aura_draws > true_before and view.boss_true_aura_ops > 0,
+		"The true-boss aura painted its filled rings"
+	)
+	boss.boss_class = source_class
+
+
+## Layer 9bq8: the live scene arms urgharun's swing clock from `boss.timer`/`attack_cooldown`
+## and paints `_draw_basic_attack_fx` while no skill is casting - the source gate is
+## `attacking and not active_skill`. No tick runs, so the boss keeps the timer set here.
+func _check_urgharun_basic_attack(tree: SceneTree, view, boss, check: Callable) -> void:
+	var source_type: String = boss.boss_type
+	var source_skill: String = boss.active_skill
+	var source_timer: int = boss.timer
+	var source_cooldown: int = boss.attack_cooldown
+	boss.boss_type = "urgharun"
+	boss.active_skill = ""
+	boss.attack_cooldown = 38
+	# `near_max = timer >= cooldown - 1` arms the swing on the next painted frame.
+	boss.timer = 37
+	var draws_before: int = view.boss_basic_attack_fg_draws
+	for _frame in range(6):
+		await tree.process_frame
+		if view.boss_basic_attack_fg_draws > draws_before:
+			break
+	check.call(
+		view.boss_basic_attack_fg_draws > draws_before,
+		"Urgharun's armed basic attack painted its claw-swing layer"
+	)
+	check.call(view.boss_basic_attack_fg_ops > 0, "The basic-attack ops reached the painter")
+	# The clock keeps ticking during a cast (the source advances it before choosing a pose) but
+	# the FX layer is gated on `not active_skill`.
+	boss.active_skill = "q"
+	boss.active_skill_timer = 30
+	var gated_before: int = view.boss_basic_attack_fg_draws
+	for _frame in range(4):
+		await tree.process_frame
+	check.call(
+		view.boss_basic_attack_fg_draws == gated_before,
+		"A skill cast suppresses the basic-attack FX in the live scene"
+	)
+	boss.boss_type = source_type
+	boss.active_skill = source_skill
+	boss.timer = source_timer
+	boss.attack_cooldown = source_cooldown
+
+
+## Layer 9bq9: the live scene paints the debuff indicator (`Boss.draw` slot after the auras) as
+## soon as one debuff timer runs, and stops once every timer is cleared.
+func _check_boss_debuff_fx(tree: SceneTree, view, boss, check: Callable) -> void:
+	var source_slow: int = boss.slow_timer
+	var source_atk_slow: int = boss.atk_slow_timer
+	var source_skill_down: int = boss.skill_down_timer
+	var source_anti_heal: int = boss.anti_heal_timer
+	var source_burn: int = boss.burn_timer
+	boss.slow_timer = 0
+	boss.atk_slow_timer = 0
+	boss.skill_down_timer = 0
+	boss.anti_heal_timer = 0
+	boss.burn_timer = 0
+	var clean_before: int = view.boss_debuff_fx_draws
+	for _frame in range(4):
+		await tree.process_frame
+	check.call(
+		view.boss_debuff_fx_draws == clean_before, "An undebuffed boss painted no debuff indicator"
+	)
+	boss.slow_timer = 30
+	boss.burn_timer = 20
+	var debuffed_before: int = view.boss_debuff_fx_draws
+	for _frame in range(6):
+		await tree.process_frame
+		if view.boss_debuff_fx_draws > debuffed_before:
+			break
+	check.call(
+		view.boss_debuff_fx_draws > debuffed_before,
+		"A slowed and burning boss painted its debuff indicator"
+	)
+	check.call(view.boss_debuff_fx_ops > 0, "The debuff ops reached the painter")
+	boss.slow_timer = source_slow
+	boss.atk_slow_timer = source_atk_slow
+	boss.skill_down_timer = source_skill_down
+	boss.anti_heal_timer = source_anti_heal
+	boss.burn_timer = source_burn
 
 
 func _seed_hero_projectile(world, hero) -> bool:

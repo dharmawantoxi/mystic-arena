@@ -113,6 +113,23 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
 - 9bq membake badan 216 boss (pose diam fase 0, dua arah; satu PNG per boss, 2,6 MB) dan
   menggambarnya menggantikan lingkaran bermahkota, dengan bayangan, bar HP, dan papan nama di atas
   puncak sprite (`BOSS_LABEL_TOP`). Rincian di bagian "Slice 9bq".
+- 9bq4 memport FX visual foreground R/enrage urgharun (`_draw_enrage_fx`) sebagai daftar op
+  murni: sepuluh lidah api naik, cincin aura 38->33 px, dan enam bara, dengan alpha sumber.
+  Lapisan dilukis setelah badan dan sebelum HP bar/papan nama, sesuai urutan sumber. Oracle
+  `urgharun_enrage_fx_source_oracle.py` menjalankan fungsi asli `_NS_urgharun` di bawah shim
+  pygame perekam (7 frame, 476 op); `urgharun_enrage_fx_checks.gd` mereplay fixture, dan
+  `painter_scene_checks.gd` membuktikan scene hidup melukisnya di lima fase cast. Rincian ada di
+  bagian "Slice 9bq4".
+- 9bq5 memport LAYER 2 R/enrage urgharun (`_draw_enrage_ground`): dua cincin tanah bertumpuk
+  tiga outline (3/2/1 px) dan sepuluh rune 3x3 dengan inti 1 px, dilukis **di bawah badan**.
+  Painter op bersama kini mengenal `ellipse` (garis dalam rect pygame, fill polygon). Oracle
+  `urgharun_enrage_ground_source_oracle.py` menjalankan fungsi asli (8 frame, 208 op);
+  `urgharun_enrage_ground_checks.gd` mereplay fixture, dan `painter_scene_checks.gd`
+  membuktikan scene hidup melukisnya di lima fase cast. Rincian ada di bagian "Slice 9bq5".
+- 9bq6 melengkapi sisa FX urgharun: LAYER 1 (`_draw_fury_aura` + `_draw_ground_ring` pada
+  `y + 50`) dan FX Q/W/E (`_draw_earthshock_ground`, `_draw_earthshock_fx`,
+  `_draw_overpower_fx`, `_draw_furyswipes_fx`). Oracle menjalankan keenam fungsi asli
+  (27 frame, 1236 op) termasuk cabang target hidup/mati W/E. Rincian ada di bagian "Slice 9bq6".
 - Slice kontrol UI dan ambience menu 9br/9bs sudah diselesaikan di PR #341. HUD/arena layar penuh,
   peluru hero, dan pose jalan/serang boss tetap pekerjaan terpisah, tidak termasuk slice ini.
   `DynamicRenderer` **sudah terport (layer 9d0)**: partikel, kabut, obor,
@@ -3439,6 +3456,348 @@ contact sheet dari crop lossless dengan rumus penempatan runtime. Review interak
 
 Batas: bukan klaim pixel parity. Godot tidak tersedia di sandbox sesi ini, jadi lapisan belum
 dilihat langsung. Review interaktif tetap perlu.
+
+## Slice 9bq4 — FX enrage R urgharun (layer 9bq4)
+
+Sumber: `bosses/level40.py::_NS_urgharun._draw_enrage_fx`, dipanggil `draw_urgharun` di LAYER 4
+(foreground) hanya saat `active_skill == "r"`, sesudah dispatch badan (LAYER 3) dan sesudah
+`_draw_enrage_ground` (LAYER 2). `Boss.draw` menambahkan HP bar dan papan nama SETELAH renderer,
+jadi lapisan ini menimpa badan dan berada di bawah bar.
+
+- `scripts/ui/urgharun_enrage_fx_layout.gd` membangun op yang sama dalam urutan sumber: 10 lidah api
+  (lingkaran `fury_dark` r=3, `fury_mid` r=2, `fury_light` r=1 bertumpuk naik di x yang sama, lalu
+  spark 1 px `fury_hot` dan `fury_shine`) = 50 op; cincin aura `range(38, 32, -1)` bergaris 1 px
+  `fury_light` dengan alpha `180 * aura_pulse * (38 - r) / 6` = 6 op; 6 bara bergantian 35 px kiri
+  dan kanan, masing-masing rect 2x2 `fury_hot` plus inti 1 px `fury_shine` = 12 op. Total 68 op per
+  frame, semuanya berpusat pada anchor int `(x, y)` yang diterima renderer sumber.
+- Geometri mengikuti sumber apa adanya: api di radius 32 dengan kompresi vertikal 0.5, naik sampai
+  20 px mengikuti `flame_t = (pulse*0.6 + i*0.15) % 1`; alpha api `220*(1 - flame_t)`; bara naik
+  40 px dengan alpha `240*(1 - ember_t)`. Warna diambil dari `PALETTE` urgharun
+  (`fury_dark/mid/light/hot/shine`).
+- Kuirk yang dipertahankan: fungsi sumber menghitung `progress = 1 - timer/duration` dan `flame_h`
+  lalu tidak pernah memakainya, sehingga lapisan hanya fungsi `pulse` - sisa waktu cast tidak
+  mengubah satu op pun. Oracle memaku ini dengan frame `timer_ignored` (timer 5) yang identik
+  dengan frame `mid` (timer 40) pada pulse yang sama.
+- Alpha: sumber menggambar ke canvas sprite boss SRCALPHA (`heroes._boss_get_canvas`), jadi nilai
+  alpha di atas bertahan sebagai alpha piksel lalu di-blit. `pygame.draw` menulis alpha (bukan
+  mencampurnya), sehingga bentuk yang saling menumpuk saling menimpa; Godot mereplay op lewat
+  `_draw_intro_op` dengan blending normal. Perbedaan ini diterima (bukan klaim pixel parity).
+- `prototype_view.gd` menambah `urgharun_enrage_draw_ops(boss)` dari state yang sudah ada
+  (`active_skill == "r"`, `active_skill_timer`, `pulse`, `position`) dan melukisnya di `_draw_boss`
+  setelah `_draw_boss_sprite`/`_draw_boss_plain` dan sebelum `bar_position` (HP bar + nama).
+  Penghitung `boss_enrage_fx_draws` dan `boss_enrage_fx_ops` dipakai suite scene. Tidak ada atlas
+  baru: urgharun tidak punya keyframe skill di `data/art/bosses.json` (`skills: {}`), jadi
+  `BossAnim.from_boss` tetap memakai pose idle/attack dan lapisan ini satu-satunya visual R.
+- Bukti: oracle `tests/urgharun_enrage_fx_source_oracle.py` (memanen `HAS_AACIRCLE`, `PALETTE`,
+  `_clamp`, `_alpha`, `_aacircle`, `_draw_enrage_fx` dengan `ast`) menghasilkan 7 frame / 476 op
+  (termasuk anchor di tepi layar dan pulse yang melewati wrap modulo).
+  `tests/urgharun_enrage_fx_checks.gd` mereplay semua frame, urutan 68 op, cincin 38..33, peluruhan
+  alpha api/bara, kuirk timer, gate, dan wiring view; suite terdaftar di `tests/run_all.gd`.
+  `tests/painter_scene_checks.gd` memutar scene hidup dan membuktikan lapisan tergambar di lima fase
+  cast (timer 80/60/40/20/1). Pin 9bq4 (36 cek) ada di `tests/validate_project.py`, command oracle
+  di workflow CI.
+
+Validasi lokal: `python3 godot_rebuild/tests/validate_project.py` -> PASS 21053 static checks;
+`gdparse`/`gdlint`/`gdformat --check` untuk 635 GDScript -> bersih; oracle dijalankan dua kali dan
+fixture identik; `git diff --check` OK. Godot tidak tersedia di sandbox, jadi runtime/native suite
+dan review visual menunggu CI.
+
+Batas slice ini:
+- AI produksi belum punya resep yang meng-cast `R` untuk urgharun (`boss_ai.gd` tidak memuat
+  urgharun; sumber juga tidak pernah menyetel `active_skill` untuknya). Lapisan aktif begitu state
+  `active_skill == "r"` ada, dan suite scene menyetelnya langsung; menambah resep AI adalah slice
+  lain.
+- LAYER 2 (`_draw_enrage_ground`) dikerjakan sebagai slice terpisah 9bq5 di bawah.
+- Tidak termasuk: FX Q/W/E urgharun, `_draw_fury_aura`/`_draw_ground_ring`, aura enrage ber-cache
+  `_draw_enrage_aura` milik `Boss.draw`, perluasan ke `_LIVE_FX_HEROES` atau boss lain, dan
+  rebake atlas.
+
+## Slice 9bq5 — FX enrage tanah R urgharun (layer 9bq5)
+
+Sumber: `bosses/level40.py::_NS_urgharun._draw_enrage_ground`, dipanggil `draw_urgharun` di
+LAYER 2 (di belakang badan) hanya saat `active_skill == "r"`, sesudah `_draw_fury_aura` +
+`_draw_ground_ring` dan sebelum dispatch badan.
+
+- `scripts/ui/urgharun_enrage_ground_layout.gd` membangun 26 op per frame dalam urutan sumber:
+  - dua cincin tanah. Tiap cincin tiga outline bersarang pada keluarga rect yang sama -
+    `fury_dark` 3 px, `fury_mid` 2 px inset (3, 2), `fury_light` 1 px inset (6, 4) - dengan
+    `r = int(35 + i*8 + sin(phase*2)*3)`, rect `(x - r, y + 40 - r//3, 2r, 2r//3)` (Python `//`
+    = `floori` di Godot), dan alpha `_alpha(220 * pulse - i*40)` dengan
+    `pulse = sin(phase*3)*0.3 + 0.7`;
+  - sepuluh rune pada lingkaran 38 px yang dimampatkan 0.4 di sekitar `y + 42`: kotak 3x3
+    `fury_hot` alpha `_alpha(240 * pulse)` plus inti 1 px `fury_shine`.
+- Kuirk yang dipertahankan: `progress` dihitung dari `timer` lalu tidak dipakai (lapisan hanya
+  fungsi `phase`); inti rune memakai tuple palet mentah sehingga alpha-nya tetap 255 sementara
+  kotak 3x3 memudar; `r` bisa turun ke 32-33 saat `sin(phase*2)` negatif dan offset vertikal
+  cincin ikut bergeser karena pembagian floor.
+- `prototype_view._draw_intro_op` kini mengenal op `ellipse`: `pygame` tidak punya elips
+  anti-alias, dan Godot tidak punya `draw_ellipse`, jadi rect disampel menjadi polygon tertutup
+  (segmen mengikuti radius terbesar, 24-128) lalu digambar dengan `draw_polyline` untuk outline
+  atau `draw_colored_polygon` untuk fill. Karena pygame menebalkan border DI DALAM rect, jalur
+  outline ditarik masuk setengah lebar garis (konvensi sama dengan kotak kill feed 9bb).
+- `prototype_view.gd` melukis layer ini sesudah cincin aura/realm nyxareth dan **sebelum**
+  `BossArt.frame`/badan, dengan penghitung `boss_enrage_ground_draws` dan
+  `boss_enrage_ground_ops`. Layer foreground 9bq4 tetap dilukis sesudah badan.
+- Bukti: oracle `tests/urgharun_enrage_ground_source_oracle.py` (memanen `PALETTE`, `_alpha`,
+  `_draw_enrage_ground`) menghasilkan 8 frame / 208 op, termasuk frame dengan `sin` negatif,
+  anchor di tepi bawah layar (rect yang dipotong surface 720 px), dan frame `timer_ignored`
+  yang identik dengan `mid`. `tests/urgharun_enrage_ground_checks.gd` mereplay semua frame,
+  urutan 26 op, inset outline, alpha cincin/rune, kuirk timer, gate, dan wiring view; suite
+  terdaftar di `tests/run_all.gd`. `tests/painter_scene_checks.gd` memutar scene hidup dan
+  membuktikan layer tanah tergambar 26 op di lima fase cast. Pin 9bq5 (34 cek) ada di
+  `tests/validate_project.py` dan command oracle di workflow CI.
+
+Validasi lokal: `validate_project.py` -> PASS 21087 static checks; `gdparse`/`gdlint`/
+`gdformat --check` bersih (637 GDScript); fixture deterministik; `git diff --check` OK.
+
+CI PR #342 (`Godot Rebuild (native, fresh project)`, run `40180195871`): job `validate` **lulus**
+(12m11s) - langkah *Static guardrails and GDScript lint*, *Native import*, dan *Native
+simulation, input and screen lifecycle tests* semua success, dengan notice
+`PASS: 1504921 checks; fixed ticks and source parity`. Godot tetap tidak tersedia di sandbox,
+jadi review visual interaktif belum dilakukan.
+
+Batas slice ini:
+- Geometri elips adalah aproksimasi polygon (24-128 segmen); pygame menggambar elips per piksel.
+  Ketebalan border diasumsikan ke dalam rect seperti pygame, tetapi ini bukan klaim pixel parity.
+- Alpha tetap ditulis apa adanya seperti 9bq4 (canvas SRCALPHA sumber) sementara Godot memakai
+  blending normal.
+- LAYER 1 dan FX Q/W/E dikerjakan sebagai slice 9bq6 di bawah.
+- Tidak termasuk: `_draw_basic_attack_fx` (butuh state `_urg_attack_progress`), aura enrage
+  ber-cache `Boss.draw`, perluasan ke `_LIVE_FX_HEROES`/boss lain, rebake atlas, dan resep AI
+  yang meng-cast skill urgharun.
+
+## Slice 9bq9 — indikator debuff `Boss.draw` (`_draw_tower_debuff_fx`)
+
+`Boss.draw` memanggil `_core.py::TowerDebuffMixin._draw_tower_debuff_fx(surface, x, y, r)` setelah
+blok aura ber-cache dan bayangan, sebelum dispatch renderer per tipe. Sebelumnya tidak ada di
+rebuild, jadi boss yang kena slow/burn hanya berubah warna tanpa indikator.
+
+- `scripts/ui/boss_debuff_fx_layout.gd::ops(x, y, radius, slow, atk_slow, skill_down, anti_heal,
+  burn, anim_time, include_rings=true)`:
+  - `not alive` -> kosong.
+  - cincin slow: elips `(150, 220, 255)` 1 px pada `(x-r-2, y+r-7, (r+2)*2, 10)`.
+  - api burn: tiga lidah, `flick = int(1.5 + 1.5*sin(anim*0.6))`, tiap lidah lingkaran luar
+    `(255, 140, 40)` + inti `(255, 220, 90)` `max(1, r-1)`.
+  - pip: satu blok 5x5 `(10, 10, 14)` + blok 4x4 warna per debuff, jarak 5 px, mulai
+    `x - (n*5-1)//2` pada `y + r + 12`, urutan slow / attack-slow / skill-down / anti-heal / burn.
+  - Semua warna adalah tuple mentah sumber (alpha 255); `anim_time` menggantikan
+    `getattr(self, "anim_time", getattr(self, "pulse", 0))` karena `BossState` selalu punya
+    `anim_time`.
+- `prototype_view.gd`: `boss_debuff_draw_ops(boss)` (kosong bila `not boss.alive`) dilukis setelah
+  aura true-boss dan sebelum LAYER 1 urgharun, jadi tetap di bawah badan atlas. Penghitung baru:
+  `boss_debuff_fx_draws/_ops`.
+- Bukti: `tests/boss_debuff_fx_source_oracle.py` memanen `TowerDebuffMixin._draw_tower_debuff_fx`
+  dari `_core.py` dan menjalankannya di shim `draw_recorder.py` -> **8 frame / 69 op** (bersih,
+  slow saja, burn pada dua fase jam, semua debuff dengan `anim` pecahan dan bilangan bulat, tanpa
+  cincin, dan unit mati). `tests/boss_debuff_fx_checks.gd` me-replay semuanya plus bentuk dan
+  wiring view; `tests/painter_scene_checks.gd` membuktikan scene hidup melukis indikator saat ada
+  timer debuff dan diam saat semua timer nol. Terdaftar di `tests/run_all.gd`, command oracle di
+  workflow, pin 9bq9 (32 cek) di `tests/validate_project.py`.
+
+Validasi lokal: `validate_project.py` -> PASS 21227 static checks; `gdparse`/`gdlint`/
+`gdformat --check` bersih (645 file); oracle deterministik; `git diff --check` OK. CI run
+`40207671281` (job `121211995053`) **pass 15m9s** dengan notice
+`PASS: 1505070 checks; fixed ticks and source parity`; review visual tetap tidak dilakukan.
+
+Batas slice ini:
+- Hanya call site `Boss.draw` yang diport. Sumber memakai fungsi yang sama dari `_entity.py` untuk
+  hero, menara, dan unit lain; wiring itu belum ada di rebuild dan menjadi slice lain.
+- `include_rings` hanya dipakai suite (call site boss memakai default `True`), sesuai sumber.
+- Tidak termasuk: `_draw_entrance`, bayangan/aura boss lain, `_LIVE_FX_HEROES`, rebake atlas.
+  Alpha tetap apa adanya dengan blending normal Godot.
+
+## Slice 9bq8 — FX basic attack urgharun dan jam ayunan `_update_urg_attack_anim`
+
+Melengkapi FX urgharun yang terakhir. `draw_urgharun` membuka dengan
+`_update_urg_attack_anim(boss)` — jam presentasi yang disimpan di bos (`_urg_attack_active`,
+`_urg_attack_frame`, `_urg_previous_timer`, `_urg_attack_progress`) — lalu LAYER 4 memanggil
+`_draw_basic_attack_fx` **hanya bila** `attacking and not active_skill`.
+
+- `scripts/ui/urgharun_attack_clock.gd`: port `_update_urg_attack_anim`. `cooldown =
+  max(2, attack_cooldown)` (**mentah**, bukan yang sudah diperlambat), `just_reset = previous >
+  cooldown - 5 and timer < 3`, `near_max = timer >= cooldown - 1`, arm saat salah satunya benar
+  dan belum aktif, `frame += 1` lalu lepas di 28 frame, `previous_timer` selalu diperbarui,
+  `progress = min(1.0, frame / 28)` saat aktif. Karena `timer` diisi dari cooldown efektif
+  sementara pembandingnya mentah, bos yang diperlambat meng-arm lebih awal - kuirk sumber yang
+  dipaku oracle.
+- `scripts/ui/urgharun_skill_fx_layout.gd::basic_attack_ops` (ditambah `ATTACK_DURATION = 28`,
+  `WHITE`): tiga fase sumber — wind-up `< 0.3` (cincin `fury_light` di kedua cakar, alpha
+  `150*t*r/5`, frame pertama transparan), slash `0.3..0.7` (5 busur x 10 segmen x 4 garis
+  bertumpuk 3/2/1/1 px, tip 4 cincin `fury_hot` + 2 kotak, 8 percikan), impact `>= 0.7`
+  (3 cincin, inti panas, 5 goresan, 10 partikel). Target `boss.target` bila hidup, jika tidak
+  `(x + facing*60, y)`, dan target > 80 px ditarik ke 60 px pada arah yang sama.
+- `prototype_view.gd`: `urgharun_attack_clock(boss)` (satu jam per instance bos),
+  `urgharun_attack_clock_step(boss)` dipanggil di awal `_draw_boss` **setelah** cabang entrance
+  (sumber melewati renderer saat entrance, jadi jamnya pun tidak maju), dan
+  `urgharun_basic_attack_draw_ops(boss)` yang membaca jam + gerbang `not active_skill`. Layer
+  dilukis sebelum FX skill Q/W/E/R. Penghitung baru: `boss_basic_attack_fg_draws/_ops`.
+- Bukti: `tests/urgharun_basic_attack_source_oracle.py` memanen `_draw_basic_attack_fx`,
+  `_update_urg_attack_anim`, `_alpha`, `_aacircle`, PALETTE dan menjalankannya di shim
+  `draw_recorder.py` -> **11 frame / 1132 op** (wind-up 6/8/10, slash 3x246, impact 4x31, plus
+  target jauh dan tanpa target) dan **5 run jam / 52 langkah** (siklus serangan, arm dini karena
+  slow, `just_reset`, jendela penuh 28 frame, cooldown `max(2, ...)`).
+  `tests/urgharun_basic_attack_checks.gd` me-replay semuanya plus gerbang dan wiring view;
+  `tests/painter_scene_checks.gd` membuktikan scene hidup melukis ayunan setelah jam di-arm dari
+  `boss.timer` dan berhenti saat ada cast. Suite terdaftar di `tests/run_all.gd`, command oracle
+  di workflow, pin 9bq8 (37 cek) di `tests/validate_project.py`.
+
+Validasi lokal: `validate_project.py` -> PASS 21195 static checks (baseline 21158); `gdparse`/
+`gdlint`/`gdformat --check` bersih (643 file); oracle deterministik; `git diff --check` OK. Godot
+tidak tersedia lokal, jadi native suite lewat CI: run `40200697653` gagal pada dua asersi suite
+baru (indeks op tip busur 200 vs 40 - tip disisipkan setelah 40 garis busurnya sendiri - dan
+"disarm" dihitung dari langkah aktif terakhir padahal run fixture meng-arm ulang di ujungnya),
+lalu run `40202446923` gagal pada asersi disarm yang masih membaca langkah terakhir; setelah
+diperbaiki run `40203662319` (job `121199934380`) **pass 12m25s** dengan notice
+`PASS: 1505047 checks; fixed ticks and source parity`.
+
+Batas slice ini:
+- Jam sumber maju **satu kali per frame yang dilukis**; rebuild memanggilnya di awal `_draw_boss`
+  dengan aturan yang sama (sekali per frame, sebelum semua layer, dan tidak saat entrance).
+  Kalau `_draw` dipanggil lebih dari sekali dalam satu frame, jamnya akan maju lebih cepat
+  daripada sumber; tidak ada mekanisme penjaga.
+- Jam disimpan di view per instance bos (`boss_attack_clocks`), bukan di `BossState`, supaya
+  state simulasi tidak berubah; entri tidak pernah dibuang (jumlahnya sebanyak bos yang pernah
+  dilukis dalam satu sesi view).
+- Pose badan tetap dari atlas: `BossAnim` memilih `atk%d` dari `timer`, kunci yang sama dengan
+  `_boss_cache_key` sumber, dan frame `atk*` urgharun (`atk1`, `atk13`, `atk26`, `atk38`, ...)
+  sudah dipanggang termasuk pose ayunan yang dipilih sumber lewat jam ini. Jadi jam di view hanya
+  dipakai untuk layer FX; ia tidak ikut memilih pose badan.
+- Tidak termasuk: `_draw_entrance`, FX boss lain, `_LIVE_FX_HEROES`, rebake atlas, resep AI yang
+  meng-cast skill urgharun. Alpha tetap ditulis apa adanya dengan blending normal Godot.
+
+## Slice 9bq7 — blok aura ber-cache `Boss.draw` (aura kemampuan, enrage, true boss)
+
+`bosses/base_boss.py::Boss.draw` membuka render boss dengan tiga aura cincin yang surface-nya
+di-cache `_aura_surface` (kunci `(jenis, warna/kelas, radius, _aura_phase(sin))`):
+
+- **Aura kemampuan** (`if self.ability_active:`) — cincin **terisi** warna `entrance_color`,
+  `pulse = sin(anim_time*0.2)*0.3 + 0.7`, `aura_r = int(ability_range * pulse)`, pita
+  `range(aura_r, aura_r - 20, -3)`, alpha `int((aura_r - ar) * 8 * pulse)` cap 255.
+- **Aura enrage** (`_draw_enrage_aura`) — cincin **outline 2 px**, `pulse =
+  sin(enrage_pulse)*0.3 + 0.7`, `aura_r = radius + int(14 * pulse)`, pita
+  `range(aura_r, max(5, aura_r - 18), -3)`, alpha `int((aura_r - r) * 12 * pulse)` cap 200,
+  warna `(255, 50, 40)` untuk true boss dan `(255, 140, 30)` untuk lainnya.
+- **Aura true boss** (`_draw_true_boss_aura`) — cincin terisi warna badan, `pulse =
+  sin(pulse)*0.3 + 0.7`, `aura_r = radius + 15`, pita `range(aura_r, aura_r - 15, -2)`,
+  alpha `int((aura_r - r) * 5 * pulse)` cap 255. Hanya `boss_class == "true"`.
+
+Ketiganya membuat surface lalu mem-blit sehingga pusat surface jatuh tepat di `(x, y)`, jadi
+ops sudah dalam koordinat layar. Cache hanya memoisation (geometri/alpha cuma bergantung pada
+radius), jadi layout membangun ops langsung tanpa cache; oracle tetap memanen `_aura_surface`
+dan `_aura_phase` supaya perubahan kunci/budget terdeteksi sebagai drift fixture.
+
+- `scripts/ui/boss_aura_fx_layout.gd`: `ability_aura_ops(x, y, ability_range, anim_time,
+  entrance_rgb)`, `enrage_aura_ops(x, y, radius, enrage_pulse, is_true)`,
+  `true_boss_aura_ops(x, y, radius, phase, rgb)`, plus `rgb8(Color)` dan `_circle`. Cincin
+  kosong pertama (alpha 0) dilewati seperti sumber; radius non-positif pada aura kemampuan
+  dijaga karena `draw_circle` Godot menolaknya (tidak pernah terjadi dengan `ability_range` asli).
+- `scenes/prototype/prototype_view.gd`: builder `boss_ability_aura_draw_ops`,
+  `boss_enrage_aura_draw_ops`, `boss_true_aura_draw_ops` (masing-masing bergerbang pada
+  `ability_active` / `is_enraged` / `boss_class == "true"`), dilukis **berurutan sebelum**
+  LAYER 1 urgharun, realm nyxareth, dan badan. Tiga aproksimasi lama (`draw_arc` tunggal dengan
+  alpha tetap) dihapus. Penghitung baru: `boss_ability_aura_draws/_ops`,
+  `boss_enrage_aura_draws/_ops`, `boss_true_aura_draws/_ops`.
+- Bukti: `tests/boss_aura_fx_source_oracle.py` memanen blok `if self.ability_active:` dari
+  `Boss.draw` (AST) plus `_draw_enrage_aura`, `_draw_true_boss_aura`, `_aura_surface`,
+  `_aura_phase` dan menjalankannya di shim `draw_recorder.py` -> **12 frame / 69 op**
+  (kemampuan 4x6, enrage `[5,5,5,5,4]` termasuk boss mungil yang kena clamp `max(5, ...)`,
+  true boss 3x7). `tests/boss_aura_fx_checks.gd` me-replay semuanya plus wiring view dan gate.
+  `tests/painter_scene_checks.gd` membuktikan scene hidup melukis ketiga aura (dan tidak ada
+  yang melukis sebelum gerbangnya terbuka). Suite terdaftar di `tests/run_all.gd`, command
+  oracle di workflow, pin 9bq7 (35 cek) di `tests/validate_project.py`.
+
+Validasi lokal: `validate_project.py` -> PASS 21158 static checks; `gdparse`/`gdlint`/
+`gdformat --check` bersih (641 file); oracle deterministik; `git diff --check` OK. Godot tidak
+tersedia lokal, jadi native suite lewat CI: run `40192115376` gagal (pin alpha frame
+`enrage_true` salah 25 vs 29, dan painter mengasumsikan tidak ada aura sebelum gerbangnya
+padahal boss hidup bisa sudah enrage) lalu diperbaiki; run `40193223973` (job `121168493421`)
+**pass 14m36s** dengan notice `PASS: 1505002 checks; fixed ticks and source parity`.
+
+Batas slice ini:
+- Cache LRU sumber tidak diport: ops dibangun ulang tiap frame (sama pikselnya, karena alpha dan
+  geometri hanya bergantung pada radius). Kalau nanti terbukti terlalu mahal, cache bisa
+  ditambahkan tanpa mengubah fixture.
+- `_draw_entrance` (aura masuk panggung), bayangan ellips, indikator debuff menara, dan seluruh
+  FX boss lain tetap di luar cakupan; alpha tetap ditulis apa adanya dengan blending normal Godot
+  seperti slice sebelumnya, dan cincin outline 2 px digambar sebagai `draw_arc` pada
+  `radius - 1` (pygame menebalkan ke dalam). Konsekuensi khusus aura terisi: pygame menulis
+  ulang piksel surface (cincin dalam menimpa cincin luar), Godot menjumlahkan alpha bertingkat,
+  jadi pusat aura kemampuan/true boss tampak sedikit lebih pekat daripada sumber.
+- `_draw_basic_attack_fx` urgharun masih tertunda: butuh `_urg_attack_progress` (state swing yang
+  belum dibawa `BossState`), jadi slice tersendiri.
+
+## Slice 9bq6 — LAYER 1 dan FX Q/W/E urgharun (layer 9bq6)
+
+Melengkapi seluruh FX urgharun selain basic attack. Sumber dan urutannya di `draw_urgharun`:
+`_draw_fury_aura(x, y, pulse, enraged=active_skill == "r")`, lalu
+`_draw_ground_ring(x, y + 50, pulse, active_skill)`, lalu ground FX skill (Q/R), badan, lalu
+foreground skill (Q/W/E/R).
+
+- `scripts/ui/urgharun_skill_fx_layout.gd`:
+  - `aura_ops`: `pulse = sin(phase*0.5)*0.25 + 0.75`, `strength = 1.6` saat enrage. Dua
+    rangkaian cincin `fury_darkest` (r 90..10 langkah 5, alpha `(90-r)*1.2*pulse*strength`)
+    dan `fury_dark` (r 50..8 langkah 3, alpha `(50-r)*1.4*...`), semuanya berpusat di anchor
+    (surface 220x180 di-blit `(x-110, y-90)`), lalu 12 (16 saat enrage) bara
+    `fury_mid` 2x2 + `fury_hot` 1x1 di ring 40 px yang dimampatkan 0.4.
+  - `ground_ring_ops`: surface 170x54 di-blit `(x-85, y-27)` berisi tiga elips
+    (`fury_darkest` 3 px, `fur_darkest` 2 px, `fury_dark` 1 px), sepuluh rune garis
+    `fury_mid` dari jari-jari 46 ke 72 (vertikal 8/12), plus elips `fury_hot` 1 px
+    alpha `150*pulse` hanya saat ada cast aktif.
+  - `earthshock_ground_ops` (Q): tiga cincin `r = int(max(0, progress - i*0.15) * 90)` yang
+    hanya muncul bila `r > 5`, alpha `220*(1-ring_t)`.
+  - `earthshock_fx_ops` (Q): delapan batu (tiga polygon `shadow_deep`/`fur_darkest`/`fur_mid`
+    per batu, tinggi 0 -> 22 -> 0 px per `local_t`), glow api di bawahnya, dan retakan
+    delapan arah yang hanya ada selama `progress < 0.5`.
+  - `overpower_ops` (W): empat jejak cakar melengkung per tangan (7 sampel, garis
+    `fury_dark` 2 px + `fury_light` 1 px), 12 partikel kecepatan, dan empat bintang "+" di
+    atas target hanya bila `progress > 0.5` dan target ada.
+  - `furyswipes_ops` (E): lima slash berurutan (`slash_t > 1.2` dilewati), tiga garis
+    paralel 3/2/1 px + garis `fury_light` 1 px yang digeser 2 px, plus tip 2x2; target
+    dijepit ke 80 px bila lebih dari 100 px, dan tanpa target sumber memakai
+    `(x + facing*80, y)`.
+- `prototype_view.gd`: `urgharun_aura_draw_ops` (dilukis **paling awal**, sebelum realm
+  nyxareth dan semua layer boss lain), `urgharun_skill_ground_draw_ops` (Q, di bawah badan),
+  `urgharun_skill_fg_draw_ops` (Q/W/E, sesudah badan dan sebelum HP bar). `urgharun_target_point`
+  membaca `world.boss_presentation_target()` - helper read-only baru di `prototype_battle.gd`
+  yang menjalankan pemilihan target AI yang sama tanpa memutasi apa pun - agar layer W/E
+  memakai cabang target hidup seperti sumber. Penghitung baru: `boss_aura_fx_draws/_ops`,
+  `boss_skill_ground_draws/_ops`, `boss_skill_fg_draws/_ops`.
+- Kuirk yang dipertahankan: bara, rune cincin, dan tip W/E memakai tuple palet mentah
+  (alpha 255); Q tidak menggambar apa pun pada tick pertama; E tidak menggambar apa pun di
+  awal maupun ekor cast; bintang W hanya muncul pada paruh kedua cast.
+- Bukti: oracle `tests/urgharun_skill_fx_source_oracle.py` (memanen `HAS_AACIRCLE`,
+  `HAS_AALINES`, `PALETTE`, `_clamp`, `_alpha`, `_aacircle`, `_poly`, dan keenam fungsi) ->
+  27 frame / 1236 op: aura 5 frame (54 op tenang, 62 op enrage), ring 5 frame (13/14 op),
+  Q ground 4, Q foreground 4 (0..168 op), W 4 (dengan dan tanpa target), E 5 (0..39 op,
+  termasuk target jauh yang dijepit). `tests/urgharun_skill_fx_checks.gd` mereplay semuanya,
+  memeriksa struktur (jumlah ember, elips ekstra saat cast, polygon batu, frame kosong),
+  gate, dan wiring view; pesan gagal menyebut label frame + indeks op + kedua op.
+  `tests/painter_scene_checks.gd` membuktikan scene hidup melukis LAYER 1 tanpa cast dan
+  layer Q (ground + foreground). Suite terdaftar di `tests/run_all.gd`, command oracle di
+  workflow, pin 9bq6 (34 cek) di `tests/validate_project.py`.
+
+Validasi lokal: `validate_project.py` -> PASS 21123 static checks; `gdparse`/`gdlint`/
+`gdformat --check` bersih; oracle deterministik; `git diff --check` OK. Godot tidak tersedia
+lokal; native suite dan review visual menunggu CI.
+
+CI (dipakai sebagai pengganti Godot lokal): dua kegagalan pertama berasal dari skrip baru dan
+sudah diperbaiki - `prototype_view.gd` mendeklarasikan ulang `const UnitState` yang sudah ada di
+`minion_view.gd` (parse error "member already exists in parent class"; kini memakai milik parent
+dan validator mem-pin agar tidak kembali), dan `_report()` memakai `:=` atas
+`Array[index] if ... else {}` yang tidak bisa diinferensi (kini bertipe `Variant`). Run
+`40186732016` (job `121149006132`) **pass 15m16s** dengan notice
+`PASS: 1504971 checks; fixed ticks and source parity`, dan run `40187825038` (job `121152261750`,
+commit catatan PETA) **pass 15m57s**; validator lokal PASS 21123.
+
+Batas slice ini:
+- Elips tetap aproksimasi polygon dan alpha tetap ditulis apa adanya (blending normal di
+  Godot) seperti slice sebelumnya; bukan klaim pixel parity.
+- `boss_presentation_target()` menjalankan pemilihan target yang sama dengan AI, tetapi
+  dipanggil dari painter: bila AI memakai target lain pada frame itu (mis. target skill
+  khusus), W/E bisa memakai titik yang sedikit berbeda. Tidak ada mutasi state.
+- Tidak termasuk: `_draw_basic_attack_fx` (swing basic attack butuh state
+  `_urg_attack_progress` yang belum dibawa `BossState`), aura enrage ber-cache `Boss.draw`,
+  boss lain, `_LIVE_FX_HEROES`, rebake atlas, dan resep AI yang meng-cast skill urgharun.
 
 ## Slice 9bi2 — paritas visual tactical commands
 

@@ -27,6 +27,12 @@ const HeroPainter = preload("res://scripts/ui/hero_painter.gd")
 const BossArt = preload("res://scripts/ui/boss_art.gd")
 const BossAnim = preload("res://scripts/ui/boss_anim.gd")
 const NyxarethRealmLayout = preload("res://scripts/ui/nyxareth_realm_layout.gd")
+const UrgharunEnrageFxLayout = preload("res://scripts/ui/urgharun_enrage_fx_layout.gd")
+const UrgharunEnrageGroundLayout = preload("res://scripts/ui/urgharun_enrage_ground_layout.gd")
+const BossAuraFxLayout = preload("res://scripts/ui/boss_aura_fx_layout.gd")
+const UrgharunAttackClock = preload("res://scripts/ui/urgharun_attack_clock.gd")
+const BossDebuffFxLayout = preload("res://scripts/ui/boss_debuff_fx_layout.gd")
+const UrgharunSkillFxLayout = preload("res://scripts/ui/urgharun_skill_fx_layout.gd")
 const TacticalLayout = preload("res://scripts/ui/tactical_layout.gd")
 const GoldHudLayout = preload("res://scripts/ui/gold_hud_layout.gd")
 const ShopHintLayout = preload("res://scripts/ui/shop_hint_layout.gd")
@@ -77,6 +83,34 @@ var boss_sprite_draws := 0
 var boss_pose_draws: Dictionary = {}
 ## Screen-wide boss skill layers painted under the body (nyxareth's ultimate, layer 9bq3).
 var boss_screen_layer_draws := 0
+## Layer 9bq4: urgharun R/enrage foreground layers painted over the body and the ops they
+## carried; `painter_scene_checks.gd` proves the live scene reaches this layer across the cast.
+var boss_enrage_fx_draws := 0
+var boss_enrage_fx_ops := 0
+## Layer 9bq5: urgharun R/enrage ground layers painted under the body and the ops they carried.
+var boss_enrage_ground_draws := 0
+var boss_enrage_ground_ops := 0
+## Layer 9bq6: urgharun's LAYER 1 (fury aura + ground ring) and its Q/W/E skill FX.
+var boss_aura_fx_draws := 0
+var boss_aura_fx_ops := 0
+var boss_skill_ground_draws := 0
+var boss_skill_ground_ops := 0
+var boss_skill_fg_draws := 0
+var boss_skill_fg_ops := 0
+## Layer 9bq7: the three cached `Boss.draw` auras (ability, enrage, true boss) and their ops.
+var boss_ability_aura_draws := 0
+var boss_ability_aura_ops := 0
+var boss_enrage_aura_draws := 0
+var boss_enrage_aura_ops := 0
+var boss_true_aura_draws := 0
+var boss_true_aura_ops := 0
+## Layer 9bq8: urgharun's basic-attack FX layer plus the per-boss swing clocks that drive it.
+var boss_basic_attack_fg_draws := 0
+var boss_basic_attack_fg_ops := 0
+## Layer 9bq9: the debuff indicator (slow ring, burn flames, pip row) `Boss.draw` paints.
+var boss_debuff_fx_draws := 0
+var boss_debuff_fx_ops := 0
+var boss_attack_clocks := {}
 ## The tactical banner border (layer 9bi2): 2 px, 6 px corners, drawn inside its box.
 var tactical_border := StyleBoxFlat.new()
 ## Layer 9bv2: pygame skips `_draw_gold_hud` while the wide-screen side panel shows the
@@ -928,6 +962,26 @@ func _draw_intro_op(op: Dictionary) -> void:
 				color,
 				float(op.get("width", 1))
 			)
+		"ellipse":
+			var ellipse_box: Array = op.get("rect", [0, 0, 0, 0])
+			var ellipse_rect := Rect2(
+				float(ellipse_box[0]),
+				float(ellipse_box[1]),
+				float(ellipse_box[2]),
+				float(ellipse_box[3])
+			)
+			if color.a <= 0.0 or ellipse_rect.size.x <= 0.0 or ellipse_rect.size.y <= 0.0:
+				return
+			var ellipse_width := int(op.get("width", 0))
+			if ellipse_width > 0:
+				# pygame strokes an ellipse border INSIDE its rect, so the path is pulled in
+				# by half the stroke width and the stroke straddles it.
+				var path_rect := ellipse_rect.grow(-float(ellipse_width) * 0.5)
+				var outline := _ellipse_outline(path_rect)
+				outline.append(outline[0])
+				draw_polyline(outline, color, float(ellipse_width), true)
+			else:
+				draw_colored_polygon(_ellipse_outline(ellipse_rect), color)
 		"polygon":
 			var points := PackedVector2Array()
 			for point in op.get("points", []):
@@ -949,6 +1003,20 @@ func _draw_intro_op(op: Dictionary) -> void:
 				font_size,
 				color
 			)
+
+
+## pygame has no anti-aliased ellipse primitive, so the source strokes ellipses 1..3 px wide.
+## Godot has no `draw_ellipse` either: the rect is sampled into a closed polygon whose segment
+## count follows the larger radius, which keeps a 1 px ring smooth at ground-ring sizes.
+func _ellipse_outline(rect: Rect2) -> PackedVector2Array:
+	var center := rect.get_center()
+	var radii := rect.size * 0.5
+	var segments := clampi(int(maxf(radii.x, radii.y) * 2.0), 24, 128)
+	var points := PackedVector2Array()
+	for step in range(segments):
+		var angle := TAU * float(step) / float(segments)
+		points.append(center + Vector2(cos(angle) * radii.x, sin(angle) * radii.y))
+	return points
 
 
 ## Layer 9bv2: `Game._draw_gold_hud`, the gold chip and mode badge at the top-left, painted
@@ -1465,18 +1533,47 @@ func _draw_boss(boss: BossState) -> void:
 	if boss.entrance_timer > 0:
 		_draw_boss_entrance(boss)
 		return
-	if boss.ability_active:
-		var ability_pulse := sin(float(boss.anim_time) * 0.2) * 0.3 + 0.7
-		var ability_radius := boss.ability_range * ability_pulse
-		draw_arc(point, ability_radius, 0, TAU, 48, Color(boss.entrance_color, 0.30), 3, true)
-	if boss.is_enraged:
-		var enrage_pulse := sin(boss.enrage_pulse) * 0.3 + 0.7
-		var enrage_radius := radius + 14.0 * enrage_pulse
-		var enrage_color := Color("ff3228") if is_true else Color("ff8c1e")
-		draw_arc(point, enrage_radius, 0, TAU, 48, Color(enrage_color, 0.65), 3, true)
-	if is_true:
-		var true_pulse := sin(boss.pulse) * 0.3 + 0.7
-		draw_arc(point, radius + 15.0, 0, TAU, 48, Color(boss.color, 0.28 * true_pulse), 4, true)
+	# Layer 9bq8: `draw_urgharun` advances the swing clock before it paints anything, and only
+	# when the renderer runs (the entrance branch above returns before it), so this stays in the
+	# same place: once per painted frame, before every layer of the boss.
+	urgharun_attack_clock_step(boss)
+	# Layer 9bq7: `Boss.draw` opens with the cached aura block - the ability aura while
+	# `ability_active`, the enrage aura once `is_enraged`, then the extra true-boss aura - and all
+	# three sit under everything else the boss paints, so they keep the source order here.
+	var ability_aura_ops := boss_ability_aura_draw_ops(boss)
+	if not ability_aura_ops.is_empty():
+		boss_ability_aura_draws += 1
+		boss_ability_aura_ops += ability_aura_ops.size()
+		for op in ability_aura_ops:
+			_draw_intro_op(op)
+	var boss_aura_ops := boss_enrage_aura_draw_ops(boss)
+	if not boss_aura_ops.is_empty():
+		boss_enrage_aura_draws += 1
+		boss_enrage_aura_ops += boss_aura_ops.size()
+		for op in boss_aura_ops:
+			_draw_intro_op(op)
+	var true_aura_ops := boss_true_aura_draw_ops(boss)
+	if not true_aura_ops.is_empty():
+		boss_true_aura_draws += 1
+		boss_true_aura_ops += true_aura_ops.size()
+		for op in true_aura_ops:
+			_draw_intro_op(op)
+	# Layer 9bq9: `Boss.draw` paints the debuff indicator right after the shadow (the atlas already
+	# bakes the shadow) and before the per-type renderer, so it belongs here.
+	var debuff_ops := boss_debuff_draw_ops(boss)
+	if not debuff_ops.is_empty():
+		boss_debuff_fx_draws += 1
+		boss_debuff_fx_ops += debuff_ops.size()
+		for op in debuff_ops:
+			_draw_intro_op(op)
+	# Layer 9bq6: `draw_urgharun` opens with `_draw_fury_aura` and `_draw_ground_ring(x, y + 50)`
+	# before any skill FX, so both land under everything else the boss paints.
+	var aura_ops := urgharun_aura_draw_ops(boss)
+	if not aura_ops.is_empty():
+		boss_aura_fx_draws += 1
+		boss_aura_fx_ops += aura_ops.size()
+		for op in aura_ops:
+			_draw_intro_op(op)
 	# Layer 9bq3: the source paints nyxareth's ultimate realm inside its draw function, over
 	# everything drawn before the boss and under the body (the baked atlas leaves it out).
 	var realm_ops := nyxareth_realm_draw_ops(boss)
@@ -1484,6 +1581,20 @@ func _draw_boss(boss: BossState) -> void:
 		boss_screen_layer_draws += 1
 		for op in realm_ops:
 			_draw_realm_op(op)
+	# Layer 9bq5: `draw_urgharun` paints LAYER 2 (the R ground runes) after the auras and the
+	# ground ring and before the body pose, so they stay behind the sprite and its bar.
+	var skill_ground_ops := urgharun_skill_ground_draw_ops(boss)
+	if not skill_ground_ops.is_empty():
+		boss_skill_ground_draws += 1
+		boss_skill_ground_ops += skill_ground_ops.size()
+		for op in skill_ground_ops:
+			_draw_intro_op(op)
+	var ground_ops := urgharun_enrage_ground_draw_ops(boss)
+	if not ground_ops.is_empty():
+		boss_enrage_ground_draws += 1
+		boss_enrage_ground_ops += ground_ops.size()
+		for op in ground_ops:
+			_draw_intro_op(op)
 
 	var bar_width := 70.0 if is_true else 60.0
 	var bar_height := 10.0 if is_true else 8.0
@@ -1497,6 +1608,30 @@ func _draw_boss(boss: BossState) -> void:
 		# `Boss.draw`: the bar sits 6 px above the sprite top (`BOSS_LABEL_TOP`).
 		var head_top := float(BossArt.label_top(boss.boss_type, int(radius)))
 		bar_top = point.y - head_top - 6.0 - bar_height
+	# Layer 9bq8: `_draw_basic_attack_fx` is the first LAYER 4 entry, gated on
+	# `attacking and not active_skill`, so it lands above the body and below the skill FX.
+	var basic_attack_ops := urgharun_basic_attack_draw_ops(boss)
+	if not basic_attack_ops.is_empty():
+		boss_basic_attack_fg_draws += 1
+		boss_basic_attack_fg_ops += basic_attack_ops.size()
+		for op in basic_attack_ops:
+			_draw_intro_op(op)
+	# Layer 9bq6: the Q/W/E foreground FX sit in the same source slot as the R layer below,
+	# over the body and under the HP bar and name plate that `Boss.draw` adds next.
+	var skill_fg_ops := urgharun_skill_fg_draw_ops(boss)
+	if not skill_fg_ops.is_empty():
+		boss_skill_fg_draws += 1
+		boss_skill_fg_ops += skill_fg_ops.size()
+		for op in skill_fg_ops:
+			_draw_intro_op(op)
+	# Layer 9bq4: the source paints the R foreground FX inside the boss draw function, so the
+	# layer lands over the body and under the HP bar and name plate that `Boss.draw` adds next.
+	var enrage_ops := urgharun_enrage_draw_ops(boss)
+	if not enrage_ops.is_empty():
+		boss_enrage_fx_draws += 1
+		boss_enrage_fx_ops += enrage_ops.size()
+		for op in enrage_ops:
+			_draw_intro_op(op)
 	var bar_position := Vector2(point.x - bar_width * 0.5, bar_top)
 	var health := clampf(float(boss.hp) / maxf(1.0, float(boss.max_hp)), 0.0, 1.0)
 	draw_rect(Rect2(bar_position, Vector2(bar_width, bar_height)), Color("280000"))
@@ -1530,6 +1665,185 @@ func nyxareth_realm_draw_ops(boss: BossState) -> Array:
 		return []
 	return NyxarethRealmLayout.ops(
 		boss.active_skill_timer, boss.pulse, NyxarethRealmLayout.SCREEN_SIZE
+	)
+
+
+## Layer 9bq9: `_core.py::TowerDebuffMixin._draw_tower_debuff_fx` from the live boss timers.
+## `Boss.draw` calls it with its own radius and `include_rings` default true.
+func boss_debuff_draw_ops(boss: BossState) -> Array:
+	if not boss.alive:
+		return []
+	return BossDebuffFxLayout.ops(
+		int(boss.position.x),
+		int(boss.position.y),
+		int(boss.radius),
+		boss.slow_timer,
+		boss.atk_slow_timer,
+		boss.skill_down_timer,
+		boss.anti_heal_timer,
+		boss.burn_timer,
+		float(boss.anim_time)
+	)
+
+
+## Layer 9bq8: the swing clock of one boss (`_update_urg_attack_anim` state). Created on demand;
+## a fresh clock is idle and reports progress 0.
+func urgharun_attack_clock(boss: BossState) -> UrgharunAttackClock:
+	var key := boss.get_instance_id()
+	if not boss_attack_clocks.has(key):
+		boss_attack_clocks[key] = UrgharunAttackClock.new()
+	return boss_attack_clocks[key]
+
+
+## Layer 9bq8: advance that clock once for the frame about to be painted. Only urgharun owns the
+## source clock, so other boss types keep no state.
+func urgharun_attack_clock_step(boss: BossState) -> void:
+	if not UrgharunSkillFxLayout.active(boss.boss_type):
+		return
+	urgharun_attack_clock(boss).advance(boss.timer, boss.attack_cooldown)
+
+
+## Layer 9bq8: `_draw_basic_attack_fx` while the clock says the source is `attacking` and no
+## `active_skill` is casting. The target comes from the same read-only query as the W/E layers.
+func urgharun_basic_attack_draw_ops(boss: BossState) -> Array:
+	if not UrgharunSkillFxLayout.active(boss.boss_type):
+		return []
+	var clock: UrgharunAttackClock = boss_attack_clocks.get(boss.get_instance_id())
+	if clock == null or not clock.active or not boss.active_skill.is_empty():
+		return []
+	return UrgharunSkillFxLayout.basic_attack_ops(
+		int(boss.position.x),
+		int(boss.position.y),
+		boss.direction,
+		clock.progress,
+		urgharun_target_point(),
+		boss.pulse
+	)
+
+
+## Layer 9bq7: `Boss.draw`'s ability aura - the filled `entrance_color` rings that pulse on the
+## `anim_time` clock while `ability_active`.
+func boss_ability_aura_draw_ops(boss: BossState) -> Array:
+	if not boss.ability_active:
+		return []
+	return BossAuraFxLayout.ability_aura_ops(
+		int(boss.position.x),
+		int(boss.position.y),
+		boss.ability_range,
+		int(boss.anim_time),
+		BossAuraFxLayout.rgb8(boss.entrance_color)
+	)
+
+
+## Layer 9bq7: the enrage/frenzy aura from `_draw_enrage_aura` (two-pixel rings, red for a true
+## boss and amber otherwise), live only after the one-shot enrage transition.
+func boss_enrage_aura_draw_ops(boss: BossState) -> Array:
+	if not boss.is_enraged:
+		return []
+	return BossAuraFxLayout.enrage_aura_ops(
+		int(boss.position.x),
+		int(boss.position.y),
+		int(boss.radius),
+		boss.enrage_pulse,
+		boss.boss_class == "true"
+	)
+
+
+## Layer 9bq7: `_draw_true_boss_aura`, the extra filled rings only a true boss wears.
+func boss_true_aura_draw_ops(boss: BossState) -> Array:
+	if boss.boss_class != "true":
+		return []
+	return BossAuraFxLayout.true_boss_aura_ops(
+		int(boss.position.x),
+		int(boss.position.y),
+		int(boss.radius),
+		boss.pulse,
+		BossAuraFxLayout.rgb8(boss.color)
+	)
+
+
+## Layer 9bq6: LAYER 1 (`_draw_fury_aura` + `_draw_ground_ring(x, y + 50)`) for urgharun.
+## `enraged` is `active_skill == "r"` and the ring's extra `fury_hot` ellipse needs any cast.
+func urgharun_aura_draw_ops(boss: BossState) -> Array:
+	if not UrgharunSkillFxLayout.active(boss.boss_type):
+		return []
+	return UrgharunSkillFxLayout.layer_one_ops(
+		int(boss.position.x),
+		int(boss.position.y),
+		boss.pulse,
+		boss.active_skill == UrgharunSkillFxLayout.SKILL_R,
+		not boss.active_skill.is_empty()
+	)
+
+
+## Layer 9bq6: `_draw_earthshock_ground` while urgharun casts "q" (the R ground layer lives in
+## `urgharun_enrage_ground_draw_ops`).
+func urgharun_skill_ground_draw_ops(boss: BossState) -> Array:
+	if not UrgharunSkillFxLayout.active(boss.boss_type):
+		return []
+	if boss.active_skill != UrgharunSkillFxLayout.SKILL_Q:
+		return []
+	return UrgharunSkillFxLayout.earthshock_ground_ops(
+		int(boss.position.x), int(boss.position.y), boss.active_skill_timer, boss.pulse
+	)
+
+
+## Layer 9bq6: the Q/W/E foreground FX, from the live anchor, facing, cast timer, pulse and the
+## boss's current target (source `boss.target`; empty falls back to the source's own default).
+func urgharun_skill_fg_draw_ops(boss: BossState) -> Array:
+	if not UrgharunSkillFxLayout.active(boss.boss_type):
+		return []
+	var x := int(boss.position.x)
+	var y := int(boss.position.y)
+	match boss.active_skill:
+		UrgharunSkillFxLayout.SKILL_Q:
+			return UrgharunSkillFxLayout.earthshock_fx_ops(
+				x, y, boss.active_skill_timer, boss.pulse
+			)
+		UrgharunSkillFxLayout.SKILL_W:
+			return UrgharunSkillFxLayout.overpower_ops(
+				x, y, boss.direction, boss.active_skill_timer, boss.pulse, urgharun_target_point()
+			)
+		UrgharunSkillFxLayout.SKILL_E:
+			return UrgharunSkillFxLayout.furyswipes_ops(
+				x, y, boss.direction, boss.active_skill_timer, boss.pulse, urgharun_target_point()
+			)
+	return []
+
+
+## Read-only presentation query: the enemy `Boss._find_target` would pick this frame, as `[x, y]`
+## for the W/E layers (the source reads `boss.target`). Empty when the boss has no target.
+func urgharun_target_point() -> Array:
+	if not (session is PrototypeSession):
+		return []
+	var world := session.world as Prototype
+	if world == null:
+		return []
+	# `UnitState` comes from the parent view's preload; declaring it here shadows the parent.
+	var target: UnitState = world.boss_presentation_target()
+	if target == null or not target.alive:
+		return []
+	return [int(target.position.x), int(target.position.y)]
+
+
+## Layer 9bq5: `_draw_enrage_ground` ops while urgharun casts "r"; the source keeps the
+## elapsed cast time out of this layer too, so the anchor and the pulse carry it.
+func urgharun_enrage_ground_draw_ops(boss: BossState) -> Array:
+	if not UrgharunEnrageGroundLayout.active(boss.boss_type, boss.active_skill):
+		return []
+	return UrgharunEnrageGroundLayout.ops(
+		int(boss.position.x), int(boss.position.y), boss.active_skill_timer, boss.pulse
+	)
+
+
+## Layer 9bq4: `_draw_enrage_fx` ops while urgharun casts "r", from the live anchor, cast
+## timer and pulse; empty for every other boss and skill. The source keeps the elapsed cast
+## time out of the picture (its `progress` is never read), so a frame only needs those.
+func urgharun_enrage_draw_ops(boss: BossState) -> Array:
+	if not UrgharunEnrageFxLayout.active(boss.boss_type, boss.active_skill):
+		return []
+	return UrgharunEnrageFxLayout.ops(
+		int(boss.position.x), int(boss.position.y), boss.active_skill_timer, boss.pulse
 	)
 
 

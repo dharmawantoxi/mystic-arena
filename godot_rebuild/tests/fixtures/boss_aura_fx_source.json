@@ -1,0 +1,1240 @@
+{
+ "anchor": [
+  640,
+  360
+ ],
+ "ability_frames": [
+  {
+   "ops": [
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 241,
+     "color": [
+      255,
+      200,
+      130,
+      16
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 238,
+     "color": [
+      255,
+      200,
+      130,
+      33
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 235,
+     "color": [
+      255,
+      200,
+      130,
+      50
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 232,
+     "color": [
+      255,
+      200,
+      130,
+      67
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 229,
+     "color": [
+      255,
+      200,
+      130,
+      84
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 226,
+     "color": [
+      255,
+      200,
+      130,
+      100
+     ],
+     "mult": 255,
+     "width": 0
+    }
+   ],
+   "label": "ability_full",
+   "ability_range": 350,
+   "anim_time": 0,
+   "entrance_color": [
+    255,
+    200,
+    130
+   ]
+  },
+  {
+   "ops": [
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 346,
+     "color": [
+      255,
+      200,
+      130,
+      23
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 343,
+     "color": [
+      255,
+      200,
+      130,
+      47
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 340,
+     "color": [
+      255,
+      200,
+      130,
+      71
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 337,
+     "color": [
+      255,
+      200,
+      130,
+      95
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 334,
+     "color": [
+      255,
+      200,
+      130,
+      119
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 331,
+     "color": [
+      255,
+      200,
+      130,
+      143
+     ],
+     "mult": 255,
+     "width": 0
+    }
+   ],
+   "label": "ability_rising",
+   "ability_range": 350,
+   "anim_time": 8,
+   "entrance_color": [
+    255,
+    200,
+    130
+   ]
+  },
+  {
+   "ops": [
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 162,
+     "color": [
+      255,
+      200,
+      130,
+      11
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 159,
+     "color": [
+      255,
+      200,
+      130,
+      22
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 156,
+     "color": [
+      255,
+      200,
+      130,
+      34
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 153,
+     "color": [
+      255,
+      200,
+      130,
+      45
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 150,
+     "color": [
+      255,
+      200,
+      130,
+      56
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 147,
+     "color": [
+      255,
+      200,
+      130,
+      68
+     ],
+     "mult": 255,
+     "width": 0
+    }
+   ],
+   "label": "ability_peak",
+   "ability_range": 350,
+   "anim_time": 20,
+   "entrance_color": [
+    255,
+    200,
+    130
+   ]
+  },
+  {
+   "ops": [
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 51,
+     "color": [
+      120,
+      200,
+      255,
+      21
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 48,
+     "color": [
+      120,
+      200,
+      255,
+      43
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 45,
+     "color": [
+      120,
+      200,
+      255,
+      64
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 42,
+     "color": [
+      120,
+      200,
+      255,
+      86
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 39,
+     "color": [
+      120,
+      200,
+      255,
+      108
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 36,
+     "color": [
+      120,
+      200,
+      255,
+      129
+     ],
+     "mult": 255,
+     "width": 0
+    }
+   ],
+   "label": "ability_small",
+   "ability_range": 60,
+   "anim_time": 12,
+   "entrance_color": [
+    120,
+    200,
+    255
+   ]
+  }
+ ],
+ "enrage_frames": [
+  {
+   "ops": [
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 42,
+     "color": [
+      255,
+      140,
+      30,
+      25
+     ],
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 39,
+     "color": [
+      255,
+      140,
+      30,
+      50
+     ],
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 36,
+     "color": [
+      255,
+      140,
+      30,
+      75
+     ],
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 33,
+     "color": [
+      255,
+      140,
+      30,
+      100
+     ],
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 30,
+     "color": [
+      255,
+      140,
+      30,
+      125
+     ],
+     "mult": 255,
+     "width": 2
+    }
+   ],
+   "label": "enrage_mini",
+   "radius": 36,
+   "enrage_pulse": 0.0,
+   "boss_class": "mini"
+  },
+  {
+   "ops": [
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 41,
+     "color": [
+      255,
+      140,
+      30,
+      22
+     ],
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 38,
+     "color": [
+      255,
+      140,
+      30,
+      44
+     ],
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 35,
+     "color": [
+      255,
+      140,
+      30,
+      67
+     ],
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 32,
+     "color": [
+      255,
+      140,
+      30,
+      89
+     ],
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 29,
+     "color": [
+      255,
+      140,
+      30,
+      111
+     ],
+     "mult": 255,
+     "width": 2
+    }
+   ],
+   "label": "enrage_mini_late",
+   "radius": 36,
+   "enrage_pulse": 12.3,
+   "boss_class": "mini"
+  },
+  {
+   "ops": [
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 44,
+     "color": [
+      255,
+      50,
+      40,
+      29
+     ],
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 41,
+     "color": [
+      255,
+      50,
+      40,
+      58
+     ],
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 38,
+     "color": [
+      255,
+      50,
+      40,
+      87
+     ],
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 35,
+     "color": [
+      255,
+      50,
+      40,
+      116
+     ],
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 32,
+     "color": [
+      255,
+      50,
+      40,
+      145
+     ],
+     "mult": 255,
+     "width": 2
+    }
+   ],
+   "label": "enrage_true",
+   "radius": 36,
+   "enrage_pulse": 63.2,
+   "boss_class": "true"
+  },
+  {
+   "ops": [
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 68,
+     "color": [
+      255,
+      50,
+      40,
+      35
+     ],
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 65,
+     "color": [
+      255,
+      50,
+      40,
+      71
+     ],
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 62,
+     "color": [
+      255,
+      50,
+      40,
+      107
+     ],
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 59,
+     "color": [
+      255,
+      50,
+      40,
+      143
+     ],
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 56,
+     "color": [
+      255,
+      50,
+      40,
+      179
+     ],
+     "mult": 255,
+     "width": 2
+    }
+   ],
+   "label": "enrage_true_peak",
+   "radius": 58,
+   "enrage_pulse": 1.5708,
+   "boss_class": "true"
+  },
+  {
+   "ops": [
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 15,
+     "color": [
+      255,
+      140,
+      30,
+      35
+     ],
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 12,
+     "color": [
+      255,
+      140,
+      30,
+      71
+     ],
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 9,
+     "color": [
+      255,
+      140,
+      30,
+      107
+     ],
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 6,
+     "color": [
+      255,
+      140,
+      30,
+      143
+     ],
+     "mult": 255,
+     "width": 2
+    }
+   ],
+   "label": "enrage_tiny_radius",
+   "radius": 5,
+   "enrage_pulse": 1.5708,
+   "boss_class": "mini"
+  }
+ ],
+ "true_boss_frames": [
+  {
+   "ops": [
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 49,
+     "color": [
+      255,
+      140,
+      60,
+      7
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 47,
+     "color": [
+      255,
+      140,
+      60,
+      14
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 45,
+     "color": [
+      255,
+      140,
+      60,
+      21
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 43,
+     "color": [
+      255,
+      140,
+      60,
+      28
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 41,
+     "color": [
+      255,
+      140,
+      60,
+      35
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 39,
+     "color": [
+      255,
+      140,
+      60,
+      42
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 37,
+     "color": [
+      255,
+      140,
+      60,
+      49
+     ],
+     "mult": 255,
+     "width": 0
+    }
+   ],
+   "label": "true_aura_mini_clock",
+   "radius": 36,
+   "pulse": 0.0,
+   "color": [
+    255,
+    140,
+    60
+   ]
+  },
+  {
+   "ops": [
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 49,
+     "color": [
+      255,
+      140,
+      60,
+      9
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 47,
+     "color": [
+      255,
+      140,
+      60,
+      19
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 45,
+     "color": [
+      255,
+      140,
+      60,
+      29
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 43,
+     "color": [
+      255,
+      140,
+      60,
+      39
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 41,
+     "color": [
+      255,
+      140,
+      60,
+      49
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 39,
+     "color": [
+      255,
+      140,
+      60,
+      59
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 37,
+     "color": [
+      255,
+      140,
+      60,
+      69
+     ],
+     "mult": 255,
+     "width": 0
+    }
+   ],
+   "label": "true_aura_peak",
+   "radius": 36,
+   "pulse": 1.5708,
+   "color": [
+    255,
+    140,
+    60
+   ]
+  },
+  {
+   "ops": [
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 71,
+     "color": [
+      120,
+      60,
+      200,
+      8
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 69,
+     "color": [
+      120,
+      60,
+      200,
+      16
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 67,
+     "color": [
+      120,
+      60,
+      200,
+      24
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 65,
+     "color": [
+      120,
+      60,
+      200,
+      32
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 63,
+     "color": [
+      120,
+      60,
+      200,
+      40
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 61,
+     "color": [
+      120,
+      60,
+      200,
+      48
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      360
+     ],
+     "radius": 59,
+     "color": [
+      120,
+      60,
+      200,
+      56
+     ],
+     "mult": 255,
+     "width": 0
+    }
+   ],
+   "label": "true_aura_late",
+   "radius": 58,
+   "pulse": 63.2,
+   "color": [
+    120,
+    60,
+    200
+   ]
+  }
+ ]
+}

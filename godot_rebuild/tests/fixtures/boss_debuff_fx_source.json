@@ -1,0 +1,1290 @@
+{
+ "radius": 36,
+ "anchor": [
+  640,
+  360
+ ],
+ "frames": [
+  {
+   "label": "clean",
+   "slow": 0,
+   "atk_slow": 0,
+   "skill_down": 0,
+   "anti_heal": 0,
+   "burn": 0,
+   "anim_time": 0.0,
+   "alive": true,
+   "include_rings": true,
+   "ops": []
+  },
+  {
+   "label": "slow_only",
+   "slow": 30,
+   "atk_slow": 0,
+   "skill_down": 0,
+   "anti_heal": 0,
+   "burn": 0,
+   "anim_time": 0.0,
+   "alive": true,
+   "include_rings": true,
+   "ops": [
+    {
+     "kind": "ellipse",
+     "rect": [
+      602,
+      389,
+      76,
+      10
+     ],
+     "color": [
+      150,
+      220,
+      255,
+      255
+     ],
+     "mult": 255,
+     "width": 1
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      637,
+      407,
+      5,
+      5
+     ],
+     "color": [
+      10,
+      10,
+      14,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      638,
+      408,
+      4,
+      4
+     ],
+     "color": [
+      150,
+      220,
+      255,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    }
+   ]
+  },
+  {
+   "label": "burn_only_anim0",
+   "slow": 0,
+   "atk_slow": 0,
+   "skill_down": 0,
+   "anti_heal": 0,
+   "burn": 20,
+   "anim_time": 0.0,
+   "alive": true,
+   "include_rings": true,
+   "ops": [
+    {
+     "kind": "circle",
+     "center": [
+      606,
+      322
+     ],
+     "radius": 3,
+     "color": [
+      255,
+      140,
+      40,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      606,
+      322
+     ],
+     "radius": 2,
+     "color": [
+      255,
+      220,
+      90,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      674,
+      321
+     ],
+     "radius": 2,
+     "color": [
+      255,
+      140,
+      40,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      674,
+      321
+     ],
+     "radius": 1,
+     "color": [
+      255,
+      220,
+      90,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      318
+     ],
+     "radius": 4,
+     "color": [
+      255,
+      140,
+      40,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      318
+     ],
+     "radius": 3,
+     "color": [
+      255,
+      220,
+      90,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      637,
+      407,
+      5,
+      5
+     ],
+     "color": [
+      10,
+      10,
+      14,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      638,
+      408,
+      4,
+      4
+     ],
+     "color": [
+      255,
+      130,
+      40,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    }
+   ]
+  },
+  {
+   "label": "burn_only_anim13",
+   "slow": 0,
+   "atk_slow": 0,
+   "skill_down": 0,
+   "anti_heal": 0,
+   "burn": 20,
+   "anim_time": 13.0,
+   "alive": true,
+   "include_rings": true,
+   "ops": [
+    {
+     "kind": "circle",
+     "center": [
+      606,
+      322
+     ],
+     "radius": 4,
+     "color": [
+      255,
+      140,
+      40,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      606,
+      322
+     ],
+     "radius": 3,
+     "color": [
+      255,
+      220,
+      90,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      674,
+      321
+     ],
+     "radius": 2,
+     "color": [
+      255,
+      140,
+      40,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      674,
+      321
+     ],
+     "radius": 1,
+     "color": [
+      255,
+      220,
+      90,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      318
+     ],
+     "radius": 5,
+     "color": [
+      255,
+      140,
+      40,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      318
+     ],
+     "radius": 4,
+     "color": [
+      255,
+      220,
+      90,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      637,
+      407,
+      5,
+      5
+     ],
+     "color": [
+      10,
+      10,
+      14,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      638,
+      408,
+      4,
+      4
+     ],
+     "color": [
+      255,
+      130,
+      40,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    }
+   ]
+  },
+  {
+   "label": "all_debuffs",
+   "slow": 30,
+   "atk_slow": 30,
+   "skill_down": 40,
+   "anti_heal": 40,
+   "burn": 20,
+   "anim_time": 5.5,
+   "alive": true,
+   "include_rings": true,
+   "ops": [
+    {
+     "kind": "ellipse",
+     "rect": [
+      602,
+      389,
+      76,
+      10
+     ],
+     "color": [
+      150,
+      220,
+      255,
+      255
+     ],
+     "mult": 255,
+     "width": 1
+    },
+    {
+     "kind": "circle",
+     "center": [
+      606,
+      322
+     ],
+     "radius": 3,
+     "color": [
+      255,
+      140,
+      40,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      606,
+      322
+     ],
+     "radius": 2,
+     "color": [
+      255,
+      220,
+      90,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      674,
+      321
+     ],
+     "radius": 2,
+     "color": [
+      255,
+      140,
+      40,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      674,
+      321
+     ],
+     "radius": 1,
+     "color": [
+      255,
+      220,
+      90,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      318
+     ],
+     "radius": 4,
+     "color": [
+      255,
+      140,
+      40,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      318
+     ],
+     "radius": 3,
+     "color": [
+      255,
+      220,
+      90,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      627,
+      407,
+      5,
+      5
+     ],
+     "color": [
+      10,
+      10,
+      14,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      628,
+      408,
+      4,
+      4
+     ],
+     "color": [
+      150,
+      220,
+      255,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      632,
+      407,
+      5,
+      5
+     ],
+     "color": [
+      10,
+      10,
+      14,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      633,
+      408,
+      4,
+      4
+     ],
+     "color": [
+      90,
+      160,
+      255,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      637,
+      407,
+      5,
+      5
+     ],
+     "color": [
+      10,
+      10,
+      14,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      638,
+      408,
+      4,
+      4
+     ],
+     "color": [
+      200,
+      120,
+      255,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      642,
+      407,
+      5,
+      5
+     ],
+     "color": [
+      10,
+      10,
+      14,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      643,
+      408,
+      4,
+      4
+     ],
+     "color": [
+      255,
+      90,
+      140,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      647,
+      407,
+      5,
+      5
+     ],
+     "color": [
+      10,
+      10,
+      14,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      648,
+      408,
+      4,
+      4
+     ],
+     "color": [
+      255,
+      130,
+      40,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    }
+   ]
+  },
+  {
+   "label": "all_debuffs_int_anim",
+   "slow": 30,
+   "atk_slow": 30,
+   "skill_down": 40,
+   "anti_heal": 40,
+   "burn": 20,
+   "anim_time": 6.0,
+   "alive": true,
+   "include_rings": true,
+   "ops": [
+    {
+     "kind": "ellipse",
+     "rect": [
+      602,
+      389,
+      76,
+      10
+     ],
+     "color": [
+      150,
+      220,
+      255,
+      255
+     ],
+     "mult": 255,
+     "width": 1
+    },
+    {
+     "kind": "circle",
+     "center": [
+      606,
+      322
+     ],
+     "radius": 2,
+     "color": [
+      255,
+      140,
+      40,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      606,
+      322
+     ],
+     "radius": 1,
+     "color": [
+      255,
+      220,
+      90,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      674,
+      321
+     ],
+     "radius": 2,
+     "color": [
+      255,
+      140,
+      40,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      674,
+      321
+     ],
+     "radius": 1,
+     "color": [
+      255,
+      220,
+      90,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      318
+     ],
+     "radius": 3,
+     "color": [
+      255,
+      140,
+      40,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      318
+     ],
+     "radius": 2,
+     "color": [
+      255,
+      220,
+      90,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      627,
+      407,
+      5,
+      5
+     ],
+     "color": [
+      10,
+      10,
+      14,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      628,
+      408,
+      4,
+      4
+     ],
+     "color": [
+      150,
+      220,
+      255,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      632,
+      407,
+      5,
+      5
+     ],
+     "color": [
+      10,
+      10,
+      14,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      633,
+      408,
+      4,
+      4
+     ],
+     "color": [
+      90,
+      160,
+      255,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      637,
+      407,
+      5,
+      5
+     ],
+     "color": [
+      10,
+      10,
+      14,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      638,
+      408,
+      4,
+      4
+     ],
+     "color": [
+      200,
+      120,
+      255,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      642,
+      407,
+      5,
+      5
+     ],
+     "color": [
+      10,
+      10,
+      14,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      643,
+      408,
+      4,
+      4
+     ],
+     "color": [
+      255,
+      90,
+      140,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      647,
+      407,
+      5,
+      5
+     ],
+     "color": [
+      10,
+      10,
+      14,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      648,
+      408,
+      4,
+      4
+     ],
+     "color": [
+      255,
+      130,
+      40,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    }
+   ]
+  },
+  {
+   "label": "all_without_rings",
+   "slow": 30,
+   "atk_slow": 30,
+   "skill_down": 40,
+   "anti_heal": 40,
+   "burn": 20,
+   "anim_time": 5.5,
+   "alive": true,
+   "include_rings": false,
+   "ops": [
+    {
+     "kind": "circle",
+     "center": [
+      606,
+      322
+     ],
+     "radius": 3,
+     "color": [
+      255,
+      140,
+      40,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      606,
+      322
+     ],
+     "radius": 2,
+     "color": [
+      255,
+      220,
+      90,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      674,
+      321
+     ],
+     "radius": 2,
+     "color": [
+      255,
+      140,
+      40,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      674,
+      321
+     ],
+     "radius": 1,
+     "color": [
+      255,
+      220,
+      90,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      318
+     ],
+     "radius": 4,
+     "color": [
+      255,
+      140,
+      40,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "circle",
+     "center": [
+      640,
+      318
+     ],
+     "radius": 3,
+     "color": [
+      255,
+      220,
+      90,
+      255
+     ],
+     "mult": 255,
+     "width": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      627,
+      407,
+      5,
+      5
+     ],
+     "color": [
+      10,
+      10,
+      14,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      628,
+      408,
+      4,
+      4
+     ],
+     "color": [
+      150,
+      220,
+      255,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      632,
+      407,
+      5,
+      5
+     ],
+     "color": [
+      10,
+      10,
+      14,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      633,
+      408,
+      4,
+      4
+     ],
+     "color": [
+      90,
+      160,
+      255,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      637,
+      407,
+      5,
+      5
+     ],
+     "color": [
+      10,
+      10,
+      14,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      638,
+      408,
+      4,
+      4
+     ],
+     "color": [
+      200,
+      120,
+      255,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      642,
+      407,
+      5,
+      5
+     ],
+     "color": [
+      10,
+      10,
+      14,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      643,
+      408,
+      4,
+      4
+     ],
+     "color": [
+      255,
+      90,
+      140,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      647,
+      407,
+      5,
+      5
+     ],
+     "color": [
+      10,
+      10,
+      14,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    },
+    {
+     "kind": "rect",
+     "rect": [
+      648,
+      408,
+      4,
+      4
+     ],
+     "color": [
+      255,
+      130,
+      40,
+      255
+     ],
+     "mult": 255,
+     "width": 0,
+     "radius": 0
+    }
+   ]
+  },
+  {
+   "label": "dead_ignores_everything",
+   "slow": 30,
+   "atk_slow": 30,
+   "skill_down": 40,
+   "anti_heal": 40,
+   "burn": 20,
+   "anim_time": 5.5,
+   "alive": false,
+   "include_rings": true,
+   "ops": []
+  }
+ ]
+}

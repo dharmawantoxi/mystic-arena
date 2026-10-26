@@ -1529,6 +1529,12 @@ func _boss_enemies() -> Array[UnitState]:
 	return enemies
 
 
+## Layer 9bq6: read-only presentation query for the FX layers whose source reads `boss.target`
+## (urgharun's W and E). It runs the same nearest-enemy pick the AI uses and mutates nothing.
+func boss_presentation_target() -> UnitState:
+	return _boss_target(_boss_enemies())
+
+
 func _boss_target(enemies: Array[UnitState]) -> UnitState:
 	if active_boss == null:
 		return null

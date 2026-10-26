@@ -144,6 +144,12 @@ jobs:
           python godot_rebuild/tests/boss_celebration_draw_source_oracle.py
           python godot_rebuild/tests/boss_death_sequence_draw_source_oracle.py
           python godot_rebuild/tests/nyxareth_realm_draw_source_oracle.py
+          python godot_rebuild/tests/urgharun_enrage_fx_source_oracle.py
+          python godot_rebuild/tests/urgharun_enrage_ground_source_oracle.py
+          python godot_rebuild/tests/urgharun_skill_fx_source_oracle.py
+          python godot_rebuild/tests/boss_aura_fx_source_oracle.py
+          python godot_rebuild/tests/urgharun_basic_attack_source_oracle.py
+          python godot_rebuild/tests/boss_debuff_fx_source_oracle.py
           python godot_rebuild/tests/tactical_draw_source_oracle.py
           python godot_rebuild/tests/gold_hud_draw_source_oracle.py
           python godot_rebuild/tests/shop_hint_draw_source_oracle.py
