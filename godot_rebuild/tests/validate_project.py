@@ -4594,7 +4594,8 @@ for _fragment in (
 ):
     check(_fragment in _hr_painter, f"9bo the painter must draw the source hero overlay: {_fragment!r}")
 check("if _draw_hero_sprite(hero):" in _hr_view and "func _draw_hero_sprite(" in _hr_view
-      and "HeroPainter.paint(self, hero, art, hero.id == session.selected_id)" in _hr_view
+      and "HeroPainter.paint(self, hero, art, hero.id == session.selected_id, debuff_ops)"
+      in _hr_view
       and "hero_anim.prune(session.world.units)" in _hr_view
       and _hr_view.index("if _draw_hero_sprite(hero):") < _hr_view.index("HeroMarker.silhouette(point, radius"),
       "9bo the view must draw the baked hero first and keep the marker as the fallback")
@@ -5294,6 +5295,64 @@ check("view.boss_debuff_fx_draws > debuffed_before" in _us_painter
 check("_check_frames(check, data)" in _bd_checks and "_check_shape(check, data)" in _bd_checks
       and "_check_view_wiring(check, data)" in _bd_checks and "func _report(" in _bd_checks,
       "9bq9 the debuff suite must replay the frames, the shape and the view")
+
+# ── Layer 9bq10: the same indicator at the `_entity.py` hero and minion call sites ──
+from entity_debuff_fx_source_oracle import source_fixture as entity_debuff_fixture
+_ed_path = ROOT / "tests/fixtures/entity_debuff_fx_source.json"
+_ed_checks = (ROOT / "tests/entity_debuff_fx_checks.gd").read_text(encoding="utf-8")
+_ed_painter = (ROOT / "scripts/ui/debuff_fx_painter.gd").read_text(encoding="utf-8")
+_ed_hero_painter = (ROOT / "scripts/ui/hero_painter.gd").read_text(encoding="utf-8")
+_ed_minion_view = (ROOT / "scenes/combat/minion_view.gd").read_text(encoding="utf-8")
+_ed_entity = (ROOT.parent / "_entity.py").read_text(encoding="utf-8")
+check('const EntityDebuffFxChecks = preload("res://tests/entity_debuff_fx_checks.gd")' in ai_tests
+      and "EntityDebuffFxChecks.new().run(_check)" in ai_tests,
+      "9bq10 entity debuff suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/entity_debuff_fx_source_oracle.py" in workflow,
+      "9bq10 CI must run the hero/minion debuff source oracle")
+check(_ed_path.is_file(), "9bq10 entity debuff fixture must exist")
+if _ed_path.is_file():
+    _ed = json.loads(_ed_path.read_text(encoding="utf-8"))
+    check(entity_debuff_fixture() == _ed,
+          "9bq10 entity debuff fixture must not drift from _entity.py and _core.py")
+    check(len(_ed["frames"]) == 8
+          and sum(len(frame["ops"]) for frame in _ed["frames"]) == 54
+          and [len(frame["ops"]) for frame in _ed["frames"]] == [0, 3, 8, 17, 2, 8, 16, 0],
+          "9bq10 oracle must pin 8 frames, 54 ops and the hero/minion split")
+    check(_ed["call_sites"]["Hero"]["args"] == ["surface", "x", "y", "self.radius"]
+          and _ed["call_sites"]["Hero"]["kwargs"] == {}
+          and int(_ed["call_sites"]["Hero"]["radius"]) == 16,
+          "9bq10 `Hero.draw` must keep its own radius and the default ring flag")
+    check(_ed["call_sites"]["Minion"]["kwargs"] == {"include_rings": "False"}
+          and "_draw_hero_shape" in _ed["call_sites"]["Hero"]["after"]
+          and "self.slow_timer > 0" in _ed["call_sites"]["Minion"]["before"],
+          "9bq10 the call sites must keep their position and their ring flag")
+check("self._draw_tower_debuff_fx(surface, x, y, self.radius)" in _ed_entity
+      and "self._draw_tower_debuff_fx(surface, x, y, self.radius,\n                                   include_rings=False)"
+      in _ed_entity,
+      "9bq10 `_entity.py` must still call the shared indicator from both draws")
+check("const HERO_DEBUFF_RADIUS := 16" in _bs_view
+      and "func hero_debuff_draw_ops(hero: HeroState, anim: float) -> Array:" in _bs_view
+      and "hero.anti_heal_timer," in _bs_view,
+      "9bq10 the view must build the hero indicator from the live timers at radius 16")
+_ed_hero_paint = _ed_hero_painter[_ed_hero_painter.index("static func paint("):]
+check("debuff_ops: Array = []" in _ed_hero_paint
+      and _ed_hero_paint.index("_ellipse(shadow)")
+      < _ed_hero_paint.index("DebuffFxPainter.paint(canvas, debuff_ops)")
+      < _ed_hero_paint.index("draw_texture_rect_region"),
+      "9bq10 the hero painter must paint the indicator after the shadow, before the body")
+check("func minion_debuff_draw_ops(unit: UnitState, anim: int) -> Array:" in _ed_minion_view
+      and "int(unit.definition.radius_px)," in _ed_minion_view
+      and _ed_minion_view.index("_draw_minion_slow(point, radius")
+      < _ed_minion_view.index("DebuffFxPainter.paint(self, debuff_ops)")
+      < _ed_minion_view.index("draw_texture_rect_region"),
+      "9bq10 the minion view must paint the indicator after the ice aura, before the body")
+check('"ellipse"' in _ed_painter and '"circle"' in _ed_painter
+      and 'canvas.draw_polyline(path, color, float(width), true)' in _ed_painter,
+      "9bq10 the shared painter must cover the layout's ellipse, circle and rect ops")
+check("_check_call_sites(check, data)" in _ed_checks
+      and "_check_hero_wiring(check, data)" in _ed_checks
+      and "_check_minion_wiring(check, data)" in _ed_checks,
+      "9bq10 the entity suite must replay the call sites and both wirings")
 
 # ── Layer 9bi2: tactical command visuals (gather marker, feedback banner, floating text) ──
 from tactical_draw_source_oracle import source_fixture as tactical_draw_fixture

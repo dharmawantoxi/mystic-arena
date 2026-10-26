@@ -48,6 +48,9 @@ const WallTiles = preload("res://scripts/ui/wall_tiles.gd")
 const TerrainTiles = preload("res://scripts/ui/terrain_tiles.gd")
 const HeroProjectileArtScript = preload("res://scripts/ui/hero_projectile_art.gd")
 const HUD_SCREEN_W := 1280
+## Layer 9bq10: `Hero.__init__` pins `self.radius = 16`, the radius `Hero.draw` feeds the
+## shared tower-debuff indicator.
+const HERO_DEBUFF_RADIUS := 16
 ## Layer 9bi: paint order of the world-space layers (`EffectManager.draw` = path
 ## preview then the effects, then `tactical.draw_world`) and of the screen overlays
 ## (`Game.draw`: boss intro, then `effects.draw_ui` = wave announcer and achievement,
@@ -110,6 +113,9 @@ var boss_basic_attack_fg_ops := 0
 ## Layer 9bq9: the debuff indicator (slow ring, burn flames, pip row) `Boss.draw` paints.
 var boss_debuff_fx_draws := 0
 var boss_debuff_fx_ops := 0
+## Layer 9bq10: the same indicator on a hero (`Hero.draw` paints it after the ground shadow).
+var hero_debuff_fx_draws := 0
+var hero_debuff_fx_ops := 0
 var boss_attack_clocks := {}
 ## The tactical banner border (layer 9bi2): 2 px, 6 px corners, drawn inside its box.
 var tactical_border := StyleBoxFlat.new()
@@ -1493,7 +1499,11 @@ func _draw_hero_sprite(hero: HeroState) -> bool:
 		art = HeroArt.frame(hero.definition.id, hero.team, pose, hero.facing)
 	if art.is_empty():
 		return false
-	HeroPainter.paint(self, hero, art, hero.id == session.selected_id)
+	var debuff_ops := hero_debuff_draw_ops(hero, pulse)
+	if not debuff_ops.is_empty():
+		hero_debuff_fx_draws += 1
+		hero_debuff_fx_ops += debuff_ops.size()
+	HeroPainter.paint(self, hero, art, hero.id == session.selected_id, debuff_ops)
 	return true
 
 
@@ -1683,6 +1693,26 @@ func boss_debuff_draw_ops(boss: BossState) -> Array:
 		boss.anti_heal_timer,
 		boss.burn_timer,
 		float(boss.anim_time)
+	)
+
+
+## Layer 9bq10: `_entity.py::Hero.draw` calls the shared indicator after the ground shadow and
+## before the hero body. `Hero.__init__` fixes the source radius at 16, and a hero carries no
+## `anim_time`, so the source falls back to `pulse` (`self.pulse += 0.1` per tick), which is the
+## clock `hero_anim.observe` already reproduces.
+func hero_debuff_draw_ops(hero: HeroState, anim: float) -> Array:
+	if not hero.alive:
+		return []
+	return BossDebuffFxLayout.ops(
+		int(hero.position.x),
+		int(hero.position.y),
+		HERO_DEBUFF_RADIUS,
+		hero.slow_timer,
+		hero.atk_slow_timer,
+		hero.skill_down_timer,
+		hero.anti_heal_timer,
+		hero.burn_timer,
+		anim
 	)
 
 

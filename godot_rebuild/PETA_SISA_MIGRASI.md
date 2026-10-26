@@ -3599,6 +3599,48 @@ Validasi lokal: `validate_project.py` -> PASS 21227 static checks; `gdparse`/`gd
 `40207671281` (job `121211995053`) **pass 15m9s** dengan notice
 `PASS: 1505070 checks; fixed ticks and source parity`; review visual tetap tidak dilakukan.
 
+----
+
+## Slice 9bq10 — indikator debuff hero dan minion (`_entity.py` call sites)
+
+`TowerDebuffMixin._draw_tower_debuff_fx` (layer 9bq9) sudah diport dan dipakai `Boss.draw`.
+Sumber memanggil fungsi yang sama dari dua `draw()` lain di `_entity.py`, dan keduanya belum ada
+di rebuild, jadi hero/menara yang kena slow/burn/anti-heal hanya berubah warna:
+
+- `Hero.draw` (`_entity.py:4836`): `self._draw_tower_debuff_fx(surface, x, y, self.radius)` setelah
+  bayangan tanah, sebelum `_draw_hero_shape`. `Hero.__init__` memaku `self.radius = 16`; hero tidak
+  punya `anim_time`, jadi `getattr(self, "anim_time", getattr(self, "pulse", 0))` membaca `pulse`
+  (`+= 0.1` per tick) - jam yang sudah direproduksi `hero_anim.gd` (`PULSE_STEP = 0.1`).
+- `Minion.draw` (`_entity.py:5908`): panggilan yang sama dengan `include_rings=False` (aura es
+  minion digambar tepat sebelumnya) dan `anim_time` bilangan bulat (`+= 1`), radius
+  `stats["radius"]` (goblin 9).
+
+Implementasi memakai ulang layout 9bq9 tanpa perubahan; yang baru hanya call site dan satu painter
+bersama:
+
+- `scripts/ui/debuff_fx_painter.gd`: `paint(canvas, ops)` untuk tiga jenis op layout (`rect`,
+  `circle`, `ellipse`), meniru semantik pygame (border di dalam rect, stroke elips ditarik masuk
+  setengah lebar).
+- `scripts/ui/hero_painter.gd`: `paint(..., debuff_ops: Array = [])` melukis op setelah bayangan
+  tanah dan sebelum badan, persis urutan `Hero.draw`.
+- `prototype_view.gd`: `hero_debuff_draw_ops(hero, anim)` (kosong bila `not hero.alive`, radius
+  `HERO_DEBUFF_RADIUS = 16`), penghitung `hero_debuff_fx_draws/_ops`, dan `_draw_hero_sprite`
+  menurunkan op dari `pulse` jam `hero_anim` yang sama.
+- `scenes/combat/minion_view.gd`: `minion_debuff_draw_ops(unit, anim)` (`include_rings=False`,
+  radius `definition.radius_px`), penghitung `minion_debuff_fx_draws/_ops`, dilukis setelah aura es
+  dan sebelum sprite.
+- Bukti: `tests/entity_debuff_fx_source_oracle.py` memanen metode mixin yang sama dari `_core.py`
+  (shim `draw_recorder.py`) plus audit `ast` call site `Hero.draw`/`Minion.draw` (argumen,
+  `include_rings`, pernyataan sebelum/sesudah) -> **8 frame / 54 op** dengan pola
+  `[0, 3, 8, 17, 2, 8, 16, 0]`. `tests/entity_debuff_fx_checks.gd` me-replay semuanya plus wiring
+  view hero dan minion; suite terdaftar di `tests/run_all.gd`, command oracle di workflow, pin
+  9bq10 di `tests/validate_project.py`.
+
+Batas slice ini: jalur fallback marker hero (atlas hero tidak ter-import) dan fallback lingkaran
+minion (atlas minion tidak ter-import) belum melukis indikator, karena keduanya tidak melewati
+painter/sprite yang membawa jam animasi. `_draw_entrance` boss dan resep AI urgharun tetap di luar
+cakupan.
+
 Batas slice ini:
 - Hanya call site `Boss.draw` yang diport. Sumber memakai fungsi yang sama dari `_entity.py` untuk
   hero, menara, dan unit lain; wiring itu belum ada di rebuild dan menjadi slice lain.
