@@ -10,6 +10,15 @@ static func _fake_measure(text: String, font_size: int) -> Vector2i:
 	return Vector2i(int(font_size * 0.55) * text.length(), font_size)
 
 
+static func _mismatch_detail(actual: Array, expected: Array) -> String:
+	if actual.size() != expected.size():
+		return "size %d != %d" % [actual.size(), expected.size()]
+	for index in range(expected.size()):
+		if actual[index] != expected[index]:
+			return "op %d got %s, expected %s" % [index, str(actual[index]), str(expected[index])]
+	return "none"
+
+
 func run(check: Callable) -> void:
 	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(FIXTURE))
 	check.call(data is Dictionary, "Tower-hover source fixture parses")
@@ -28,8 +37,10 @@ func run(check: Callable) -> void:
 		var ops: Array = []
 		if state is Dictionary:
 			ops = Layout.ops(state, _fake_measure)
+		var detail := _mismatch_detail(ops, frame["ops"])
 		check.call(
-			ops == frame["ops"], "Tower-hover %s matches source draw ops" % String(frame["name"])
+			detail == "none",
+			"Tower-hover %s source-op parity: %s" % [String(frame["name"]), detail]
 		)
 	_check_view_wiring(check, frames[0])
 
@@ -42,8 +53,6 @@ func _check_view_wiring(check: Callable, frame: Dictionary) -> void:
 	)
 	view.tower_hover_state = frame["state"].duplicate(true)
 	var actual := view.tower_hover_draw_ops(_fake_measure)
-	check.call(
-		actual == frame["ops"],
-		"PrototypeView paints the tower-hover snapshot using the source layout"
-	)
+	var detail := _mismatch_detail(actual, frame["ops"])
+	check.call(detail == "none", "PrototypeView tower-hover source-op parity: %s" % detail)
 	view.free()
