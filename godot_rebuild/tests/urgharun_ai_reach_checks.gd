@@ -112,7 +112,7 @@ func _check_no_cast(check: Callable, data: Dictionary) -> void:
 		return
 	enemy.position = boss.position + Vector2(40, 0)
 	enemy.hp = 1000000.0
-	enemy.max_hp = 1000000.0
+	enemy.max_hp = 1000000
 	var enemies: Array[UnitState] = [enemy]
 	var casts := 0
 	var generic := false
