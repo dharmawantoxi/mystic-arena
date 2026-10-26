@@ -3843,7 +3843,7 @@ static func _urgharun(
 		for enemy in enemies:
 			if boss.position.distance_to(enemy.position) <= 180.0:
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
-			return
+		return
 	# Urgharun had no source smart-AI arm, so preserve its previous generic ability whenever this
 	# new R extension does not cast.
 	_generic(world, boss, enemies)
