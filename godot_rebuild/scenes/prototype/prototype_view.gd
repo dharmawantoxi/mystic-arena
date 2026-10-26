@@ -32,6 +32,7 @@ const UrgharunEnrageGroundLayout = preload("res://scripts/ui/urgharun_enrage_gro
 const BossAuraFxLayout = preload("res://scripts/ui/boss_aura_fx_layout.gd")
 const UrgharunAttackClock = preload("res://scripts/ui/urgharun_attack_clock.gd")
 const BossDebuffFxLayout = preload("res://scripts/ui/boss_debuff_fx_layout.gd")
+const BossEntranceLayout = preload("res://scripts/ui/boss_entrance_layout.gd")
 const UrgharunSkillFxLayout = preload("res://scripts/ui/urgharun_skill_fx_layout.gd")
 const TacticalLayout = preload("res://scripts/ui/tactical_layout.gd")
 const GoldHudLayout = preload("res://scripts/ui/gold_hud_layout.gd")
@@ -1945,22 +1946,56 @@ func _draw_boss_sprite(boss: BossState, art: Dictionary) -> void:
 	draw_texture_rect_region(art["texture"] as Texture2D, Rect2(corner, src.size), src, tint)
 
 
-func _draw_boss_entrance(boss: BossState) -> void:
-	var state := boss.entrance_presentation_state()
-	var size := int(state["aura_radius"])
-	if size > 0:
-		var alpha := float(state["aura_alpha"]) / 255.0
-		draw_circle(boss.position, size, Color(boss.entrance_color, alpha))
-	if bool(state["text_visible"]):
+## Layer 9bq11: `Boss.draw` hands the whole frame to `_draw_entrance` while the entrance timer
+## runs, so this paints the aura and the wrapped title and nothing else. `measure` defaults to the
+## real `Barlow-SemiBold` metrics; the suite passes the recording shim's glyph metrics.
+func _draw_boss_entrance(boss: BossState, measure: Callable = Callable()) -> void:
+	for op in boss_entrance_draw_ops(boss, measure):
+		if String(op.get("kind", "")) != "text":
+			_draw_intro_op(op)
+			continue
+		var color: Array = op["color"]
+		var ink := Color8(int(color[0]), int(color[1]), int(color[2]), int(op.get("mult", 255)))
+		var pos: Array = op["pos"]
+		var size_px := int(op["size"])
 		draw_string(
 			BossFont,
-			Vector2(180, 100),
-			boss.entrance_text,
-			HORIZONTAL_ALIGNMENT_CENTER,
-			920,
-			28 if boss.boss_class == "true" else 24,
-			Color(boss.entrance_color, float(state["text_alpha"]) / 255.0)
+			Vector2(float(pos[0]), float(pos[1]) + BossFont.get_ascent(size_px)),
+			String(op["text"]),
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1,
+			size_px,
+			ink
 		)
+
+
+## Layer 9bq11: the `_draw_entrance` ops for this frame (aura, then shadow/text per wrapped line).
+func boss_entrance_draw_ops(boss: BossState, measure: Callable = Callable()) -> Array:
+	if not boss.alive:
+		return []
+	var is_true := boss.boss_class == "true"
+	var ink := [
+		int(boss.entrance_color.r8),
+		int(boss.entrance_color.g8),
+		int(boss.entrance_color.b8),
+		255,
+	]
+	return BossEntranceLayout.ops(
+		int(boss.position.x),
+		int(boss.position.y),
+		int(boss.radius),
+		boss.entrance_timer,
+		BossEntranceLayout.max_entrance(is_true),
+		ink,
+		boss.entrance_text,
+		is_true,
+		float(boss.anim_time),
+		measure if measure.is_valid() else _boss_text_measure
+	)
+
+
+func _boss_text_measure(text: String, size_px: int) -> Vector2:
+	return BossFont.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px)
 
 
 func _draw_boss_death(snapshot: Dictionary) -> void:

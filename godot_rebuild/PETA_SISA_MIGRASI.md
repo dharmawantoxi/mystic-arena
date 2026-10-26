@@ -3643,6 +3643,42 @@ dinaikkan ke `timeout 600` agar suite yang bertambah tidak dipotong di tengah ja
 `40265306356` (job `121386299127`) **pass 12m32s** dengan notice
 `PASS: 1505098 checks; fixed ticks and source parity`.
 
+----
+
+## Slice 9bq11 - `_draw_entrance` boss (`Boss.draw` saat masuk panggung)
+
+Selama `entrance_timer > 0` sumber tidak menggambar apa pun selain entrance: `Boss.draw` memanggil
+`_draw_entrance(surface, x, y, max_entrance)` lalu `return`, dengan
+`max_entrance = 180 if boss_class == "true" else 120`. Sebelumnya view hanya menggambar satu
+lingkaran aura dan satu `draw_string` tanpa wrap/bayangan pada `(180, 100)`.
+
+- `scripts/ui/boss_entrance_layout.gd::ops(x, y, radius, entrance_timer, max_timer, entrance_color,
+  entrance_text, is_true, anim_time, measure)`:
+  - `progress = 1 - entrance_timer / max_timer`, `size = int(radius * progress * 2)`;
+  - `size > 0` -> satu `circle` terisi `(*entrance_color, clamp(int(200 * (1 - progress))))`
+    berpusat di boss (sumber membuat surface `size*3` lalu mem-blit di `x - size*3//2`);
+  - `entrance_timer > max_timer // 2` -> `pulse = sin(anim*0.2)*0.3 + 0.7`,
+    `alpha = clamp(int(255*pulse))`, bayangan `clamp(int(200*pulse))`, word-wrap greedy 1000 px
+    memakai `measure` font, `start_y = 84 - (n-1)*18`, 34 px per baris, tiap baris: teks bayangan
+    hitam `(x+2, y+2)` lebih dulu lalu teksnya, keduanya `get_rect(center=(640, ly))`
+    (`640 - w // 2`, `ly - h // 2`).
+  - Metrik font tidak bisa dimiliki layout, jadi `measure(text, size)` adalah Callable
+    `-> Vector2(w, h)`: view memakai `Barlow-SemiBold` asli, suite memakai shim
+    `int(size * 0.55) * len(text) x size`.
+- `prototype_view.gd`: `boss_entrance_draw_ops(boss, measure = Callable())` (kosong bila
+  `not boss.alive`) dan `_draw_boss_entrance` melukis op non-teks lewat `_draw_intro_op` serta teks
+  lewat `draw_string` pada baseline `pos.y + get_ascent(size)`.
+- Bukti: `tests/boss_entrance_draw_source_oracle.py` memanen `Boss._draw_entrance` dari
+  `bosses/base_boss.py` (AST) dan menjalankannya di shim `draw_recorder.py` -> **8 frame / 19 op**
+  (`[2, 3, 1, 1, 2, 3, 4, 3]`: judul saja, aura+judul, aura saja di `timer == max//2`, near-end,
+  true boss 28 px, dan satu judul panjang yang ter-wrap jadi dua baris).
+  `tests/boss_entrance_draw_checks.gd` me-replay semuanya plus bentuk dan wiring view; terdaftar di
+  `tests/run_all.gd`, command oracle di workflow, pin 9bq11 di `tests/validate_project.py`.
+
+Batas slice ini: `measure` tetap menjadi parameter karena metrik font Godot tidak identik dengan
+pygame, jadi posisi vertikal teks bisa bergeser beberapa piksel dari sumber;
+`entrance_presentation_state` di `BossState` dibiarkan (kontrak state, bukan jalur gambar baru).
+
 Batas slice ini: jalur fallback marker hero (atlas hero tidak ter-import) dan fallback lingkaran
 minion (atlas minion tidak ter-import) belum melukis indikator, karena keduanya tidak melewati
 painter/sprite yang membawa jam animasi. `_draw_entrance` boss dan resep AI urgharun tetap di luar

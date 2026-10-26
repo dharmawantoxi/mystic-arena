@@ -5354,6 +5354,57 @@ check("_check_call_sites(check, data)" in _ed_checks
       and "_check_minion_wiring(check, data)" in _ed_checks,
       "9bq10 the entity suite must replay the call sites and both wirings")
 
+# ── Layer 9bq11: `Boss._draw_entrance` (entrance aura and wrapped title) ──
+from boss_entrance_draw_source_oracle import source_fixture as boss_entrance_fixture
+_be_path = ROOT / "tests/fixtures/boss_entrance_draw_source.json"
+_be_layout = (ROOT / "scripts/ui/boss_entrance_layout.gd").read_text(encoding="utf-8")
+_be_checks = (ROOT / "tests/boss_entrance_draw_checks.gd").read_text(encoding="utf-8")
+_be_boss = (ROOT.parent / "bosses/base_boss.py").read_text(encoding="utf-8")
+check('const BossEntranceDrawChecks = preload("res://tests/boss_entrance_draw_checks.gd")' in ai_tests
+      and "BossEntranceDrawChecks.new().run(_check)" in ai_tests,
+      "9bq11 entrance suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/boss_entrance_draw_source_oracle.py" in workflow,
+      "9bq11 CI must run the entrance source oracle")
+check(_be_path.is_file(), "9bq11 entrance fixture must exist")
+if _be_path.is_file():
+    _be = json.loads(_be_path.read_text(encoding="utf-8"))
+    check(boss_entrance_fixture() == _be,
+          "9bq11 entrance fixture must not drift from `Boss._draw_entrance`")
+    check(len(_be["frames"]) == 8
+          and sum(len(frame["ops"]) for frame in _be["frames"]) == 19
+          and [len(frame["ops"]) for frame in _be["frames"]] == [2, 3, 1, 1, 2, 3, 4, 3],
+          "9bq11 oracle must pin 8 frames, 19 ops and the aura/title gate")
+    check(any(frame["entrance_text"].count(" ") > 8 and len(frame["ops"]) == 4
+              for frame in _be["frames"]),
+          "9bq11 one frame must prove the 1000 px word wrap")
+check("self._draw_entrance(surface, x, y, max_entrance)" in _be_boss
+      and "max_entrance = 180 if is_true else 120" in _be_boss
+      and "if font.size(trial)[0] <= 1000:" in _be_boss
+      and "start_y = 84 - (len(lines) - 1) * 18" in _be_boss,
+      "9bq11 the source must keep the entrance gate, the wrap and the line origin")
+check("const SCREEN_WIDTH := 1280" in _be_layout
+      and "const TEXT_MAX_WIDTH := 1000" in _be_layout
+      and "const TEXT_START_Y := 84" in _be_layout
+      and "const LINE_STEP := 34" in _be_layout
+      and "return int(float(radius) * entrance_progress * 2.0)" in _be_layout
+      and "return sin(anim_time * 0.2) * 0.3 + 0.7" in _be_layout
+      and "const TRUE_ENTRANCE := 180" in _be_layout,
+      "9bq11 the layout must mirror the aura, the pulse and the 1000 px wrap")
+check("func boss_entrance_draw_ops(boss: BossState, measure: Callable = Callable()) -> Array:"
+      in _bs_view
+      and "BossEntranceLayout.max_entrance(is_true)," in _bs_view
+      and "measure if measure.is_valid() else _boss_text_measure" in _bs_view,
+      "9bq11 the view must build the entrance ops from the live boss and the real font")
+_be_draw = _bs_view[_bs_view.index("func _draw_boss_entrance("):]
+check(_be_draw.index("boss_entrance_draw_ops(boss, measure)")
+      < _be_draw.index("draw_string(")
+      and _be_draw.index("draw_string(") < _be_draw.index("BossFont.get_ascent(size_px)")
+      and "_draw_intro_op(op)" in _be_draw,
+      "9bq11 the view must paint the aura as an op and the title on its baseline")
+check("_check_frames(check, data)" in _be_checks and "_check_shape(check, data)" in _be_checks
+      and "_check_view_wiring(check, data)" in _be_checks and "func _report(" in _be_checks,
+      "9bq11 the entrance suite must replay the frames, the shape and the view")
+
 # ── Layer 9bi2: tactical command visuals (gather marker, feedback banner, floating text) ──
 from tactical_draw_source_oracle import source_fixture as tactical_draw_fixture
 _td_path = ROOT / "tests/fixtures/tactical_draw_source.json"
