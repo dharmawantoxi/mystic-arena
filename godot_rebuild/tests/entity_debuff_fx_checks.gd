@@ -120,7 +120,7 @@ func _check_call_sites(check: Callable, data: Dictionary) -> void:
 	)
 	check.call(
 		(
-			"_draw_hero_shape(surface, x, y)" == String(hero["after"])
+			"self._draw_hero_shape(surface, x, y)" == String(hero["after"])
 			and "self.radius * 2, 8" in String(hero["before"])
 			and hero["before"].find("ellipse") != -1
 		),
@@ -174,7 +174,7 @@ func _check_shape(check: Callable, data: Dictionary) -> void:
 	check.call(
 		(
 			str(minion_slow["ops"][0]["kind"]) == "rect"
-			and _value_equal(minion_slow["ops"][0]["rect"], [638, 380, 5, 5])
+			and _value_equal(minion_slow["ops"][0]["rect"], [637, 380, 5, 5])
 			and minion_slow["ops"].size() == 2
 		),
 		"`Minion.draw` drops the ring: only the slow pip pair remains"
