@@ -1,0 +1,53 @@
+{
+ "hero_type": "raz",
+ "name": "Raz",
+ "title": "The Heat of Despair",
+ "role": "Boss/Fire Monk",
+ "palette": {
+  "skin_mid": [
+   155,
+   95,
+   60
+  ],
+  "hair_mid": [
+   55,
+   42,
+   48
+  ],
+  "cloth_darkest": [
+   18,
+   12,
+   10
+  ],
+  "cloth_dark": [
+   45,
+   32,
+   22
+  ],
+  "red_darkest": [
+   55,
+   8,
+   12
+  ],
+  "red_mid": [
+   185,
+   35,
+   40
+  ],
+  "fire_mid": [
+   230,
+   90,
+   20
+  ],
+  "fire_hot": [
+   255,
+   220,
+   120
+  ],
+  "gold_mid": [
+   185,
+   138,
+   55
+  ]
+ }
+}

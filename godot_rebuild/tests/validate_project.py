@@ -6545,6 +6545,41 @@ if _hp_manifest_path.is_file():
               and re.fullmatch(r"[0-9a-f]{64}", _case.get("rgba_sha256", "")) is not None,
               f"9bu source-render hashes must be pinned: {_case.get('key')}")
 
+# ── Slice 9c215: Raz becomes the 222nd source-informed native portrait ──
+from hero_portrait_raz_source_oracle import source_fixture as raz_portrait_source_fixture
+
+_raz_fixture_path = ROOT / "tests/fixtures/hero_portrait_raz_source.json"
+_raz_fixture = None
+_raz_painter = (ROOT / "scripts/ui/hero_portrait_raz.gd").read_text(encoding="utf-8")
+_raz_expansion = (ROOT / "scripts/ui/hero_portrait_expansion.gd").read_text(encoding="utf-8")
+_raz_checks = (ROOT / "tests/hero_shop_portrait_checks.gd").read_text(encoding="utf-8")
+check("python godot_rebuild/tests/hero_portrait_raz_source_oracle.py" in workflow,
+      "9c215 CI must run the Raz portrait palette oracle")
+check(_raz_fixture_path.is_file(), "9c215 Raz portrait source fixture must exist")
+if _raz_fixture_path.is_file():
+    _raz_fixture = json.loads(_raz_fixture_path.read_text(encoding="utf-8"))
+    check(raz_portrait_source_fixture() == _raz_fixture,
+          "9c215 Raz portrait fixture must match the Python Fire Monk source")
+    check(_raz_fixture.get("hero_type") == "raz"
+          and _raz_fixture.get("role") == "Boss/Fire Monk"
+          and _raz_fixture.get("title") == "The Heat of Despair",
+          "9c215 fixture must identify Raz as the Fire Monk")
+check('const RAZ_PAINTER = preload("res://scripts/ui/hero_portrait_raz.gd")' in _raz_expansion
+      and '\t\t"raz",' in _raz_expansion
+      and '\t\t"raz":\n\t\t\tRAZ_PAINTER.paint(canvas, box)' in _raz_expansion,
+      "9c215 expansion painter must register and dispatch Raz")
+check('"family": "fighter"' in _raz_painter
+      and '"feature": "fire"' in _raz_painter
+      and '"hair": Color8(55, 42, 48)' in _raz_painter
+      and '"gold": Color8(185, 138, 55)' in _raz_painter,
+      "9c215 Raz painter must use the Fire Monk fighter palette accents")
+check('const RazPainter = preload("res://scripts/ui/hero_portrait_raz.gd")' in _raz_checks
+      and "_raz_palette(check)" in _raz_checks
+      and "Every roster hero has a native custom canvas" in _raz_checks
+      and 'HeroPortrait.has_custom("raz")' in _raz_checks
+      and '"unknown_portrait_test"' in _raz_checks,
+      "9c215 native portrait suite must cover Raz and preserve unknown-id fallback")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

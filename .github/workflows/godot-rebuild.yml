@@ -177,6 +177,7 @@ jobs:
           python godot_rebuild/tests/balance_baseline_source_oracle.py
           python godot_rebuild/tests/debuff_payload_reach_source_oracle.py
           python godot_rebuild/tests/hero_marker_source_oracle.py
+          python godot_rebuild/tests/hero_portrait_raz_source_oracle.py
           gdparse $(find godot_rebuild -name '*.gd')
           gdlint $(find godot_rebuild -name '*.gd')
           gdformat --check $(find godot_rebuild -name '*.gd')

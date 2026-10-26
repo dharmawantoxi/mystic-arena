@@ -74,6 +74,7 @@ const PYRENTH_PAINTER = preload("res://scripts/ui/hero_portrait_pyrenth.gd")
 const PYRHAAN_PAINTER = preload("res://scripts/ui/hero_portrait_pyrhaan.gd")
 const RAKZHAN_PAINTER = preload("res://scripts/ui/hero_portrait_rakzhan.gd")
 const RAVOKKAR_PAINTER = preload("res://scripts/ui/hero_portrait_ravokkar.gd")
+const RAZ_PAINTER = preload("res://scripts/ui/hero_portrait_raz.gd")
 const RAZAK_PAINTER = preload("res://scripts/ui/hero_portrait_razak.gd")
 const RYNVARA_PAINTER = preload("res://scripts/ui/hero_portrait_rynvara.gd")
 const SANGUIRE_PAINTER = preload("res://scripts/ui/hero_portrait_sanguire.gd")
@@ -229,6 +230,7 @@ static func ids() -> Array[String]:
 		"pyrhaan",
 		"rakzhan",
 		"ravokkar",
+		"raz",
 		"razak",
 		"rynvara",
 		"sanguire",
@@ -462,6 +464,8 @@ static func paint(canvas: CanvasItem, box: Rect2, id: String) -> void:
 			RAKZHAN_PAINTER.paint(canvas, box)
 		"ravokkar":
 			RAVOKKAR_PAINTER.paint(canvas, box)
+		"raz":
+			RAZ_PAINTER.paint(canvas, box)
 		"razak":
 			RAZAK_PAINTER.paint(canvas, box)
 		"rynvara":

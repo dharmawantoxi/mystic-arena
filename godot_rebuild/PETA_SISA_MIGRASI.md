@@ -3337,8 +3337,26 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
   72 x 6 + 10 aman. Full static guardrails workflow **lulus**: 602 GDScript,
   gdparse/gdlint bersih dan gdformat tidak mengubah file. Native import/runtime
   Godot 4.7.2 diperiksa melalui CI PR sesi.
-- Berikutnya: **0 hero non-custom selain Raz**. Raz tetap fallback oleh keputusan
-  scope; tidak ada kandidat portrait tersisa dari metadata proyek.
+- Pada batas akhir 9c214, Raz adalah satu-satunya hero non-custom karena keputusan
+  scope saat itu. Permintaan user **“Lnjutkan semua”** mengizinkan portrait terakhir ini;
+  penyelesaian 222/222 dicatat pada slice 9c215 berikut.
+
+## Slice 9c215 — portrait Raz, The Heat of Despair (222/222)
+
+- Menutup satu-satunya slot generic di roster: Raz, metadata `Boss/Fire Monk`.
+  Pilihan paling kecil adalah komposisi native bersama `fighter` / `fire`, dengan
+  skin tan, sash merah, kain gelap, rambut hitam, aksen emas dan api dari palette
+  `_NS_raz.PALETTE` di `bosses/level10.py`.
+- `hero_portrait_raz_source_oracle.py` mengambil identitas hero dari
+  `bosses/boss_data.py` dan warna dari class sumber `_NS_raz`; fixture mengunci
+  metadata/palette. Painter didaftarkan di `hero_portrait_expansion.gd`.
+- Suite Hero Shop kini menuntut 222/222 dispatch custom, memeriksa warna Raz dari
+  fixture, card/kanvas Raz, serta generic fallback untuk ID tak dikenal. Art-only:
+  tanpa rebake atlas, perubahan gameplay atau simulasi.
+- Validasi lokal: `validate_project.py` **PASS 21377**; `gdparse`, `gdlint`,
+  `gdformat --check` pada tiga `.gd` yang berubah, dan `git diff --check` **PASS**.
+  CI native dan status review visual dicatat setelah push. Tidak ada Godot lokal;
+  belum mengklaim review visual atau pixel parity.
 
 ## Slice 9d0 — DynamicRenderer (animasi peta dan lingkungan boss)
 
