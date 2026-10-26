@@ -3675,6 +3675,11 @@ lingkaran aura dan satu `draw_string` tanpa wrap/bayangan pada `(180, 100)`.
   `tests/boss_entrance_draw_checks.gd` me-replay semuanya plus bentuk dan wiring view; terdaftar di
   `tests/run_all.gd`, command oracle di workflow, pin 9bq11 di `tests/validate_project.py`.
 
+Validasi lokal: `validate_project.py` -> PASS 21306 static checks; `gdparse`/`gdlint`/
+`gdformat --check` bersih; oracle deterministik; `git diff --check` OK. CI run `40276680299`
+(job `121420794496`) **pass 15m49s** dengan notice `PASS: 1505118 checks; fixed ticks and source
+parity`; review visual tetap tidak dilakukan.
+
 Penjaga tambahan: `entrance_timer == 0` menghasilkan op kosong, karena `Boss.draw` hanya memanggil
 `_draw_entrance` selama timer berjalan (tanpa penjaga ini `progress = 1` akan melukis aura alpha 0).
 
