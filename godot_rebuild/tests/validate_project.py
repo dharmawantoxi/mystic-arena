@@ -5669,9 +5669,10 @@ check(_eo_path.is_file(), "9bv5 end overlay fixture must exist")
 if _eo_path.is_file():
     _eo = json.loads(_eo_path.read_text(encoding="utf-8"))
     check(end_overlay_draw_fixture() == _eo, "9bv5 end overlay fixture must not drift from the source")
-    check(len(_eo["frames"]) == 8 and sum(len(f["ops"]) for f in _eo["frames"]) == 2210
-          and _eo["colors"] == {"victory": [255, 200, 50], "defeat": [220, 50, 50]},
-          "9bv5 fixture must pin 8 frames / 2210 ops and the GOLD / RED titles")
+    check(len(_eo["frames"]) == 10 and sum(len(f["ops"]) for f in _eo["frames"]) == 2810
+          and _eo["colors"] == {"victory": [255, 200, 50], "defeat": [220, 50, 50]}
+          and {frame.get("cheap_alpha") for frame in _eo["frames"]} == {True, False},
+          "9bv5/9bv10 fixture must pin 10 frames / 2810 ops across both quality modes")
     _eo_buttons = {f["label"]: (f["unlock"] or {}).get("button") for f in _eo["frames"]}
     check(_eo_buttons.get("unlock_steady") == [1275, 440, 310, 30]
           and _eo_buttons.get("unlock_full_hover") == [875, 440, 310, 30],
@@ -5705,6 +5706,27 @@ check('arena.set("end_overlay_state", {} if world.is_running() else _end_overlay
       in _eo_screen and "_set_result_layout(true)" in _eo_screen
       and "_set_result_layout(false)" in _eo_screen,
       "9bv5 screen must hand the end state to the arena and switch the pause card layout")
+
+# ── Layer 9bv10: low-quality EndOverlay path ──
+_eo_checks = (ROOT / "tests/end_overlay_draw_checks.gd").read_text(encoding="utf-8")
+check('"kind": "darken"' in _eo_layout
+      and '"alpha": 170' in _eo_layout
+      and '_title(title, victory, animation_time, cheap_alpha)' in _eo_layout
+      and 'ticks_msec, cheap_alpha)' in _eo_layout,
+      "9bv10 layout must darken the backdrop and gate source alpha effects on quality")
+check('"darken":\n\t\t\t\t_draw_end_darken(op)' in _eo_view
+      and "func _draw_end_darken(op: Dictionary) -> void:" in _eo_view
+      and "Color8(0, 0, 0, alpha)" in _eo_view,
+      "9bv10 view must render the source darken operation as a full-screen overlay")
+check('get_node_or_null("/root/AdaptiveQuality")' in _eo_screen
+      and 'quality_runtime.get("quality_level")' in _eo_screen
+      and '"cheap_alpha": cheap_alpha' in _eo_screen,
+      "9bv10 screen must map AdaptiveQuality low to the source non-cheap-alpha branch")
+check('bool(frame.get("cheap_alpha", true))' in _eo_checks
+      and "frames[8]" in _eo_checks
+      and "frames[9]" in _eo_checks
+      and "10 quality-mode frames" in _eo_checks,
+      "9bv10 native end-overlay suite must replay both quality modes through the view")
 
 # ── Layer 9bv7: the build-tower popup (BuildPopup.draw) ──
 from build_popup_draw_source_oracle import source_fixture as build_popup_draw_fixture

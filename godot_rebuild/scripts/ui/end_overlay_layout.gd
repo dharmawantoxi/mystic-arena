@@ -1,6 +1,6 @@
 extends RefCounted
-## Layer 9bv5: `Overlay.draw` (`ui_components/_bundle.py`, cheap-alpha branch), the victory /
-## defeat screen pygame paints over the frozen match. Pure op builder; the ops use the
+## Layers 9bv5/9bv10: `Overlay.draw` (`ui_components/_bundle.py`) in both quality modes, the
+## victory / defeat screen pygame paints over the frozen match. Pure op builder; the ops use the
 ## `draw_recorder.py` shapes (plus one op per cached surface) so
 ## `tests/end_overlay_draw_source_oracle.py` can pin them. Every helper is preceded by a
 ## `section` op, like the oracle's wrapped methods.
@@ -22,6 +22,8 @@ extends RefCounted
 ##     stops AT the delay, so in a real match the card stays 400 px right at alpha 0;
 ##   * action hint: keycap chips parsed from `[KEY] Desc` pairs centred on y = cy + 200;
 ##   * achievements: trophy icon + "N Achievements Unlocked!" on y = cy + 250.
+## With `cheap_alpha` false the source instead uses `darken(..., 170)`, skips rays/title glow,
+## draws two opaque outline rings and a solid stats panel (no shadow/gradient); sparkles remain.
 
 const GoldHudLayout = preload("res://scripts/ui/gold_hud_layout.gd")
 
@@ -90,28 +92,42 @@ func _draw(state: Dictionary, ticks_msec: int) -> void:
 	var color: Array = state.get("color", [255, 200, 50])
 	var title := String(state.get("title", ""))
 	var victory := bool(state.get("victory", false))
-	var t := int(state.get("animation_time", 0)) * 0.05
-	var gradient := {
-		"kind": "end_gradient",
-		"rect": [0, 0, 1280, 720],
-		"color": BACKDROP.duplicate(),
-		"rows": backdrop_rows(),
-		"mult": 255,
-	}
-	_ops.append(gradient)
+	var cheap_alpha := bool(state.get("cheap_alpha", true))
+	var animation_time := int(state.get("animation_time", 0))
+	var t := animation_time * 0.05
+	if cheap_alpha:
+		(
+			_ops
+			. append(
+				{
+					"kind": "end_gradient",
+					"rect": [0, 0, 1280, 720],
+					"color": BACKDROP.duplicate(),
+					"rows": backdrop_rows(),
+					"mult": 255,
+				}
+			)
+		)
+	else:
+		_ops.append({"kind": "darken", "rect": [0, 0, 1280, 720], "alpha": 170})
 	_section("_draw_rays")
-	_rays(color, t)
+	if cheap_alpha:
+		_rays(color, t)
 	_section("_draw_central_glow")
-	for radius in range(200, 50, -20):
-		var alpha := int((200 - radius) / 200.0 * 60)
-		_ops.append(_circle([CENTER.x, CENTER.y], radius, _rgba(color, alpha), 0))
+	if cheap_alpha:
+		for radius in range(200, 50, -20):
+			var alpha := int((200 - radius) / 200.0 * 60)
+			_ops.append(_circle([CENTER.x, CENTER.y], radius, _rgba(color, alpha), 0))
+	else:
+		_ops.append(_circle([CENTER.x, CENTER.y], 120, _rgba(color, 255), 3))
+		_ops.append(_circle([CENTER.x, CENTER.y], 190, _rgba(color, 255), 2))
 	_section("_draw_title")
-	_title(title, victory, int(state.get("animation_time", 0)))
+	_title(title, victory, animation_time, cheap_alpha)
 	_section("_draw_sparkles")
 	if victory:
 		_sparkles(color, t)
 	_section("_draw_stats")
-	_stats(state.get("stats", [0, 0, 0, 0, 0, false, false]), color, ticks_msec)
+	_stats(state.get("stats", [0, 0, 0, 0, 0, false, false]), color, ticks_msec, cheap_alpha)
 	if victory:
 		_section("_draw_level_unlock_popup")
 		_unlock_popup(state.get("unlock", {}), ticks_msec)
@@ -291,17 +307,22 @@ func _rays(color: Array, t: float) -> void:
 		_ops.append(_polygon(points, _rgba(color, 30)))
 
 
-func _title(title: String, victory: bool, animation_time: int) -> void:
+func _title(title: String, victory: bool, animation_time: int, cheap_alpha: bool) -> void:
 	var size := title_size(animation_time)
-	var glow := [255, 205, 90] if victory else [255, 90, 70]
-	var radial := {
-		"kind": "radial",
-		"rect": [CENTER.x - 380, CENTER.y - TITLE_Y - 95, 760, 190],
-		"color": glow,
-		"alpha": 48,
-		"mult": 255,
-	}
-	_ops.append(radial)
+	if cheap_alpha:
+		var glow := [255, 205, 90] if victory else [255, 90, 70]
+		(
+			_ops
+			. append(
+				{
+					"kind": "radial",
+					"rect": [CENTER.x - 380, CENTER.y - TITLE_Y - 95, 760, 190],
+					"color": glow,
+					"alpha": 48,
+					"mult": 255,
+				}
+			)
+		)
 	var metrics: Vector2i = _title_measure.call(title, size)
 	var outline := {
 		"kind": "outline_text",
@@ -327,7 +348,7 @@ func _sparkles(color: Array, t: float) -> void:
 		_ops.append(_circle(at, 2, _rgba(color, 255), 0))
 
 
-func _stats(stats: Array, color: Array, ticks_msec: int) -> void:
+func _stats(stats: Array, color: Array, ticks_msec: int, cheap_alpha: bool) -> void:
 	var seconds := int(stats[1])
 	var rows := [
 		["Final Score", GoldHudLayout.gold_text(int(stats[0])), bool(stats[5])],
@@ -346,8 +367,11 @@ func _stats(stats: Array, color: Array, ticks_msec: int) -> void:
 		"alpha": 160,
 		"mult": 255,
 	}
-	_ops.append(shadow)
-	_ops.append(_vgrad(panel, [30, 34, 58], [14, 16, 30], 10))
+	if cheap_alpha:
+		_ops.append(shadow)
+		_ops.append(_vgrad(panel, [30, 34, 58], [14, 16, 30], 10))
+	else:
+		_ops.append(_rect(panel, [18, 20, 34, 255], 0, 10))
 	_ops.append(_rect(panel, _rgba(color, 255), 2, 10))
 	_corner_ticks(panel, GOLD_BRIGHT, 14)
 	for index in range(rows.size()):

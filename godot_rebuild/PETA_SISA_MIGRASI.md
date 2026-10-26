@@ -4187,7 +4187,7 @@ bagian yang memakai `get_ticks`.
   oracle di workflow.
 
 Batas:
-- Hanya cabang cheap-alpha yang diport; cabang darken untuk HP belum.
+- Pada 9bv5 baru cabang cheap-alpha yang diport; cabang low/darken ditutup terpisah di 9bv10.
 - Gradasi badan judul diganti warna tengahnya. Glow radial dan bayangan adalah tiruan.
 - `Match Time` sumber terus bertambah selama overlay tampil (`time.time()` dihitung tiap
   frame). Godot memakai waktu selesai pertandingan.
@@ -4341,3 +4341,22 @@ Sumber: `_core.py::InputHandler.handle_click`, `handle_build_popup_click`, dan
   suite masuk `tests/run_all.gd`. Pin 9bv9 ada di `tests/validate_project.py`.
 
 Batas: tidak ada Godot lokal untuk runtime atau review visual. Tidak diklaim pixel parity.
+
+## Slice 9bv10 — jalur kualitas rendah EndOverlay (`cheap_alpha = false`)
+
+- Menutup cabang yang tertinggal dari 9bv5. Saat `AdaptiveQuality` turun ke `low`, state
+  EndOverlay mengaktifkan jalur sumber non-cheap-alpha: backdrop `darken(..., 170)`, tanpa rays
+  dan title radial, dua outline glow, serta panel stats solid tanpa shadow/gradasi. Sparkles,
+  stats, popup unlock, action hint, dan achievements tetap pada urutan sumber.
+- `PrototypeScreen` hanya menyerahkan flag kualitas view-only (`high/medium` → cheap-alpha,
+  `low` → non-cheap-alpha); tidak mengubah simulasi. `PrototypeView` menggambar op darken sebagai
+  overlay hitam alpha 170, ekuivalen secara visual dengan pengali RGB sumber; tidak diklaim
+  pixel-identical.
+- Oracle `end_overlay_draw_source_oracle.py` kini merekam kedua nilai `Quality.cheap_alpha`:
+  **10 frame / 2810 op** mencakup victory, defeat, controller hint, popup unlock dan stats.
+  `EndOverlayDrawChecks` membandingkan seluruh op untuk kedua mode dan memeriksa state lewat view.
+- Art/UI-only: tanpa perubahan gameplay, input, cooldown, atlas atau aset.
+- Validasi lokal: `validate_project.py` **PASS 21381**; `gdparse`, `gdlint`,
+  `gdformat --check` pada empat `.gd` yang berubah, dan `git diff --check` **PASS**.
+  CI native dicatat setelah push. Godot lokal/review visual tidak tersedia; bukan klaim
+  pixel parity.

@@ -1153,6 +1153,8 @@ func _draw_end_overlay(world: Prototype) -> void:
 				continue
 			"end_gradient":
 				_draw_end_backdrop(op)
+			"darken":
+				_draw_end_darken(op)
 			"radial":
 				_draw_radial_op(op)
 			"outline_text":
@@ -1216,6 +1218,17 @@ func _draw_end_backdrop(op: Dictionary) -> void:
 	var box: Array = op.get("rect", [0, 0, 1280, 720])
 	draw_texture_rect(
 		_end_backdrop, Rect2(float(box[0]), float(box[1]), float(box[2]), float(box[3])), false
+	)
+
+
+## Source `darken(surface, 170)`: equivalent full-screen black overlay in the low-quality path.
+func _draw_end_darken(op: Dictionary) -> void:
+	var box: Array = op.get("rect", [0, 0, 1280, 720])
+	var alpha := int(op.get("alpha", 170))
+	draw_rect(
+		Rect2(float(box[0]), float(box[1]), float(box[2]), float(box[3])),
+		Color8(0, 0, 0, alpha),
+		true
 	)
 
 

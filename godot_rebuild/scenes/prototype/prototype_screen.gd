@@ -691,6 +691,10 @@ func _end_overlay_state(world: Prototype) -> Dictionary:
 			labels[action] = controller_cursor.get_action_label(action)
 	var has_next := LevelCatalog.get_next_level(world.level_number) >= 0
 	var stats := world.match_stats_snapshot()
+	var quality_runtime := get_node_or_null("/root/AdaptiveQuality")
+	var cheap_alpha := (
+		quality_runtime == null or String(quality_runtime.get("quality_level")) != "low"
+	)
 	return {
 		"title": ("VICTORY! LV.%d" if victory else "DEFEAT LV.%d") % world.level_number,
 		"victory": victory,
@@ -707,6 +711,7 @@ func _end_overlay_state(world: Prototype) -> Dictionary:
 			end_new_best_time,
 		],
 		"achievements": world.achievements_unlocked.size(),
+		"cheap_alpha": cheap_alpha,
 		"unlock": _unlock_popup_state(world) if victory else {},
 	}
 
