@@ -6019,6 +6019,7 @@ check("var force_art_fallback := false" in _fb_minion
       "9bv13 marker hero and plain-circle minion must paint the shared debuff indicator")
 check("_check_fallback_debuff_fx(tree, view, world, hero, check)" in _fb_scene
       and "view.force_art_fallback = true" in _fb_scene
+      and "var ready: bool = chosen_hero != null" in _fb_scene
       and "A marker hero painted the source debuff indicator" in _fb_scene
       and "A plain-circle minion painted the source debuff indicator" in _fb_scene,
       "9bv13 live scene must prove both fallback paths draw the indicator")

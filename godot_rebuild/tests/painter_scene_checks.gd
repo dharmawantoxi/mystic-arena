@@ -423,7 +423,7 @@ func _check_fallback_debuff_fx(tree: SceneTree, view, world, hero, check: Callab
 			if unit.is_hero and unit.alive:
 				chosen_hero = unit
 				break
-	var ready := chosen_hero != null and minion != null and chosen_hero.alive
+	var ready: bool = chosen_hero != null and minion != null and bool(chosen_hero.alive)
 	check.call(ready, "The fallback scene has one live hero and one live minion")
 	if ready:
 		chosen_hero.slow_timer = 30

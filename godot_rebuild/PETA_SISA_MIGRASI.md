@@ -14,6 +14,8 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
   `git diff --check` **PASS**. Godot lokal tidak tersedia: tidak ada klaim verifikasi
   runtime/visual lokal. Run native PR #344 pertama gagal karena konstanta
   `DebuffFxPainter` dideklarasikan ulang di anak; koreksi memakai konstanta warisan.
+  Run kedua gagal pada inferensi tipe `ready` di scene suite; diperbaiki dengan tipe
+  `bool` eksplisit. CI ulang menyusul.
 
 - PR #334 sudah di-merge (`a134020`). 9aw WaveAnnouncer + PathPreview, 9ax ikon
   AchievementPopup, 9ay HitParticle, 9az FloatingText, dan 9ba panel
