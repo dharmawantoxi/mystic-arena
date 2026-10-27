@@ -9,7 +9,14 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
 - Milestone sesi ini: **9bv12** hover slot bangun, **9bv13** indikator debuff pada
   jalur fallback marker/siluet, dan **9bv14** FX menara yang tertinggal dari 9bl
   (range terseleksi, kilat upgrade, kilat moncong Archer). Rincian di bagian paling bawah.
-- `validate_project.py` **PASS 21467** (run akhir setelah koreksi CI); `gdparse`,
+- **9bv15 menutup kandidat sisa terakhir**: "aura sihir kastil level 6" ternyata
+  kode mati di sumber (`MAX_NEXUS_LEVEL = 5`), jadi katalog 1-5 Godot sudah paritas
+  dan dua klaim lama di peta dikoreksi (lihat "Slice 9bv15" paling bawah).
+  `validate_project.py` **PASS 21493**; oracle/fixture/suite baru, `gdparse`,
+  `gdlint`, `gdformat --check`, `py_compile`, `git diff --check` **PASS**.
+  CI native PR #344 run **40546418575** / job **122338141803** **PASS 15m25s**
+  (`PASS: 1505208 checks; fixed ticks and source parity`) untuk head kode `d8e5f81`.
+- `validate_project.py` **PASS 21467** (run akhir setelah koreksi CI 9bv12-9bv14); `gdparse`,
   `gdlint`, `gdformat --check` pada 11 `.gd` yang berubah, oracle/`py_compile`, dan
   `git diff --check` **PASS**. Godot lokal tidak tersedia: tidak ada klaim verifikasi
   runtime/visual lokal. Run native PR #344 pertama gagal karena konstanta
