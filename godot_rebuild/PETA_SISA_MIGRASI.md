@@ -2257,9 +2257,12 @@ Sumbernya menggambar badan menara dari `towers/_bundle.py` (299 KB) lewat cache
 
 Batas yang diketahui:
 
-- Belum ada: kilat moncong Archer, kilat upgrade, lingkaran jangkauan versi sumber (Godot
-  tetap memakai busur jangkauan miliknya), peluru `Bullet.draw` (anak panah HD) dan aura sihir
-  kastil level 6 (nexus Godot berhenti di level 5).
+- **Dulu "Belum ada" — dikoreksi 9bv14 / 9bp / 9bv15:** kilat moncong Archer,
+  kilat upgrade, dan lingkaran jangkauan sumber kini diport di 9bv14; peluru
+  `Bullet.draw` di 9bp; aura sihir kastil level 6 ditutup di 9bv15. Catatan lama
+  mengira batas level 5 itu kekurangan rebuild; kenyataannya `MAX_NEXUS_LEVEL = 5`
+  ada di sumber Python juga, jadi cabang level 6 adalah kode mati dan Godot
+  (katalog 1-5) sudah paritas. Lihat "Slice 9bv15".
 - Hanya frame pertama tiap kunci cache yang dibake, seperti game; sprite menara yang berubah
   menurut sudut bidik di luar kunci (hadap kiri/kanan) tidak dicakup.
 - Painter tidak dieksekusi suite headless; hanya pemuatan sheet, cakupan definisi, jam, dan
@@ -4462,12 +4465,53 @@ Batas: `_TOWER_SPRITE_CACHE` sumber tidak diport, jadi alpha moncong dihitung ul
 frame (sama dengan permukaan cache dingin); cakram dalam Godot di-blend normal, bukan
 ditimpa piksel SRCALPHA seperti pygame. Bukan klaim pixel parity.
 
-## Sisa setelah 9bv12–9bv14
+## Slice 9bv15 — rekonsiliasi aura sihir kastil level 6 (bukan gap migrasi)
 
-- **Aura sihir kastil level 6** belum ada: nexus Godot berhenti di level 5, jadi
-  melengkapinya berarti mengubah batas level simulasi, di luar migrasi visual sesi ini.
+Menutup kandidat terakhir di peta. Dua catatan lama menyebut aura sihir kastil
+level 6 sebagai pekerjaan yang tertinggal karena nexus Godot hanya sampai level 5,
+seolah-olah itu keterbatasan rebuild. Audit sumber menunjukkan sebaliknya:
+
+- `_core.py` memaku `MAX_NEXUS_LEVEL = 5`, `MAX_CASTLE_LEVEL = MAX_NEXUS_LEVEL`,
+  `CASTLE_LEVELS = NEXUS_LEVELS`, dan `NEXUS_LEVELS` hanya punya kunci **1-5**.
+- `_entity.py::Castle.upgrade()` mengembalikan `False` begitu
+  `self.level >= MAX_NEXUS_LEVEL`; cheat sekalipun hanya menaikkan sampai 5.
+- Karena itu dua cabang `if lvl >= 6:` di `_render_dynamic_effects` dan
+  `_render_dynamic_effects_direct` (satu-satunya pemanggil
+  `_draw_castle_magic_aura`) serta cabang `else: _render_castle_lvl6(...)` pada
+  dispatcher `_render_castle_full` adalah kode mati di sumber: tidak pernah
+  tergambar di pygame.
+- Godot (`NexusUpgrades.LEVELS` 1-5, bake `CASTLE_LEVELS = (1, 2, 3, 4, 5)` di
+  9bl, manifest `castle.levels` 1-5) **sudah paritas** dengan sumber. Menaikkan
+  batas ke 6 akan mengubah simulasi dan membuat Godot divergen, jadi tidak
+  dilakukan (di luar scope dan dilarang).
+
+Bukti dipaku, bukan sekadar narasi. Oracle
+`tests/castle_aura_reach_source_oracle.py` memanen fakta di atas dengan `ast`
+dan mengeksekusi badan `Castle.upgrade` asli pada stub: `upgrade_walk` naik
+1->5 lalu empat kali `False` (fixture
+`tests/fixtures/castle_aura_reach_source.json`). Suite native
+`tests/castle_aura_reach_checks.gd` (terdaftar di `run_all.gd`) mereplay fixture
+dan memeriksa katalog `.tres` serta manifest bake Godot. `validate_project.py`
+mem-pin bahwa fixture tidak drift dari sumber, kedua klaim PETA dikoreksi, dan
+tidak ada `nexus_level_6.tres`. Oracle dijalankan di workflow CI.
+
+Batas 9bv15: hanya rekonsiliasi dan bukti (oracle, fixture, suite, pin
+validator, dokumen). Aura sihir kastil level 6 adalah kode mati di sumber,
+jadi tidak ada painter baru, tidak ada perubahan `.tres`/atlas, dan tidak ada
+perubahan simulasi, damage, cooldown, input, atau batas level. Ini **bukan gap
+migrasi**; Godot sudah paritas. Bukan klaim pixel parity; review visual tetap
+perlu.
+
+## Sisa setelah 9bv12–9bv14 (diperbarui 9bv15)
+
+- **Aura sihir kastil level 6 — ditutup 9bv15, bukan gap migrasi.** Lihat
+  "Slice 9bv15" di atas: batas level 5 ada di sumber Python
+  (`MAX_NEXUS_LEVEL = 5`), jadi katalog 1-5 di Godot sudah paritas dan
+  menaikkannya justru akan divergen.
 - Divergensi yang sudah dicatat dan sengaja dipertahankan: metrik font/AA, panel taktis
   mengambang, realm nyxareth 1280 px, aura hasil bake yang tidak ikut tergelapkan,
   sprite menara yang berubah di luar kunci cache, serta jejak hit/impact lama.
 - Review interaktif/visual di Godot masih perlu Anda lakukan. Sandbox ini tidak punya
   Godot; bukti yang tersedia adalah oracle sumber, validator statis, dan CI native.
+- **Tidak ada lagi item migrasi kode produksi yang belum selesai** menurut peta ini.
+  Sisa di atas adalah divergensi yang diterima atau pekerjaan review pengguna.

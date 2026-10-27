@@ -6832,6 +6832,72 @@ check('const RazPainter = preload("res://scripts/ui/hero_portrait_raz.gd")' in _
       and '"unknown_portrait_test"' in _raz_checks,
       "9c215 native portrait suite must cover Raz and preserve unknown-id fallback")
 
+# ── Layer 9bv15: castle level-6 magic aura is dead code in the source, not a migration gap ──
+from castle_aura_reach_source_oracle import source_fixture as castle_aura_fixture
+_car_path = ROOT / "tests/fixtures/castle_aura_reach_source.json"
+_car_checks = (ROOT / "tests/castle_aura_reach_checks.gd").read_text(encoding="utf-8")
+_car_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+_car_entity = (ROOT.parent / "_entity.py").read_text(encoding="utf-8")
+_car_bake = (ROOT / "bake/bake_structure_atlas.py").read_text(encoding="utf-8")
+_car_upgrades = (ROOT / "scripts/match/nexus_upgrades.gd").read_text(encoding="utf-8")
+check("python godot_rebuild/tests/castle_aura_reach_source_oracle.py" in workflow,
+      "9bv15 CI must record the castle-aura reachability oracle")
+check(
+    'const CastleAuraReachChecks = preload("res://tests/castle_aura_reach_checks.gd")' in ai_tests
+    and "CastleAuraReachChecks.new().run(_check)" in ai_tests,
+    "9bv15 native reachability suite must run in run_all.gd",
+)
+check(_car_path.is_file(), "9bv15 castle-aura reach fixture must exist")
+if _car_path.is_file():
+    _car_fixture = json.loads(_car_path.read_text(encoding="utf-8"))
+    check(castle_aura_fixture() == _car_fixture,
+          "9bv15 castle-aura fixture must not drift from the Python source")
+    check(
+        _car_fixture.get("max_nexus_level") == 5
+        and _car_fixture.get("nexus_level_keys") == [1, 2, 3, 4, 5]
+        and _car_fixture.get("castle_dispatch_levels") == [1, 2, 3, 4, 5]
+        and _car_fixture.get("bake_castle_levels") == [1, 2, 3, 4, 5]
+        and _car_fixture.get("aura_guard") == "lvl >= 6"
+        and _car_fixture.get("aura_call_sites") == [
+            "_render_dynamic_effects", "_render_dynamic_effects_direct"]
+        and _car_fixture.get("upgrade_walk", {}).get("final_level") == 5
+        and _car_fixture.get("aura_reachable_in_source") is False,
+        "9bv15 fixture must pin the level-5 cap and unreachable aura",
+    )
+check(
+    "MAX_NEXUS_LEVEL = 5" in _car_core
+    and "MAX_CASTLE_LEVEL = MAX_NEXUS_LEVEL" in _car_core
+    and "CASTLE_LEVELS = NEXUS_LEVELS" in _car_core
+    and "if self.level >= MAX_NEXUS_LEVEL:" in _car_entity
+    and "if lvl >= 6:" in _car_entity
+    and "_draw_castle_magic_aura" in _car_entity
+    and "else:\n        _render_castle_lvl6(" in _car_entity
+    and "CASTLE_LEVELS = (1, 2, 3, 4, 5)" in _car_bake,
+    "9bv15 source keeps the level-5 cap and dead level-6 aura/citadel branches",
+)
+check(
+    _car_upgrades.count('preload("res://data/structures/nexus_level_') == 5
+    and "nexus_level_6.tres" not in _car_upgrades
+    and not (ROOT / "data/structures/nexus_level_6.tres").is_file(),
+    "9bv15 native nexus catalog stops at level 5 (already at parity)",
+)
+check(
+    "Castle aura reach fixture parses" in _car_checks
+    and "Executing the real Castle.upgrade walks 1->5 then stops" in _car_checks
+    and "Native NexusUpgrades.LEVELS has five entries" in _car_checks,
+    "9bv15 native suite replays the source cap and the native catalog",
+)
+check(
+    "Aura sihir kastil level 6 adalah kode mati di sumber" in _peta_doc
+    and "bukan gap migrasi" in _peta_doc
+    and "Slice 9bv15" in _peta_doc,
+    "9bv15 PETA must record the castle-aura reconciliation",
+)
+check(
+    "nexus Godot berhenti di level 5, jadi" not in _peta_doc,
+    "9bv15 PETA drops the stale claim that the level-5 cap is a Godot limitation",
+)
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")
