@@ -162,6 +162,8 @@ jobs:
           python godot_rebuild/tests/build_popup_draw_source_oracle.py
           python godot_rebuild/tests/hero_panel_draw_source_oracle.py
           python godot_rebuild/tests/tower_hover_source_oracle.py
+          python godot_rebuild/tests/slot_hover_source_oracle.py
+          python godot_rebuild/tests/tower_fx_source_oracle.py
           python godot_rebuild/tests/death_explosion_draw_source_oracle.py
           python godot_rebuild/tests/map_tint_draw_source_oracle.py
           python godot_rebuild/tests/draw_order_source_oracle.py

@@ -29,6 +29,9 @@ var minion_slash_draws := 0
 var minion_debuff_fx_draws := 0
 var minion_debuff_fx_ops := 0
 var minion_death_draws := 0
+## Layer 9bv13: scene-suite hook for an unimported atlas; no simulation or input state changes.
+var force_art_fallback := false
+var _minion_fallback_anim := 0
 var _minion_death_animations: Array[Dictionary] = []
 
 
@@ -149,6 +152,18 @@ func _draw_unit(unit: UnitState) -> void:
 	if unit.id == session.selected_id:
 		draw_arc(point, radius + 9, 0, TAU, 32, Color("f4d491"), 2, true)
 	draw_circle(point + Vector2(0, 4), radius + 2, Color("071518"))
+	if not unit.is_hero:
+		# Layer 9bv13: the plain-circle fallback keeps the source order of `Minion.draw`:
+		# ice aura, tower-debuff indicator, then the body.
+		if unit.slow_timer > 0:
+			_draw_minion_slow(
+				Vector2(int(point.x), int(point.y)), int(radius), _minion_fallback_anim
+			)
+		var fallback_debuff_ops := minion_debuff_draw_ops(unit, _minion_fallback_anim)
+		if not fallback_debuff_ops.is_empty():
+			minion_debuff_fx_draws += 1
+			minion_debuff_fx_ops += fallback_debuff_ops.size()
+			DebuffFxPainter.paint(self, fallback_debuff_ops)
 	draw_circle(point, radius, color.darkened(0.25))
 	draw_arc(point, radius, 0, TAU, 24, color, 2, true)
 	draw_line(point, point + Vector2(unit.facing * (radius + 7), 0), color, 3, true)
@@ -167,8 +182,12 @@ func _draw_base(point: Vector2, color: Color) -> void:
 ## the plain circle above still draws.
 func _draw_minion_sprite(unit: UnitState) -> bool:
 	var clocks := minion_anim.observe(unit, session.world.tick_count, _minion_target_position(unit))
+	var anim := int(clocks["anim"])
+	_minion_fallback_anim = anim
+	if force_art_fallback:
+		return false
 	var pose := MinionAnim.pose_key(
-		int(clocks["attack"]), bool(clocks["moving"]), float(clocks["walk"]), int(clocks["anim"])
+		int(clocks["attack"]), bool(clocks["moving"]), float(clocks["walk"]), anim
 	)
 	var art := MinionArt.frame(unit.definition.id, unit.team, unit.nexus_level, pose, unit.facing)
 	if art.is_empty():
@@ -178,10 +197,10 @@ func _draw_minion_sprite(unit: UnitState) -> bool:
 	if unit.id == session.selected_id:
 		draw_arc(point, radius + 9, 0, TAU, 32, Color("f4d491"), 2, true)
 	if unit.slow_timer > 0:
-		_draw_minion_slow(point, radius, int(clocks["anim"]))
+		_draw_minion_slow(point, radius, anim)
 	# Layer 9bq10: `Minion.draw` calls the shared indicator with `include_rings=False` (the ice
 	# aura above already covers the slow ring) and its own integer `anim_time`.
-	var debuff_ops := minion_debuff_draw_ops(unit, int(clocks["anim"]))
+	var debuff_ops := minion_debuff_draw_ops(unit, anim)
 	if not debuff_ops.is_empty():
 		minion_debuff_fx_draws += 1
 		minion_debuff_fx_ops += debuff_ops.size()

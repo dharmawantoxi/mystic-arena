@@ -76,6 +76,9 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	check.call(view.minion_slash_draws > 0, "The source-baked minion slash path was drawn")
 	check.call(view.minion_death_draws > 0, "The source-baked minion death path was drawn")
 	check.call(view.structure_anim.tracked() > 0, "Structure clocks were tracked while drawing")
+	check.call(view.tower_fx_draws > 0, "Source tower FX ops reached the painter")
+	check.call(view.tower_range_fx_draws > 0, "The selected tower painted its source range circles")
+	check.call(view.tower_muzzle_fx_draws > 0, "A firing archer painted its source muzzle glow")
 	check.call(view.hero_anim.tracked() > 0, "Hero clocks were tracked while drawing")
 	check.call(view.hero_projectile_draws > 0, "Source-baked hero projectiles were drawn")
 	check.call(view.dynamic_map_draws > 0, "DynamicRenderer painted the live map")
@@ -100,6 +103,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		await _check_boss_auras(tree, view, boss, check)
 		await _check_urgharun_basic_attack(tree, view, boss, check)
 		await _check_boss_debuff_fx(tree, view, boss, check)
+		await _check_fallback_debuff_fx(tree, view, world, hero, check)
 	else:
 		check.call(false, "The suite could not spawn a boss to draw")
 	app.show_menu()
@@ -385,6 +389,73 @@ func _check_boss_debuff_fx(tree: SceneTree, view, boss, check: Callable) -> void
 	boss.skill_down_timer = source_skill_down
 	boss.anti_heal_timer = source_anti_heal
 	boss.burn_timer = source_burn
+
+
+## Layer 9bv13: with the atlas import forced off, the marker hero and plain-circle minion
+## still paint the source tower-debuff indicator from their live timers.
+func _check_fallback_debuff_fx(tree: SceneTree, view, world, hero, check: Callable) -> void:
+	var saved: Array = []
+	var minion = null
+	for unit in world.units:
+		(
+			saved
+			. append(
+				[
+					unit,
+					unit.slow_timer,
+					unit.atk_slow_timer,
+					unit.skill_down_timer,
+					unit.anti_heal_timer,
+					unit.burn_timer,
+				]
+			)
+		)
+		unit.slow_timer = 0
+		unit.atk_slow_timer = 0
+		unit.skill_down_timer = 0
+		unit.anti_heal_timer = 0
+		unit.burn_timer = 0
+		if minion == null and not unit.is_hero and unit.alive:
+			minion = unit
+	var chosen_hero = hero
+	if chosen_hero == null:
+		for unit in world.units:
+			if unit.is_hero and unit.alive:
+				chosen_hero = unit
+				break
+	var ready := chosen_hero != null and minion != null and chosen_hero.alive
+	check.call(ready, "The fallback scene has one live hero and one live minion")
+	if ready:
+		chosen_hero.slow_timer = 30
+		chosen_hero.burn_timer = 20
+		minion.slow_timer = 30
+		minion.burn_timer = 20
+		var hero_before: int = view.hero_debuff_fx_draws
+		var minion_before: int = view.minion_debuff_fx_draws
+		view.force_art_fallback = true
+		for _frame in range(6):
+			await tree.process_frame
+			if (
+				view.hero_debuff_fx_draws > hero_before
+				and view.minion_debuff_fx_draws > minion_before
+			):
+				break
+		check.call(
+			view.hero_debuff_fx_draws > hero_before,
+			"A marker hero painted the source debuff indicator"
+		)
+		check.call(
+			view.minion_debuff_fx_draws > minion_before,
+			"A plain-circle minion painted the source debuff indicator"
+		)
+		view.force_art_fallback = false
+	for row in saved:
+		var unit = row[0]
+		unit.slow_timer = row[1]
+		unit.atk_slow_timer = row[2]
+		unit.skill_down_timer = row[3]
+		unit.anti_heal_timer = row[4]
+		unit.burn_timer = row[5]
 
 
 func _seed_hero_projectile(world, hero) -> bool:

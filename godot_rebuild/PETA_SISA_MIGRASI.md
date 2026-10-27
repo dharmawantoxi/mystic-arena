@@ -2,7 +2,16 @@
 
 Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
 
-## Status terkini — branch `arena/799d0e95-mystic-arena`
+## Status terkini — branch `arena/e60d4a0f-mystic-arena`
+
+- PR #343 sudah di-merge: 9bv11 (cincin range + tooltip hover menara) dan slice
+  sebelumnya ada di `main`; pekerjaan itu **tidak diulang** di sesi ini.
+- Milestone sesi ini: **9bv12** hover slot bangun, **9bv13** indikator debuff pada
+  jalur fallback marker/siluet, dan **9bv14** FX menara yang tertinggal dari 9bl
+  (range terseleksi, kilat upgrade, kilat moncong Archer). Rincian di bagian paling bawah.
+- `validate_project.py` **PASS 21470**; `gdparse`, `gdlint`, `gdformat --check`
+  pada 11 `.gd` yang berubah, oracle/`py_compile`, dan `git diff --check` **PASS**.
+  Godot lokal tidak tersedia: tidak ada klaim verifikasi runtime/visual lokal.
 
 - PR #334 sudah di-merge (`a134020`). 9aw WaveAnnouncer + PathPreview, 9ax ikon
   AchievementPopup, 9ay HitParticle, 9az FloatingText, dan 9ba panel
@@ -4382,3 +4391,78 @@ Batas: tidak ada Godot lokal untuk runtime atau review visual. Tidak diklaim pix
   (`PASS: 1505168 checks; fixed ticks and source parity`). Percobaan CI pertama gagal hanya pada
   equality int/float fixture; perbandingan tes diperbaiki. Godot lokal/review visual tidak tersedia;
   bukan klaim pixel parity.
+
+## Slice 9bv12 — indikator hover slot bangun (layer 9bv12)
+
+Menutup cabang yang sengaja ditinggalkan 9bv11: `HoverIndicators._draw_slot_hover`.
+
+- Oracle `tests/slot_hover_source_oracle.py` menjalankan `draw` dan helper slot asli di
+  `draw_recorder.py`, termasuk `font_tiny` sumber (`get_font(20, "body")`). Fixture
+  `tests/fixtures/slot_hover_source.json` memaku **4 frame / 27 op**: dua denyut, posisi
+  slot pecahan (pembulatan `int` sumber), dan cabang tanpa hover. Tiap frame hidup berisi
+  enam cincin glow, kotak hint hitam alpha 200, border biru 1 px, dan teks `TAP TO BUILD`.
+- `scripts/ui/slot_hover_layout.gd` menyusun op murni; `PrototypeView` melukisnya tepat
+  sesudah `_draw_tower_hover()` dan sebelum HUD screen-space, sesuai urutan sumber.
+  `PrototypeScreen` membuat snapshot view-only: menara didahulukan, lalu slot biru kosong
+  dalam radius 20 px; shop/popup/forge dan struktur terseleksi mematikan hover. Tidak ada
+  perubahan routing input, seleksi, command, atau simulasi.
+- Bukti: `tests/slot_hover_draw_checks.gd` mereplay seluruh op dan wiring view (termasuk
+  anchor pecahan); suite terdaftar di `run_all.gd`, oracle dipanggil workflow, dan
+  `validate_project.py` mem-pin fixture, rumus sumber, urutan layer, serta gate screen.
+
+Batas: deteksi hover memakai mouse lokal arena seperti 9bv11; pratinjau slot terseleksi
+milik rebuild (cakram + busur Archer) tetap dipertahankan. Belum ada review visual di Godot.
+
+## Slice 9bv13 — indikator debuff pada jalur fallback unit (layer 9bv13)
+
+Menutup batas 9bq9/9bq10: marker hero tanpa atlas dan lingkaran minion tanpa atlas
+sebelumnya tidak melukis `_draw_tower_debuff_fx`.
+
+- `PrototypeView` menyimpan `pulse` dari `hero_anim.observe` saat sprite gagal, lalu
+  jalur marker melukis op debuff **sesudah bayangan tanah dan sebelum badan**, seperti
+  `Hero.draw`. `MinionView` menyimpan `anim` dari `minion_anim.observe`, lalu jalur
+  lingkaran melukis aura es (bila slow), op debuff (`include_rings=False`), baru badan,
+  seperti `Minion.draw`. Painter bersama `debuff_fx_painter.gd` dipakai ulang.
+- Flag view `force_art_fallback` hanya untuk suite scene: `painter_scene_checks.gd`
+  mematikan atlas, mengisi timer slow/burn pada satu hero dan satu minion hidup, lalu
+  membuktikan penghitung `hero_debuff_fx_draws` / `minion_debuff_fx_draws` naik. Semua
+  timer dikembalikan setelah pengecekan. Tidak ada state simulasi atau input yang ditambah.
+- `validate_project.py` mem-pin jam fallback, urutan lukis, dan bukti scene. Tidak ada
+  oracle/fixture baru: geometri indikator tetap dipaku fixture 9bq9/9bq10.
+
+## Slice 9bv14 — FX menara tertinggal dari 9bl (layer 9bv14)
+
+Menuntaskan tiga item "Belum ada" di peta 9bl: lingkaran jangkauan versi sumber,
+kilat upgrade, dan kilat moncong Archer. Peluru `Bullet.draw` sudah ditutup 9bp.
+
+- Oracle `tests/tower_fx_source_oracle.py` memanen tiga blok `if` asli dari
+  `_entity.py::Tower.draw` (`self.selected`, `upgrade_flash`, `shoot_flash_timer` Archer)
+  dan `get_archer_bow_position` asli berikut tabel `LEVEL_CONFIGS` dari
+  `towers/_bundle.py`. Fixture `tests/fixtures/tower_fx_source.json`: **7 frame / 14 op**,
+  termasuk range dua warna, upgrade alpha 100/200, moncong kanan/kiri pada level 3/6,
+  timer yang menghasilkan `size == 0`, kombinasi ketiga FX, dan cabang kosong.
+- `scripts/ui/tower_fx_layout.gd` memisahkan `before_ops` (range + kilat upgrade) dan
+  `after_ops` (dua cakram moncong), sesuai posisi sumber di sekitar badan menara.
+  `SiegeView` menggantikan busur range lama dengan op sumber, melukis kilat sebelum badan
+  dan moncong sesudah badan/ sebelum bar HP. Warna mengikuti `TOWER_TYPE_COLORS`.
+- Jam view `structure_anim.gd` kini mengamati kenaikan level dan aktivasi regen shield
+  untuk meng-arm `upgrade_flash = 30`; jam tembak lama tetap dipakai untuk moncong.
+  Semua itu view-only: tidak mengubah damage, cooldown, level, shield, input, atau atlas.
+- Bukti: `tests/tower_fx_draw_checks.gd` mereplay fixture dan wiring `SiegeView`;
+  `painter_scene_checks.gd` membuktikan range terseleksi dan moncong Archer yang menembak
+  benar-benar dilukis di scene hidup. Suite/oracle terdaftar, dan validator mem-pin blok
+  sumber, tabel tinggi busur, nilai `.tres` Archer level 1-6, serta penghitung scene.
+
+Batas: `_TOWER_SPRITE_CACHE` sumber tidak diport, jadi alpha moncong dihitung ulang tiap
+frame (sama dengan permukaan cache dingin); cakram dalam Godot di-blend normal, bukan
+ditimpa piksel SRCALPHA seperti pygame. Bukan klaim pixel parity.
+
+## Sisa setelah 9bv12–9bv14
+
+- **Aura sihir kastil level 6** belum ada: nexus Godot berhenti di level 5, jadi
+  melengkapinya berarti mengubah batas level simulasi, di luar migrasi visual sesi ini.
+- Divergensi yang sudah dicatat dan sengaja dipertahankan: metrik font/AA, panel taktis
+  mengambang, realm nyxareth 1280 px, aura hasil bake yang tidak ikut tergelapkan,
+  sprite menara yang berubah di luar kunci cache, serta jejak hit/impact lama.
+- Review interaktif/visual di Godot masih perlu Anda lakukan. Sandbox ini tidak punya
+  Godot; bukti yang tersedia adalah oracle sumber, validator statis, dan CI native.

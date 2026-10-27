@@ -5932,6 +5932,175 @@ check('arena.set("tower_hover_state", _tower_hover_state(world, match_session, b
       and "set_tactical_cursor" not in _th_state,
       "9bv11 screen/test must wire mouse-only hover drawing without commands or simulation writes")
 
+# ── Layer 9bv12: read-only build-slot hover glow and hint ──
+from slot_hover_source_oracle import source_fixture as slot_hover_fixture
+_sh_path = ROOT / "tests/fixtures/slot_hover_source.json"
+_sh_layout = (ROOT / "scripts/ui/slot_hover_layout.gd").read_text(encoding="utf-8")
+_sh_checks = (ROOT / "tests/slot_hover_draw_checks.gd").read_text(encoding="utf-8")
+_sh_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_sh_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+_sh_bundle = (ROOT.parent / "ui_components" / "_bundle.py").read_text(encoding="utf-8")
+_sh_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+check('const SlotHoverDrawChecks = preload("res://tests/slot_hover_draw_checks.gd")' in ai_tests
+      and "SlotHoverDrawChecks.new().run(_check)" in ai_tests,
+      "9bv12 slot-hover source parity suite must run in the native suite")
+check("python godot_rebuild/tests/slot_hover_source_oracle.py" in workflow,
+      "9bv12 CI must record the source slot-hover painter")
+check(_sh_path.is_file(), "9bv12 slot-hover fixture must exist")
+if _sh_path.is_file():
+    _sh_fixture = json.loads(_sh_path.read_text(encoding="utf-8"))
+    _sh_frames = _sh_fixture["frames"]
+    check(slot_hover_fixture() == _sh_fixture,
+          "9bv12 slot-hover fixture must not drift from HoverIndicators.draw")
+    check(len(_sh_frames) == 4 and sum(len(frame["ops"]) for frame in _sh_frames) == 27
+          and [frame["name"] for frame in _sh_frames] == [
+              "slot_hover_top_lane", "slot_hover_low_pulse",
+              "slot_hover_fractional_position", "no_slot_hover"]
+          and _sh_fixture["source"] == "ui_components/_bundle.py::HoverIndicators",
+          "9bv12 fixture must pin three live slot-hover cases and the empty branch (27 ops)")
+check("static func ops(state: Dictionary, measure: Callable) -> Array:" in _sh_layout
+      and 'const HINT_FONT_STYLE := "body"' in _sh_layout
+      and 'const HINT_TEXT := "TAP TO BUILD"' in _sh_layout
+      and "sin(animation_time * 0.15) * 0.3 + 0.7" in _sh_layout
+      and "for radius in range(35, 15, -3):" in _sh_layout
+      and 'self.font_tiny = get_font(20, "body")' in _sh_core
+      and 'glow_surf = pygame.Surface((80, 80), pygame.SRCALPHA)' in _sh_bundle
+      and "alpha = int((35 - r) * 6 * pulse)" in _sh_bundle
+      and "hint_bg = pygame.Rect(slot['x'] - 50, slot['y'] - 36, 100, 18)" in _sh_bundle,
+      "9bv12 layout must preserve the six-ring pulse, rounded hint box, and source font")
+_sh_draw_start = _sh_view.find("func _draw() -> void:")
+_sh_draw_end = _sh_view.find("func _draw_structures() -> void:", _sh_draw_start)
+_sh_draw = _sh_view[_sh_draw_start:_sh_draw_end] if _sh_draw_start >= 0 else ""
+check('const SlotHoverLayout = preload("res://scripts/ui/slot_hover_layout.gd")' in _sh_view
+      and "var slot_hover_state: Dictionary = {}" in _sh_view
+      and "func slot_hover_draw_ops(" in _sh_view
+      and "SlotHoverLayout.ops(slot_hover_state, metrics)" in _sh_view
+      and "_draw_slot_hover()" in _sh_draw
+      and _sh_draw.index("_draw_tower_hover()")
+      < _sh_draw.index("_draw_slot_hover()")
+      < _sh_draw.index("draw_set_transform(Vector2.ZERO"),
+      "9bv12 PrototypeView must paint the read-only slot-hover snapshot after tower hover")
+_sh_state_start = _sh_screen.find("func _slot_hover_state(")
+_sh_state_end = _sh_screen.find("func _build_popup_state(", _sh_state_start)
+_sh_state = _sh_screen[_sh_state_start:_sh_state_end] if _sh_state_start >= 0 else ""
+check('"slot_hover_state",' in _sh_screen
+      and "_slot_hover_state(world, match_session, build_popup_state, tower_hover_state)" in _sh_screen
+      and "not tower_state.is_empty()" in _sh_state
+      and "slot.team != world.BLUE" in _sh_state
+      and "slot.structure_id != -1" in _sh_state
+      and "slot.position.distance_to(mouse) > 20.0" in _sh_state
+      and '"animation_time": world.tick_count' in _sh_state
+      and "if g.shop_open or g.popup_target or g.build_popup_slot:" in _sh_bundle
+      and "for slot in g.build_slots_blue:" in _sh_bundle
+      and "if dist <= 20:" in _sh_bundle
+      and "g.hovered_slot = slot" in _sh_bundle
+      and "slot_hover_state" in _sh_checks
+      and "Layout.ops(state, _fake_measure)" in _sh_checks
+      and "request_" not in _sh_state
+      and "set_tactical_cursor" not in _sh_state,
+      "9bv12 screen/test must wire mouse-only slot hover without commands or simulation writes")
+
+# ── Layer 9bv13: tower-debuff indicators on the art-fallback unit paths ──
+_fb_minion = (ROOT / "scenes/combat/minion_view.gd").read_text(encoding="utf-8")
+_fb_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_fb_scene = (ROOT / "tests/painter_scene_checks.gd").read_text(encoding="utf-8")
+check("var force_art_fallback := false" in _fb_minion
+      and "_minion_fallback_anim = anim" in _fb_minion
+      and "if force_art_fallback:" in _fb_minion
+      and "if not unit.is_hero:" in _fb_minion
+      and "DebuffFxPainter.paint(self, fallback_debuff_ops)" in _fb_minion
+      and "minion_debuff_draw_ops(unit, _minion_fallback_anim)" in _fb_minion
+      and "_hero_fallback_pulse = pulse" in _fb_view
+      and "if force_art_fallback:" in _fb_view
+      and "hero_debuff_draw_ops(hero, _hero_fallback_pulse)" in _fb_view
+      and "DebuffFxPainter.paint(self, fallback_debuff_ops)" in _fb_view
+      and 'const DebuffFxPainter = preload("res://scripts/ui/debuff_fx_painter.gd")' in _fb_view,
+      "9bv13 marker hero and plain-circle minion must paint the shared debuff indicator")
+check("_check_fallback_debuff_fx(tree, view, world, hero, check)" in _fb_scene
+      and "view.force_art_fallback = true" in _fb_scene
+      and "A marker hero painted the source debuff indicator" in _fb_scene
+      and "A plain-circle minion painted the source debuff indicator" in _fb_scene,
+      "9bv13 live scene must prove both fallback paths draw the indicator")
+
+# ── Layer 9bv14: source selected range, upgrade flash, and archer muzzle glow ──
+from tower_fx_source_oracle import source_fixture as tower_fx_fixture
+_tf_path = ROOT / "tests/fixtures/tower_fx_source.json"
+_tf_layout = (ROOT / "scripts/ui/tower_fx_layout.gd").read_text(encoding="utf-8")
+_tf_checks = (ROOT / "tests/tower_fx_draw_checks.gd").read_text(encoding="utf-8")
+_tf_view = (ROOT / "scenes/siege/siege_view.gd").read_text(encoding="utf-8")
+_tf_anim = (ROOT / "scripts/ui/structure_anim.gd").read_text(encoding="utf-8")
+_tf_scene = (ROOT / "tests/painter_scene_checks.gd").read_text(encoding="utf-8")
+_tf_entity = (ROOT.parent / "_entity.py").read_text(encoding="utf-8")
+_tf_towers = (ROOT.parent / "towers" / "_bundle.py").read_text(encoding="utf-8")
+_tf_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+_tf_definition = (ROOT / "scripts/data/structure_definition.gd").read_text(encoding="utf-8")
+check('const TowerFxDrawChecks = preload("res://tests/tower_fx_draw_checks.gd")' in ai_tests
+      and "TowerFxDrawChecks.new().run(_check)" in ai_tests,
+      "9bv14 tower-FX source parity suite must run in the native suite")
+check("python godot_rebuild/tests/tower_fx_source_oracle.py" in workflow,
+      "9bv14 CI must record the source Tower.draw FX")
+check(_tf_path.is_file(), "9bv14 tower-FX fixture must exist")
+if _tf_path.is_file():
+    _tf_fixture = json.loads(_tf_path.read_text(encoding="utf-8"))
+    _tf_frames = _tf_fixture["frames"]
+    check(tower_fx_fixture() == _tf_fixture,
+          "9bv14 tower-FX fixture must not drift from Tower.draw")
+    check(len(_tf_frames) == 7 and sum(len(frame["ops"]) for frame in _tf_frames) == 14
+          and _tf_fixture["source"] == "_entity.py::Tower.draw"
+          and [frame["name"] for frame in _tf_frames] == [
+              "selected_archer", "selected_cannon_upgrade", "archer_muzzle_right",
+              "archer_muzzle_left_low", "archer_muzzle_zero", "archer_all_fx",
+              "no_tower_fx"],
+          "9bv14 fixture must pin range, upgrade, muzzle, and empty branches (14 ops)")
+    check(_tf_fixture["bow_heights"] == {
+        "1": 38, "2": 42, "3": 46, "4": 52, "5": 56, "6": 62},
+        "9bv14 fixture must pin the source archer bow heights")
+check("static func before_ops(state: Dictionary) -> Array:" in _tf_layout
+      and "static func after_ops(state: Dictionary) -> Array:" in _tf_layout
+      and "static func bow_position(state: Dictionary) -> Vector2i:" in _tf_layout
+      and "const BOW_HEIGHTS := [38, 42, 46, 52, 56, 62]" in _tf_layout
+      and "const RANGE_FILL_ALPHA := 40" in _tf_layout
+      and "const RANGE_BORDER_ALPHA := 150" in _tf_layout
+      and "const UPGRADE_FLASH_TICKS := 30" in _tf_layout,
+      "9bv14 layout must preserve the source range, upgrade, and muzzle formulas")
+check("x, y = self.x, self.y" in _tf_entity
+      and "if self.selected:" in _tf_entity
+      and "if self.upgrade_flash > 0:" in _tf_entity
+      and 'if self.shoot_flash_timer > 0 and self.tower_type == "archer":' in _tf_entity
+      and "self.upgrade_flash = 30" in _tf_entity
+      and "def get_archer_bow_position(tower_x, tower_y, level, face=1):" in _tf_towers
+      and "SCALE = 0.7" in _tf_towers
+      and "TOWER_TYPE_COLORS = {" in _tf_core,
+      "9bv14 oracle must harvest the real Tower.draw blocks and archer bow helper")
+check('@export var bow_platform_height: float = 38.0' in _tf_definition,
+      "9bv14 level-1 archer bow height keeps the source default")
+for _tf_level in range(2, 7):
+    _tf_res = (ROOT / ("data/structures/archer_level_%d.tres" % _tf_level)).read_text(encoding="utf-8")
+    _tf_match = re.search(r"bow_platform_height = ([0-9.]+)", _tf_res)
+    check(_tf_match is not None and int(float(_tf_match.group(1))) == [42, 46, 52, 56, 62][_tf_level - 2],
+          "9bv14 archer level %d bow height matches the source table" % _tf_level)
+check('const TowerFxLayout = preload("res://scripts/ui/tower_fx_layout.gd")' in _tf_view
+      and "var tower_range_fx_draws := 0" in _tf_view
+      and "var tower_upgrade_fx_draws := 0" in _tf_view
+      and "var tower_muzzle_fx_draws := 0" in _tf_view
+      and "func tower_fx_state(" in _tf_view
+      and "func _draw_tower_fx_before(" in _tf_view
+      and "func _draw_tower_fx_after(" in _tf_view
+      and "_draw_tower_fx_before(fx_state)" in _tf_view
+      and "_draw_tower_fx_after(fx_state)" in _tf_view
+      and "draw_arc(structure.position, data.attack_range_px" not in _tf_view,
+      "9bv14 SiegeView must replace the rebuild range arc with source FX around the body")
+check("const UPGRADE_FLASH_TICKS := 30" in _tf_anim
+      and 'entry["upgrade_flash"]' in _tf_anim
+      and "level > int(entry[\"level\"])" in _tf_anim
+      and "regen and not bool(entry[\"regen\"])" in _tf_anim,
+      "9bv14 structure clock must observe upgrades and regen-shield activation")
+check("view.tower_range_fx_draws > 0" in _tf_scene
+      and "view.tower_muzzle_fx_draws > 0" in _tf_scene
+      and "Tower-FX oracle pins 7 frames and 14 ops" in _tf_checks
+      and "Layout.ops(state)" in _tf_checks,
+      "9bv14 native suite and live scene must prove the tower FX painter")
+
 # ── Layer 9bv9: interactive BuildPopup and HeroPanel ──
 _pi_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
 _pi_side_panel = (ROOT / "scripts/ui/side_panel.gd").read_text(encoding="utf-8")

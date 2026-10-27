@@ -4,6 +4,7 @@ const Siege = preload("res://scripts/combat/siege_battle.gd")
 const Structure = preload("res://scripts/combat/structure_state.gd")
 const StructureArt = preload("res://scripts/ui/structure_art.gd")
 const StructureAnim = preload("res://scripts/ui/structure_anim.gd")
+const TowerFxLayout = preload("res://scripts/ui/tower_fx_layout.gd")
 const BulletArt = preload("res://scripts/ui/bullet_art.gd")
 const HudFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
 ## `_entity.py` bar colours: SHIELD_COLOR_*, CASTLE_SHIELD_COLOR_*, GREEN / YELLOW / RED.
@@ -20,6 +21,12 @@ const BADGE_YELLOW := Color(255 / 255.0, 220 / 255.0, 0 / 255.0)
 const TOWER_BAR_WIDTH := 44
 const TOWER_BAR_HEIGHT := 5
 var structure_anim := StructureAnim.new()
+## Layer 9bv14: source selected range, upgrade flash, and archer muzzle glow counters.
+var tower_fx_draws := 0
+var tower_range_fx_draws := 0
+var tower_upgrade_fx_draws := 0
+var tower_muzzle_fx_draws := 0
+var tower_fx_ops_count := 0
 
 
 func _draw() -> void:
@@ -74,21 +81,25 @@ func _draw_structure_art(structure: Structure) -> bool:
 	var data := structure.settings()
 	var tick: int = session.world.tick_count
 	var art: Dictionary = {}
+	var clocks: Dictionary = {}
 	var nexus := data.structure_kind == "nexus"
 	if nexus:
 		art = StructureArt.castle_frame(structure.team, data.level, StructureAnim.flicker(tick))
 	else:
-		var flash := int(structure_anim.observe(structure, tick)["flash"])
+		clocks = structure_anim.observe(structure, tick)
 		art = StructureArt.tower_frame(
 			data.tower_path,
 			structure.team,
 			data.level,
 			_target_is_right(structure),
-			StructureAnim.shoot_b(flash)
+			StructureAnim.shoot_b(int(clocks["flash"]))
 		)
 	if art.is_empty():
 		return false
 	_draw_structure_selection(structure, data)
+	var fx_state := tower_fx_state(structure, data, clocks)
+	if not nexus:
+		_draw_tower_fx_before(fx_state)
 	var src: Rect2 = art["src"]
 	var corner := structure.position - (art["anchor"] as Vector2)
 	corner = Vector2(int(corner.x), int(corner.y))
@@ -96,6 +107,7 @@ func _draw_structure_art(structure: Structure) -> bool:
 	if nexus:
 		_draw_castle_extras(structure, corner)
 	else:
+		_draw_tower_fx_after(fx_state)
 		_draw_tower_extras(structure, data, tick)
 	return true
 
@@ -113,9 +125,78 @@ func _target_is_right(structure: Structure) -> int:
 func _draw_structure_selection(structure: Structure, data) -> void:
 	if structure.id != session.selected_id:
 		return
-	var color := Color("73cbbb") if structure.team == 0 else Color("d78579")
-	draw_arc(structure.position, data.attack_range_px, 0, TAU, 90, Color(color, 0.4), 1.5, true)
+	# Layer 9bv14: the attack range is now the source's two-circle op; this yellow arc is
+	# the rebuild's extra selection marker around the body.
 	draw_arc(structure.position, data.radius_px + 8, 0, TAU, 40, Color("f4d491"), 2, true)
+
+
+## Layer 9bv14: view-only snapshot of the three source `Tower.draw` FX blocks.
+func tower_fx_state(structure: Structure, data, clocks: Dictionary) -> Dictionary:
+	var target_x: Variant = null
+	var target := session.world.get_unit(structure.target_id)
+	if target != null and target.alive:
+		target_x = target.position.x
+	return {
+		"x": structure.position.x,
+		"y": structure.position.y,
+		"range": int(data.attack_range_px),
+		"color": TowerFxLayout.color_for(data.tower_path),
+		"level": int(data.level),
+		"bow_platform_height": float(data.bow_platform_height),
+		"tower_type": String(data.tower_path),
+		"selected": structure.id == session.selected_id,
+		"upgrade_flash": int(clocks.get("upgrade_flash", 0)),
+		"shoot_flash_timer": int(clocks.get("flash", 0)),
+		"target_x": target_x,
+	}
+
+
+func tower_fx_ops(state: Dictionary) -> Array:
+	return TowerFxLayout.ops(state)
+
+
+func tower_fx_before_ops(state: Dictionary) -> Array:
+	return TowerFxLayout.before_ops(state)
+
+
+func tower_fx_after_ops(state: Dictionary) -> Array:
+	return TowerFxLayout.after_ops(state)
+
+
+func _draw_tower_fx_before(state: Dictionary) -> void:
+	var ops := TowerFxLayout.before_ops(state)
+	if bool(state.get("selected", false)):
+		tower_range_fx_draws += 1
+	if int(state.get("upgrade_flash", 0)) > 0:
+		tower_upgrade_fx_draws += 1
+	_paint_tower_fx(ops)
+
+
+func _draw_tower_fx_after(state: Dictionary) -> void:
+	var ops := TowerFxLayout.after_ops(state)
+	if not ops.is_empty():
+		tower_muzzle_fx_draws += 1
+	_paint_tower_fx(ops)
+
+
+func _paint_tower_fx(ops: Array) -> void:
+	if ops.is_empty():
+		return
+	tower_fx_draws += 1
+	tower_fx_ops_count += ops.size()
+	for op in ops:
+		var center: Array = op.get("center", [0, 0])
+		var at := Vector2(float(center[0]), float(center[1]))
+		var radius := float(op.get("radius", 1))
+		var width := int(op.get("width", 0))
+		var rgba: Array = op.get("color", [255, 255, 255, 255])
+		var color := Color8(int(rgba[0]), int(rgba[1]), int(rgba[2]))
+		if rgba.size() > 3:
+			color.a = float(rgba[3]) * float(op.get("mult", 255)) / 65025.0
+		if width > 0:
+			draw_arc(at, radius - float(width) * 0.5, 0.0, TAU, 64, color, float(width), true)
+		else:
+			draw_circle(at, radius, color)
 
 
 func _blit_art(art: Dictionary, anchor_point: Vector2) -> void:

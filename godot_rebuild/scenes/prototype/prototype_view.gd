@@ -24,6 +24,7 @@ const SlotArt = preload("res://scripts/ui/slot_art.gd")
 const HeroArt = preload("res://scripts/ui/hero_art.gd")
 const HeroAnim = preload("res://scripts/ui/hero_anim.gd")
 const HeroPainter = preload("res://scripts/ui/hero_painter.gd")
+const DebuffFxPainter = preload("res://scripts/ui/debuff_fx_painter.gd")
 const BossArt = preload("res://scripts/ui/boss_art.gd")
 const BossAnim = preload("res://scripts/ui/boss_anim.gd")
 const NyxarethRealmLayout = preload("res://scripts/ui/nyxareth_realm_layout.gd")
@@ -42,6 +43,7 @@ const EndOverlayLayout = preload("res://scripts/ui/end_overlay_layout.gd")
 const BuildPopupLayout = preload("res://scripts/ui/build_popup_layout.gd")
 const HeroPanelLayout = preload("res://scripts/ui/hero_panel_layout.gd")
 const TowerHoverLayout = preload("res://scripts/ui/tower_hover_layout.gd")
+const SlotHoverLayout = preload("res://scripts/ui/slot_hover_layout.gd")
 const TitleFont = preload("res://assets/fonts/Cinzel.ttf")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
@@ -139,6 +141,8 @@ var build_popup_state: Dictionary = {}
 var hero_panel_state: Dictionary = {}
 ## Layer 9bv11: view-only hovered tower snapshot from `HoverIndicators.draw`.
 var tower_hover_state: Dictionary = {}
+## Layer 9bv12: view-only hovered empty build-slot snapshot from `HoverIndicators.draw`.
+var slot_hover_state: Dictionary = {}
 var hud_shadow_box := StyleBoxFlat.new()
 ## Layer 9bv6: `Overlay.unlock_popup_timer`, advanced once per victory overlay draw and
 ## stopped AT the 90-call delay exactly like `_update_unlock_popup`.
@@ -150,6 +154,8 @@ var dynamic_map := DynamicMapRenderer.new()
 var dynamic_map_draws := 0
 var _end_backdrop: ImageTexture
 var _radial_textures: Dictionary = {}
+## Layer 9bv13: pulse clock carried from the sprite attempt into the marker fallback.
+var _hero_fallback_pulse := 0.0
 
 
 func _draw() -> void:
@@ -207,6 +213,7 @@ func _draw() -> void:
 		draw_line(mark - Vector2(5, 5), mark + Vector2(5, 5), color, 1.5, true)
 		draw_line(mark + Vector2(-5, 5), mark + Vector2(5, -5), color, 1.5, true)
 	_draw_tower_hover()
+	_draw_slot_hover()
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	for layer in OVERLAY_ORDER:
 		_draw_overlay_layer(String(layer), world)
@@ -1094,6 +1101,22 @@ func tower_hover_draw_ops(measure: Callable = Callable()) -> Array:
 	return TowerHoverLayout.ops(tower_hover_state, metrics)
 
 
+## Layer 9bv12: glow and "TAP TO BUILD" hint for the read-only hovered empty slot snapshot.
+## Source `HoverIndicators.draw` paints this directly after the tower hover branch.
+func _draw_slot_hover() -> void:
+	for op in slot_hover_draw_ops():
+		_draw_hud_op(op)
+
+
+func slot_hover_draw_ops(measure: Callable = Callable()) -> Array:
+	if slot_hover_state.is_empty():
+		return []
+	var metrics: Callable = _measure_intro_text
+	if measure.is_valid():
+		metrics = measure
+	return SlotHoverLayout.ops(slot_hover_state, metrics)
+
+
 ## Layer 9bv7: `BuildPopup.draw`, the build-tower popup painted right after the tactical banner
 ## while the screen hands over `build_popup_state` (slot x/y and gold).
 func _draw_build_popup(world: Prototype) -> void:
@@ -1506,6 +1529,13 @@ func _draw_unit(unit: UnitState) -> void:
 		draw_arc(point, radius + 12, 0, TAU, 36, Color("f4d491"), 2, true)
 	# Team outline, stable ID polygon, and facing eye are intentionally basic.
 	draw_circle(point + Vector2(0, 4), radius + 5, Color("071518"))
+	# Layer 9bv13: `Hero.draw` paints the shared indicator after the ground shadow and
+	# before the body, also when the baked sheet is unavailable.
+	var fallback_debuff_ops := hero_debuff_draw_ops(hero, _hero_fallback_pulse)
+	if not fallback_debuff_ops.is_empty():
+		hero_debuff_fx_draws += 1
+		hero_debuff_fx_ops += fallback_debuff_ops.size()
+		DebuffFxPainter.paint(self, fallback_debuff_ops)
 	draw_circle(point, radius + 5, team_color)
 	_draw_lit_polygon(HeroMarker.silhouette(point, radius, hero.definition.id), fill)
 	draw_circle(point + Vector2(hero.facing * 5, -2), 3, Color("e1fff4"))
@@ -1522,6 +1552,9 @@ func _draw_hero_sprite(hero: HeroState) -> bool:
 	var clocks := hero_anim.observe(hero, session.world.tick_count)
 	var moving := bool(clocks["moving"])
 	var pulse := float(clocks["pulse"])
+	_hero_fallback_pulse = pulse
+	if force_art_fallback:
+		return false
 	var pose := HeroAnim.pose_key(
 		hero.attack_timer, moving, pulse, hero.active_skill, hero.active_skill_timer
 	)
