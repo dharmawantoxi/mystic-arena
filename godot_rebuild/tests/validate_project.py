@@ -6014,7 +6014,8 @@ check("var force_art_fallback := false" in _fb_minion
       and "if force_art_fallback:" in _fb_view
       and "hero_debuff_draw_ops(hero, _hero_fallback_pulse)" in _fb_view
       and "DebuffFxPainter.paint(self, fallback_debuff_ops)" in _fb_view
-      and 'const DebuffFxPainter = preload("res://scripts/ui/debuff_fx_painter.gd")' in _fb_view,
+      and 'const DebuffFxPainter = preload("res://scripts/ui/debuff_fx_painter.gd")' in _fb_minion
+      and 'const DebuffFxPainter = preload(' not in _fb_view,
       "9bv13 marker hero and plain-circle minion must paint the shared debuff indicator")
 check("_check_fallback_debuff_fx(tree, view, world, hero, check)" in _fb_scene
       and "view.force_art_fallback = true" in _fb_scene

@@ -9,9 +9,11 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
 - Milestone sesi ini: **9bv12** hover slot bangun, **9bv13** indikator debuff pada
   jalur fallback marker/siluet, dan **9bv14** FX menara yang tertinggal dari 9bl
   (range terseleksi, kilat upgrade, kilat moncong Archer). Rincian di bagian paling bawah.
-- `validate_project.py` **PASS 21470**; `gdparse`, `gdlint`, `gdformat --check`
-  pada 11 `.gd` yang berubah, oracle/`py_compile`, dan `git diff --check` **PASS**.
-  Godot lokal tidak tersedia: tidak ada klaim verifikasi runtime/visual lokal.
+- `validate_project.py` **PASS 21467** (run akhir setelah koreksi CI); `gdparse`,
+  `gdlint`, `gdformat --check` pada 11 `.gd` yang berubah, oracle/`py_compile`, dan
+  `git diff --check` **PASS**. Godot lokal tidak tersedia: tidak ada klaim verifikasi
+  runtime/visual lokal. Run native PR #344 pertama gagal karena konstanta
+  `DebuffFxPainter` dideklarasikan ulang di anak; koreksi memakai konstanta warisan.
 
 - PR #334 sudah di-merge (`a134020`). 9aw WaveAnnouncer + PathPreview, 9ax ikon
   AchievementPopup, 9ay HitParticle, 9az FloatingText, dan 9ba panel
