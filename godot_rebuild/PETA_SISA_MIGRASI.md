@@ -15,7 +15,8 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
   runtime/visual lokal. Run native PR #344 pertama gagal karena konstanta
   `DebuffFxPainter` dideklarasikan ulang di anak; koreksi memakai konstanta warisan.
   Run kedua gagal pada inferensi tipe `ready` di scene suite; diperbaiki dengan tipe
-  `bool` eksplisit. CI ulang menyusul.
+  `bool` eksplisit. Run final **40532617942** / job **122289231726** **PASS 10m30s**
+  (`PASS: 1505197 checks; fixed ticks and source parity`).
 
 - PR #334 sudah di-merge (`a134020`). 9aw WaveAnnouncer + PathPreview, 9ax ikon
   AchievementPopup, 9ay HitParticle, 9az FloatingText, dan 9ba panel
