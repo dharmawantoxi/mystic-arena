@@ -7,6 +7,7 @@ extends RefCounted
 
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const HeroArt = preload("res://scripts/ui/hero_art.gd")
+const DebuffFxPainter = preload("res://scripts/ui/debuff_fx_painter.gd")
 const HudFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
 ## `pygame.draw.ellipse(surface, (0, 0, 0, 100), ...)` on the display surface: pygame drops the
 ## alpha of a draw call on a surface without per-pixel alpha, so the source shadow is solid.
@@ -35,7 +36,11 @@ const STAR := [
 ]
 
 
-static func paint(canvas: CanvasItem, hero: HeroState, art: Dictionary, selected: bool) -> void:
+## Layer 9bq10: `debuff_ops` is the shared tower-debuff indicator `Hero.draw` paints after the
+## ground shadow and before the body; the caller builds it from the live timers.
+static func paint(
+	canvas: CanvasItem, hero: HeroState, art: Dictionary, selected: bool, debuff_ops: Array = []
+) -> void:
 	var facts := HeroArt.meta(hero.definition.id)
 	var radius := int(facts.get("radius", 16))
 	var point := Vector2(int(hero.position.x), int(hero.position.y))
@@ -43,6 +48,7 @@ static func paint(canvas: CanvasItem, hero: HeroState, art: Dictionary, selected
 		_paint_selection(canvas, hero, point, radius)
 	var shadow := Rect2(point.x - radius, point.y + radius - 4, radius * 2, 8)
 	canvas.draw_colored_polygon(_ellipse(shadow), SHADOW)
+	DebuffFxPainter.paint(canvas, debuff_ops)
 	var src: Rect2 = art["src"]
 	var scale := float(art.get("scale", 1.0))
 	var corner := point - (art["anchor"] as Vector2) * scale

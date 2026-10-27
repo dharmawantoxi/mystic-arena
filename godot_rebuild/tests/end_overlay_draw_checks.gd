@@ -1,6 +1,6 @@
 extends RefCounted
 ## Layers 9bv5 + 9bv6: `Overlay.draw` replay. `end_overlay_draw_source_oracle.py` runs the REAL
-## source overlay (cheap-alpha branch) under the recording pygame shim; `EndOverlayLayout` must
+## source overlay in both quality modes under the recording pygame shim; `EndOverlayLayout` must
 ## rebuild every op (backdrop, rays, glow, title, sparkles, stats, level unlock popup, action
 ## hint, achievements) and the arena view must paint the screen's end state in the source slot.
 
@@ -25,6 +25,7 @@ static func _state(frame: Dictionary, colors: Dictionary) -> Dictionary:
 		"color": colors["victory"] if victory else colors["defeat"],
 		"action": frame["action"],
 		"animation_time": int(frame["animation_time"]),
+		"cheap_alpha": bool(frame.get("cheap_alpha", true)),
 		"stats": frame["stats"],
 		"achievements": int(frame["achievements"]),
 		"unlock": _unlock(frame),
@@ -82,8 +83,8 @@ func run(check: Callable) -> void:
 	for frame in frames:
 		ops_total += frame["ops"].size()
 	check.call(
-		frames.size() == 8 and ops_total == 2210,
-		"End overlay oracle pins 8 source frames and 2210 draw ops (got %d)" % ops_total
+		frames.size() == 10 and ops_total == 2810,
+		"End overlay oracle pins 10 quality-mode frames and 2810 draw ops (got %d)" % ops_total
 	)
 	var colors: Dictionary = data["colors"]
 	check.call(
@@ -120,6 +121,8 @@ func run(check: Callable) -> void:
 		"End overlay action lines follow Game.draw's keyboard labels"
 	)
 	_check_view_wiring(check, frames[2], colors)
+	_check_view_wiring(check, frames[8], colors)
+	_check_view_wiring(check, frames[9], colors)
 
 
 func _check_view_wiring(check: Callable, frame: Dictionary, colors: Dictionary) -> void:

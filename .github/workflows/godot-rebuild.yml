@@ -150,6 +150,10 @@ jobs:
           python godot_rebuild/tests/boss_aura_fx_source_oracle.py
           python godot_rebuild/tests/urgharun_basic_attack_source_oracle.py
           python godot_rebuild/tests/boss_debuff_fx_source_oracle.py
+          python godot_rebuild/tests/entity_debuff_fx_source_oracle.py
+          python godot_rebuild/tests/boss_entrance_draw_source_oracle.py
+          python godot_rebuild/tests/urgharun_ai_reach_source_oracle.py
+          python godot_rebuild/tests/urgharun_ai_skill_source_oracle.py
           python godot_rebuild/tests/tactical_draw_source_oracle.py
           python godot_rebuild/tests/gold_hud_draw_source_oracle.py
           python godot_rebuild/tests/shop_hint_draw_source_oracle.py
@@ -157,6 +161,7 @@ jobs:
           python godot_rebuild/tests/end_overlay_draw_source_oracle.py
           python godot_rebuild/tests/build_popup_draw_source_oracle.py
           python godot_rebuild/tests/hero_panel_draw_source_oracle.py
+          python godot_rebuild/tests/tower_hover_source_oracle.py
           python godot_rebuild/tests/death_explosion_draw_source_oracle.py
           python godot_rebuild/tests/map_tint_draw_source_oracle.py
           python godot_rebuild/tests/draw_order_source_oracle.py
@@ -173,6 +178,7 @@ jobs:
           python godot_rebuild/tests/balance_baseline_source_oracle.py
           python godot_rebuild/tests/debuff_payload_reach_source_oracle.py
           python godot_rebuild/tests/hero_marker_source_oracle.py
+          python godot_rebuild/tests/hero_portrait_raz_source_oracle.py
           gdparse $(find godot_rebuild -name '*.gd')
           gdlint $(find godot_rebuild -name '*.gd')
           gdformat --check $(find godot_rebuild -name '*.gd')
@@ -244,7 +250,7 @@ jobs:
         run: |
           set -euo pipefail
           code=0
-          timeout 180 "$GODOT" --headless --path godot_rebuild --script res://tests/run_all.gd 2>&1 | tee /tmp/rebuild-tests.log || code=$?
+          timeout 600 "$GODOT" --headless --path godot_rebuild --script res://tests/run_all.gd 2>&1 | tee /tmp/rebuild-tests.log || code=$?
           if [[ "$code" != 0 ]] || grep -qE 'SCRIPT ERROR:|ERROR:|FAIL:' /tmp/rebuild-tests.log; then
             python godot_rebuild/tests/annotate_failure.py /tmp/rebuild-tests.log
             exit 1

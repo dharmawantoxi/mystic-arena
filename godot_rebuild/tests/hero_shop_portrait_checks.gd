@@ -1,11 +1,13 @@
 extends RefCounted
 ## Hero Shop native custom portrait dispatch, fallback, and shared draw-pass counter.
-## Every roster hero except Raz has a native custom canvas; unknown IDs and Raz
-## retain the deterministic generic fallback. Draw tests cover card and 96-unit sizes.
+## Every roster hero has a native custom canvas; unknown IDs retain the generic fallback.
+## Draw tests cover card and 96-unit sizes, including Raz's source-informed Fire Monk palette.
 
 const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
 const HeroShopCard = preload("res://scripts/ui/hero_shop_card.gd")
+const RazPainter = preload("res://scripts/ui/hero_portrait_raz.gd")
 const HERO_ROSTER = preload("res://scripts/data/hero_roster.gd").DEFINITIONS
+const RAZ_FIXTURE := "res://tests/fixtures/hero_portrait_raz_source.json"
 
 const MATCH_PANEL := "res://scripts/ui/hero_shop_panel.gd"
 const META_PANEL := "res://scripts/ui/meta_hero_shop_panel.gd"
@@ -87,6 +89,7 @@ const SAMPLE: Array[String] = [
 func run(tree: SceneTree, check: Callable) -> void:
 	_dispatch(check)
 	_fallback(check)
+	_raz_palette(check)
 	_card(check)
 	_wiring(check)
 	await _draw_counter(tree, check)
@@ -96,34 +99,73 @@ func _dispatch(check: Callable) -> void:
 	var custom := HeroPortrait.custom_ids()
 	var expected: Array[String] = []
 	for id in HERO_ROSTER:
-		if id != "raz":
-			expected.append(str(id))
+		expected.append(str(id))
 	expected.sort()
-	check.call(custom == expected, "Portrait list covers every roster hero except Raz")
+	check.call(custom == expected, "Portrait list covers every roster hero")
 	for id in expected:
 		check.call(HeroPortrait.has_custom(id), "%s dispatches to a native custom canvas" % id)
-	check.call(not HeroPortrait.has_custom("raz"), "Raz keeps the generic fallback bust")
+	check.call(HeroPortrait.has_custom("raz"), "Raz dispatches to the native Fire Monk portrait")
+	check.call(
+		not HeroPortrait.has_custom("unknown_portrait_test"), "Unknown id keeps generic fallback"
+	)
 	check.call(not HeroPortrait.has_custom(""), "Empty id falls back to the generic bust")
 
 
 func _fallback(check: Callable) -> void:
 	check.call(
-		is_equal_approx(HeroPortrait.hue_for("raz"), 3.0 / 360.0), "Fallback hue is deterministic"
+		is_equal_approx(HeroPortrait.hue_for("raz"), 3.0 / 360.0), "Hero hue hash is deterministic"
 	)
 	check.call(
 		HeroPortrait.hue_for("raz") != HeroPortrait.hue_for("zephyr"),
-		"Fallback hue separates heroes"
+		"Hero hue hash separates identifiers"
 	)
 	for hero_type in SAMPLE:
 		var hue := HeroPortrait.hue_for(hero_type)
-		check.call(
-			hue >= 0.0 and hue < 1.0, "Fallback hue stays inside the HSV range: %s" % hero_type
-		)
+		check.call(hue >= 0.0 and hue < 1.0, "Hero hue stays inside the HSV range: %s" % hero_type)
 	for hero_type in SAMPLE:
 		var portrait := HeroPortrait.new()
 		portrait.setup(hero_type, HERO_ROSTER[hero_type])
 		check.call(portrait.hero_type == hero_type, "Portrait stores the id for %s" % hero_type)
 		portrait.free()
+
+
+func _raz_palette(check: Callable) -> void:
+	var source: Variant = JSON.parse_string(FileAccess.get_file_as_string(RAZ_FIXTURE))
+	check.call(source is Dictionary, "Raz source palette fixture parses")
+	if not source is Dictionary:
+		return
+	var palette: Dictionary = source.get("palette", {})
+	var portrait: Dictionary = RazPainter.spec()
+	check.call(
+		(
+			source.get("hero_type") == "raz"
+			and source.get("name") == "Raz"
+			and source.get("title") == "The Heat of Despair"
+			and source.get("role") == "Boss/Fire Monk"
+		),
+		"Raz portrait fixture keeps the Fire Monk identity"
+	)
+	check.call(
+		(
+			portrait.get("family") == "fighter"
+			and portrait.get("feature") == "fire"
+			and portrait.get("primary") == _source_color(palette.get("red_darkest", []))
+			and portrait.get("accent") == _source_color(palette.get("fire_mid", []))
+			and portrait.get("light") == _source_color(palette.get("fire_hot", []))
+			and portrait.get("skin") == _source_color(palette.get("skin_mid", []))
+			and portrait.get("top") == _source_color(palette.get("red_mid", []))
+			and portrait.get("bottom") == _source_color(palette.get("cloth_darkest", []))
+			and portrait.get("hair") == _source_color(palette.get("hair_mid", []))
+			and portrait.get("gold") == _source_color(palette.get("gold_mid", []))
+		),
+		"Raz portrait uses the source Fire Monk palette"
+	)
+
+
+func _source_color(values: Array) -> Color:
+	if values.size() != 3:
+		return Color.TRANSPARENT
+	return Color8(int(values[0]), int(values[1]), int(values[2]))
 
 
 func _card(check: Callable) -> void:
@@ -178,13 +220,24 @@ func _card(check: Callable) -> void:
 	check.call(card.custom_minimum_size.x == 525.0, "Card honours the caller width")
 	check.call(card.get_portrait().hero_type == "thorne", "Card dispatches Thorne to its portrait")
 
-	var generic := HeroShopCard.new()
-	generic.setup("raz", "Raz — The Heat of Despair\n1400 G", false, 485.0, HERO_ROSTER["raz"])
+	var raz_card := HeroShopCard.new()
+	raz_card.setup("raz", "Raz — The Heat of Despair\n1400 G", false, 485.0, HERO_ROSTER["raz"])
+	check.call(raz_card.get_portrait().hero_type == "raz", "Card dispatches Raz to his portrait")
 	check.call(
-		generic.get_portrait().hero_type == "raz", "Card routes other heroes to the fallback"
+		HeroPortrait.has_custom(raz_card.get_portrait().hero_type),
+		"Raz card uses the custom portrait"
+	)
+	raz_card.free()
+
+	var generic := HeroShopCard.new()
+	generic.setup("unknown_portrait_test", "Unknown hero\n1400 G", false, 485.0, HERO_ROSTER["raz"])
+	check.call(
+		generic.get_portrait().hero_type == "unknown_portrait_test",
+		"Card preserves an unknown hero id for fallback"
 	)
 	check.call(
-		not HeroPortrait.has_custom(generic.get_portrait().hero_type), "Raz uses the fallback"
+		not HeroPortrait.has_custom(generic.get_portrait().hero_type),
+		"Unknown card uses the generic fallback"
 	)
 	generic.free()
 	card.free()
@@ -304,6 +357,11 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 	raz_portrait.size = Vector2(96.0, 96.0)
 	raz_portrait.position = Vector2(672.0, 96.0)
 	tree.root.add_child(raz_portrait)
+	var fallback_portrait := HeroPortrait.new()
+	fallback_portrait.setup("unknown_portrait_test", HERO_ROSTER["raz"], 96.0)
+	fallback_portrait.size = Vector2(96.0, 96.0)
+	fallback_portrait.position = Vector2(0.0, 672.0)
+	tree.root.add_child(fallback_portrait)
 	# Exercise every custom painter at card size and the 96-unit design size.
 	# Shared draw_pass_count remains unchanged; no per-hero counter assertions.
 	var batch_portraits: Array[Control] = []
@@ -348,8 +406,9 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 			and kunkka_portrait.draw_pass_count > 0
 			and ignis_drachorn_portrait.draw_pass_count > 0
 			and raz_portrait.draw_pass_count > 0
+			and fallback_portrait.draw_pass_count > 0
 		),
-		"Existing portrait canvases and the generic fallback reach _draw after two frames"
+		"Custom portraits and the generic fallback reach _draw after two frames"
 	)
 	for portrait in batch_portraits:
 		portrait.free()
@@ -372,3 +431,4 @@ func _draw_counter(tree: SceneTree, check: Callable) -> void:
 	kunkka_portrait.free()
 	ignis_drachorn_portrait.free()
 	raz_portrait.free()
+	fallback_portrait.free()

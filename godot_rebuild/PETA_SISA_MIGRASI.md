@@ -3337,8 +3337,27 @@ Batas: ini satu tambahan art bertahap, bukan penyelesaian seluruh art final; tam
   72 x 6 + 10 aman. Full static guardrails workflow **lulus**: 602 GDScript,
   gdparse/gdlint bersih dan gdformat tidak mengubah file. Native import/runtime
   Godot 4.7.2 diperiksa melalui CI PR sesi.
-- Berikutnya: **0 hero non-custom selain Raz**. Raz tetap fallback oleh keputusan
-  scope; tidak ada kandidat portrait tersisa dari metadata proyek.
+- Pada batas akhir 9c214, Raz adalah satu-satunya hero non-custom karena keputusan
+  scope saat itu. Permintaan user **“Lnjutkan semua”** mengizinkan portrait terakhir ini;
+  penyelesaian 222/222 dicatat pada slice 9c215 berikut.
+
+## Slice 9c215 — portrait Raz, The Heat of Despair (222/222)
+
+- Menutup satu-satunya slot generic di roster: Raz, metadata `Boss/Fire Monk`.
+  Pilihan paling kecil adalah komposisi native bersama `fighter` / `fire`, dengan
+  skin tan, sash merah, kain gelap, rambut hitam, aksen emas dan api dari palette
+  `_NS_raz.PALETTE` di `bosses/level10.py`.
+- `hero_portrait_raz_source_oracle.py` mengambil identitas hero dari
+  `bosses/boss_data.py` dan warna dari class sumber `_NS_raz`; fixture mengunci
+  metadata/palette. Painter didaftarkan di `hero_portrait_expansion.gd`.
+- Suite Hero Shop kini menuntut 222/222 dispatch custom, memeriksa warna Raz dari
+  fixture, card/kanvas Raz, serta generic fallback untuk ID tak dikenal. Art-only:
+  tanpa rebake atlas, perubahan gameplay atau simulasi.
+- Validasi lokal: `validate_project.py` **PASS 21377**; `gdparse`, `gdlint`,
+  `gdformat --check` pada tiga `.gd` yang berubah, dan `git diff --check` **PASS**.
+  CI native PR #343 run **40338170467**, job **121625247053**, **PASS 15m24s**
+  (`PASS: 1505148 checks; fixed ticks and source parity`). Godot lokal/review visual
+  tidak tersedia; belum mengklaim review visual atau pixel parity.
 
 ## Slice 9d0 — DynamicRenderer (animasi peta dan lingkungan boss)
 
@@ -3503,10 +3522,10 @@ fixture identik; `git diff --check` OK. Godot tidak tersedia di sandbox, jadi ru
 dan review visual menunggu CI.
 
 Batas slice ini:
-- AI produksi belum punya resep yang meng-cast `R` untuk urgharun (`boss_ai.gd` tidak memuat
-  urgharun; sumber juga tidak pernah menyetel `active_skill` untuknya). Lapisan aktif begitu state
-  `active_skill == "r"` ada, dan suite scene menyetelnya langsung; menambah resep AI adalah slice
-  lain.
+- Sumber Python memang tidak punya recipe yang meng-cast `R` untuk urgharun (`Boss.update` tidak
+  memuatnya dan tak ada writer `active_skill` miliknya). Lapisan aktif saat state
+  `active_skill == "r"` ada; saat slice ini ditulis suite scene menyetelnya langsung. Setelah izin
+  pengguna, ekstensi AI R-only native ditambahkan terpisah di slice 9bq13 (bukan klaim paritas).
 - LAYER 2 (`_draw_enrage_ground`) dikerjakan sebagai slice terpisah 9bq5 di bawah.
 - Tidak termasuk: FX Q/W/E urgharun, `_draw_fury_aura`/`_draw_ground_ring`, aura enrage ber-cache
   `_draw_enrage_aura` milik `Boss.draw`, perluasan ke `_LIVE_FX_HEROES` atau boss lain, dan
@@ -3598,6 +3617,161 @@ Validasi lokal: `validate_project.py` -> PASS 21227 static checks; `gdparse`/`gd
 `gdformat --check` bersih (645 file); oracle deterministik; `git diff --check` OK. CI run
 `40207671281` (job `121211995053`) **pass 15m9s** dengan notice
 `PASS: 1505070 checks; fixed ticks and source parity`; review visual tetap tidak dilakukan.
+
+----
+
+## Slice 9bq10 — indikator debuff hero dan minion (`_entity.py` call sites)
+
+`TowerDebuffMixin._draw_tower_debuff_fx` (layer 9bq9) sudah diport dan dipakai `Boss.draw`.
+Sumber memanggil fungsi yang sama dari dua `draw()` lain di `_entity.py`, dan keduanya belum ada
+di rebuild, jadi hero/menara yang kena slow/burn/anti-heal hanya berubah warna:
+
+- `Hero.draw` (`_entity.py:4836`): `self._draw_tower_debuff_fx(surface, x, y, self.radius)` setelah
+  bayangan tanah, sebelum `_draw_hero_shape`. `Hero.__init__` memaku `self.radius = 16`; hero tidak
+  punya `anim_time`, jadi `getattr(self, "anim_time", getattr(self, "pulse", 0))` membaca `pulse`
+  (`+= 0.1` per tick) - jam yang sudah direproduksi `hero_anim.gd` (`PULSE_STEP = 0.1`).
+- `Minion.draw` (`_entity.py:5908`): panggilan yang sama dengan `include_rings=False` (aura es
+  minion digambar tepat sebelumnya) dan `anim_time` bilangan bulat (`+= 1`), radius
+  `stats["radius"]` (goblin 9).
+
+Implementasi memakai ulang layout 9bq9 tanpa perubahan; yang baru hanya call site dan satu painter
+bersama:
+
+- `scripts/ui/debuff_fx_painter.gd`: `paint(canvas, ops)` untuk tiga jenis op layout (`rect`,
+  `circle`, `ellipse`), meniru semantik pygame (border di dalam rect, stroke elips ditarik masuk
+  setengah lebar).
+- `scripts/ui/hero_painter.gd`: `paint(..., debuff_ops: Array = [])` melukis op setelah bayangan
+  tanah dan sebelum badan, persis urutan `Hero.draw`.
+- `prototype_view.gd`: `hero_debuff_draw_ops(hero, anim)` (kosong bila `not hero.alive`, radius
+  `HERO_DEBUFF_RADIUS = 16`), penghitung `hero_debuff_fx_draws/_ops`, dan `_draw_hero_sprite`
+  menurunkan op dari `pulse` jam `hero_anim` yang sama.
+- `scenes/combat/minion_view.gd`: `minion_debuff_draw_ops(unit, anim)` (`include_rings=False`,
+  radius `definition.radius_px`), penghitung `minion_debuff_fx_draws/_ops`, dilukis setelah aura es
+  dan sebelum sprite.
+- Bukti: `tests/entity_debuff_fx_source_oracle.py` memanen metode mixin yang sama dari `_core.py`
+  (shim `draw_recorder.py`) plus audit `ast` call site `Hero.draw`/`Minion.draw` (argumen,
+  `include_rings`, pernyataan sebelum/sesudah) -> **8 frame / 54 op** dengan pola
+  `[0, 3, 8, 17, 2, 8, 16, 0]`. `tests/entity_debuff_fx_checks.gd` me-replay semuanya plus wiring
+  view hero dan minion; suite terdaftar di `tests/run_all.gd`, command oracle di workflow, pin
+  9bq10 di `tests/validate_project.py`.
+
+Validasi lokal: `validate_project.py` -> PASS 21275 static checks; `gdparse`/`gdlint`/
+`gdformat --check` bersih; oracle deterministik; `git diff --check` OK. Langkah native test di
+workflow memakai `timeout 180`, sedangkan baseline hijau 9bq9 sudah 178 detik, jadi batas itu
+dinaikkan ke `timeout 600` agar suite yang bertambah tidak dipotong di tengah jalan. CI run
+`40265306356` (job `121386299127`) **pass 12m32s** dengan notice
+`PASS: 1505098 checks; fixed ticks and source parity`.
+
+----
+
+## Slice 9bq11 - `_draw_entrance` boss (`Boss.draw` saat masuk panggung)
+
+Selama `entrance_timer > 0` sumber tidak menggambar apa pun selain entrance: `Boss.draw` memanggil
+`_draw_entrance(surface, x, y, max_entrance)` lalu `return`, dengan
+`max_entrance = 180 if boss_class == "true" else 120`. Sebelumnya view hanya menggambar satu
+lingkaran aura dan satu `draw_string` tanpa wrap/bayangan pada `(180, 100)`.
+
+- `scripts/ui/boss_entrance_layout.gd::ops(x, y, radius, entrance_timer, max_timer, entrance_color,
+  entrance_text, is_true, anim_time, measure)`:
+  - `progress = 1 - entrance_timer / max_timer`, `size = int(radius * progress * 2)`;
+  - `size > 0` -> satu `circle` terisi `(*entrance_color, clamp(int(200 * (1 - progress))))`
+    berpusat di boss (sumber membuat surface `size*3` lalu mem-blit di `x - size*3//2`);
+  - `entrance_timer > max_timer // 2` -> `pulse = sin(anim*0.2)*0.3 + 0.7`,
+    `alpha = clamp(int(255*pulse))`, bayangan `clamp(int(200*pulse))`, word-wrap greedy 1000 px
+    memakai `measure` font, `start_y = 84 - (n-1)*18`, 34 px per baris, tiap baris: teks bayangan
+    hitam `(x+2, y+2)` lebih dulu lalu teksnya, keduanya `get_rect(center=(640, ly))`
+    (`640 - w // 2`, `ly - h // 2`).
+  - Metrik font tidak bisa dimiliki layout, jadi `measure(text, size)` adalah Callable
+    `-> Vector2(w, h)`: view memakai `Barlow-SemiBold` asli, suite memakai shim
+    `int(size * 0.55) * len(text) x size`.
+- `prototype_view.gd`: `boss_entrance_draw_ops(boss, measure = Callable())` (kosong bila
+  `not boss.alive`) dan `_draw_boss_entrance` melukis op non-teks lewat `_draw_intro_op` serta teks
+  lewat `draw_string` pada baseline `pos.y + get_ascent(size)`.
+- Bukti: `tests/boss_entrance_draw_source_oracle.py` memanen `Boss._draw_entrance` dari
+  `bosses/base_boss.py` (AST) dan menjalankannya di shim `draw_recorder.py` -> **8 frame / 19 op**
+  (`[2, 3, 1, 1, 2, 3, 4, 3]`: judul saja, aura+judul, aura saja di `timer == max//2`, near-end,
+  true boss 28 px, dan satu judul panjang yang ter-wrap jadi dua baris).
+  `tests/boss_entrance_draw_checks.gd` me-replay semuanya plus bentuk dan wiring view; terdaftar di
+  `tests/run_all.gd`, command oracle di workflow, pin 9bq11 di `tests/validate_project.py`.
+
+Validasi lokal: `validate_project.py` -> PASS 21306 static checks; `gdparse`/`gdlint`/
+`gdformat --check` bersih; oracle deterministik; `git diff --check` OK. CI run `40276680299`
+(job `121420794496`) **pass 15m49s** dengan notice `PASS: 1505118 checks; fixed ticks and source
+parity`; review visual tetap tidak dilakukan.
+
+Penjaga tambahan: `entrance_timer == 0` menghasilkan op kosong, karena `Boss.draw` hanya memanggil
+`_draw_entrance` selama timer berjalan (tanpa penjaga ini `progress = 1` akan melukis aura alpha 0).
+
+Batas slice ini: `measure` tetap menjadi parameter karena metrik font Godot tidak identik dengan
+pygame, jadi posisi vertikal teks bisa bergeser beberapa piksel dari sumber;
+`entrance_presentation_state` di `BossState` dibiarkan (kontrak state, bukan jalur gambar baru).
+
+----
+
+## Slice 9bq12 - capaian FX skill urgharun (resep AI: tidak ada di sumber)
+
+Pertanyaan yang tersisa setelah 9bq4-9bq9: siapa yang boleh meng-cast Q/W/E/R urgharun? Jawabannya
+datang dari sumber, bukan dari selera: `bosses/level40.py::draw_urgharun` hanya melukis lapisan itu
+saat `active_skill` berisi kuncinya. Rantai `if/elif self.boss_type == ...` di `Boss.update`
+memanggil 79 resep `_smart_ai_*`, tetapi `urgharun` tidak ada di rantai itu dan tidak punya
+`_smart_ai_urgharun`; jadi di sumber pun keempat lapisan skill-nya tidak pernah tergambar. Menambah
+resep mengubah
+simulasi dan bukan lagi paritas literal; nilai R yang sudah tersedia bisa dipakai tanpa mengubah
+angka damage/cooldown. Pengguna kemudian mengizinkan ekstensi native R-only ini di slice 9bq13.
+
+- Bukti: `tests/urgharun_ai_reach_source_oracle.py` memanen dengan `ast` (a) rantai dispatch
+  `Boss.update` (79 arm, urutan sumber), (b) daftar metode `_smart_ai_*` (79), (c) semua penulis
+  literal `self.active_skill` (193 fungsi, kunci `q/w/e/r` plus indeks `1-4`), dan (d) statistik
+  urgharun dari `bosses/boss_data.py` (8 kunci skill, `skill_q_cooldown = 425`,
+  `skill_r_damage = 2275`). Oracle gagal keras bila `urgharun` masuk rantai, punya resep, atau ada
+  fungsi `*urg*` yang menulis `active_skill` -> fixture 1 halaman.
+- `tests/urgharun_ai_reach_checks.gd` memaku fakta sumber (79 dispatch/method, 8 statistik skill)
+  dan membedakan sumber dari ekstensi native yang kemudian diizinkan: Python tetap tidak punya
+  recipe, sementara `boss_ai.gd` mempunyai arm khusus yang diuji secara terpisah di 9bq13.
+- Terdaftar di `tests/run_all.gd`, command oracle di workflow, pin 9bq12 di
+  `tests/validate_project.py`. Slice 9bq12 hanya memaku temuan sumber; perubahan simulasi ditunda
+  sampai ada izin, lalu dikerjakan sebagai ekstensi native terpisah di slice 9bq13.
+
+Status setelah izin pengguna: lapisan FX Q/W/E/R lain tetap hanya bisa dilihat lewat suite scene
+yang menyetel `active_skill` langsung; resep R-only yang diizinkan di 9bq13 mengaktifkan lapisan R
+pada simulasi native, tanpa mengklaim bahwa Python source sudah melakukan hal yang sama.
+
+## Slice 9bq13 — resep AI R-only Urgharun (ekstensi native diizinkan pengguna)
+
+Pengguna mengizinkan slice AI yang menyentuh simulasi. Fakta penting: Python memang tidak memiliki
+`_smart_ai_urgharun`, jadi perubahan ini **ekstensi native yang disengaja**, bukan paritas gameplay
+terhadap sumber. Pilihan minimum: hanya R `Feral Cataclysm`, sebab itu lapisan FX yang masih tak
+terjangkau dan data `skill_r_damage`/`skill_r_cooldown` sudah tersedia. Tidak menambah/mengubah
+angka data damage atau cooldown.
+
+- `boss_ai.gd`: arm `urgharun` menuju `_urgharun`. Menggunakan pola R `gravefang` yang dipanen dari
+  sumber: cast saat sedikitnya 3 musuh berada dalam 180 px **atau** HP di bawah 35%, dengan
+  `r_timer == 0`; set timer dari `boss.skill_r_cooldown`, `active_skill = "r"` selama 100 tick,
+  lalu damage setiap target dalam radius 180 menggunakan `_skill_damage(boss, boss.skill_r_damage)`.
+  Q/W/E sengaja tidak ditambah; di tick tanpa cast R, jalur `_generic` lama tetap dipanggil agar
+  ability generik urgharun tidak hilang.
+- Oracle `tests/urgharun_ai_skill_source_oracle.py` memanen ketiadaan recipe Python, statistik R
+  urgharun (damage 2275, cooldown 1020 setelah normalisasi sumber), dan ambang/radius/durasi dari
+  `_smart_ai_gravefang` sebagai referensi. Fixture menyatakan terang bahwa resep ini bukan perilaku
+  yang ada di Python.
+- Suite native `tests/urgharun_ai_skill_checks.gd`: tidak cast pada satu target/HP penuh; crowd
+  cast 3 target (target 181 px tidak kena); cast saat HP <35%; timer cooldown memblokir cast.
+  Mencocokkan juga data boss hidup dan wiring dispatch. Fixture/suite terdaftar di `run_all.gd`,
+  command oracle pada workflow, pin 9bq13 di `validate_project.py`.
+
+Validasi lokal: oracle sumber deterministik, `validate_project.py` PASS 21357 static checks,
+`gdparse`/`gdlint`/`gdformat --check` untuk semua GDScript berubah bersih, `git diff --check` OK.
+CI run `40306764441` (job `121517675776`) **pass 15m10s**, notice `PASS: 1505141 checks; fixed
+ticks and source parity`. Godot tidak tersedia lokal; runtime visual tidak dijalankan.
+
+Batas slice ini: resep R-only baru ini satu-satunya perubahan simulasi yang diizinkan; Q/W/E dan
+semua aturan damage/cooldown di luar pemakaian nilai katalog tetap tidak disentuh. Godot tidak ada
+di sandbox, jadi bukti runtime/native menunggu CI.
+
+Batas slice ini: jalur fallback marker hero (atlas hero tidak ter-import) dan fallback lingkaran
+minion (atlas minion tidak ter-import) belum melukis indikator, karena keduanya tidak melewati
+painter/sprite yang membawa jam animasi. `_draw_entrance` boss selesai di slice 9bq11; ekstensi AI
+R-only urgharun selesai di slice 9bq13.
 
 Batas slice ini:
 - Hanya call site `Boss.draw` yang diport. Sumber memakai fungsi yang sama dari `_entity.py` untuk
@@ -4013,7 +4187,7 @@ bagian yang memakai `get_ticks`.
   oracle di workflow.
 
 Batas:
-- Hanya cabang cheap-alpha yang diport; cabang darken untuk HP belum.
+- Pada 9bv5 baru cabang cheap-alpha yang diport; cabang low/darken ditutup terpisah di 9bv10.
 - Gradasi badan judul diganti warna tengahnya. Glow radial dan bayangan adalah tiruan.
 - `Match Time` sumber terus bertambah selama overlay tampil (`time.time()` dihitung tiap
   frame). Godot memakai waktu selesai pertandingan.
@@ -4167,3 +4341,44 @@ Sumber: `_core.py::InputHandler.handle_click`, `handle_build_popup_click`, dan
   suite masuk `tests/run_all.gd`. Pin 9bv9 ada di `tests/validate_project.py`.
 
 Batas: tidak ada Godot lokal untuk runtime atau review visual. Tidak diklaim pixel parity.
+
+## Slice 9bv10 — jalur kualitas rendah EndOverlay (`cheap_alpha = false`)
+
+- Menutup cabang yang tertinggal dari 9bv5. Saat `AdaptiveQuality` turun ke `low`, state
+  EndOverlay mengaktifkan jalur sumber non-cheap-alpha: backdrop `darken(..., 170)`, tanpa rays
+  dan title radial, dua outline glow, serta panel stats solid tanpa shadow/gradasi. Sparkles,
+  stats, popup unlock, action hint, dan achievements tetap pada urutan sumber.
+- `PrototypeScreen` hanya menyerahkan flag kualitas view-only (`high/medium` → cheap-alpha,
+  `low` → non-cheap-alpha); tidak mengubah simulasi. `PrototypeView` menggambar op darken sebagai
+  overlay hitam alpha 170, ekuivalen secara visual dengan pengali RGB sumber; tidak diklaim
+  pixel-identical.
+- Oracle `end_overlay_draw_source_oracle.py` kini merekam kedua nilai `Quality.cheap_alpha`:
+  **10 frame / 2810 op** mencakup victory, defeat, controller hint, popup unlock dan stats.
+  `EndOverlayDrawChecks` membandingkan seluruh op untuk kedua mode dan memeriksa state lewat view.
+- Art/UI-only: tanpa perubahan gameplay, input, cooldown, atlas atau aset.
+- Validasi lokal: `validate_project.py` **PASS 21381**; `gdparse`, `gdlint`,
+  `gdformat --check` pada empat `.gd` yang berubah, dan `git diff --check` **PASS**.
+  CI native PR #343 run **40351230732**, job **121671509139**, **PASS 15m1s**
+  (`PASS: 1505161 checks; fixed ticks and source parity`). Godot lokal/review visual
+  tidak tersedia; bukan klaim pixel parity.
+
+## Slice 9bv11 — indikator hover menara: range dan tooltip
+
+- Memport cabang menara dari `HoverIndicators.draw`: cincin range berdenyut dengan 24 titik dash
+  berputar, tooltip tiga baris (nama/level, damage/range, kills), bayangan, border warna tipe dan
+  panah penunjuk. Slot hover sengaja tetap slice terpisah.
+- `tower_hover_source_oracle.py` menjalankan `HoverIndicators.draw` dan helper sumber asli di
+  recorder pygame. Fixture mematok dua tipe menara dan cabang tanpa hover: **3 frame / 66 op**.
+  `TowerHoverLayout` menyusun operasi; `PrototypeView` melukisnya setelah lapisan dunia, sebelum
+  overlay HUD. Screen hanya membuat snapshot hover view-only dari posisi mouse dan struktur hidup;
+  tidak mengubah pilihan, command, input routing atau simulasi.
+- `TowerHoverDrawChecks` membandingkan semua op dari fixture (dengan toleransi numerik karena JSON
+  memuat angka sebagai float) dan memeriksa view wiring; suite native terdaftar di `run_all.gd`,
+  oracle dipanggil di workflow, dan `validate_project.py` mem-pin sumber, fixture, serta pemanggil
+  layer.
+- Validasi lokal: `validate_project.py` **PASS 21406**; `gdparse`, `gdlint`,
+  `gdformat --check` pada lima `.gd` yang berubah, oracle/`py_compile`, dan `git diff --check`
+  **PASS**. CI native PR #343 run **40370465683**, job **121739503166**, **PASS 15m8s**
+  (`PASS: 1505168 checks; fixed ticks and source parity`). Percobaan CI pertama gagal hanya pada
+  equality int/float fixture; perbandingan tes diperbaiki. Godot lokal/review visual tidak tersedia;
+  bukan klaim pixel parity.

@@ -4594,7 +4594,8 @@ for _fragment in (
 ):
     check(_fragment in _hr_painter, f"9bo the painter must draw the source hero overlay: {_fragment!r}")
 check("if _draw_hero_sprite(hero):" in _hr_view and "func _draw_hero_sprite(" in _hr_view
-      and "HeroPainter.paint(self, hero, art, hero.id == session.selected_id)" in _hr_view
+      and "HeroPainter.paint(self, hero, art, hero.id == session.selected_id, debuff_ops)"
+      in _hr_view
       and "hero_anim.prune(session.world.units)" in _hr_view
       and _hr_view.index("if _draw_hero_sprite(hero):") < _hr_view.index("HeroMarker.silhouette(point, radius"),
       "9bo the view must draw the baked hero first and keep the marker as the fallback")
@@ -5295,6 +5296,186 @@ check("_check_frames(check, data)" in _bd_checks and "_check_shape(check, data)"
       and "_check_view_wiring(check, data)" in _bd_checks and "func _report(" in _bd_checks,
       "9bq9 the debuff suite must replay the frames, the shape and the view")
 
+# ── Layer 9bq10: the same indicator at the `_entity.py` hero and minion call sites ──
+from entity_debuff_fx_source_oracle import source_fixture as entity_debuff_fixture
+_ed_path = ROOT / "tests/fixtures/entity_debuff_fx_source.json"
+_ed_checks = (ROOT / "tests/entity_debuff_fx_checks.gd").read_text(encoding="utf-8")
+_ed_painter = (ROOT / "scripts/ui/debuff_fx_painter.gd").read_text(encoding="utf-8")
+_ed_hero_painter = (ROOT / "scripts/ui/hero_painter.gd").read_text(encoding="utf-8")
+_ed_minion_view = (ROOT / "scenes/combat/minion_view.gd").read_text(encoding="utf-8")
+_ed_entity = (ROOT.parent / "_entity.py").read_text(encoding="utf-8")
+check('const EntityDebuffFxChecks = preload("res://tests/entity_debuff_fx_checks.gd")' in ai_tests
+      and "EntityDebuffFxChecks.new().run(_check)" in ai_tests,
+      "9bq10 entity debuff suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/entity_debuff_fx_source_oracle.py" in workflow,
+      "9bq10 CI must run the hero/minion debuff source oracle")
+check(_ed_path.is_file(), "9bq10 entity debuff fixture must exist")
+if _ed_path.is_file():
+    _ed = json.loads(_ed_path.read_text(encoding="utf-8"))
+    check(entity_debuff_fixture() == _ed,
+          "9bq10 entity debuff fixture must not drift from _entity.py and _core.py")
+    check(len(_ed["frames"]) == 8
+          and sum(len(frame["ops"]) for frame in _ed["frames"]) == 54
+          and [len(frame["ops"]) for frame in _ed["frames"]] == [0, 3, 8, 17, 2, 8, 16, 0],
+          "9bq10 oracle must pin 8 frames, 54 ops and the hero/minion split")
+    check(_ed["call_sites"]["Hero"]["args"] == ["surface", "x", "y", "self.radius"]
+          and _ed["call_sites"]["Hero"]["kwargs"] == {}
+          and int(_ed["call_sites"]["Hero"]["radius"]) == 16,
+          "9bq10 `Hero.draw` must keep its own radius and the default ring flag")
+    check(_ed["call_sites"]["Minion"]["kwargs"] == {"include_rings": "False"}
+          and "_draw_hero_shape" in _ed["call_sites"]["Hero"]["after"]
+          and "self.slow_timer > 0" in _ed["call_sites"]["Minion"]["before"],
+          "9bq10 the call sites must keep their position and their ring flag")
+check("self._draw_tower_debuff_fx(surface, x, y, self.radius)" in _ed_entity
+      and "self._draw_tower_debuff_fx(surface, x, y, self.radius,\n                                   include_rings=False)"
+      in _ed_entity,
+      "9bq10 `_entity.py` must still call the shared indicator from both draws")
+check("const HERO_DEBUFF_RADIUS := 16" in _bs_view
+      and "func hero_debuff_draw_ops(hero: HeroState, anim: float) -> Array:" in _bs_view
+      and "hero.anti_heal_timer," in _bs_view,
+      "9bq10 the view must build the hero indicator from the live timers at radius 16")
+_ed_hero_paint = _ed_hero_painter[_ed_hero_painter.index("static func paint("):]
+check("debuff_ops: Array = []" in _ed_hero_paint
+      and _ed_hero_paint.index("_ellipse(shadow)")
+      < _ed_hero_paint.index("DebuffFxPainter.paint(canvas, debuff_ops)")
+      < _ed_hero_paint.index("draw_texture_rect_region"),
+      "9bq10 the hero painter must paint the indicator after the shadow, before the body")
+check("func minion_debuff_draw_ops(unit: UnitState, anim: int) -> Array:" in _ed_minion_view
+      and "int(unit.definition.radius_px)," in _ed_minion_view
+      and _ed_minion_view.index("_draw_minion_slow(point, radius")
+      < _ed_minion_view.index("DebuffFxPainter.paint(self, debuff_ops)")
+      < _ed_minion_view.index("draw_texture_rect_region"),
+      "9bq10 the minion view must paint the indicator after the ice aura, before the body")
+check('"ellipse"' in _ed_painter and '"circle"' in _ed_painter
+      and 'canvas.draw_polyline(path, color, float(width), true)' in _ed_painter,
+      "9bq10 the shared painter must cover the layout's ellipse, circle and rect ops")
+check("_check_call_sites(check, data)" in _ed_checks
+      and "_check_hero_wiring(check, data)" in _ed_checks
+      and "_check_minion_wiring(check, data)" in _ed_checks,
+      "9bq10 the entity suite must replay the call sites and both wirings")
+
+# ── Layer 9bq11: `Boss._draw_entrance` (entrance aura and wrapped title) ──
+from boss_entrance_draw_source_oracle import source_fixture as boss_entrance_fixture
+_be_path = ROOT / "tests/fixtures/boss_entrance_draw_source.json"
+_be_layout = (ROOT / "scripts/ui/boss_entrance_layout.gd").read_text(encoding="utf-8")
+_be_checks = (ROOT / "tests/boss_entrance_draw_checks.gd").read_text(encoding="utf-8")
+_be_boss = (ROOT.parent / "bosses/base_boss.py").read_text(encoding="utf-8")
+check('const BossEntranceDrawChecks = preload("res://tests/boss_entrance_draw_checks.gd")' in ai_tests
+      and "BossEntranceDrawChecks.new().run(_check)" in ai_tests,
+      "9bq11 entrance suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/boss_entrance_draw_source_oracle.py" in workflow,
+      "9bq11 CI must run the entrance source oracle")
+check(_be_path.is_file(), "9bq11 entrance fixture must exist")
+if _be_path.is_file():
+    _be = json.loads(_be_path.read_text(encoding="utf-8"))
+    check(boss_entrance_fixture() == _be,
+          "9bq11 entrance fixture must not drift from `Boss._draw_entrance`")
+    check(len(_be["frames"]) == 8
+          and sum(len(frame["ops"]) for frame in _be["frames"]) == 19
+          and [len(frame["ops"]) for frame in _be["frames"]] == [2, 3, 1, 1, 2, 3, 4, 3],
+          "9bq11 oracle must pin 8 frames, 19 ops and the aura/title gate")
+    check(any(frame["entrance_text"].count(" ") > 8 and len(frame["ops"]) == 4
+              for frame in _be["frames"]),
+          "9bq11 one frame must prove the 1000 px word wrap")
+check("self._draw_entrance(surface, x, y, max_entrance)" in _be_boss
+      and "max_entrance = 180 if is_true else 120" in _be_boss
+      and "if font.size(trial)[0] <= 1000:" in _be_boss
+      and "start_y = 84 - (len(lines) - 1) * 18" in _be_boss,
+      "9bq11 the source must keep the entrance gate, the wrap and the line origin")
+check("const SCREEN_WIDTH := 1280" in _be_layout
+      and "const TEXT_MAX_WIDTH := 1000" in _be_layout
+      and "const TEXT_START_Y := 84" in _be_layout
+      and "const LINE_STEP := 34" in _be_layout
+      and "return int(float(radius) * entrance_progress * 2.0)" in _be_layout
+      and "return sin(anim_time * 0.2) * 0.3 + 0.7" in _be_layout
+      and "const TRUE_ENTRANCE := 180" in _be_layout,
+      "9bq11 the layout must mirror the aura, the pulse and the 1000 px wrap")
+check("func boss_entrance_draw_ops(boss: BossState, measure: Callable = Callable()) -> Array:"
+      in _bs_view
+      and "BossEntranceLayout.max_entrance(is_true)," in _bs_view
+      and "measure if measure.is_valid() else _boss_text_measure" in _bs_view,
+      "9bq11 the view must build the entrance ops from the live boss and the real font")
+_be_draw = _bs_view[_bs_view.index("func _draw_boss_entrance("):]
+check(_be_draw.index("boss_entrance_draw_ops(boss, measure)")
+      < _be_draw.index("draw_string(")
+      and _be_draw.index("draw_string(") < _be_draw.index("BossFont.get_ascent(size_px)")
+      and "_draw_intro_op(op)" in _be_draw,
+      "9bq11 the view must paint the aura as an op and the title on its baseline")
+check("_check_frames(check, data)" in _be_checks and "_check_shape(check, data)" in _be_checks
+      and "_check_view_wiring(check, data)" in _be_checks and "func _report(" in _be_checks,
+      "9bq11 the entrance suite must replay the frames, the shape and the view")
+
+# ── Layer 9bq12: no source recipe casts Urgharun's skills, so its FX stay unreachable ──
+from urgharun_ai_reach_source_oracle import source_fixture as urgharun_reach_fixture
+_ua_path = ROOT / "tests/fixtures/urgharun_ai_reach_source.json"
+_ua_checks = (ROOT / "tests/urgharun_ai_reach_checks.gd").read_text(encoding="utf-8")
+_ua_ai = (ROOT / "scripts/match/boss_ai.gd").read_text(encoding="utf-8")
+check('const UrgharunAiReachChecks = preload("res://tests/urgharun_ai_reach_checks.gd")' in ai_tests
+      and "UrgharunAiReachChecks.new().run(_check)" in ai_tests,
+      "9bq12 urgharun reach suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/urgharun_ai_reach_source_oracle.py" in workflow,
+      "9bq12 CI must run the urgharun reach source oracle")
+check(_ua_path.is_file(), "9bq12 urgharun reach fixture must exist")
+if _ua_path.is_file():
+    _ua = json.loads(_ua_path.read_text(encoding="utf-8"))
+    check(urgharun_reach_fixture() == _ua,
+          "9bq12 urgharun reach fixture must not drift from base_boss.py and boss_data.py")
+    check(int(_ua["dispatch_count"]) == 79
+          and int(_ua["smart_ai_method_count"]) == 79
+          and not _ua["dispatch_has_subject"]
+          and not _ua["smart_ai_has_subject"],
+          "9bq12 urgharun must stay outside the 79 arm dispatch chain and its recipes")
+    check(_ua["subject_writers"] == []
+          and int(_ua["subject_reset_count"]) == 2
+          and _ua["stats"]["skill_count"] == 8,
+          "9bq12 the boss must own skill stats but no active_skill writer")
+check("urgharun" in _ua_ai and "_generic(world, boss, enemies)" in _ua_ai,
+      "9bq12 must preserve the generic fallback while 9bq13 fills the source gap")
+check("_check_source(check, data)" in _ua_checks
+      and "_check_native_extension(check)" in _ua_checks
+      and "casts == 0" not in _ua_checks,
+      "9bq12 must pin the Python source gap without asserting the later authorized AI is silent")
+
+# ── Layer 9bq13: user-authorized Urgharun R recipe using existing catalog stats ──
+from urgharun_ai_skill_source_oracle import source_fixture as urgharun_skill_fixture
+_uk_path = ROOT / "tests/fixtures/urgharun_ai_skill_source.json"
+_uk_ai = (ROOT / "scripts/match/boss_ai.gd").read_text(encoding="utf-8")
+_uk_recipe = _uk_ai[_uk_ai.index("static func _urgharun("): _uk_ai.index("static func _vhalzun(")]
+_uk_checks = (ROOT / "tests/urgharun_ai_skill_checks.gd").read_text(encoding="utf-8")
+check('const UrgharunAiSkillChecks = preload("res://tests/urgharun_ai_skill_checks.gd")' in ai_tests
+      and "UrgharunAiSkillChecks.new().run(_check)" in ai_tests,
+      "9bq13 Urgharun R suite must be preloaded and run in the native suite")
+check("python godot_rebuild/tests/urgharun_ai_skill_source_oracle.py" in workflow,
+      "9bq13 CI must run the Urgharun R source oracle")
+check(_uk_path.is_file(), "9bq13 Urgharun R source fixture must exist")
+if _uk_path.is_file():
+    _uk = json.loads(_uk_path.read_text(encoding="utf-8"))
+    check(urgharun_skill_fixture() == _uk,
+          "9bq13 fixture must harvest Urgharun data and the Gravefang source R reference")
+    check(not bool(_uk["python_recipe_exists"])
+          and int(_uk["urgharun_r"]["damage"]) == 2275
+          and int(_uk["urgharun_r"]["cooldown"]) == 1020,
+          "9bq13 extension must use existing R data while documenting the source gap")
+    check(bool(_uk["reference"]["crowd_shape_found"])
+          and bool(_uk["reference"]["low_hp_shape_found"])
+          and _uk["reference"]["r_radii_found"] == [180]
+          and int(_uk["reference"]["active_skill_timer"]) == 100,
+          "9bq13 trigger/area/window must stay source-informed by Gravefang R")
+check('"urgharun":\n\t\t\t_urgharun(world, boss, enemies, target, target_distance)' in _uk_ai
+      and "static func _urgharun(" in _uk_ai
+      and "nearby >= 3 or hp_ratio < 0.35" in _uk_ai
+      and "boss.r_timer = boss.skill_r_cooldown" in _uk_ai
+      and '_set_skill(boss, "r", 100)' in _uk_ai
+      and "_skill_damage(boss, boss.skill_r_damage)" in _uk_ai
+      and "_generic(world, boss, enemies)" in _uk_recipe,
+      "9bq13 native AI must cast R with the user-approved, source-informed trigger and catalog payload")
+check("_check_no_trigger(check)" in _uk_checks
+      and "boss.ability_timer == boss.ability_cooldown" in _uk_checks
+      and "_check_crowd_cast(check)" in _uk_checks
+      and "_check_low_hp_cast(check)" in _uk_checks
+      and "_check_cooldown_gate(check)" in _uk_checks,
+      "9bq13 native suite must cover no-trigger, crowd, low-HP and cooldown gates")
+
 # ── Layer 9bi2: tactical command visuals (gather marker, feedback banner, floating text) ──
 from tactical_draw_source_oracle import source_fixture as tactical_draw_fixture
 _td_path = ROOT / "tests/fixtures/tactical_draw_source.json"
@@ -5488,9 +5669,10 @@ check(_eo_path.is_file(), "9bv5 end overlay fixture must exist")
 if _eo_path.is_file():
     _eo = json.loads(_eo_path.read_text(encoding="utf-8"))
     check(end_overlay_draw_fixture() == _eo, "9bv5 end overlay fixture must not drift from the source")
-    check(len(_eo["frames"]) == 8 and sum(len(f["ops"]) for f in _eo["frames"]) == 2210
-          and _eo["colors"] == {"victory": [255, 200, 50], "defeat": [220, 50, 50]},
-          "9bv5 fixture must pin 8 frames / 2210 ops and the GOLD / RED titles")
+    check(len(_eo["frames"]) == 10 and sum(len(f["ops"]) for f in _eo["frames"]) == 2810
+          and _eo["colors"] == {"victory": [255, 200, 50], "defeat": [220, 50, 50]}
+          and {frame.get("cheap_alpha") for frame in _eo["frames"]} == {True, False},
+          "9bv5/9bv10 fixture must pin 10 frames / 2810 ops across both quality modes")
     _eo_buttons = {f["label"]: (f["unlock"] or {}).get("button") for f in _eo["frames"]}
     check(_eo_buttons.get("unlock_steady") == [1275, 440, 310, 30]
           and _eo_buttons.get("unlock_full_hover") == [875, 440, 310, 30],
@@ -5524,6 +5706,27 @@ check('arena.set("end_overlay_state", {} if world.is_running() else _end_overlay
       in _eo_screen and "_set_result_layout(true)" in _eo_screen
       and "_set_result_layout(false)" in _eo_screen,
       "9bv5 screen must hand the end state to the arena and switch the pause card layout")
+
+# ── Layer 9bv10: low-quality EndOverlay path ──
+_eo_checks = (ROOT / "tests/end_overlay_draw_checks.gd").read_text(encoding="utf-8")
+check('"kind": "darken"' in _eo_layout
+      and '"alpha": 170' in _eo_layout
+      and '_title(title, victory, animation_time, cheap_alpha)' in _eo_layout
+      and 'ticks_msec, cheap_alpha)' in _eo_layout,
+      "9bv10 layout must darken the backdrop and gate source alpha effects on quality")
+check('"darken":\n\t\t\t\t_draw_end_darken(op)' in _eo_view
+      and "func _draw_end_darken(op: Dictionary) -> void:" in _eo_view
+      and "Color8(0, 0, 0, alpha)" in _eo_view,
+      "9bv10 view must render the source darken operation as a full-screen overlay")
+check('get_node_or_null("/root/AdaptiveQuality")' in _eo_screen
+      and 'quality_runtime.get("quality_level")' in _eo_screen
+      and '"cheap_alpha": cheap_alpha' in _eo_screen,
+      "9bv10 screen must map AdaptiveQuality low to the source non-cheap-alpha branch")
+check('bool(frame.get("cheap_alpha", true))' in _eo_checks
+      and "frames[8]" in _eo_checks
+      and "frames[9]" in _eo_checks
+      and "10 quality-mode frames" in _eo_checks,
+      "9bv10 native end-overlay suite must replay both quality modes through the view")
 
 # ── Layer 9bv7: the build-tower popup (BuildPopup.draw) ──
 from build_popup_draw_source_oracle import source_fixture as build_popup_draw_fixture
@@ -5669,6 +5872,65 @@ check("Hero panel oracle pins 6 source frames and 440 draw ops" in _hp_checks
       and "for index in range(Layout.ITEM_COUNT):" in _hp_checks
       and 'order.back() == "boss_death"' in _hp_checks,
       "9bv8 draw checks must replay the fixture, pin all six slots, and keep the overlay order")
+
+# ── Layer 9bv11: read-only tower hover range and tooltip ──
+from tower_hover_source_oracle import source_fixture as tower_hover_fixture
+_th_path = ROOT / "tests/fixtures/tower_hover_source.json"
+_th_layout = (ROOT / "scripts/ui/tower_hover_layout.gd").read_text(encoding="utf-8")
+_th_checks = (ROOT / "tests/tower_hover_draw_checks.gd").read_text(encoding="utf-8")
+_th_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_th_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+_th_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+check('const TowerHoverDrawChecks = preload("res://tests/tower_hover_draw_checks.gd")' in ai_tests
+      and "TowerHoverDrawChecks.new().run(_check)" in ai_tests,
+      "9bv11 tower-hover source parity suite must run in the native suite")
+check("python godot_rebuild/tests/tower_hover_source_oracle.py" in workflow,
+      "9bv11 CI must record the source tower-hover painter")
+check(_th_path.is_file(), "9bv11 tower-hover fixture must exist")
+if _th_path.is_file():
+    _th_fixture = json.loads(_th_path.read_text(encoding="utf-8"))
+    _th_frames = _th_fixture["frames"]
+    check(tower_hover_fixture() == _th_fixture,
+          "9bv11 tower-hover fixture must not drift from HoverIndicators.draw")
+    check(len(_th_frames) == 3 and sum(len(frame["ops"]) for frame in _th_frames) == 66
+          and [frame["name"] for frame in _th_frames] == [
+              "archer_tower_hover", "cannon_tower_hover", "no_tower_hover"]
+          and _th_fixture["source"] == "ui_components/_bundle.py::HoverIndicators",
+          "9bv11 fixture must pin two live tower-hover cases and the empty branch (66 ops)")
+check("static func ops(state: Dictionary, measure: Callable) -> Array:" in _th_layout
+      and 'const FONT_STYLE := "body_medium"' in _th_layout
+      and 'self.font_small = get_font(24, "body_medium")' in _th_core
+      and "const DASH_COUNT := 24" in _th_layout
+      and "Kills: %d" in _th_layout
+      and "static func _tooltip_ops(" in _th_layout,
+      "9bv11 layout must preserve the pulsing 24-dash range ring and three-line tooltip")
+_th_draw_start = _th_view.find("func _draw() -> void:")
+_th_draw_end = _th_view.find("func _draw_structures() -> void:", _th_draw_start)
+_th_draw = _th_view[_th_draw_start:_th_draw_end] if _th_draw_start >= 0 else ""
+check('const TowerHoverLayout = preload("res://scripts/ui/tower_hover_layout.gd")' in _th_view
+      and "var tower_hover_state: Dictionary = {}" in _th_view
+      and "func tower_hover_draw_ops(" in _th_view
+      and "TowerHoverLayout.ops(tower_hover_state, metrics)" in _th_view
+      and "_draw_tower_hover()" in _th_draw
+      and _th_draw.index("for layer in WORLD_LAYER_ORDER:")
+      < _th_draw.index("_draw_tower_hover()")
+      < _th_draw.index("draw_set_transform(Vector2.ZERO"),
+      "9bv11 PrototypeView must paint only the read-only tower-hover snapshot")
+_th_state_start = _th_screen.find("func _tower_hover_state(")
+_th_state_end = _th_screen.find("func _build_popup_state(", _th_state_start)
+_th_state = _th_screen[_th_state_start:_th_state_end] if _th_state_start >= 0 else ""
+check('arena.set("tower_hover_state", _tower_hover_state(world, match_session, build_popup_state))' in _th_screen
+      and "for value in world.structures:" in _th_state
+      and "tower.position.distance_to(mouse) > 25.0" in _th_state
+      and "color = [100, 220, 120]" in _th_state
+      and "color = [200, 100, 60]" in _th_state
+      and "color = [120, 200, 255]" in _th_state
+      and "color = [180, 80, 220]" in _th_state
+      and "tower_hover_state" in _th_checks
+      and "Layout.ops(state, _fake_measure)" in _th_checks
+      and "request_" not in _th_state
+      and "set_tactical_cursor" not in _th_state,
+      "9bv11 screen/test must wire mouse-only hover drawing without commands or simulation writes")
 
 # ── Layer 9bv9: interactive BuildPopup and HeroPanel ──
 _pi_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
@@ -6363,6 +6625,41 @@ if _hp_manifest_path.is_file():
         check(re.fullmatch(r"[0-9a-f]{64}", _case.get("pygame_rgb_sha256", "")) is not None
               and re.fullmatch(r"[0-9a-f]{64}", _case.get("rgba_sha256", "")) is not None,
               f"9bu source-render hashes must be pinned: {_case.get('key')}")
+
+# ── Slice 9c215: Raz becomes the 222nd source-informed native portrait ──
+from hero_portrait_raz_source_oracle import source_fixture as raz_portrait_source_fixture
+
+_raz_fixture_path = ROOT / "tests/fixtures/hero_portrait_raz_source.json"
+_raz_fixture = None
+_raz_painter = (ROOT / "scripts/ui/hero_portrait_raz.gd").read_text(encoding="utf-8")
+_raz_expansion = (ROOT / "scripts/ui/hero_portrait_expansion.gd").read_text(encoding="utf-8")
+_raz_checks = (ROOT / "tests/hero_shop_portrait_checks.gd").read_text(encoding="utf-8")
+check("python godot_rebuild/tests/hero_portrait_raz_source_oracle.py" in workflow,
+      "9c215 CI must run the Raz portrait palette oracle")
+check(_raz_fixture_path.is_file(), "9c215 Raz portrait source fixture must exist")
+if _raz_fixture_path.is_file():
+    _raz_fixture = json.loads(_raz_fixture_path.read_text(encoding="utf-8"))
+    check(raz_portrait_source_fixture() == _raz_fixture,
+          "9c215 Raz portrait fixture must match the Python Fire Monk source")
+    check(_raz_fixture.get("hero_type") == "raz"
+          and _raz_fixture.get("role") == "Boss/Fire Monk"
+          and _raz_fixture.get("title") == "The Heat of Despair",
+          "9c215 fixture must identify Raz as the Fire Monk")
+check('const RAZ_PAINTER = preload("res://scripts/ui/hero_portrait_raz.gd")' in _raz_expansion
+      and '\t\t"raz",' in _raz_expansion
+      and '\t\t"raz":\n\t\t\tRAZ_PAINTER.paint(canvas, box)' in _raz_expansion,
+      "9c215 expansion painter must register and dispatch Raz")
+check('"family": "fighter"' in _raz_painter
+      and '"feature": "fire"' in _raz_painter
+      and '"hair": Color8(55, 42, 48)' in _raz_painter
+      and '"gold": Color8(185, 138, 55)' in _raz_painter,
+      "9c215 Raz painter must use the Fire Monk fighter palette accents")
+check('const RazPainter = preload("res://scripts/ui/hero_portrait_raz.gd")' in _raz_checks
+      and "_raz_palette(check)" in _raz_checks
+      and "Every roster hero has a native custom canvas" in _raz_checks
+      and 'HeroPortrait.has_custom("raz")' in _raz_checks
+      and '"unknown_portrait_test"' in _raz_checks,
+      "9c215 native portrait suite must cover Raz and preserve unknown-id fallback")
 
 for error in errors:
     print("FAIL:", error, file=sys.stderr)

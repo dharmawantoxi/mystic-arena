@@ -1,8 +1,8 @@
-"""Source oracle for the victory / defeat overlay (layer 9bv5).
+"""Source oracle for both quality modes of the victory / defeat overlay (layers 9bv5/9bv10).
 
 `Game.draw` paints `ui.draw_overlay(screen, title, color, subtitle, action)` once the match is
 won (`VICTORY! LV.n`, GOLD) or lost (`DEFEAT LV.n`, RED), after the popups and before the
-input hint bar. `ui_components/_bundle.py::Overlay.draw` (cheap-alpha branch) stacks:
+input hint bar. `ui_components/_bundle.py::Overlay.draw` stacks:
   * the cached backdrop: one (10, 10, 20, a) line per row, a = int(180 * (1 - |i - 360| /
     360 * 0.3));
   * `_draw_rays`: 12 (color, 30) triangles from the centre, t = animation_time * 0.05;
@@ -76,6 +76,10 @@ FRAMES = [
     ("unlock_already_won", True, 3, "[N] Next Level  [R] Replay  [ESC] Menu", 300, 9050,
      (5000, 200, 9, 60, 8, False, False), 0,
      (150, [1, 2, 3, 4], 4, "Frozen Wastes", 1.0, BOSS, "normal", (900, 450))),
+]
+QUALITY_FRAMES = [frame + (True,) for frame in FRAMES] + [
+    (FRAMES[2][0] + "_low_quality", *FRAMES[2][1:], False),
+    (FRAMES[6][0] + "_low_quality", *FRAMES[6][1:], False),
 ]
 
 
@@ -172,7 +176,13 @@ def _perf():
                               "mult": 255}, w, h)
 
     module.cached_render = cached_render
-    module.darken = lambda surface, amount: None
+
+    def darken(surface, amount):
+        width, height = surface.get_size()
+        surface.ops.append({"kind": "darken", "rect": [0, 0, width, height],
+                            "alpha": int(amount)})
+
+    module.darken = darken
     return module
 
 
@@ -194,7 +204,8 @@ def source_fixture():
                      "title_font": lambda size, bold=True: rec.Font(
                          max(8, min(int(size), 220)), "title")}
         cls = _overlay_class(namespace)
-        for label, victory, level, action, anim, ticks, stats, achievements, unlock in FRAMES:
+        for label, victory, level, action, anim, ticks, stats, achievements, unlock, cheap_alpha in QUALITY_FRAMES:
+            perf.Quality.cheap_alpha = cheap_alpha
             clock["ticks"] = ticks
             score, seconds, waves, kills, combo, best_score, best_time = stats
             timer, completed, next_level, next_name, hp_mult, boss, difficulty, mouse = (
@@ -225,8 +236,8 @@ def source_fixture():
                                 "bosses.boss_data": boss_data, "_core": core}):
                 overlay.draw(screen, title, gold if victory else red, "", action)
             entry = {"label": label, "title": title, "action": action, "animation_time": anim,
-                     "ticks": ticks, "stats": list(stats), "achievements": achievements,
-                     "ops": screen.ops, "unlock": None}
+                     "cheap_alpha": cheap_alpha, "ticks": ticks, "stats": list(stats),
+                     "achievements": achievements, "ops": screen.ops, "unlock": None}
             if unlock:
                 entry["unlock"] = {
                     "timer_before": timer, "completed": list(completed), "level": next_level,
@@ -237,7 +248,7 @@ def source_fixture():
                              for key, value in boss.items()}}
             frames.append(entry)
     return {
-        "source": "ui_components/_bundle.py::Overlay.draw (cheap-alpha branch)",
+        "source": "ui_components/_bundle.py::Overlay.draw (both cheap-alpha quality branches)",
         "glyph_factor": rec.GLYPH_FACTOR,
         "colors": {"victory": list(gold), "defeat": list(red)},
         "frames": frames,

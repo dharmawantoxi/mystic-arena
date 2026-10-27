@@ -173,6 +173,8 @@ func _process(_delta: float) -> void:
 	var hero_panel_state := _hero_panel_state(world, match_session)
 	var build_popup_state := _build_popup_state(world, match_session)
 	_update_side_panel(world, hero_panel_state, build_popup_state)
+	# Layer 9bv11: read-only source tower-hover drawing; this snapshot does not route input.
+	arena.set("tower_hover_state", _tower_hover_state(world, match_session, build_popup_state))
 	if forge_panel != null and forge_panel.visible:
 		forge_panel.refresh()
 	if hero_shop_panel != null and hero_shop_panel.visible:
@@ -533,6 +535,59 @@ func _save_result() -> void:
 	end_completed_levels = saved.get("completed_levels", []).duplicate()
 
 
+## Layer 9bv11: view-only source tower-hover state. It reads the mouse and a live structure but
+## never writes to selection, commands, or simulation.
+func _tower_hover_state(
+	world: Prototype, current: PrototypeSession, build_state: Dictionary
+) -> Dictionary:
+	if (
+		not world.is_running()
+		or not build_state.is_empty()
+		or (hero_shop_panel != null and hero_shop_panel.visible)
+		or (forge_panel != null and forge_panel.visible)
+	):
+		return {}
+	var mouse := Vector2(arena.get_local_mouse_position())
+	if not Rect2(Vector2.ZERO, Vector2(1280, 720)).has_point(mouse):
+		return {}
+	for value in world.structures:
+		var tower := value as Structure
+		if tower == null or not tower.alive:
+			continue
+		var data = tower.settings()
+		# In the source, selecting any structure opens `popup_target`, which suppresses hover overlays.
+		if tower.id == current.selected_id:
+			return {}
+		if data.structure_kind != "tower":
+			continue
+		if tower.position.distance_to(mouse) > 25.0:
+			continue
+		var color: Array
+		match data.tower_path:
+			"archer":
+				color = [100, 220, 120]
+			"cannon":
+				color = [200, 100, 60]
+			"ice":
+				color = [120, 200, 255]
+			"mage":
+				color = [180, 80, 220]
+			_:
+				color = [255, 255, 255]
+		return {
+			"x": tower.position.x,
+			"y": tower.position.y,
+			"range": int(data.attack_range_px),
+			"animation_time": world.tick_count,
+			"name": String(data.tower_path).capitalize(),
+			"level": data.level,
+			"damage": data.damage,
+			"kills": tower.kills,
+			"color": color,
+		}
+	return {}
+
+
 ## Layer 9bv7/9bv9: popup snapshot for the selected empty slot, including its command id.
 func _build_popup_state(world: Prototype, match_session: PrototypeSession) -> Dictionary:
 	if not world.is_running():
@@ -691,6 +746,10 @@ func _end_overlay_state(world: Prototype) -> Dictionary:
 			labels[action] = controller_cursor.get_action_label(action)
 	var has_next := LevelCatalog.get_next_level(world.level_number) >= 0
 	var stats := world.match_stats_snapshot()
+	var quality_runtime := get_node_or_null("/root/AdaptiveQuality")
+	var cheap_alpha := (
+		quality_runtime == null or String(quality_runtime.get("quality_level")) != "low"
+	)
 	return {
 		"title": ("VICTORY! LV.%d" if victory else "DEFEAT LV.%d") % world.level_number,
 		"victory": victory,
@@ -707,6 +766,7 @@ func _end_overlay_state(world: Prototype) -> Dictionary:
 			end_new_best_time,
 		],
 		"achievements": world.achievements_unlocked.size(),
+		"cheap_alpha": cheap_alpha,
 		"unlock": _unlock_popup_state(world) if victory else {},
 	}
 

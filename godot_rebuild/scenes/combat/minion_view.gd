@@ -7,6 +7,8 @@ const Layout = preload("res://scripts/data/lane_layout.gd")
 const MinionArt = preload("res://scripts/ui/minion_art.gd")
 const MinionAnim = preload("res://scripts/ui/minion_anim.gd")
 const MinionCombatFxArt = preload("res://scripts/ui/minion_combat_fx_art.gd")
+const DebuffFxLayout = preload("res://scripts/ui/boss_debuff_fx_layout.gd")
+const DebuffFxPainter = preload("res://scripts/ui/debuff_fx_painter.gd")
 # Source `apply_hurt_flash` lifts every channel by 90 for 8 ticks; a multiply is the
 # closest a baked sprite can get.
 const HURT_TINT := Color(1.6, 1.6, 1.6)
@@ -23,6 +25,9 @@ var terrain_texture: Texture2D
 var baked_static_base := false
 var minion_anim := MinionAnim.new()
 var minion_slash_draws := 0
+## Layer 9bq10: the shared tower-debuff indicator `Minion.draw` paints after its ice aura.
+var minion_debuff_fx_draws := 0
+var minion_debuff_fx_ops := 0
 var minion_death_draws := 0
 var _minion_death_animations: Array[Dictionary] = []
 
@@ -174,6 +179,13 @@ func _draw_minion_sprite(unit: UnitState) -> bool:
 		draw_arc(point, radius + 9, 0, TAU, 32, Color("f4d491"), 2, true)
 	if unit.slow_timer > 0:
 		_draw_minion_slow(point, radius, int(clocks["anim"]))
+	# Layer 9bq10: `Minion.draw` calls the shared indicator with `include_rings=False` (the ice
+	# aura above already covers the slow ring) and its own integer `anim_time`.
+	var debuff_ops := minion_debuff_draw_ops(unit, int(clocks["anim"]))
+	if not debuff_ops.is_empty():
+		minion_debuff_fx_draws += 1
+		minion_debuff_fx_ops += debuff_ops.size()
+		DebuffFxPainter.paint(self, debuff_ops)
 	var src: Rect2 = art["src"]
 	var tint := HURT_TINT if int(clocks["hurt"]) > 0 else Color.WHITE
 	var corner := point - (art["anchor"] as Vector2)
@@ -210,6 +222,25 @@ func _draw_minion_hp_bar(unit: UnitState, point: Vector2) -> void:
 			ink = Color8(225, 190, 60)
 		draw_rect(Rect2(left, top, fill, 4), ink)
 	draw_rect(Rect2(left + 0.5, top + 0.5, width - 1, 3), edge, false, 1.0)
+
+
+## Layer 9bq10: the shared indicator `Minion.draw` paints, from the live debuff timers. The
+## source passes `include_rings=False`, so only the burn flames and the pip row appear.
+func minion_debuff_draw_ops(unit: UnitState, anim: int) -> Array:
+	if not unit.alive:
+		return []
+	return DebuffFxLayout.ops(
+		int(unit.position.x),
+		int(unit.position.y),
+		int(unit.definition.radius_px),
+		unit.slow_timer,
+		unit.atk_slow_timer,
+		unit.skill_down_timer,
+		unit.anti_heal_timer,
+		unit.burn_timer,
+		float(anim),
+		false
+	)
 
 
 ## `minions/_bundle.py::draw_slow_effect` as `Minion.draw` inlines it: a pale disc and

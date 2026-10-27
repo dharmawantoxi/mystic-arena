@@ -32,6 +32,7 @@ const UrgharunEnrageGroundLayout = preload("res://scripts/ui/urgharun_enrage_gro
 const BossAuraFxLayout = preload("res://scripts/ui/boss_aura_fx_layout.gd")
 const UrgharunAttackClock = preload("res://scripts/ui/urgharun_attack_clock.gd")
 const BossDebuffFxLayout = preload("res://scripts/ui/boss_debuff_fx_layout.gd")
+const BossEntranceLayout = preload("res://scripts/ui/boss_entrance_layout.gd")
 const UrgharunSkillFxLayout = preload("res://scripts/ui/urgharun_skill_fx_layout.gd")
 const TacticalLayout = preload("res://scripts/ui/tactical_layout.gd")
 const GoldHudLayout = preload("res://scripts/ui/gold_hud_layout.gd")
@@ -40,6 +41,7 @@ const InputHintLayout = preload("res://scripts/ui/input_hint_layout.gd")
 const EndOverlayLayout = preload("res://scripts/ui/end_overlay_layout.gd")
 const BuildPopupLayout = preload("res://scripts/ui/build_popup_layout.gd")
 const HeroPanelLayout = preload("res://scripts/ui/hero_panel_layout.gd")
+const TowerHoverLayout = preload("res://scripts/ui/tower_hover_layout.gd")
 const TitleFont = preload("res://assets/fonts/Cinzel.ttf")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
@@ -48,6 +50,9 @@ const WallTiles = preload("res://scripts/ui/wall_tiles.gd")
 const TerrainTiles = preload("res://scripts/ui/terrain_tiles.gd")
 const HeroProjectileArtScript = preload("res://scripts/ui/hero_projectile_art.gd")
 const HUD_SCREEN_W := 1280
+## Layer 9bq10: `Hero.__init__` pins `self.radius = 16`, the radius `Hero.draw` feeds the
+## shared tower-debuff indicator.
+const HERO_DEBUFF_RADIUS := 16
 ## Layer 9bi: paint order of the world-space layers (`EffectManager.draw` = path
 ## preview then the effects, then `tactical.draw_world`) and of the screen overlays
 ## (`Game.draw`: boss intro, then `effects.draw_ui` = wave announcer and achievement,
@@ -110,6 +115,9 @@ var boss_basic_attack_fg_ops := 0
 ## Layer 9bq9: the debuff indicator (slow ring, burn flames, pip row) `Boss.draw` paints.
 var boss_debuff_fx_draws := 0
 var boss_debuff_fx_ops := 0
+## Layer 9bq10: the same indicator on a hero (`Hero.draw` paints it after the ground shadow).
+var hero_debuff_fx_draws := 0
+var hero_debuff_fx_ops := 0
 var boss_attack_clocks := {}
 ## The tactical banner border (layer 9bi2): 2 px, 6 px corners, drawn inside its box.
 var tactical_border := StyleBoxFlat.new()
@@ -129,6 +137,8 @@ var end_overlay_state: Dictionary = {}
 var build_popup_state: Dictionary = {}
 ## Layer 9bv8: selected live hero snapshot used by the screen-space panel painter.
 var hero_panel_state: Dictionary = {}
+## Layer 9bv11: view-only hovered tower snapshot from `HoverIndicators.draw`.
+var tower_hover_state: Dictionary = {}
 var hud_shadow_box := StyleBoxFlat.new()
 ## Layer 9bv6: `Overlay.unlock_popup_timer`, advanced once per victory overlay draw and
 ## stopped AT the 90-call delay exactly like `_update_unlock_popup`.
@@ -196,6 +206,7 @@ func _draw() -> void:
 		draw_arc(mark, 8, 0, TAU, 20, color, 1.5, true)
 		draw_line(mark - Vector2(5, 5), mark + Vector2(5, 5), color, 1.5, true)
 		draw_line(mark + Vector2(-5, 5), mark + Vector2(5, -5), color, 1.5, true)
+	_draw_tower_hover()
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	for layer in OVERLAY_ORDER:
 		_draw_overlay_layer(String(layer), world)
@@ -1068,6 +1079,21 @@ func input_hints_blocked(world: Prototype) -> bool:
 	)
 
 
+## Layer 9bv11: range and tooltip for the read-only hovered tower snapshot.
+func _draw_tower_hover() -> void:
+	for op in tower_hover_draw_ops():
+		_draw_hud_op(op)
+
+
+func tower_hover_draw_ops(measure: Callable = Callable()) -> Array:
+	if tower_hover_state.is_empty():
+		return []
+	var metrics: Callable = _measure_intro_text
+	if measure.is_valid():
+		metrics = measure
+	return TowerHoverLayout.ops(tower_hover_state, metrics)
+
+
 ## Layer 9bv7: `BuildPopup.draw`, the build-tower popup painted right after the tactical banner
 ## while the screen hands over `build_popup_state` (slot x/y and gold).
 func _draw_build_popup(world: Prototype) -> void:
@@ -1146,6 +1172,8 @@ func _draw_end_overlay(world: Prototype) -> void:
 				continue
 			"end_gradient":
 				_draw_end_backdrop(op)
+			"darken":
+				_draw_end_darken(op)
 			"radial":
 				_draw_radial_op(op)
 			"outline_text":
@@ -1209,6 +1237,17 @@ func _draw_end_backdrop(op: Dictionary) -> void:
 	var box: Array = op.get("rect", [0, 0, 1280, 720])
 	draw_texture_rect(
 		_end_backdrop, Rect2(float(box[0]), float(box[1]), float(box[2]), float(box[3])), false
+	)
+
+
+## Source `darken(surface, 170)`: equivalent full-screen black overlay in the low-quality path.
+func _draw_end_darken(op: Dictionary) -> void:
+	var box: Array = op.get("rect", [0, 0, 1280, 720])
+	var alpha := int(op.get("alpha", 170))
+	draw_rect(
+		Rect2(float(box[0]), float(box[1]), float(box[2]), float(box[3])),
+		Color8(0, 0, 0, alpha),
+		true
 	)
 
 
@@ -1493,7 +1532,11 @@ func _draw_hero_sprite(hero: HeroState) -> bool:
 		art = HeroArt.frame(hero.definition.id, hero.team, pose, hero.facing)
 	if art.is_empty():
 		return false
-	HeroPainter.paint(self, hero, art, hero.id == session.selected_id)
+	var debuff_ops := hero_debuff_draw_ops(hero, pulse)
+	if not debuff_ops.is_empty():
+		hero_debuff_fx_draws += 1
+		hero_debuff_fx_ops += debuff_ops.size()
+	HeroPainter.paint(self, hero, art, hero.id == session.selected_id, debuff_ops)
 	return true
 
 
@@ -1683,6 +1726,26 @@ func boss_debuff_draw_ops(boss: BossState) -> Array:
 		boss.anti_heal_timer,
 		boss.burn_timer,
 		float(boss.anim_time)
+	)
+
+
+## Layer 9bq10: `_entity.py::Hero.draw` calls the shared indicator after the ground shadow and
+## before the hero body. `Hero.__init__` fixes the source radius at 16, and a hero carries no
+## `anim_time`, so the source falls back to `pulse` (`self.pulse += 0.1` per tick), which is the
+## clock `hero_anim.observe` already reproduces.
+func hero_debuff_draw_ops(hero: HeroState, anim: float) -> Array:
+	if not hero.alive:
+		return []
+	return BossDebuffFxLayout.ops(
+		int(hero.position.x),
+		int(hero.position.y),
+		HERO_DEBUFF_RADIUS,
+		hero.slow_timer,
+		hero.atk_slow_timer,
+		hero.skill_down_timer,
+		hero.anti_heal_timer,
+		hero.burn_timer,
+		anim
 	)
 
 
@@ -1915,22 +1978,56 @@ func _draw_boss_sprite(boss: BossState, art: Dictionary) -> void:
 	draw_texture_rect_region(art["texture"] as Texture2D, Rect2(corner, src.size), src, tint)
 
 
-func _draw_boss_entrance(boss: BossState) -> void:
-	var state := boss.entrance_presentation_state()
-	var size := int(state["aura_radius"])
-	if size > 0:
-		var alpha := float(state["aura_alpha"]) / 255.0
-		draw_circle(boss.position, size, Color(boss.entrance_color, alpha))
-	if bool(state["text_visible"]):
+## Layer 9bq11: `Boss.draw` hands the whole frame to `_draw_entrance` while the entrance timer
+## runs, so this paints the aura and the wrapped title and nothing else. `measure` defaults to the
+## real `Barlow-SemiBold` metrics; the suite passes the recording shim's glyph metrics.
+func _draw_boss_entrance(boss: BossState, measure: Callable = Callable()) -> void:
+	for op in boss_entrance_draw_ops(boss, measure):
+		if String(op.get("kind", "")) != "text":
+			_draw_intro_op(op)
+			continue
+		var color: Array = op["color"]
+		var ink := Color8(int(color[0]), int(color[1]), int(color[2]), int(op.get("mult", 255)))
+		var pos: Array = op["pos"]
+		var size_px := int(op["size"])
 		draw_string(
 			BossFont,
-			Vector2(180, 100),
-			boss.entrance_text,
-			HORIZONTAL_ALIGNMENT_CENTER,
-			920,
-			28 if boss.boss_class == "true" else 24,
-			Color(boss.entrance_color, float(state["text_alpha"]) / 255.0)
+			Vector2(float(pos[0]), float(pos[1]) + BossFont.get_ascent(size_px)),
+			String(op["text"]),
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1,
+			size_px,
+			ink
 		)
+
+
+## Layer 9bq11: the `_draw_entrance` ops for this frame (aura, then shadow/text per wrapped line).
+func boss_entrance_draw_ops(boss: BossState, measure: Callable = Callable()) -> Array:
+	if not boss.alive:
+		return []
+	var is_true := boss.boss_class == "true"
+	var ink := [
+		int(boss.entrance_color.r8),
+		int(boss.entrance_color.g8),
+		int(boss.entrance_color.b8),
+		255,
+	]
+	return BossEntranceLayout.ops(
+		int(boss.position.x),
+		int(boss.position.y),
+		int(boss.radius),
+		boss.entrance_timer,
+		BossEntranceLayout.max_entrance(is_true),
+		ink,
+		boss.entrance_text,
+		is_true,
+		float(boss.anim_time),
+		measure if measure.is_valid() else _boss_text_measure
+	)
+
+
+func _boss_text_measure(text: String, size_px: int) -> Vector2:
+	return BossFont.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px)
 
 
 func _draw_boss_death(snapshot: Dictionary) -> void:
