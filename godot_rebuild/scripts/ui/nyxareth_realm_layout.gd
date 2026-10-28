@@ -33,6 +33,17 @@ static func active(boss_type: String, active_skill: String) -> bool:
 	return boss_type == BOSS_TYPE and active_skill == SKILL
 
 
+## Layer 9bv16: the source asks `surface.get_size()` every frame. On a widened
+## window (project.godot uses `stretch/aspect="expand"`) that size is the live
+## viewport, not the 1280x720 arena, so the star wrap must follow it. A detached
+## node / zero-sized viewport keeps the baked default instead.
+static func size_for_viewport(viewport_size: Vector2) -> Vector2i:
+	var size := Vector2i(int(viewport_size.x), int(viewport_size.y))
+	if size.x <= 0 or size.y <= 0:
+		return SCREEN_SIZE
+	return size
+
+
 ## `_draw_astro_realm_bg(surface, boss, x, y, timer, phase)`: `timer` is the boss's
 ## `active_skill_timer` and `phase` its `pulse`.
 static func ops(timer: int, phase: float, size: Vector2i = SCREEN_SIZE) -> Array:

@@ -1,0 +1,32 @@
+{
+  "body_font_files": {
+    "body": "Barlow-Regular.ttf",
+    "body_bold": "Barlow-Bold.ttf",
+    "body_medium": "Barlow-Medium.ttf",
+    "body_semibold": "Barlow-SemiBold.ttf"
+  },
+  "copies_match": true,
+  "font_path_default": "Barlow-Regular.ttf",
+  "godot_font_sha256": {
+    "Barlow-Bold.ttf": "84e6a4d61e7c3e21f3c50ea6a4f7e5303a3467864c038be6ea3759bab8d547f9",
+    "Barlow-Medium.ttf": "f8906f762cb73dca441da034bc363b2d8e2e68bc10d5c05e58717646c20cc4b4",
+    "Barlow-Regular.ttf": "95aa02c7c43096e0dd44d787ba6216864a67157e402adab59b35572e0c1577ea",
+    "Barlow-SemiBold.ttf": "86577cb32f8abe3673db53ca0f4221e6856751a4f6730c867e00f720f8bb1fc5",
+    "Cinzel.ttf": "f4d83d34d1f6c741193e4acf4b3dff9531e5a67b6aa65228d00a7db72a4e0f34"
+  },
+  "source_font_sha256": {
+    "Barlow-Bold.ttf": "84e6a4d61e7c3e21f3c50ea6a4f7e5303a3467864c038be6ea3759bab8d547f9",
+    "Barlow-Medium.ttf": "f8906f762cb73dca441da034bc363b2d8e2e68bc10d5c05e58717646c20cc4b4",
+    "Barlow-Regular.ttf": "95aa02c7c43096e0dd44d787ba6216864a67157e402adab59b35572e0c1577ea",
+    "Barlow-SemiBold.ttf": "86577cb32f8abe3673db53ca0f4221e6856751a4f6730c867e00f720f8bb1fc5",
+    "Cinzel.ttf": "f4d83d34d1f6c741193e4acf4b3dff9531e5a67b6aa65228d00a7db72a4e0f34"
+  },
+  "style_font_map": {
+    "body": "Barlow-Regular.ttf",
+    "body_bold": "Barlow-Bold.ttf",
+    "body_medium": "Barlow-Medium.ttf",
+    "body_semibold": "Barlow-SemiBold.ttf",
+    "title": "Cinzel.ttf"
+  },
+  "title_font_file": "Cinzel.ttf"
+}

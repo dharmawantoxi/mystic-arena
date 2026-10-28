@@ -9,6 +9,7 @@ const HeroMarker = preload("res://scripts/ui/hero_marker.gd")
 const PathPreview = preload("res://scripts/ui/path_preview.gd")
 const SpriteLighting = preload("res://scripts/ui/sprite_lighting.gd")
 const BossFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
+const SourceFonts = preload("res://scripts/ui/source_fonts.gd")
 const LevelIntroLayout = preload("res://scripts/ui/level_intro_layout.gd")
 const KillFeedLayout = preload("res://scripts/ui/kill_feed_layout.gd")
 const ComboCounterLayout = preload("res://scripts/ui/combo_counter_layout.gd")
@@ -148,6 +149,10 @@ var hud_shadow_box := StyleBoxFlat.new()
 var unlock_popup_timer := 0
 ## Rounded chip/badge fills and borders (pygame `draw.rect(..., border_radius=r)`).
 var hud_round_box := StyleBoxFlat.new()
+## Layer 9bv16: `_draw_astro_realm_bg` sizes its stars by `surface.get_size()`.
+## `_draw()` refreshes this from the live viewport; detached views keep the
+## 1280x720 default so the recorded oracle fixture still replays exactly.
+var realm_screen_size: Vector2i = NyxarethRealmLayout.SCREEN_SIZE
 var dynamic_map := DynamicMapRenderer.new()
 ## Real DynamicRenderer paints; the scene suite proves this reaches `_draw`.
 var dynamic_map_draws := 0
@@ -162,6 +167,8 @@ func _draw() -> void:
 	if session == null:
 		super._draw()
 		return
+	# Layer 9bv16: mirror `surface.get_size()` before super._draw() reaches the boss.
+	realm_screen_size = NyxarethRealmLayout.size_for_viewport(get_viewport_rect().size)
 	var world := session.world as Prototype
 	terrain_palette = TerrainPalette.for_level(world.level_config)
 	terrain_river = TerrainPalette.river_path()
@@ -1010,9 +1017,16 @@ func _draw_intro_op(op: Dictionary) -> void:
 			var font_size := int(op.get("size", 16))
 			if color.a <= 0.0:
 				return
+			# Layer 9bv17: `_render.py` resolves each op's `style` to its own TTF.
+			# Keep the shared SemiBold ascent/measure so every recorded `pos` stays
+			# put; only the drawn face follows the source weight.
+			var style := String(op.get("style", ""))
+			var font: Font = BossFont
+			if SourceFonts.has_style(style):
+				font = SourceFonts.for_style(style)
 			var ascent := BossFont.get_ascent(font_size)
 			draw_string(
-				BossFont,
+				font,
 				Vector2(float(pos[0]), float(pos[1]) + ascent),
 				String(op.get("text", "")),
 				HORIZONTAL_ALIGNMENT_LEFT,
@@ -1738,9 +1752,9 @@ func _draw_boss(boss: BossState) -> void:
 func nyxareth_realm_draw_ops(boss: BossState) -> Array:
 	if not NyxarethRealmLayout.active(boss.boss_type, boss.active_skill):
 		return []
-	return NyxarethRealmLayout.ops(
-		boss.active_skill_timer, boss.pulse, NyxarethRealmLayout.SCREEN_SIZE
-	)
+	# Layer 9bv16: stars wrap on the live render surface, as `surface.get_size()`
+	# does in `_draw_astro_realm_bg`. A detached view keeps the baked 1280x720.
+	return NyxarethRealmLayout.ops(boss.active_skill_timer, boss.pulse, realm_screen_size)
 
 
 ## Layer 9bq9: `_core.py::TowerDebuffMixin._draw_tower_debuff_fx` from the live boss timers.

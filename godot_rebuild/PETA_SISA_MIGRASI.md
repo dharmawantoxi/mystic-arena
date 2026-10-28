@@ -9,6 +9,10 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
 - Milestone sesi ini: **9bv12** hover slot bangun, **9bv13** indikator debuff pada
   jalur fallback marker/siluet, dan **9bv14** FX menara yang tertinggal dari 9bl
   (range terseleksi, kilat upgrade, kilat moncong Archer). Rincian di bagian paling bawah.
+- **Lanjutan sesi: 9bv16 + 9bv17 menutup dua divergensi visual lama.** Realm
+  nyxareth kini mengikuti `surface.get_size()` lewat viewport hidup (bukan 1280 px
+  tetap), dan lima font `_render.py` sudah ada di Godot dengan painter teks memilih
+  face sesuai `style`. Rincian di "Slice 9bv16" dan "Slice 9bv17" paling bawah.
 - **9bv15 menutup kandidat sisa terakhir**: "aura sihir kastil level 6" ternyata
   kode mati di sumber (`MAX_NEXUS_LEVEL = 5`), jadi katalog 1-5 Godot sudah paritas
   dan dua klaim lama di peta dikoreksi (lihat "Slice 9bv15" paling bawah).
@@ -4509,15 +4513,76 @@ perubahan simulasi, damage, cooldown, input, atau batas level. Ini **bukan gap
 migrasi**; Godot sudah paritas. Bukan klaim pixel parity; review visual tetap
 perlu.
 
+## Slice 9bv16 — realm nyxareth mengikuti ukuran layar hidup
+
+`bosses/level17.py::_draw_astro_realm_bg` memanggil `surface.get_size()` tiap
+frame, jadi bintang membungkus pada lebar permukaan render yang sebenarnya.
+Oracle `nyxareth_realm_draw_source_oracle.py` sudah sejak 9bq3 merekam frame
+`wide_display` **1560x720** selain enam frame arena 1280x720, dan
+`nyxareth_realm_layout.gd::ops(timer, phase, size)` sudah menerima `size`.
+Kekurangannya murni di wiring: `PrototypeView` selalu meneruskan konstanta
+`SCREEN_SIZE`, jadi layar yang dilebarkan tetap menggambar bintang 1280 px.
+
+Perbaikan 9bv16 (view-only):
+
+- `NyxarethRealmLayout.size_for_viewport()` mengubah ukuran viewport menjadi
+  `Vector2i`, dengan fallback ke `SCREEN_SIZE` bila viewport nol/negatif (node
+  lepas, headless). Konstanta 1280x720 tetap menjadi default bake.
+- `PrototypeView._draw()` menyegarkan `realm_screen_size` dari
+  `get_viewport_rect().size` sebelum menggambar; `nyxareth_realm_draw_ops()`
+  meneruskannya ke layout. `stretch/aspect="expand"` di `project.godot` berarti
+  viewport sungguh melebar, sama seperti `surface.get_size()` di pygame.
+- `tests/realm_viewport_checks.gd` (terdaftar di `run_all.gd`) mereplay frame
+  `wide_display` lewat layout **dan** view, membuktikan fill `[0,0,1560,720]`,
+  perbedaan bintang terhadap frame arena, serta fallback viewport nol. Suite 9bq3
+  lama tetap membuktikan tujuh frame 109 op.
+
+Batas: ini ukuran lapisan, bukan klaim pixel parity AA; tidak ada perubahan
+simulasi, timer skill, damage, input, atau atlas.
+
+## Slice 9bv17 — font `body_bold` / `body_medium` sampai ke Godot
+
+Catatan berulang di 9bb/9bd/9bv1–9bv5: `_render.py::_STYLE_FONT_MAP`
+memetakan `title`→Cinzel, `body`→Barlow-Regular, `body_medium`→Barlow-Medium,
+`body_semibold`→Barlow-SemiBold, `body_bold`→Barlow-Bold, dengan fallback
+`Barlow-Regular.ttf`. `godot_rebuild/assets/fonts/` hanya punya tiga font, jadi
+setiap op teks digambar dengan Barlow-SemiBold berapa pun `style`-nya.
+
+Perbaikan 9bv17 (aset + painter, tanpa simulasi):
+
+- `Barlow-Bold.ttf` dan `Barlow-Medium.ttf` disalin byte-identik dari
+  `assets/fonts/` (SHA-256 tercantum di fixture). Kelima TTF kini paritas.
+- `scripts/ui/source_fonts.gd` memuat peta style→file dan `for_style()`;
+  `_draw_intro_op()` memilih face sesuai `style` op. **Ascent tetap memakai
+  Barlow-SemiBold bersama**, sama seperti `measure` yang dipakai layout, supaya
+  seluruh `pos` hasil oracle tidak bergeser. Ops tanpa `style` juga tetap
+  SemiBold, jadi HUD lama tidak berubah.
+- Oracle `tests/source_fonts_source_oracle.py` memanen `_BODY_FONT_FILES`,
+  `_STYLE_FONT_MAP`, `_TITLE_FONT_FILE` dan literal fallback `_font_path` dengan
+  `ast`, lalu meng-hash kelima TTF sumber dan salinan Godot
+  (`tests/fixtures/source_fonts_source.json`). Suite
+  `tests/source_fonts_checks.gd` mereplay peta itu, memeriksa `for_style()`
+  untuk kelima style plus style asing, dan membandingkan
+  `FileAccess.get_sha256()` asli. Oracle dijalankan di workflow CI.
+
+Batas: metrik/AA font Godot tetap berbeda dari pygame (posisi bisa bergeser
+beberapa piksel); yang tertutup adalah **pemilihan family/weight**, bukan
+klaim pixel parity. Tidak ada perubahan damage, cooldown, input, atau atlas.
+
 ## Sisa setelah 9bv12–9bv14 (diperbarui 9bv15)
 
 - **Aura sihir kastil level 6 — ditutup 9bv15, bukan gap migrasi.** Lihat
   "Slice 9bv15" di atas: batas level 5 ada di sumber Python
   (`MAX_NEXUS_LEVEL = 5`), jadi katalog 1-5 di Godot sudah paritas dan
   menaikkannya justru akan divergen.
-- Divergensi yang sudah dicatat dan sengaja dipertahankan: metrik font/AA, panel taktis
-  mengambang, realm nyxareth 1280 px, aura hasil bake yang tidak ikut tergelapkan,
-  sprite menara yang berubah di luar kunci cache, serta jejak hit/impact lama.
+- **Ditutup 9bv16:** realm nyxareth tidak lagi terkunci 1280 px (lihat
+  "Slice 9bv16").
+- **Ditutup sebagian 9bv17:** font `Barlow-Bold` / `Barlow-Medium` sudah ada dan
+  painter memakai face sesuai `style`. Yang tersisa adalah **metrik/AA** font Godot
+  yang memang berbeda dari pygame (pergeseran beberapa piksel), bukan family/weight.
+- Divergensi lain yang sudah dicatat dan sengaja dipertahankan: panel taktis
+  mengambang, aura hasil bake yang tidak ikut tergelapkan, sprite menara yang
+  berubah di luar kunci cache, serta jejak hit/impact lama.
 - Review interaktif/visual di Godot masih perlu Anda lakukan. Sandbox ini tidak punya
   Godot; bukti yang tersedia adalah oracle sumber, validator statis, dan CI native.
 - **Tidak ada lagi item migrasi kode produksi yang belum selesai** menurut peta ini.

@@ -6898,6 +6898,92 @@ check(
     "9bv15 PETA drops the stale claim that the level-5 cap is a Godot limitation",
 )
 
+# --- 9bv16: nyxareth realm follows the live render surface -------------------
+_nr_layout2 = (ROOT / "scripts/ui/nyxareth_realm_layout.gd").read_text(encoding="utf-8")
+_rv_checks = (ROOT / "tests/realm_viewport_checks.gd").read_text(encoding="utf-8")
+_nr_fixture = json.loads(
+    (ROOT / "tests/fixtures/nyxareth_realm_draw_source.json").read_text(encoding="utf-8")
+)
+check("static func size_for_viewport(viewport_size: Vector2) -> Vector2i:" in _nr_layout2
+      and "if size.x <= 0 or size.y <= 0:" in _nr_layout2
+      and "return SCREEN_SIZE" in _nr_layout2,
+      "9bv16 realm layout must fall back to the baked surface for a detached viewport")
+check("var realm_screen_size: Vector2i = NyxarethRealmLayout.SCREEN_SIZE" in _prototype_view_text
+      and "realm_screen_size = NyxarethRealmLayout.size_for_viewport(get_viewport_rect().size)"
+      in _prototype_view_text
+      and "NyxarethRealmLayout.ops(boss.active_skill_timer, boss.pulse, realm_screen_size)"
+      in _prototype_view_text,
+      "9bv16 the view must size the realm from the live viewport, not a hard-coded 1280")
+check("NyxarethRealmLayout.SCREEN_SIZE\n\t)" not in _prototype_view_text,
+      "9bv16 the view must not still pass SCREEN_SIZE straight into the realm ops")
+check([_f["screen"] for _f in _nr_fixture["frames"] if _f["label"] == "wide_display"]
+      == [[1560, 720]],
+      "9bv16 the source oracle must pin a widened 1560x720 display frame")
+check("const RealmViewportChecks = preload(\"res://tests/realm_viewport_checks.gd\")"
+      in ai_tests and "RealmViewportChecks.new().run(_check)" in ai_tests,
+      "9bv16 realm viewport suite must be registered in the native runner")
+check("The live view paints the wide star field from its viewport size" in _rv_checks
+      and "A detached or zero-sized viewport falls back to the baked default" in _rv_checks,
+      "9bv16 native suite must replay the wide display and the fallback")
+check("realm nyxareth mengikuti" in _peta_doc or "9bv16" in _peta_doc,
+      "9bv16 PETA must record the realm viewport fix")
+
+# --- 9bv17: source font styles ----------------------------------------------
+import hashlib
+import importlib.util
+_spec = importlib.util.spec_from_file_location(
+    "source_fonts_source_oracle", ROOT / "tests/source_fonts_source_oracle.py"
+)
+_sfo = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_sfo)
+_sf_lookup = (ROOT / "scripts/ui/source_fonts.gd").read_text(encoding="utf-8")
+_sf_checks = (ROOT / "tests/source_fonts_checks.gd").read_text(encoding="utf-8")
+_sf_fixture_path = ROOT / "tests/fixtures/source_fonts_source.json"
+check(_sf_fixture_path.is_file(), "9bv17 source font fixture must exist")
+if _sf_fixture_path.is_file():
+    _sf_fixture = json.loads(_sf_fixture_path.read_text(encoding="utf-8"))
+    check(_sfo.source_fixture() == _sf_fixture,
+          "9bv17 source font fixture must not drift from _render.py")
+    check(_sf_fixture["style_font_map"] == {
+              "title": "Cinzel.ttf",
+              "body": "Barlow-Regular.ttf",
+              "body_medium": "Barlow-Medium.ttf",
+              "body_semibold": "Barlow-SemiBold.ttf",
+              "body_bold": "Barlow-Bold.ttf",
+          },
+          "9bv17 oracle must pin all five _render.py font styles")
+    check(_sf_fixture["font_path_default"] == "Barlow-Regular.ttf"
+          and _sf_fixture["copies_match"] is True,
+          "9bv17 oracle must pin the _font_path fallback and byte-identical copies")
+    for _name, _digest in _sf_fixture["godot_font_sha256"].items():
+        _godot_ttf = ROOT / "assets/fonts" / _name
+        check(_godot_ttf.is_file()
+              and hashlib.sha256(_godot_ttf.read_bytes()).hexdigest() == _digest,
+              "9bv17 Godot font copy %s must match the source bytes" % _name)
+check("python godot_rebuild/tests/source_fonts_source_oracle.py" in workflow,
+      "9bv17 CI must run the source font oracle")
+check("const SourceFonts = preload(\"res://scripts/ui/source_fonts.gd\")"
+      in _prototype_view_text
+      and "if SourceFonts.has_style(style):" in _prototype_view_text
+      and "font = SourceFonts.for_style(style)" in _prototype_view_text
+      and "var ascent := BossFont.get_ascent(font_size)" in _prototype_view_text,
+      "9bv17 the text painter must pick the source face per style but keep the shared ascent")
+check("const STYLE_FILES := {" in _sf_lookup
+      and "static func has_style(style: String) -> bool:" in _sf_lookup
+      and "static func for_style(style: String) -> Font:" in _sf_lookup
+      and all("assets/fonts/%s" % _name in _sf_lookup for _name in
+              ("Barlow-Regular.ttf", "Barlow-Medium.ttf", "Barlow-SemiBold.ttf",
+               "Barlow-Bold.ttf", "Cinzel.ttf")),
+      "9bv17 native lookup must preload all five source faces")
+check("const SourceFontsChecks = preload(\"res://tests/source_fonts_checks.gd\")"
+      in ai_tests and "SourceFontsChecks.new().run(_check)" in ai_tests,
+      "9bv17 source font suite must be registered in the native runner")
+check("Native filename mirrors _font_path for" in _sf_checks
+      and "matches the source bytes" in _sf_checks,
+      "9bv17 native suite must replay the style map and the TTF hashes")
+check("Slice 9bv17" in _peta_doc,
+      "9bv17 PETA must record the font style migration")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")
