@@ -13,6 +13,13 @@ Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
   nyxareth kini mengikuti `surface.get_size()` lewat viewport hidup (bukan 1280 px
   tetap), dan lima font `_render.py` sudah ada di Godot dengan painter teks memilih
   face sesuai `style`. Rincian di "Slice 9bv16" dan "Slice 9bv17" paling bawah.
+  `validate_project.py` **PASS 21563 static checks**; `gdparse`, `gdlint`,
+  `gdformat --check` pada 6 `.gd` yang berubah, oracle + `py_compile`, dan
+  `git diff --check` **PASS**. CI native PR #344 run **40624063888** / job
+  **122604682727** **PASS 16m0s** (`PASS: 1505259 checks; fixed ticks and source
+  parity`) untuk head `085c28d` (PR event **40624056756** juga **success**).
+  Run kode awal `c28cab2` sempat gagal karena check suite membandingkan Array JSON
+  (float) dengan literal int; diperbaiki memakai `_value_equal` numerik.
 - **9bv15 menutup kandidat sisa terakhir**: "aura sihir kastil level 6" ternyata
   kode mati di sumber (`MAX_NEXUS_LEVEL = 5`), jadi katalog 1-5 Godot sudah paritas
   dan dua klaim lama di peta dikoreksi (lihat "Slice 9bv15" paling bawah).
