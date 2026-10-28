@@ -61,8 +61,10 @@ func run(check: Callable) -> void:
 		not wide.is_empty() and not default.is_empty(),
 		"The oracle pins both a wide and the default arena frame"
 	)
+	# JSON numbers are floats in Godot; `_value_equal` compares them numerically
+	# against the integer literals below (a raw Array == would fail on the type).
 	check.call(
-		wide["screen"] == [1560, 720] and default["screen"] == [1280, 720],
+		_value_equal(wide["screen"], [1560, 720]) and _value_equal(default["screen"], [1280, 720]),
 		"The oracle pins a 1560x720 wide display and a 1280x720 arena"
 	)
 	check.call(
@@ -93,7 +95,7 @@ func run(check: Callable) -> void:
 		"The layout replays the source's wide-display star field exactly"
 	)
 	check.call(
-		wide_ops[0]["rect"] == [0, 0, 1560, 720],
+		_value_equal(wide_ops[0]["rect"], [0, 0, 1560, 720]),
 		"The wide cosmic fill covers the whole 1560x720 surface"
 	)
 	var arena_ops: Array = Layout.ops(
