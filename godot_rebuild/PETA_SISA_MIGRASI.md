@@ -4590,7 +4590,26 @@ klaim pixel parity. Tidak ada perubahan damage, cooldown, input, atau atlas.
 - Divergensi lain yang sudah dicatat dan sengaja dipertahankan: panel taktis
   mengambang, aura hasil bake yang tidak ikut tergelapkan, sprite menara yang
   berubah di luar kunci cache, serta jejak hit/impact lama.
-- Review interaktif/visual di Godot masih perlu Anda lakukan. Sandbox ini tidak punya
-  Godot; bukti yang tersedia adalah oracle sumber, validator statis, dan CI native.
+- Review interaktif/visual di Godot masih perlu Anda lakukan. Percobaan instalasi
+  lokal 4.7.2-stable pada 2026-10-28 gagal karena koneksi sandbox ke host aset rilis
+  GitHub (`release-assets.githubusercontent.com`) ditutup; tidak ada binary Godot
+  lokal, screenshot, atau hasil pixel-diff dari sandbox. CI native yang memakai
+  Godot 4.7.2-stable tetap lulus, tetapi suite headless bukan bukti kesamaan visual.
 - **Tidak ada lagi item migrasi kode produksi yang belum selesai** menurut peta ini.
   Sisa di atas adalah divergensi yang diterima atau pekerjaan review pengguna.
+
+## Verifikasi Godot lokal — 2026-10-28
+
+- Workflow CI mematok Godot **4.7.2-stable**. Instalasi lokal dicoba dari aset
+  rilis resmi di GitHub; resolusi unduhan diarahkan ke `release-assets.githubusercontent.com`
+  dan TLS berakhir dengan `SSL_ERROR_SYSCALL` pada koneksi sandbox. Binary tidak
+  berhasil dipasang; tidak ada pengujian engine lokal atau pengambilan screenshot.
+- Pengganti yang tersedia adalah CI native PR #344: `gh pr checks 344` **PASS**
+  (run `40626178523`, job `122611516597`, 15m25s); run test headless sebelumnya
+  mencatat `PASS: 1505259 checks; fixed ticks and source parity`. Ini memverifikasi
+  import/native suites dan kontrak replay, bukan kesamaan piksel pada tampilan
+  interaktif.
+- Jadi status visual tetap **belum terverifikasi**: perlu jalankan proyek di Godot
+  4.7.2-stable pada mesin yang dapat mengunduh engine, bandingkan adegan dengan
+  pygame pada ukuran viewport yang sama, dan tinjau divergensi yang diterima di
+  atas. Jangan menyebut migrasi pixel-identik sebelum review itu selesai.
