@@ -8,6 +8,8 @@ const StructureState = preload("res://scripts/combat/structure_state.gd")
 const FLASH_TICKS := 8
 const CANNON_FLASH_TICKS := 10
 const FLICKER_STEPS := 5
+## Layer 9bv14: `Tower.upgrade` / `activate_regen_shield` set `upgrade_flash = 30`.
+const UPGRADE_FLASH_TICKS := 30
 var _entries: Dictionary = {}
 
 
@@ -27,15 +29,24 @@ static func flicker(tick: int) -> int:
 
 ## Advance this structure's clocks to `tick`; returns `{flash}` in ticks.
 func observe(structure: StructureState, tick: int) -> Dictionary:
+	var data := structure.settings()
+	var level := int(data.level)
+	var regen := bool(structure.regen_shield_active)
 	var entry: Dictionary = _entries.get(structure.id, {})
 	if entry.is_empty():
-		entry = {"tick": tick, "flash": 0}
+		entry = {"tick": tick, "flash": 0, "upgrade_flash": 0, "level": level, "regen": regen}
 	else:
 		var elapsed := maxi(0, tick - int(entry["tick"]))
 		entry["flash"] = maxi(0, int(entry["flash"]) - elapsed)
+		entry["upgrade_flash"] = maxi(0, int(entry["upgrade_flash"]) - elapsed)
 		# The source starts the flash when the shot is fired, i.e. the cooldown is set.
 		if structure.cooldown_ticks > int(entry["cooldown"]):
-			entry["flash"] = flash_ticks(structure.settings().tower_path)
+			entry["flash"] = flash_ticks(data.tower_path)
+		# `Tower.upgrade` and `activate_regen_shield` both re-arm the 30-tick upgrade flash.
+		if level > int(entry["level"]) or (regen and not bool(entry["regen"])):
+			entry["upgrade_flash"] = UPGRADE_FLASH_TICKS
+		entry["level"] = level
+		entry["regen"] = regen
 		entry["tick"] = tick
 	entry["cooldown"] = structure.cooldown_ticks
 	_entries[structure.id] = entry

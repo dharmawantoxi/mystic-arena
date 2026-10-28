@@ -9,6 +9,7 @@ const HeroMarker = preload("res://scripts/ui/hero_marker.gd")
 const PathPreview = preload("res://scripts/ui/path_preview.gd")
 const SpriteLighting = preload("res://scripts/ui/sprite_lighting.gd")
 const BossFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
+const SourceFonts = preload("res://scripts/ui/source_fonts.gd")
 const LevelIntroLayout = preload("res://scripts/ui/level_intro_layout.gd")
 const KillFeedLayout = preload("res://scripts/ui/kill_feed_layout.gd")
 const ComboCounterLayout = preload("res://scripts/ui/combo_counter_layout.gd")
@@ -42,6 +43,7 @@ const EndOverlayLayout = preload("res://scripts/ui/end_overlay_layout.gd")
 const BuildPopupLayout = preload("res://scripts/ui/build_popup_layout.gd")
 const HeroPanelLayout = preload("res://scripts/ui/hero_panel_layout.gd")
 const TowerHoverLayout = preload("res://scripts/ui/tower_hover_layout.gd")
+const SlotHoverLayout = preload("res://scripts/ui/slot_hover_layout.gd")
 const TitleFont = preload("res://assets/fonts/Cinzel.ttf")
 const TerrainPalette = preload("res://scripts/ui/terrain_palette.gd")
 const RiverTiles = preload("res://scripts/ui/river_tiles.gd")
@@ -139,17 +141,25 @@ var build_popup_state: Dictionary = {}
 var hero_panel_state: Dictionary = {}
 ## Layer 9bv11: view-only hovered tower snapshot from `HoverIndicators.draw`.
 var tower_hover_state: Dictionary = {}
+## Layer 9bv12: view-only hovered empty build-slot snapshot from `HoverIndicators.draw`.
+var slot_hover_state: Dictionary = {}
 var hud_shadow_box := StyleBoxFlat.new()
 ## Layer 9bv6: `Overlay.unlock_popup_timer`, advanced once per victory overlay draw and
 ## stopped AT the 90-call delay exactly like `_update_unlock_popup`.
 var unlock_popup_timer := 0
 ## Rounded chip/badge fills and borders (pygame `draw.rect(..., border_radius=r)`).
 var hud_round_box := StyleBoxFlat.new()
+## Layer 9bv16: `_draw_astro_realm_bg` sizes its stars by `surface.get_size()`.
+## `_draw()` refreshes this from the live viewport; detached views keep the
+## 1280x720 default so the recorded oracle fixture still replays exactly.
+var realm_screen_size: Vector2i = NyxarethRealmLayout.SCREEN_SIZE
 var dynamic_map := DynamicMapRenderer.new()
 ## Real DynamicRenderer paints; the scene suite proves this reaches `_draw`.
 var dynamic_map_draws := 0
 var _end_backdrop: ImageTexture
 var _radial_textures: Dictionary = {}
+## Layer 9bv13: pulse clock carried from the sprite attempt into the marker fallback.
+var _hero_fallback_pulse := 0.0
 
 
 func _draw() -> void:
@@ -157,6 +167,8 @@ func _draw() -> void:
 	if session == null:
 		super._draw()
 		return
+	# Layer 9bv16: mirror `surface.get_size()` before super._draw() reaches the boss.
+	realm_screen_size = NyxarethRealmLayout.size_for_viewport(get_viewport_rect().size)
 	var world := session.world as Prototype
 	terrain_palette = TerrainPalette.for_level(world.level_config)
 	terrain_river = TerrainPalette.river_path()
@@ -207,6 +219,7 @@ func _draw() -> void:
 		draw_line(mark - Vector2(5, 5), mark + Vector2(5, 5), color, 1.5, true)
 		draw_line(mark + Vector2(-5, 5), mark + Vector2(5, -5), color, 1.5, true)
 	_draw_tower_hover()
+	_draw_slot_hover()
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	for layer in OVERLAY_ORDER:
 		_draw_overlay_layer(String(layer), world)
@@ -1004,9 +1017,16 @@ func _draw_intro_op(op: Dictionary) -> void:
 			var font_size := int(op.get("size", 16))
 			if color.a <= 0.0:
 				return
+			# Layer 9bv17: `_render.py` resolves each op's `style` to its own TTF.
+			# Keep the shared SemiBold ascent/measure so every recorded `pos` stays
+			# put; only the drawn face follows the source weight.
+			var style := String(op.get("style", ""))
+			var font: Font = BossFont
+			if SourceFonts.has_style(style):
+				font = SourceFonts.for_style(style)
 			var ascent := BossFont.get_ascent(font_size)
 			draw_string(
-				BossFont,
+				font,
 				Vector2(float(pos[0]), float(pos[1]) + ascent),
 				String(op.get("text", "")),
 				HORIZONTAL_ALIGNMENT_LEFT,
@@ -1092,6 +1112,22 @@ func tower_hover_draw_ops(measure: Callable = Callable()) -> Array:
 	if measure.is_valid():
 		metrics = measure
 	return TowerHoverLayout.ops(tower_hover_state, metrics)
+
+
+## Layer 9bv12: glow and "TAP TO BUILD" hint for the read-only hovered empty slot snapshot.
+## Source `HoverIndicators.draw` paints this directly after the tower hover branch.
+func _draw_slot_hover() -> void:
+	for op in slot_hover_draw_ops():
+		_draw_hud_op(op)
+
+
+func slot_hover_draw_ops(measure: Callable = Callable()) -> Array:
+	if slot_hover_state.is_empty():
+		return []
+	var metrics: Callable = _measure_intro_text
+	if measure.is_valid():
+		metrics = measure
+	return SlotHoverLayout.ops(slot_hover_state, metrics)
 
 
 ## Layer 9bv7: `BuildPopup.draw`, the build-tower popup painted right after the tactical banner
@@ -1506,6 +1542,13 @@ func _draw_unit(unit: UnitState) -> void:
 		draw_arc(point, radius + 12, 0, TAU, 36, Color("f4d491"), 2, true)
 	# Team outline, stable ID polygon, and facing eye are intentionally basic.
 	draw_circle(point + Vector2(0, 4), radius + 5, Color("071518"))
+	# Layer 9bv13: `Hero.draw` paints the shared indicator after the ground shadow and
+	# before the body, also when the baked sheet is unavailable.
+	var fallback_debuff_ops := hero_debuff_draw_ops(hero, _hero_fallback_pulse)
+	if not fallback_debuff_ops.is_empty():
+		hero_debuff_fx_draws += 1
+		hero_debuff_fx_ops += fallback_debuff_ops.size()
+		DebuffFxPainter.paint(self, fallback_debuff_ops)
 	draw_circle(point, radius + 5, team_color)
 	_draw_lit_polygon(HeroMarker.silhouette(point, radius, hero.definition.id), fill)
 	draw_circle(point + Vector2(hero.facing * 5, -2), 3, Color("e1fff4"))
@@ -1522,6 +1565,9 @@ func _draw_hero_sprite(hero: HeroState) -> bool:
 	var clocks := hero_anim.observe(hero, session.world.tick_count)
 	var moving := bool(clocks["moving"])
 	var pulse := float(clocks["pulse"])
+	_hero_fallback_pulse = pulse
+	if force_art_fallback:
+		return false
 	var pose := HeroAnim.pose_key(
 		hero.attack_timer, moving, pulse, hero.active_skill, hero.active_skill_timer
 	)
@@ -1706,9 +1752,9 @@ func _draw_boss(boss: BossState) -> void:
 func nyxareth_realm_draw_ops(boss: BossState) -> Array:
 	if not NyxarethRealmLayout.active(boss.boss_type, boss.active_skill):
 		return []
-	return NyxarethRealmLayout.ops(
-		boss.active_skill_timer, boss.pulse, NyxarethRealmLayout.SCREEN_SIZE
-	)
+	# Layer 9bv16: stars wrap on the live render surface, as `surface.get_size()`
+	# does in `_draw_astro_realm_bg`. A detached view keeps the baked 1280x720.
+	return NyxarethRealmLayout.ops(boss.active_skill_timer, boss.pulse, realm_screen_size)
 
 
 ## Layer 9bq9: `_core.py::TowerDebuffMixin._draw_tower_debuff_fx` from the live boss timers.

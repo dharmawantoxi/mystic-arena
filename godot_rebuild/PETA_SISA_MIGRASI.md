@@ -2,7 +2,39 @@
 
 Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
 
-## Status terkini — branch `arena/799d0e95-mystic-arena`
+## Status terkini — branch `arena/e60d4a0f-mystic-arena`
+
+- PR #343 sudah di-merge: 9bv11 (cincin range + tooltip hover menara) dan slice
+  sebelumnya ada di `main`; pekerjaan itu **tidak diulang** di sesi ini.
+- Milestone sesi ini: **9bv12** hover slot bangun, **9bv13** indikator debuff pada
+  jalur fallback marker/siluet, dan **9bv14** FX menara yang tertinggal dari 9bl
+  (range terseleksi, kilat upgrade, kilat moncong Archer). Rincian di bagian paling bawah.
+- **Lanjutan sesi: 9bv16 + 9bv17 menutup dua divergensi visual lama.** Realm
+  nyxareth kini mengikuti `surface.get_size()` lewat viewport hidup (bukan 1280 px
+  tetap), dan lima font `_render.py` sudah ada di Godot dengan painter teks memilih
+  face sesuai `style`. Rincian di "Slice 9bv16" dan "Slice 9bv17" paling bawah.
+  `validate_project.py` **PASS 21563 static checks**; `gdparse`, `gdlint`,
+  `gdformat --check` pada 6 `.gd` yang berubah, oracle + `py_compile`, dan
+  `git diff --check` **PASS**. CI native PR #344 run **40624063888** / job
+  **122604682727** **PASS 16m0s** (`PASS: 1505259 checks; fixed ticks and source
+  parity`) untuk head `085c28d` (PR event **40624056756** juga **success**).
+  Run kode awal `c28cab2` sempat gagal karena check suite membandingkan Array JSON
+  (float) dengan literal int; diperbaiki memakai `_value_equal` numerik.
+- **9bv15 menutup kandidat sisa terakhir**: "aura sihir kastil level 6" ternyata
+  kode mati di sumber (`MAX_NEXUS_LEVEL = 5`), jadi katalog 1-5 Godot sudah paritas
+  dan dua klaim lama di peta dikoreksi (lihat "Slice 9bv15" paling bawah).
+  `validate_project.py` **PASS 21493**; oracle/fixture/suite baru, `gdparse`,
+  `gdlint`, `gdformat --check`, `py_compile`, `git diff --check` **PASS**.
+  CI native PR #344 run **40546418575** / job **122338141803** **PASS 15m25s**
+  (`PASS: 1505208 checks; fixed ticks and source parity`) untuk head kode `d8e5f81`.
+- `validate_project.py` **PASS 21467** (run akhir setelah koreksi CI 9bv12-9bv14); `gdparse`,
+  `gdlint`, `gdformat --check` pada 11 `.gd` yang berubah, oracle/`py_compile`, dan
+  `git diff --check` **PASS**. Godot lokal tidak tersedia: tidak ada klaim verifikasi
+  runtime/visual lokal. Run native PR #344 pertama gagal karena konstanta
+  `DebuffFxPainter` dideklarasikan ulang di anak; koreksi memakai konstanta warisan.
+  Run kedua gagal pada inferensi tipe `ready` di scene suite; diperbaiki dengan tipe
+  `bool` eksplisit. Run final **40532617942** / job **122289231726** **PASS 10m30s**
+  (`PASS: 1505197 checks; fixed ticks and source parity`).
 
 - PR #334 sudah di-merge (`a134020`). 9aw WaveAnnouncer + PathPreview, 9ax ikon
   AchievementPopup, 9ay HitParticle, 9az FloatingText, dan 9ba panel
@@ -2243,9 +2275,12 @@ Sumbernya menggambar badan menara dari `towers/_bundle.py` (299 KB) lewat cache
 
 Batas yang diketahui:
 
-- Belum ada: kilat moncong Archer, kilat upgrade, lingkaran jangkauan versi sumber (Godot
-  tetap memakai busur jangkauan miliknya), peluru `Bullet.draw` (anak panah HD) dan aura sihir
-  kastil level 6 (nexus Godot berhenti di level 5).
+- **Dulu "Belum ada" — dikoreksi 9bv14 / 9bp / 9bv15:** kilat moncong Archer,
+  kilat upgrade, dan lingkaran jangkauan sumber kini diport di 9bv14; peluru
+  `Bullet.draw` di 9bp; aura sihir kastil level 6 ditutup di 9bv15. Catatan lama
+  mengira batas level 5 itu kekurangan rebuild; kenyataannya `MAX_NEXUS_LEVEL = 5`
+  ada di sumber Python juga, jadi cabang level 6 adalah kode mati dan Godot
+  (katalog 1-5) sudah paritas. Lihat "Slice 9bv15".
 - Hanya frame pertama tiap kunci cache yang dibake, seperti game; sprite menara yang berubah
   menurut sudut bidik di luar kunci (hadap kiri/kanan) tidak dicakup.
 - Painter tidak dieksekusi suite headless; hanya pemuatan sheet, cakupan definisi, jam, dan
@@ -4382,3 +4417,199 @@ Batas: tidak ada Godot lokal untuk runtime atau review visual. Tidak diklaim pix
   (`PASS: 1505168 checks; fixed ticks and source parity`). Percobaan CI pertama gagal hanya pada
   equality int/float fixture; perbandingan tes diperbaiki. Godot lokal/review visual tidak tersedia;
   bukan klaim pixel parity.
+
+## Slice 9bv12 — indikator hover slot bangun (layer 9bv12)
+
+Menutup cabang yang sengaja ditinggalkan 9bv11: `HoverIndicators._draw_slot_hover`.
+
+- Oracle `tests/slot_hover_source_oracle.py` menjalankan `draw` dan helper slot asli di
+  `draw_recorder.py`, termasuk `font_tiny` sumber (`get_font(20, "body")`). Fixture
+  `tests/fixtures/slot_hover_source.json` memaku **4 frame / 27 op**: dua denyut, posisi
+  slot pecahan (pembulatan `int` sumber), dan cabang tanpa hover. Tiap frame hidup berisi
+  enam cincin glow, kotak hint hitam alpha 200, border biru 1 px, dan teks `TAP TO BUILD`.
+- `scripts/ui/slot_hover_layout.gd` menyusun op murni; `PrototypeView` melukisnya tepat
+  sesudah `_draw_tower_hover()` dan sebelum HUD screen-space, sesuai urutan sumber.
+  `PrototypeScreen` membuat snapshot view-only: menara didahulukan, lalu slot biru kosong
+  dalam radius 20 px; shop/popup/forge dan struktur terseleksi mematikan hover. Tidak ada
+  perubahan routing input, seleksi, command, atau simulasi.
+- Bukti: `tests/slot_hover_draw_checks.gd` mereplay seluruh op dan wiring view (termasuk
+  anchor pecahan); suite terdaftar di `run_all.gd`, oracle dipanggil workflow, dan
+  `validate_project.py` mem-pin fixture, rumus sumber, urutan layer, serta gate screen.
+
+Batas: deteksi hover memakai mouse lokal arena seperti 9bv11; pratinjau slot terseleksi
+milik rebuild (cakram + busur Archer) tetap dipertahankan. Belum ada review visual di Godot.
+
+## Slice 9bv13 — indikator debuff pada jalur fallback unit (layer 9bv13)
+
+Menutup batas 9bq9/9bq10: marker hero tanpa atlas dan lingkaran minion tanpa atlas
+sebelumnya tidak melukis `_draw_tower_debuff_fx`.
+
+- `PrototypeView` menyimpan `pulse` dari `hero_anim.observe` saat sprite gagal, lalu
+  jalur marker melukis op debuff **sesudah bayangan tanah dan sebelum badan**, seperti
+  `Hero.draw`. `MinionView` menyimpan `anim` dari `minion_anim.observe`, lalu jalur
+  lingkaran melukis aura es (bila slow), op debuff (`include_rings=False`), baru badan,
+  seperti `Minion.draw`. Painter bersama `debuff_fx_painter.gd` dipakai ulang.
+- Flag view `force_art_fallback` hanya untuk suite scene: `painter_scene_checks.gd`
+  mematikan atlas, mengisi timer slow/burn pada satu hero dan satu minion hidup, lalu
+  membuktikan penghitung `hero_debuff_fx_draws` / `minion_debuff_fx_draws` naik. Semua
+  timer dikembalikan setelah pengecekan. Tidak ada state simulasi atau input yang ditambah.
+- `validate_project.py` mem-pin jam fallback, urutan lukis, dan bukti scene. Tidak ada
+  oracle/fixture baru: geometri indikator tetap dipaku fixture 9bq9/9bq10.
+
+## Slice 9bv14 — FX menara tertinggal dari 9bl (layer 9bv14)
+
+Menuntaskan tiga item "Belum ada" di peta 9bl: lingkaran jangkauan versi sumber,
+kilat upgrade, dan kilat moncong Archer. Peluru `Bullet.draw` sudah ditutup 9bp.
+
+- Oracle `tests/tower_fx_source_oracle.py` memanen tiga blok `if` asli dari
+  `_entity.py::Tower.draw` (`self.selected`, `upgrade_flash`, `shoot_flash_timer` Archer)
+  dan `get_archer_bow_position` asli berikut tabel `LEVEL_CONFIGS` dari
+  `towers/_bundle.py`. Fixture `tests/fixtures/tower_fx_source.json`: **7 frame / 14 op**,
+  termasuk range dua warna, upgrade alpha 100/200, moncong kanan/kiri pada level 3/6,
+  timer yang menghasilkan `size == 0`, kombinasi ketiga FX, dan cabang kosong.
+- `scripts/ui/tower_fx_layout.gd` memisahkan `before_ops` (range + kilat upgrade) dan
+  `after_ops` (dua cakram moncong), sesuai posisi sumber di sekitar badan menara.
+  `SiegeView` menggantikan busur range lama dengan op sumber, melukis kilat sebelum badan
+  dan moncong sesudah badan/ sebelum bar HP. Warna mengikuti `TOWER_TYPE_COLORS`.
+- Jam view `structure_anim.gd` kini mengamati kenaikan level dan aktivasi regen shield
+  untuk meng-arm `upgrade_flash = 30`; jam tembak lama tetap dipakai untuk moncong.
+  Semua itu view-only: tidak mengubah damage, cooldown, level, shield, input, atau atlas.
+- Bukti: `tests/tower_fx_draw_checks.gd` mereplay fixture dan wiring `SiegeView`;
+  `painter_scene_checks.gd` membuktikan range terseleksi dan moncong Archer yang menembak
+  benar-benar dilukis di scene hidup. Suite/oracle terdaftar, dan validator mem-pin blok
+  sumber, tabel tinggi busur, nilai `.tres` Archer level 1-6, serta penghitung scene.
+
+Batas: `_TOWER_SPRITE_CACHE` sumber tidak diport, jadi alpha moncong dihitung ulang tiap
+frame (sama dengan permukaan cache dingin); cakram dalam Godot di-blend normal, bukan
+ditimpa piksel SRCALPHA seperti pygame. Bukan klaim pixel parity.
+
+## Slice 9bv15 — rekonsiliasi aura sihir kastil level 6 (bukan gap migrasi)
+
+Menutup kandidat terakhir di peta. Dua catatan lama menyebut aura sihir kastil
+level 6 sebagai pekerjaan yang tertinggal karena nexus Godot hanya sampai level 5,
+seolah-olah itu keterbatasan rebuild. Audit sumber menunjukkan sebaliknya:
+
+- `_core.py` memaku `MAX_NEXUS_LEVEL = 5`, `MAX_CASTLE_LEVEL = MAX_NEXUS_LEVEL`,
+  `CASTLE_LEVELS = NEXUS_LEVELS`, dan `NEXUS_LEVELS` hanya punya kunci **1-5**.
+- `_entity.py::Castle.upgrade()` mengembalikan `False` begitu
+  `self.level >= MAX_NEXUS_LEVEL`; cheat sekalipun hanya menaikkan sampai 5.
+- Karena itu dua cabang `if lvl >= 6:` di `_render_dynamic_effects` dan
+  `_render_dynamic_effects_direct` (satu-satunya pemanggil
+  `_draw_castle_magic_aura`) serta cabang `else: _render_castle_lvl6(...)` pada
+  dispatcher `_render_castle_full` adalah kode mati di sumber: tidak pernah
+  tergambar di pygame.
+- Godot (`NexusUpgrades.LEVELS` 1-5, bake `CASTLE_LEVELS = (1, 2, 3, 4, 5)` di
+  9bl, manifest `castle.levels` 1-5) **sudah paritas** dengan sumber. Menaikkan
+  batas ke 6 akan mengubah simulasi dan membuat Godot divergen, jadi tidak
+  dilakukan (di luar scope dan dilarang).
+
+Bukti dipaku, bukan sekadar narasi. Oracle
+`tests/castle_aura_reach_source_oracle.py` memanen fakta di atas dengan `ast`
+dan mengeksekusi badan `Castle.upgrade` asli pada stub: `upgrade_walk` naik
+1->5 lalu empat kali `False` (fixture
+`tests/fixtures/castle_aura_reach_source.json`). Suite native
+`tests/castle_aura_reach_checks.gd` (terdaftar di `run_all.gd`) mereplay fixture
+dan memeriksa katalog `.tres` serta manifest bake Godot. `validate_project.py`
+mem-pin bahwa fixture tidak drift dari sumber, kedua klaim PETA dikoreksi, dan
+tidak ada `nexus_level_6.tres`. Oracle dijalankan di workflow CI.
+
+Batas 9bv15: hanya rekonsiliasi dan bukti (oracle, fixture, suite, pin
+validator, dokumen). Aura sihir kastil level 6 adalah kode mati di sumber,
+jadi tidak ada painter baru, tidak ada perubahan `.tres`/atlas, dan tidak ada
+perubahan simulasi, damage, cooldown, input, atau batas level. Ini **bukan gap
+migrasi**; Godot sudah paritas. Bukan klaim pixel parity; review visual tetap
+perlu.
+
+## Slice 9bv16 — realm nyxareth mengikuti ukuran layar hidup
+
+`bosses/level17.py::_draw_astro_realm_bg` memanggil `surface.get_size()` tiap
+frame, jadi bintang membungkus pada lebar permukaan render yang sebenarnya.
+Oracle `nyxareth_realm_draw_source_oracle.py` sudah sejak 9bq3 merekam frame
+`wide_display` **1560x720** selain enam frame arena 1280x720, dan
+`nyxareth_realm_layout.gd::ops(timer, phase, size)` sudah menerima `size`.
+Kekurangannya murni di wiring: `PrototypeView` selalu meneruskan konstanta
+`SCREEN_SIZE`, jadi layar yang dilebarkan tetap menggambar bintang 1280 px.
+
+Perbaikan 9bv16 (view-only):
+
+- `NyxarethRealmLayout.size_for_viewport()` mengubah ukuran viewport menjadi
+  `Vector2i`, dengan fallback ke `SCREEN_SIZE` bila viewport nol/negatif (node
+  lepas, headless). Konstanta 1280x720 tetap menjadi default bake.
+- `PrototypeView._draw()` menyegarkan `realm_screen_size` dari
+  `get_viewport_rect().size` sebelum menggambar; `nyxareth_realm_draw_ops()`
+  meneruskannya ke layout. `stretch/aspect="expand"` di `project.godot` berarti
+  viewport sungguh melebar, sama seperti `surface.get_size()` di pygame.
+- `tests/realm_viewport_checks.gd` (terdaftar di `run_all.gd`) mereplay frame
+  `wide_display` lewat layout **dan** view, membuktikan fill `[0,0,1560,720]`,
+  perbedaan bintang terhadap frame arena, serta fallback viewport nol. Suite 9bq3
+  lama tetap membuktikan tujuh frame 109 op.
+
+Batas: ini ukuran lapisan, bukan klaim pixel parity AA; tidak ada perubahan
+simulasi, timer skill, damage, input, atau atlas.
+
+## Slice 9bv17 — font `body_bold` / `body_medium` sampai ke Godot
+
+Catatan berulang di 9bb/9bd/9bv1–9bv5: `_render.py::_STYLE_FONT_MAP`
+memetakan `title`→Cinzel, `body`→Barlow-Regular, `body_medium`→Barlow-Medium,
+`body_semibold`→Barlow-SemiBold, `body_bold`→Barlow-Bold, dengan fallback
+`Barlow-Regular.ttf`. `godot_rebuild/assets/fonts/` hanya punya tiga font, jadi
+setiap op teks digambar dengan Barlow-SemiBold berapa pun `style`-nya.
+
+Perbaikan 9bv17 (aset + painter, tanpa simulasi):
+
+- `Barlow-Bold.ttf` dan `Barlow-Medium.ttf` disalin byte-identik dari
+  `assets/fonts/` (SHA-256 tercantum di fixture). Kelima TTF kini paritas.
+- `scripts/ui/source_fonts.gd` memuat peta style→file dan `for_style()`;
+  `_draw_intro_op()` memilih face sesuai `style` op. **Ascent tetap memakai
+  Barlow-SemiBold bersama**, sama seperti `measure` yang dipakai layout, supaya
+  seluruh `pos` hasil oracle tidak bergeser. Ops tanpa `style` juga tetap
+  SemiBold, jadi HUD lama tidak berubah.
+- Oracle `tests/source_fonts_source_oracle.py` memanen `_BODY_FONT_FILES`,
+  `_STYLE_FONT_MAP`, `_TITLE_FONT_FILE` dan literal fallback `_font_path` dengan
+  `ast`, lalu meng-hash kelima TTF sumber dan salinan Godot
+  (`tests/fixtures/source_fonts_source.json`). Suite
+  `tests/source_fonts_checks.gd` mereplay peta itu, memeriksa `for_style()`
+  untuk kelima style plus style asing, dan membandingkan
+  `FileAccess.get_sha256()` asli. Oracle dijalankan di workflow CI.
+
+Batas: metrik/AA font Godot tetap berbeda dari pygame (posisi bisa bergeser
+beberapa piksel); yang tertutup adalah **pemilihan family/weight**, bukan
+klaim pixel parity. Tidak ada perubahan damage, cooldown, input, atau atlas.
+
+## Sisa setelah 9bv12–9bv14 (diperbarui 9bv15)
+
+- **Aura sihir kastil level 6 — ditutup 9bv15, bukan gap migrasi.** Lihat
+  "Slice 9bv15" di atas: batas level 5 ada di sumber Python
+  (`MAX_NEXUS_LEVEL = 5`), jadi katalog 1-5 di Godot sudah paritas dan
+  menaikkannya justru akan divergen.
+- **Ditutup 9bv16:** realm nyxareth tidak lagi terkunci 1280 px (lihat
+  "Slice 9bv16").
+- **Ditutup sebagian 9bv17:** font `Barlow-Bold` / `Barlow-Medium` sudah ada dan
+  painter memakai face sesuai `style`. Yang tersisa adalah **metrik/AA** font Godot
+  yang memang berbeda dari pygame (pergeseran beberapa piksel), bukan family/weight.
+- Divergensi lain yang sudah dicatat dan sengaja dipertahankan: panel taktis
+  mengambang, aura hasil bake yang tidak ikut tergelapkan, sprite menara yang
+  berubah di luar kunci cache, serta jejak hit/impact lama.
+- Review interaktif/visual di Godot masih perlu Anda lakukan. Percobaan instalasi
+  lokal 4.7.2-stable pada 2026-10-28 gagal karena koneksi sandbox ke host aset rilis
+  GitHub (`release-assets.githubusercontent.com`) ditutup; tidak ada binary Godot
+  lokal, screenshot, atau hasil pixel-diff dari sandbox. CI native yang memakai
+  Godot 4.7.2-stable tetap lulus, tetapi suite headless bukan bukti kesamaan visual.
+- **Tidak ada lagi item migrasi kode produksi yang belum selesai** menurut peta ini.
+  Sisa di atas adalah divergensi yang diterima atau pekerjaan review pengguna.
+
+## Verifikasi Godot lokal — 2026-10-28
+
+- Workflow CI mematok Godot **4.7.2-stable**. Instalasi lokal dicoba dari aset
+  rilis resmi di GitHub; resolusi unduhan diarahkan ke `release-assets.githubusercontent.com`
+  dan TLS berakhir dengan `SSL_ERROR_SYSCALL` pada koneksi sandbox. Binary tidak
+  berhasil dipasang; tidak ada pengujian engine lokal atau pengambilan screenshot.
+- Pengganti yang tersedia adalah CI native PR #344: `gh pr checks 344` **PASS**
+  (run `40626178523`, job `122611516597`, 15m25s); run test headless sebelumnya
+  mencatat `PASS: 1505259 checks; fixed ticks and source parity`. Ini memverifikasi
+  import/native suites dan kontrak replay, bukan kesamaan piksel pada tampilan
+  interaktif.
+- Jadi status visual tetap **belum terverifikasi**: perlu jalankan proyek di Godot
+  4.7.2-stable pada mesin yang dapat mengunduh engine, bandingkan adegan dengan
+  pygame pada ukuran viewport yang sama, dan tinjau divergensi yang diterima di
+  atas. Jangan menyebut migrasi pixel-identik sebelum review itu selesai.

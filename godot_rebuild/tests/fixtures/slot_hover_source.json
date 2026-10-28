@@ -1,0 +1,487 @@
+{
+  "frames": [
+    {
+      "name": "slot_hover_top_lane",
+      "ops": [
+        {
+          "center": [
+            245,
+            210
+          ],
+          "color": [
+            100,
+            200,
+            255,
+            12
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 32,
+          "width": 0
+        },
+        {
+          "center": [
+            245,
+            210
+          ],
+          "color": [
+            100,
+            200,
+            255,
+            25
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 29,
+          "width": 0
+        },
+        {
+          "center": [
+            245,
+            210
+          ],
+          "color": [
+            100,
+            200,
+            255,
+            38
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 26,
+          "width": 0
+        },
+        {
+          "center": [
+            245,
+            210
+          ],
+          "color": [
+            100,
+            200,
+            255,
+            50
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 23,
+          "width": 0
+        },
+        {
+          "center": [
+            245,
+            210
+          ],
+          "color": [
+            100,
+            200,
+            255,
+            63
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 20,
+          "width": 0
+        },
+        {
+          "center": [
+            245,
+            210
+          ],
+          "color": [
+            100,
+            200,
+            255,
+            76
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 17,
+          "width": 0
+        },
+        {
+          "color": [
+            0,
+            0,
+            0,
+            200
+          ],
+          "kind": "rect",
+          "mult": 255,
+          "radius": 3,
+          "rect": [
+            195,
+            174,
+            100,
+            18
+          ],
+          "width": 0
+        },
+        {
+          "color": [
+            100,
+            200,
+            255,
+            255
+          ],
+          "kind": "rect",
+          "mult": 255,
+          "radius": 3,
+          "rect": [
+            195,
+            174,
+            100,
+            18
+          ],
+          "width": 1
+        },
+        {
+          "color": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "kind": "text",
+          "mult": 255,
+          "pos": [
+            179,
+            173
+          ],
+          "size": 20,
+          "style": "body",
+          "text": "TAP TO BUILD"
+        }
+      ],
+      "state": {
+        "animation_time": 42,
+        "x": 245,
+        "y": 210
+      }
+    },
+    {
+      "name": "slot_hover_low_pulse",
+      "ops": [
+        {
+          "center": [
+            895,
+            505
+          ],
+          "color": [
+            100,
+            200,
+            255,
+            7
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 32,
+          "width": 0
+        },
+        {
+          "center": [
+            895,
+            505
+          ],
+          "color": [
+            100,
+            200,
+            255,
+            14
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 29,
+          "width": 0
+        },
+        {
+          "center": [
+            895,
+            505
+          ],
+          "color": [
+            100,
+            200,
+            255,
+            22
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 26,
+          "width": 0
+        },
+        {
+          "center": [
+            895,
+            505
+          ],
+          "color": [
+            100,
+            200,
+            255,
+            29
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 23,
+          "width": 0
+        },
+        {
+          "center": [
+            895,
+            505
+          ],
+          "color": [
+            100,
+            200,
+            255,
+            36
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 20,
+          "width": 0
+        },
+        {
+          "center": [
+            895,
+            505
+          ],
+          "color": [
+            100,
+            200,
+            255,
+            44
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 17,
+          "width": 0
+        },
+        {
+          "color": [
+            0,
+            0,
+            0,
+            200
+          ],
+          "kind": "rect",
+          "mult": 255,
+          "radius": 3,
+          "rect": [
+            845,
+            469,
+            100,
+            18
+          ],
+          "width": 0
+        },
+        {
+          "color": [
+            100,
+            200,
+            255,
+            255
+          ],
+          "kind": "rect",
+          "mult": 255,
+          "radius": 3,
+          "rect": [
+            845,
+            469,
+            100,
+            18
+          ],
+          "width": 1
+        },
+        {
+          "color": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "kind": "text",
+          "mult": 255,
+          "pos": [
+            829,
+            468
+          ],
+          "size": 20,
+          "style": "body",
+          "text": "TAP TO BUILD"
+        }
+      ],
+      "state": {
+        "animation_time": 117,
+        "x": 895,
+        "y": 505
+      }
+    },
+    {
+      "name": "slot_hover_fractional_position",
+      "ops": [
+        {
+          "center": [
+            512,
+            318
+          ],
+          "color": [
+            100,
+            200,
+            255,
+            17
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 32,
+          "width": 0
+        },
+        {
+          "center": [
+            512,
+            318
+          ],
+          "color": [
+            100,
+            200,
+            255,
+            35
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 29,
+          "width": 0
+        },
+        {
+          "center": [
+            512,
+            318
+          ],
+          "color": [
+            100,
+            200,
+            255,
+            52
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 26,
+          "width": 0
+        },
+        {
+          "center": [
+            512,
+            318
+          ],
+          "color": [
+            100,
+            200,
+            255,
+            70
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 23,
+          "width": 0
+        },
+        {
+          "center": [
+            512,
+            318
+          ],
+          "color": [
+            100,
+            200,
+            255,
+            87
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 20,
+          "width": 0
+        },
+        {
+          "center": [
+            512,
+            318
+          ],
+          "color": [
+            100,
+            200,
+            255,
+            105
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 17,
+          "width": 0
+        },
+        {
+          "color": [
+            0,
+            0,
+            0,
+            200
+          ],
+          "kind": "rect",
+          "mult": 255,
+          "radius": 3,
+          "rect": [
+            462,
+            282,
+            100,
+            18
+          ],
+          "width": 0
+        },
+        {
+          "color": [
+            100,
+            200,
+            255,
+            255
+          ],
+          "kind": "rect",
+          "mult": 255,
+          "radius": 3,
+          "rect": [
+            462,
+            282,
+            100,
+            18
+          ],
+          "width": 1
+        },
+        {
+          "color": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "kind": "text",
+          "mult": 255,
+          "pos": [
+            446,
+            281
+          ],
+          "size": 20,
+          "style": "body",
+          "text": "TAP TO BUILD"
+        }
+      ],
+      "state": {
+        "animation_time": 301,
+        "x": 512.75,
+        "y": 318.25
+      }
+    },
+    {
+      "name": "no_slot_hover",
+      "ops": [],
+      "state": null
+    }
+  ],
+  "source": "ui_components/_bundle.py::HoverIndicators"
+}

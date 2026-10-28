@@ -175,6 +175,12 @@ func _process(_delta: float) -> void:
 	_update_side_panel(world, hero_panel_state, build_popup_state)
 	# Layer 9bv11: read-only source tower-hover drawing; this snapshot does not route input.
 	arena.set("tower_hover_state", _tower_hover_state(world, match_session, build_popup_state))
+	# Layer 9bv12: source gives towers priority over an overlapping slot hover.
+	var tower_hover_state: Dictionary = arena.get("tower_hover_state")
+	arena.set(
+		"slot_hover_state",
+		_slot_hover_state(world, match_session, build_popup_state, tower_hover_state)
+	)
 	if forge_panel != null and forge_panel.visible:
 		forge_panel.refresh()
 	if hero_shop_panel != null and hero_shop_panel.visible:
@@ -584,6 +590,40 @@ func _tower_hover_state(
 			"damage": data.damage,
 			"kills": tower.kills,
 			"color": color,
+		}
+	return {}
+
+
+## Layer 9bv12: view-only source build-slot hover state. Source `HoverIndicators.update`
+## checks live towers first, then empty blue slots within 20 px, and suppresses both
+## while a shop/build popup or structure popup is open. No input or simulation write here.
+func _slot_hover_state(
+	world: Prototype, current: PrototypeSession, build_state: Dictionary, tower_state: Dictionary
+) -> Dictionary:
+	if (
+		not world.is_running()
+		or not build_state.is_empty()
+		or not tower_state.is_empty()
+		or (hero_shop_panel != null and hero_shop_panel.visible)
+		or (forge_panel != null and forge_panel.visible)
+	):
+		return {}
+	for value in world.structures:
+		var popup_target := value as Structure
+		if popup_target != null and popup_target.id == current.selected_id:
+			return {}
+	var mouse := Vector2(arena.get_local_mouse_position())
+	if not Rect2(Vector2.ZERO, Vector2(1280, 720)).has_point(mouse):
+		return {}
+	for slot in world.slots:
+		if slot.team != world.BLUE or slot.structure_id != -1:
+			continue
+		if slot.position.distance_to(mouse) > 20.0:
+			continue
+		return {
+			"x": slot.position.x,
+			"y": slot.position.y,
+			"animation_time": world.tick_count,
 		}
 	return {}
 

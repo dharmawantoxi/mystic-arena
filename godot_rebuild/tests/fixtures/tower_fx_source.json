@@ -1,0 +1,389 @@
+{
+  "bow_heights": {
+    "1": 38,
+    "2": 42,
+    "3": 46,
+    "4": 52,
+    "5": 56,
+    "6": 62
+  },
+  "frames": [
+    {
+      "name": "selected_archer",
+      "ops": [
+        {
+          "center": [
+            360,
+            330
+          ],
+          "color": [
+            100,
+            220,
+            120,
+            40
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 180,
+          "width": 0
+        },
+        {
+          "center": [
+            360,
+            330
+          ],
+          "color": [
+            100,
+            220,
+            120,
+            150
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 180,
+          "width": 2
+        }
+      ],
+      "state": {
+        "bow_platform_height": 38,
+        "color": [
+          100,
+          220,
+          120
+        ],
+        "level": 1,
+        "range": 180,
+        "selected": true,
+        "shoot_flash_timer": 0,
+        "target_x": null,
+        "tower_type": "archer",
+        "upgrade_flash": 0,
+        "x": 360,
+        "y": 330
+      }
+    },
+    {
+      "name": "selected_cannon_upgrade",
+      "ops": [
+        {
+          "center": [
+            895,
+            505
+          ],
+          "color": [
+            200,
+            100,
+            60,
+            40
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 205,
+          "width": 0
+        },
+        {
+          "center": [
+            895,
+            505
+          ],
+          "color": [
+            200,
+            100,
+            60,
+            150
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 205,
+          "width": 2
+        },
+        {
+          "center": [
+            895,
+            505
+          ],
+          "color": [
+            255,
+            255,
+            200,
+            100
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 30,
+          "width": 0
+        }
+      ],
+      "state": {
+        "bow_platform_height": 52,
+        "color": [
+          200,
+          100,
+          60
+        ],
+        "level": 4,
+        "range": 205,
+        "selected": true,
+        "shoot_flash_timer": 0,
+        "target_x": null,
+        "tower_type": "cannon",
+        "upgrade_flash": 15,
+        "x": 895,
+        "y": 505
+      }
+    },
+    {
+      "name": "archer_muzzle_right",
+      "ops": [
+        {
+          "center": [
+            424,
+            283
+          ],
+          "color": [
+            255,
+            240,
+            150,
+            120
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 10,
+          "width": 0
+        },
+        {
+          "center": [
+            424,
+            283
+          ],
+          "color": [
+            255,
+            255,
+            200,
+            200
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 5,
+          "width": 0
+        }
+      ],
+      "state": {
+        "bow_platform_height": 46,
+        "color": [
+          100,
+          220,
+          120
+        ],
+        "level": 3,
+        "range": 200,
+        "selected": false,
+        "shoot_flash_timer": 8,
+        "target_x": 700,
+        "tower_type": "archer",
+        "upgrade_flash": 0,
+        "x": 420,
+        "y": 310
+      }
+    },
+    {
+      "name": "archer_muzzle_left_low",
+      "ops": [
+        {
+          "center": [
+            890,
+            467
+          ],
+          "color": [
+            255,
+            240,
+            150,
+            60
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 4,
+          "width": 0
+        },
+        {
+          "center": [
+            890,
+            467
+          ],
+          "color": [
+            255,
+            255,
+            200,
+            100
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 2,
+          "width": 0
+        }
+      ],
+      "state": {
+        "bow_platform_height": 62,
+        "color": [
+          100,
+          220,
+          120
+        ],
+        "level": 6,
+        "range": 230,
+        "selected": false,
+        "shoot_flash_timer": 4,
+        "target_x": 300,
+        "tower_type": "archer",
+        "upgrade_flash": 0,
+        "x": 895,
+        "y": 505
+      }
+    },
+    {
+      "name": "archer_muzzle_zero",
+      "ops": [],
+      "state": {
+        "bow_platform_height": 46,
+        "color": [
+          100,
+          220,
+          120
+        ],
+        "level": 3,
+        "range": 200,
+        "selected": false,
+        "shoot_flash_timer": 1,
+        "target_x": 700,
+        "tower_type": "archer",
+        "upgrade_flash": 0,
+        "x": 420,
+        "y": 310
+      }
+    },
+    {
+      "name": "archer_all_fx",
+      "ops": [
+        {
+          "center": [
+            640,
+            360
+          ],
+          "color": [
+            100,
+            220,
+            120,
+            40
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 190,
+          "width": 0
+        },
+        {
+          "center": [
+            640,
+            360
+          ],
+          "color": [
+            100,
+            220,
+            120,
+            150
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 190,
+          "width": 2
+        },
+        {
+          "center": [
+            640,
+            360
+          ],
+          "color": [
+            255,
+            255,
+            200,
+            200
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 30,
+          "width": 0
+        },
+        {
+          "center": [
+            635,
+            336
+          ],
+          "color": [
+            255,
+            240,
+            150,
+            120
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 10,
+          "width": 0
+        },
+        {
+          "center": [
+            635,
+            336
+          ],
+          "color": [
+            255,
+            255,
+            200,
+            200
+          ],
+          "kind": "circle",
+          "mult": 255,
+          "radius": 5,
+          "width": 0
+        }
+      ],
+      "state": {
+        "bow_platform_height": 42,
+        "color": [
+          100,
+          220,
+          120
+        ],
+        "level": 2,
+        "range": 190,
+        "selected": true,
+        "shoot_flash_timer": 8,
+        "target_x": 100,
+        "tower_type": "archer",
+        "upgrade_flash": 30,
+        "x": 640,
+        "y": 360
+      }
+    },
+    {
+      "name": "no_tower_fx",
+      "ops": [],
+      "state": {
+        "bow_platform_height": 38,
+        "color": [
+          100,
+          220,
+          120
+        ],
+        "level": 1,
+        "range": 180,
+        "selected": false,
+        "shoot_flash_timer": 0,
+        "target_x": null,
+        "tower_type": "archer",
+        "upgrade_flash": 0,
+        "x": 640,
+        "y": 360
+      }
+    }
+  ],
+  "source": "_entity.py::Tower.draw"
+}

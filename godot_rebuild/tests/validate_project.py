@@ -5932,6 +5932,177 @@ check('arena.set("tower_hover_state", _tower_hover_state(world, match_session, b
       and "set_tactical_cursor" not in _th_state,
       "9bv11 screen/test must wire mouse-only hover drawing without commands or simulation writes")
 
+# ── Layer 9bv12: read-only build-slot hover glow and hint ──
+from slot_hover_source_oracle import source_fixture as slot_hover_fixture
+_sh_path = ROOT / "tests/fixtures/slot_hover_source.json"
+_sh_layout = (ROOT / "scripts/ui/slot_hover_layout.gd").read_text(encoding="utf-8")
+_sh_checks = (ROOT / "tests/slot_hover_draw_checks.gd").read_text(encoding="utf-8")
+_sh_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_sh_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+_sh_bundle = (ROOT.parent / "ui_components" / "_bundle.py").read_text(encoding="utf-8")
+_sh_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+check('const SlotHoverDrawChecks = preload("res://tests/slot_hover_draw_checks.gd")' in ai_tests
+      and "SlotHoverDrawChecks.new().run(_check)" in ai_tests,
+      "9bv12 slot-hover source parity suite must run in the native suite")
+check("python godot_rebuild/tests/slot_hover_source_oracle.py" in workflow,
+      "9bv12 CI must record the source slot-hover painter")
+check(_sh_path.is_file(), "9bv12 slot-hover fixture must exist")
+if _sh_path.is_file():
+    _sh_fixture = json.loads(_sh_path.read_text(encoding="utf-8"))
+    _sh_frames = _sh_fixture["frames"]
+    check(slot_hover_fixture() == _sh_fixture,
+          "9bv12 slot-hover fixture must not drift from HoverIndicators.draw")
+    check(len(_sh_frames) == 4 and sum(len(frame["ops"]) for frame in _sh_frames) == 27
+          and [frame["name"] for frame in _sh_frames] == [
+              "slot_hover_top_lane", "slot_hover_low_pulse",
+              "slot_hover_fractional_position", "no_slot_hover"]
+          and _sh_fixture["source"] == "ui_components/_bundle.py::HoverIndicators",
+          "9bv12 fixture must pin three live slot-hover cases and the empty branch (27 ops)")
+check("static func ops(state: Dictionary, measure: Callable) -> Array:" in _sh_layout
+      and 'const HINT_FONT_STYLE := "body"' in _sh_layout
+      and 'const HINT_TEXT := "TAP TO BUILD"' in _sh_layout
+      and "sin(animation_time * 0.15) * 0.3 + 0.7" in _sh_layout
+      and "for radius in range(35, 15, -3):" in _sh_layout
+      and 'self.font_tiny = get_font(20, "body")' in _sh_core
+      and 'glow_surf = pygame.Surface((80, 80), pygame.SRCALPHA)' in _sh_bundle
+      and "alpha = int((35 - r) * 6 * pulse)" in _sh_bundle
+      and "hint_bg = pygame.Rect(slot['x'] - 50, slot['y'] - 36, 100, 18)" in _sh_bundle,
+      "9bv12 layout must preserve the six-ring pulse, rounded hint box, and source font")
+_sh_draw_start = _sh_view.find("func _draw() -> void:")
+_sh_draw_end = _sh_view.find("func _draw_structures() -> void:", _sh_draw_start)
+_sh_draw = _sh_view[_sh_draw_start:_sh_draw_end] if _sh_draw_start >= 0 else ""
+check('const SlotHoverLayout = preload("res://scripts/ui/slot_hover_layout.gd")' in _sh_view
+      and "var slot_hover_state: Dictionary = {}" in _sh_view
+      and "func slot_hover_draw_ops(" in _sh_view
+      and "SlotHoverLayout.ops(slot_hover_state, metrics)" in _sh_view
+      and "_draw_slot_hover()" in _sh_draw
+      and _sh_draw.index("_draw_tower_hover()")
+      < _sh_draw.index("_draw_slot_hover()")
+      < _sh_draw.index("draw_set_transform(Vector2.ZERO"),
+      "9bv12 PrototypeView must paint the read-only slot-hover snapshot after tower hover")
+_sh_state_start = _sh_screen.find("func _slot_hover_state(")
+_sh_state_end = _sh_screen.find("func _build_popup_state(", _sh_state_start)
+_sh_state = _sh_screen[_sh_state_start:_sh_state_end] if _sh_state_start >= 0 else ""
+check('"slot_hover_state",' in _sh_screen
+      and "_slot_hover_state(world, match_session, build_popup_state, tower_hover_state)" in _sh_screen
+      and "not tower_state.is_empty()" in _sh_state
+      and "slot.team != world.BLUE" in _sh_state
+      and "slot.structure_id != -1" in _sh_state
+      and "slot.position.distance_to(mouse) > 20.0" in _sh_state
+      and '"animation_time": world.tick_count' in _sh_state
+      and "if g.shop_open or g.popup_target or g.build_popup_slot:" in _sh_bundle
+      and "for slot in g.build_slots_blue:" in _sh_bundle
+      and "if dist <= 20:" in _sh_bundle
+      and "g.hovered_slot = slot" in _sh_bundle
+      and "slot_hover_state" in _sh_checks
+      and "Layout.ops(state, _fake_measure)" in _sh_checks
+      and "request_" not in _sh_state
+      and "set_tactical_cursor" not in _sh_state,
+      "9bv12 screen/test must wire mouse-only slot hover without commands or simulation writes")
+
+# ── Layer 9bv13: tower-debuff indicators on the art-fallback unit paths ──
+_fb_minion = (ROOT / "scenes/combat/minion_view.gd").read_text(encoding="utf-8")
+_fb_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_fb_scene = (ROOT / "tests/painter_scene_checks.gd").read_text(encoding="utf-8")
+check("var force_art_fallback := false" in _fb_minion
+      and "_minion_fallback_anim = anim" in _fb_minion
+      and "if force_art_fallback:" in _fb_minion
+      and "if not unit.is_hero:" in _fb_minion
+      and "DebuffFxPainter.paint(self, fallback_debuff_ops)" in _fb_minion
+      and "minion_debuff_draw_ops(unit, _minion_fallback_anim)" in _fb_minion
+      and "_hero_fallback_pulse = pulse" in _fb_view
+      and "if force_art_fallback:" in _fb_view
+      and "hero_debuff_draw_ops(hero, _hero_fallback_pulse)" in _fb_view
+      and "DebuffFxPainter.paint(self, fallback_debuff_ops)" in _fb_view
+      and 'const DebuffFxPainter = preload("res://scripts/ui/debuff_fx_painter.gd")' in _fb_minion
+      and 'const DebuffFxPainter = preload(' not in _fb_view,
+      "9bv13 marker hero and plain-circle minion must paint the shared debuff indicator")
+check("_check_fallback_debuff_fx(tree, view, world, hero, check)" in _fb_scene
+      and "view.force_art_fallback = true" in _fb_scene
+      and "var ready: bool = chosen_hero != null" in _fb_scene
+      and "A marker hero painted the source debuff indicator" in _fb_scene
+      and "A plain-circle minion painted the source debuff indicator" in _fb_scene,
+      "9bv13 live scene must prove both fallback paths draw the indicator")
+
+# ── Layer 9bv14: source selected range, upgrade flash, and archer muzzle glow ──
+from tower_fx_source_oracle import source_fixture as tower_fx_fixture
+_tf_path = ROOT / "tests/fixtures/tower_fx_source.json"
+_tf_layout = (ROOT / "scripts/ui/tower_fx_layout.gd").read_text(encoding="utf-8")
+_tf_checks = (ROOT / "tests/tower_fx_draw_checks.gd").read_text(encoding="utf-8")
+_tf_view = (ROOT / "scenes/siege/siege_view.gd").read_text(encoding="utf-8")
+_tf_anim = (ROOT / "scripts/ui/structure_anim.gd").read_text(encoding="utf-8")
+_tf_scene = (ROOT / "tests/painter_scene_checks.gd").read_text(encoding="utf-8")
+_tf_entity = (ROOT.parent / "_entity.py").read_text(encoding="utf-8")
+_tf_towers = (ROOT.parent / "towers" / "_bundle.py").read_text(encoding="utf-8")
+_tf_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+_tf_definition = (ROOT / "scripts/data/structure_definition.gd").read_text(encoding="utf-8")
+check('const TowerFxDrawChecks = preload("res://tests/tower_fx_draw_checks.gd")' in ai_tests
+      and "TowerFxDrawChecks.new().run(_check)" in ai_tests,
+      "9bv14 tower-FX source parity suite must run in the native suite")
+check("python godot_rebuild/tests/tower_fx_source_oracle.py" in workflow,
+      "9bv14 CI must record the source Tower.draw FX")
+check(_tf_path.is_file(), "9bv14 tower-FX fixture must exist")
+if _tf_path.is_file():
+    _tf_fixture = json.loads(_tf_path.read_text(encoding="utf-8"))
+    _tf_frames = _tf_fixture["frames"]
+    check(tower_fx_fixture() == _tf_fixture,
+          "9bv14 tower-FX fixture must not drift from Tower.draw")
+    check(len(_tf_frames) == 7 and sum(len(frame["ops"]) for frame in _tf_frames) == 14
+          and _tf_fixture["source"] == "_entity.py::Tower.draw"
+          and [frame["name"] for frame in _tf_frames] == [
+              "selected_archer", "selected_cannon_upgrade", "archer_muzzle_right",
+              "archer_muzzle_left_low", "archer_muzzle_zero", "archer_all_fx",
+              "no_tower_fx"],
+          "9bv14 fixture must pin range, upgrade, muzzle, and empty branches (14 ops)")
+    check(_tf_fixture["bow_heights"] == {
+        "1": 38, "2": 42, "3": 46, "4": 52, "5": 56, "6": 62},
+        "9bv14 fixture must pin the source archer bow heights")
+check("static func before_ops(state: Dictionary) -> Array:" in _tf_layout
+      and "static func after_ops(state: Dictionary) -> Array:" in _tf_layout
+      and "static func bow_position(state: Dictionary) -> Vector2i:" in _tf_layout
+      and "const BOW_HEIGHTS := [38, 42, 46, 52, 56, 62]" in _tf_layout
+      and "const RANGE_FILL_ALPHA := 40" in _tf_layout
+      and "const RANGE_BORDER_ALPHA := 150" in _tf_layout
+      and "const UPGRADE_FLASH_TICKS := 30" in _tf_layout,
+      "9bv14 layout must preserve the source range, upgrade, and muzzle formulas")
+check("x, y = self.x, self.y" in _tf_entity
+      and "if self.selected:" in _tf_entity
+      and "if self.upgrade_flash > 0:" in _tf_entity
+      and 'if self.shoot_flash_timer > 0 and self.tower_type == "archer":' in _tf_entity
+      and "self.upgrade_flash = 30" in _tf_entity
+      and "def get_archer_bow_position(tower_x, tower_y, level, face=1):" in _tf_towers
+      and "SCALE = 0.7" in _tf_towers
+      and "TOWER_TYPE_COLORS = {" in _tf_core,
+      "9bv14 oracle must harvest the real Tower.draw blocks and archer bow helper")
+check('@export var bow_platform_height: float = 38.0' in _tf_definition,
+      "9bv14 level-1 archer bow height keeps the source default")
+for _tf_level in range(2, 7):
+    _tf_res = (ROOT / ("data/structures/archer_level_%d.tres" % _tf_level)).read_text(encoding="utf-8")
+    _tf_match = re.search(r"bow_platform_height = ([0-9.]+)", _tf_res)
+    check(_tf_match is not None and int(float(_tf_match.group(1))) == [42, 46, 52, 56, 62][_tf_level - 2],
+          "9bv14 archer level %d bow height matches the source table" % _tf_level)
+check('const TowerFxLayout = preload("res://scripts/ui/tower_fx_layout.gd")' in _tf_view
+      and "var tower_range_fx_draws := 0" in _tf_view
+      and "var tower_upgrade_fx_draws := 0" in _tf_view
+      and "var tower_muzzle_fx_draws := 0" in _tf_view
+      and "func tower_fx_state(" in _tf_view
+      and "func _draw_tower_fx_before(" in _tf_view
+      and "func _draw_tower_fx_after(" in _tf_view
+      and "_draw_tower_fx_before(fx_state)" in _tf_view
+      and "_draw_tower_fx_after(fx_state)" in _tf_view
+      and "draw_arc(structure.position, data.attack_range_px" not in _tf_view,
+      "9bv14 SiegeView must replace the rebuild range arc with source FX around the body")
+check("const UPGRADE_FLASH_TICKS := 30" in _tf_anim
+      and 'entry["upgrade_flash"]' in _tf_anim
+      and "level > int(entry[\"level\"])" in _tf_anim
+      and "regen and not bool(entry[\"regen\"])" in _tf_anim,
+      "9bv14 structure clock must observe upgrades and regen-shield activation")
+check("view.tower_range_fx_draws > 0" in _tf_scene
+      and "view.tower_muzzle_fx_draws > 0" in _tf_scene
+      and "Tower-FX oracle pins 7 frames and 14 ops" in _tf_checks
+      and "Layout.ops(state)" in _tf_checks,
+      "9bv14 native suite and live scene must prove the tower FX painter")
+
 # ── Layer 9bv9: interactive BuildPopup and HeroPanel ──
 _pi_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
 _pi_side_panel = (ROOT / "scripts/ui/side_panel.gd").read_text(encoding="utf-8")
@@ -6660,6 +6831,158 @@ check('const RazPainter = preload("res://scripts/ui/hero_portrait_raz.gd")' in _
       and 'HeroPortrait.has_custom("raz")' in _raz_checks
       and '"unknown_portrait_test"' in _raz_checks,
       "9c215 native portrait suite must cover Raz and preserve unknown-id fallback")
+
+# ── Layer 9bv15: castle level-6 magic aura is dead code in the source, not a migration gap ──
+from castle_aura_reach_source_oracle import source_fixture as castle_aura_fixture
+_car_path = ROOT / "tests/fixtures/castle_aura_reach_source.json"
+_car_checks = (ROOT / "tests/castle_aura_reach_checks.gd").read_text(encoding="utf-8")
+_car_core = (ROOT.parent / "_core.py").read_text(encoding="utf-8")
+_car_entity = (ROOT.parent / "_entity.py").read_text(encoding="utf-8")
+_car_bake = (ROOT / "bake/bake_structure_atlas.py").read_text(encoding="utf-8")
+_car_upgrades = (ROOT / "scripts/match/nexus_upgrades.gd").read_text(encoding="utf-8")
+check("python godot_rebuild/tests/castle_aura_reach_source_oracle.py" in workflow,
+      "9bv15 CI must record the castle-aura reachability oracle")
+check(
+    'const CastleAuraReachChecks = preload("res://tests/castle_aura_reach_checks.gd")' in ai_tests
+    and "CastleAuraReachChecks.new().run(_check)" in ai_tests,
+    "9bv15 native reachability suite must run in run_all.gd",
+)
+check(_car_path.is_file(), "9bv15 castle-aura reach fixture must exist")
+if _car_path.is_file():
+    _car_fixture = json.loads(_car_path.read_text(encoding="utf-8"))
+    check(castle_aura_fixture() == _car_fixture,
+          "9bv15 castle-aura fixture must not drift from the Python source")
+    check(
+        _car_fixture.get("max_nexus_level") == 5
+        and _car_fixture.get("nexus_level_keys") == [1, 2, 3, 4, 5]
+        and _car_fixture.get("castle_dispatch_levels") == [1, 2, 3, 4, 5]
+        and _car_fixture.get("bake_castle_levels") == [1, 2, 3, 4, 5]
+        and _car_fixture.get("aura_guard") == "lvl >= 6"
+        and _car_fixture.get("aura_call_sites") == [
+            "_render_dynamic_effects", "_render_dynamic_effects_direct"]
+        and _car_fixture.get("upgrade_walk", {}).get("final_level") == 5
+        and _car_fixture.get("aura_reachable_in_source") is False,
+        "9bv15 fixture must pin the level-5 cap and unreachable aura",
+    )
+check(
+    "MAX_NEXUS_LEVEL = 5" in _car_core
+    and "MAX_CASTLE_LEVEL = MAX_NEXUS_LEVEL" in _car_core
+    and "CASTLE_LEVELS = NEXUS_LEVELS" in _car_core
+    and "if self.level >= MAX_NEXUS_LEVEL:" in _car_entity
+    and "if lvl >= 6:" in _car_entity
+    and "_draw_castle_magic_aura" in _car_entity
+    and "else:\n        _render_castle_lvl6(" in _car_entity
+    and "CASTLE_LEVELS = (1, 2, 3, 4, 5)" in _car_bake,
+    "9bv15 source keeps the level-5 cap and dead level-6 aura/citadel branches",
+)
+check(
+    _car_upgrades.count('preload("res://data/structures/nexus_level_') == 5
+    and "nexus_level_6.tres" not in _car_upgrades
+    and not (ROOT / "data/structures/nexus_level_6.tres").is_file(),
+    "9bv15 native nexus catalog stops at level 5 (already at parity)",
+)
+check(
+    "Castle aura reach fixture parses" in _car_checks
+    and "Executing the real Castle.upgrade walks 1->5 then stops" in _car_checks
+    and "Native NexusUpgrades.LEVELS has five entries" in _car_checks,
+    "9bv15 native suite replays the source cap and the native catalog",
+)
+check(
+    "Aura sihir kastil level 6 adalah kode mati di sumber" in _peta_doc
+    and "bukan gap migrasi" in _peta_doc
+    and "Slice 9bv15" in _peta_doc,
+    "9bv15 PETA must record the castle-aura reconciliation",
+)
+check(
+    "nexus Godot berhenti di level 5, jadi" not in _peta_doc,
+    "9bv15 PETA drops the stale claim that the level-5 cap is a Godot limitation",
+)
+
+# --- 9bv16: nyxareth realm follows the live render surface -------------------
+_nr_layout2 = (ROOT / "scripts/ui/nyxareth_realm_layout.gd").read_text(encoding="utf-8")
+_rv_checks = (ROOT / "tests/realm_viewport_checks.gd").read_text(encoding="utf-8")
+_nr_fixture = json.loads(
+    (ROOT / "tests/fixtures/nyxareth_realm_draw_source.json").read_text(encoding="utf-8")
+)
+check("static func size_for_viewport(viewport_size: Vector2) -> Vector2i:" in _nr_layout2
+      and "if size.x <= 0 or size.y <= 0:" in _nr_layout2
+      and "return SCREEN_SIZE" in _nr_layout2,
+      "9bv16 realm layout must fall back to the baked surface for a detached viewport")
+check("var realm_screen_size: Vector2i = NyxarethRealmLayout.SCREEN_SIZE" in _prototype_view_text
+      and "realm_screen_size = NyxarethRealmLayout.size_for_viewport(get_viewport_rect().size)"
+      in _prototype_view_text
+      and "NyxarethRealmLayout.ops(boss.active_skill_timer, boss.pulse, realm_screen_size)"
+      in _prototype_view_text,
+      "9bv16 the view must size the realm from the live viewport, not a hard-coded 1280")
+check("NyxarethRealmLayout.SCREEN_SIZE\n\t)" not in _prototype_view_text,
+      "9bv16 the view must not still pass SCREEN_SIZE straight into the realm ops")
+check([_f["screen"] for _f in _nr_fixture["frames"] if _f["label"] == "wide_display"]
+      == [[1560, 720]],
+      "9bv16 the source oracle must pin a widened 1560x720 display frame")
+check("const RealmViewportChecks = preload(\"res://tests/realm_viewport_checks.gd\")"
+      in ai_tests and "RealmViewportChecks.new().run(_check)" in ai_tests,
+      "9bv16 realm viewport suite must be registered in the native runner")
+check("The live view paints the wide star field from its viewport size" in _rv_checks
+      and "A detached or zero-sized viewport falls back to the baked default" in _rv_checks,
+      "9bv16 native suite must replay the wide display and the fallback")
+check("realm nyxareth mengikuti" in _peta_doc or "9bv16" in _peta_doc,
+      "9bv16 PETA must record the realm viewport fix")
+
+# --- 9bv17: source font styles ----------------------------------------------
+import hashlib
+import importlib.util
+_spec = importlib.util.spec_from_file_location(
+    "source_fonts_source_oracle", ROOT / "tests/source_fonts_source_oracle.py"
+)
+_sfo = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_sfo)
+_sf_lookup = (ROOT / "scripts/ui/source_fonts.gd").read_text(encoding="utf-8")
+_sf_checks = (ROOT / "tests/source_fonts_checks.gd").read_text(encoding="utf-8")
+_sf_fixture_path = ROOT / "tests/fixtures/source_fonts_source.json"
+check(_sf_fixture_path.is_file(), "9bv17 source font fixture must exist")
+if _sf_fixture_path.is_file():
+    _sf_fixture = json.loads(_sf_fixture_path.read_text(encoding="utf-8"))
+    check(_sfo.source_fixture() == _sf_fixture,
+          "9bv17 source font fixture must not drift from _render.py")
+    check(_sf_fixture["style_font_map"] == {
+              "title": "Cinzel.ttf",
+              "body": "Barlow-Regular.ttf",
+              "body_medium": "Barlow-Medium.ttf",
+              "body_semibold": "Barlow-SemiBold.ttf",
+              "body_bold": "Barlow-Bold.ttf",
+          },
+          "9bv17 oracle must pin all five _render.py font styles")
+    check(_sf_fixture["font_path_default"] == "Barlow-Regular.ttf"
+          and _sf_fixture["copies_match"] is True,
+          "9bv17 oracle must pin the _font_path fallback and byte-identical copies")
+    for _name, _digest in _sf_fixture["godot_font_sha256"].items():
+        _godot_ttf = ROOT / "assets/fonts" / _name
+        check(_godot_ttf.is_file()
+              and hashlib.sha256(_godot_ttf.read_bytes()).hexdigest() == _digest,
+              "9bv17 Godot font copy %s must match the source bytes" % _name)
+check("python godot_rebuild/tests/source_fonts_source_oracle.py" in workflow,
+      "9bv17 CI must run the source font oracle")
+check("const SourceFonts = preload(\"res://scripts/ui/source_fonts.gd\")"
+      in _prototype_view_text
+      and "if SourceFonts.has_style(style):" in _prototype_view_text
+      and "font = SourceFonts.for_style(style)" in _prototype_view_text
+      and "var ascent := BossFont.get_ascent(font_size)" in _prototype_view_text,
+      "9bv17 the text painter must pick the source face per style but keep the shared ascent")
+check("const STYLE_FILES := {" in _sf_lookup
+      and "static func has_style(style: String) -> bool:" in _sf_lookup
+      and "static func for_style(style: String) -> Font:" in _sf_lookup
+      and all("assets/fonts/%s" % _name in _sf_lookup for _name in
+              ("Barlow-Regular.ttf", "Barlow-Medium.ttf", "Barlow-SemiBold.ttf",
+               "Barlow-Bold.ttf", "Cinzel.ttf")),
+      "9bv17 native lookup must preload all five source faces")
+check("const SourceFontsChecks = preload(\"res://tests/source_fonts_checks.gd\")"
+      in ai_tests and "SourceFontsChecks.new().run(_check)" in ai_tests,
+      "9bv17 source font suite must be registered in the native runner")
+check("Native filename mirrors _font_path for" in _sf_checks
+      and "matches the source bytes" in _sf_checks,
+      "9bv17 native suite must replay the style map and the TTF hashes")
+check("Slice 9bv17" in _peta_doc,
+      "9bv17 PETA must record the font style migration")
 
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
