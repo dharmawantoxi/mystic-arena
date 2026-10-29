@@ -19,6 +19,7 @@ const ProgressStore = preload("res://scripts/match/level_progress_store.gd")
 const SaveSlotStore = preload("res://scripts/match/save_slot_store.gd")
 const LevelCatalog = preload("res://scripts/match/level_catalog.gd")
 const EndOverlayLayout = preload("res://scripts/ui/end_overlay_layout.gd")
+const MobileTouchHudLayout = preload("res://scripts/ui/mobile_touch_hud_layout.gd")
 ## The pause card's dim (PrototypeMatch.tscn); the result layout clears it.
 const PAUSE_DIM := Color(0.0392, 0.0392, 0.0784, 0.7843)
 const GameSpeedStore = preload("res://scripts/simulation/game_speed_store.gd")
@@ -47,6 +48,7 @@ var forge_panel: ItemForgePanel
 var hero_shop_panel: HeroShopPanel
 var hero_shop_toggle: Button
 var side_panel: SidePanel
+var mobile_pause_button: Button
 var ai_toggle: Button
 var migration_status: Label
 var touch_gestures = TouchGestureRuntime.new()
@@ -174,6 +176,7 @@ func _process(_delta: float) -> void:
 	var hero_panel_state := _hero_panel_state(world, match_session)
 	var build_popup_state := _build_popup_state(world, match_session)
 	_update_side_panel(world, hero_panel_state, build_popup_state)
+	_sync_mobile_pause_button(world)
 	# Layer 9bv11: read-only source tower-hover drawing; this snapshot does not route input.
 	arena.set("tower_hover_state", _tower_hover_state(world, match_session, build_popup_state))
 	# Layer 9bv12: source gives towers priority over an overlapping slot hover.
@@ -963,39 +966,113 @@ func _is_mobile_device() -> bool:
 	)
 
 
-## Replace the desktop QA toolbar with the source Android HUD profile.
-## With the source's wide-screen dock active, the panel owns pause/status/heroes/commands;
-## at 16:9, retain only compact touch controls and the map's own gold HUD.
+## Use the same compact Android touch HUD as `mobile.hud.TouchHUD`: on 16:9
+## only its source pause circle is visible (debug is opt-in in the pygame build).
+## A wide-screen source side dock owns pause/status/heroes/tactical controls instead.
 func _configure_mobile_hud(mobile: bool, docked: bool) -> void:
 	_mobile_hud_active = mobile
-	if not mobile:
-		return
 	var top_bar: Control = $HUD/TopBar
 	var names: Control = $HUD/TopBar/Row/Names
-	var row: HBoxContainer = $HUD/TopBar/Row
-	top_bar.visible = not docked
+	if not mobile:
+		top_bar.show()
+		names.show()
+		%GoldLabel.show()
+		%TickLabel.show()
+		%GameSpeedSelector.show()
+		%PauseButton.show()
+		%BackButton.show()
+		%TacticalToggleButton.show()
+		%CommandDockToggle.show()
+		if ai_toggle != null:
+			ai_toggle.show()
+		if migration_status != null:
+			migration_status.show()
+		if mobile_pause_button != null:
+			mobile_pause_button.hide()
+		return
+
+	_ensure_mobile_pause_button()
+	# The pygame mobile.hud doesn't show desktop QA controls: its gold stays on
+	# the map, and the pause target floats at the source-safe coordinates.
+	top_bar.hide()
 	names.hide()
-	%GoldLabel.hide()  # Opponent gold is desktop QA; the map paints player gold.
+	%GoldLabel.hide()
+	%TickLabel.hide()
+	%GameSpeedSelector.hide()
+	%PauseButton.hide()
+	%BackButton.hide()
+	%TacticalToggleButton.hide()
 	%CommandDockToggle.hide()
 	%BottomBar.hide()
-	%TacticalToggleButton.visible = not docked
-	%PauseButton.visible = not docked
-	%BackButton.visible = not docked
 	if ai_toggle != null:
 		ai_toggle.hide()
 	if migration_status != null:
 		migration_status.hide()
-	# Android has a landscaped safe-area; leave a 28 px touch-safe inset.
-	top_bar.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	top_bar.offset_left = 28.0
-	top_bar.offset_top = 10.0
-	top_bar.offset_right = -28.0
-	top_bar.offset_bottom = 72.0
-	row.add_theme_constant_override("separation", 8)
-	%GameSpeedSelector.custom_minimum_size = Vector2(72.0, 48.0)
-	%PauseButton.custom_minimum_size = Vector2(72.0, 48.0)
-	%TacticalToggleButton.custom_minimum_size = Vector2(88.0, 48.0)
-	%BackButton.custom_minimum_size = Vector2(72.0, 48.0)
+	mobile_pause_button.visible = not docked
+
+
+func _ensure_mobile_pause_button() -> void:
+	if mobile_pause_button == null or not is_instance_valid(mobile_pause_button):
+		mobile_pause_button = Button.new()
+		mobile_pause_button.name = "MobilePauseButton"
+		mobile_pause_button.text = "II"
+		mobile_pause_button.focus_mode = Control.FOCUS_NONE
+		mobile_pause_button.custom_minimum_size = Vector2(
+			MobileTouchHudLayout.BUTTON_SIZE, MobileTouchHudLayout.BUTTON_SIZE
+		)
+		mobile_pause_button.add_theme_font_override("font", UI_THEME.STRONG_FONT)
+		mobile_pause_button.add_theme_font_size_override("font_size", 22)
+		mobile_pause_button.add_theme_color_override("font_color", Color8(235, 235, 245))
+		mobile_pause_button.add_theme_color_override("font_hover_color", Color8(235, 235, 245))
+		mobile_pause_button.add_theme_color_override("font_pressed_color", Color8(235, 235, 245))
+		var normal := _mobile_pause_style(Color8(16, 14, 22, 205))
+		var pressed := _mobile_pause_style(Color8(60, 48, 20, 235))
+		mobile_pause_button.add_theme_stylebox_override("normal", normal)
+		mobile_pause_button.add_theme_stylebox_override("hover", normal)
+		mobile_pause_button.add_theme_stylebox_override("pressed", pressed)
+		mobile_pause_button.add_theme_stylebox_override("disabled", normal)
+		mobile_pause_button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		mobile_pause_button.pressed.connect(pause_match)
+		$HUD.add_child(mobile_pause_button)
+	var source_rect := MobileTouchHudLayout.pause_rect()
+	mobile_pause_button.position = Vector2(source_rect.position)
+	mobile_pause_button.size = Vector2(source_rect.size)
+
+
+func _mobile_pause_style(fill: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill
+	style.border_color = Color8(255, 200, 70)
+	style.set_border_width_all(3)
+	style.set_corner_radius_all(int(MobileTouchHudLayout.BUTTON_SIZE / 2))
+	style.shadow_color = Color8(255, 200, 70, 46)
+	style.shadow_size = 18
+	style.content_margin_left = 0.0
+	style.content_margin_top = 0.0
+	style.content_margin_right = 0.0
+	style.content_margin_bottom = 0.0
+	return style
+
+
+func _sync_mobile_pause_button(world: Prototype) -> void:
+	if mobile_pause_button == null or not is_instance_valid(mobile_pause_button):
+		return
+	var intro := world.level_intro_state(true)
+	var boss_intro := world.boss_intro_state()
+	var boss_death := world.boss_death_state()
+	var cinematic := (
+		bool(intro.get("active", false))
+		or bool(boss_intro.get("active", false))
+		or bool(boss_death.get("celebration_active", false))
+	)
+	var panel_active := side_panel != null and side_panel.is_active()
+	mobile_pause_button.visible = (
+		_mobile_hud_active
+		and not panel_active
+		and world.is_running()
+		and not get_tree().paused
+		and not cinematic
+	)
 
 
 func _set_tactical_panel_open(open: bool) -> void:
@@ -1354,6 +1431,8 @@ func _touch_forge_background(point: Vector2, button_index: int) -> void:
 
 
 func _touch_button_rect(button: Button) -> Rect2:
+	if button == mobile_pause_button:
+		return Rect2(MobileTouchHudLayout.hit_rect(MobileTouchHudLayout.pause_rect()))
 	var rect := button.get_global_rect().grow(TOUCH_PADDING)
 	if rect.size.x < TOUCH_TARGET_MIN:
 		rect = (

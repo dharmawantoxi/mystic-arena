@@ -9,6 +9,16 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	var screen = app.current_screen
 	screen.simulation.set_physics_process(false)
 	var arena: Node2D = screen.get_node("Arena")
+	var quality_runtime: Node = tree.root.get_node("AdaptiveQuality")
+	var previous_quality := String(quality_runtime.get("quality_level"))
+	quality_runtime.call("apply_quality", "low")
+	arena._sync_dynamic_map_quality()
+	check.call(
+		String(arena.dynamic_map.quality.get("level", "")) == "low",
+		"Android LOW quality profile reaches the live DynamicRenderer"
+	)
+	quality_runtime.call("apply_quality", previous_quality)
+	arena._sync_dynamic_map_quality()
 	var top_bar: Control = screen.get_node("HUD/TopBar")
 	var bottom_bar: Control = screen.get_node("HUD/BottomBar")
 	var tactical_panel: Control = screen.get_node("%TacticalPanel")
@@ -83,25 +93,39 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 
 	screen._configure_mobile_hud(true, true)
 	check.call(
-		not top_bar.visible and not bottom_bar.visible and not command_toggle.visible,
-		"Android wide-screen layout replaces the desktop bars with the source side dock"
+		(
+			not top_bar.visible
+			and not bottom_bar.visible
+			and not command_toggle.visible
+			and not screen.mobile_pause_button.visible
+		),
+		"Android wide-screen layout replaces desktop bars with the source side dock"
 	)
 	screen._configure_mobile_hud(true, false)
-	top_rect = top_bar.get_global_rect()
+	var mobile_pause: Button = screen.mobile_pause_button
+	var pause_rect := mobile_pause.get_global_rect()
+	var pause_hit_rect: Rect2 = screen._touch_button_rect(mobile_pause)
 	check.call(
 		(
-			top_bar.visible
+			not top_bar.visible
 			and not screen.get_node("HUD/TopBar/Row/Names").visible
 			and not screen.get_node("%GoldLabel").visible
-			and screen.get_node("%PauseButton").visible
-			and screen.get_node("%BackButton").visible
-			and screen.get_node("%TacticalToggleButton").visible
+			and not screen.get_node("%TickLabel").visible
+			and not screen.get_node("%GameSpeedSelector").visible
+			and not screen.get_node("%PauseButton").visible
+			and not screen.get_node("%BackButton").visible
+			and not screen.get_node("%TacticalToggleButton").visible
 			and not bottom_bar.visible
-			and top_rect.position.x >= 24.0
-			and top_rect.end.x <= 1256.0
+			and mobile_pause.visible
+			and pause_rect == Rect2(34.0, 158.0, 52.0, 52.0)
+			and pause_hit_rect == Rect2(20.0, 144.0, 80.0, 80.0)
 		),
-		"Android 16:9 fallback uses a compact safe-area toolbar with 48 px touch controls"
+		"Android 16:9 matches pygame: source-positioned pause circle and 80 px target only"
 	)
+	screen._touch_tap(pause_rect.get_center())
+	check.call(tree.paused, "Source-positioned Android pause button opens the pause screen")
+	screen.resume_match()
+	check.call(not tree.paused, "Android pause button resumes through the shared pause flow")
 
 	screen.get_node("%BackButton").pressed.emit()
 	await _settle(tree)

@@ -2,17 +2,18 @@
 
 Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
 
-## Status terkini — branch `arena/148a7e91-mystic-arena`
+## Status terkini — branch `arena/8c7765e2-mystic-arena`
 
-- PR #344 sudah di-merge ke `main` (merge commit `1f6c77d`), mencakup slice
-  9bv12–9bv17. Tidak ada pekerjaan itu yang diulang.
-- Slice UI terbaru: **9bv18 MainMenu**, **9bv19 HUD Android in-game**, dan **9bv20 roster hero awal**.
+- PR #345 dan #346 sudah di-merge ke `main`; kelanjutan visual Android dikerjakan di branch aktif ini.
+- Slice UI terbaru: **9bv18 MainMenu**, **9bv19 HUD Android in-game**, **9bv20 roster hero awal**, dan **9bv21 tombol Android 16:9 mengikuti pygame**.
   Alur menu tersambung; gameplay production sekarang mulai dengan roster hero player dan
   enemy kosong seperti pygame. Kaizen tetap auto-unlock permanen, tetapi baru muncul setelah
   dibeli dengan gold match; AI enemy juga tidak diberi hero cermin gratis. HUD Android memakai
-  dock kanan/toolbar touch-safe. `validate_project.py` **PASS 21604**; GDScript parse/lint/format,
-  source oracle, `py_compile`, dan `git diff --check` **PASS**. Godot native/screenshot belum
-  dijalankan; visual runtime perangkat masih belum diverifikasi.
+  dock kanan serta tombol pause 16:9 yang mengikuti geometri TouchHUD pygame. Renderer
+  dinamis juga kini mengikuti preset `AdaptiveQuality` (Android mulai LOW seperti pygame mobile,
+  desktop HIGH). `validate_project.py` **PASS 21613**; GDScript parse/lint/format dan
+  `tools/test_hud_layout.py` **PASS**. Godot native/screenshot belum dijalankan; visual runtime
+  perangkat masih belum diverifikasi.
 - PR #343 sudah di-merge: 9bv11 (cincin range + tooltip hover menara) dan slice
   sebelumnya ada di `main`; pekerjaan itu **tidak diulang** di sesi ini.
 - Milestone sesi ini: **9bv12** hover slot bangun, **9bv13** indikator debuff pada
@@ -4663,13 +4664,13 @@ Audit gameplay `PrototypeMatch` menemukan toolbar desktop (judul, AI, tombol Kon
 serta bar perintah bawah) tetap muncul berdampingan dengan dock Android yang sudah
 ada. `prototype_screen.gd` kini memakai viewport ekstra untuk dock hanya pada Android,
 iOS, atau layar sentuh. Pada landscape lebar, dock sumber menguasai jeda/status/hero/
-perintah taktis; toolbar desktop dan indikator QA disembunyikan. Pada 16:9 tanpa ruang
-dock, HUD memakai toolbar ringkas dengan inset sentuh 28 px, tombol minimal 48 px,
-dan gold tetap digambar di arena. Desktop tetap menggunakan toolbar desktop.
+perintah taktis; toolbar desktop dan indikator QA disembunyikan. Implementasi awal 16:9
+memakai toolbar touch-safe Godot, tetapi audit lanjutan menemukan tombolnya tidak sama
+dengan `mobile.hud.TouchHUD`; lihat koreksi sumber di slice **9bv21**. Desktop tetap
+menggunakan toolbar desktop.
 
-`prototype_layout_checks.gd` menambahkan pemeriksaan dua profil Android (docked dan
-16:9 fallback); `validate_project.py` **PASS 21604**. Parser/linter/formatter dan
-`git diff --check` **PASS**. Godot native dan screenshot Android belum tersedia di
+`prototype_layout_checks.gd` memeriksa profil docked dan 16:9; validasi akhir profil
+16:9 dikunci pada slice 9bv21. Godot native dan screenshot Android belum tersedia di
 sandbox, sehingga hasil visual perangkat masih perlu diuji langsung.
 
 ## Slice 9bv20 — roster hero awal sama dengan pygame
@@ -4689,3 +4690,19 @@ biaya gold, dan restart kembali ke roster kosong.
 
 `validate_project.py` **PASS 21604**; GDScript parse/lint/format, oracle, `py_compile`, dan
 `git diff --check` **PASS**. Suite native Godot belum dijalankan di sandbox.
+
+## Slice 9bv21 — tombol Android 16:9 mengikuti pygame
+
+Audit ulang setelah laporan perbedaan Android menemukan divergensi nyata: di 16:9 pygame
+hanya menampilkan tombol pause bundar di `(max(22, safe_left + 6), 158)`; FPS/debug
+bersifat opt-in dan kontrol taktis hanya ada pada side dock layar lebar. Godot sebelumnya
+menampilkan toolbar desktop berisi speed, pause persegi, taktik, dan menu.
+
+Godot kini menyembunyikan toolbar desktop saat touch/mobile; tanpa side dock ia menggambar
+satu tombol pause 52×52 pada koordinat sumber `(34, 158)`, dengan target sentuh 80×80, dan
+menghubungkannya ke alur pause/resume bersama. Saat side dock aktif, tombol ini disembunyikan
+karena panel mengambil alih pause, sesuai perilaku pygame. Scene check mengunci visibilitas,
+koordinat visual dan target sentuh, serta alur pause/resume. `validate_project.py` **PASS
+21613**; GDScript parse/lint/format dan `tools/test_hud_layout.py` **PASS**. Runtime
+Godot/screenshot Android masih perlu diverifikasi pada perangkat; karya ini mengoreksi
+perbedaan kontrol yang terbukti, bukan klaim pixel-parity untuk seluruh renderer.

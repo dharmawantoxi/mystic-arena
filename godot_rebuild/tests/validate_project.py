@@ -1046,9 +1046,13 @@ check('func _configure_mobile_hud(mobile: bool, docked: bool) -> void:' in shiel
       and '%BottomBar.hide()' in shield_screen
       and 'screen._configure_mobile_hud(true, true)' in mobile_hud_checks
       and 'screen._configure_mobile_hud(true, false)' in mobile_hud_checks
-      and 'Android wide-screen layout replaces the desktop bars' in mobile_hud_checks
-      and 'Android 16:9 fallback uses a compact safe-area toolbar' in mobile_hud_checks,
-      "Android in-game HUD must use the source side dock or compact touch-safe fallback, not desktop chrome")
+      and 'Android wide-screen layout replaces desktop bars with the source side dock' in mobile_hud_checks
+      and 'Android 16:9 matches pygame: source-positioned pause circle and 80 px target only' in mobile_hud_checks
+      and 'const MobileTouchHudLayout' in shield_screen
+      and 'MobileTouchHudLayout.pause_rect()' in shield_screen
+      and 'func dynamic_map_quality_level() -> String:' in (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+      and 'Android LOW quality profile reaches the live DynamicRenderer' in mobile_hud_checks,
+      "Android gameplay must use pygame mobile controls and LOW rendering profile, not desktop defaults")
 check(all(path in shield_screen for path in ('"cannon"', '"ice"', '"mage"'))
       and "request_regen_shield" in shield_screen and "request_castle_shield" in shield_screen,
       "Playable scene must route all source build and shield choices")
@@ -4106,7 +4110,8 @@ check('"ellipse":' in _dyn_painter and '"arc":' in _dyn_painter
 check(_art_base.index("draw_texture(wall_texture") < _art_base.index("_draw_map_dynamic()")
       < _art_base.index("_draw_map_overlay()")
       and "dynamic_map.draw(self, world.tick_count)" in _art_view
-      and "dynamic_map.configure(cached_river_theme)" in _art_view,
+      and "dynamic_map.configure(cached_river_theme, desired_quality)" in _art_view
+      and 'String(dynamic_map.quality.get("level", "high")) != desired_quality' in _art_view,
       "9d0 view must draw dynamic ops after the wall and before ambient tint")
 check("_replay_case(case_value as Dictionary, check)" in _dyn_checks
       and "_check_torch_case(case_value as Dictionary, check)" in _dyn_checks
