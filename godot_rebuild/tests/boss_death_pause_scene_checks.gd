@@ -36,6 +36,13 @@ func run(tree: SceneTree, check: Callable) -> void:
 		),
 		"playable match Space key skips LevelIntroScreen"
 	)
+	check.call(
+		world.player_roster().is_empty(), "Playable scene has no free starter before purchase"
+	)
+	check.call(
+		session.request_hero_buy("kaizen"), "Playable scene queues the owned starter purchase"
+	)
+	session._physics_process(1.0 / 60.0)
 	var hero: HeroState = world.blue_hero()
 	var boss = world._spawn_boss("gornak")
 	check.call(

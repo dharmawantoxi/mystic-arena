@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scenes/menu/main_menu.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/ui/menu_backdrop.gd" id="2"]
 [ext_resource type="Script" path="res://scripts/ui/source_ui_button.gd" id="3"]
 [ext_resource type="Script" path="res://scripts/ui/menu_ambient_fx.gd" id="4"]
+[ext_resource type="Script" path="res://scripts/ui/menu_foreground.gd" id="5"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -34,182 +35,176 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("4")
 
-[node name="Content" type="MarginContainer" parent="."]
+[node name="Ornaments" type="Control" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 72
-theme_override_constants/margin_top = 48
-theme_override_constants/margin_right = 72
-theme_override_constants/margin_bottom = 36
 mouse_filter = 2
+script = ExtResource("5")
 
-[node name="Column" type="VBoxContainer" parent="Content"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 20
-
-[node name="Eyebrow" type="Label" parent="Content/Column"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.4314, 0.7647, 1, 1)
-theme_override_font_sizes/font_size = 16
-text = "MYSTIC ARENA  /  NATIVE GODOT REBUILD"
-
-[node name="Space" type="Control" parent="Content/Column"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 60)
-mouse_filter = 2
-
-[node name="Title" type="Label" parent="Content/Column"]
+[node name="Title" type="Label" parent="."]
 unique_name_in_owner = true
-layout_mode = 2
-text = "MYSTIC
-ARENA"
-
-[node name="Subtitle" type="Label" parent="Content/Column"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Dunia yang sama. Fondasi yang baru."
-
-[node name="LevelPicker" type="HBoxContainer" parent="Content/Column"]
-layout_mode = 2
-theme_override_constants/separation = 14
-
-[node name="LevelLabel" type="Label" parent="Content/Column/LevelPicker"]
-layout_mode = 2
-text = "Level uji (belum parity penuh):"
-
-[node name="LevelChoice" type="OptionButton" parent="Content/Column/LevelPicker"]
-unique_name_in_owner = true
-layout_mode = 2
-custom_minimum_size = Vector2(330, 46)
-
-[node name="DifficultyChoice" type="OptionButton" parent="Content/Column/LevelPicker"]
-unique_name_in_owner = true
-layout_mode = 2
-custom_minimum_size = Vector2(180, 46)
-
-[node name="LevelStatsLabel" type="Label" parent="Content/Column/LevelPicker"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.5176, 0.5569, 0.6667, 1)
-theme_override_font_sizes/font_size = 14
-text = "NO STATS YET"
+layout_mode = 0
+text = "MYSTIC ARENA"
+horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Actions" type="HBoxContainer" parent="Content/Column"]
-layout_mode = 2
-theme_override_constants/separation = 12
-mouse_filter = 2
-
-[node name="HeroShopButton" type="Button" parent="Content/Column/Actions"]
+[node name="Subtitle" type="Label" parent="."]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(155, 60)
-layout_mode = 2
-text = "Hero Shop"
-script = ExtResource("3")
-source_style_key = "hero"
-icon_name = "coin"
-label_font_size = 18
+layout_mode = 0
+text = "B A T T L E   A R E N A"
+horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="PrototypeButton" type="Button" parent="Content/Column/Actions"]
+[node name="Scope" type="Label" parent="."]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(225, 60)
-layout_mode = 2
-text = "Pertandingan awal  →"
+layout_mode = 0
+text = "Dark Fantasy MOBA  •  Tower Defense"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ContinueButton" type="Button" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(300, 50)
+layout_mode = 0
+text = "CONTINUE"
 script = ExtResource("3")
 source_style_key = "continue"
 icon_name = "continue"
-label_font_size = 15
+label_font_size = 36
 
-[node name="SiegeButton" type="Button" parent="Content/Column/Actions"]
+[node name="PlayButton" type="Button" parent="."]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(175, 60)
-layout_mode = 2
-text = "Tower & nexus  →"
-script = ExtResource("3")
-source_style_key = "help"
-icon_name = "help"
-label_font_size = 15
-
-[node name="CombatButton" type="Button" parent="Content/Column/Actions"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(235, 60)
-layout_mode = 2
-text = "Laboratorium minion  →"
-script = ExtResource("3")
-source_style_key = "input"
-icon_name = "pad"
-label_font_size = 12
-
-[node name="PlayButton" type="Button" parent="Content/Column/Actions"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(150, 60)
-layout_mode = 2
-text = "Uji input"
+custom_minimum_size = Vector2(300, 50)
+layout_mode = 0
+text = "PLAY GAME"
 script = ExtResource("3")
 source_style_key = "play"
 icon_name = "play"
-label_font_size = 15
+label_font_size = 36
 
-[node name="QuitButton" type="Button" parent="Content/Column/Actions"]
+[node name="HeroShopButton" type="Button" parent="."]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(130, 60)
-layout_mode = 2
-text = "Keluar"
+custom_minimum_size = Vector2(360, 50)
+layout_mode = 0
+text = "HERO SHOP"
 script = ExtResource("3")
-source_style_key = "quit"
-icon_name = "quit"
-label_font_size = 16
+source_style_key = "hero"
+icon_name = "coin"
+label_font_size = 44
 
-[node name="SaveRow" type="HBoxContainer" parent="Content/Column"]
-layout_mode = 2
-theme_override_constants/separation = 14
-
-[node name="SaveGamesButton" type="Button" parent="Content/Column/SaveRow"]
+[node name="InputButton" type="Button" parent="."]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(190, 48)
-layout_mode = 2
-text = "Save Games"
+custom_minimum_size = Vector2(360, 50)
+layout_mode = 0
+text = "INPUT"
 script = ExtResource("3")
 source_style_key = "input"
-icon_name = "cloud"
-label_font_size = 15
+icon_name = "pad"
+label_font_size = 44
 
-[node name="SettingsButton" type="Button" parent="Content/Column/SaveRow"]
+[node name="HowToPlayButton" type="Button" parent="."]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(145, 48)
-layout_mode = 2
-text = "Settings"
+custom_minimum_size = Vector2(360, 50)
+layout_mode = 0
+text = "HOW TO PLAY"
+script = ExtResource("3")
+source_style_key = "help"
+icon_name = "help"
+label_font_size = 44
+
+[node name="SettingsButton" type="Button" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(360, 50)
+layout_mode = 0
+text = "SETTINGS"
 script = ExtResource("3")
 source_style_key = "settings"
 icon_name = "gear"
-label_font_size = 16
+label_font_size = 44
 
-[node name="ActiveSlotLabel" type="Label" parent="Content/Column/SaveRow"]
+[node name="CreditsButton" type="Button" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(360, 50)
+layout_mode = 0
+text = "CREDITS"
+script = ExtResource("3")
+source_style_key = "credits"
+icon_name = "star"
+label_font_size = 44
+
+[node name="QuitButton" type="Button" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(360, 50)
+layout_mode = 0
+text = "QUIT GAME"
+script = ExtResource("3")
+source_style_key = "quit"
+icon_name = "quit"
+label_font_size = 44
+
+[node name="InputStatus" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+text = "INPUT: KEYBOARD + MOUSE"
+
+[node name="Version" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+text = "v2.0  •  MOBA Tower Defense"
+horizontal_alignment = 1
+
+[node name="LevelPicker" type="HBoxContainer" parent="."]
+unique_name_in_owner = false
+visible = false
+layout_mode = 0
+
+[node name="LevelLabel" type="Label" parent="LevelPicker"]
+layout_mode = 2
+text = "Level"
+
+[node name="LevelChoice" type="OptionButton" parent="LevelPicker"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(330, 46)
+layout_mode = 2
+
+[node name="DifficultyChoice" type="OptionButton" parent="LevelPicker"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 46)
+layout_mode = 2
+
+[node name="LevelStatsLabel" type="Label" parent="LevelPicker"]
 unique_name_in_owner = true
 layout_mode = 2
+text = "NO STATS YET"
+
+[node name="LegacyControls" type="Control" parent="."]
+visible = false
+layout_mode = 0
+
+[node name="PrototypeButton" type="Button" parent="LegacyControls"]
+unique_name_in_owner = true
+text = "Prototype Test"
+
+[node name="MatchTestButton" type="Button" parent="LegacyControls"]
+unique_name_in_owner = true
+text = "Match Test"
+
+[node name="CombatButton" type="Button" parent="LegacyControls"]
+unique_name_in_owner = true
+text = "Minion Lab"
+
+[node name="SiegeButton" type="Button" parent="LegacyControls"]
+unique_name_in_owner = true
+text = "Siege Lab"
+
+[node name="SaveGamesButton" type="Button" parent="LegacyControls"]
+unique_name_in_owner = true
+text = "Save Games"
+
+[node name="ActiveSlotLabel" type="Label" parent="LegacyControls"]
+unique_name_in_owner = true
 text = "SAVE GAME 1"
-vertical_alignment = 1
-
-[node name="Scope" type="Label" parent="Content/Column"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_font_sizes/font_size = 17
-text = "REBUILD EKSPERIMENTAL · 54 konfigurasi level, belum parity penuh
-AI, boss, ekonomi dan progres development aktif; map/theme, reward dan save Python belum dipindahkan."
-
-[node name="Fill" type="Control" parent="Content/Column"]
-layout_mode = 2
-size_flags_vertical = 3
-mouse_filter = 2
-
-[node name="Footer" type="Label" parent="Content/Column"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.5176, 0.5569, 0.6667, 1)
-theme_override_font_sizes/font_size = 15
-text = "PROYEK BARU    /    TANPA DEPENDENCY MIGRASI LAMA                                       2D  ·  60 HZ  ·  COMPATIBILITY"

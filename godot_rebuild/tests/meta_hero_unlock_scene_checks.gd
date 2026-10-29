@@ -73,6 +73,10 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	var screen = app.current_screen
 	var world = screen.simulation.world
 	check.call(
+		world.player_roster().is_empty(),
+		"Permanent ownership does not auto-summon a hero at match startup"
+	)
+	check.call(
 		world.purchased_heroes == ["kaizen", "thorne", "gornak"],
 		"Saved permanent roster configures the playable match"
 	)

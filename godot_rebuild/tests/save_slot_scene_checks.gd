@@ -28,6 +28,26 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		"Scene fixture writes slot two"
 	)
 	menu.refresh_levels()
+	menu.get_node("%PlayButton").pressed.emit()
+	await _settle(tree)
+	var play_panel = menu.get_node("SaveSlotPanel")
+	check.call(play_panel.visible, "Play Game enters the source save-slot selection flow")
+	play_panel._slot_buttons[2].pressed.emit()
+	await _settle(tree)
+	check.call(
+		(
+			app.current_screen.name == "PrototypeMatch"
+			and app.current_screen.progress_path == Slots.slot_path(3, TEST_TEMPLATE)
+		),
+		"Choosing an empty save slot from Play Game starts a fresh source-parity match"
+	)
+	app.current_screen.get_node("%MenuButton").pressed.emit()
+	await _settle(tree)
+	menu = app.current_screen
+	check.call(menu.active_slot == 3, "Play Game retains its newly selected save slot")
+	Slots.delete_slot(3, TEST_TEMPLATE)
+	menu.refresh_levels()
+
 	menu.get_node("%SaveGamesButton").pressed.emit()
 	await _settle(tree)
 	var panel = menu.get_node("SaveSlotPanel")

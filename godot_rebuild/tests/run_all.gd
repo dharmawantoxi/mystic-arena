@@ -497,6 +497,7 @@ func _run() -> void:
 	_check(app.current_screen.name == "MainMenu", "splash skip hands over to the menu")
 	var backdrop = app.current_screen.get_node("Backdrop")
 	_check(backdrop.background_draws > 0, "The main menu draws the baked source background")
+	MenuArtChecks.new().run_scene(app.current_screen, _check)
 	await MenuAmbientChecks.new().run_scene(root.get_tree(), app.current_screen, _check)
 	await AudioSettingsSceneChecks.new().run(root.get_tree(), app, _check)
 	_check(app.current_screen.name == "MainMenu", "audio settings scene restores the menu")
@@ -513,8 +514,8 @@ func _run() -> void:
 	var menu_child_count: int = app.current_screen.get_child_count()
 	var menu_tree_count: int = root.get_tree().get_node_count()
 	for cycle in range(10):
-		app.current_screen.get_node("%PlayButton").pressed.emit()
-		app.current_screen.get_node("%PlayButton").pressed.emit()
+		app.current_screen.get_node("%MatchTestButton").pressed.emit()
+		app.current_screen.get_node("%MatchTestButton").pressed.emit()
 		await _settle()
 		_check(app.screen_root.get_child_count() == 1, "single match screen, cycle %d" % cycle)
 		_check(app.current_screen.name == "Match", "play opens match, cycle %d" % cycle)
@@ -1021,10 +1022,11 @@ func _test_prototype_scene(app: Node) -> void:
 			(
 				world.structures.size() == 2
 				and world.living_minion_count() == 0
-				and world.blue_hero() != null
+				and world.player_roster().is_empty()
+				and world._ai_roster().is_empty()
 				and world.economy.gold == [1000, 350]
 			),
-			"playable match starts empty with source budgets"
+			"playable match starts with empty hero rosters and source budgets"
 		)
 		var click := InputEventMouseButton.new()
 		click.button_index = MOUSE_BUTTON_LEFT

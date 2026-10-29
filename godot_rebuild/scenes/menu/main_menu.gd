@@ -21,7 +21,9 @@ const TopupClient = preload("res://scripts/net/topup_client.gd")
 const TopupPanel = preload("res://scripts/ui/topup_panel.gd")
 const SaveSlotPanel = preload("res://scripts/ui/save_slot_panel.gd")
 const AudioSettingsPanel = preload("res://scripts/ui/audio_settings_panel.gd")
+const SourceUiButton = preload("res://scripts/ui/source_ui_button.gd")
 
+const SOURCE_MENU_SIZE := Vector2(1280.0, 720.0)
 var slot_path_template := SaveSlotStore.PATH_TEMPLATE
 var progress_path := SaveSlotStore.current_path(slot_path_template)
 var active_slot := SaveSlotStore.get_current_slot()
@@ -32,6 +34,7 @@ var topup_panel: TopupPanel
 var save_slot_panel: SaveSlotPanel
 var audio_settings_panel: AudioSettingsPanel
 var _localization_runtime: Node
+var _play_after_slot_selection := false
 
 
 func _ready() -> void:
@@ -39,18 +42,34 @@ func _ready() -> void:
 	_localization_runtime = get_tree().root.get_node_or_null("Localization")
 	if is_instance_valid(_localization_runtime):
 		_localization_runtime.connect("language_changed", _refresh_localized_labels)
-	UI_THEME.title(%Title, 56)
-	UI_THEME.muted(%Subtitle)
+	UI_THEME.title(%Title, 72)
+	%Subtitle.add_theme_font_override("font", UI_THEME.STRONG_FONT)
+	%Subtitle.add_theme_font_size_override("font_size", 32)
+	%Subtitle.add_theme_color_override("font_color", Color8(150, 195, 255))
+	%Scope.add_theme_font_override("font", UI_THEME.BODY_FONT)
+	%Scope.add_theme_font_size_override("font_size", 22)
 	UI_THEME.muted(%Scope)
-	%PlayButton.pressed.connect(func() -> void: _click_and_emit(play_requested))
+	%InputStatus.add_theme_font_override("font", UI_THEME.BODY_FONT)
+	%InputStatus.add_theme_font_size_override("font_size", 20)
+	%InputStatus.add_theme_color_override("font_color", Color8(110, 200, 210))
+	%Version.add_theme_font_override("font", UI_THEME.BODY_FONT)
+	%Version.add_theme_font_size_override("font_size", 20)
+	UI_THEME.muted(%Version)
+	%PlayButton.pressed.connect(_open_new_game)
 	%QuitButton.pressed.connect(func() -> void: _click_and_emit(quit_requested))
 	%CombatButton.pressed.connect(func() -> void: _click_and_emit(combat_requested))
 	%SiegeButton.pressed.connect(func() -> void: _click_and_emit(siege_requested))
 	%PrototypeButton.pressed.connect(func() -> void: _click_and_start())
+	%MatchTestButton.pressed.connect(func() -> void: _click_and_emit(play_requested))
+	%ContinueButton.pressed.connect(_start_continue_level)
 	%HeroShopButton.pressed.connect(_open_hero_shop)
+	%InputButton.pressed.connect(_toggle_input_mode)
+	%HowToPlayButton.pressed.connect(_open_how_to_play)
+	%CreditsButton.pressed.connect(_open_credits)
 	%SaveGamesButton.pressed.connect(_open_save_slots)
 	%SettingsButton.pressed.connect(_open_audio_settings)
 	%LevelChoice.item_selected.connect(_update_level_stats_label)
+	resized.connect(_layout_source_menu)
 	var selected_from_path := SaveSlotStore.slot_for_path(progress_path, slot_path_template)
 	if selected_from_path > 0:
 		active_slot = selected_from_path
@@ -61,7 +80,156 @@ func _ready() -> void:
 	_refresh_localized_labels()
 	_update_active_slot_label()
 	refresh_levels()
-	%PrototypeButton.grab_focus()
+	_layout_source_menu()
+	%ContinueButton.grab_focus()
+
+
+func _process(_delta: float) -> void:
+	if not is_node_ready() or size.x <= 0.0 or size.y <= 0.0:
+		return
+	var fit := minf(size.x / SOURCE_MENU_SIZE.x, size.y / SOURCE_MENU_SIZE.y)
+	var origin := (size - SOURCE_MENU_SIZE * fit) * 0.5
+	var ornaments := get_node("Ornaments") as Control
+	var pulse := sin(float(ornaments.get("animation_time")) * 0.02) * 3.0
+	%Title.position.y = origin.y + (74.0 + pulse) * fit
+
+
+## Source `_draw_main_menu()` positions in its 1280x720 reference frame.
+func _layout_source_menu() -> void:
+	if not is_node_ready():
+		return
+	var fit := minf(size.x / SOURCE_MENU_SIZE.x, size.y / SOURCE_MENU_SIZE.y)
+	if fit <= 0.0:
+		return
+	var origin := (size - SOURCE_MENU_SIZE * fit) * 0.5
+	_place_source_control("Title", Rect2(190.0, 74.0, 900.0, 100.0), origin, fit)
+	_place_source_control("Subtitle", Rect2(470.0, 190.0, 340.0, 48.0), origin, fit)
+	_place_source_control("Scope", Rect2(280.0, 244.0, 720.0, 32.0), origin, fit)
+	_place_source_control("ContinueButton", Rect2(320.0, 311.0, 300.0, 50.0), origin, fit)
+	_place_source_control("PlayButton", Rect2(660.0, 311.0, 300.0, 50.0), origin, fit)
+	_place_source_control("HeroShopButton", Rect2(460.0, 364.0, 360.0, 50.0), origin, fit)
+	_place_source_control("InputButton", Rect2(460.0, 417.0, 360.0, 50.0), origin, fit)
+	_place_source_control("HowToPlayButton", Rect2(460.0, 470.0, 360.0, 50.0), origin, fit)
+	_place_source_control("SettingsButton", Rect2(460.0, 523.0, 360.0, 50.0), origin, fit)
+	_place_source_control("CreditsButton", Rect2(460.0, 576.0, 360.0, 50.0), origin, fit)
+	_place_source_control("QuitButton", Rect2(460.0, 629.0, 360.0, 50.0), origin, fit)
+	_place_source_control("InputStatus", Rect2(24.0, 692.0, 340.0, 24.0), origin, fit)
+	_place_source_control("Version", Rect2(420.0, 686.0, 440.0, 24.0), origin, fit)
+	for button_name in [
+		"ContinueButton",
+		"PlayButton",
+		"HeroShopButton",
+		"InputButton",
+		"HowToPlayButton",
+		"SettingsButton",
+		"CreditsButton",
+		"QuitButton",
+	]:
+		var button := get_node("%" + button_name) as Button
+		if button.has_method("set_label_font_size"):
+			var base_font := 36 if button_name in ["ContinueButton", "PlayButton"] else 44
+			button.call("set_label_font_size", maxi(8, roundi(float(base_font) * fit)))
+
+
+func _place_source_control(
+	node_name: String, base_rect: Rect2, origin: Vector2, fit: float
+) -> void:
+	var control := get_node("%" + node_name) as Control
+	control.position = origin + base_rect.position * fit
+	control.size = base_rect.size * fit
+	if control is Button:
+		(control as Button).custom_minimum_size = control.size
+
+
+func _toggle_input_mode() -> void:
+	var devices := Input.get_connected_joypads()
+	if devices.is_empty():
+		%InputStatus.text = "INPUT: KEYBOARD + MOUSE"
+		AudioRuntime.play("ui_error")
+		return
+	if %InputStatus.text.contains("CONTROLLER"):
+		%InputStatus.text = "INPUT: KEYBOARD + MOUSE"
+	else:
+		%InputStatus.text = "INPUT: CONTROLLER"
+	AudioRuntime.play("ui_click")
+
+
+func _open_how_to_play() -> void:
+	_show_info_dialog(
+		"HOW TO PLAY",
+		(
+			"OBJECTIVE\nDestroy the enemy castle before they destroy yours.\n\n"
+			+ "BUILDING TOWERS\nTap empty build slots (+) to build towers. Cost: 100 gold.\n\n"
+			+ "HEROES\nBuy heroes from Hero Shop. Select a hero, then tap an enemy to attack.\n\n"
+			+ "TACTICAL COMMANDS\nG = Gather heroes   ·   T = Protect tower   ·   C = Protect castle\n"
+			+ "B = Attack boss   ·   D = Attack top damage dealer\n\n"
+			+ "SKILLS & UPGRADES\nQ, W, E, R auto-cast near enemies. "
+			+ "Select towers, castle, or hero to upgrade."
+		)
+	)
+
+
+func _open_credits() -> void:
+	_show_info_dialog(
+		"CREDITS",
+		(
+			"Tower Defense Battle Arena\n\n"
+			+ "GAME DESIGN & PROGRAMMING\nDharmawan Toxi\n\n"
+			+ "ART DIRECTION\nDark Fantasy Vector Style\n\n"
+			+ "SOUND EFFECTS & MUSIC\nCustom SFX Library\n\n"
+			+ "SPECIAL THANKS\nPygame Community  •  Python 3.10+\n\n"
+			+ "Made with ♥ using Godot"
+		)
+	)
+
+
+func _show_info_dialog(title_text: String, body_text: String) -> void:
+	var old_overlay := get_node_or_null("MenuInfoOverlay")
+	if old_overlay != null:
+		old_overlay.queue_free()
+	var overlay := Control.new()
+	overlay.name = "MenuInfoOverlay"
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.z_index = 100
+	add_child(overlay)
+	var shade := ColorRect.new()
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0.02, 0.025, 0.06, 0.88)
+	shade.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.add_child(shade)
+	var card := PanelContainer.new()
+	card.set_anchors_preset(Control.PRESET_CENTER)
+	card.position = Vector2(-450.0, -250.0)
+	card.size = Vector2(900.0, 500.0)
+	overlay.add_child(card)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 18)
+	card.add_child(column)
+	var title := Label.new()
+	title.text = title_text
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UI_THEME.title(title, 34)
+	column.add_child(title)
+	var body := Label.new()
+	body.text = body_text
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	body.add_theme_font_size_override("font_size", 19)
+	body.add_theme_color_override("font_color", UI_THEME.BODY)
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(body)
+	var close := Button.new()
+	close.text = "BACK"
+	close.custom_minimum_size = Vector2(180.0, 48.0)
+	close.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	close.set_script(SourceUiButton)
+	close.set("source_style_key", "help")
+	close.set("icon_name", "help")
+	close.set("label_font_size", 20)
+	close.pressed.connect(overlay.queue_free)
+	column.add_child(close)
+	close.grab_focus()
 
 
 func _refresh_localized_labels(_language: String = "") -> void:
@@ -71,6 +239,36 @@ func _refresh_localized_labels(_language: String = "") -> void:
 	%QuitButton.text = String(_localization_runtime.call("translate", "menu_quit"))
 	%SaveGamesButton.text = String(_localization_runtime.call("translate", "slot_title"))
 	%SettingsButton.text = String(_localization_runtime.call("translate", "menu_settings"))
+
+
+func _open_new_game() -> void:
+	_play_after_slot_selection = true
+	_open_save_slots()
+
+
+func _start_continue_level() -> void:
+	var progress := ProgressStore.load_state(progress_path)
+	var completed: Array[int] = []
+	for value in progress.get("completed_levels", []):
+		completed.append(int(value))
+	var level_number := int(progress.get("last_played_level", 1))
+	if not completed.is_empty():
+		var highest := completed.max()
+		var next_level := Catalog.get_next_level(highest)
+		level_number = next_level if next_level > 0 else highest
+	if not Catalog.is_level_unlocked(level_number, completed):
+		level_number = 1
+	var difficulty := String(progress.get("run_difficulty", "normal"))
+	if difficulty not in ["easy", "normal", "hard"]:
+		difficulty = "normal"
+	if progress.get("run_difficulty") == null:
+		progress = HeroUnlockStore.bootstrap_state(progress)
+		progress["run_difficulty"] = difficulty
+		if not SaveSlotStore.save_path(progress, progress_path, -1.0, slot_path_template):
+			AudioRuntime.play("ui_error")
+			return
+	AudioRuntime.play("ui_click")
+	prototype_requested.emit(level_number, difficulty)
 
 
 func _click_and_emit(signal_value: Signal) -> void:
@@ -137,6 +335,7 @@ func _build_save_slots() -> void:
 	save_slot_panel.name = "SaveSlotPanel"
 	save_slot_panel.slot_requested.connect(_select_save_slot)
 	save_slot_panel.delete_requested.connect(_delete_save_slot)
+	save_slot_panel.closed.connect(_on_save_slots_closed)
 	add_child(save_slot_panel)
 	var cloud := get_tree().root.get_node_or_null("CloudSave")
 	if cloud != null:
@@ -183,6 +382,10 @@ func refresh_after_cloud_restore() -> void:
 		save_slot_panel.refresh_slots(SaveSlotStore.all_slot_info(slot_path_template), active_slot)
 
 
+func _on_save_slots_closed() -> void:
+	_play_after_slot_selection = false
+
+
 func _open_save_slots() -> void:
 	AudioRuntime.play("ui_click")
 	if hero_shop_panel != null:
@@ -211,6 +414,8 @@ func _select_save_slot(slot: int) -> void:
 	if not SaveSlotStore.set_current_slot(slot):
 		AudioRuntime.play("ui_error")
 		return
+	var start_after_selection := _play_after_slot_selection
+	_play_after_slot_selection = false
 	active_slot = slot
 	progress_path = SaveSlotStore.slot_path(slot, slot_path_template)
 	_update_active_slot_label()
@@ -218,6 +423,8 @@ func _select_save_slot(slot: int) -> void:
 	save_slot_panel.set_open(false)
 	progress_slot_changed.emit(slot, progress_path)
 	AudioRuntime.play("ui_click")
+	if start_after_selection:
+		_start_selected_level()
 
 
 func _delete_save_slot(slot: int) -> void:

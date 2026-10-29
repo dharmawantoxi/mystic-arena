@@ -5,8 +5,8 @@ extends Control
 ## The pure layout lives in `side_panel_layout.gd`; this node owns the stone
 ## backdrop, the 250 ms refresh cadence (the source rebuilds its text buffer
 ## four times a second, immediately on a state change or while a button
-## press animation runs), the font measure and the touch routing. It only
-## exists on screens with >= 120 px left of the 1280 px arena.
+## press animation runs), the font measure and the touch routing. It is
+## enabled only on mobile viewports with >= 120 px left of the 1280 px arena.
 
 signal pause_requested
 signal tactical_down(action: String)

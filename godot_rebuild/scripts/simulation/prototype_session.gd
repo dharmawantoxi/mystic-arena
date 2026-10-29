@@ -38,8 +38,8 @@ func configure_player_profile(state: Dictionary) -> bool:
 
 
 ## Layer 9c: the playable match flow (app.gd) opts the arena into the
-## rebalance override table before _ready spawns the production heroes.
-## Suites and the lab never call this, so their worlds stay source-parity.
+## rebalance override table before setup. It also requests the empty source
+## starting hero roster; lab/test fixtures may opt into legacy hero mirrors.
 func enable_balance_overrides() -> void:
 	(world as Prototype).balance_overrides_enabled = true
 
@@ -52,7 +52,7 @@ func _ready() -> void:
 	get_node("/root/GameSpeed").call("reset_match_clock")
 	super._ready()
 	var match_world := world as Prototype
-	match_world.setup_arena()
+	match_world.setup_arena(false)  # Source reset: neither team starts with a live hero.
 	# Layer 6d: the real AI owns the red side in the scene (layer 6e removed the
 	# temporary defender) and every AI stream is seeded, so the match is
 	# reproducible.

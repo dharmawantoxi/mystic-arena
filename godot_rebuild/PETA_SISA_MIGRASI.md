@@ -2,8 +2,17 @@
 
 Peta ini mencatat migrasi visual Godot yang berlangsung per slice.
 
-## Status terkini — branch `arena/e60d4a0f-mystic-arena`
+## Status terkini — branch `arena/148a7e91-mystic-arena`
 
+- PR #344 sudah di-merge ke `main` (merge commit `1f6c77d`), mencakup slice
+  9bv12–9bv17. Tidak ada pekerjaan itu yang diulang.
+- Slice UI terbaru: **9bv18 MainMenu**, **9bv19 HUD Android in-game**, dan **9bv20 roster hero awal**.
+  Alur menu tersambung; gameplay production sekarang mulai dengan roster hero player dan
+  enemy kosong seperti pygame. Kaizen tetap auto-unlock permanen, tetapi baru muncul setelah
+  dibeli dengan gold match; AI enemy juga tidak diberi hero cermin gratis. HUD Android memakai
+  dock kanan/toolbar touch-safe. `validate_project.py` **PASS 21604**; GDScript parse/lint/format,
+  source oracle, `py_compile`, dan `git diff --check` **PASS**. Godot native/screenshot belum
+  dijalankan; visual runtime perangkat masih belum diverifikasi.
 - PR #343 sudah di-merge: 9bv11 (cincin range + tooltip hover menara) dan slice
   sebelumnya ada di `main`; pekerjaan itu **tidak diulang** di sesi ini.
 - Milestone sesi ini: **9bv12** hover slot bangun, **9bv13** indikator debuff pada
@@ -4595,8 +4604,9 @@ klaim pixel parity. Tidak ada perubahan damage, cooldown, input, atau atlas.
   GitHub (`release-assets.githubusercontent.com`) ditutup; tidak ada binary Godot
   lokal, screenshot, atau hasil pixel-diff dari sandbox. CI native yang memakai
   Godot 4.7.2-stable tetap lulus, tetapi suite headless bukan bukti kesamaan visual.
-- **Tidak ada lagi item migrasi kode produksi yang belum selesai** menurut peta ini.
-  Sisa di atas adalah divergensi yang diterima atau pekerjaan review pengguna.
+- **Koreksi 9bv18:** pemeriksaan oleh pengguna menemukan layar MainMenu masih merupakan
+  launchpad eksperimen, bukan komposisi `_draw_main_menu()` pygame. Status itu kini
+  ditangani di slice 9bv18 di bawah; jangan anggap menu utama telah pixel-parity.
 
 ## Verifikasi Godot lokal — 2026-10-28
 
@@ -4613,3 +4623,69 @@ klaim pixel parity. Tidak ada perubahan damage, cooldown, input, atau atlas.
   4.7.2-stable pada mesin yang dapat mengunduh engine, bandingkan adegan dengan
   pygame pada ukuran viewport yang sama, dan tinjau divergensi yang diterima di
   atas. Jangan menyebut migrasi pixel-identik sebelum review itu selesai.
+
+## Slice 9bv18 — komposisi layar MainMenu dari pygame
+
+Audit `_core.py::Menu._draw_main_menu()` terhadap `scenes/menu/MainMenu.tscn`
+menemukan layar Godot masih berupa launchpad eksperimen: heading “NATIVE GODOT
+REBUILD”, pemilih level, serta tombol prototype/siege/combat berjajar mendatar.
+Sumber menampilkan judul terpusat “MYSTIC ARENA”, plate “BATTLE ARENA”, tagline,
+flourish emas, Continue + Play Game berdampingan, enam tombol bersusun, dan footer.
+
+Perbaikan 9bv18:
+
+- `main_menu.gd` kini menempatkan kontrol pada frame referensi 1280×720 dari sumber:
+  dua tombol 300×50 di pusat x=470/810, lalu tombol 360×50 pada y=389/442/495/548/601/654.
+  Layout memakai skala fit dan pusat viewport; `menu_foreground.gd` menggambar
+  glow judul, plate bersudut emas, flourish, dan titik ujung. Background/fog sumber
+  yang sudah dibake tetap di bawahnya.
+- Layar utama memakai judul, subtitle, tagline, delapan aksi, input label, dan footer
+  versi sumber. Continue memilih level lanjut/replay dari progres; Play Game membuka
+  pemilih save lalu meluncurkan level terpilih. Settings, Hero Shop, dan Quit tetap
+  dihubungkan. Shortcut lab, kontrol uji Match, dan picker level tersembunyi dari menu
+  reguler; node uji tetap ada untuk suite.
+- Tombol HOW TO PLAY dan CREDITS membuka panel informasi; INPUT mendeteksi joypad dan
+  memperbarui label mode (keyboard/mouse fallback bila tidak ada controller). Ini
+  menyelaraskan alur UI; parity pertukaran mode controller penuh belum diuji. Font-size
+  tombol mengikuti skala viewport.
+- `MenuArtChecks.run_scene()` memeriksa label sumber, visibilitas, posisi/ukuran semua
+  delapan tombol, dan menyembunyikan kontrol khusus Godot. Suite native dijalankan
+  dari `run_all.gd`; validator mengunci scene dan urutan layer.
+
+Batas: ini memperbaiki komposisi dan susunan menu yang memang berbeda; metrik/AA font,
+hover glow, serta semua detail pixel belum dibandingkan lewat screenshot. Godot tidak
+tersedia lokal di sandbox; validasi runtime menunggu CI 4.7.2 dan review visual setelah
+build dapat dijalankan.
+
+## Slice 9bv19 — HUD in-game Android/touch
+
+Audit gameplay `PrototypeMatch` menemukan toolbar desktop (judul, AI, tombol Kontrol,
+serta bar perintah bawah) tetap muncul berdampingan dengan dock Android yang sudah
+ada. `prototype_screen.gd` kini memakai viewport ekstra untuk dock hanya pada Android,
+iOS, atau layar sentuh. Pada landscape lebar, dock sumber menguasai jeda/status/hero/
+perintah taktis; toolbar desktop dan indikator QA disembunyikan. Pada 16:9 tanpa ruang
+dock, HUD memakai toolbar ringkas dengan inset sentuh 28 px, tombol minimal 48 px,
+dan gold tetap digambar di arena. Desktop tetap menggunakan toolbar desktop.
+
+`prototype_layout_checks.gd` menambahkan pemeriksaan dua profil Android (docked dan
+16:9 fallback); `validate_project.py` **PASS 21604**. Parser/linter/formatter dan
+`git diff --check` **PASS**. Godot native dan screenshot Android belum tersedia di
+sandbox, sehingga hasil visual perangkat masih perlu diuji langsung.
+
+## Slice 9bv20 — roster hero awal sama dengan pygame
+
+Audit `_core.py::Game.reset()` dan `Game.try_buy_hero()` memastikan `self.heroes` mulai
+kosong; Kaizen hanya di-auto-grant ke `purchased_heroes`, sementara summon baru terjadi
+setelah validasi unlock, roster, kapasitas, dan gold. AIPlayer juga memulai dengan roster
+kosong dan membeli hero lewat kebijakan AI.
+
+Godot `PrototypeSession` kini memanggil `setup_arena(false)`, sehingga match production
+tidak memunculkan Kaizen biru maupun cermin Kaizen merah gratis. Ownership Kaizen tetap
+auto-grant; pembelian match melewati transaksi roster/gold yang ada. Cermin hero lama
+hanya dipertahankan sebagai fixture level rendah untuk tes combat yang membutuhkan unit
+awal. Source oracle membandingkan reset pygame dan startup match production; test scene
+membuktikan roster kosong sebelum transaksi, hero muncul sesudah fixed tick pembelian,
+biaya gold, dan restart kembali ke roster kosong.
+
+`validate_project.py` **PASS 21604**; GDScript parse/lint/format, oracle, `py_compile`, dan
+`git diff --check` **PASS**. Suite native Godot belum dijalankan di sandbox.

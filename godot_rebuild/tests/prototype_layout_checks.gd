@@ -81,6 +81,28 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	tactical_toggle.toggled.emit(false)
 	check.call(not tactical_panel.visible, "Tactical toggle restores the unobstructed arena")
 
+	screen._configure_mobile_hud(true, true)
+	check.call(
+		not top_bar.visible and not bottom_bar.visible and not command_toggle.visible,
+		"Android wide-screen layout replaces the desktop bars with the source side dock"
+	)
+	screen._configure_mobile_hud(true, false)
+	top_rect = top_bar.get_global_rect()
+	check.call(
+		(
+			top_bar.visible
+			and not screen.get_node("HUD/TopBar/Row/Names").visible
+			and not screen.get_node("%GoldLabel").visible
+			and screen.get_node("%PauseButton").visible
+			and screen.get_node("%BackButton").visible
+			and screen.get_node("%TacticalToggleButton").visible
+			and not bottom_bar.visible
+			and top_rect.position.x >= 24.0
+			and top_rect.end.x <= 1256.0
+		),
+		"Android 16:9 fallback uses a compact safe-area toolbar with 48 px touch controls"
+	)
+
 	screen.get_node("%BackButton").pressed.emit()
 	await _settle(tree)
 	check.call(app.current_screen.name == "MainMenu", "Prototype layout exits cleanly")

@@ -20,15 +20,14 @@ func run(tree: SceneTree, check: Callable) -> void:
 	var world = session.world
 	world.set_ai_enabled(false)
 	world.ai_hero_control_enabled = false
+	check.call(world.player_roster().is_empty(), "Playable scene starts without a free player hero")
+	check.call(session.request_hero_buy("kaizen"), "Player queues owned Kaizen purchase")
+	session._physics_process(1.0 / 60.0)
 	var hero: HeroState = world.blue_hero()
-	var foe: HeroState = null
-	for unit in world.units:
-		if unit is HeroState and unit.team == world.RED:
-			foe = unit as HeroState
-			break
+	var foe: HeroState = world.spawn_hero(world.HERO_ROSTER["kaizen"], world.RED, Vector2(480, 480))
 	check.call(
 		screen.name == "PrototypeMatch" and hero != null and foe != null,
-		"playable match scene has the source-mapped Kaizen pair"
+		"Hero pair exists only after player purchase and explicit test fixture spawn"
 	)
 	if hero != null and foe != null:
 		foe.position = hero.position + Vector2(48, 0)

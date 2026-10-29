@@ -52,6 +52,7 @@ var migration_status: Label
 var touch_gestures = TouchGestureRuntime.new()
 var _tactical_panel_open := false
 var _touch_tactical_claims: Dictionary = {}
+var _mobile_hud_active := false
 @onready var match_session: PrototypeSession = $Simulation
 @onready var controller_cursor = %ControllerCursor
 
@@ -927,10 +928,9 @@ func _update_tactical_hud(world: Prototype) -> void:
 
 
 func _build_side_panel() -> void:
-	# Layer 9as: `mobile/sidepanel.py` - on screens wider than 16:9 the
-	# leftover width right of the 1280 px arena becomes the stone panel with
-	# PAUSE / STATUS / HEROES / TACTICAL COMMANDS; the floating tactical box
-	# moves there, exactly like the source hid its floating panels.
+	# Android/touch fullscreen keeps a 1280 px arena and uses extra landscape
+	# width for the source stone dock: PAUSE / STATUS / HEROES / TACTICAL
+	# COMMANDS. Desktop keeps the normal 1280 px composition.
 	side_panel = SidePanel.new()
 	side_panel.name = "SidePanel"
 	side_panel.pause_requested.connect(pause_match)
@@ -945,10 +945,57 @@ func _build_side_panel() -> void:
 func _layout_side_panel() -> void:
 	if side_panel == null:
 		return
-	side_panel.configure(int(get_viewport().get_visible_rect().size.x))
+	var mobile := _is_mobile_device()
+	var viewport_width := int(get_viewport().get_visible_rect().size.x)
+	# The source only expands the 1280 px arena and mounts its right dock in touch mode.
+	side_panel.configure(viewport_width if mobile else 1280)
 	var docked := side_panel.is_active()
 	%TacticalToggleButton.visible = not docked
 	%TacticalPanel.visible = _tactical_panel_open and not docked
+	_configure_mobile_hud(mobile, docked)
+
+
+func _is_mobile_device() -> bool:
+	return (
+		OS.has_feature("android")
+		or OS.has_feature("ios")
+		or DisplayServer.is_touchscreen_available()
+	)
+
+
+## Replace the desktop QA toolbar with the source Android HUD profile.
+## With the source's wide-screen dock active, the panel owns pause/status/heroes/commands;
+## at 16:9, retain only compact touch controls and the map's own gold HUD.
+func _configure_mobile_hud(mobile: bool, docked: bool) -> void:
+	_mobile_hud_active = mobile
+	if not mobile:
+		return
+	var top_bar: Control = $HUD/TopBar
+	var names: Control = $HUD/TopBar/Row/Names
+	var row: HBoxContainer = $HUD/TopBar/Row
+	top_bar.visible = not docked
+	names.hide()
+	%GoldLabel.hide()  # Opponent gold is desktop QA; the map paints player gold.
+	%CommandDockToggle.hide()
+	%BottomBar.hide()
+	%TacticalToggleButton.visible = not docked
+	%PauseButton.visible = not docked
+	%BackButton.visible = not docked
+	if ai_toggle != null:
+		ai_toggle.hide()
+	if migration_status != null:
+		migration_status.hide()
+	# Android has a landscaped safe-area; leave a 28 px touch-safe inset.
+	top_bar.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	top_bar.offset_left = 28.0
+	top_bar.offset_top = 10.0
+	top_bar.offset_right = -28.0
+	top_bar.offset_bottom = 72.0
+	row.add_theme_constant_override("separation", 8)
+	%GameSpeedSelector.custom_minimum_size = Vector2(72.0, 48.0)
+	%PauseButton.custom_minimum_size = Vector2(72.0, 48.0)
+	%TacticalToggleButton.custom_minimum_size = Vector2(88.0, 48.0)
+	%BackButton.custom_minimum_size = Vector2(72.0, 48.0)
 
 
 func _set_tactical_panel_open(open: bool) -> void:
@@ -958,6 +1005,9 @@ func _set_tactical_panel_open(open: bool) -> void:
 
 
 func _set_command_dock_open(open: bool) -> void:
+	if _mobile_hud_active:
+		%BottomBar.hide()
+		return
 	%BottomBar.visible = open
 	%CommandDockToggle.text = "Tutup" if open else "Kontrol"
 
