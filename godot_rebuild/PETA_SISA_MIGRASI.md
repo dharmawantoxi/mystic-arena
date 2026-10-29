@@ -4737,4 +4737,6 @@ build CI.
 
 Setelah push, diagnostics native CI menemukan inferensi tipe yang gagal pada variabel dari
 `Object` dinamis (`gold`, state BUY, queue, dan jumlah owned). Variabel tersebut kini diberi
-tipe eksplisit `int`/`bool`; hasil CI sesudah koreksi masih menunggu.
+tipe eksplisit `int`/`bool`. Diagnostik native juga menunjukkan sublabel kartu meminta
+nama node kosong; helper label kini hanya menetapkan nama jika string-nya nonkosong.
+Hasil suite native setelah dua koreksi tersebut masih menunggu.
