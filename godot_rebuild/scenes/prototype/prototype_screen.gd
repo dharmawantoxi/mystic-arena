@@ -12,6 +12,8 @@ const HeroDefinition = preload("res://scripts/data/hero_definition.gd")
 const HeroItemInventory = preload("res://scripts/match/hero_item_inventory.gd")
 const HeroPanelLayout = preload("res://scripts/ui/hero_panel_layout.gd")
 const BuildPopupLayout = preload("res://scripts/ui/build_popup_layout.gd")
+const CastlePanelLayout = preload("res://scripts/ui/castle_panel_layout.gd")
+const NexusUpgrades = preload("res://scripts/match/nexus_upgrades.gd")
 const ItemForgePanel = preload("res://scripts/ui/item_forge_panel.gd")
 const HeroShopPanel = preload("res://scripts/ui/hero_shop_panel.gd")
 const SidePanel = preload("res://scripts/ui/side_panel.gd")
@@ -175,7 +177,9 @@ func _process(_delta: float) -> void:
 	_update_tactical_hud(world)
 	var hero_panel_state := _hero_panel_state(world, match_session)
 	var build_popup_state := _build_popup_state(world, match_session)
-	_update_side_panel(world, hero_panel_state, build_popup_state)
+	var castle_panel_state := _castle_panel_state(world, match_session)
+	arena.set("castle_panel_state", castle_panel_state)
+	_update_side_panel(world, hero_panel_state, build_popup_state, castle_panel_state)
 	_sync_mobile_pause_button(world)
 	# Layer 9bv11: read-only source tower-hover drawing; this snapshot does not route input.
 	arena.set("tower_hover_state", _tower_hover_state(world, match_session, build_popup_state))
@@ -653,6 +657,66 @@ func _build_popup_state(world: Prototype, match_session: PrototypeSession) -> Di
 	return state
 
 
+## Selected blue castle upgrade popup moved into the Android right dock, matching
+## the source `PopupRenderer` rather than relying on the desktop-only BottomBar.
+func _castle_panel_state(world: Prototype, current: PrototypeSession) -> Dictionary:
+	if not world.is_running() or side_panel == null or not side_panel.is_active():
+		return {}
+	var selected := world.get_unit(current.selected_id) as Structure
+	if (
+		selected == null
+		or not selected.alive
+		or selected.team != world.BLUE
+		or selected.settings().structure_kind != "nexus"
+	):
+		return {}
+	var geometry := CastlePanelLayout.mobile_geometry(side_panel.panel)
+	if geometry.is_empty():
+		return {}
+	var level := int(selected.settings().level)
+	var names := ["OUTPOST", "WATCHTOWER", "FORTRESS", "STRONGHOLD", "ROYAL CASTLE"]
+	var upgrade_cost := world.nexus_upgrade_price(selected.id)
+	var shield_active := selected.shield_active
+	var shield_free := selected.free_shield_active
+	var shield_purchased := selected.castle_shield_purchased
+	var shield_label := (
+		"CASTLE SHIELD: FREE (WAVE 1-10)"
+		if shield_free
+		else (
+			"CASTLE SHIELD: ON"
+			if shield_active
+			else "ACTIVATE SHIELD (%dG)" % Structure.CASTLE_SHIELD_COST
+		)
+	)
+	var next_name: String = names[level] if level >= 0 and level < names.size() else "CITADEL"
+	var state := {
+		"level": level,
+		"max_level": names.size(),
+		"castle_name": names[level - 1] if level > 0 and level <= names.size() else "CASTLE",
+		"next_name": next_name,
+		"hp": int(selected.hp),
+		"max_hp": int(selected.definition.max_hp),
+		"gold": int(world.economy.gold[world.BLUE]),
+		"upgrade_cost": upgrade_cost,
+		"upgrade_label": "UPGRADE %dG" % upgrade_cost if upgrade_cost > 0 else "MAX LEVEL",
+		"minion_scale":
+		NexusUpgrades.MINION_SCALES[clampi(level - 1, 0, NexusUpgrades.MINION_SCALES.size() - 1)],
+		"minion_ai":
+		NexusUpgrades.MINION_AI[clampi(level - 1, 0, NexusUpgrades.MINION_AI.size() - 1)],
+		"damage": int(selected.settings().damage),
+		"range": int(selected.settings().attack_range_px),
+		"shield_label": shield_label,
+		"shield_active": shield_active,
+		"shield_ratio": float(selected.shield) / maxf(1.0, selected.shield_max),
+		"shield_free": shield_free,
+		"shield_purchased": shield_purchased,
+		"shield_can_activate": selected.can_activate_castle_shield(),
+		"shield_cost": Structure.CASTLE_SHIELD_COST,
+	}
+	state.merge(geometry, true)
+	return state
+
+
 ## Layer 9bv8/9bv9: selected live hero snapshot shared by the arena painter and input router.
 func _hero_panel_state(world: Prototype, match_session: PrototypeSession) -> Dictionary:
 	var selected := world.get_unit(match_session.selected_id) as HeroState
@@ -1090,18 +1154,23 @@ func _set_command_dock_open(open: bool) -> void:
 
 
 func _update_side_panel(
-	world: Prototype, hero_panel_state: Dictionary, build_popup_state: Dictionary
+	world: Prototype,
+	hero_panel_state: Dictionary,
+	build_popup_state: Dictionary,
+	castle_panel_state: Dictionary
 ) -> void:
 	if side_panel == null or not side_panel.is_active():
 		return
 	var snapshot := _side_panel_snapshot(world)
 	snapshot["hero_panel_state"] = hero_panel_state
 	snapshot["build_popup_state"] = build_popup_state
+	snapshot["castle_panel_state"] = castle_panel_state
 	# Match SidePanel.hit_test: visible popups cover dock tactical controls.
 	snapshot["popup_open"] = (
 		bool(snapshot.get("popup_open", false))
 		or not hero_panel_state.is_empty()
 		or not build_popup_state.is_empty()
+		or not castle_panel_state.is_empty()
 	)
 	side_panel.update_snapshot(snapshot)
 
@@ -1582,6 +1651,29 @@ func _build_popup_action_entries(state: Dictionary) -> Array[Dictionary]:
 	return entries
 
 
+func _castle_panel_action_entries(state: Dictionary) -> Array[Dictionary]:
+	var entries: Array[Dictionary] = [
+		{"id": "castle_close", "rect": CastlePanelLayout.close_rect(state), "screen_space": true}
+	]
+	if bool(state.get("shield_can_activate", false)):
+		entries.append(
+			{
+				"id": "castle_shield",
+				"rect": CastlePanelLayout.shield_rect(state),
+				"screen_space": true
+			}
+		)
+	if int(state.get("upgrade_cost", 0)) > 0:
+		entries.append(
+			{
+				"id": "castle_upgrade",
+				"rect": CastlePanelLayout.upgrade_rect(state),
+				"screen_space": true
+			}
+		)
+	return entries
+
+
 func _overlay_action_entries() -> Array[Dictionary]:
 	var entries: Array[Dictionary] = []
 	if get_tree().paused or _controller_modal_open():
@@ -1595,6 +1687,9 @@ func _overlay_action_entries() -> Array[Dictionary]:
 	var build_state: Dictionary = arena.get("build_popup_state")
 	if not build_state.is_empty():
 		entries.append_array(_build_popup_action_entries(build_state))
+	var castle_state: Dictionary = arena.get("castle_panel_state")
+	if not castle_state.is_empty():
+		entries.append_array(_castle_panel_action_entries(castle_state))
 	return entries
 
 
@@ -1651,6 +1746,14 @@ func _overlay_panel_captures_pointer(point: Vector2) -> bool:
 		and HeroPanelLayout.panel_rect(hero_state).has_point(_overlay_point(point, hero_state))
 	):
 		return true
+	var castle_state: Dictionary = arena.get("castle_panel_state")
+	if (
+		not castle_state.is_empty()
+		and CastlePanelLayout.panel_rect(castle_state).has_point(
+			_overlay_point(point, castle_state)
+		)
+	):
+		return true
 	var build_state: Dictionary = arena.get("build_popup_state")
 	if not build_state.is_empty():
 		var panel_rect := Rect2i(
@@ -1689,6 +1792,22 @@ func _handle_overlay_pointer(point: Vector2, button_index: int) -> bool:
 			# right-click item-drop branch is unreachable behind its button == 1 guard.
 			return true
 
+	var castle_state: Dictionary = arena.get("castle_panel_state")
+	if not castle_state.is_empty():
+		var castle_point := _overlay_point(point, castle_state)
+		if button_index == MOUSE_BUTTON_LEFT:
+			for entry in _castle_panel_action_entries(castle_state):
+				if not _touch_target_rect(entry["rect"]).has_point(castle_point):
+					continue
+				var action := String(entry["id"])
+				if action == "castle_close":
+					match_session.selected_id = -1
+				else:
+					_activate_castle_panel_action(action)
+				return true
+		if CastlePanelLayout.panel_rect(castle_state).has_point(castle_point):
+			return true
+
 	var build_state: Dictionary = arena.get("build_popup_state")
 	if build_state.is_empty():
 		return false
@@ -1708,6 +1827,31 @@ func _handle_overlay_pointer(point: Vector2, button_index: int) -> bool:
 	# Source closes an unclaimed build popup and continues dispatching the click to the world.
 	match_session.selected_slot_id = -1
 	return false
+
+
+func _activate_castle_panel_action(action_id: String) -> void:
+	var world := match_session.world as Prototype
+	var castle := world.get_unit(match_session.selected_id) as Structure
+	if (
+		castle == null
+		or not castle.alive
+		or castle.team != world.BLUE
+		or castle.settings().structure_kind != "nexus"
+	):
+		return
+	match action_id:
+		"castle_upgrade":
+			if (
+				world.nexus_upgrade_price(castle.id) > 0
+				and world.economy.gold[world.BLUE] >= world.nexus_upgrade_price(castle.id)
+			):
+				match_session.request_nexus_upgrade(castle.id)
+		"castle_shield":
+			if (
+				castle.can_activate_castle_shield()
+				and world.economy.gold[world.BLUE] >= Structure.CASTLE_SHIELD_COST
+			):
+				match_session.request_castle_shield(castle.id)
 
 
 func _activate_hero_panel_action(action_id: String) -> void:

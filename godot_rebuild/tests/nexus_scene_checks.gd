@@ -1,6 +1,8 @@
 extends RefCounted
 ## Nexus UI lifecycle through the real scene/session.
 
+const CastlePanelLayout = preload("res://scripts/ui/castle_panel_layout.gd")
+
 
 func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	var baseline := tree.get_node_count()
@@ -22,8 +24,20 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		"nexus UI quotes level-two price"
 	)
 	check.call(screen.get_node("%UpgradeButton").disabled, "archer button stays idle")
-	screen.get_node("%NexusButton").pressed.emit()
-	screen.get_node("%NexusButton").pressed.emit()
+	# Simulate a wide Android dock and route a real tap through its castle upgrade
+	# hitbox; this is the interaction hidden by the desktop-only BottomBar on mobile.
+	screen.side_panel.configure(1624)
+	await _settle(tree)
+	var castle_state: Dictionary = screen.arena.get("castle_panel_state")
+	check.call(not castle_state.is_empty(), "selected blue castle opens the dock popup")
+	if not castle_state.is_empty():
+		var upgrade_rect := CastlePanelLayout.upgrade_rect(castle_state)
+		var upgrade_point := Vector2(upgrade_rect.position + upgrade_rect.size / 2)
+		check.call(
+			screen._handle_overlay_pointer(upgrade_point, MOUSE_BUTTON_LEFT),
+			"castle dock upgrade hitbox consumes a tap"
+		)
+	screen.side_panel.configure(1280)
 	check.call(
 		(
 			session.command.id == nexus.id
@@ -31,7 +45,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 			and nexus.settings().level == 1
 			and world.economy.gold[0] == 1000
 		),
-		"nexus click captures ID/level without charge"
+		"castle dock upgrade queues the selected ID/level without charge"
 	)
 	session.select_at(world.slots[2].position)
 	session._physics_process(1.0 / 60.0)
