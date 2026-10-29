@@ -253,7 +253,7 @@ func _start_continue_level() -> void:
 		completed.append(int(value))
 	var level_number := int(progress.get("last_played_level", 1))
 	if not completed.is_empty():
-		var highest := completed.max()
+		var highest: int = int(completed.max())
 		var next_level := Catalog.get_next_level(highest)
 		level_number = next_level if next_level > 0 else highest
 	if not Catalog.is_level_unlocked(level_number, completed):

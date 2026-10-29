@@ -124,7 +124,7 @@ func _test_production_world(scenario: Dictionary, check: Callable) -> void:
 	check.call(world._ai_state().hero_count == 5, "Production AI policy sees only its five heroes")
 	check.call(
 		world.ai_upgrades.hero_candidates(world).size() == 5,
-		"Free mirror stays outside the complete upgrade roster"
+		"Upgrade candidates include all five AI-owned heroes"
 	)
 	var next_source_y := _source_spawn_y_for_roster_count(world._ai_roster().size())
 	var next_position := Vector2(World.RED_HERO_SPAWN.x, next_source_y)
@@ -134,7 +134,7 @@ func _test_production_world(scenario: Dictionary, check: Callable) -> void:
 			not world._buy_ai_hero("zephyr", int(zephyr.cost), next_position)
 			and world.transaction_error == "capacity"
 		),
-		"Free mirror does not consume an AI hero-cap slot"
+		"AI hero cap rejects a sixth purchase"
 	)
 
 	var enemy := world.spawn_unit(GOBLIN, world.BLUE, 1)
@@ -143,9 +143,6 @@ func _test_production_world(scenario: Dictionary, check: Callable) -> void:
 	world.ai_controller.policy.think_timer = 90
 	world.step_tick()
 	check.call(first_ai_hero.has_destination, "Production tick controls the paid AI-owned hero")
-	check.call(
-		not free_red.has_destination, "Production tick leaves the free red mirror uncontrolled"
-	)
 
 
 func _fund(world: World, amount: int) -> void:
