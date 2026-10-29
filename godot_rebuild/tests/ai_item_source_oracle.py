@@ -28,8 +28,8 @@ _NAMES = frozenset({
     "_MIASMA",
     # Forge shop paging (5f-2).
     "CLASS_PHYSICAL", "CLASS_MAGIC", "CLASS_TANK", "ITEM_CLASS_INFO",
-    "_ITEM_CLASS_OVERRIDES", "_MAP_CATEGORY_TO_CLASS", "ITEMS_PER_PAGE",
-    "CLASS_ITEM_ORDER",
+    "CATEGORY_INFO", "_ITEM_CLASS_OVERRIDES", "_MAP_CATEGORY_TO_CLASS",
+    "ITEMS_PER_PAGE", "CLASS_ITEM_ORDER",
 })
 _FUNCTIONS = ("is_magic_hero", "suggest_item_for_hero",
               "_apply_miasma", "_tick_miasma")
@@ -214,9 +214,13 @@ def source_namespace(with_functions=False, with_inventory=False, with_forge=Fals
     by_name = {node.targets[0].id: node for node in nodes}
     assert _NAMES <= by_name.keys(), "source constants missing"
     needed = set(_NAMES)
-    for ref in ast.walk(by_name["ITEM_CATALOG"].value):
-        if isinstance(ref, ast.Name) and ref.id in by_name:
-            needed.add(ref.id)
+    pending = list(needed)
+    while pending:
+        name = pending.pop()
+        for ref in ast.walk(by_name[name].value):
+            if isinstance(ref, ast.Name) and ref.id in by_name and ref.id not in needed:
+                needed.add(ref.id)
+                pending.append(ref.id)
     kept = [node for node in nodes if node.targets[0].id in needed]
     wanted = set()
     if with_functions:
@@ -265,7 +269,7 @@ def catalog(env=None):
         # category id -> source CATEGORY_* constant name, so the metadata can
         # be validated by category id and still points at the source symbol.
         "categories": {env[name]: name for name in sorted(env)
-                       if name.startswith("CATEGORY_")},
+                       if name.startswith("CATEGORY_") and isinstance(env[name], str)},
         "items": items,
     }))
 

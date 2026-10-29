@@ -6,14 +6,13 @@ extends RefCounted
 ## `itemshop_close` / `_hero_` / `_page_` / `_buy_` / `_slot_` / `_card_` /
 ## `_detail_close_`).
 ##
-## NOT ported here, by design: pygame geometry (`PANEL_W/H`, rects, hit tests),
-## fonts/colors and localization. The panel therefore exposes view data
-## (`hero_chips()`, `item_cards()`, `page_tabs()`) for a Control to draw, a
-## `click_outside_panel()` hook for the one geometry rule the source keeps
-## (`item_shop_open = False`), and message keys instead of `tr()` strings
-## ("dead", "Lv.N", "BUY FOR").
+## The presentation Control consumes the same source-derived dimensions,
+## colors, descriptions, class/category labels and icon files. This script keeps
+## the view data and click vocabulary separate from that drawing layer.
 
 const METADATA := "res://data/ai/item_catalog.json"
+const PRESENTATION_METADATA := "res://data/ui/item_shop_presentation.json"
+const HeroItems = preload("res://scripts/match/hero_items.gd")
 const CLASS_PHYSICAL := "physical"
 const CLASS_MAGIC := "magic"
 const CLASS_TANK := "tank"
@@ -104,6 +103,8 @@ var inspect_item := ""
 var notice: Dictionary = {}
 var pages: Array = []
 var page_meta: Array = []
+var _catalog_cache: Dictionary = {}
+var _presentation_cache: Dictionary = {}
 
 
 func _init() -> void:
@@ -111,8 +112,21 @@ func _init() -> void:
 
 
 func _catalog() -> Dictionary:
-	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(METADATA))
-	return {} if parsed == null else parsed
+	if _catalog_cache.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(METADATA))
+		if parsed != null:
+			_catalog_cache = parsed
+	return _catalog_cache
+
+
+func _presentation_catalog() -> Dictionary:
+	if _presentation_cache.is_empty():
+		var parsed: Variant = JSON.parse_string(
+			FileAccess.get_file_as_string(PRESENTATION_METADATA)
+		)
+		if parsed != null:
+			_presentation_cache = parsed.get("items", {})
+	return _presentation_cache
 
 
 func item_class(item_id: String) -> String:
@@ -194,26 +208,62 @@ func hero_chips(world: Object, forge: Object) -> Array:
 
 
 func item_cards(world: Object, forge: Object) -> Array:
-	# Grid entries of the current page; `owned` mirrors the source card badge.
-	var hero: Object = forge.resolve_target(forge._player_heroes(world))
+	# Match the source card's display gate, not just its gold check. A card is
+	# always inspectable, while BUY is disabled without a target, room, or role.
+	var hero: Object = forge._shop_hero(world)
 	var items: Dictionary = _catalog().get("items", {})
+	var visual_items := _presentation_catalog()
+	var gold := forge.player_gold(world)
 	var cards: Array = []
 	for item_id in current_page_items():
-		var data: Dictionary = items.get(String(item_id), {})
+		var id := String(item_id)
+		var data: Dictionary = items.get(id, {})
+		var visual: Dictionary = visual_items.get(id, {})
 		var cost := int(data.get("cost", 0))
+		var affordable := gold >= cost
+		var owned_count := 0
+		var has_hero := hero != null and hero.items != null
+		var is_melee := false
+		var is_magic := false
+		var slot_full := false
+		if has_hero:
+			owned_count = hero.items.count(id)
+			is_melee = HeroItems.is_melee(float(hero.attack_range))
+			is_magic = HeroItems.is_magic_hero(String(hero.settings().role))
+			var queued := hero.pending_items.size()
+			slot_full = hero.items.used_slots() + queued >= hero.items.max_slots()
+		var melee_ok := not bool(data.get("melee_only", false)) or is_melee
+		var magic_ok := not bool(data.get("magic_only", false)) or is_magic
+		var can_buy := has_hero and affordable and not slot_full and melee_ok and magic_ok
+		var reason := ""
+		if bool(data.get("melee_only", false)) and not is_melee:
+			reason = "MELEE ONLY"
+		elif bool(data.get("magic_only", false)) and not is_magic:
+			reason = "MAGIC ONLY"
+		elif has_hero:
+			reason = "NOT AFFORDABLE"
+		else:
+			reason = "SELECT HERO"
+		var card := visual.duplicate(true)
 		(
-			cards
-			. append(
+			card
+			. merge(
 				{
-					"id": String(item_id),
-					"name": String(data.get("name", item_id)),
-					"class": item_class(String(item_id)),
+					"id": id,
+					"name": String(data.get("name", id)),
+					"class": item_class(id),
 					"cost": cost,
-					"affordable": forge.player_gold(world) >= cost,
-					"owned": hero != null and hero.items.has(String(item_id)),
-				}
+					"affordable": affordable,
+					"can_buy": can_buy,
+					"disabled_reason": reason,
+					"owned_count": owned_count,
+					"owned": owned_count > 0,
+					"has_hero": has_hero,
+				},
+				true
 			)
 		)
+		cards.append(card)
 	return cards
 
 

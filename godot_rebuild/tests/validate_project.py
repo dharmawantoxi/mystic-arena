@@ -746,6 +746,15 @@ check(item_catalog["flat_cost"] == 4500 and item_catalog["max_slots"] == 6,
 check(set(item_catalog["categories"])
       == {entry["category"] for entry in item_catalog["items"].values()},
       "AI item catalog categories must be keyed by the category ids in use")
+from item_shop_presentation_source_oracle import presentation_data
+item_shop_presentation = json.loads(
+    (ROOT / "data/ui/item_shop_presentation.json").read_text(encoding="utf-8"))
+source_item_shop_presentation = presentation_data()
+check(item_shop_presentation == source_item_shop_presentation,
+      "ITEM FORGE presentation data drifted from source ITEM_CATALOG")
+for item_id, entry in source_item_shop_presentation["items"].items():
+    check((ROOT / "assets/art/items" / entry["icon"]).is_file(),
+          f"ITEM FORGE icon missing for {item_id}")
 hero_items = (ROOT / "scripts/match/hero_items.gd").read_text(encoding="utf-8")
 
 

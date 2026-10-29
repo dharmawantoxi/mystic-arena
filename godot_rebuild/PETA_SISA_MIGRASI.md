@@ -4706,3 +4706,31 @@ koordinat visual dan target sentuh, serta alur pause/resume. `validate_project.p
 21613**; GDScript parse/lint/format dan `tools/test_hud_layout.py` **PASS**. Runtime
 Godot/screenshot Android masih perlu diverifikasi pada perangkat; karya ini mengoreksi
 perbedaan kontrol yang terbukti, bukan klaim pixel-parity untuk seluruh renderer.
+
+## Slice 9bv22 — Item Forge mobile mengikuti toko item pygame
+
+Audit `hero_items.py::ItemShopUI` versus Godot `ItemForgePanel` menemukan perbedaan
+nyata pada komposisi panel, konten kartu, slot inventori, modal detail, serta perilaku
+BUY saat belum ada hero. Godot kini memakai frame sumber 1100×720 pada arena 1280×720,
+peredup hitam alpha 215 yang dibatasi ke arena (dock layar lebar tetap terlihat),
+strip BUY FOR, ringkasan target/no-hero banner, enam tab kelas, grid 4×2 berisi kartu
+250×200, ikon asli dan deskripsi, pill BUY/disabled-reason, enam slot 54×54, dan popup
+detail terpisah 880×600.
+
+Metadata presentasi (ikon, nama, deskripsi id/en, warna, kategori/kelas, persyaratan,
+stat/effect dan flavor) diekspor tanpa mengimpor pygame melalui
+`tests/item_shop_presentation_source_oracle.py`; 33 tekstur item disalin ke resource
+Godot dan `validate_project.py` membandingkan metadata hasil ekspor dengan sumber.
+View-data sekarang menonaktifkan BUY tanpa hero, tanpa gold, saat slot/pesanan penuh,
+atau saat syarat melee/magic tidak cocok. Klik kartu tetap membuka detail dan transaksi
+masih lewat click router/Forge yang sama. Test mengunci kondisi SELECT HERO, geometri
+panel/card/detail, keberadaan icon, tab, slot, dan alur beli/drop/modal.
+
+Validasi GDScript parse/lint/format, Python compile, `git diff --check`, serta verifikasi
+terarah metadata/33 ikon **PASS**. `validate_project.py` telah menjalankan 21.659 check;
+satu pemeriksaan awal menemukan beda representasi tuple/list pada warna source, lalu
+serialisasi oracle dinormalisasi dan pengecekan target lulus. Suite validator lengkap
+setelah normalisasi dan suite native Godot belum dijalankan ulang lokal; Godot 4.7.2
+tidak tersedia di sandbox. Karena itu, layout dan interaksi belum diverifikasi saat
+runtime dan tidak ada klaim pixel-parity; tinjau screenshot/perangkat Android setelah
+build CI.
