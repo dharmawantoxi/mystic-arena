@@ -501,7 +501,7 @@ func _build_hero_chips(shop_ui: Object) -> void:
 			line_two += "   RNG +%d" % int(range_bonus)
 		summary.text = line_one + "\n" + line_two
 		if not bool(buyer.alive):
-			var pending := buyer.pending_items.size()
+			var pending: int = buyer.pending_items.size()
 			summary.text += "   · " + String(SHOP_TEXT.delivery_after_respawn)
 			if pending > 0:
 				summary.text += " (%d %s)" % [pending, String(SHOP_TEXT.queued)]
@@ -726,7 +726,7 @@ func _build_detail_content(item_id: String) -> void:
 	right.add_child(price)
 	var hero: Object = forge()._shop_hero(world)
 	if hero != null:
-		var owned := hero.items.count(item_id)
+		var owned: int = hero.items.count(item_id)
 		if owned > 0:
 			var own_label := _label("", "Owned: %d" % owned, 17, Color8(150, 255, 170), true)
 			own_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT

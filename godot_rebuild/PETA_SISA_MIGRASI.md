@@ -4734,3 +4734,7 @@ setelah normalisasi dan suite native Godot belum dijalankan ulang lokal; Godot 4
 tidak tersedia di sandbox. Karena itu, layout dan interaksi belum diverifikasi saat
 runtime dan tidak ada klaim pixel-parity; tinjau screenshot/perangkat Android setelah
 build CI.
+
+Setelah push, diagnostics native CI menemukan inferensi tipe yang gagal pada variabel dari
+`Object` dinamis (`gold`, state BUY, queue, dan jumlah owned). Variabel tersebut kini diberi
+tipe eksplisit `int`/`bool`; hasil CI sesudah koreksi masih menunggu.

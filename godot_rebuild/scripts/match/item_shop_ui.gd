@@ -213,14 +213,14 @@ func item_cards(world: Object, forge: Object) -> Array:
 	var hero: Object = forge._shop_hero(world)
 	var items: Dictionary = _catalog().get("items", {})
 	var visual_items := _presentation_catalog()
-	var gold := forge.player_gold(world)
+	var gold: int = int(forge.player_gold(world))
 	var cards: Array = []
 	for item_id in current_page_items():
 		var id := String(item_id)
 		var data: Dictionary = items.get(id, {})
 		var visual: Dictionary = visual_items.get(id, {})
 		var cost := int(data.get("cost", 0))
-		var affordable := gold >= cost
+		var affordable: bool = gold >= cost
 		var owned_count := 0
 		var has_hero := hero != null and hero.items != null
 		var is_melee := false
@@ -230,11 +230,11 @@ func item_cards(world: Object, forge: Object) -> Array:
 			owned_count = hero.items.count(id)
 			is_melee = HeroItems.is_melee(float(hero.attack_range))
 			is_magic = HeroItems.is_magic_hero(String(hero.settings().role))
-			var queued := hero.pending_items.size()
+			var queued: int = hero.pending_items.size()
 			slot_full = hero.items.used_slots() + queued >= hero.items.max_slots()
 		var melee_ok := not bool(data.get("melee_only", false)) or is_melee
 		var magic_ok := not bool(data.get("magic_only", false)) or is_magic
-		var can_buy := has_hero and affordable and not slot_full and melee_ok and magic_ok
+		var can_buy: bool = has_hero and affordable and not slot_full and melee_ok and magic_ok
 		var reason := ""
 		if bool(data.get("melee_only", false)) and not is_melee:
 			reason = "MELEE ONLY"
