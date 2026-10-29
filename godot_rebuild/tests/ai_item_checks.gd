@@ -1461,11 +1461,6 @@ func _test_forge_panel(check: Callable) -> void:
 	var world := _world()
 	_clear_heroes(world)
 	_fund_team(world, world.BLUE, 60000)
-	var alive := world.spawn_hero(World.THORNE, world.BLUE, Vector2(200, 200))
-	var dead := world.spawn_hero(World.VEX, world.BLUE, Vector2(260, 200))
-	alive.apply_item_change()
-	dead.apply_item_change()
-	dead.alive = false
 	var panel := ForgePanel.new()
 	panel.bind(world)
 	panel.refresh()
@@ -1473,10 +1468,50 @@ func _test_forge_panel(check: Callable) -> void:
 	world.item_shop.is_open = true
 	panel.refresh()
 	check.call(panel.visible, "Panel must follow item_shop_open")
+	var forge_card := panel.find_child("ItemForgePanel", true, false) as Control
+	var arena_dimmer := panel.find_child("ItemForgeArenaDimmer", true, false) as ColorRect
+	check.call(
+		(
+			forge_card != null
+			and forge_card.position == Vector2(90, 0)
+			and forge_card.size == Vector2(1100, 720)
+		),
+		"Forge panel must use pygame mobile's 1100x720 arena-centered geometry"
+	)
+	check.call(
+		(
+			arena_dimmer != null
+			and arena_dimmer.size == Vector2(1280, 720)
+			and is_equal_approx(arena_dimmer.color.a, 215.0 / 255.0)
+		),
+		"Forge dimmer must match pygame's 215 alpha and leave the wide-screen dock untouched"
+	)
+	var no_hero_cards: Array = world.item_shop.item_cards(world, world.forge)
+	check.call(
+		(
+			no_hero_cards.size() == 8
+			and not bool(no_hero_cards[0].can_buy)
+			and String(no_hero_cards[0].disabled_reason) == "SELECT HERO"
+		),
+		"Cards remain inspectable, but BUY must require a selected/summoned hero"
+	)
+	var no_hero_grid := panel.find_child("ItemForgeGrid", true, false)
+	var no_hero_buy := no_hero_grid.get_child(0).get_child(1) as Button
+	check.call(
+		no_hero_buy.disabled and String(no_hero_buy.text) == "SELECT HERO",
+		"No-hero card must show the source SELECT HERO state"
+	)
+	var alive := world.spawn_hero(World.THORNE, world.BLUE, Vector2(200, 200))
+	var dead := world.spawn_hero(World.VEX, world.BLUE, Vector2(260, 200))
+	alive.apply_item_change()
+	dead.apply_item_change()
+	dead.alive = false
+	panel.refresh()
 	var chips := panel.find_child("ItemForgeChips", true, false)
 	check.call(chips != null and chips.get_child_count() == 2, "Panel must draw two hero chips")
 	check.call(
-		chips.get_child(0).text.contains("BELI UNTUK 0"), "First chip must name the buyer index"
+		chips.get_child(0).text.contains(String(alive.settings().title)),
+		"First hero chip must name the selected player hero"
 	)
 	check.call(
 		String(chips.get_child(1).text).contains("dead"),
@@ -1491,10 +1526,21 @@ func _test_forge_panel(check: Callable) -> void:
 	var grid := panel.find_child("ItemForgeGrid", true, false)
 	check.call(grid != null and grid.get_child_count() == 8, "Panel must draw the 4x2 page grid")
 	var first_cell := grid.get_child(0) as VBoxContainer
+	var item_card := first_cell.get_child(0) as Button
 	var buy_button := first_cell.get_child(1) as Button
 	check.call(
-		String(buy_button.text).contains("Beli") or String(buy_button.text).contains("BELI"),
-		"Card cell must expose a BUY button"
+		(
+			first_cell.custom_minimum_size == Vector2(250, 200)
+			and item_card.custom_minimum_size == Vector2(250, 164)
+			and buy_button.custom_minimum_size == Vector2(230, 26)
+		),
+		"Item cards and BUY pills must match the pygame 250x200 grid"
+	)
+	var icon := item_card.find_child("ItemIcon_dead_edge", true, false) as TextureRect
+	check.call(icon != null and icon.texture != null, "Cards must show the source item art")
+	check.call(
+		String(buy_button.text) == "BUY" and not buy_button.disabled,
+		"Affordable card must expose the source BUY pill"
 	)
 	# Presses: chips -> tabs -> buy -> detail popup -> slots -> close.
 	check.call(panel.press("itemshop_hero_1"), "Chip press must reach the shop router")
@@ -1512,8 +1558,10 @@ func _test_forge_panel(check: Callable) -> void:
 	panel.refresh()
 	var slots := panel.find_child("ItemForgeSlots", true, false)
 	check.call(slots != null and slots.get_child_count() == 6, "Panel must draw the six slots")
+	var slot_icon := slots.get_child(0).find_child("ItemIcon_demon_maw", true, false) as TextureRect
 	check.call(
-		String(slots.get_child(0).text) == "demon_maw", "Slot row must show the buyer inventory"
+		slot_icon != null and slot_icon.texture != null,
+		"Slot row must show the buyer's source inventory icon"
 	)
 	panel.press("itemshop_slot_0", 3)
 	check.call(not alive.items.has("demon_maw"), "Slot right-click must drop the item")
@@ -1521,8 +1569,16 @@ func _test_forge_panel(check: Callable) -> void:
 	panel.press("itemshop_card_demon_maw")
 	check.call(world.item_shop.inspect_item == "demon_maw", "Card press must inspect the item")
 	panel.refresh()
-	var detail := panel.find_child("ItemForgeDetail", true, false)
-	check.call(detail != null and detail.visible, "Detail popup must appear when inspecting")
+	var detail := panel.find_child("ItemForgeDetail", true, false) as Control
+	check.call(
+		(
+			detail != null
+			and detail.visible
+			and detail.position == Vector2(200, 60)
+			and detail.size == Vector2(880, 600)
+		),
+		"Detail popup must match the source's separate centered 880x600 modal"
+	)
 	var swallowed := panel.press("itemshop_buy_moon_shard")
 	check.call(swallowed, "Detail popup must swallow other clicks")
 	check.call(world.item_shop.inspect_item == "", "Any other click must close the detail popup")

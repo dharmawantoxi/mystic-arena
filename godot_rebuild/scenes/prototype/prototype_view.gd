@@ -304,11 +304,29 @@ func _draw_map_decor() -> void:
 
 ## Layer 9d0: source DynamicRenderer between the static map and ambient tint.
 func _draw_map_dynamic() -> void:
-	if dynamic_map.theme_name != cached_river_theme:
-		dynamic_map.configure(cached_river_theme)
+	_sync_dynamic_map_quality()
 	var world := session.world as Prototype
 	dynamic_map.draw(self, world.tick_count)
 	dynamic_map_draws += 1
+
+
+func dynamic_map_quality_level() -> String:
+	# Pygame mobile starts `Quality` at LOW; the Android autoload mirrors that
+	# choice and may later adapt it. Desktop keeps the HIGH source profile.
+	var quality_runtime := get_node_or_null("/root/AdaptiveQuality")
+	if quality_runtime == null:
+		return "high"
+	var level := String(quality_runtime.get("quality_level"))
+	return level if level in ["low", "medium", "high"] else "high"
+
+
+func _sync_dynamic_map_quality() -> void:
+	var desired_quality := dynamic_map_quality_level()
+	if (
+		dynamic_map.theme_name != cached_river_theme
+		or String(dynamic_map.quality.get("level", "high")) != desired_quality
+	):
+		dynamic_map.configure(cached_river_theme, desired_quality)
 
 
 ## Layer 9bh: the ambient tint `MapRenderer.draw()` lays over the map, under the
