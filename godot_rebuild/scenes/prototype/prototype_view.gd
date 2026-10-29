@@ -139,6 +139,8 @@ var end_overlay_state: Dictionary = {}
 var build_popup_state: Dictionary = {}
 ## Layer 9bv8: selected live hero snapshot used by the screen-space panel painter.
 var hero_panel_state: Dictionary = {}
+## Selected blue castle popup, screen-space so the mobile dock owns upgrade input.
+var castle_panel_state: Dictionary = {}
 ## Layer 9bv11: view-only hovered tower snapshot from `HoverIndicators.draw`.
 var tower_hover_state: Dictionary = {}
 ## Layer 9bv12: view-only hovered empty build-slot snapshot from `HoverIndicators.draw`.

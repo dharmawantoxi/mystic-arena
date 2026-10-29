@@ -590,6 +590,19 @@ check("CombatAudio.tower_kind(source.settings().tower_path)" in _siege_text
 check('const SidePanelChecks = preload("res://tests/side_panel_checks.gd")' in ai_tests
       and "SidePanelChecks.new().run(_check)" in ai_tests,
       "9as side panel suite must be preloaded and run")
+check('const CastlePanelChecks = preload("res://tests/castle_panel_checks.gd")' in ai_tests
+      and "CastlePanelChecks.new().run(_check)" in ai_tests,
+      "9as castle dock geometry/affordability checks must run")
+_castle_panel_text = (ROOT / "scripts/ui/castle_panel_layout.gd").read_text(encoding="utf-8")
+_castle_screen_text = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+check("CastlePanelLayout.mobile_geometry(side_panel.panel)" in _castle_screen_text
+      and "match_session.request_nexus_upgrade(castle.id)" in _castle_screen_text
+      and "match_session.request_castle_shield(castle.id)" in _castle_screen_text,
+      "9as selected castle must expose routed upgrade and shield controls in the mobile dock")
+check("func upgrade_rect(state: Dictionary)" in _castle_panel_text
+      and "func shield_rect(state: Dictionary)" in _castle_panel_text
+      and "func button_enabled(state: Dictionary, action: String)" in _castle_panel_text,
+      "9as castle dock controls need hit targets and affordability guards")
 check("python godot_rebuild/tests/side_panel_source_oracle.py" in workflow,
       "9as CI must regenerate the side panel fixture from mobile/sidepanel.py")
 check((ROOT / "tests/fixtures/side_panel_source.json").is_file(),
@@ -5798,7 +5811,7 @@ check('const BuildPopupLayout = preload("res://scripts/ui/build_popup_layout.gd"
       "9bv7 view must keep fallback order and leave the right-panel branch to SidePanel")
 check('arena.set("build_popup_state", build_popup_state)' in _bp_screen
       and "var build_popup_state := _build_popup_state(world, match_session)" in _bp_screen
-      and "_update_side_panel(world, hero_panel_state, build_popup_state)" in _bp_screen
+      and "_update_side_panel(world, hero_panel_state, build_popup_state, castle_panel_state)" in _bp_screen
       and "func _build_popup_state(world: Prototype, match_session: PrototypeSession) -> Dictionary:" in _bp_screen
       and "if not world.is_running():\n\t\treturn {}\n\tvar slot_id := match_session.selected_slot_id" in _bp_screen
       and "if slot == null or slot.structure_id != -1:" in _bp_screen

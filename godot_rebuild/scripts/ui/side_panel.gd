@@ -16,6 +16,7 @@ signal overlay_pressed(screen_position: Vector2i, button_index: int)
 const Layout = preload("res://scripts/ui/side_panel_layout.gd")
 const BuildPopupLayout = preload("res://scripts/ui/build_popup_layout.gd")
 const HeroPanelLayout = preload("res://scripts/ui/hero_panel_layout.gd")
+const CastlePanelLayout = preload("res://scripts/ui/castle_panel_layout.gd")
 const HeroPanelFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
 const BuildPopupBodyFont = preload("res://assets/fonts/Barlow-Regular.ttf")
 const BuildPopupTitleFont = preload("res://assets/fonts/Cinzel.ttf")
@@ -82,11 +83,15 @@ func update_snapshot(next: Dictionary, now_ms: int = Time.get_ticks_msec()) -> v
 	var next_hero_state: Dictionary = next.get("hero_panel_state", {})
 	var previous_build_state: Dictionary = snapshot.get("build_popup_state", {})
 	var next_build_state: Dictionary = next.get("build_popup_state", {})
+	var previous_castle_state: Dictionary = snapshot.get("castle_panel_state", {})
+	var next_castle_state: Dictionary = next.get("castle_panel_state", {})
 	var overlay_active := (
 		not previous_hero_state.is_empty()
 		or not next_hero_state.is_empty()
 		or not previous_build_state.is_empty()
 		or not next_build_state.is_empty()
+		or not previous_castle_state.is_empty()
+		or not next_castle_state.is_empty()
 	)
 	snapshot = next
 	if overlay_active:
@@ -174,6 +179,7 @@ func _draw() -> void:
 	if layout.is_empty():
 		_draw_build_popup_overlay()
 		_draw_hero_panel_overlay()
+		_draw_castle_panel_overlay()
 		return
 	_draw_pause_button()
 	for entry in layout["rects"]:
@@ -184,6 +190,7 @@ func _draw() -> void:
 	if font == null:
 		_draw_build_popup_overlay()
 		_draw_hero_panel_overlay()
+		_draw_castle_panel_overlay()
 		return
 	for entry in layout["texts"]:
 		var font_size := int(entry["size"])
@@ -200,6 +207,186 @@ func _draw() -> void:
 		)
 	_draw_build_popup_overlay()
 	_draw_hero_panel_overlay()
+	_draw_castle_panel_overlay()
+
+
+func _draw_castle_panel_overlay() -> void:
+	var state: Dictionary = snapshot.get("castle_panel_state", {})
+	if state.is_empty() or not state.has("panel_pos"):
+		return
+	var origin := CastlePanelLayout.origin(state)
+	var popup := CastlePanelLayout.panel_rect(state)
+	var local := Rect2(Vector2(popup.position - panel.position), Vector2(popup.size))
+	draw_rect(local.grow(3), Color(0.0, 0.0, 0.0, 0.45), true)
+	_round_rect(Rect2i(Vector2i(local.position), Vector2i(local.size)), Color8(25, 30, 45), 0, 10)
+	_round_rect(Rect2i(Vector2i(local.position), Vector2i(local.size)), Color8(255, 205, 85), 2, 10)
+	var left := float(origin.x - panel.position.x + 15)
+	var width := popup.size.x
+	var title := String(state.get("castle_name", "CASTLE"))
+	var title_size := 28
+	var title_width := (
+		BuildPopupTitleFont.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, title_size).x
+	)
+	_castle_panel_text(
+		title,
+		Vector2(left, float(origin.y + 10)),
+		title_size,
+		Color8(115, 203, 187),
+		BuildPopupTitleFont
+	)
+	_castle_panel_text(
+		"Lv.%d" % int(state.get("level", 1)),
+		Vector2(left + 21.0 + title_width, float(origin.y + 16)),
+		20,
+		Color8(255, 220, 110)
+	)
+	var close := CastlePanelLayout.close_rect(state)
+	var close_local := Rect2(Vector2(close.position - panel.position), Vector2(close.size))
+	_round_rect(
+		Rect2i(Vector2i(close_local.position), Vector2i(close_local.size)), Color8(70, 45, 52), 0, 4
+	)
+	_round_rect(
+		Rect2i(Vector2i(close_local.position), Vector2i(close_local.size)),
+		Color8(220, 90, 90),
+		1,
+		4
+	)
+	_castle_panel_text("X", close_local.position + Vector2(6, 2), 14, Color8(255, 220, 220))
+	var y := origin.y + 46
+	if bool(state.get("shield_active", false)):
+		var shield_ratio := clampf(float(state.get("shield_ratio", 0.0)), 0.0, 1.0)
+		_castle_panel_text(
+			"CASTLE SHIELD %d%%" % int(shield_ratio * 100.0),
+			Vector2(left, float(y)),
+			16,
+			Color8(100, 220, 255)
+		)
+		y += 22
+	_castle_panel_text(
+		"HP: %d/%d" % [int(state.get("hp", 0)), int(state.get("max_hp", 0))],
+		Vector2(left, float(y)),
+		18,
+		Color8(198, 207, 230)
+	)
+	y += 24
+	var hp_ratio := clampf(
+		float(state.get("hp", 0)) / maxf(1.0, float(state.get("max_hp", 1))), 0.0, 1.0
+	)
+	var bar := Rect2(left, float(y), float(width - 30), 10.0)
+	_round_rect(Rect2i(Vector2i(bar.position), Vector2i(bar.size)), Color8(48, 42, 58), 0, 4)
+	var hp_color := Color8(120, 220, 120)
+	if hp_ratio <= 0.5:
+		hp_color = Color8(255, 200, 80)
+	if hp_ratio <= 0.25:
+		hp_color = Color8(255, 100, 100)
+	var hp_fill := Rect2(bar.position, Vector2(bar.size.x * hp_ratio, bar.size.y))
+	_round_rect(Rect2i(Vector2i(hp_fill.position), Vector2i(hp_fill.size)), hp_color, 0, 4)
+	y += 24
+	var stats := [
+		"Minion Power: x%.1f" % float(state.get("minion_scale", 1.0)),
+		"AI Level: %d/5" % int(state.get("minion_ai", 1)),
+		"DMG: %d  RNG: %d" % [int(state.get("damage", 0)), int(state.get("range", 0))],
+	]
+	for text in stats:
+		_castle_panel_text(
+			String(text), Vector2(left, float(y)), 18, Color8(160, 170, 195), BuildPopupBodyFont
+		)
+		y += 21
+	y += 12
+	var has_shield_row := (
+		bool(state.get("shield_free", false))
+		or bool(state.get("shield_purchased", false))
+		or bool(state.get("shield_can_activate", false))
+	)
+	if has_shield_row:
+		var shield := CastlePanelLayout.shield_rect(state)
+		var shield_local := Rect2(Vector2(shield.position - panel.position), Vector2(shield.size))
+		var shield_enabled := CastlePanelLayout.button_enabled(state, "castle_shield")
+		var shield_fill := Color8(35, 105, 125)
+		var shield_edge := Color8(100, 220, 255)
+		var shield_ink := Color8(225, 240, 255)
+		if bool(state.get("shield_purchased", false)):
+			shield_fill = Color8(35, 105, 75)
+			shield_edge = Color8(90, 190, 120)
+			shield_ink = Color8(220, 255, 225)
+		elif bool(state.get("shield_free", false)):
+			shield_fill = Color8(35, 105, 125)
+		elif not shield_enabled:
+			shield_fill = Color8(50, 57, 69)
+			shield_edge = Color8(75, 82, 96)
+			shield_ink = Color8(145, 150, 165)
+		_round_rect(
+			Rect2i(Vector2i(shield_local.position), Vector2i(shield_local.size)), shield_fill, 0, 6
+		)
+		_round_rect(
+			Rect2i(Vector2i(shield_local.position), Vector2i(shield_local.size)), shield_edge, 1, 6
+		)
+		_castle_panel_text(
+			String(state.get("shield_label", "CASTLE SHIELD")),
+			Vector2(shield_local.position.x + 10, shield_local.position.y + 8),
+			17,
+			shield_ink
+		)
+	var upgrade := CastlePanelLayout.upgrade_rect(state)
+	var upgrade_local := Rect2(Vector2(upgrade.position - panel.position), Vector2(upgrade.size))
+	if int(state.get("upgrade_cost", 0)) > 0:
+		_castle_panel_text(
+			"Next: %s" % String(state.get("next_name", "CITADEL")),
+			Vector2(left, float(upgrade.position.y - 24)),
+			18,
+			Color8(100, 220, 255),
+			BuildPopupBodyFont
+		)
+		var upgrade_enabled := CastlePanelLayout.button_enabled(state, "castle_upgrade")
+		var upgrade_fill := Color8(50, 118, 79) if upgrade_enabled else Color8(52, 53, 62)
+		var upgrade_edge := Color8(120, 220, 140) if upgrade_enabled else Color8(76, 78, 92)
+		_round_rect(
+			Rect2i(Vector2i(upgrade_local.position), Vector2i(upgrade_local.size)),
+			upgrade_fill,
+			0,
+			8
+		)
+		_round_rect(
+			Rect2i(Vector2i(upgrade_local.position), Vector2i(upgrade_local.size)),
+			upgrade_edge,
+			1,
+			8
+		)
+		_castle_panel_text(
+			"UPGRADE %dG" % int(state.get("upgrade_cost", 0)),
+			Vector2(upgrade_local.position.x + 10, upgrade_local.position.y + 8),
+			20,
+			Color8(238, 255, 240) if upgrade_enabled else Color8(96, 96, 108)
+		)
+	else:
+		var max_label := "MAX LEVEL"
+		var max_size := 24
+		var max_width := (
+			HeroPanelFont.get_string_size(max_label, HORIZONTAL_ALIGNMENT_LEFT, -1, max_size).x
+		)
+		_castle_panel_text(
+			max_label,
+			Vector2(
+				float(popup.position.x - panel.position.x) + (float(width) - max_width) * 0.5,
+				float(upgrade.position.y)
+			),
+			max_size,
+			Color8(255, 220, 110)
+		)
+
+
+func _castle_panel_text(
+	text: String, pos: Vector2, font_size: int, color: Color, font: Font = HeroPanelFont
+) -> void:
+	draw_string(
+		font,
+		Vector2(pos.x, pos.y + font.get_ascent(font_size)),
+		text,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1,
+		font_size,
+		color
+	)
 
 
 func _draw_build_popup_overlay() -> void:
