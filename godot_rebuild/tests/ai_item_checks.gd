@@ -1510,7 +1510,8 @@ func _test_forge_panel(check: Callable) -> void:
 	var chips := panel.find_child("ItemForgeChips", true, false)
 	check.call(chips != null and chips.get_child_count() == 2, "Panel must draw two hero chips")
 	check.call(
-		chips.get_child(0).text.contains("BELI UNTUK 0"), "First chip must name the buyer index"
+		chips.get_child(0).text.contains(String(alive.settings().title)),
+		"First hero chip must name the selected player hero"
 	)
 	check.call(
 		String(chips.get_child(1).text).contains("dead"),
@@ -1557,8 +1558,10 @@ func _test_forge_panel(check: Callable) -> void:
 	panel.refresh()
 	var slots := panel.find_child("ItemForgeSlots", true, false)
 	check.call(slots != null and slots.get_child_count() == 6, "Panel must draw the six slots")
+	var slot_icon := slots.get_child(0).find_child("ItemIcon_demon_maw", true, false) as TextureRect
 	check.call(
-		String(slots.get_child(0).text) == "demon_maw", "Slot row must show the buyer inventory"
+		slot_icon != null and slot_icon.texture != null,
+		"Slot row must show the buyer's source inventory icon"
 	)
 	panel.press("itemshop_slot_0", 3)
 	check.call(not alive.items.has("demon_maw"), "Slot right-click must drop the item")

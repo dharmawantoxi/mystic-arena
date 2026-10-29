@@ -4739,4 +4739,7 @@ Setelah push, diagnostics native CI menemukan inferensi tipe yang gagal pada var
 `Object` dinamis (`gold`, state BUY, queue, dan jumlah owned). Variabel tersebut kini diberi
 tipe eksplisit `int`/`bool`. Diagnostik native juga menunjukkan sublabel kartu meminta
 nama node kosong; helper label kini hanya menetapkan nama jika string-nya nonkosong.
-Hasil suite native setelah dua koreksi tersebut masih menunggu.
+Hasil suite native setelah dua koreksi tersebut masih menunggu. Assertion UI yang masih
+mengharapkan teks ID pada chip/slot diselaraskan ke nama hero dan ikon sumber; penanganan
+klik kosong kini dipusatkan pada koordinat viewport agar area kosong di dalam panel tidak
+menutup toko.

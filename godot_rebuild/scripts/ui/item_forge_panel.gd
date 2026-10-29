@@ -187,35 +187,6 @@ func _input(event: InputEvent) -> void:
 						get_viewport().set_input_as_handled()
 
 
-func _on_background_input(event: InputEvent) -> void:
-	if not event is InputEventMouseButton:
-		return
-	var mouse := event as InputEventMouseButton
-	if not mouse.pressed or mouse.button_index not in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT]:
-		return
-	var shop_ui: Object = shop()
-	if shop_ui == null or not bool(shop_ui.is_open):
-		return
-	var point := get_global_mouse_position()
-	if String(shop_ui.inspect_item) != "":
-		if DETAIL_RECT.has_point(point):
-			get_viewport().set_input_as_handled()
-			return
-		shop_ui.inspect_item = ""
-		refresh()
-		get_viewport().set_input_as_handled()
-		return
-	if mouse.button_index == MOUSE_BUTTON_LEFT and PANEL_RECT.has_point(point):
-		get_viewport().set_input_as_handled()
-		return
-	if mouse.button_index == MOUSE_BUTTON_RIGHT:
-		shop_ui.is_open = false
-	else:
-		shop_ui.click_outside_panel()
-	refresh()
-	get_viewport().set_input_as_handled()
-
-
 func _build_chrome() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -225,7 +196,6 @@ func _build_chrome() -> void:
 	_dim.position = Vector2.ZERO
 	_dim.size = ARENA_SIZE
 	_dim.mouse_filter = Control.MOUSE_FILTER_STOP
-	_dim.gui_input.connect(_on_background_input)
 	add_child(_dim)
 
 	_card = PanelContainer.new()
@@ -237,7 +207,6 @@ func _build_chrome() -> void:
 	_card.add_theme_stylebox_override(
 		"panel", _panel_style(Color8(22, 26, 44), UI_THEME.GOLD, 3, 14)
 	)
-	_card.gui_input.connect(_on_background_input)
 	add_child(_card)
 	_chrome = Control.new()
 	_chrome.name = "ItemForgeChrome"
@@ -370,7 +339,6 @@ func _build_chrome() -> void:
 	_detail_scrim.size = ARENA_SIZE
 	_detail_scrim.visible = false
 	_detail_scrim.mouse_filter = Control.MOUSE_FILTER_STOP
-	_detail_scrim.gui_input.connect(_on_background_input)
 	add_child(_detail_scrim)
 	_detail = PanelContainer.new()
 	_detail.name = "ItemForgeDetail"
