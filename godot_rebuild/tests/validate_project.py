@@ -1038,6 +1038,17 @@ check('[node name="BottomBar" type="PanelContainer" parent="HUD"]\n'
 check('const PrototypeLayoutChecks = preload("res://tests/prototype_layout_checks.gd")' in ai_tests
       and 'await PrototypeLayoutChecks.new().run(self, app, _check)' in ai_tests,
       "Prototype full-screen overlay layout must have a registered scene proof")
+mobile_hud_checks = (ROOT / "tests/prototype_layout_checks.gd").read_text(encoding="utf-8")
+check('func _configure_mobile_hud(mobile: bool, docked: bool) -> void:' in shield_screen
+      and '_configure_mobile_hud(mobile, docked)' in shield_screen
+      and 'side_panel.configure(viewport_width if mobile else 1280)' in shield_screen
+      and 'OS.has_feature("android")' in shield_screen
+      and '%BottomBar.hide()' in shield_screen
+      and 'screen._configure_mobile_hud(true, true)' in mobile_hud_checks
+      and 'screen._configure_mobile_hud(true, false)' in mobile_hud_checks
+      and 'Android wide-screen layout replaces the desktop bars' in mobile_hud_checks
+      and 'Android 16:9 fallback uses a compact safe-area toolbar' in mobile_hud_checks,
+      "Android in-game HUD must use the source side dock or compact touch-safe fallback, not desktop chrome")
 check(all(path in shield_screen for path in ('"cannon"', '"ice"', '"mage"'))
       and "request_regen_shield" in shield_screen and "request_castle_shield" in shield_screen,
       "Playable scene must route all source build and shield choices")
@@ -6451,8 +6462,33 @@ check("sin(phase) * 0.08" in _mn_layout and "phase += 0.01 * frames" in _mn_layo
 check("[node name=\"Ambient\" type=\"Control\" parent=\".\"]" in _mn_scene
       and 'path="res://scripts/ui/menu_ambient_fx.gd" id="4"' in _mn_scene
       and _mn_scene.index('[node name="Backdrop"') < _mn_scene.index('[node name="Ambient"')
-      < _mn_scene.index('[node name="Content"'),
-      "9bs the ambient node must layer over the static art and underneath interactive menu content")
+      < _mn_scene.index('[node name="Ornaments"') < _mn_scene.index('[node name="ContinueButton"'),
+      "9bs backdrop, ambience, menu ornaments and interactive controls must layer in source order")
+_mn_layout = (ROOT / "scenes/menu/main_menu.gd").read_text(encoding="utf-8")
+_mn_foreground = (ROOT / "scripts/ui/menu_foreground.gd").read_text(encoding="utf-8")
+check('text = "MYSTIC ARENA"' in _mn_scene
+      and 'text = "B A T T L E   A R E N A"' in _mn_scene
+      and 'Dark Fantasy MOBA  •  Tower Defense' in _mn_scene
+      and "func _layout_source_menu() -> void:" in _mn_layout
+      and '%ContinueButton.pressed.connect(_start_continue_level)' in _mn_layout
+      and '%PlayButton.pressed.connect(_open_new_game)' in _mn_layout
+      and 'var next_level := Catalog.get_next_level(highest)' in _mn_layout
+      and '_start_selected_level()' in _mn_layout
+      and 'unique_name_in_owner = true' in _mn_scene
+      and '[node name="ContinueButton" type="Button" parent="."]' in _mn_scene
+      and '[node name="LegacyControls" type="Control" parent="."]' in _mn_scene
+      and 'Rect2(320.0, 311.0, 300.0, 50.0)' in _mn_layout
+      and 'Rect2(660.0, 311.0, 300.0, 50.0)' in _mn_layout
+      and 'Rect2(460.0, 629.0, 360.0, 50.0)' in _mn_layout
+      and "resized.connect(_layout_source_menu)" in _mn_layout
+      and "func _draw_corner_ticks(rect: Rect2) -> void:" in _mn_foreground
+      and "var flourish_y := 286.0" in _mn_foreground,
+      "9bv18 source main-menu title, flourish and two-plus-six button layout must be ported")
+_mn_art_checks = (ROOT / "tests/menu_art_checks.gd").read_text(encoding="utf-8")
+check('func run_scene(menu: Node, check: Callable) -> void:' in _mn_art_checks
+      and "MainMenu buttons match the source two-button row and six-button vertical stack" in _mn_art_checks
+      and "MenuArtChecks.new().run_scene(app.current_screen, _check)" in ai_tests,
+      "9bv18 native menu scene suite must assert visible source composition and placement")
 check("MenuAmbientChecks.new().run_scene(" in ai_tests
       and "ambient_draws" in _mn_ambient_checks and "particle_draws" in _mn_ambient_checks
       and "The live menu overlay draws" in _mn_ambient_checks,
@@ -6479,11 +6515,11 @@ def _mn_colour(name):
     return f"Color({', '.join(parts)}, 1)"
 
 
-check(_mn_scenes.count(_mn_colour("TEXT_DIM")) == 8 and _mn_scenes.count(_mn_colour("GOLD")) == 1
-      and _mn_scenes.count(_mn_colour("CYAN")) == 1
+check(_mn_scenes.count(_mn_colour("TEXT_DIM")) == 6 and _mn_scenes.count(_mn_colour("GOLD")) == 1
+      and _mn_scenes.count(_mn_colour("CYAN")) == 0
       and _mn_scenes.count("Color(0.0392, 0.0392, 0.0784, 0.7843)") == 4
       and "overlay.fill((10, 10, 20, 200))" in _mn_core,
-      "9bs the scenes must use the ui_theme.py muted, gold, cyan and the (10, 10, 20, 200) pause dim")
+      "9bv18 source menu removes the experimental cyan eyebrow while retaining source theme and dim palette")
 
 # ── Layer 9bt: source-baked minion slash and death effects ──
 _mfx_path = ROOT / "data/art/minion_combat_fx.json"

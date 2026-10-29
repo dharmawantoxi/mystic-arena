@@ -14,6 +14,10 @@ func run(check: Callable) -> void:
 	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(FIXTURE))
 	var source: Dictionary = fixture.get("source", {})
 	var scenario: Dictionary = fixture.get("scenario", {})
+	check.call(
+		int(source.get("initial_player_hero_count", -1)) == 0,
+		"Source player hero list starts empty before a purchase"
+	)
 	check.call(int(source.get("initial_ai_hero_count", -1)) == 0, "Source AI roster starts empty")
 	check.call(
 		bool(source.get("hero_cap_uses_ai_roster", false)), "Source hero cap reads AI roster"
@@ -30,25 +34,26 @@ func run(check: Callable) -> void:
 
 func _test_production_world(scenario: Dictionary, check: Callable) -> void:
 	var world := World.new()
-	check.call(world.setup_arena(), "Production world initializes the mirrored hero pair")
-	var free_red: World.HeroState = null
+	check.call(world.setup_arena(false), "Playable world initializes without free hero mirrors")
+	var player_heroes := 0
 	var red_scene_heroes := 0
 	for unit in world.units:
-		if unit.is_hero and unit.team == world.RED:
+		if not unit.is_hero:
+			continue
+		if unit.team == world.BLUE:
+			player_heroes += 1
+		elif unit.team == world.RED:
 			red_scene_heroes += 1
-			if free_red == null:
-				free_red = unit as World.HeroState
-	check.call(free_red != null, "Production setup has a free red mirrored Kaizen")
-	if free_red == null:
-		return
-	check.call(free_red.definition.id == "kaizen", "Free red mirror identity remains Kaizen")
 	check.call(
-		red_scene_heroes == int(scenario.get("free_red_scene_heroes", -1)),
-		"Production scene exposes the source-divergent free red mirror"
+		(
+			player_heroes == int(scenario.get("initial_player_hero_count", -1))
+			and world.player_roster().is_empty()
+		),
+		"Playable player roster begins empty until the player buys a hero"
 	)
 	check.call(
-		int(scenario.get("native_old_ai_roster_before_purchase", -1)) == 1,
-		"Old team-scan would count the free red mirror"
+		red_scene_heroes == int(scenario.get("initial_red_scene_hero_count", -1)),
+		"Playable red scene has no free hero before AI recruitment"
 	)
 	check.call(
 		(
@@ -58,15 +63,14 @@ func _test_production_world(scenario: Dictionary, check: Callable) -> void:
 				== int(scenario.get("source_ai_roster_before_purchase", -1))
 			)
 		),
-		"Production AI roster matches the source empty roster"
+		"Playable AI roster matches the source empty roster"
 	)
-	check.call(not world._ai_roster().has(free_red), "Free red Kaizen is not an AI-owned hero")
 	check.call(
-		world.ai_items.candidates(world).is_empty(), "Free mirror is not an AI item candidate"
+		world.ai_items.candidates(world).is_empty(), "Empty AI roster has no item candidates"
 	)
 	check.call(
 		world.ai_upgrades.hero_candidates(world).is_empty(),
-		"Free mirror is not an AI upgrade candidate"
+		"Empty AI roster has no hero upgrade candidates"
 	)
 
 	_fund(world, 100000)
@@ -74,24 +78,18 @@ func _test_production_world(scenario: Dictionary, check: Callable) -> void:
 	draft.purchase_target = "kaizen"
 	draft.purchase_target_cost = int(World.PLAYABLE_AI_HEROES.kaizen.cost)
 	check.call(
-		Recruitment.new().try_buy(world, draft), "AI may buy Kaizen absent from its own roster"
+		Recruitment.new().try_buy(world, draft), "AI may recruit Kaizen from its empty roster"
 	)
 	var roster := world._ai_roster()
-	check.call(roster.size() == 1, "Paid red hero is registered in the AI roster")
+	check.call(roster.size() == 1, "Purchased red hero is registered in the AI roster")
 	if roster.is_empty():
 		return
 	var first_ai_hero := roster[0] as World.HeroState
-	check.call(first_ai_hero.id != free_red.id, "Paid Kaizen stays distinct from the free mirror")
 	var source_first_y := _source_spawn_y_for_roster_count(0)
-	var native_old_first_y := World.RED_HERO_SPAWN.y + red_scene_heroes * 40 - 40
 	check.call(source_first_y >= 0.0, "Source draft oracle records the first AI spawn position")
 	check.call(
 		is_equal_approx(first_ai_hero.position.y, source_first_y),
 		"Production recruitment uses the source AI-roster spawn offset"
-	)
-	check.call(
-		not is_equal_approx(source_first_y, native_old_first_y),
-		"Counterfactual old physical count would shift the AI spawn by one slot"
 	)
 	check.call(
 		world.ai_items.candidates(world) == [first_ai_hero.id], "Item candidates use AI ownership"

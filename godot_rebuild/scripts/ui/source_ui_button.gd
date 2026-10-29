@@ -73,6 +73,15 @@ func set_source_active(active: bool) -> void:
 	_sync_label(true)
 
 
+func set_label_font_size(value: int) -> void:
+	label_font_size = maxi(8, value)
+	add_theme_font_size_override("font_size", label_font_size)
+	if is_instance_valid(_label):
+		_label.add_theme_font_size_override("font_size", label_font_size)
+		_last_size = Vector2(-1.0, -1.0)
+		_layout_source_children()
+
+
 func _setup_styleboxes() -> void:
 	var normal: StyleBox = null
 	var hover: StyleBox = null

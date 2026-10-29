@@ -36,11 +36,16 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	var thorne_button: Button = _card(panel, "thorne")
 	var kaizen_button: Button = _card(panel, "kaizen")
 	check.call(
+		world.player_roster().is_empty(),
+		"Playable match starts with no live player hero before a purchase"
+	)
+	check.call(
 		thorne_button != null and not thorne_button.disabled,
 		"Affordable unlocked Thorne is buyable"
 	)
 	check.call(
-		kaizen_button != null and kaizen_button.disabled, "Already-active Kaizen is disabled"
+		kaizen_button != null and not kaizen_button.disabled,
+		"Owned Kaizen remains purchasable until summoned in-match"
 	)
 	var purse: int = world.economy.gold[world.BLUE]
 	thorne_button.pressed.emit()
@@ -52,28 +57,29 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		)
 	)
 	check.call(
-		world.player_roster().size() == 1 and world.economy.gold[0] == purse,
-		"UI never mutates before fixed tick"
+		world.player_roster().is_empty() and world.economy.gold[0] == purse,
+		"UI never mutates before fixed tick and does not pre-spawn heroes"
 	)
 	thorne_button.pressed.emit()
 	check.call(
-		world.player_roster().size() == 1, "Repeated same-frame card press cannot double summon"
+		world.player_roster().is_empty(),
+		"Repeated same-frame card press cannot pre-spawn or double summon"
 	)
 	session._physics_process(1.0 / 60.0)
 	var roster: Array = world.player_roster()
 	check.call(
-		roster.size() == 2 and roster[1].definition.id == "thorne",
-		"Fixed tick summons exact selected hero"
+		roster.size() == 1 and roster[0].definition.id == "thorne",
+		"Fixed tick summons the first hero only after the purchase"
 	)
 	check.call(
-		world.economy.gold[0] == purse - roster[1].settings().cost,
+		world.economy.gold[0] == purse - roster[0].settings().cost,
 		"Scene summon debits exact source cost"
 	)
 	check.call(
-		session.selected_id == roster[1].id, "New player hero becomes the controlled selection"
+		session.selected_id == roster[0].id, "New player hero becomes the controlled selection"
 	)
 	check.call(
-		world.forge.selected_hero_id == roster[1].id,
+		world.forge.selected_hero_id == roster[0].id,
 		"Forge target follows recruited hero selection"
 	)
 	panel.command_pending = false
@@ -82,18 +88,18 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	thorne_button = _card(panel, "thorne")
 	check.call(thorne_button != null and thorne_button.disabled, "Purchased card becomes ACTIVE")
 
-	var destination: Vector2 = roster[1].position + Vector2(35, 0)
+	var destination: Vector2 = roster[0].position + Vector2(35, 0)
 	check.call(
-		session.request_hero_move(roster[1].id, destination),
+		session.request_hero_move(roster[0].id, destination),
 		"Recruited hero accepts player move command"
 	)
 	session._physics_process(1.0 / 60.0)
-	check.call(roster[1].has_destination, "Recruited hero executes movement through session")
+	check.call(roster[0].has_destination, "Recruited hero executes movement through session")
 	check.call(
-		session.request_hero_upgrade(roster[1].id), "Recruited hero uses selected-ID upgrade path"
+		session.request_hero_upgrade(roster[0].id), "Recruited hero uses selected-ID upgrade path"
 	)
 	session._physics_process(1.0 / 60.0)
-	check.call(roster[1].level == 2, "Recruited non-Kaizen upgrades through real domain")
+	check.call(roster[0].level == 2, "Recruited non-Kaizen upgrades through real domain")
 
 	toggle.pressed.emit()
 	check.call(not panel.visible, "Hero Shop toggles closed")

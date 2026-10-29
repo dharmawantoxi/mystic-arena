@@ -71,6 +71,55 @@ func _check_cover(check: Callable) -> void:
 	check.call(covers, "The frame always covers the window")
 
 
+func run_scene(menu: Node, check: Callable) -> void:
+	check.call(
+		(
+			menu.get_node("%Title").text == "MYSTIC ARENA"
+			and menu.get_node("%Subtitle").text == "B A T T L E   A R E N A"
+			and menu.get_node("%Scope").text == "Dark Fantasy MOBA  •  Tower Defense"
+		),
+		"MainMenu uses the source title, subtitle and tagline rather than rebuild marketing copy"
+	)
+	var expected := {
+		"ContinueButton": Rect2(320.0, 311.0, 300.0, 50.0),
+		"PlayButton": Rect2(660.0, 311.0, 300.0, 50.0),
+		"HeroShopButton": Rect2(460.0, 364.0, 360.0, 50.0),
+		"InputButton": Rect2(460.0, 417.0, 360.0, 50.0),
+		"HowToPlayButton": Rect2(460.0, 470.0, 360.0, 50.0),
+		"SettingsButton": Rect2(460.0, 523.0, 360.0, 50.0),
+		"CreditsButton": Rect2(460.0, 576.0, 360.0, 50.0),
+		"QuitButton": Rect2(460.0, 629.0, 360.0, 50.0),
+	}
+	var layout_matches := true
+	for button_name in expected:
+		var button := menu.get_node("%" + button_name) as Control
+		var rect: Rect2 = expected[button_name]
+		layout_matches = layout_matches and button.visible
+		layout_matches = layout_matches and is_equal_approx(button.position.x, rect.position.x)
+		layout_matches = layout_matches and is_equal_approx(button.position.y, rect.position.y)
+		layout_matches = layout_matches and is_equal_approx(button.size.x, rect.size.x)
+		layout_matches = layout_matches and is_equal_approx(button.size.y, rect.size.y)
+	check.call(
+		layout_matches,
+		"MainMenu buttons match the source two-button row and six-button vertical stack"
+	)
+	check.call(
+		(
+			menu.get_node("%ContinueButton").text == "CONTINUE"
+			and menu.get_node("%PlayButton").text in ["PLAY GAME", "MULAI GAME"]
+			and menu.get_node("%HeroShopButton").text == "HERO SHOP"
+			and menu.get_node("%InputButton").text == "INPUT"
+			and menu.get_node("%HowToPlayButton").text == "HOW TO PLAY"
+			and menu.get_node("%CreditsButton").text == "CREDITS"
+		),
+		"MainMenu exposes the source action labels and preserves localization for Play Game"
+	)
+	check.call(
+		not menu.get_node("LegacyControls").visible and not menu.get_node("LevelPicker").visible,
+		"Godot-only lab shortcuts and prototype selectors stay off the source main menu"
+	)
+
+
 func _check_scenes(check: Callable) -> void:
 	var dim := UiSkin.palette("TEXT_DIM")
 	var muted := "Color(%s, %s, %s, 1)" % [_f(dim.r), _f(dim.g), _f(dim.b)]

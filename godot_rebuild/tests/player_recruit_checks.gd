@@ -64,18 +64,20 @@ func _playable_roster(check: Callable) -> void:
 		),
 		"Permanent starter unlocks configure before the playable arena"
 	)
-	check.call(world.setup_arena(), "Player recruit playable arena initializes")
-	(
-		check
-		. call(
-			(
-				world.player_roster().size() == 1
-				and world.player_roster()[0].definition.id == "kaizen"
-			),
-			"Free prototype Kaizen occupies source player roster slot",
-		)
+	check.call(world.setup_arena(false), "Player recruit playable arena initializes source-empty")
+	check.call(
+		world.player_roster().is_empty(), "No player hero is live before an in-match purchase"
 	)
 	var initial := world.economy.gold[world.BLUE]
+	world.economy.credit_kill(world.BLUE, 1000)
+	check.call(
+		world.buy_player_hero("kaizen"), "Owned starter spawns only after a match-gold purchase"
+	)
+	var kaizen = world.player_roster()[0]
+	check.call(
+		kaizen.definition.id == "kaizen" and kaizen.position == world.player_hero_spawn_position(0),
+		"First Kaizen uses the source shop spawn point"
+	)
 	check.call(world.buy_player_hero("thorne"), "Unlocked starter recruits in playable world")
 	var thorne = world.player_roster()[1]
 	check.call(thorne.definition.id == "thorne", "Player summon uses real Thorne kit")
@@ -90,8 +92,11 @@ func _playable_roster(check: Callable) -> void:
 		)
 	)
 	check.call(
-		world.economy.gold[world.BLUE] == initial - thorne.settings().cost,
-		"Summon costs match gold"
+		(
+			world.economy.gold[world.BLUE]
+			== initial + 1000 - kaizen.settings().cost - thorne.settings().cost
+		),
+		"Summon costs match gold for each purchased hero"
 	)
 	world.player_roster()[0].alive = false
 	check.call(not world.buy_player_hero("kaizen"), "Dead active hero still blocks duplicate")

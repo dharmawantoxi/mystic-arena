@@ -700,7 +700,7 @@ func apply_presentation_settings() -> void:
 	)
 
 
-func setup_arena() -> bool:
+func setup_arena(spawn_legacy_hero_mirrors: bool = true) -> bool:
 	# Layer 9k: match block rolls share the seeded item stream, so a replayed
 	# match draws the same passive blocks (lab worlds keep `block_rng`).
 	block_roll_override = Callable(self, "_item_block_roll")
@@ -710,9 +710,10 @@ func setup_arena() -> bool:
 	spawn_structure(NEXUS, BLUE, LaneLayout.BLUE_BASE)
 	spawn_structure(NEXUS, RED, LaneLayout.RED_BASE)
 	_apply_castle_start_levels()
-	# Keep the existing free mirror for prototype compatibility, but register
-	# blue Kaizen as the first player-roster slot. The red mirror remains outside
-	# AIPlayer ownership.
+	# The pygame match starts with an empty live hero roster; Kaizen is owned,
+	# not summoned. Keep the old mirrored pair only for low-level legacy fixtures.
+	if not spawn_legacy_hero_mirrors:
+		return true
 	var blue_kaizen := _spawn_production_hero(KAIZEN, BLUE, HERO_SPAWN)
 	if blue_kaizen == null:
 		return false

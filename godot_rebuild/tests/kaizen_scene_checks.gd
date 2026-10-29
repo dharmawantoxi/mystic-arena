@@ -10,26 +10,26 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	var session = screen.simulation
 	var world = session.world
 	session.set_physics_process(false)
-	var hero = world.blue_hero()
-	check.call(hero != null and hero.alive and hero.level == 1, "prototype spawns Kaizen")
-	var rival = null
-	for unit in world.units:
-		if unit.is_hero and unit.team == 1:
-			rival = unit
-			break
 	check.call(
-		rival != null and rival.settings().id == "kaizen" and rival.team == 1,
-		"prototype spawns red Kaizen"
+		world.player_roster().is_empty(),
+		"Playable match starts with no live player heroes before an in-match purchase"
 	)
-	session.selected_id = rival.id
-	await _settle(tree)
+	var initial_red_heroes := 0
+	for unit in world.units:
+		if unit.is_hero and unit.team == world.RED:
+			initial_red_heroes += 1
+	check.call(initial_red_heroes == 0, "Enemy heroes are not mirrored into the scene at reset")
+	var starting_gold: int = world.economy.gold[world.BLUE]
+	check.call(session.request_hero_buy("kaizen"), "Owned starter enters the purchase command path")
+	session._physics_process(1.0 / 60.0)
+	var hero = world.blue_hero()
 	check.call(
-		(
-			not screen.get_node("%SkillQButton").visible
-			and not screen.get_node("%AutoCastButton").visible
-			and not screen.get_node("%HeroCommands").visible
-		),
-		"red inspect hides blue skills"
+		hero != null and hero.alive and hero.level == 1,
+		"Kaizen appears only after the player completes an in-match buy"
+	)
+	check.call(
+		world.economy.gold[world.BLUE] == starting_gold - hero.settings().cost,
+		"First Kaizen summon charges the exact source match-gold cost"
 	)
 	session.selected_id = hero.id
 	session.selected_slot_id = -1
@@ -238,19 +238,14 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	await _settle(tree)
 	check.call(not is_instance_id_valid(old_id) and not tree.paused, "hero scene disposed")
 	world = app.current_screen.simulation.world
-	check.call(
-		(
-			world.blue_hero() != null
-			and world.blue_hero().skill_timer == 0
-			and world.blue_hero().auto_cast_enabled
-		),
-		"restart respawns a fresh Kaizen"
-	)
-	var revived := 0
+	var heroes_after_restart := 0
 	for unit in world.units:
 		if unit.is_hero:
-			revived += 1
-	check.call(revived == 2, "restart respawns both Kaizen")
+			heroes_after_restart += 1
+	check.call(
+		world.player_roster().is_empty() and heroes_after_restart == 0,
+		"Restart returns to source state with no hero before another purchase"
+	)
 	app.show_menu()
 	await _settle(tree)
 	check.call(tree.get_node_count() == baseline, "hero lifecycle clean")

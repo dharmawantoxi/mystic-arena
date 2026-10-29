@@ -3,6 +3,7 @@ extends Control
 
 signal slot_requested(slot: int)
 signal delete_requested(slot: int)
+signal closed
 
 const Slots = preload("res://scripts/match/save_slot_store.gd")
 
@@ -52,6 +53,7 @@ func open_with_slots(infos: Array[Dictionary], selected_slot: int) -> void:
 
 
 func set_open(is_open: bool) -> void:
+	var was_open := visible
 	visible = is_open
 	if not is_open:
 		pending_delete = -1
@@ -63,6 +65,8 @@ func set_open(is_open: bool) -> void:
 			_confirm.visible = false
 		if _cloud_confirm != null:
 			_cloud_confirm.visible = false
+		if was_open:
+			closed.emit()
 
 
 func show_cloud_restore_prompt(payload: Dictionary, summary: Dictionary) -> void:
