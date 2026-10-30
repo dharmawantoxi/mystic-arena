@@ -1,23 +1,8 @@
 # MULAI DI SINI
 
-Tiga langkah: **uji di PC → unggah ke GitHub → build APK**.
+Tiga langkah untuk versi Android Pygame: **uji di PC → unggah ke GitHub → build APK**.
 
-> **Mau versi Godot (port GPU) dan tidak mau memasang apa pun?**
-> Tab **Actions → Godot Debug Run** menjalankan game di layar virtual lalu
-> mengunggah screenshot + `run.log` + `report.json`; buka repo ini dengan
-> **Codespaces** kalau ingin editor Godot di browser. Panduan:
-> [docs/GODOT_DEBUG_DI_GITHUB.md](docs/GODOT_DEBUG_DI_GITHUB.md).
-
-> **Menyentuh `godot/gdext/` (C++ GDExtension)?** Jangan tunggu Actions
-> (±40 menit). Cek di PC sendiri dalam **±40 detik** — cukup `python3` + `g++`,
-> tanpa godot-cpp:
->
-> ```bash
-> tools/gdext_local_check.sh              # data + logika C++ (±27.000 cek)
-> tools/gdext_local_check.sh --lapis 5    # setara penuh CI: build .so + engine
-> ```
->
-> Panduan: [docs/GDEXT_VERIFIKASI_LOKAL.md](docs/GDEXT_VERIFIKASI_LOKAL.md).
+> **Catatan Godot:** proyek port yang aktif adalah `godot_rebuild/`, dan parity penuh dengan Pygame belum tercapai. Lihat [Status parity Godot ↔ Pygame](docs/GODOT_PYGAME_PARITY_STATUS.md) untuk gap, bukti, dan kriteria selesai. Jangan gunakan runbook/converter Godot lama sebagai status proyek aktif.
 
 ---
 

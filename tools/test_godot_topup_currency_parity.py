@@ -2,7 +2,7 @@
 # pyright: reportMissingImports=false
 """Oracle paritas mata uang dialog top-up (Fase 33) — pygame = ground truth.
 
-Gap #2 di docs/AUDIT_ULANG_DARI_AWAL.md: dialog top-up pygame menampilkan
+Catatan historis untuk port `godot/` lama: dialog top-up Pygame menampilkan
 harga dalam MATA UANG PENGUNA (`topup_currency.py` di root repo), sedangkan
 Godot dulu hanya punya satu angka IDR yang diformat sendiri — dan string-nya
 salah: "Rp10.000" tanpa spasi, padahal simbol pygame "Rp " (dengan spasi).

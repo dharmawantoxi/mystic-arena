@@ -1,8 +1,8 @@
 # Mystic Arena — Godot Rebuild
 
-**Proyek baru, native GDScript. Target editor: Godot 4.7.2 standard, Windows 11.**
+**Proyek Godot native GDScript. Target editor: Godot 4.7.2.**
 
-Milestone 1 (fondasi), 2 (combat minion), 3 (tower/projectile/nexus), 4 (prototipe wave/ekonomi/build-sell), 5 (upgrade Archer 1–6), 6 (upgrade nexus 1–5 + scaling/AI/komposisi), dan 7 (jalur Cannon 2–6 + splash/burn), 8 (jalur Ice 2–6 + slow/attack-slow), dan 9 (jalur Mage 2–6 + chain/skill-down/anti-heal) telah diimplementasikan; CI native diverifikasi pada branch sesi baru. **Ini belum migrasi seluruh game.** Tidak menggunakan scene, script, generator, GDExtension, atau plugin Godot dari migrasi sebelumnya. Python hanya menjadi referensi untuk pekerjaan migrasi berikutnya.
+Pygame Android/mobile di root repository adalah sumber kebenaran untuk parity. Proyek ini masih port bertahap; kelengkapan domain, UI, dan render tidak otomatis berarti parity produksi. Status gap yang berlaku ada di [Status parity Godot ↔ Pygame](../docs/GODOT_PYGAME_PARITY_STATUS.md); jangan gunakan catatan milestone atau handoff lama sebagai status.
 
 ## Buka di Windows (tanpa membuat scene/script manual)
 
@@ -97,9 +97,9 @@ Keyboard Tab dan Enter juga dapat digunakan untuk navigasi tombol. Klik panel HU
 - Lokasi data development terpisah (`MysticArenaRebuildDev`). Scene pertandingan awal menyimpan progres ke `user://level_progress_v1.json` setelah hasil; slot save Python tidak disentuh.
 - Validator statis, runner tes native Godot, script PowerShell untuk Windows, dan workflow CI baru.
 
-## Yang belum dimigrasikan
+## Batas cakupan dan gap parity
 
-Art final dan animasi produksi, balance final, ekonomi permanen, UI roster/forge produksi lengkap, audio, migrasi save Python/cloud, pembayaran, Android export, multi-touch/safe-area, profiling perangkat, dan parity penuh semua perilaku 54 level masih belum selesai. Domain native untuk 222 kit hero, item inventory/effects, forge transaksi, paid shield, boss/miniboss, AIPlayer policy/adapters, katalog 54 level, progression development-save, dan terrain source sudah tersedia serta diuji secara statis/native CI. Jangan menggunakan sandbox ini sebagai build pengganti game yang sudah rilis.
+`Pertandingan awal` adalah prototipe/QA, bukan pengganti penuh game Pygame. Katalog atau domain yang tersedia belum membuktikan semua level, UI, render, audio, save/cloud, pembayaran, dan alur Android telah terport serta teruji setara. Daftar gap dan bukti yang tersedia dipusatkan di [Status parity Godot ↔ Pygame](../docs/GODOT_PYGAME_PARITY_STATUS.md). Hindari menyimpulkan parity produksi dari keberadaan resource atau lolosnya validator statis saja.
 
 ## Struktur
 
@@ -280,15 +280,9 @@ Workflow **Godot Rebuild (native, fresh project)** pada `.github/workflows/godot
 10. Buka **Pertandingan awal**, pilih slot biru, bangun/jual Archer, amati wave otomatis dan gold. Upgrade Archer dan periksa perubahan harga/refund/HP/shield serta jumlah panah. Pilih nexus biru, upgrade ke level 2+ dan amati HP/shield/komposisi/minion menguat. Pause harus membekukan keduanya; restart mengembalikan 1000 G dan nexus level 1.
 11. Kembali ke menu, ulangi. Periksa Debugger untuk error dan Remote tree untuk screen sisa.
 
-## Status migrasi hero setelah #292
+## Status roster hero
 
-**222/222 kit native teruji, 0 pending.** Daftar tepat dan bukti per hero:
-[HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md). Progres batch,
-validasi dan pesan kelanjutan: [HERO_MIGRATION_PROGRESS.md](HERO_MIGRATION_PROGRESS.md).
-150 dari kit tersebut memakai shared handler karena sumber aslinya memang sama,
-bukan fallback. ID di luar registry ditolak tanpa debit/substitusi.
-CI Godot 4.7.2 hijau pada main `8119e31` (run 36329618088), seluruh suite lama tetap.
-Kaizen gratis/defender lama tidak diganti; item/forge/AIPlayer penuh/art final di luar fase ini.
+Registry native mencakup 222 ID hero, dengan tes domain/source untuk kit yang diimplementasikan. Daftar ID dan cakupan per hero: [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md). Registry/domain coverage bukan klaim bahwa semua kit sudah setara secara visual, playable dalam campaign, atau lulus Android runtime; lihat [status parity](../docs/GODOT_PYGAME_PARITY_STATUS.md).
 
 ## Katalog level 1–54 (data, belum 54 level playable)
 
@@ -373,10 +367,8 @@ Metadata summon mencakup 222 ID dan registry kit native juga mencakup 222 ID,
 namun ini belum berarti UI roster produksi atau balance final. Batas parity yang
 tersisa dicatat di [AI_CONTRACT.md](AI_CONTRACT.md).
 
-## Langkah pengembangan berikutnya
+## Status dan gap
 
-Fondasi, combat minion, siege tier 1, prototipe wave/ekonomi/build-sell, upgrade Archer, dan upgrade nexus + scaling/AI/komposisi sudah diimplementasikan (CI sesi baru menyusul). Berikutnya: uji Windows → tower tambahan → hero/skill dan AI asli → lengkapi satu pertandingan kecil → perluasan sistem/konten. Lihat [rencana lengkap](../docs/RENCANA_MIGRASI_GODOT_DARI_NOL.md).
+Lihat [Status parity Godot ↔ Pygame](../docs/GODOT_PYGAME_PARITY_STATUS.md) untuk temuan, bukti, dan acceptance criteria terkini. Kontrak domain di folder ini menjelaskan aturan dan deviasi per sistem; kontrak bukan pengganti perbandingan runtime/screenshot.
 
-Jangan mengedit game Python atau mengaktifkan converter lama untuk membuat proyek ini berjalan. Jika menemukan error, simpan pesan lengkap beserta versi Godot dan langkah reproduksi, lalu perbaiki di proyek baru.
-
-Paid shield, regen dan refund domain: [SHIELD_CONTRACT.md](SHIELD_CONTRACT.md). Belum ada tombol purchase shield atau AI otomatis.
+Sumber Pygame tetap read-only selama porting. Jika menemukan perbedaan, catat state, resolusi, langkah reproduksi, versi engine, dan screenshot dari kedua engine; perbaiki di `godot_rebuild/` setelah perilaku sumber terverifikasi.

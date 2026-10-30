@@ -3,8 +3,7 @@
 `mobile/debug.py` + `mobile/platform_utils.get_safe_area()` untuk port Godot
 (`TouchGestures.gd`, `DebugOverlay.gd`, `MobileLayout.safe_area()`).
 
-Ini tool gap #3/#4/#5/#6/#8 di docs/AUDIT_ULANG_DARI_AWAL.md: rantai
-"tahan >= 450 ms = klik kanan, overlay debug 4 mode, getar, safe-area".
+Oracle ini mengunci rantai touch Pygame (long-press, overlay debug, getar, safe-area) terhadap proyek Godot historis `godot/`. Cakupannya bukan bukti untuk `godot_rebuild/`; lihat status aktif di `docs/GODOT_PYGAME_PARITY_STATUS.md`.
 
 Tiga lapis, sama seperti tool paritas lain di repo ini:
 

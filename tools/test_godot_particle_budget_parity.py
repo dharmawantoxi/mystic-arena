@@ -2,7 +2,7 @@
 # pyright: reportMissingImports=false
 """Oracle paritas anggaran partikel (Fase 34) — pygame = ground truth.
 
-Gap #9 di docs/AUDIT_ULANG_DARI_AWAL.md: pygame `mobile/perf.py` memakai
+Catatan historis untuk port `godot/` lama: Pygame `mobile/perf.py` memakai
 multiplier partikel 0.20 (low) / 0.40 (med) / 0.70 (high) per preset
 (`_Quality.apply`) DIKALI beban combat `fx_load()` (governor) + anggaran
 keras per frame (token 140/18/10 dengan lantai 56/10/5); Godot dulu tidak

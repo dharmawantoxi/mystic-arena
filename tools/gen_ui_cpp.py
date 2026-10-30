@@ -1937,7 +1937,7 @@ def emit_h(funcs):
 // Generator : tools/gen_ui_cpp.py (AST Python -> C++, bukan terjemahan tangan)
 // Regenerasi: python3 tools/gen_ui_cpp.py
 // Cek CI    : python3 tools/gen_ui_cpp.py --check
-// Desain    : docs/AUDIT_ULANG_DARI_AWAL.md
+// Desain    : docs/GODOT_PYGAME_PARITY_STATUS.md
 //
 // Port ui_components/_bundle.py ke Godot C++ GDExtension: lapisan LAYOUT +
 // STATE + LABEL (geometri panel/kartu/tombol, state machine tombol, label,

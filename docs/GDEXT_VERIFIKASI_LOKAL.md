@@ -1,5 +1,7 @@
 # Verifikasi GDExtension di lokal — tanpa menunggu GitHub Actions
 
+> **LEGACY:** dokumen ini membahas GDExtension pada proyek lama `godot/`; bukan instruksi build/test bagi proyek aktif `godot_rebuild/`. Untuk status parity saat ini, lihat [Status parity Godot ↔ Pygame](GODOT_PYGAME_PARITY_STATUS.md).
+
 > **Jawaban singkat:** ada. Sebagian besar yang diperiksa
 > `.github/workflows/godot-gdext.yml` **tidak butuh godot-cpp, tidak butuh
 > compiler engine, dan tidak butuh Actions** — cukup `python3` + `g++`, dan
@@ -120,9 +122,9 @@ $ GODOT_CPP_DIR=$PWD/godot/gdext/godot-cpp python3 tools/test_ui_cpp_selftest.py
 ```
 
 Tertangkap di **L2 maupun L3 dalam < 1 detik** (stub UI ternyata ikut menolak
-`r8()`; header asli memberi pesan "did you mean 'r'?"). Inilah yang dimaksud
-catatan `docs/AUDIT_ULANG_DARI_AWAL.md`: tiga kegagalan nyata PR #234 kini ketahuan
-lokal dalam ±10 detik, bukan ±30 menit siklus CI.
+`r8()`; header asli memberi pesan "did you mean 'r'?"). Pada workflow legacy
+tersebut tiga kegagalan PR #234 tertangkap lokal dalam ±10 detik, bukan ±30 menit
+siklus CI. Catatan ini tidak mengukur proyek Godot aktif.
 
 ---
 
@@ -297,7 +299,7 @@ Flag `SCONS_FLAGS` sengaja sama dengan CI (`optimize=none debug_symbols=no`):
 yang diuji **paritas**, bukan kecepatan, dan `optimize=none` memangkas waktu
 compile drastis. Nama berkas `.so` = suffix scons (`template_debug`), sedangkan
 kunci di `.gdextension` = `linux.debug.x86_64` — jangan "dikoreksi", engine
-tidak akan menemukan lib-nya (lihat `docs/AUDIT_ULANG_DARI_AWAL.md`).
+tidak akan menemukan lib-nya. Ini aturan build untuk proyek legacy `godot/` saja.
 
 ---
 
@@ -372,7 +374,7 @@ Yang masih bisa dipangkas, urut dari dampak terbesar:
 | `godot/tools/godot_log_gate.py` | L5 — gagalkan run kalau log headless memuat error (exit code Godot sering tetap 0) |
 | `tools/godot_debug_run.py` | unduh binary Godot ke cache + jalankan scene/screenshot |
 | `.github/workflows/godot-gdext.yml` | jaring terakhir: build + engine + paritas C++ ↔ oracle |
-| `docs/AUDIT_ULANG_DARI_AWAL.md` | patokan tunggal paritas + desain per lib GDExt |
+| `GODOT_PYGAME_PARITY_STATUS.md` | status parity proyek Godot aktif; bukan panduan GDExt lama |
 
 ### Variabel lingkungan skrip
 

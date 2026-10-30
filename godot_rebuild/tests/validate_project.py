@@ -3222,8 +3222,7 @@ _ai_contract_doc = _flat((ROOT / "AI_CONTRACT.md").read_text(encoding="utf-8"))
 _shield_contract_doc = _flat((ROOT / "SHIELD_CONTRACT.md").read_text(encoding="utf-8"))
 _nexus_contract_doc = _flat((ROOT / "NEXUS_CONTRACT.md").read_text(encoding="utf-8"))
 _upgrade_contract_doc = _flat((ROOT / "UPGRADE_CONTRACT.md").read_text(encoding="utf-8"))
-_hero_progress_doc = _flat((ROOT / "HERO_MIGRATION_PROGRESS.md").read_text(encoding="utf-8"))
-_peta_doc = _flat((ROOT / "PETA_SISA_MIGRASI.md").read_text(encoding="utf-8"))
+_parity_doc = _flat((ROOT.parent / "docs/GODOT_PYGAME_PARITY_STATUS.md").read_text(encoding="utf-8"))
 
 for stale in (
     "Belum port AIPlayer lengkap",
@@ -3262,17 +3261,12 @@ check("urutan kandidat dan loop AI scene belum aktif" not in _upgrade_contract_d
 check("loop AI scene aktif" in _upgrade_contract_doc,
       "9ak UPGRADE_CONTRACT.md must state the scene AI loop is active")
 
-check("Pekerjaan berikutnya (di luar migrasi kit): AIPlayer penuh" not in _hero_progress_doc,
-      "9ak HERO_MIGRATION_PROGRESS.md copy-paste message must not list AIPlayer penuh as pending")
-check("Pembaruan 9ak" in _hero_progress_doc and "AIPlayer penuh SUDAH selesai" in _hero_progress_doc,
-      "9ak HERO_MIGRATION_PROGRESS.md must carry the update banner and the corrected message")
-check("tabel produksi kosong by decision" not in _hero_progress_doc
-      and "Arahan rebalance 2026-10-16 SUDAH terpasang di tabel itu (PR #333)" in _hero_progress_doc,
-      "9c-S3 HERO_MIGRATION_PROGRESS.md copy-paste message must not claim the override table is empty")
-
-check("efektif tinggal AIPlayer penuh dan art final. (**Koreksi 9ak:**" in _peta_doc
-      and "Rekonsiliasi klaim status AI (layer 9ak, doc-only)" in _peta_doc,
-      "9ak PETA_SISA_MIGRASI.md must cross-correct the stale remaining-work line")
+check("parity penuh **belum tercapai" in _parity_doc,
+      "Parity status document must clearly state that full parity is not complete")
+check("1.505.221 pemeriksaan dan melaporkan **23 kegagalan**" in _parity_doc,
+      "Parity status document must disclose the latest known native-suite failures")
+check("Godot/Pygame" in _parity_doc and "godot_rebuild/" in _parity_doc,
+      "Parity status document must identify the reference and current Godot project")
 
 # Code anchors: the corrected claims must stay true in the shipped code.
 _session = (ROOT / "scripts/simulation/prototype_session.gd").read_text(encoding="utf-8")
@@ -6950,17 +6944,6 @@ check(
     and "Native NexusUpgrades.LEVELS has five entries" in _car_checks,
     "9bv15 native suite replays the source cap and the native catalog",
 )
-check(
-    "Aura sihir kastil level 6 adalah kode mati di sumber" in _peta_doc
-    and "bukan gap migrasi" in _peta_doc
-    and "Slice 9bv15" in _peta_doc,
-    "9bv15 PETA must record the castle-aura reconciliation",
-)
-check(
-    "nexus Godot berhenti di level 5, jadi" not in _peta_doc,
-    "9bv15 PETA drops the stale claim that the level-5 cap is a Godot limitation",
-)
-
 # --- 9bv16: nyxareth realm follows the live render surface -------------------
 _nr_layout2 = (ROOT / "scripts/ui/nyxareth_realm_layout.gd").read_text(encoding="utf-8")
 _rv_checks = (ROOT / "tests/realm_viewport_checks.gd").read_text(encoding="utf-8")
@@ -6988,9 +6971,6 @@ check("const RealmViewportChecks = preload(\"res://tests/realm_viewport_checks.g
 check("The live view paints the wide star field from its viewport size" in _rv_checks
       and "A detached or zero-sized viewport falls back to the baked default" in _rv_checks,
       "9bv16 native suite must replay the wide display and the fallback")
-check("realm nyxareth mengikuti" in _peta_doc or "9bv16" in _peta_doc,
-      "9bv16 PETA must record the realm viewport fix")
-
 # --- 9bv17: source font styles ----------------------------------------------
 import hashlib
 import importlib.util
@@ -7044,9 +7024,6 @@ check("const SourceFontsChecks = preload(\"res://tests/source_fonts_checks.gd\")
 check("Native filename mirrors _font_path for" in _sf_checks
       and "matches the source bytes" in _sf_checks,
       "9bv17 native suite must replay the style map and the TTF hashes")
-check("Slice 9bv17" in _peta_doc,
-      "9bv17 PETA must record the font style migration")
-
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

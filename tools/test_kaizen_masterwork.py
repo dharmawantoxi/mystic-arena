@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Regresi visual untuk Kaizen PIXEL MASTERWORK v3 + SKILL FX / SWING / PROJECTILE.
 
-Memastikan upgrade mengikuti standar Thorne v2/v2.1 (docs/AUDIT_ULANG_DARI_AWAL.md)
+Memastikan upgrade mengikuti standar Thorne v2/v2.1 (docs/GODOT_PYGAME_PARITY_STATUS.md)
 dan tidak kembali menjadi rig lama:
 
   - 100% prosedural (tanpa PNG / sprite-sheet / image.load).
