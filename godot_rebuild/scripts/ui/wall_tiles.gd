@@ -3,6 +3,7 @@ extends RefCounted
 ## triangle edge pixels use Godot rasterization instead of pygame scanlines.
 
 const DATA := "res://data/levels/wall_tiles.json"
+const MapPalette = preload("res://scripts/ui/map_palette.gd")
 const BOUNDS := Rect2i(0, 0, 1280, 720)
 static var _commands: Array = []
 
@@ -18,13 +19,9 @@ static func commands() -> Array:
 static func raster() -> Image:
 	var image := Image.create(1280, 720, false, Image.FORMAT_RGBA8)
 	image.fill(Color(0, 0, 0, 0))
-	var colors: Array[Color] = [
-		Color8(12, 8, 12),
-		Color8(55, 55, 65),
-		Color8(95, 95, 105),
-		Color8(135, 135, 145),
-		Color8(175, 175, 185)
-	]
+	var colors := MapPalette.palette(
+		["outline", "stone_dark", "stone_mid", "stone_light", "stone_high"]
+	)
 	for row in commands():
 		var ink: Color = colors[int(row[1])]
 		match int(row[0]):

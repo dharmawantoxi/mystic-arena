@@ -3,6 +3,7 @@ extends RefCounted
 ## coordinates/order and theme colors; no animation or terrain decorations.
 
 const DATA := "res://data/levels/river_tiles.json"
+const MapPalette = preload("res://scripts/ui/map_palette.gd")
 const BOUNDS := Rect2i(0, 0, 1280, 720)
 static var _commands: Array = []
 
@@ -22,12 +23,9 @@ static func raster(palette: Dictionary) -> Image:
 		palette["river_deep"],
 		palette["river_mid"],
 		palette["river_glow"],
-		palette["river_foam"],
-		Color8(55, 55, 65),
-		Color8(95, 95, 105),
-		Color8(135, 135, 145),
-		Color8(12, 8, 12)
+		palette["river_foam"]
 	]
+	colors.append_array(MapPalette.palette(["stone_dark", "stone_mid", "stone_light", "outline"]))
 	for row in commands():
 		var rect := Rect2i(int(row[1]), int(row[2]), int(row[3]), int(row[4]))
 		var ink: Color = colors[int(row[0])]

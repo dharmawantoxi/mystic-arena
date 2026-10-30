@@ -166,6 +166,8 @@ from hero_skills_folder_source_oracle import source_fixture as hero_skills_fixtu
 from heroes_folder_source_oracle import source_fixture as heroes_folder_fixture
 from levels_folder_source_oracle import source_fixture as levels_folder_fixture
 from levels_folder_source_oracle import check_native as levels_folder_readers
+from map_components_source_oracle import source_fixture as map_components_fixture
+from map_components_source_oracle import palette_payload as map_components_palette
 check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
       "Item structure arm suite must be preloaded")
 check("ItemStructureArmChecks.new().run(_check)" in ai_tests,
@@ -2802,6 +2804,140 @@ if _lv_doc.is_file() and _lv_path.is_file():
     check(all(token in _lv_text for token in ("DEVIASI", "BELUM", "Diport")),
           "9ca the report must use the same Diport / BELUM / DEVIASI vocabulary")
     check(_lv_text.count("|") > 150, "9ca the report must stay tabular")
+
+# ── 9cb: the whole `map_components/` folder (2 files, 7 merged modules) ─────
+# The map renderer: 52 palette colours, 54 theme dictionaries, three path and
+# decoration generators, four static rasterisers and three pixel layers, all
+# merged into one 7.403-line bundle. This layer pins the accounting: 194
+# classified symbols with a target file and token each, the executed seed-42
+# geometry, and the palette JSON that stops the rasterisers from hard-coding
+# source colours.
+_mc_path = ROOT / "tests/fixtures/map_components_source.json"
+check(_mc_path.is_file(), "9cb map_components/ inventory needs a source oracle fixture")
+check("MapComponentsChecks.new().run(_check)" in ai_tests
+      and 'const MapComponentsChecks = preload("res://tests/map_components_checks.gd")'
+      in ai_tests, "9cb map_components/ folder suite must be preloaded and run")
+_mc_doc = ROOT.parent / "docs/MAP_COMPONENTS_FOLDER_MIGRATION.md"
+check(_mc_doc.is_file(), "9cb the map_components/ migration report must ship")
+_mc_palette_path = ROOT / "data/levels/map_palette.json"
+check(_mc_palette_path.is_file(), "9cb the palette data must ship as JSON")
+_mc_palette_gd = (ROOT / "scripts/ui/map_palette.gd")
+check(_mc_palette_gd.is_file() and "res://data/levels/map_palette.json"
+      in _mc_palette_gd.read_text(encoding="utf-8"),
+      "9cb the palette loader must read the shipped JSON")
+if _mc_path.is_file():
+    _mc = map_components_fixture()
+    check(_mc == json.loads(_mc_path.read_text(encoding="utf-8")),
+          "9cb map_components/ inventory drifted from the source folder")
+    check(_mc_palette_path.is_file()
+          and json.loads(_mc_palette_path.read_text(encoding="utf-8"))
+          == map_components_palette(_mc),
+          "9cb data/levels/map_palette.json drifted from palettes.py")
+    _mc_folder = _mc["folder"]
+    check((_mc_folder["count"], _mc_folder["lines"]) == (2, 7504)
+          and _mc_folder["files"] == {"__init__.py": 101, "_bundle.py": 7403},
+          "9cb map_components/ is a 7.403-line bundle plus a 101-line shim")
+    _mc_modules = _mc["modules"]
+    check([row["module"] for row in _mc_modules] == [
+              "palettes", "themes", "generators", "static_renderer",
+              "dynamic_renderer", "decoration_renderer", "shop_renderer"]
+          and [row["lines"] for row in _mc_modules] == [94, 4530, 294, 374, 733, 1091, 252]
+          and sum(row["lines"] for row in _mc_modules) == 7368
+          and _mc_modules[0]["start"] == 36
+          and sum(row["lines"] for row in _mc_modules) == 7403 - 35,
+          "9cb the seven merged modules tile the 7.403-line bundle after a 35-line header")
+    check(_mc["palette"]["tile_size"] == 16 and len(_mc["palette"]["colors"]) == 52,
+          "9cb palettes.py is 52 colours and TILE_SIZE 16")
+    check(_mc["themes"]["count"] == 54 and len(_mc["themes"]["consts"]) == 54
+          and _mc["themes"]["key_count"] == 77,
+          "9cb themes.py is 54 dictionaries over a 77-key union")
+    check(_mc["fallback"]["equals_forest"] and _mc["fallback"]["known_returns_self"],
+          "9cb get_theme falls back to FOREST_THEME")
+    _mc_dynamic = json.loads((ROOT / "data/art/map_dynamic.json").read_text(encoding="utf-8"))
+    _mc_theme_drift = []
+    for _key, _row in _mc["themes"]["meta"].items():
+        _theme = _mc_dynamic["themes"].get(_key, {}).get("theme", {})
+        if (str(_theme.get("name", "")) != str(_row["name"])
+                or str(_theme.get("boss_identity", "")) != str(_row["boss_identity"])
+                or str(_theme.get("particle_type", "")) != str(_row["particle_type"])
+                or len(_theme) != _row["key_count"]
+                or sorted(k for k, v in _theme.items() if v is True) != _row["gate_keys"]):
+            _mc_theme_drift.append(_key)
+    check(not _mc_theme_drift,
+          f"9cb all 54 themes must match map_dynamic.json: {_mc_theme_drift}")
+    _mc_layout = _mc_dynamic["layout"]
+    _mc_decor = _mc["generators"]["decorations"]
+    _mc_layout_drift = [key for key in _mc_layout
+                        if key != "river_points" and _mc_layout[key] != _mc_decor[key]]
+    check(not _mc_layout_drift and _mc_layout["river_points"]
+          == _mc["generators"]["river"]["points"],
+          f"9cb the runtime layout must equal the executed seed 42 output: "
+          f"{_mc_layout_drift}")
+    check(_mc["generators"]["lanes"]["counts"] == [111, 65, 101]
+          and _mc["generators"]["river"]["count"] == 61
+          and _mc["generators"]["repeatable"],
+          "9cb the generators reproduce 3 lanes, a 61-point river and repeatable decorations")
+    check(_mc["generators"]["counts"]["boss_landmarks"] == 30
+          and _mc["generators"]["counts"]["dark_trees"] == 8
+          and len(_mc["generators"]["counts"]) == 14,
+          "9cb the 14 decoration arrays keep their seed-42 counts")
+    check(_mc["decoration_reads"] == ["bones", "boss_landmarks", "crystals_blue",
+                                      "gravestones", "rocks_mossy", "torch_stones"]
+          and _mc["bake_only_arrays"] == ["boss_landmarks", "crystals_blue"],
+          "9cb the two bake-only arrays must be classified, not dropped")
+    check([row["argument"] for row in _mc["seeds"]] == ["42", "", "100", ""]
+          and [row["kind"] for row in _mc["seeds"]] == ["fixed", "entropy", "fixed", "entropy"],
+          "9cb the folder seeds 42 and 100, then reseeds entropy twice")
+    check(len(_mc["aliases"]["aliased"]) == 7 and len(_mc["aliases"]["extra"]) == 3
+          and len(_mc["aliases"]["plain"]) == 4
+          and {"DecorationRenderer", "DynamicRenderer", "PathGenerator",
+               "ShopRenderer", "StaticRenderer", "DecorationGenerator"}
+          <= set(_mc["aliases"]["reexports"]),
+          "9cb the sys.modules shim keeps seven namespaces and six class re-exports")
+    check(_mc["symbol_count"] == 194 and len(_mc["classification"]) == 194
+          and _mc["classification_kinds"] == {"bake": 39, "data": 112, "executed": 9,
+                                              "internal": 1, "meta": 2, "native": 31},
+          "9cb all 194 folder symbols carry a kind: "
+          f"{_mc['classification_kinds']}")
+    check(not _mc["stale_entries"], f"9cb stale classifications: {_mc['stale_entries']}")
+    _mc_broken = sorted(name for name, entry in _mc["classification"].items()
+                        if not (ROOT.parent / entry["target"]).is_file()
+                        or entry["token"] not in (ROOT.parent / entry["target"]).read_text(
+                            encoding="utf-8"))
+    check(not _mc_broken,
+          f"9cb every classification needs a file and a line behind it: {_mc_broken}")
+for _tiles in ("wall_tiles.gd", "lane_tiles.gd", "river_tiles.gd"):
+    _tiles_text = (ROOT / "scripts/ui" / _tiles).read_text(encoding="utf-8")
+    check('preload("res://scripts/ui/map_palette.gd")' in _tiles_text
+          and "Color8(12, 8, 12)" not in _tiles_text
+          and "Color8(175, 175, 185)" not in _tiles_text,
+          f"9cb {_tiles} must read the palette instead of hard-coded stone colours")
+check("static func create_paths() -> Array[PackedVector2Array]:" in
+      (ROOT / "scripts/data/lane_layout.gd").read_text(encoding="utf-8"),
+      "9cb lane_layout.gd must keep the ported spline entry point")
+
+if _mc_doc.is_file() and _mc_path.is_file():
+    _mc_text = _mc_doc.read_text(encoding="utf-8")
+    _mc_modules_names = [row["module"] for row in _mc["modules"]]
+    _mc_unnamed = [name for name in _mc_modules_names if "`%s.py`" % name not in _mc_text]
+    check(not _mc_unnamed, f"9cb the report must name all seven merged modules: {_mc_unnamed}")
+    _mc_class_rows = {name.split(":", 1)[1].split(".")[0]
+                      for name in _mc["classification"] if "." in name}
+    _mc_class_unnamed = sorted({name for name in _mc_class_rows | set(_mc["classes"])
+                                if "`%s`" % name not in _mc_text
+                                and "`%s." % name not in _mc_text})
+    check(not _mc_class_unnamed,
+          f"9cb the report must classify every class: {_mc_class_unnamed}")
+    check(all(kind in _mc_text for kind in ("native", "data", "bake", "executed",
+                                            "meta", "internal")),
+          "9cb the report must explain all six classification kinds")
+    check(all(token in _mc_text for token in (
+              "map_palette.json", "theme_palette.json", "map_dynamic.json",
+              "river_path.json", "terrain_tiles.json", "wall_tiles.json",
+              "map_overlay.json", "seed 42", "boss_landmarks", "crystals_blue",
+              "get_theme", "TILE_SIZE", "Haunted Veil")),
+          "9cb the report must cover the data files, the seeds and the bake-only arrays")
+    check(_mc_text.count("|") > 150, "9cb the report must stay tabular")
 
 if _bf_doc.is_file() and _bf_path.is_file():
     _bf_text = _bf_doc.read_text(encoding="utf-8")
