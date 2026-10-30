@@ -162,6 +162,7 @@ from debuff_payload_reach_source_oracle import source_fixture as debuff_payload_
 from hero_marker_source_oracle import source_fixture as hero_marker_fixture
 from miasma_tick_delivery_source_oracle import source_fixture as miasma_tick_delivery_fixture
 from bosses_folder_source_oracle import source_fixture as bosses_folder_fixture
+from hero_skills_folder_source_oracle import source_fixture as hero_skills_fixture
 check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
       "Item structure arm suite must be preloaded")
 check("ItemStructureArmChecks.new().run(_check)" in ai_tests,
@@ -2468,6 +2469,98 @@ if _bf_path.is_file():
           "9bx no boss is both a recipe kit and a shared-fallback boss")
     check(sorted(_bf_recipes | set(_bf_shared_ids)) == sorted(_bf["index"]),
           "9bx recipe kits plus shared fallback cover the whole 216-boss roster")
+# ── 9by: the whole `hero_skills/` folder ──────────────────────────────
+# The folder is two files but it owns the `BaseSkill` helper API, the 66-recipe
+# `BossHeroSkills` registry, the six starter kits and the handler registry.
+_hs_path = ROOT / "tests/fixtures/hero_skills_folder_source.json"
+check(_hs_path.is_file(), "9by hero_skills/ inventory needs a source oracle fixture")
+check("HeroSkillsFolderChecks.new().run(_check)" in ai_tests
+      and 'const HeroSkillsFolderChecks = preload("res://tests/hero_skills_folder_checks.gd")'
+      in ai_tests, "9by hero_skills/ folder suite must be preloaded and run")
+_hs_doc = ROOT.parent / "docs/HERO_SKILLS_FOLDER_MIGRATION.md"
+check(_hs_doc.is_file(), "9by the hero_skills/ migration report must ship")
+if _hs_path.is_file():
+    _hs = hero_skills_fixture()
+    check(_hs == json.loads(_hs_path.read_text(encoding="utf-8")),
+          "9by hero_skills/ inventory drifted from the source folder")
+    _hs_counts = _hs["counts"]
+    check((_hs_counts["files"], _hs_counts["base_skill_methods"], _hs_counts["boss_hero_methods"],
+           _hs_counts["registry_bosses"], _hs_counts["registry_casts"], _hs_counts["starter_kits"],
+           _hs_counts["starter_methods"]) == (2, 28, 273, 66, 264, 6, 39),
+          "9by 2 files: 28 BaseSkill methods, 273 BossHeroSkills methods, 66 recipes / "
+          "264 casts, 6 starter kits / 39 methods")
+    _hs_base = _hs["base_skill"]
+    check(_hs_base["require_target"] and _hs_base["target_range_slack"] == 1.15
+          and _hs_base["default_skill_range"] == 200,
+          "9by the source targeting guard is require-target with 1.15 slack and a 200 px fallback")
+    check(_hs_base["default_visual_duration"] == {"q": 60, "w": 90, "e": 60, "r": 100}
+          and _hs_base["class_visual_duration"] == {},
+          "9by the shared visual duration is 60/90/60/100 with no class override")
+    _hs_triggers = _hs_base["triggers"]
+    check((_hs_triggers["q"]["shake"], _hs_triggers["w"]["shake"],
+           _hs_triggers["e"]["shake"], _hs_triggers["r"]["shake"]) == (8, 5, 6, 15)
+          and (_hs_triggers["q"]["volume"], _hs_triggers["w"]["volume"],
+               _hs_triggers["e"]["volume"], _hs_triggers["r"]["volume"]) == (0.7, 0.6, 0.7, 1.0),
+          "9by the BaseSkill triggers shake 8/5/6/15 and play at 0.7/0.6/0.7/1.0")
+    _hs_boss = _hs["boss_hero_skills"]
+    check(_hs_boss["cast_shake"] == {"q": 10, "w": 8, "e": 8, "r": 15}
+          and _hs_boss["cast_range_floor"] == 140,
+          "9by BossHeroSkills shakes 10/8/8/15 and gates the cast at max(skill_range, 140)")
+    check(_hs_boss["visual_overrides"] == {
+        "nyzrak": {"q": 50, "w": 50, "e": 70, "r": 90},
+        "vhalzun": {"q": 60, "w": 80, "e": 60, "r": 100},
+    }, "9by the two per-hero boss visual overrides are nyzrak and vhalzun")
+    check(_hs_boss["fallback"]["multipliers"] == {"q": 1.0, "w": 1.2, "e": 1.5, "r": 2.5}
+          and _hs_boss["fallback"]["aoe_range"] == [150, 200]
+          and _hs_boss["fallback"]["visual_duration"] == 40,
+          "9by _fallback_cast keeps its multipliers, AOE radii and 40-tick visual")
+    check(_hs["starter_kits"]["thorne"]["shake"] == {"q": 6, "w": 5, "e": 8, "r": 15},
+          "9by thorne keeps the source's swapped Q/E shake amounts")
+    check(_hs["handler_registry"]["functions"] == ["register_handler", "get_skill_handler"]
+          and len(_hs["handler_registry"]["aliased_submodules"]) == 7
+          and _hs["handler_registry"]["registered_starters"] ==
+          ["kaizen", "grimjaw", "sylara", "vex", "thorne", "zephyr"]
+          and _hs["handler_registry"]["auto_registers_every_boss_type"],
+          "9by __init__.py keeps its registry API, seven aliases and boss auto-registration")
+
+# The cast feedback (shake + `hero_skill` sound) is the one behaviour the folder
+# had no native home for before this layer.
+_hs_feedback = (ROOT / "scripts/combat/skill_feedback.gd").read_text(encoding="utf-8")
+check("const DEFAULT_SHAKE := {\"q\": 8, \"w\": 5, \"e\": 6, \"r\": 15}" in _hs_feedback
+      and "const BOSS_SHAKE := {\"q\": 10, \"w\": 8, \"e\": 8, \"r\": 15}" in _hs_feedback
+      and "const VOLUME := {\"q\": 0.7, \"w\": 0.6, \"e\": 0.7, \"r\": 1.0}" in _hs_feedback
+      and '"thorne": {"q": 6, "w": 5, "e": 8, "r": 15}' in _hs_feedback,
+      "9by skill_feedback.gd must carry the source shake and volume tables")
+check('const SOUND := "hero_skill"' in _hs_feedback
+      and "if int(hero.team) != BLUE:" in _hs_feedback
+      and "AudioRuntime.play_scaled(SOUND, volume)" in _hs_feedback,
+      "9by the cast sound stays blue-only with the source volume multiplier")
+_hs_battle = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+check(_hs_battle.count("_trigger_source_cast_feedback(hero_id,") == 4
+      and "skill_feedback = SkillFeedback.apply(self, get_unit(hero_id), skill)"
+      in _hs_battle,
+      "9by all four cast entry points must apply the source feedback")
+_hs_audio = (ROOT / "scripts/audio/audio_manager.gd").read_text(encoding="utf-8")
+check("const SFX_THROTTLE_MS := 50" in _hs_audio
+      and "func play_scaled(key: String, volume_mult: float) -> bool:" in _hs_audio
+      and "clampf(combat_global_volume() * volume_mult, 0.0, 1.0)" in _hs_audio,
+      "9by the sound manager must reproduce the 50 ms throttle and scaled volume")
+check("_apply_player_volume(effects, combat_global_volume())" in _hs_audio,
+      "9by a plain play must restore the mix volume after a scaled cast")
+_hs_runtime = (ROOT / "scripts/audio/audio_runtime.gd").read_text(encoding="utf-8")
+check("static func play_scaled(key: String, volume_mult: float) -> bool:" in _hs_runtime,
+      "9by AudioRuntime must expose the scaled play")
+if _hs_doc.is_file() and _hs_path.is_file():
+    _hs_text = _hs_doc.read_text(encoding="utf-8")
+    _hs_unnamed = sorted(name for name in _hs["files"] if "`%s`" % name not in _hs_text)
+    check(not _hs_unnamed, f"9by the report must name both files: {_hs_unnamed}")
+    check(all(token in _hs_text for token in (
+        "BaseSkill", "BossHeroSkills", "SKILL_VISUAL_DURATION", "BOSS_HERO_VISUAL_DURATION",
+        "_SKILL_REGISTRY", "_fallback_cast", "REQUIRE_TARGET", "_shake_screen",
+        "_play_skill_sound", "register_handler", "_install_aliases", "SkillFeedback")),
+        "9by the report must classify every source construct")
+    check(_hs_text.count("|") > 80, "9by the report must stay tabular")
+
 if _bf_doc.is_file() and _bf_path.is_file():
     _bf_text = _bf_doc.read_text(encoding="utf-8")
     _bf_unnamed = sorted(name for name in _bf["files"] if "`%s`" % name not in _bf_text)

@@ -21,6 +21,15 @@ static func play(key: String) -> void:
 		manager.call("play", key)
 
 
+## Source `SoundManager.play(key, volume_mult=...)`; false when no manager
+## exists (headless suites), so callers can report the decision.
+static func play_scaled(key: String, volume_mult: float) -> bool:
+	var manager := _manager()
+	if manager == null or not manager.has_method("play_scaled"):
+		return false
+	return bool(manager.call("play_scaled", key, volume_mult))
+
+
 static func get_volume(channel: String) -> float:
 	var manager := _manager()
 	if manager == null or not manager.has_method("get_volume"):

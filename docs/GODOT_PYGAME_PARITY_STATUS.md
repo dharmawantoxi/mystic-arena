@@ -50,7 +50,7 @@ Tes native Godot 4.7.2 headless terakhir yang jumlah pemeriksaannya tercatat (br
 
 Run native terbaru untuk lapisan 9bt adalah commit `0411b28` ([run 41030476536](https://github.com/dharmawantoxi/mystic-arena/actions/runs/41030476536)) dan lulus tanpa kegagalan; jumlah pemeriksaannya tidak terbaca dari artefak di lingkungan kerja ini, jadi angka 1.505.443 di atas tetap merujuk run `f4e840b`.
 
-Validator statis terakhir yang tersedia lulus **21.933 pemeriksaan**. Itu berbeda dari tes native dan tidak menggantikan bukti runtime, screenshot, perangkat, atau audio.
+Validator statis terakhir yang tersedia lulus **22.017 pemeriksaan**. Itu berbeda dari tes native dan tidak menggantikan bukti runtime, screenshot, perangkat, atau audio.
 
 #### Triase 23 kegagalan tes native sebelumnya
 
@@ -162,6 +162,19 @@ Seluruh 61 berkas di `bosses/` sudah dipetakan ke Godot; rincian per berkas ada 
 * **Koreksi penting soal harga hero bos:** `unlock_cost` di `data/heroes/*.tres` memang **0**, bukan salah tulis. `_core.py` menimpa `hero_unlock["cost"]` untuk seluruh 216 hero dengan kebijakan final starter 0 / mini 4.500 / true 4.500, dan nilai `cost` mentah tetap tersimpan apa adanya di `.tres` (dan kini dikunci suite). Jangan "memperbaiki" harga menjadi 4.500.
 
 Yang **belum** dibuktikan untuk folder ini: komposit pertandingan di perangkat Android nyata (sprite bos sendiri sudah di-bake dan di-decode di tes), serta level 2–54 yang bosnya siap tetapi konfigurasi gelombang penuhnya belum.
+
+### Folder `hero_skills/` (layer 9by, 30 Oktober 2026)
+
+Kedua berkas di `hero_skills/` sudah dipetakan penuh; rincian per konstruksi ada di [`HERO_SKILLS_FOLDER_MIGRATION.md`](HERO_SKILLS_FOLDER_MIGRATION.md). Folder ini kecil di disk (2 berkas, 5.348 baris) tetapi memuat API dasar yang diwarisi semua kit hero, registri 66 resep bos, dan enam kit starter.
+
+* **`__init__.py`** — registri `register_handler`/`get_skill_handler`, tujuh nama submodul alias (`_install_aliases`), dan auto-register 6 starter + 216 bos. API-nya sudah digantikan resolver native (`NATIVE_SKILLS`, `BossRecipeRegistry`, `SourceSharedBossSkills`); peta aliasnya diklasifikasikan **N/A** karena hanya jembatan `sys.modules` untuk berkas yang sudah digabung ke `_bundle.py`.
+* **`_bundle.py`** — `BaseSkill` (28 method: sweep musuh, stun `max`, guard `REQUIRE_TARGET` dengan slack 1.15, `SKILL_VISUAL_DURATION`) sudah diport ke `skill_common.gd`/`boss_skill_common.gd`/`_has_q_target`; `BossHeroSkills` (273 method, `_SKILL_REGISTRY` 66 bos / 264 cast, `_fallback_cast` 150 bos, override `BOSS_HERO_VISUAL_DURATION` nyzrak+vhalzun) sudah diport ke 20 modul `boss_level_*_skills.gd` + `alchemist_skills.gd` + `source_shared_boss_skills.gd`; enam kit starter ada di lima skrip native dan satu jalur inline `minion_battle.gd` (kaizen).
+
+**Satu perilaku yang belum punya rumah native dan diport di layer ini:** setiap cast sukses di sumber menjalankan `_shake_screen` dan `_play_skill_sound` di dalam `_trigger_{q,w,e,r}_cooldown`, tetapi jalur skill Godot tidak menghasilkan keduanya dan `AudioManager` belum menerima `volume_mult`. Sekarang ada `scripts/combat/skill_feedback.gd` (tabel `DEFAULT_SHAKE` 8/5/6/15, `BOSS_SHAKE` 10/8/8/15 untuk 216 bos, `STARTER_SHAKE` dengan thorne yang menukar Q=6/E=8, `VOLUME` 0.7/0.6/0.7/1.0), `AudioManager.play_scaled` (throttle 50 ms per nama + `master*sfx*volume_mult`), dan pemanggilan di keempat titik masuk cast `prototype_battle.gd`. Kuirk sumber yang dipertahankan: tim merah tetap mengguncang layar tetapi tidak memutar suara, karena sumber memfilter suara dengan `team == "blue"` saja.
+
+Deviasi yang dicatat: shake skill berbagi `EffectManager` dengan shake bos (akumulasi `max` per tick, sama seperti sumber); throttle dan volume hanya berlaku di jalur skill, `play()` biasa tetap tanpa throttle.
+
+Yang **belum** dibuktikan: hasil audio/visual di perangkat nyata — suite membuktikan keputusan (intensitas, volume, tim), bukan suara atau guncangan yang benar-benar terlihat/terdengar.
 
 ### Membandingkan capture Godot dari PC (layar sentuh)
 

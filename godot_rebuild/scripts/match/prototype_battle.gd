@@ -4,6 +4,7 @@ extends "res://scripts/combat/siege_battle.gd"
 
 const Upgrades = preload("res://scripts/match/archer_upgrades.gd")
 const AudioRuntime = preload("res://scripts/audio/audio_runtime.gd")
+const SkillFeedback = preload("res://scripts/combat/skill_feedback.gd")
 const CannonUpgrades = preload("res://scripts/match/cannon_upgrades.gd")
 const IceUpgrades = preload("res://scripts/match/ice_upgrades.gd")
 const MageUpgrades = preload("res://scripts/match/mage_upgrades.gd")
@@ -113,6 +114,8 @@ const HERO_DEATH_REWARD := 150
 
 var economy := Economy.new()
 var effects := EffectManager.new()
+## Last source cast feedback payload (`shake`, `volume`, `sound`), layer 9by.
+var skill_feedback := {"shake": 0, "volume": 0.0, "sound": false}
 var level_intro := LevelIntroScreen.new()
 var boss_intro: BossIntroCinematic = null
 var boss_death: BossDeathAnimation = null
@@ -2669,6 +2672,7 @@ func cast_hero_q(hero_id: int, structures: Array = []) -> bool:
 	var source_q2 := hero != null and hero.settings().id == "kaizen" and hero.q_stack == 1
 	var cast := super.cast_hero_q(hero_id, structures)
 	if cast:
+		_trigger_source_cast_feedback(hero_id, "q")
 		_trigger_source_cast_hit_stop(hero_id, "q")
 		if source_q2 and hero != null and hero.is_dashing:
 			_trigger_source_dash_hit_stop(hero_id, "q")
@@ -2678,6 +2682,7 @@ func cast_hero_q(hero_id: int, structures: Array = []) -> bool:
 func cast_hero_w(hero_id: int) -> bool:
 	var cast := super.cast_hero_w(hero_id)
 	if cast:
+		_trigger_source_cast_feedback(hero_id, "w")
 		_trigger_source_cast_hit_stop(hero_id, "w")
 	return cast
 
@@ -2685,6 +2690,7 @@ func cast_hero_w(hero_id: int) -> bool:
 func cast_hero_e(hero_id: int, structures: Array = []) -> bool:
 	var cast := super.cast_hero_e(hero_id, structures)
 	if cast:
+		_trigger_source_cast_feedback(hero_id, "e")
 		_trigger_source_cast_hit_stop(hero_id, "e")
 	return cast
 
@@ -2692,8 +2698,15 @@ func cast_hero_e(hero_id: int, structures: Array = []) -> bool:
 func _cast_hero_r(hero_id: int, structures: Array = []) -> bool:
 	var cast := super._cast_hero_r(hero_id, structures)
 	if cast:
+		_trigger_source_cast_feedback(hero_id, "r")
 		_trigger_source_cast_hit_stop(hero_id, "r")
 	return cast
+
+
+## Source `BaseSkill._trigger_*_cooldown` feedback half: the per-slot screen
+## shake and, for the blue team, the `hero_skill` sound at its slot volume.
+func _trigger_source_cast_feedback(hero_id: int, skill: String) -> void:
+	skill_feedback = SkillFeedback.apply(self, get_unit(hero_id), skill)
 
 
 func _trigger_source_cast_hit_stop(hero_id: int, skill: String) -> void:
