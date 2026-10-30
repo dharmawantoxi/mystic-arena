@@ -50,7 +50,7 @@ Tes native Godot 4.7.2 headless terakhir yang jumlah pemeriksaannya tercatat (br
 
 Run native terbaru untuk lapisan 9bt adalah commit `0411b28` ([run 41030476536](https://github.com/dharmawantoxi/mystic-arena/actions/runs/41030476536)) dan lulus tanpa kegagalan; jumlah pemeriksaannya tidak terbaca dari artefak di lingkungan kerja ini, jadi angka 1.505.443 di atas tetap merujuk run `f4e840b`.
 
-Validator statis terakhir yang tersedia lulus **21.878 pemeriksaan**. Itu berbeda dari tes native dan tidak menggantikan bukti runtime, screenshot, perangkat, atau audio.
+Validator statis terakhir yang tersedia lulus **21.933 pemeriksaan**. Itu berbeda dari tes native dan tidak menggantikan bukti runtime, screenshot, perangkat, atau audio.
 
 #### Triase 23 kegagalan tes native sebelumnya
 
@@ -150,6 +150,18 @@ Seluruh 20 berkas di `mobile/` sudah dipetakan ke Godot; rincian per berkas ada 
 * **`hud.py` → `scripts/ui/touch_hud_layout.gd` (9bv21).** Tombol sentuh pemain (PAUSE/FPS di bawah chip emas, SKIP saat cinematic, REPLAY/NEXT LEVEL/MENU saat menang/kalah, BACK) sebelumnya tidak ada di Godot — layar prototipe memakai bar container desktop. Port ini membawa rect dan *hit rect* sumber (pad 24 px, lantai 80 px), aturan visibilitas, animasi tekan 0,12, hit-test urutan terbalik, dan terjemahan aksi `apply_hud_action` termasuk `protect_tower` yang hanya meneruskan tower biru terpilih. Painter (lingkaran/kapsul/glow radial/cincin cooldown) **belum** — itu layer berikutnya, dan HUD ini belum dipasang di scene.
 
 Kuirk sumber yang dipertahankan: `sync` tidak pernah menampilkan BACK (harus dipicu pemanggil lain), FPS tetap tampil di layar menu, dan `blocks()` ikut menganimasikan tombol karena memanggil `hit_test` yang sama.
+
+### Folder `bosses/` (layer 9bx, 30 Oktober 2026)
+
+Seluruh 61 berkas di `bosses/` sudah dipetakan ke Godot; rincian per berkas ada di [`BOSSES_FOLDER_MIGRATION.md`](BOSSES_FOLDER_MIGRATION.md). Ringkasnya: folder ini **sudah termigrasi penuh secara perilaku** sebelum putaran ini (stat, art, AI, skill, dan entitas bos semuanya sudah punya padanan dan tes), sehingga putaran ini tidak menambah port baru — yang ditambahkan adalah **inventaris per-berkas yang diturunkan dari sumber** plus oracle, suite native, dan guard validator yang mengunci klaim itu.
+
+* **`tests/bosses_folder_source_oracle.py`** membaca `bosses/` tanpa pygame (`ast` untuk `_boss_index.py`, `base_boss.py`, dan 54 modul level; `runpy` untuk `boss_data.py`) lalu menulis `tests/fixtures/bosses_folder_source.json`. Isinya: 61 berkas + jumlah baris, peta 216 `id → (modul, draw_fn)`, 219 definisi `draw_*` (217 unik), 216 kelas `_NS_`, 79 `_smart_ai_*` beserta urutan arm `Boss.update`, 162 mini + 54 true, `hero_unlock.cost` per bos, dan 6 tabel konstruksi.
+* **`tests/bosses_folder_checks.gd`** menuntut proyek Godot mempertanggungjawabkan setiap entri: 216 id = 216 baris `boss_stats.json` = 216 `.tres` hero = 216 body di `data/art/bosses.json` dengan kelas mini/true identik dan `cost` = `hero_unlock.cost` sumber; 80 arm `boss_ai.gd` = 79 arm sumber + `urgharun`; dan **setiap** id bos punya tepat satu rumah skill lewat resolver yang sama dengan pertandingan (`SourceSharedBossSkills.IDS` 150, sisanya `BossRecipeRegistry.handler(id, NATIVE_SKILLS)` 66) — tidak ada yang dobel, tidak ada yang yatim.
+* **Tiga cacat oracle sumber ditemukan dan diklasifikasikan** (bukan bug port, Godot tidak kehilangan perilaku): `level5.draw_morgath` tidak pernah di-index (`morgath` di-index ke `level3`), serta `level47.draw_kaizoku_raijin` dan `level48.draw_ursath` masing-masing didefinisikan dua kali sehingga definisi pertama tertimpa — bake memakai definisi terakhir, sama seperti Python.
+* **Enam tabel di `boss_data.py` diklasifikasikan input-only:** `MINI_BOSS_WAVES`, `LEVEL_TRUE_BOSS`, tiga kurva true-boss, dan `MELEE_ROLE_HINTS`. Oracle memverifikasi bahwa satu-satunya pembacanya berada di `tools/` (konverter), bukan runtime; nilainya sudah ter-embed ke `boss_stats.json` dan `attack_range` di `.tres`. `MINI_BOSS_WAVES` bahkan tidak dipakai permainan Pygame karena ke-54 konfigurasi level membawa daftar `mini_bosses` sendiri.
+* **Koreksi penting soal harga hero bos:** `unlock_cost` di `data/heroes/*.tres` memang **0**, bukan salah tulis. `_core.py` menimpa `hero_unlock["cost"]` untuk seluruh 216 hero dengan kebijakan final starter 0 / mini 4.500 / true 4.500, dan nilai `cost` mentah tetap tersimpan apa adanya di `.tres` (dan kini dikunci suite). Jangan "memperbaiki" harga menjadi 4.500.
+
+Yang **belum** dibuktikan untuk folder ini: komposit pertandingan di perangkat Android nyata (sprite bos sendiri sudah di-bake dan di-decode di tes), serta level 2–54 yang bosnya siap tetapi konfigurasi gelombang penuhnya belum.
 
 ### Membandingkan capture Godot dari PC (layar sentuh)
 

@@ -161,6 +161,7 @@ from boss_shake_sites_source_oracle import source_fixture as boss_shake_sites_fi
 from debuff_payload_reach_source_oracle import source_fixture as debuff_payload_reach_fixture
 from hero_marker_source_oracle import source_fixture as hero_marker_fixture
 from miasma_tick_delivery_source_oracle import source_fixture as miasma_tick_delivery_fixture
+from bosses_folder_source_oracle import source_fixture as bosses_folder_fixture
 check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
       "Item structure arm suite must be preloaded")
 check("ItemStructureArmChecks.new().run(_check)" in ai_tests,
@@ -2379,6 +2380,113 @@ if (ROOT / "tests/fixtures/boss_core_source.json").is_file():
         "Boss stats data drifted from source boss tables")
     check(len(_boss_core["data"]["bosses"]) == 216,
           "Update the boss core suite when the source boss tables change")
+
+# ── 9bx: the whole `bosses/` folder, file by file ─────────────────────
+# `docs/BOSSES_FOLDER_MIGRATION.md` claims every one of the 61 Pygame files is
+# either ported or explicitly classified. The oracle derives that inventory
+# from the folder itself (index map, draw bodies, smart-AI dispatch, stat
+# tables), so the claim is checked instead of asserted.
+_bf_path = ROOT / "tests/fixtures/bosses_folder_source.json"
+check(_bf_path.is_file(), "9bx bosses/ inventory needs a source oracle fixture")
+check("BossesFolderChecks.new().run(_check)" in ai_tests
+      and 'const BossesFolderChecks = preload("res://tests/bosses_folder_checks.gd")' in ai_tests,
+      "9bx bosses/ folder suite must be preloaded and run")
+_bf_doc = ROOT.parent / "docs/BOSSES_FOLDER_MIGRATION.md"
+check(_bf_doc.is_file(), "9bx the bosses/ migration report must ship with the project")
+if _bf_path.is_file():
+    _bf = bosses_folder_fixture()
+    check(_bf == json.loads(_bf_path.read_text(encoding="utf-8")),
+          "9bx bosses/ inventory drifted from the source folder")
+    _bf_counts = _bf["counts"]
+    check((_bf_counts["files"], _bf_counts["level_modules"], _bf_counts["structural"],
+           _bf_counts["renderers"], _bf_counts["draw_definitions"], _bf_counts["draw_functions"],
+           _bf_counts["index_entries"], _bf_counts["smart_ai"]) == (61, 54, 4, 3, 219, 217, 216, 79),
+          "9bx 61 files = 54 level modules + 4 structural + 3 renderers, 219 draw definitions "
+          "(217 unique), 216 indexed ids, 79 smart AIs")
+    check(_bf["unindexed_draw_functions"] == ["level5.draw_morgath"]
+          and _bf["shadowed_draw_functions"] == ["level47.draw_kaizoku_raijin",
+                                                 "level48.draw_ursath"]
+          and not _bf["shared_draw_functions"] and not _bf["unused_level_modules"],
+          "9bx the dead source bodies are level5's morgath plus two shadowed duplicates")
+    check(sum(len(v) for v in _bf["draw_namespaces"].values())
+          + sum(len(v) for v in _bf["renderer_namespaces"].values()) == 216,
+          "9bx every boss has exactly one _NS_ source body class")
+    check(_bf["renderers"]["exported_by"] == {
+        "nyzrak_v4": {"bundle": "level3.py", "namespace": "_NS_nyzrak"},
+        "razak_v4": {"bundle": "level2.py", "namespace": "_NS_razak"},
+        "thalgryn_v4": {"bundle": "level6.py", "namespace": "_NS_thalgryn"},
+    }, "9bx each v4 renderer is re-exported by its own level bundle")
+    check(sorted(_bf["index"]) == sorted(
+        json.loads((ROOT / "data/bosses/boss_stats.json").read_text(encoding="utf-8"))["bosses"]),
+        "9bx the source index and the native boss table name the same 216 bosses")
+    _bf_stats = json.loads(
+        (ROOT / "data/bosses/boss_stats.json").read_text(encoding="utf-8"))["bosses"]
+    check(all(_bf_stats[k]["boss_class"] == v for k, v in _bf["boss_classes"].items()),
+          "9bx every native stat row keeps its source boss class")
+    check(sorted(_bf["smart_ai"]) == sorted(json.loads(
+              (ROOT / "data/art/bosses.json").read_text(encoding="utf-8"))["smart_bosses"]),
+          "9bx the baked smart-AI list is the source dispatch list")
+    _bf_ai = (ROOT / "scripts/match/boss_ai.gd").read_text(encoding="utf-8")
+    _bf_arms = re.findall(r'^\t\t"([a-z0-9_]+)":$', _bf_ai, re.M)
+    check(len(_bf_arms) == 80, f"9bx boss_ai.gd keeps 80 source dispatch arms: {len(_bf_arms)}")
+    check(sorted(_bf_arms) == sorted(_bf["smart_ai"] + ["urgharun"]),
+          "9bx the native arms are the 79 source arms plus urgharun")
+    check(_bf["build_input_consumers"]
+          and all(all(f.startswith("tools/") for f in files)
+                  for files in _bf["build_input_consumers"].values()),
+          "9bx the construction-only boss tables are read by the converter, never at runtime")
+    _bf_shared = (ROOT / "scripts/data/source_shared_boss_ids.gd").read_text(encoding="utf-8")
+    _bf_shared_ids = re.findall(r'^\t"([a-z0-9_]+)",?$', _bf_shared, re.M)
+    check(len(_bf_shared_ids) == 150,
+          f"9bx the audited shared fallback keeps 150 bosses: {len(_bf_shared_ids)}")
+    # The match resolves a boss kit as: shared fallback, else
+    # `BossRecipeRegistry.handler(id, NATIVE_SKILLS)` - levels 1-9 live in the
+    # dict, levels 10-20 in the registry handler modules.
+    _bf_native = (ROOT / "scripts/combat/minion_battle.gd").read_text(encoding="utf-8")
+    _bf_native_block = _bf_native.split("const NATIVE_SKILLS := {", 1)[1].split("\n}", 1)[0]
+    _bf_native_ids = set(re.findall(r'^\t"([a-z0-9_]+)":', _bf_native_block, re.M))
+    _bf_starters = {"grimjaw", "sylara", "thorne", "vex", "zephyr"}
+    _bf_native_boss = _bf_native_ids - _bf_starters
+    check(len(_bf_native_boss) == 22,
+          f"9bx NATIVE_SKILLS carries 22 boss recipes (levels 1-9): {len(_bf_native_boss)}")
+    check(_bf_native_ids - _bf_native_boss == _bf_starters,
+          "9bx NATIVE_SKILLS' other entries are the five non-boss starters")
+    _bf_registry = (ROOT / "scripts/combat/boss_recipe_registry.gd").read_text(encoding="utf-8")
+    _bf_handlers = re.findall(
+        r'preload\("res://scripts/combat/([a-z0-9_]+)\.gd"\)', _bf_registry)
+    check(len(_bf_handlers) == 11, f"9bx the registry chains 11 level handlers: {len(_bf_handlers)}")
+    _bf_handler_ids = set()
+    for _bf_handler in _bf_handlers:
+        _bf_text = (ROOT / "scripts/combat" / f"{_bf_handler}.gd").read_text(encoding="utf-8")
+        _bf_handler_ids |= set(re.findall(r'"([a-z0-9_]+)"',
+                                         _bf_text.split("const IDS", 1)[1].split("]", 1)[0]))
+    check(len(_bf_handler_ids) == 44,
+          f"9bx the registry handlers name 44 bosses (levels 10-20): {len(_bf_handler_ids)}")
+    _bf_recipes = _bf_native_boss | _bf_handler_ids
+    check(len(_bf_recipes) == 66, f"9bx recipe kits cover 66 bosses: {len(_bf_recipes)}")
+    check(not _bf_recipes & set(_bf_shared_ids),
+          "9bx no boss is both a recipe kit and a shared-fallback boss")
+    check(sorted(_bf_recipes | set(_bf_shared_ids)) == sorted(_bf["index"]),
+          "9bx recipe kits plus shared fallback cover the whole 216-boss roster")
+if _bf_doc.is_file() and _bf_path.is_file():
+    _bf_text = _bf_doc.read_text(encoding="utf-8")
+    _bf_unnamed = sorted(name for name in _bf["files"] if "`%s`" % name not in _bf_text)
+    check(not _bf_unnamed,
+          f"9bx the report must name every one of the 61 files: {_bf_unnamed}")
+    check(all("`%s.py`" % name.lower().replace("_", "_") in _bf_text
+              for name in ("__init__", "_boss_index", "base_boss", "boss_data",
+                           "nyzrak_v4", "razak_v4", "thalgryn_v4")),
+          "9bx the report must cover the four structural files and three renderers")
+    check(all(table in _bf_text for table in ("MINI_BOSS_WAVES", "LEVEL_TRUE_BOSS",
+                                              "TRUE_BOSS_HP_CURVE", "TRUE_BOSS_DMG_CURVE",
+                                              "TRUE_BOSS_ABILITY_CURVE", "MELEE_ROLE_HINTS")),
+          "9bx the report must classify all six construction-only tables")
+    check(all(defect in _bf_text for defect in ("level5.draw_morgath",
+                                                "level47.draw_kaizoku_raijin",
+                                                "level48.draw_ursath", "urgharun")),
+          "9bx the report must record the three dead source bodies and the extra native arm")
+    check(_bf_text.count("|") > 200,
+          "9bx the report must stay a per-file table, not a prose summary")
 boss_state = (ROOT / "scripts/match/boss_state.gd").read_text(encoding="utf-8")
 for _method in ("apply_scaling", "apply_slow", "apply_debuff", "apply_stun",
                 "clear_tower_debuffs", "set_hp_value", "tick_tower_debuffs",
