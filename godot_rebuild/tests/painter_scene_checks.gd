@@ -34,6 +34,11 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		await _settle(tree)
 		return
 	world.economy.gold[0] = 90000
+	# The source match starts with an empty live roster: Kaizen is owned, not
+	# summoned (`Game.try_buy_hero`). The fixture buys it through that transaction
+	# so the hero painters have a real hero to draw.
+	if world.player_hero_ids.is_empty():
+		world.buy_player_hero("kaizen")
 	_populate(world)
 	var fx_pair := _seed_minion_fx(world)
 	var towers := _towers(world)

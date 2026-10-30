@@ -4,6 +4,7 @@ extends RefCounted
 
 func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	var baseline := tree.get_node_count()
+	var baseline_nodes := _snapshot(tree)
 	app.start_prototype()
 	await _settle(tree)
 	var screen = app.current_screen
@@ -68,7 +69,38 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	)
 	app.show_menu()
 	await _settle(tree)
-	check.call(tree.get_node_count() == baseline, "Shield scene lifecycle does not leak nodes")
+	var leaked := _leaked_paths(tree, baseline_nodes)
+	check.call(
+		leaked.is_empty() and tree.get_node_count() == baseline,
+		(
+			"Shield scene lifecycle does not leak nodes: %d (baseline %d) %s"
+			% [tree.get_node_count(), baseline, [leaked]]
+		)
+	)
+
+
+## Instance-id snapshot of every node under the root, so a leak names itself.
+func _snapshot(tree: SceneTree) -> Dictionary:
+	var ids := {}
+	_collect_ids(tree.root, ids)
+	return ids
+
+
+func _collect_ids(node: Node, into: Dictionary) -> void:
+	into[node.get_instance_id()] = String(node.get_path())
+	for child in node.get_children():
+		_collect_ids(child, into)
+
+
+func _leaked_paths(tree: SceneTree, snapshot: Dictionary) -> Array:
+	var now := {}
+	_collect_ids(tree.root, now)
+	var extra: Array = []
+	for id in now:
+		if not snapshot.has(id):
+			extra.append(now[id])
+	extra.sort()
+	return extra.slice(0, 8)
 
 
 func _settle(tree: SceneTree) -> void:

@@ -90,18 +90,29 @@ func run_scene(menu: Node, check: Callable) -> void:
 		"CreditsButton": Rect2(460.0, 576.0, 360.0, 50.0),
 		"QuitButton": Rect2(460.0, 629.0, 360.0, 50.0),
 	}
-	var layout_matches := true
+	var misplaced: Array = []
 	for button_name in expected:
 		var button := menu.get_node("%" + button_name) as Control
 		var rect: Rect2 = expected[button_name]
-		layout_matches = layout_matches and button.visible
-		layout_matches = layout_matches and is_equal_approx(button.position.x, rect.position.x)
-		layout_matches = layout_matches and is_equal_approx(button.position.y, rect.position.y)
-		layout_matches = layout_matches and is_equal_approx(button.size.x, rect.size.x)
-		layout_matches = layout_matches and is_equal_approx(button.size.y, rect.size.y)
+		var placed := (
+			is_equal_approx(button.position.x, rect.position.x)
+			and is_equal_approx(button.position.y, rect.position.y)
+			and is_equal_approx(button.size.x, rect.size.x)
+			and is_equal_approx(button.size.y, rect.size.y)
+		)
+		if not button.visible or not placed:
+			misplaced.append(
+				(
+					"%s visible=%s position=%s size=%s want=%s"
+					% [button_name, button.visible, button.position, button.size, rect]
+				)
+			)
 	check.call(
-		layout_matches,
-		"MainMenu buttons match the source two-button row and six-button vertical stack"
+		misplaced.is_empty(),
+		(
+			"MainMenu buttons match the source two-button row and six-button vertical stack: %s"
+			% [misplaced]
+		)
 	)
 	check.call(
 		(
@@ -146,9 +157,13 @@ func _check_scenes(check: Callable) -> void:
 			)
 			found["dim"] += text.count("Color(0.0392, 0.0392, 0.0784, 0.7843)")
 	check.call(stale.is_empty(), "No scene keeps the old teal literals: %s" % [stale])
-	check.call(found["muted"] == 8, "Muted labels use TEXT_DIM: %d" % found["muted"])
+	# Layer 9bv18 ported the source main menu and dropped the experimental cyan
+	# eyebrow, so the pinned literals are the source dim/gold palette only.
+	check.call(found["muted"] == 6, "Muted labels use TEXT_DIM: %d" % found["muted"])
 	check.call(found["gold"] >= 1, "The gold counter uses GOLD: %d" % found["gold"])
-	check.call(found["cyan"] >= 1, "The menu eyebrow uses CYAN: %d" % found["cyan"])
+	check.call(
+		found["cyan"] == 0, "No scene keeps the experimental cyan eyebrow: %d" % found["cyan"]
+	)
 	check.call(found["dim"] == 4, "Pause dims are the source (10, 10, 20, 200): %d" % found["dim"])
 
 

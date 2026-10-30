@@ -37,6 +37,9 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	await _settle(tree)
 	var screen = app.current_screen
 	var world = screen.simulation.world
+	# Source `Game.try_buy_hero`: the playable match owns Kaizen but starts with an
+	# empty live roster, so the score fixture summons it before trading kills.
+	check.call(world.buy_player_hero("kaizen"), "Playable match summons the owned starter hero")
 	for index in range(3):
 		check.call(_kill_red_minion(world), "Playable score records minion %d" % (index + 1))
 		world._step_combo_clock()

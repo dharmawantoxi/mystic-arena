@@ -11,6 +11,9 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	var session = screen.simulation
 	var world = session.world
 	session.set_physics_process(false)
+	# Source `Game.try_buy_hero`: neither team starts with a live hero, and every
+	# tactical command refuses without an alive blue hero. Summon the owned starter.
+	check.call(world.buy_player_hero("kaizen"), "Tactical scene summons the owned starter hero")
 
 	var panel = screen.get_node("%TacticalPanel")
 	var gather: Button = screen.get_node("%GatherButton")
