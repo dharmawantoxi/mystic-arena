@@ -46,7 +46,7 @@ Tidak akan mengubah aturan, UI, atau data Pygame agar tes Godot lulus. Jika ada 
 
 ### Hasil runtime terakhir yang diketahui
 
-Tes native Godot 4.7.2 headless terakhir (branch `arena/a5ab95fe-mystic-arena`, commit `4eea6f7`, [run 40994717039](https://github.com/dharmawantoxi/mystic-arena/actions/runs/40994717039)) menjalankan 1.505.296 pemeriksaan dan melaporkan **0 kegagalan** serta tanpa `SCRIPT ERROR`. Sebelumnya run PR #348 menjalankan 1.505.221 pemeriksaan dengan **23 kegagalan**; seluruhnya sudah ditriase dan diperbaiki, dan penyebabnya dicatat di tabel triase di bawah.
+Tes native Godot 4.7.2 headless terakhir (branch `arena/a5ab95fe-mystic-arena`, commit `bc76823`, [run 41001408193](https://github.com/dharmawantoxi/mystic-arena/actions/runs/41001408193)) menjalankan 1.505.408 pemeriksaan (112 di antaranya suite impor slot Pygame) dan melaporkan **0 kegagalan** serta tanpa `SCRIPT ERROR`. Sebelumnya run PR #348 menjalankan 1.505.221 pemeriksaan dengan **23 kegagalan**; seluruhnya sudah ditriase dan diperbaiki, dan penyebabnya dicatat di tabel triase di bawah.
 
 Validator statis terakhir yang tersedia lulus **21.713 pemeriksaan**. Itu berbeda dari tes native dan tidak menggantikan bukti runtime, screenshot, perangkat, atau audio.
 
@@ -71,6 +71,7 @@ Bukti yang ada:
 * `godot_rebuild/tests/pygame_save_import_source_oracle.py` menjalankan `SaveManager` asli dari AST (jam tetap, tanpa Pygame/cloud) terhadap 11 berkas slot: profil lengkap, save lama tanpa metadata, angka berbentuk float, ID hero asing/duplikat, level di luar 1–54, `level_stats` rusak, kesulitan asing, gold negatif, gold bukan angka, JSON terpotong, dan JSON yang bukan objek. Fixture: `tests/fixtures/pygame_save_import_source.json`.
 * Suite native `tests/pygame_save_import_checks.gd` membandingkan hasil impor dengan fixture itu, termasuk jalur tulis nyata ke `user://` (slot terisi tidak ditimpa tanpa izin, slot kosong/4 ditolak, sumber hilang/JSON rusak ditolak tanpa menulis apa pun, berkas sumber tetap utuh).
 * `validate_project.py` menjaga agar oracle tetap dijalankan CI dan agar modul impor hanya menulis lewat lapisan slot native.
+* Suite native menambah 112 pemeriksaan: total run `bc76823` menjadi 1.505.408 pemeriksaan, 0 kegagalan, tanpa `SCRIPT ERROR`.
 
 Perbedaan yang disengaja beserta alasannya:
 

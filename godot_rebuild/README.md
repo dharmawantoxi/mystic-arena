@@ -186,7 +186,7 @@ Font disalin dari `assets/fonts/` di root repo, bukan dari hasil migrasi lama. L
 
 ### Status validasi (30 Oktober 2026, triase kegagalan native)
 
-- **Suite native lulus penuh:** import engine **Godot 4.7.2** + **1.505.296 pemeriksaan** tanpa kegagalan dan tanpa `SCRIPT ERROR` pada commit `4eea6f7` ([run 40994717039](https://github.com/dharmawantoxi/mystic-arena/actions/runs/40994717039)).
+- **Suite native lulus penuh:** import engine **Godot 4.7.2** + **1.505.408 pemeriksaan** tanpa kegagalan dan tanpa `SCRIPT ERROR` pada commit `bc76823` ([run 41001408193](https://github.com/dharmawantoxi/mystic-arena/actions/runs/41001408193)); 112 pemeriksaan di antaranya berasal dari suite impor slot Pygame.
 - **23 kegagalan run sebelumnya sudah ditriase:** roster hero kosong di awal pertandingan (sumber `Game.heroes = []`), minimum size tombol sumber yang membengkak karena teks native tak terlihat, palet menu 9bv18, dan baseline lifecycle yang tercemar suite yang berhenti karena `SCRIPT ERROR`. Rincian per gejala ada di [status parity](../docs/GODOT_PYGAME_PARITY_STATUS.md).
 - **Validator statis:** 21.713 pemeriksaan lulus (`PASS: 21713 static checks`), termasuk guardrail dokumentasi status parity, migrasi legacy slot save, dan impor slot Pygame.
 - **Tetap belum diverifikasi:** tampilan GPU/screenshot berpasangan, resize secara visual, Windows fisik, touchscreen, Android, audio, dan performa perangkat. CI headless bukan pengganti tes ini.
