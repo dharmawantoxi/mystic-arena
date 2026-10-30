@@ -988,6 +988,31 @@ check("SaveSlotStore.save_path(result.state, path" in
       (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8"),
       "Match result must commit through the active native save slot")
 
+from pygame_save_import_source_oracle import probe as pygame_import_source_probe
+pygame_import_fixture_path = ROOT / "tests/fixtures/pygame_save_import_source.json"
+check(pygame_import_fixture_path.is_file(),
+      "Pygame save import requires a source fixture")
+if pygame_import_fixture_path.is_file():
+    check(pygame_import_source_probe()
+          == json.loads(pygame_import_fixture_path.read_text(encoding="utf-8")),
+          "Pygame save-import source fixture drift")
+check("python godot_rebuild/tests/pygame_save_import_source_oracle.py" in workflow,
+      "CI must execute the Pygame save-import oracle")
+check("PygameSaveImportChecks.new().run(_check)" in ai_tests,
+      "Pygame save-import domain suite must run")
+pygame_import = (ROOT / "scripts/match/pygame_save_import.gd").read_text(encoding="utf-8")
+pygame_import_checks = (ROOT / "tests/pygame_save_import_checks.gd").read_text(
+    encoding="utf-8")
+check("SaveSlotStore.save_state" in pygame_import
+      and "FileAccess.open(" not in pygame_import
+      and "ProgressStore.save_state" not in pygame_import,
+      "Pygame import must persist only through the native slot layer")
+check("HERO_ROSTER" in pygame_import and "slot_occupied" in pygame_import,
+      "Pygame import must validate roster IDs and refuse silent overwrites")
+check("pygame_save_import_source.json" in pygame_import_checks
+      and "_cleanup()" in pygame_import_checks,
+      "Pygame import suite must replay the source fixture and clean its slots")
+
 from level_stats_source_oracle import source_fixture as level_stats_source_fixture
 level_stats_fixture_path = ROOT / "tests/fixtures/level_stats_source.json"
 check(level_stats_fixture_path.is_file(), "Level-stat runtime requires a source fixture")

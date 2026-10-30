@@ -1,0 +1,933 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "ok": true,
+        "reason": "",
+        "report": {
+          "clamped_last_level": 0,
+          "dropped_bosses": [],
+          "dropped_duplicates": [],
+          "dropped_heroes": [],
+          "dropped_level_stats": [],
+          "dropped_levels": [],
+          "rejected_difficulty": ""
+        },
+        "state": {
+          "completed_levels": [
+            1,
+            2,
+            4
+          ],
+          "import_source": "pygame",
+          "last_played_level": 4,
+          "level_stats": {
+            "3": {
+              "best_score": 1820,
+              "best_time_seconds": 143,
+              "max_combo": 19,
+              "total_attempts": 4,
+              "total_kills": 61,
+              "total_playtime_seconds": 905,
+              "wins": 2
+            }
+          },
+          "meta_gold": 7250,
+          "purchased_heroes": [
+            "kaizen",
+            "thorne"
+          ],
+          "replay_reward_counts": {},
+          "run_difficulty": "hard",
+          "slot_created": 1699000000.0,
+          "slot_last_played": 1699500000.0,
+          "slot_playtime_seconds": 3665,
+          "unlocked_bosses": [
+            "gornak"
+          ]
+        }
+      },
+      "name": "full",
+      "note": "Pygame save written by SaveManager.save (all documented keys)",
+      "parsed": {
+        "completed_levels": [
+          1,
+          2,
+          4
+        ],
+        "last_played_level": 4,
+        "level_stats": {
+          "3": {
+            "best_score": 1820,
+            "best_time_seconds": 143,
+            "max_combo": 19,
+            "total_attempts": 4,
+            "total_kills": 61,
+            "total_playtime_seconds": 905,
+            "wins": 2
+          }
+        },
+        "meta_gold": 7250,
+        "purchased_heroes": [
+          "kaizen",
+          "thorne"
+        ],
+        "run_difficulty": "hard",
+        "slot_created": 1699000000.0,
+        "slot_last_played": 1699500000.0,
+        "slot_playtime_seconds": 3665,
+        "unlocked_bosses": [
+          "gornak"
+        ]
+      },
+      "raw_text": "{\"meta_gold\": 7250, \"completed_levels\": [1, 2, 4], \"last_played_level\": 4, \"purchased_heroes\": [\"kaizen\", \"thorne\"], \"unlocked_bosses\": [\"gornak\"], \"level_stats\": {\"3\": {\"best_score\": 1820, \"best_time_seconds\": 143, \"total_attempts\": 4, \"wins\": 2, \"total_kills\": 61, \"max_combo\": 19, \"total_playtime_seconds\": 905}}, \"slot_created\": 1699000000.0, \"slot_last_played\": 1699500000.0, \"slot_playtime_seconds\": 3665, \"run_difficulty\": \"hard\"}",
+      "source_loaded": {
+        "completed_levels": [
+          1,
+          2,
+          4
+        ],
+        "last_played_level": 4,
+        "level_stats": {
+          "3": {
+            "best_score": 1820,
+            "best_time_seconds": 143,
+            "max_combo": 19,
+            "total_attempts": 4,
+            "total_kills": 61,
+            "total_playtime_seconds": 905,
+            "wins": 2
+          }
+        },
+        "meta_gold": 7250,
+        "purchased_heroes": [
+          "kaizen",
+          "thorne"
+        ],
+        "run_difficulty": "hard",
+        "slot_created": 1699000000.0,
+        "slot_last_played": 1699500000.0,
+        "slot_playtime_seconds": 3665,
+        "unlocked_bosses": [
+          "gornak"
+        ]
+      },
+      "source_slot_info": {
+        "completed_levels": [
+          1,
+          2,
+          4
+        ],
+        "highest_level": 4,
+        "last_played_level": 4,
+        "meta_gold": 7250,
+        "playtime_seconds": 3665,
+        "purchased_heroes": [
+          "kaizen",
+          "thorne"
+        ],
+        "slot_created": 1699000000.0,
+        "slot_last_played": 1699500000.0,
+        "slot_num": 1,
+        "unlocked_bosses": [
+          "gornak"
+        ]
+      }
+    },
+    {
+      "expected": {
+        "ok": true,
+        "reason": "",
+        "report": {
+          "clamped_last_level": 0,
+          "dropped_bosses": [],
+          "dropped_duplicates": [],
+          "dropped_heroes": [],
+          "dropped_level_stats": [],
+          "dropped_levels": [],
+          "rejected_difficulty": ""
+        },
+        "state": {
+          "completed_levels": [
+            1
+          ],
+          "import_source": "pygame",
+          "last_played_level": 1,
+          "level_stats": {},
+          "meta_gold": 410,
+          "purchased_heroes": [],
+          "replay_reward_counts": {},
+          "run_difficulty": null,
+          "slot_created": 1700000000.0,
+          "slot_last_played": 1700000000.0,
+          "slot_playtime_seconds": 0,
+          "unlocked_bosses": []
+        }
+      },
+      "name": "legacy_minimal",
+      "note": "old save before slot metadata existed: load() backfills the rest",
+      "parsed": {
+        "completed_levels": [
+          1
+        ],
+        "last_played_level": 1,
+        "meta_gold": 410
+      },
+      "raw_text": "{\"meta_gold\": 410, \"completed_levels\": [1], \"last_played_level\": 1}",
+      "source_loaded": {
+        "completed_levels": [
+          1
+        ],
+        "last_played_level": 1,
+        "level_stats": {},
+        "meta_gold": 410,
+        "purchased_heroes": [],
+        "run_difficulty": null,
+        "slot_created": 1700000000.0,
+        "slot_last_played": 1700000000.0,
+        "slot_playtime_seconds": 0,
+        "unlocked_bosses": []
+      },
+      "source_slot_info": {
+        "completed_levels": [
+          1
+        ],
+        "highest_level": 1,
+        "last_played_level": 1,
+        "meta_gold": 410,
+        "playtime_seconds": 0,
+        "purchased_heroes": [],
+        "slot_created": 0,
+        "slot_last_played": 0,
+        "slot_num": 1,
+        "unlocked_bosses": []
+      }
+    },
+    {
+      "expected": {
+        "ok": true,
+        "reason": "",
+        "report": {
+          "clamped_last_level": 0,
+          "dropped_bosses": [],
+          "dropped_duplicates": [],
+          "dropped_heroes": [],
+          "dropped_level_stats": [],
+          "dropped_levels": [],
+          "rejected_difficulty": ""
+        },
+        "state": {
+          "completed_levels": [
+            1,
+            2
+          ],
+          "import_source": "pygame",
+          "last_played_level": 2,
+          "level_stats": {},
+          "meta_gold": 900,
+          "purchased_heroes": [
+            "kaizen"
+          ],
+          "replay_reward_counts": {},
+          "run_difficulty": null,
+          "slot_created": 1700000000.0,
+          "slot_last_played": 1700000000.0,
+          "slot_playtime_seconds": 61,
+          "unlocked_bosses": []
+        }
+      },
+      "name": "float_numbers",
+      "note": "integers stored as floats by a JSON round-trip",
+      "parsed": {
+        "completed_levels": [
+          1.0,
+          2.0
+        ],
+        "last_played_level": 2.0,
+        "meta_gold": 900.0,
+        "purchased_heroes": [
+          "kaizen"
+        ],
+        "slot_playtime_seconds": 61.0,
+        "unlocked_bosses": []
+      },
+      "raw_text": "{\"meta_gold\": 900.0, \"completed_levels\": [1.0, 2.0], \"last_played_level\": 2.0, \"purchased_heroes\": [\"kaizen\"], \"unlocked_bosses\": [], \"slot_playtime_seconds\": 61.0}",
+      "source_loaded": {
+        "completed_levels": [
+          1.0,
+          2.0
+        ],
+        "last_played_level": 2.0,
+        "level_stats": {},
+        "meta_gold": 900.0,
+        "purchased_heroes": [
+          "kaizen"
+        ],
+        "run_difficulty": null,
+        "slot_created": 1700000000.0,
+        "slot_last_played": 1700000000.0,
+        "slot_playtime_seconds": 61.0,
+        "unlocked_bosses": []
+      },
+      "source_slot_info": {
+        "completed_levels": [
+          1.0,
+          2.0
+        ],
+        "highest_level": 2.0,
+        "last_played_level": 2.0,
+        "meta_gold": 900.0,
+        "playtime_seconds": 61.0,
+        "purchased_heroes": [
+          "kaizen"
+        ],
+        "slot_created": 0,
+        "slot_last_played": 0,
+        "slot_num": 1,
+        "unlocked_bosses": []
+      }
+    },
+    {
+      "expected": {
+        "ok": true,
+        "reason": "",
+        "report": {
+          "clamped_last_level": 0,
+          "dropped_bosses": [
+            "kaizen"
+          ],
+          "dropped_duplicates": [
+            "hero:kaizen",
+            "hero:gornak"
+          ],
+          "dropped_heroes": [
+            "ghost_hero",
+            42
+          ],
+          "dropped_level_stats": [],
+          "dropped_levels": [],
+          "rejected_difficulty": ""
+        },
+        "state": {
+          "completed_levels": [],
+          "import_source": "pygame",
+          "last_played_level": 1,
+          "level_stats": {},
+          "meta_gold": 100,
+          "purchased_heroes": [
+            "kaizen"
+          ],
+          "replay_reward_counts": {},
+          "run_difficulty": null,
+          "slot_created": 1700000000.0,
+          "slot_last_played": 1700000000.0,
+          "slot_playtime_seconds": 0,
+          "unlocked_bosses": [
+            "gornak"
+          ]
+        }
+      },
+      "name": "unknown_heroes",
+      "note": "unknown ID, duplicated ID and a non-string in the hero lists",
+      "parsed": {
+        "completed_levels": [],
+        "last_played_level": 1,
+        "meta_gold": 100,
+        "purchased_heroes": [
+          "kaizen",
+          "ghost_hero",
+          "kaizen",
+          42
+        ],
+        "unlocked_bosses": [
+          "gornak",
+          "kaizen",
+          "gornak"
+        ]
+      },
+      "raw_text": "{\"meta_gold\": 100, \"completed_levels\": [], \"last_played_level\": 1, \"purchased_heroes\": [\"kaizen\", \"ghost_hero\", \"kaizen\", 42], \"unlocked_bosses\": [\"gornak\", \"kaizen\", \"gornak\"]}",
+      "source_loaded": {
+        "completed_levels": [],
+        "last_played_level": 1,
+        "level_stats": {},
+        "meta_gold": 100,
+        "purchased_heroes": [
+          "kaizen",
+          "ghost_hero",
+          "kaizen",
+          42
+        ],
+        "run_difficulty": null,
+        "slot_created": 1700000000.0,
+        "slot_last_played": 1700000000.0,
+        "slot_playtime_seconds": 0,
+        "unlocked_bosses": [
+          "gornak",
+          "kaizen",
+          "gornak"
+        ]
+      },
+      "source_slot_info": {
+        "completed_levels": [],
+        "highest_level": 0,
+        "last_played_level": 1,
+        "meta_gold": 100,
+        "playtime_seconds": 0,
+        "purchased_heroes": [
+          "kaizen",
+          "ghost_hero",
+          "kaizen",
+          42
+        ],
+        "slot_created": 0,
+        "slot_last_played": 0,
+        "slot_num": 1,
+        "unlocked_bosses": [
+          "gornak",
+          "kaizen",
+          "gornak"
+        ]
+      }
+    },
+    {
+      "expected": {
+        "ok": true,
+        "reason": "",
+        "report": {
+          "clamped_last_level": 99,
+          "dropped_bosses": [],
+          "dropped_duplicates": [
+            "level:3"
+          ],
+          "dropped_heroes": [],
+          "dropped_level_stats": [],
+          "dropped_levels": [
+            0,
+            55
+          ],
+          "rejected_difficulty": ""
+        },
+        "state": {
+          "completed_levels": [
+            1,
+            54,
+            3
+          ],
+          "import_source": "pygame",
+          "last_played_level": 54,
+          "level_stats": {},
+          "meta_gold": 10,
+          "purchased_heroes": [],
+          "replay_reward_counts": {},
+          "run_difficulty": null,
+          "slot_created": 1700000000.0,
+          "slot_last_played": 1700000000.0,
+          "slot_playtime_seconds": 0,
+          "unlocked_bosses": []
+        }
+      },
+      "name": "level_bounds",
+      "note": "levels outside 1-54, duplicates, and an out-of-range cursor",
+      "parsed": {
+        "completed_levels": [
+          0,
+          1,
+          55,
+          54,
+          3,
+          3
+        ],
+        "last_played_level": 99,
+        "meta_gold": 10
+      },
+      "raw_text": "{\"meta_gold\": 10, \"completed_levels\": [0, 1, 55, 54, 3, 3], \"last_played_level\": 99}",
+      "source_loaded": {
+        "completed_levels": [
+          0,
+          1,
+          55,
+          54,
+          3,
+          3
+        ],
+        "last_played_level": 99,
+        "level_stats": {},
+        "meta_gold": 10,
+        "purchased_heroes": [],
+        "run_difficulty": null,
+        "slot_created": 1700000000.0,
+        "slot_last_played": 1700000000.0,
+        "slot_playtime_seconds": 0,
+        "unlocked_bosses": []
+      },
+      "source_slot_info": {
+        "completed_levels": [
+          0,
+          1,
+          55,
+          54,
+          3,
+          3
+        ],
+        "highest_level": 55,
+        "last_played_level": 99,
+        "meta_gold": 10,
+        "playtime_seconds": 0,
+        "purchased_heroes": [],
+        "slot_created": 0,
+        "slot_last_played": 0,
+        "slot_num": 1,
+        "unlocked_bosses": []
+      }
+    },
+    {
+      "expected": {
+        "ok": true,
+        "reason": "",
+        "report": {
+          "clamped_last_level": 0,
+          "dropped_bosses": [],
+          "dropped_duplicates": [],
+          "dropped_heroes": [],
+          "dropped_level_stats": [
+            "abc",
+            "55",
+            "5"
+          ],
+          "dropped_levels": [],
+          "rejected_difficulty": ""
+        },
+        "state": {
+          "completed_levels": [
+            3,
+            4
+          ],
+          "import_source": "pygame",
+          "last_played_level": 4,
+          "level_stats": {
+            "3": {
+              "best_score": 1820,
+              "best_time_seconds": 143,
+              "max_combo": 19,
+              "total_attempts": 4,
+              "total_kills": 61,
+              "total_playtime_seconds": 905,
+              "wins": 2
+            },
+            "4": {
+              "best_score": 5,
+              "best_time_seconds": 0,
+              "max_combo": 0,
+              "total_attempts": 0,
+              "total_kills": 0,
+              "total_playtime_seconds": 0,
+              "wins": 0
+            }
+          },
+          "meta_gold": 20,
+          "purchased_heroes": [],
+          "replay_reward_counts": {},
+          "run_difficulty": null,
+          "slot_created": 1700000000.0,
+          "slot_last_played": 1700000000.0,
+          "slot_playtime_seconds": 0,
+          "unlocked_bosses": []
+        }
+      },
+      "name": "broken_stats",
+      "note": "level_stats with wrong keys, a bad level number and wins > attempts",
+      "parsed": {
+        "completed_levels": [
+          3,
+          4
+        ],
+        "last_played_level": 4,
+        "level_stats": {
+          "3": {
+            "best_score": 1820,
+            "best_time_seconds": 143,
+            "max_combo": 19,
+            "total_attempts": 4,
+            "total_kills": 61,
+            "total_playtime_seconds": 905,
+            "wins": 2
+          },
+          "4": {
+            "best_score": 5
+          },
+          "5": {
+            "best_score": 1,
+            "best_time_seconds": 1,
+            "max_combo": 1,
+            "total_attempts": 1,
+            "total_kills": 1,
+            "total_playtime_seconds": 1,
+            "wins": 2
+          },
+          "55": {
+            "best_score": 1820,
+            "best_time_seconds": 143,
+            "max_combo": 19,
+            "total_attempts": 4,
+            "total_kills": 61,
+            "total_playtime_seconds": 905,
+            "wins": 2
+          },
+          "abc": {
+            "best_score": 1820,
+            "best_time_seconds": 143,
+            "max_combo": 19,
+            "total_attempts": 4,
+            "total_kills": 61,
+            "total_playtime_seconds": 905,
+            "wins": 2
+          }
+        },
+        "meta_gold": 20
+      },
+      "raw_text": "{\"meta_gold\": 20, \"completed_levels\": [3, 4], \"last_played_level\": 4, \"level_stats\": {\"3\": {\"best_score\": 1820, \"best_time_seconds\": 143, \"total_attempts\": 4, \"wins\": 2, \"total_kills\": 61, \"max_combo\": 19, \"total_playtime_seconds\": 905}, \"4\": {\"best_score\": 5}, \"abc\": {\"best_score\": 1820, \"best_time_seconds\": 143, \"total_attempts\": 4, \"wins\": 2, \"total_kills\": 61, \"max_combo\": 19, \"total_playtime_seconds\": 905}, \"55\": {\"best_score\": 1820, \"best_time_seconds\": 143, \"total_attempts\": 4, \"wins\": 2, \"total_kills\": 61, \"max_combo\": 19, \"total_playtime_seconds\": 905}, \"5\": {\"best_score\": 1, \"best_time_seconds\": 1, \"total_attempts\": 1, \"wins\": 2, \"total_kills\": 1, \"max_combo\": 1, \"total_playtime_seconds\": 1}}}",
+      "source_level_stats": {
+        "best_score": 5
+      },
+      "source_loaded": {
+        "completed_levels": [
+          3,
+          4
+        ],
+        "last_played_level": 4,
+        "level_stats": {
+          "3": {
+            "best_score": 1820,
+            "best_time_seconds": 143,
+            "max_combo": 19,
+            "total_attempts": 4,
+            "total_kills": 61,
+            "total_playtime_seconds": 905,
+            "wins": 2
+          },
+          "4": {
+            "best_score": 5
+          },
+          "5": {
+            "best_score": 1,
+            "best_time_seconds": 1,
+            "max_combo": 1,
+            "total_attempts": 1,
+            "total_kills": 1,
+            "total_playtime_seconds": 1,
+            "wins": 2
+          },
+          "55": {
+            "best_score": 1820,
+            "best_time_seconds": 143,
+            "max_combo": 19,
+            "total_attempts": 4,
+            "total_kills": 61,
+            "total_playtime_seconds": 905,
+            "wins": 2
+          },
+          "abc": {
+            "best_score": 1820,
+            "best_time_seconds": 143,
+            "max_combo": 19,
+            "total_attempts": 4,
+            "total_kills": 61,
+            "total_playtime_seconds": 905,
+            "wins": 2
+          }
+        },
+        "meta_gold": 20,
+        "purchased_heroes": [],
+        "run_difficulty": null,
+        "slot_created": 1700000000.0,
+        "slot_last_played": 1700000000.0,
+        "slot_playtime_seconds": 0,
+        "unlocked_bosses": []
+      },
+      "source_slot_info": {
+        "completed_levels": [
+          3,
+          4
+        ],
+        "highest_level": 4,
+        "last_played_level": 4,
+        "meta_gold": 20,
+        "playtime_seconds": 0,
+        "purchased_heroes": [],
+        "slot_created": 0,
+        "slot_last_played": 0,
+        "slot_num": 1,
+        "unlocked_bosses": []
+      }
+    },
+    {
+      "expected": {
+        "ok": true,
+        "reason": "",
+        "report": {
+          "clamped_last_level": 0,
+          "dropped_bosses": [],
+          "dropped_duplicates": [],
+          "dropped_heroes": [],
+          "dropped_level_stats": [],
+          "dropped_levels": [],
+          "rejected_difficulty": "nightmare"
+        },
+        "state": {
+          "completed_levels": [
+            1
+          ],
+          "import_source": "pygame",
+          "last_played_level": 1,
+          "level_stats": {},
+          "meta_gold": 30,
+          "purchased_heroes": [],
+          "replay_reward_counts": {},
+          "run_difficulty": null,
+          "slot_created": 1700000000.0,
+          "slot_last_played": 1700000000.0,
+          "slot_playtime_seconds": 0,
+          "unlocked_bosses": []
+        }
+      },
+      "name": "bad_difficulty",
+      "note": "run_difficulty outside the native difficulty list",
+      "parsed": {
+        "completed_levels": [
+          1
+        ],
+        "last_played_level": 1,
+        "meta_gold": 30,
+        "run_difficulty": "nightmare"
+      },
+      "raw_text": "{\"meta_gold\": 30, \"completed_levels\": [1], \"last_played_level\": 1, \"run_difficulty\": \"nightmare\"}",
+      "source_loaded": {
+        "completed_levels": [
+          1
+        ],
+        "last_played_level": 1,
+        "level_stats": {},
+        "meta_gold": 30,
+        "purchased_heroes": [],
+        "run_difficulty": "nightmare",
+        "slot_created": 1700000000.0,
+        "slot_last_played": 1700000000.0,
+        "slot_playtime_seconds": 0,
+        "unlocked_bosses": []
+      },
+      "source_slot_info": {
+        "completed_levels": [
+          1
+        ],
+        "highest_level": 1,
+        "last_played_level": 1,
+        "meta_gold": 30,
+        "playtime_seconds": 0,
+        "purchased_heroes": [],
+        "slot_created": 0,
+        "slot_last_played": 0,
+        "slot_num": 1,
+        "unlocked_bosses": []
+      }
+    },
+    {
+      "expected": {
+        "ok": false,
+        "reason": "corrupt_meta_gold",
+        "report": null,
+        "state": null
+      },
+      "name": "negative_gold",
+      "note": "negative currency: the native envelope refuses the whole file",
+      "parsed": {
+        "completed_levels": [
+          1
+        ],
+        "last_played_level": 1,
+        "meta_gold": -5
+      },
+      "raw_text": "{\"meta_gold\": -5, \"completed_levels\": [1], \"last_played_level\": 1}",
+      "source_loaded": {
+        "completed_levels": [
+          1
+        ],
+        "last_played_level": 1,
+        "level_stats": {},
+        "meta_gold": -5,
+        "purchased_heroes": [],
+        "run_difficulty": null,
+        "slot_created": 1700000000.0,
+        "slot_last_played": 1700000000.0,
+        "slot_playtime_seconds": 0,
+        "unlocked_bosses": []
+      },
+      "source_slot_info": {
+        "completed_levels": [
+          1
+        ],
+        "highest_level": 1,
+        "last_played_level": 1,
+        "meta_gold": -5,
+        "playtime_seconds": 0,
+        "purchased_heroes": [],
+        "slot_created": 0,
+        "slot_last_played": 0,
+        "slot_num": 1,
+        "unlocked_bosses": []
+      }
+    },
+    {
+      "expected": {
+        "ok": false,
+        "reason": "corrupt_meta_gold",
+        "report": null,
+        "state": null
+      },
+      "name": "string_gold",
+      "note": "non-numeric currency",
+      "parsed": {
+        "completed_levels": [
+          1
+        ],
+        "last_played_level": 1,
+        "meta_gold": "7250"
+      },
+      "raw_text": "{\"meta_gold\": \"7250\", \"completed_levels\": [1], \"last_played_level\": 1}",
+      "source_loaded": {
+        "completed_levels": [
+          1
+        ],
+        "last_played_level": 1,
+        "level_stats": {},
+        "meta_gold": "7250",
+        "purchased_heroes": [],
+        "run_difficulty": null,
+        "slot_created": 1700000000.0,
+        "slot_last_played": 1700000000.0,
+        "slot_playtime_seconds": 0,
+        "unlocked_bosses": []
+      },
+      "source_slot_info": {
+        "completed_levels": [
+          1
+        ],
+        "highest_level": 1,
+        "last_played_level": 1,
+        "meta_gold": "7250",
+        "playtime_seconds": 0,
+        "purchased_heroes": [],
+        "slot_created": 0,
+        "slot_last_played": 0,
+        "slot_num": 1,
+        "unlocked_bosses": []
+      }
+    },
+    {
+      "expected": {
+        "ok": false,
+        "reason": "not_a_save",
+        "report": null,
+        "state": null
+      },
+      "name": "corrupt_json",
+      "note": "truncated file: source load() silently returns an empty profile",
+      "parsed": null,
+      "raw_text": "{\"meta_gold\": 12, \"completed_levels\": [1,",
+      "source_loaded": {
+        "completed_levels": [],
+        "last_played_level": 1,
+        "level_stats": {},
+        "meta_gold": 0,
+        "purchased_heroes": [],
+        "run_difficulty": null,
+        "slot_created": 1700000000.0,
+        "slot_last_played": 1700000000.0,
+        "slot_playtime_seconds": 0,
+        "unlocked_bosses": []
+      },
+      "source_slot_info": null
+    },
+    {
+      "expected": {
+        "ok": false,
+        "reason": "not_a_save",
+        "report": null,
+        "state": null
+      },
+      "name": "list_json",
+      "note": "valid JSON but not an object: source load() falls back to empty",
+      "parsed": [
+        1,
+        2,
+        3
+      ],
+      "raw_text": "[1, 2, 3]",
+      "source_loaded": {
+        "completed_levels": [],
+        "last_played_level": 1,
+        "level_stats": {},
+        "meta_gold": 0,
+        "purchased_heroes": [],
+        "run_difficulty": null,
+        "slot_created": 1700000000.0,
+        "slot_last_played": 1700000000.0,
+        "slot_playtime_seconds": 0,
+        "unlocked_bosses": []
+      },
+      "source_slot_info": null
+    }
+  ],
+  "migration": {
+    "can_import_after_migration": true,
+    "migrated": true,
+    "state": {
+      "completed_levels": [
+        1
+      ],
+      "last_played_level": 1,
+      "level_stats": {},
+      "meta_gold": 99,
+      "purchased_heroes": [
+        "kaizen"
+      ],
+      "run_difficulty": null,
+      "slot_created": 1700000000.0,
+      "slot_last_played": 1700000000.0,
+      "slot_playtime_seconds": 0,
+      "unlocked_bosses": []
+    }
+  },
+  "policy": {
+    "backfill_keys": [
+      "completed_levels",
+      "last_played_level",
+      "level_stats",
+      "meta_gold",
+      "purchased_heroes",
+      "run_difficulty",
+      "slot_created",
+      "slot_last_played",
+      "slot_playtime_seconds",
+      "unlocked_bosses"
+    ],
+    "boss_flag_count": 216,
+    "clock": 1700000000.0,
+    "difficulties": [
+      "normal",
+      "hard"
+    ],
+    "max_level": 54,
+    "replay_reward_counts_in_source": false,
+    "roster_size": 222,
+    "slot_count": 3,
+    "stats_fields": [
+      "best_score",
+      "best_time_seconds",
+      "total_attempts",
+      "wins",
+      "total_kills",
+      "max_combo",
+      "total_playtime_seconds"
+    ]
+  }
+}
