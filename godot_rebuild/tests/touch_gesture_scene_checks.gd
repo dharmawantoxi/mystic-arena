@@ -38,6 +38,10 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		if unit.is_hero and unit.team == world.RED:
 			enemy = unit
 			break
+	if enemy == null:
+		# Neither team starts with a live hero; the follow gesture needs an enemy
+		# target, so the fixture summons one at the source red spawn.
+		enemy = world.spawn_hero(HERO_ROSTER["kaizen"], world.RED, world.RED_HERO_SPAWN)
 	check.call(enemy != null, "Touch follow fixture finds the source red hero")
 	if enemy != null:
 		var enemy_point: Vector2 = screen.arena.get_global_transform_with_canvas() * enemy.position

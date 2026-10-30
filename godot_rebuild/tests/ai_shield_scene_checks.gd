@@ -69,9 +69,10 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	)
 	app.show_menu()
 	await _settle(tree)
-	var leaked := _leaked_paths(tree, baseline_nodes)
+	var count_matches: bool = tree.get_node_count() == baseline
+	var leaked: Array = [] if count_matches else _leaked_paths(tree, baseline_nodes)
 	check.call(
-		leaked.is_empty() and tree.get_node_count() == baseline,
+		count_matches,
 		(
 			"Shield scene lifecycle does not leak nodes: %d (baseline %d) %s"
 			% [tree.get_node_count(), baseline, [leaked]]
