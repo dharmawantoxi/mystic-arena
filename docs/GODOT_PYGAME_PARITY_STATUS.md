@@ -50,7 +50,7 @@ Tes native Godot 4.7.2 headless terakhir yang jumlah pemeriksaannya tercatat (br
 
 Run native terbaru untuk lapisan 9bt adalah commit `0411b28` ([run 41030476536](https://github.com/dharmawantoxi/mystic-arena/actions/runs/41030476536)) dan lulus tanpa kegagalan; jumlah pemeriksaannya tidak terbaca dari artefak di lingkungan kerja ini, jadi angka 1.505.443 di atas tetap merujuk run `f4e840b`.
 
-Validator statis terakhir yang tersedia lulus **21.811 pemeriksaan**. Itu berbeda dari tes native dan tidak menggantikan bukti runtime, screenshot, perangkat, atau audio.
+Validator statis terakhir yang tersedia lulus **21.827 pemeriksaan**. Itu berbeda dari tes native dan tidak menggantikan bukti runtime, screenshot, perangkat, atau audio.
 
 #### Triase 23 kegagalan tes native sebelumnya
 
@@ -115,6 +115,32 @@ Perbaikan yang dipaksa bukti ini di `godot_rebuild/`:
 * **Bingkai menu dulu diperbesar & ditengahkan.** `menu_backdrop.cover_rect()` memakai *cover* (`maxf`) sehingga pada 1624×720 latar 1280×720 dinaikkan 27 % lalu dipotong atas-bawah, dan `main_menu.gd` menengahkan bingkai (`origin.x = 172`). Akibatnya tombol HERO SHOP akan berada di x=632, bukan 460 seperti di HP. Sekarang `arena_rect()` menempelkan bingkai di kiri pada 1:1 (hanya mengecil bila permukaan lebih kecil, dan *letterbox* vertikal pada layar tinggi), dan `MainMenu.tscn` memakai `SOURCE_BUTTON_RECTS` sebagai satu-satunya sumber angka tombol.
 * **Strip batu kanan tidak ada di menu.** Sumber mengecat dinding batu sekali ke sisa lebar permukaan (`_gambar_panel_samping`) sebelum layar apa pun digambar, jadi menu pun berlatar batu di 344 px kanan. Godot kini punya `scripts/ui/panel_stone.gd` (angka bata, gradasi, garis emas) + `scripts/ui/panel_backdrop.gd` untuk menu; `side_panel.gd` tetap memakai angka yang sama untuk dock pertandingan.
 * **Kabut menu menembus dock.** Lapisan kabut 1500 px dulu digambar melewati batas arena; kini dipotong ke 1280×720 (`_blit_clipped`), sama seperti blit sumber ke subsurface arena.
+
+### Bobot font panel kanan (layer 9bv19, 30 Oktober 2026)
+
+Audit panel kanan menemukan satu selisih nyata di luar geometri: **bobot font**. Sumber memanggil `get_font(size, "body_bold")` untuk judul kotak, angka gold, "LV n", nama hero dan label tactical (`mobile/sidepanel.py`), dan `_render._STYLE_FONT_MAP` memetakan `body_bold` ke **Barlow-Bold**; teks lain memakai `body` (Barlow-Regular). Port sebelumnya menggambar **semua** teks dengan `get_theme_default_font()` (Barlow-Regular) dan mengukur lebarnya juga dengan font itu, sehingga `bold: true` di layout diabaikan.
+
+Perbaikannya di `godot_rebuild/`:
+
+* `side_panel_layout.gd` kini menulis `style` pada setiap entri teks (`"body"` / `"body_bold"`) dan menerima dua callable pengukur: `build(snapshot, panel, measure, measure_bold)`. Tiga keputusan yang bergantung pada lebar memakai pengukur bold, sama seperti sumber yang mengukur teks dengan font yang ia gambar: batas 55 % untuk mengecilkan gold 22 → 18, "LV n" rata kanan, dan label tactical di tengah tombol.
+* `side_panel.gd` menggambar tiap entri dengan `SourceFonts.for_style(entry["style"])` (modul 9bv17) dan menyediakan `_measure` (Barlow-Regular) + `_measure_bold` (Barlow-Bold). Tidak ada lagi `get_theme_default_font()` di panel ini.
+* Oracle `side_panel_source_oracle.py` sekarang merekam `style` dan `size` dari font yang benar-benar dipakai `SidePanel.render`, jadi fixture memuat 90 string (56 `body_bold`, 34 `body`) dengan bobot yang berasal dari sumber, bukan dari tebakan port. Suite native membandingkan teks, warna, posisi, ukuran **dan** style per string.
+
+Dampak lebar yang terukur (TTF yang sama, Pillow):
+
+| String | Ukuran | Regular | Bold | Delta |
+|---|---|---|---|---|
+| `TACTICAL COMMANDS (HOLD)` | 13 | 167 px | 175 px | +8 |
+| `ATTACK DMG DEALER [D]` | 13 | 145 px | 150 px | +5 |
+| `STATUS` | 13 | 46 px | 49 px | +3 |
+| `1,106` | 22 | 45 px | 47 px | +2 |
+| `ABADDONTHERION` | 15 | 124 px | 125 px | +1 |
+
+Karena itu teks rata kanan dan label tactical yang di tengah bergeser 1–3 px dibanding port lama; geometri kotak, tombol dan hit-test tidak berubah (dikunci oleh pemeriksaan native bahwa jumlah teks dan `y_after_tactical` tetap sama untuk kedua pengukur).
+
+Deviasi yang disengaja: sumber menggambar tombol tactical **dua kali** (gambar kedua meninggalkan busur aksen), dan itu tidak ditiru. Efek visualnya sisa goresan; port hanya menggambar satu kali.
+
+Yang **belum** dibuktikan: font sungguhan baru diverifikasi lewat metrik TTF di luar Godot; tidak ada executable Godot di lingkungan kerja ini, jadi hasil render, hinting, dan anti-alias Barlow-Bold pada runtime masih harus dilihat pengguna di PC/perangkat.
 
 ### Membandingkan capture Godot dari PC (layar sentuh)
 
