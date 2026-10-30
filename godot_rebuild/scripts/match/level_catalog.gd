@@ -1,6 +1,14 @@
 extends RefCounted
-## Source level_data.get_level_config / is_level_unlocked / get_next_level.
+## Source `levels/level_data.py`: `ALL_LEVELS`, `get_level_config`,
+## `get_level_count`, `is_level_unlocked` and `get_next_level`.
 ## Catalog only: selecting these entries does not make levels 2-54 playable.
+##
+## Deviations from the source helpers, both deliberate:
+## * the source returns `None` for "no such level" / "no next level"; here
+##   `get_level_config` returns an empty `Dictionary` and `get_next_level`
+##   returns `-1`, so callers never have to type-check a `Variant`;
+## * the source hands out the *same* mutable dict on every call; here every call
+##   re-reads the JSON, so a caller cannot corrupt the catalog.
 
 const COUNT := 54
 const LEVEL_ONE := "res://data/levels/level_1.json"
@@ -21,12 +29,30 @@ static func get_level_config(number: int) -> Dictionary:
 	return config
 
 
-static func is_level_unlocked(number: int, completed: Array[int]) -> bool:
+## Source `get_level_count()`: the number of entries in `ALL_LEVELS`.
+static func count() -> int:
+	return COUNT
+
+
+## Source `ALL_LEVELS`, in order. Not cached: the source list is a module
+## constant, but re-reading keeps the catalog stateless.
+static func all_configs() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for number in range(1, COUNT + 1):
+		var config := get_level_config(number)
+		if not config.is_empty():
+			out.append(config)
+	return out
+
+
+## Source `is_level_unlocked`: an unknown level is locked, `unlock_after_level`
+## of `null` means always unlocked, anything else needs that level completed.
+static func is_level_unlocked(number: int, completed: Array) -> bool:
 	var config := get_level_config(number)
 	if config.is_empty():
 		return false
 	var required: Variant = config.get("unlock_after_level")
-	return required == null or int(required) in completed
+	return required == null or completed.has(int(required))
 
 
 static func get_next_level(current: int) -> int:

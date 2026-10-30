@@ -164,6 +164,8 @@ from miasma_tick_delivery_source_oracle import source_fixture as miasma_tick_del
 from bosses_folder_source_oracle import source_fixture as bosses_folder_fixture
 from hero_skills_folder_source_oracle import source_fixture as hero_skills_fixture
 from heroes_folder_source_oracle import source_fixture as heroes_folder_fixture
+from levels_folder_source_oracle import source_fixture as levels_folder_fixture
+from levels_folder_source_oracle import check_native as levels_folder_readers
 check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
       "Item structure arm suite must be preloaded")
 check("ItemStructureArmChecks.new().run(_check)" in ai_tests,
@@ -2692,6 +2694,114 @@ if _hf_doc.is_file() and _hf_path.is_file():
     check(all(token in _hf_text for token in ("DEVIASI", "BELUM", "Diport")),
           "9bz the report must use the same Diport / BELUM / DEVIASI vocabulary")
     check(_hf_text.count("|") > 200, "9bz the report must stay tabular")
+
+# ── 9ca: the whole `levels/` folder (2 modules, 54 levels) ─────────────
+# Small folder, wide blast radius: enemy scaling, starting economy, castle
+# tiers, map theme, boss line-up, meta gold and the unlock chain all come from
+# these 54 dictionaries. The data was already native; this layer pins the
+# accounting of every key plus the four helper semantics.
+_lv_path = ROOT / "tests/fixtures/levels_folder_source.json"
+check(_lv_path.is_file(), "9ca levels/ inventory needs a source oracle fixture")
+check("LevelsFolderChecks.new().run(_check)" in ai_tests
+      and 'const LevelsFolderChecks = preload("res://tests/levels_folder_checks.gd")'
+      in ai_tests, "9ca levels/ folder suite must be preloaded and run")
+_lv_doc = ROOT.parent / "docs/LEVELS_FOLDER_MIGRATION.md"
+check(_lv_doc.is_file(), "9ca the levels/ migration report must ship")
+_lv_catalog = (ROOT / "scripts/match/level_catalog.gd").read_text(encoding="utf-8")
+check("static func count() -> int:" in _lv_catalog
+      and "static func all_configs() -> Array[Dictionary]:" in _lv_catalog
+      and "static func is_level_unlocked(number: int, completed: Array) -> bool:"
+      in _lv_catalog, "9ca the catalog must expose count(), all_configs() and the list gate")
+if _lv_path.is_file():
+    _lv = levels_folder_fixture()
+    check(_lv == json.loads(_lv_path.read_text(encoding="utf-8")),
+          "9ca levels/ inventory drifted from the source folder")
+    _lv_folder = _lv["folder"]
+    check((_lv_folder["count"], _lv_folder["lines"]) == (2, 2354)
+          and _lv_folder["files"] == {"__init__.py": 7, "level_data.py": 2347},
+          "9ca levels/ is two modules: a 7-line shim and the 2.347-line table")
+    check(_lv["reexports"] == ["ALL_LEVELS", "get_level_config", "get_level_count",
+                               "is_level_unlocked", "get_next_level"],
+          "9ca __init__.py re-exports the registry and the four helpers")
+    _lv_levels = _lv["levels"]
+    _lv_agg = _lv["aggregates"]
+    check((_lv_levels["count"], _lv_agg["key_count"],
+           _lv_agg["levels_with_every_key"]) == (54, 17, 54),
+          "9ca 54 levels, 17 keys each, no level missing a key")
+    check(_lv_levels["order"] == list(range(1, 55))
+          and _lv_agg["order_is_sequential"]
+          and _lv_agg["level_numbers_match_keys"],
+          "9ca ALL_LEVELS is the 1..54 order and matches every level_number")
+    check(len(_lv_agg["themes"]) == 54
+          and all(count == 1 for count in _lv_agg["themes"].values()),
+          "9ca the 54 levels use 54 distinct map themes, one level each")
+    check(len(_lv_agg["hp_mults"]) == 54
+          and _lv_agg["hp_mults"][0] == 1.0 and _lv_agg["hp_mults"][-1] == 1.54,
+          "9ca the 54 HP multipliers run 1.0 - 1.54 with no duplicates")
+    check(_lv_agg["starting_gold"] == [1000]
+          and _lv_agg["starting_castle_levels"] == [1]
+          and _lv_agg["castle_start_levels"] == [1],
+          "9ca every level opens on 1000 gold and tier-1 castles")
+    check(_lv_agg["reward_win"] == [3000] and _lv_agg["reward_replay"] == [1500]
+          and _lv_agg["reward_lose"] == [0],
+          "9ca meta gold is flat 3000 / 1500 / 0")
+    check(_lv_agg["mini_boss_counts"] == {"3": 54}
+          and _lv_agg["mini_boss_wave_keys"] == [10, 15, 17, 18, 20, 25]
+          and _lv_agg["mini_boss_wave_sets"]["10,18,25"] == 49,
+          "9ca every level carries three mini bosses on the 10/18/25 slot layout")
+    check(_lv_agg["unlock_chain_is_predecessor"],
+          "9ca every level above one unlocks from its predecessor")
+    check(len(_lv_agg["true_boss_types"]) == 54
+          and len(_lv_agg["mini_boss_types"]) == 162
+          and _lv_agg["boss_refs_total"] == 216
+          and not set(_lv_agg["true_boss_types"]) & set(_lv_agg["mini_boss_types"]),
+          "9ca 54 true + 162 mini bosses cover the 216-boss roster exactly once")
+    _lv_helpers = _lv["helpers"]
+    check(_lv_helpers["names"] == ["get_level_config", "get_level_count",
+                                   "get_next_level", "is_level_unlocked"]
+          and _lv_helpers["get_level_config"]["linear_over_all_levels"]
+          and _lv_helpers["get_level_count"]["returns_len_all_levels"],
+          "9ca the folder exposes the four helpers with their source lookup shape")
+    check(_lv_helpers["is_level_unlocked"]["none_unlock_after_means_unlocked"]
+          and _lv_helpers["is_level_unlocked"]["membership_in_completed"]
+          and _lv_helpers["is_level_unlocked"]["missing_config_is_locked"]
+          and _lv_helpers["get_next_level"]["guards_against_level_count"]
+          and _lv_helpers["get_next_level"]["guards_against_missing_config"]
+          and _lv_helpers["get_next_level"]["returns_none_at_end"],
+          "9ca the unlock and next-level guards keep their source conditions")
+    check(_lv["readers"]["dead_in_source"] == ["bgm_track", "meta_gold_reward_lose"],
+          "9ca only bgm_track and meta_gold_reward_lose are unread by the runtime")
+    _lv_readers = levels_folder_readers(_lv)
+    check(not _lv_readers["live_without_native_consumer"],
+          f"9ca every runtime-read key needs a Godot consumer: "
+          f"{_lv_readers['live_without_native_consumer']}")
+    check(_lv_readers["dead_in_native"] == _lv_readers["dead_in_source"],
+          f"9ca the dead keys must stay dead on both sides: {_lv_readers['dead_in_native']}")
+_lv_battle = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+check('float(level_config.get("enemy_hp_mult", 1.0)) * 1.15' in _lv_battle
+      and 'float(level_config.get("enemy_damage_mult", 1.0)) * 1.10' in _lv_battle
+      and 'enemy_speed_mult = float(level_config.get("enemy_speed_mult", 1.0))' in _lv_battle,
+      "9ca hard mode must apply the source 1.15 / 1.10 / raw speed multipliers")
+check('var source: Dictionary = level_config.get("mini_bosses", {})' in _lv_battle
+      and "for raw_key in source.keys():" in _lv_battle,
+      "9ca the mini-boss order must come from the source dictionary order")
+
+if _lv_doc.is_file() and _lv_path.is_file():
+    _lv_text = _lv_doc.read_text(encoding="utf-8")
+    _lv_unnamed = sorted(name for name in _lv["folder"]["files"]
+                         if "`%s`" % name not in _lv_text)
+    check(not _lv_unnamed, f"9ca the report must name both modules: {_lv_unnamed}")
+    check(all("`%s`" % key in _lv_text for key in _lv_agg["keys"]),
+          "9ca the report must classify all seventeen level keys")
+    check(all(token in _lv_text for token in (
+              "ALL_LEVELS", "get_level_config", "get_level_count", "is_level_unlocked",
+              "get_next_level", "mini_bosses", "_roll_mini_boss_schedule",
+              "enemy_hp_mult", "map_theme", "theme_palette.json", "boss_stats.json",
+              "bgm_track", "meta_gold_reward_lose")),
+          "9ca the report must classify every source construct")
+    check(all(token in _lv_text for token in ("DEVIASI", "BELUM", "Diport")),
+          "9ca the report must use the same Diport / BELUM / DEVIASI vocabulary")
+    check(_lv_text.count("|") > 150, "9ca the report must stay tabular")
 
 if _bf_doc.is_file() and _bf_path.is_file():
     _bf_text = _bf_doc.read_text(encoding="utf-8")
