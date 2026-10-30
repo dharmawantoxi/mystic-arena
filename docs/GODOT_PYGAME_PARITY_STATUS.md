@@ -50,7 +50,7 @@ Tes native Godot 4.7.2 headless terakhir yang jumlah pemeriksaannya tercatat (br
 
 Run native terbaru untuk lapisan 9bt adalah commit `0411b28` ([run 41030476536](https://github.com/dharmawantoxi/mystic-arena/actions/runs/41030476536)) dan lulus tanpa kegagalan; jumlah pemeriksaannya tidak terbaca dari artefak di lingkungan kerja ini, jadi angka 1.505.443 di atas tetap merujuk run `f4e840b`.
 
-Validator statis terakhir yang tersedia lulus **21.810 pemeriksaan**. Itu berbeda dari tes native dan tidak menggantikan bukti runtime, screenshot, perangkat, atau audio.
+Validator statis terakhir yang tersedia lulus **21.811 pemeriksaan**. Itu berbeda dari tes native dan tidak menggantikan bukti runtime, screenshot, perangkat, atau audio.
 
 #### Triase 23 kegagalan tes native sebelumnya
 
@@ -120,7 +120,7 @@ Perbaikan yang dipaksa bukti ini di `godot_rebuild/`:
 
 Perangkat uji pengguna (PC dengan layar sentuh) memenuhi `DisplayServer.is_touchscreen_available()`, jadi jalur mobile aktif dan dock 344 px ikut tampil bila permukaan logisnya 1624×720 — bukan hanya di HP.
 
-1. Jalankan dengan permukaan yang sama seperti HP: `godot --path godot_rebuild --resolution 1624x720`. Proyek memakai `canvas_items` + `expand`, jadi kanvas logis = ukuran jendela ÷ skala; jendela 1920×1080 justru menghasilkan kanvas 1280×720 tanpa dock, sedangkan 1624×720 atau 2436×1080 menghasilkan 1624×720.
+1. Jalankan dengan permukaan yang sama seperti HP. **Default jendela run sekarang sudah 1624×720** (`window_width_override`/`window_height_override` di `project.godot`), jadi F5 dari editor langsung memberi kanvas logis 1624×720; basis desain tetap 1280×720 dan build ekspor tetap 1280×720. Untuk run di luar editor atau bila ukuran jendela belum ikut: `godot --path godot_rebuild --resolution 1624x720`. Proyek memakai `canvas_items` + `expand`, jadi kanvas logis = ukuran jendela ÷ skala; jendela 1920×1080 justru menghasilkan kanvas 1280×720 tanpa dock, sedangkan 1624×720 atau 2436×1080 menghasilkan 1624×720.
 2. Rekam tanpa border jendela: `godot --path godot_rebuild --resolution 1624x720 --write-movie C:/shots/menu.png --quit-after 90`. Movie writer Godot menulis deret PNG seukuran jendela; pakai frame terakhir.
 3. Bandingkan dengan oracle HP: `python tools/measure_android_screenshot.py --compare C:/shots/menu.png --kind menu` dan `--kind match` untuk dock. Skrip mengukur capture itu dengan pipeline yang sama seperti capture HP, mencetak delta per elemen, dan gagal bila ada yang melebihi 3 px (default `--tolerance 3`).
 4. `--self-test` membuktikan pipeline tidak bergeser antarsesi: fixture harus bisa dibuat ulang byte-per-byte dari dua capture HP, dan tata letak yang sama harus tetap terbaca pada resolusi lain (uji pada capture setengah resolusi, toleransi +1 px karena highlight 1 px terkuantisasi).

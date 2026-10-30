@@ -10,7 +10,7 @@ Pygame Android/mobile di root repository adalah sumber kebenaran untuk parity. P
 2. Buka **Godot 4.7.2 → Project Manager → Import**.
 3. Pilih **`godot_rebuild/project.godot`**. Jangan memilih proyek migrasi lama.
 4. Klik **Import & Edit**, tunggu import font selesai.
-5. Tekan **F5**. Main scene sudah diatur ke `app/App.tscn`.
+5. Tekan **F5**. Main scene sudah diatur ke `app/App.tscn`. Jendela run default **1624×720** — permukaan logis build Android 2436×1080 — supaya dock kanan 344 px ikut terlihat saat memeriksa parity di PC layar sentuh. Basis desain tetap 1280×720 (`viewport_width/height`) dan build ekspor tetap memakai 1280×720; hanya override jendela editor yang diubah.
 6. Klik **Pertandingan awal** untuk prototipe terbaru. Ketiga laboratorium tetap tersedia.
 
 Tidak memerlukan Python, pip, converter, addon, atau C++ untuk menjalankan client ini. Font yang dibutuhkan sudah disertakan. Export template belum diperlukan untuk menjalankan lewat editor.
@@ -280,16 +280,17 @@ Workflow **Godot Rebuild (native, fresh project)** pada `.github/workflows/godot
 ## Pemeriksaan visual singkat
 
 1. F5 menampilkan judul Mystic Arena, Pertandingan awal, Tower & nexus, Laboratorium minion, Uji input, dan Keluar.
-2. Resize ke rasio berbeda: tampilan tetap proporsional, letterbox diperbolehkan.
-3. Buka **Uji input**; pilih penanda, klik kanan, pastikan marker bergerak.
-4. Buka **Laboratorium minion**; pastikan tiga lane terlihat, unit bergerak/menyerang, HP turun; tambah wave dan inspeksi unit.
-5. Klik panel HUD: penanda tidak hilang seleksinya karena klik tembus.
-6. Esc: angka tick harus berhenti; Lanjutkan: angka tick maju lagi.
-7. Alt+Tab: arena pause ketika kehilangan fokus.
-8. Restart mengembalikan penanda ke posisi awal tanpa seleksi.
-9. Buka **Tower & nexus**, inspeksi bangunan, kirim wave satu tim, amati projectile dan shield/HP.
-10. Buka **Pertandingan awal**, pilih slot biru, bangun/jual Archer, amati wave otomatis dan gold. Upgrade Archer dan periksa perubahan harga/refund/HP/shield serta jumlah panah. Pilih nexus biru, upgrade ke level 2+ dan amati HP/shield/komposisi/minion menguat. Pause harus membekukan keduanya; restart mengembalikan 1000 G dan nexus level 1.
-11. Kembali ke menu, ulangi. Periksa Debugger untuk error dan Remote tree untuk screen sisa.
+2. Pada jendela 1624×720 (default) menu memakai arena 1280 px di kiri + dinding batu 344 px di kanan; pada PC layar sentuh, pertandingan menampilkan dock PAUSE/STATUS/HEROES/TACTICAL. Angkanya bisa diukur dengan `tools/measure_android_screenshot.py --compare <file.png> --kind menu|match`.
+3. Resize ke rasio berbeda: tampilan tetap proporsional, letterbox diperbolehkan.
+4. Buka **Uji input**; pilih penanda, klik kanan, pastikan marker bergerak.
+5. Buka **Laboratorium minion**; pastikan tiga lane terlihat, unit bergerak/menyerang, HP turun; tambah wave dan inspeksi unit.
+6. Klik panel HUD: penanda tidak hilang seleksinya karena klik tembus.
+7. Esc: angka tick harus berhenti; Lanjutkan: angka tick maju lagi.
+8. Alt+Tab: arena pause ketika kehilangan fokus.
+9. Restart mengembalikan penanda ke posisi awal tanpa seleksi.
+10. Buka **Tower & nexus**, inspeksi bangunan, kirim wave satu tim, amati projectile dan shield/HP.
+11. Buka **Pertandingan awal**, pilih slot biru, bangun/jual Archer, amati wave otomatis dan gold. Upgrade Archer dan periksa perubahan harga/refund/HP/shield serta jumlah panah. Pilih nexus biru, upgrade ke level 2+ dan amati HP/shield/komposisi/minion menguat. Pause harus membekukan keduanya; restart mengembalikan 1000 G dan nexus level 1.
+12. Kembali ke menu, ulangi. Periksa Debugger untuk error dan Remote tree untuk screen sisa.
 
 ## Status roster hero
 
