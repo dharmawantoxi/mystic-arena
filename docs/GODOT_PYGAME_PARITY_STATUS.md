@@ -48,7 +48,9 @@ Tidak akan mengubah aturan, UI, atau data Pygame agar tes Godot lulus. Jika ada 
 
 Tes native Godot 4.7.2 headless terakhir (branch `arena/a5ab95fe-mystic-arena`, commit `f4e840b`, [run 41019560561](https://github.com/dharmawantoxi/mystic-arena/actions/runs/41019560561)) menjalankan 1.505.443 pemeriksaan (147 di antaranya suite impor slot Pygame: 112 domain + 35 scene) dan melaporkan **0 kegagalan** serta tanpa `SCRIPT ERROR`. Sebelumnya run PR #348 menjalankan 1.505.221 pemeriksaan dengan **23 kegagalan**; seluruhnya sudah ditriase dan diperbaiki, dan penyebabnya dicatat di tabel triase di bawah.
 
-Validator statis terakhir yang tersedia lulus **21.713 pemeriksaan**. Itu berbeda dari tes native dan tidak menggantikan bukti runtime, screenshot, perangkat, atau audio.
+Suite `tests/android_layout_checks.gd` (lapisan 9bt di bawah) menambah pemeriksaan geometri Android; jumlah total baru dicatat dari hasil CI branch ini, bukan ditebak di dokumen.
+
+Validator statis terakhir yang tersedia lulus **21.808 pemeriksaan**. Itu berbeda dari tes native dan tidak menggantikan bukti runtime, screenshot, perangkat, atau audio.
 
 #### Triase 23 kegagalan tes native sebelumnya
 
@@ -89,9 +91,32 @@ Jalur pemain sekarang: salin `slot_N.json` menjadi `user://pygame_slot_N.json`, 
 
 Yang **belum** ada dan tidak diklaim: salinan berkas masih langkah manual (belum ada tombol "pilih berkas" Android/SAF), belum ada uji impor pada perangkat Android nyata, kesetaraan cloud antar-engine, dan alur pembayaran/top-up. Sampai uji perangkat ada, baris "Save dan layanan" tetap belum setara.
 
-## Catatan screenshot yang dikirim
+## Screenshot Android nyata sebagai oracle tata letak (30 Oktober 2026)
 
-Gambar pengguna berukuran 1384×768. **Jika itu ukuran viewport game yang sebenarnya**, rasionya sekitar 1,80:1. Pygame menghitung lebar area game dari tinggi logis 720 px; lebar logisnya menjadi sekitar 1298 px, sehingga sisa untuk dock kanan hanya sekitar 18 px. `mobile/platform_utils.py` hanya membuat dock jika sisa ruang minimal 120 px. Maka dock/popup memang disembunyikan pada ukuran tersebut; ini perilaku sumber yang harus diikuti Godot, bukan bukti bahwa popup gagal bekerja. Jika gambar telah dipotong atau diubah ukurannya saat dikirim, ukur viewport asli sebelum memakai hitungan ini.
+Pengguna mengirim dua tangkapan dari APK Pygame di HP: `docs/screenshots/android-2026-10-30/menu.jpg` dan `match.jpg`, keduanya **2436×1080**. Ini bukti pertama dari perangkat nyata, jadi sekarang dipakai sebagai oracle, bukan lagi tebakan dari kode.
+
+Yang terbukti dari gambar (skala **1,5**, permukaan logis **1624×720**, arena 1280, dock kanan **344 px** — cocok `platform_utils.create_display` + `mobile/sidepanel.py`):
+
+| Elemen | Sumber (logis) | Terukur di screenshot |
+|---|---|---|
+| Panel kanan | `panel_rect(1624)` = (1280, 0, 344, 720) | tepat 1280..1624; mortar bata tiap 34 px |
+| Tombol PAUSE | (1294, 14, 58, 58), cincin emas | 1294..1352 × 14..72 |
+| Kotak STATUS | (1294, 84, 316, 96) | 1294..1610 × 84..179,5 |
+| Kotak HEROES (0 hero) | (1294, 190, 316, 64) | 1294..1610 × 190..253 |
+| Kotak TACTICAL | (1294, 264, 316, 210) | 1294..1610 × 264..474 |
+| 5 tombol tactical | 304×32 mulai y=288, langkah 38 | 290..317, 328..355, 366..393, 404..431, 442..469 (isi abu `(46,45,50)` = disabled) |
+| Menu CONTINUE / PLAY | (320, 311, 300, 50) & (660, 311, 300, 50) | x 320 / 660, y 311,5, tinggi 48,5 |
+| Menu tumpukan 6 tombol | x=460, w=360, h=50, mulai y=364, langkah 53 | bingkai atas 364, 417, 470, 523, 576, 629 |
+
+`tools/measure_android_screenshot.py` (Pillow, manual, bukan CI) menghitung ulang angka itu dan menulis `godot_rebuild/tests/fixtures/android_screenshot_reference.json`: setiap elemen berisi `expect` (angka tata letak sumber) dan `measured` (hasil ukur gambar). Selisih terbesar 2 px; skrip berhenti dengan error bila ada yang melebihi 3 px.
+
+Perbaikan yang dipaksa bukti ini di `godot_rebuild/`:
+
+* **Bingkai menu dulu diperbesar & ditengahkan.** `menu_backdrop.cover_rect()` memakai *cover* (`maxf`) sehingga pada 1624×720 latar 1280×720 dinaikkan 27 % lalu dipotong atas-bawah, dan `main_menu.gd` menengahkan bingkai (`origin.x = 172`). Akibatnya tombol HERO SHOP akan berada di x=632, bukan 460 seperti di HP. Sekarang `arena_rect()` menempelkan bingkai di kiri pada 1:1 (hanya mengecil bila permukaan lebih kecil, dan *letterbox* vertikal pada layar tinggi), dan `MainMenu.tscn` memakai `SOURCE_BUTTON_RECTS` sebagai satu-satunya sumber angka tombol.
+* **Strip batu kanan tidak ada di menu.** Sumber mengecat dinding batu sekali ke sisa lebar permukaan (`_gambar_panel_samping`) sebelum layar apa pun digambar, jadi menu pun berlatar batu di 344 px kanan. Godot kini punya `scripts/ui/panel_stone.gd` (angka bata, gradasi, garis emas) + `scripts/ui/panel_backdrop.gd` untuk menu; `side_panel.gd` tetap memakai angka yang sama untuk dock pertandingan.
+* **Kabut menu menembus dock.** Lapisan kabut 1500 px dulu digambar melewati batas arena; kini dipotong ke 1280×720 (`_blit_clipped`), sama seperti blit sumber ke subsurface arena.
+
+Yang **belum** diklaim: pasangan screenshot Godot pada perangkat yang sama belum direkam (tidak ada perangkat/emulator di lingkungan kerja ini), jadi perbandingan saat ini satu arah — geometri Godot diverifikasi terhadap angka hasil ukur Pygame lewat `tests/android_layout_checks.gd`, bukan pixel-diff. Aturan dock tetap: dock hanya dibuat bila sisa lebar ≥ 120 px (`platform_utils`), jadi pada viewport 16:9 (1280×720) memang tidak ada dock, dan pada 2436×1080 ada.
 
 ## Acceptance criteria untuk menyatakan parity
 

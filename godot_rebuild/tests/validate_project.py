@@ -6505,11 +6505,12 @@ if _mn_fixture_path.is_file():
     check(menu_ambient_source_fixture() == json.loads(_mn_fixture_path.read_text(encoding="utf-8")),
           "9bs the menu particle fixture must replay the live _core.py methods")
 check("ResourceLoader.exists(BACKGROUND)" in _mn_back
-      and "draw_texture_rect(baked, cover_rect(size), false)" in _mn_back
-      and "static func cover_rect(window: Vector2) -> Rect2:" in _mn_back
-      and "var factor := maxf(window.x / SOURCE_SIZE.x, window.y / SOURCE_SIZE.y)" in _mn_back
+      and "draw_texture_rect(baked, Rect2(Vector2.ZERO, size), false)" in _mn_back
+      and "static func arena_rect(window: Vector2) -> Rect2:" in _mn_back
+      and "var factor := minf(1.0, minf(window.x / SOURCE_SIZE.x, window.y / SOURCE_SIZE.y))"
+      in _mn_back
       and "background_draws += 1" in _mn_back and "func _draw_fallback() -> void:" in _mn_back,
-      "9bs the backdrop must cover the window with the baked frame and keep the old art as fallback")
+      "9bs the backdrop must pin the baked frame to the arena at 1:1 and keep the old art as fallback")
 check('const MENU_MANIFEST := "res://data/art/menu.json"' in _mn_ambient
       and "FileAccess.get_file_as_string(MENU_MANIFEST)" in _mn_ambient,
       "9bs the live fog overlay must read the menu atlas metadata, not the UI theme manifest")
@@ -6558,6 +6559,106 @@ check("MenuAmbientChecks.new().run_scene(" in ai_tests
       and "ambient_draws" in _mn_ambient_checks and "particle_draws" in _mn_ambient_checks
       and "The live menu overlay draws" in _mn_ambient_checks,
       "9bs native tests must prove the animated overlay is actually drawn")
+# ── Layer 9bt: the 2436x1080 Android captures as a layout oracle ──
+_android_shots = ROOT.parent / "docs/screenshots/android-2026-10-30"
+_android_fixture_path = ROOT / "tests/fixtures/android_screenshot_reference.json"
+_android_tool_path = ROOT.parent / "tools/measure_android_screenshot.py"
+_android_tool = _android_tool_path.read_text(encoding="utf-8") if _android_tool_path.is_file() else ""
+_android_checks = (ROOT / "tests/android_layout_checks.gd").read_text(encoding="utf-8")
+_android_stone = (ROOT / "scripts/ui/panel_stone.gd").read_text(encoding="utf-8")
+_android_backdrop = (ROOT / "scripts/ui/panel_backdrop.gd").read_text(encoding="utf-8")
+_android_menu = (ROOT / "scenes/menu/main_menu.gd").read_text(encoding="utf-8")
+_android_platform = (ROOT.parent / "mobile/platform_utils.py").read_text(encoding="utf-8")
+check((_android_shots / "menu.jpg").is_file() and (_android_shots / "match.jpg").is_file(),
+      "9bt both 2436x1080 Pygame Android captures must stay in the repo")
+check(_android_tool_path.is_file() and "--write" in _android_tool
+      and "android_screenshot_reference.json" in _android_tool
+      and "docs/screenshots/android-2026-10-30" in _android_tool,
+      "9bt the measuring script must regenerate the fixture from the captures")
+check(_android_fixture_path.is_file(), "9bt the measured screenshot fixture must exist")
+_android_source = {
+    "continue": [320, 311, 300, 50],
+    "play": [660, 311, 300, 50],
+    "hero_shop": [460, 364, 360, 50],
+    "input": [460, 417, 360, 50],
+    "how_to_play": [460, 470, 360, 50],
+    "settings": [460, 523, 360, 50],
+    "credits": [460, 576, 360, 50],
+    "quit": [460, 629, 360, 50],
+}
+if _android_fixture_path.is_file():
+    _android = json.loads(_android_fixture_path.read_text(encoding="utf-8"))
+    check(_android["device"] == {"px": [2436, 1080], "scale": 1.5, "logical": [1624, 720],
+                                 "ratio": 2.2556, "panel_width": 344},
+          "9bt the fixture must record the phone capture as 1.5x over a 1624x720 surface")
+    _android_buttons = _android["menu"]["buttons"]
+    check(sorted(_android_buttons) == sorted(_android_source),
+          "9bt the menu capture must cover the two-button row and the six-button stack")
+    for _name, _want in _android_source.items():
+        _entry = _android_buttons.get(_name, {"expect": [], "measured": []})
+        check([int(v) for v in _entry["expect"]] == _want,
+              f"9bt menu button {_name} must sit on the source rect {_want}")
+        check(all(abs(float(a) - float(b)) <= 3.0
+                  for a, b in zip(_entry["measured"], _entry["expect"])),
+              f"9bt menu button {_name} measurement must agree with the source within 3 px")
+    _match = _android["match"]
+    check([int(v) for v in _match["panel"]["expect"]] == [1280, 0, 344, 720],
+          "9bt the dock must be the 344 px strip right of the 1280 px arena")
+    check([int(v) for v in _match["pause"]["expect"]] == [1294, 14, 58, 58],
+          "9bt the PAUSE ring must sit at (1294, 14) 58x58")
+    _android_boxes = {"status": [1294, 84, 316, 96], "heroes": [1294, 190, 316, 64],
+                      "tactical": [1294, 264, 316, 210]}
+    for _name, _want in _android_boxes.items():
+        _entry = _match["boxes"][_name]
+        check([int(v) for v in _entry["expect"]] == _want,
+              f"9bt the {_name} box must use the source offsets {_want}")
+        check(all(abs(float(a) - float(b)) <= 3.0
+                  for a, b in zip(_entry["measured"], _entry["expect"])),
+              f"9bt the {_name} box measurement must agree with the source within 3 px")
+    _android_rows = _match["tactical_buttons"]
+    check(len(_android_rows) == 5
+          and all([int(v) for v in row["expect"]] == [1300, 288 + 38 * row["index"], 304, 32]
+                  for row in _android_rows),
+          "9bt the five tactical rows must be 304x32 at a 38 px step from y=288")
+    check(all(abs(float(a) - float(b)) <= 3.0
+              for row in _android_rows
+              for a, b in zip(row["measured"], row["expect"])),
+          "9bt every tactical row measurement must agree with the source within 3 px")
+    check(_match["hud"] == {"gold": 1106, "level": 2, "wave": 0, "shield_active": True,
+                            "difficulty": "normal", "heroes": 0},
+          "9bt the fixture must replay the HUD state the capture shows")
+check('const AndroidLayoutChecks = preload("res://tests/android_layout_checks.gd")' in ai_tests
+      and "AndroidLayoutChecks.new().run(_check)" in ai_tests
+      and "AndroidLayoutChecks.new().run_scene(app.current_screen, _check)" in ai_tests,
+      "9bt Android layout suite must be preloaded and run in the native suite")
+check("MenuBackdrop.arena_rect(size)" in _android_menu
+      and "const SOURCE_BUTTON_RECTS := {" in _android_menu
+      and "var origin := (size - SOURCE_MENU_SIZE * fit) * 0.5" not in _android_menu,
+      "9bt the menu must anchor its controls to the arena, never centre them")
+check('[node name="PanelStone" type="Control" parent="."]' in _mn_scene
+      and 'path="res://scripts/ui/panel_backdrop.gd"' in _mn_scene
+      and _mn_scene.index('[node name="PanelStone"') < _mn_scene.index('[node name="Backdrop"'),
+      "9bt the menu must draw the source stone strip behind the arena art")
+check("const BRICK_H := 34" in _android_stone
+      and "maxi(28, panel.size.x / 4)" in _android_stone
+      and "(row + x) % 3 == 0" in _android_stone
+      and "Color8(150, 120, 60)" in _android_stone
+      and "Color8(58, 50, 78)" in _android_stone,
+      "9bt the stone painter must keep the source brick pitch, shade rule and gold divider")
+check("    bh = 34" in _android_platform.replace("\n", "\n")
+      and "    batu = (34, 30, 48)" in _android_platform
+      and "    garis = (58, 50, 78)" in _android_platform
+      and "    emas = (150, 120, 60)" in _android_platform
+      and "def _gambar_panel_samping(surface, panel):" in _android_platform,
+      "9bt mobile/platform_utils must still paint the dock with those numbers")
+check("Rect2i(1294, 14, 58, 58)" in _android_checks
+      and '["y_after_status"] == 190' in _android_checks
+      and '["y_after_heroes"] == 264' in _android_checks
+      and "The eight menu buttons sit on the rects the phone capture measured" in _android_checks,
+      "9bt the native suite must assert the captured dock and menu geometry")
+check("android-2026-10-30" in _parity_doc and "arena_rect" in _parity_doc,
+      "9bt the parity doc must record the Android capture comparison")
+
 _mn_bright = [255, 233, 158]
 check("def outline_text(screen, font, text, color, center, outline=(8, 9, 18)," in _mn_ui
       and "body = gradient_text(font, text, GOLD_BRIGHT, (196, 138, 40))" in _mn_ui

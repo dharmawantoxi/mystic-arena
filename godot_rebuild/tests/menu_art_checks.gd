@@ -25,7 +25,7 @@ func run(check: Callable) -> void:
 		manifest = parsed
 	check.call(not manifest.is_empty(), "The menu background manifest parses")
 	_check_sheet(check, manifest)
-	_check_cover(check)
+	_check_arena(check)
 	_check_scenes(check)
 
 
@@ -54,21 +54,28 @@ func _check_sheet(check: Callable, manifest: Dictionary) -> void:
 	)
 
 
-func _check_cover(check: Callable) -> void:
-	var same := MenuBackdrop.cover_rect(Vector2(1280, 720))
-	check.call(same == Rect2(0, 0, 1280, 720), "A 16:9 window shows the frame 1:1")
-	var wide := MenuBackdrop.cover_rect(Vector2(1600, 720))
-	check.call(wide.size == Vector2(1600, 900), "A wider window scales the frame up uniformly")
-	check.call(wide.position == Vector2(0, -90), "and crops it equally above and below")
-	var tall := MenuBackdrop.cover_rect(Vector2(1280, 900))
-	check.call(tall.size == Vector2(1600, 900), "A taller window scales by height")
-	check.call(tall.position == Vector2(-160, 0), "and crops it equally left and right")
-	var covers := true
-	for window in [Vector2(800, 600), Vector2(1920, 1080), Vector2(1000, 1400)]:
-		var rect := MenuBackdrop.cover_rect(window)
-		covers = covers and rect.position.x <= 0.01 and rect.position.y <= 0.01
-		covers = covers and rect.end.x >= window.x - 0.01 and rect.end.y >= window.y - 0.01
-	check.call(covers, "The frame always covers the window")
+func _check_arena(check: Callable) -> void:
+	# The source menu blits into the 1280x720 arena subsurface, which
+	# `platform_utils.create_display` pins at the surface origin: the frame is
+	# never centred and never upscaled (the extra width is the stone dock).
+	var same := MenuBackdrop.arena_rect(Vector2(1280, 720))
+	check.call(same == Rect2(0, 0, 1280, 720), "A 16:9 surface shows the frame 1:1")
+	var wide := MenuBackdrop.arena_rect(Vector2(1624, 720))
+	check.call(wide == Rect2(0, 0, 1280, 720), "A wide surface keeps the frame 1:1 on the left")
+	var tall := MenuBackdrop.arena_rect(Vector2(1280, 900))
+	check.call(tall == Rect2(0, 90, 1280, 720), "A tall surface letterboxes instead of cropping")
+	var small := MenuBackdrop.arena_rect(Vector2(800, 600))
+	check.call(small.size == Vector2(800, 450), "Only a small surface scales the frame down")
+	check.call(
+		small.position == Vector2(0, 75), "and keeps it anchored left and centred vertically"
+	)
+	var clean := true
+	for window in [Vector2(800, 600), Vector2(1920, 1080), Vector2(1624, 720), Vector2(1000, 1400)]:
+		var rect := MenuBackdrop.arena_rect(window)
+		clean = clean and rect.position.x == 0.0 and rect.position.y >= 0.0
+		clean = clean and rect.size.x <= 1280.0 + 0.01 and rect.size.y <= 720.0 + 0.01
+		clean = clean and rect.end.x <= window.x + 0.01 and rect.end.y <= window.y + 0.01
+	check.call(clean, "The frame never upscales and never leaves the surface")
 
 
 func run_scene(menu: Node, check: Callable) -> void:
