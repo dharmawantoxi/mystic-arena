@@ -60,6 +60,8 @@ Validator statis terakhir yang tersedia lulus **21.677 pemeriksaan**. Itu berbed
 | `Shield scene lifecycle does not leak nodes` | Baseline suite ini diambil saat app masih di dalam match karena suite popup sebelumnya berhenti akibat error indeks; hitungan akhir (menu) lalu terlihat seperti kebocoran 161 node. | Kebocoran kini dilaporkan sebagai census path node, dan baseline valid setelah suite popup selesai. |
 | `Retry records its independent minion kill`, `Defeat retry accumulates totals...` | Restart membangun world baru tanpa hero hidup, sehingga kill pada percobaan kedua tidak pernah terjadi. | Fixture level-stat menyummon starter pada setiap world baru. |
 
+Catatan penting untuk triase berikutnya: `SCRIPT ERROR` di tengah suite menghentikan fungsi suite tanpa mencetak `FAIL`, sehingga pemeriksaan sisanya hilang tanpa terlihat gagal. Karena itu bandingkan jumlah `PASS: ... checks` antar-run: penurunan jumlah pemeriksaan adalah sinyal regresi yang tidak tertangkap daftar `FAIL`. Anotasi CI kini juga menyertakan baris `at: file:line` dari setiap `SCRIPT ERROR`.
+
 ## Catatan screenshot yang dikirim
 
 Gambar pengguna berukuran 1384×768. **Jika itu ukuran viewport game yang sebenarnya**, rasionya sekitar 1,80:1. Pygame menghitung lebar area game dari tinggi logis 720 px; lebar logisnya menjadi sekitar 1298 px, sehingga sisa untuk dock kanan hanya sekitar 18 px. `mobile/platform_utils.py` hanya membuat dock jika sisa ruang minimal 120 px. Maka dock/popup memang disembunyikan pada ukuran tersebut; ini perilaku sumber yang harus diikuti Godot, bukan bukti bahwa popup gagal bekerja. Jika gambar telah dipotong atau diubah ukurannya saat dikirim, ukur viewport asli sebelum memakai hitungan ini.
