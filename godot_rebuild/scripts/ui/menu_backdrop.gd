@@ -1,7 +1,13 @@
 extends Control
 ## Layer 9bs: the main menu draws the baked source background (`Menu._build_main_background`,
-## `bake/bake_menu_background.py`), scaled to cover the window. While that sheet is not imported
-## the older decorative artwork in `_draw_fallback` (new, deterministic, not a port) still draws.
+## `bake/bake_menu_background.py`). While that sheet is not imported the older decorative
+## artwork in `_draw_fallback` (new, deterministic, not a port) still draws.
+##
+## The source menu blits its art into the 1280x720 render subsurface, and
+## `platform_utils.create_display` puts that subsurface at the display origin, so on a
+## 2436x1080 phone the art sits at (0, 0) at 1:1 and the leftover 344 px on the right stay
+## stone (see `panel_backdrop.gd`). It is never centred and never scaled up: `arena_rect()`
+## is the frame the art is drawn into, and `main_menu.gd` sizes this node to it.
 
 const BACKGROUND := "res://assets/art/menu/main_background.png"
 const SOURCE_SIZE := Vector2(1280, 720)
@@ -15,12 +21,13 @@ static func texture() -> Texture2D:
 	return _texture
 
 
-## Where the baked 1280x720 frame lands in a window of `window` size: uniform scale, centred,
-## so a wider or taller window crops the frame instead of stretching it.
-static func cover_rect(window: Vector2) -> Rect2:
-	var factor := maxf(window.x / SOURCE_SIZE.x, window.y / SOURCE_SIZE.y)
+## Where the 1280x720 arena lands on a surface of `window`: pinned to the left edge
+## (the source never splits the leftover width), scaled down only when the surface is
+## smaller than the arena, and centred vertically for the letterbox of tall surfaces.
+static func arena_rect(window: Vector2) -> Rect2:
+	var factor := minf(1.0, minf(window.x / SOURCE_SIZE.x, window.y / SOURCE_SIZE.y))
 	var scaled := SOURCE_SIZE * factor
-	return Rect2((window - scaled) * 0.5, scaled)
+	return Rect2(Vector2(0.0, (window.y - scaled.y) * 0.5), scaled)
 
 
 func _ready() -> void:
@@ -31,7 +38,7 @@ func _ready() -> void:
 func _draw() -> void:
 	var baked := texture()
 	if baked != null:
-		draw_texture_rect(baked, cover_rect(size), false)
+		draw_texture_rect(baked, Rect2(Vector2.ZERO, size), false)
 		background_draws += 1
 		return
 	_draw_fallback()

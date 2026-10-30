@@ -54,7 +54,9 @@ func _draw() -> void:
 	ambient_draws += 1
 	fog_draws = 0
 	particle_draws = 0
-	var cover := MenuBackdrop.cover_rect(size)
+	# The source draws the fog into the 1280x720 arena subsurface, so the wrap
+	# never reaches the stone dock: the arena rect is the clip.
+	var cover := MenuBackdrop.arena_rect(size)
 	var factor := cover.size.x / MenuAmbientLayout.SOURCE_WIDTH
 	draw_set_transform(cover.position, 0.0, Vector2(factor, factor))
 	_draw_fog()
@@ -87,19 +89,27 @@ func _draw_fog() -> void:
 			/ 255.0
 		)
 		var offset := MenuAmbientLayout.fog_offset(animation_time, speed, width)
-		draw_texture_rect_region(
-			_fog_texture,
-			Rect2(-float(offset), 0.0, float(width), float(height)),
-			source,
-			Color(1.0, 1.0, 1.0, alpha)
-		)
-		draw_texture_rect_region(
-			_fog_texture,
-			Rect2(float(width - offset), 0.0, float(width), float(height)),
-			source,
-			Color(1.0, 1.0, 1.0, alpha)
-		)
+		var tint := Color(1.0, 1.0, 1.0, alpha)
+		_blit_clipped(Rect2(-float(offset), 0.0, float(width), float(height)), source, tint)
+		_blit_clipped(Rect2(float(width - offset), 0.0, float(width), float(height)), source, tint)
 		fog_draws += 2
+
+
+## Every copy is counted even when the arena clips it away, so `fog_draws`
+## still reports the source's two wrapped blits per layer.
+func _blit_clipped(dest: Rect2, source_rect: Rect2, tint: Color) -> void:
+	var arena := Rect2(0.0, 0.0, MenuAmbientLayout.SOURCE_WIDTH, MenuAmbientLayout.SOURCE_HEIGHT)
+	var visible_rect := dest.intersection(arena)
+	if visible_rect.size.x <= 0.0 or visible_rect.size.y <= 0.0:
+		return
+	var uv := Rect2(
+		(
+			source_rect.position
+			+ (visible_rect.position - dest.position) / dest.size * source_rect.size
+		),
+		visible_rect.size / dest.size * source_rect.size
+	)
+	draw_texture_rect_region(_fog_texture, visible_rect, uv, tint)
 
 
 func _draw_particles() -> void:

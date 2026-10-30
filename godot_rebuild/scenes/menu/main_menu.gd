@@ -23,8 +23,23 @@ const TopupPanel = preload("res://scripts/ui/topup_panel.gd")
 const SaveSlotPanel = preload("res://scripts/ui/save_slot_panel.gd")
 const AudioSettingsPanel = preload("res://scripts/ui/audio_settings_panel.gd")
 const SourceUiButton = preload("res://scripts/ui/source_ui_button.gd")
+const MenuBackdrop = preload("res://scripts/ui/menu_backdrop.gd")
 
 const SOURCE_MENU_SIZE := Vector2(1280.0, 720.0)
+## `_core.py::_draw_main_menu` in the 1280x720 reference frame. The Android
+## screenshots (`tests/fixtures/android_screenshot_reference.json`) pin these
+## numbers, and `tests/android_layout_checks.gd` replays them.
+const SOURCE_BUTTON_RECTS := {
+	"ContinueButton": Rect2(320.0, 311.0, 300.0, 50.0),
+	"PlayButton": Rect2(660.0, 311.0, 300.0, 50.0),
+	"HeroShopButton": Rect2(460.0, 364.0, 360.0, 50.0),
+	"InputButton": Rect2(460.0, 417.0, 360.0, 50.0),
+	"HowToPlayButton": Rect2(460.0, 470.0, 360.0, 50.0),
+	"SettingsButton": Rect2(460.0, 523.0, 360.0, 50.0),
+	"CreditsButton": Rect2(460.0, 576.0, 360.0, 50.0),
+	"QuitButton": Rect2(460.0, 629.0, 360.0, 50.0),
+}
+const SOURCE_ROW_BUTTONS := ["ContinueButton", "PlayButton"]
 var slot_path_template := SaveSlotStore.PATH_TEMPLATE
 var pygame_import_template := PygameSaveImport.STAGED_TEMPLATE
 var progress_path := SaveSlotStore.current_path(slot_path_template)
@@ -89,8 +104,9 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if not is_node_ready() or size.x <= 0.0 or size.y <= 0.0:
 		return
-	var fit := minf(size.x / SOURCE_MENU_SIZE.x, size.y / SOURCE_MENU_SIZE.y)
-	var origin := (size - SOURCE_MENU_SIZE * fit) * 0.5
+	var arena := MenuBackdrop.arena_rect(size)
+	var fit := arena.size.x / SOURCE_MENU_SIZE.x
+	var origin := arena.position
 	var ornaments := get_node("Ornaments") as Control
 	var pulse := sin(float(ornaments.get("animation_time")) * 0.02) * 3.0
 	%Title.position.y = origin.y + (74.0 + pulse) * fit
@@ -100,21 +116,22 @@ func _process(_delta: float) -> void:
 func _layout_source_menu() -> void:
 	if not is_node_ready():
 		return
-	var fit := minf(size.x / SOURCE_MENU_SIZE.x, size.y / SOURCE_MENU_SIZE.y)
+	# `platform_utils.create_display` keeps the arena at the surface origin and
+	# collects the leftover width into the stone dock, so the menu frame is
+	# anchored left instead of being centred.
+	var arena := MenuBackdrop.arena_rect(size)
+	var fit := arena.size.x / SOURCE_MENU_SIZE.x
 	if fit <= 0.0:
 		return
-	var origin := (size - SOURCE_MENU_SIZE * fit) * 0.5
+	var origin := arena.position
+	_place_arena_layer("Backdrop", arena)
+	_place_arena_layer("Ambient", arena)
+	_place_arena_layer("Ornaments", arena)
 	_place_source_control("Title", Rect2(190.0, 74.0, 900.0, 100.0), origin, fit)
 	_place_source_control("Subtitle", Rect2(470.0, 190.0, 340.0, 48.0), origin, fit)
 	_place_source_control("Scope", Rect2(280.0, 244.0, 720.0, 32.0), origin, fit)
-	_place_source_control("ContinueButton", Rect2(320.0, 311.0, 300.0, 50.0), origin, fit)
-	_place_source_control("PlayButton", Rect2(660.0, 311.0, 300.0, 50.0), origin, fit)
-	_place_source_control("HeroShopButton", Rect2(460.0, 364.0, 360.0, 50.0), origin, fit)
-	_place_source_control("InputButton", Rect2(460.0, 417.0, 360.0, 50.0), origin, fit)
-	_place_source_control("HowToPlayButton", Rect2(460.0, 470.0, 360.0, 50.0), origin, fit)
-	_place_source_control("SettingsButton", Rect2(460.0, 523.0, 360.0, 50.0), origin, fit)
-	_place_source_control("CreditsButton", Rect2(460.0, 576.0, 360.0, 50.0), origin, fit)
-	_place_source_control("QuitButton", Rect2(460.0, 629.0, 360.0, 50.0), origin, fit)
+	for button_name in SOURCE_BUTTON_RECTS:
+		_place_source_control(button_name, SOURCE_BUTTON_RECTS[button_name], origin, fit)
 	_place_source_control("InputStatus", Rect2(24.0, 692.0, 340.0, 24.0), origin, fit)
 	_place_source_control("Version", Rect2(420.0, 686.0, 440.0, 24.0), origin, fit)
 	for button_name in [
@@ -129,8 +146,16 @@ func _layout_source_menu() -> void:
 	]:
 		var button := get_node("%" + button_name) as Button
 		if button.has_method("set_label_font_size"):
-			var base_font := 36 if button_name in ["ContinueButton", "PlayButton"] else 44
+			var base_font := 36 if button_name in SOURCE_ROW_BUTTONS else 44
 			button.call("set_label_font_size", maxi(8, roundi(float(base_font) * fit)))
+
+
+## Decorative layers span exactly the arena, so their internal transforms land
+## at 1:1 and the stone dock is never painted over.
+func _place_arena_layer(node_name: String, arena: Rect2) -> void:
+	var layer := get_node(node_name) as Control
+	layer.position = arena.position
+	layer.size = arena.size
 
 
 func _place_source_control(
