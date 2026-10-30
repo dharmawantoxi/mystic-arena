@@ -134,6 +134,8 @@ scripts/match/
   match_economy.gd            Gold integer, income milli, debit/refund/ledger
   slot_layout.gd             Posisi 18 slot dari sumber
   build_slot.gd              Identitas/ownership dan struktur yang mengisi slot
+  save_slot_store.gd         Tiga slot native, migrasi legacy dan kartu slot
+  pygame_save_import.gd      Impor salinan slot save Pygame ke slot native
 scripts/combat/
   siege_battle.gd             Perluasan combat: bangunan, projectile dan hasil
   structure_state.gd          Shield/regen dan aturan damage struktur
@@ -172,6 +174,8 @@ tests/
   match_source_oracle.py      Metode sumber wave/income/slot/build-sale
   structure_source_oracle.py  Metode sumber numerik Tower/Castle/muzzle
   check_source_contract.py    Membandingkan fixture dengan Python asli
+  pygame_save_import_source_oracle.py  Arti 11 berkas slot save Pygame
+  pygame_save_import_checks.gd         Impor slot Pygame vs fixture sumber
   fixtures/                  Snapshot stat dan 277 titik lane sumber
   run_windows.ps1             Import + tes native di Windows
 ```
@@ -179,6 +183,13 @@ tests/
 Font disalin dari `assets/fonts/` di root repo, bukan dari hasil migrasi lama. Lisensi/distribusi font tetap perlu ikut audit aset sebelum rilis. Semua script memakai path `res://` di dalam proyek ini; sumber Python tidak diimpor saat runtime.
 
 ## Pengujian
+
+### Status validasi (30 Oktober 2026, triase kegagalan native)
+
+- **Suite native lulus penuh:** import engine **Godot 4.7.2** + **1.505.443 pemeriksaan** tanpa kegagalan dan tanpa `SCRIPT ERROR` pada commit `f4e840b` ([run 41019560561](https://github.com/dharmawantoxi/mystic-arena/actions/runs/41019560561)); 147 pemeriksaan di antaranya berasal dari suite impor slot Pygame (112 domain + 35 scene).
+- **23 kegagalan run sebelumnya sudah ditriase:** roster hero kosong di awal pertandingan (sumber `Game.heroes = []`), minimum size tombol sumber yang membengkak karena teks native tak terlihat, palet menu 9bv18, dan baseline lifecycle yang tercemar suite yang berhenti karena `SCRIPT ERROR`. Rincian per gejala ada di [status parity](../docs/GODOT_PYGAME_PARITY_STATUS.md).
+- **Validator statis:** 21.733 pemeriksaan lulus (`PASS: 21733 static checks`), termasuk guardrail dokumentasi status parity, migrasi legacy slot save, impor slot Pygame, dan tombol impor di panel save.
+- **Tetap belum diverifikasi:** tampilan GPU/screenshot berpasangan, resize secara visual, Windows fisik, touchscreen, Android, audio, dan performa perangkat. CI headless bukan pengganti tes ini.
 
 ### Status validasi (25 September 2026, sesi nexus)
 
@@ -345,8 +356,67 @@ dan hanya menandai klaim selesai **setelah write sukses**. Scene pertandingan
 awal memanggilnya saat hasil dan menampilkan reward pada overlay. Save rusak
 atau backup belum dipulihkan menampilkan kegagalan dan tombol coba lagi;
 file lama tidak ditimpa otomatis. Ini **hanya progres development Godot**:
-belum ada migrasi slot save/cloud/Python, reward boss/shop permanen atau
-parity map/theme dan save Python/cloud. Uji juga pada Windows sebelum distribusi.
+sinkronisasi cloud dan save Python yang berjalan langsung belum ada (impor
+salinan slot Pygame dibahas di bagian berikutnya), begitu pula reward
+boss/shop permanen dan parity map/theme. Uji juga pada Windows sebelum distribusi.
+
+## Impor slot save Pygame (panel save, oracle, suite scene)
+
+`scripts/match/pygame_save_import.gd` memindahkan arti berkas slot Pygame
+(`SAVE_DIR/slot_1.json`…`slot_3.json`) ke envelope slot native. Berkas sumber
+tidak dibaca langsung dari direktori Android lama dan tidak pernah diubah:
+pemain/QA menyalinnya ke `user://pygame_slot_1.json` (atau nama apa pun), lalu
+modul ini memetakan dan menuliskannya lewat `SaveSlotStore.save_state`, jadi
+envelope berversi, rename atomik dan notifikasi cloud tetap dipakai.
+
+API: `normalize(source, now)` memetakan dictionary slot Pygame ke state Godot
+plus `report` berisi setiap nilai yang dibuang; `preview(source, now)` membuat
+ringkasan kartu slot (gold, level tertinggi, jumlah hero/boss, playtime);
+`import_file(source_path, slot, template, now, overwrite)` adalah jalur tulis
+dan menolak dengan alasan `invalid_slot`, `missing_source`, `invalid_json`,
+`not_a_save`, `corrupt_meta_gold`, `slot_occupied` atau `write_failed`. Slot
+yang sudah terisi tidak pernah ditimpa tanpa `overwrite = true`.
+
+Aturan yang diikuti dari `_system.py::SaveManager`: backfill 10 kunci default
+`load()` (waktu `slot_created`/`slot_last_played` memakai waktu impor bila
+hilang), batas level 54, daftar 222 hero di `data/heroes`, field
+`LevelStats.INTEGER_FIELDS`, `run_difficulty` `normal`/`hard`, dan penanda
+`slot_last_played` saat menyimpan. Ledger `replay_reward_counts` (khusus
+Godot) mulai kosong dan state diberi `import_source = "pygame"`.
+
+Perbedaan yang disengaja terhadap Pygame, semuanya dicatat di
+[Status parity](../docs/GODOT_PYGAME_PARITY_STATUS.md): berkas rusak/JSON bukan
+objek **ditolak** (Pygame diam-diam mengembalikan profil kosong lalu menimpa
+berkas itu), nilai yang tidak bisa disimpan envelope native dibuang satu per
+satu dan dilaporkan (Pygame menyimpannya apa adanya), dan `meta_gold` negatif
+atau bukan angka menolak seluruh impor. Entri `level_stats` rusak mengikuti
+kontrak Godot: `get_level_stats` memvalidasi lalu jatuh ke `empty_stats()`.
+
+Bukti: `tests/pygame_save_import_source_oracle.py` menjalankan `SaveManager`
+asli dari AST terhadap 11 berkas slot (profil lengkap, save lama, angka float,
+hero asing/duplikat, level di luar batas, statistik rusak, kesulitan asing,
+gold negatif/string, JSON terpotong, JSON bukan objek) dan menyimpan hasilnya
+di `tests/fixtures/pygame_save_import_source.json`. Suite
+`tests/pygame_save_import_checks.gd` membandingkan impor dengan fixture itu
+termasuk penulisan nyata ke `user://` dan pembersihannya.
+
+### Tombol impor di layar save
+
+Panel slot save kini punya baris **PYGAME SAVE IMPORT**: tombol `IMPORT`
+membuka konfirmasi (slot yang cocok akan diganti, berkas Pygame tidak diubah),
+lalu menu menjalankan `PygameSaveImport.import_staged_slots()` dan menampilkan
+ringkasannya di panel (`Slot 1 imported: Level 4 · Hero Gold 7250`,
+`Slot 2 refused: invalid_json`). Panel tetap request-only: ia hanya memancarkan
+`import_requested` dan merender laporan; pembacaan berkas, penulisan slot,
+`refresh_levels()` dan pemilihan slot tetap milik `MainMenu`/`SaveSlotStore`.
+`configure_pygame_import_template()` memberi suite path `user://` terisolasi.
+
+Alurnya diuji headless oleh `tests/pygame_save_import_scene_checks.gd` dengan
+klik tombol sungguhan: konfirmasi dan pembatalan, impor tanpa berkas (tidak
+menulis apa pun), slot 1 terimpor + slot 2 rusak ditolak tanpa menyentuh save,
+kartu slot dan pilihan level/difficulty ikut menyegarkan, impor ulang mengganti
+slot yang sama, dan hitungan node kembali ke baseline. **Belum diuji pada
+perangkat Android nyata**, jadi migrasi pemain belum boleh diklaim selesai.
 
 ## Reset AI tanpa seed
 

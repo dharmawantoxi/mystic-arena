@@ -4,6 +4,7 @@ extends RefCounted
 
 func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	var baseline := tree.get_node_count()
+	var baseline_nodes := _snapshot(tree)
 	app.start_prototype()
 	await _settle(tree)
 	var screen = app.current_screen
@@ -68,7 +69,43 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	)
 	app.show_menu()
 	await _settle(tree)
-	check.call(tree.get_node_count() == baseline, "Shield scene lifecycle does not leak nodes")
+	var count_matches: bool = tree.get_node_count() == baseline
+	var leaked: Array = [] if count_matches else _leaked_paths(tree, baseline_nodes)
+	check.call(
+		count_matches,
+		(
+			"Shield scene lifecycle does not leak nodes: %d (baseline %d) %s"
+			% [tree.get_node_count(), baseline, [leaked]]
+		)
+	)
+
+
+## Node-path census of the root, so a leak names the nodes that appeared. Paths are
+## compared instead of instance IDs because a fresh screen legitimately reuses the
+## same paths as the screen it replaced.
+func _snapshot(tree: SceneTree) -> Dictionary:
+	var census := {}
+	_collect_paths(tree.root, census)
+	return census
+
+
+func _collect_paths(node: Node, into: Dictionary) -> void:
+	var path := String(node.get_path())
+	into[path] = int(into.get(path, 0)) + 1
+	for child in node.get_children():
+		_collect_paths(child, into)
+
+
+func _leaked_paths(tree: SceneTree, snapshot: Dictionary) -> Array:
+	var now := {}
+	_collect_paths(tree.root, now)
+	var extra: Array = []
+	for path in now:
+		var added := int(now[path]) - int(snapshot.get(path, 0))
+		for _copy in range(maxi(0, added)):
+			extra.append(path)
+	extra.sort()
+	return extra.slice(0, 8)
 
 
 func _settle(tree: SceneTree) -> void:

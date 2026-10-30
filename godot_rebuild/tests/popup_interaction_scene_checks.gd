@@ -17,6 +17,9 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	session.set_physics_process(false)
 	world.set_ai_enabled(false)
 	world.economy.credit_kill(world.BLUE, 20_000)
+	# Source `Game.try_buy_hero`: the match starts with no live hero, so the dock
+	# fixtures summon the owned starter before inspecting the HeroPanel.
+	world.buy_player_hero("kaizen")
 
 	var paths := ["archer", "cannon", "ice", "mage"]
 	for index in range(paths.size()):

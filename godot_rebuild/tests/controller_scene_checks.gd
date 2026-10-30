@@ -15,6 +15,8 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	var world = session.world
 	session.set_physics_process(false)
 	world.set_ai_enabled(false)
+	# Source `Game.try_buy_hero`: controller commands need an owned live hero.
+	world.buy_player_hero("kaizen")
 	var cursor = screen.get_node("%ControllerCursor")
 	check.call(
 		cursor != null and not cursor.active, "Playable match authors controller cursor runtime"

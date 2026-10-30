@@ -988,6 +988,47 @@ check("SaveSlotStore.save_path(result.state, path" in
       (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8"),
       "Match result must commit through the active native save slot")
 
+from pygame_save_import_source_oracle import probe as pygame_import_source_probe
+pygame_import_fixture_path = ROOT / "tests/fixtures/pygame_save_import_source.json"
+check(pygame_import_fixture_path.is_file(),
+      "Pygame save import requires a source fixture")
+if pygame_import_fixture_path.is_file():
+    check(pygame_import_source_probe()
+          == json.loads(pygame_import_fixture_path.read_text(encoding="utf-8")),
+          "Pygame save-import source fixture drift")
+check("python godot_rebuild/tests/pygame_save_import_source_oracle.py" in workflow,
+      "CI must execute the Pygame save-import oracle")
+check("PygameSaveImportChecks.new().run(_check)" in ai_tests,
+      "Pygame save-import domain suite must run")
+pygame_import = (ROOT / "scripts/match/pygame_save_import.gd").read_text(encoding="utf-8")
+pygame_import_checks = (ROOT / "tests/pygame_save_import_checks.gd").read_text(
+    encoding="utf-8")
+check("SaveSlotStore.save_state" in pygame_import
+      and "FileAccess.open(" not in pygame_import
+      and "ProgressStore.save_state" not in pygame_import,
+      "Pygame import must persist only through the native slot layer")
+check("HERO_ROSTER" in pygame_import and "slot_occupied" in pygame_import,
+      "Pygame import must validate roster IDs and refuse silent overwrites")
+check("pygame_save_import_source.json" in pygame_import_checks
+      and "_cleanup()" in pygame_import_checks,
+      "Pygame import suite must replay the source fixture and clean its slots")
+check("PygameSaveImportSceneChecks.new().run(self, app, _check)" in ai_tests,
+      "Pygame import scene suite must run")
+_pygame_import_panel = (ROOT / "scripts/ui/save_slot_panel.gd").read_text(encoding="utf-8")
+_pygame_import_menu = (ROOT / "scenes/menu/main_menu.gd").read_text(encoding="utf-8")
+check("signal import_requested" in _pygame_import_panel
+      and "import_requested.emit()" in _pygame_import_panel
+      and "show_import_report" in _pygame_import_panel,
+      "Save-slot panel must expose the import as a request plus a report")
+check("pygame_save_import" not in _pygame_import_panel
+      and "SaveSlotStore.save_state" not in _pygame_import_panel
+      and "FileAccess.open(" not in _pygame_import_panel,
+      "Save-slot panel must not read staged files or write saves itself")
+check("save_slot_panel.import_requested.connect(_import_pygame_saves)" in _pygame_import_menu
+      and "PygameSaveImport.import_staged_slots(" in _pygame_import_menu
+      and "func configure_pygame_import_template" in _pygame_import_menu,
+      "Main menu must own the staged-file import and its isolated template")
+
 from level_stats_source_oracle import source_fixture as level_stats_source_fixture
 level_stats_fixture_path = ROOT / "tests/fixtures/level_stats_source.json"
 check(level_stats_fixture_path.is_file(), "Level-stat runtime requires a source fixture")
@@ -3263,8 +3304,11 @@ check("loop AI scene aktif" in _upgrade_contract_doc,
 
 check("parity penuh **belum tercapai" in _parity_doc,
       "Parity status document must clearly state that full parity is not complete")
-check("1.505.221 pemeriksaan dan melaporkan **23 kegagalan**" in _parity_doc,
-      "Parity status document must disclose the latest known native-suite failures")
+check("1.505.443 pemeriksaan" in _parity_doc
+      and "melaporkan **0 kegagalan**" in _parity_doc
+      and "23 kegagalan" in _parity_doc
+      and "Triase 23 kegagalan tes native sebelumnya" in _parity_doc,
+      "Parity status document must disclose the latest native-suite result and keep its triage record")
 check("Godot/Pygame" in _parity_doc and "godot_rebuild/" in _parity_doc,
       "Parity status document must identify the reference and current Godot project")
 

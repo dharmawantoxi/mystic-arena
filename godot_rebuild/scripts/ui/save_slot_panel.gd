@@ -3,6 +3,7 @@ extends Control
 
 signal slot_requested(slot: int)
 signal delete_requested(slot: int)
+signal import_requested
 signal closed
 
 const Slots = preload("res://scripts/match/save_slot_store.gd")
@@ -28,6 +29,12 @@ var _cloud_confirm_no: Button
 var _cloud_pending_action := ""
 var _cloud_pending_payload: Dictionary = {}
 var _cloud_runtime: Node
+var _import_status: Label
+var _import_button: Button
+var _import_confirm: PanelContainer
+var _import_confirm_label: Label
+var _import_confirm_yes: Button
+var _import_confirm_no: Button
 
 
 func _ready() -> void:
@@ -65,6 +72,8 @@ func set_open(is_open: bool) -> void:
 			_confirm.visible = false
 		if _cloud_confirm != null:
 			_cloud_confirm.visible = false
+		if _import_confirm != null:
+			_import_confirm.visible = false
 		if was_open:
 			closed.emit()
 
@@ -141,6 +150,7 @@ func _build() -> void:
 		_build_slot_card(row, index + 1)
 
 	_build_cloud_section(column)
+	_build_import_section(column)
 
 	_confirm = PanelContainer.new()
 	_confirm.visible = false
@@ -222,6 +232,76 @@ func _build_cloud_section(column: VBoxContainer) -> void:
 	_cloud_confirm_no.custom_minimum_size = Vector2(120, 44)
 	_cloud_confirm_no.pressed.connect(_cancel_cloud_action)
 	confirm_row.add_child(_cloud_confirm_no)
+
+
+func _build_import_section(column: VBoxContainer) -> void:
+	var section := HBoxContainer.new()
+	section.add_theme_constant_override("separation", 10)
+	column.add_child(section)
+	var heading := Label.new()
+	heading.text = "PYGAME SAVE IMPORT"
+	heading.add_theme_font_size_override("font_size", 18)
+	section.add_child(heading)
+	_import_status = Label.new()
+	_import_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_import_status.text = "Copy slot_N.json as user://pygame_slot_N.json, then import."
+	_import_status.add_theme_font_size_override("font_size", 14)
+	_import_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_import_status.max_lines_visible = 2
+	section.add_child(_import_status)
+	_import_button = Button.new()
+	_import_button.text = "IMPORT"
+	_import_button.custom_minimum_size = Vector2(145, 44)
+	_import_button.pressed.connect(_ask_import)
+	section.add_child(_import_button)
+
+	_import_confirm = PanelContainer.new()
+	_import_confirm.visible = false
+	column.add_child(_import_confirm)
+	var confirm_row := HBoxContainer.new()
+	confirm_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	confirm_row.add_theme_constant_override("separation", 12)
+	_import_confirm.add_child(confirm_row)
+	_import_confirm_label = Label.new()
+	_import_confirm_label.custom_minimum_size = Vector2(520, 0)
+	_import_confirm_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	confirm_row.add_child(_import_confirm_label)
+	_import_confirm_yes = Button.new()
+	_import_confirm_yes.text = "IMPORT"
+	_import_confirm_yes.custom_minimum_size = Vector2(130, 44)
+	_import_confirm_yes.pressed.connect(_confirm_import)
+	confirm_row.add_child(_import_confirm_yes)
+	_import_confirm_no = Button.new()
+	_import_confirm_no.text = "CANCEL"
+	_import_confirm_no.custom_minimum_size = Vector2(120, 44)
+	_import_confirm_no.pressed.connect(_cancel_import)
+	confirm_row.add_child(_import_confirm_no)
+
+
+func _ask_import() -> void:
+	_import_confirm_label.text = (
+		"Import staged Pygame save files into the save games with the same number? "
+		+ "Matching slots are replaced; the Pygame files themselves are not modified."
+	)
+	_import_confirm.visible = true
+	_import_confirm_yes.grab_focus()
+
+
+func _confirm_import() -> void:
+	_import_confirm.visible = false
+	import_requested.emit()
+
+
+func _cancel_import() -> void:
+	_import_confirm.visible = false
+	_import_status.text = "Pygame import cancelled. Nothing was written."
+
+
+## The menu owns the files and the write; the panel only renders the outcome.
+func show_import_report(report: Dictionary) -> void:
+	_import_confirm.visible = false
+	var lines: Array = report.get("lines", [])
+	_import_status.text = "\n".join(PackedStringArray(lines))
 
 
 func _build_slot_card(row: HBoxContainer, slot: int) -> void:
