@@ -163,6 +163,7 @@ from hero_marker_source_oracle import source_fixture as hero_marker_fixture
 from miasma_tick_delivery_source_oracle import source_fixture as miasma_tick_delivery_fixture
 from bosses_folder_source_oracle import source_fixture as bosses_folder_fixture
 from hero_skills_folder_source_oracle import source_fixture as hero_skills_fixture
+from heroes_folder_source_oracle import source_fixture as heroes_folder_fixture
 check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
       "Item structure arm suite must be preloaded")
 check("ItemStructureArmChecks.new().run(_check)" in ai_tests,
@@ -2560,6 +2561,137 @@ if _hs_doc.is_file() and _hs_path.is_file():
         "_play_skill_sound", "register_handler", "_install_aliases", "SkillFeedback")),
         "9by the report must classify every source construct")
     check(_hs_text.count("|") > 80, "9by the report must stay tabular")
+
+# ── 9bz: the whole `heroes/` folder (34 modules, 101.262 lines) ────────
+# `heroes/` is two layers in one folder: the renderer pipeline (baked into the
+# atlas manifest on the Godot side) and 27 live-FX directors plus the shared bus
+# and combat-load governor that drive them.
+_hf_path = ROOT / "tests/fixtures/heroes_folder_source.json"
+check(_hf_path.is_file(), "9bz heroes/ inventory needs a source oracle fixture")
+check("HeroesFolderChecks.new().run(_check)" in ai_tests
+      and 'const HeroesFolderChecks = preload("res://tests/heroes_folder_checks.gd")'
+      in ai_tests, "9bz heroes/ folder suite must be preloaded and run")
+_hf_doc = ROOT.parent / "docs/HEROES_FOLDER_MIGRATION.md"
+check(_hf_doc.is_file(), "9bz the heroes/ migration report must ship")
+check((ROOT / "scripts/ui/hero_fx_bus.gd").is_file()
+      and (ROOT / "scripts/settings/fx_governor.gd").is_file(),
+      "9bz the live-FX bus and its combat-load governor must exist natively")
+if _hf_path.is_file():
+    _hf = heroes_folder_fixture()
+    check(_hf == json.loads(_hf_path.read_text(encoding="utf-8")),
+          "9bz heroes/ inventory drifted from the source folder")
+    _hf_folder = _hf["folder"]
+    check((_hf_folder["files"], _hf_folder["lines"], _hf_folder["fx_modules"],
+           _hf_folder["v1_modules"]) == (34, 101262, 27, 4),
+          "9bz 34 modules / 101.262 lines: 27 live-FX directors, 4 _v1 renderers")
+    check(_hf_folder["per_file_lines"]["__init__.py"] == 3374
+          and _hf_folder["per_file_lines"]["_bundle.py"] == 16769
+          and _hf_folder["per_file_lines"]["combat_feel.py"] == 311,
+          "9bz the bus, the bundle and the feel layer keep their source sizes")
+    _hf_live = _hf["live_fx"]
+    check(len(_hf_live["heroes"]) == 27 == len(_hf_live["paths"])
+          and _hf_live["heroes_kind"] == "set",
+          "9bz the live-FX registry is a 27-hero set with one module path each")
+    check(_hf_live["contract"] == ["attach", "owns", "tick", "draw_ground_layer",
+                                   "draw_live_layer", "reset_all", "stats",
+                                   "total_particles", "MAX_PARTICLES", "Particle",
+                                   "ParticleSystem", "ProjectileSystem"],
+          "9bz every director exposes the same twelve entry points")
+    check(all(name in _hf_live["bus_functions"] for name in (
+              "begin_fx_frame", "fx_frame", "count_busy_fx_heroes", "_fx_busy",
+              "_reset_fx_ground_budget", "_live_fx_pre", "_live_fx_post",
+              "_install_global_fx_caps", "_skill_quant", "_atk_quant")),
+          "9bz the bus owns the frame counter, busy count, budgets and pose quanta")
+    _hf_governor = _hf["governor"]
+    check((_hf_governor["load_smooth"], _hf_governor["base_heroes"],
+           _hf_governor["load_min"], _hf_governor["load_exp"]) == (0.40, 1.0, 0.10, 1.5),
+          "9bz the combat-load governor smooths at 0.40 with a 0.10 floor and 1.5 exponent")
+    check((_hf_governor["particle_cap"], _hf_governor["projectile_cap"],
+           _hf_governor["skill_projectile_cap"]) == (140, 18, 10)
+          and (_hf_governor["particle_floor"], _hf_governor["projectile_floor"],
+               _hf_governor["skill_projectile_floor"]) == (56, 10, 5),
+          "9bz spawn tokens are 140/18/10 with 56/10/5 floors")
+    check(_hf_governor["particle_ratio"] == {"low": 0.20, "medium": 0.40, "high": 0.70}
+          and _hf_governor["skill_quant_floor"] == {"low": 12, "medium": 8, "high": 4}
+          and _hf_governor["atk_quant_floor"] == {"low": 6, "medium": 4, "high": 3},
+          "9bz the presets keep their particle ratio and both pose floors")
+    check(_hf_governor["ground_budget"] == {"low": 2, "medium": 3, "high": 6}
+          and _hf_governor["max_hero_render"] == {"low": 3, "medium": 4, "high": 8},
+          "9bz the presets keep the ground-FX and full-render budgets")
+    _hf_scale = _hf["renderers"]["scale"]
+    check((_hf_scale["global_scale"], _hf_scale["target_height"], _hf_scale["ref_aspect"],
+           _hf_scale["width_weight"], _hf_scale["default_scale"]) == (0.78, 65, 1.6, 0.0, 0.65)
+          and (_hf_scale["clamp_min"], _hf_scale["clamp_max"]) == (0.40, 1.70),
+          "9bz the measured-scale formula keeps 0.78 / 65 px / 1.6 / clamp 0.40-1.70")
+    check((_hf_scale["anim_phases"], _hf_scale["atk_quant"], _hf_scale["skill_quant"])
+          == (8, 4, 6)
+          and _hf["skill_quant_ladder"]["thresholds"] == [2, 4, 6],
+          "9bz 8 animation phases, source quanta 4/6 and the 2/4/6 busy ladder")
+    check(sorted(_hf["renderers"]["heroes"]) == ["grimjaw", "kaizen", "sylara", "thorne",
+                                                "vex", "zephyr"]
+          and len(_hf["renderers"]["aliases"]) == 6,
+          "9bz the six HERO_RENDERERS starters are the six aliased namespaces")
+    check(_hf["bundle"]["namespace_count"] == 6
+          and sorted(_hf["bundle"]["v1_installs"]) == ["grimjaw", "kaizen", "sylara", "vex"],
+          "9bz _bundle.py installs the four _v1 renderers over their own namespace")
+    check(all(len(_hf["v1"][name]["functions"]) == 1 and _hf["v1"][name]["install_args"]
+              == "legacy_cls" and _hf["v1"][name]["subclasses_legacy"]
+              for name in _hf["v1"]),
+          "9bz every _v1 module is an install(legacy_cls) subclass, not a dead file")
+    check(_hf["combat_feel"]["constants"]["HIT_STOP_MIN"] == 0.03
+          and _hf["combat_feel"]["constants"]["HIT_STOP_MAX"] == 0.08
+          and _hf["combat_feel"]["hit_stop"]["MAX_FRAMES"] == 5,
+          "9bz combat_feel keeps the 0.03-0.08 s clamp and the 5-step cap")
+    check(sum(1 for name in _hf["fx"] if "MAX_PARTICLES" in _hf["fx"][name]["caps"]) == 27,
+          "9bz all 27 directors declare a particle cap")
+    check(all(not ({"tick", "draw_ground_layer", "draw_live_layer"}
+                   & set(_hf["fx"][name]["missing_api"])) for name in _hf["fx"]),
+          "9bz all 27 directors expose tick plus both draw layers")
+    check([name for name in _hf["fx"] if "attach" in _hf["fx"][name]["missing_api"]]
+          == ["zephyr_fx.py"]
+          and [name for name in _hf["fx"] if "stats" in _hf["fx"][name]["missing_api"]].__len__()
+          == 15,
+          "9bz attach/owns are optional (zephyr omits them) and 15 directors omit stats")
+
+_hf_governor_gd = (ROOT / "scripts/settings/fx_governor.gd").read_text(encoding="utf-8")
+check("const LOAD_SMOOTH := 0.40" in _hf_governor_gd
+      and "const LOAD_MIN := 0.10" in _hf_governor_gd
+      and "const PARTICLE_CAP := 140" in _hf_governor_gd
+      and "const PARTICLE_FLOOR := 56" in _hf_governor_gd,
+      "9bz fx_governor.gd must carry the source smoothing, floor and token caps")
+check("static func set_fx_load(active_count: int) -> void:" in _hf_governor_gd
+      and "static func reset_fx_load() -> void:" in _hf_governor_gd
+      and "static func allow_skill_projectile() -> bool:" in _hf_governor_gd,
+      "9bz the governor must expose the load feed, reset and one-way skill gate")
+_hf_bus_gd = (ROOT / "scripts/ui/hero_fx_bus.gd").read_text(encoding="utf-8")
+check("const GROUND_BUDGET_UNLIMITED := 99" in _hf_bus_gd
+      and "const HERO_SKILL_QUANT := 6" in _hf_bus_gd
+      and "static func begin_fx_frame(active_count: int = 0) -> int:" in _hf_bus_gd
+      and "static func count_busy_fx_heroes(units: Array) -> int:" in _hf_bus_gd,
+      "9bz the bus must own the frame tick, busy count and 99-slot ground default")
+check("Budget gone: keep the simulation alive, skip only the drawing." in _hf_bus_gd
+      and "_ground_left <= 0:" in _hf_bus_gd
+      and "_tick(director)" in _hf_bus_gd.split("_ground_left <= 0:", 1)[1],
+      "9bz an exhausted ground budget must still attach and tick the director")
+check("bool(_attr(unit, \"_portrait_hd\", false))" in _hf_bus_gd,
+      "9bz HD portrait rendering must opt out of the world FX layer")
+
+if _hf_doc.is_file() and _hf_path.is_file():
+    _hf_text = _hf_doc.read_text(encoding="utf-8")
+    _hf_unnamed = sorted(name for name in _hf["folder"]["per_file_lines"]
+                         if "`%s`" % name not in _hf_text)
+    check(not _hf_unnamed, f"9bz the report must name all 34 modules: {_hf_unnamed}")
+    check(all("`%s_fx.py`" % hero_id in _hf_text for hero_id in _hf["live_fx"]["heroes"]),
+          "9bz the report must list all 27 live-FX directors")
+    check(all(token in _hf_text for token in (
+              "HERO_RENDERERS", "_LIVE_FX_HEROES", "begin_fx_frame", "count_busy_fx_heroes",
+              "_FX_GROUND_LEFT", "MYSTIC_FX_GROUND", "particle_ratio", "skill_quant_floor",
+              "HERO_GLOBAL_SCALE", "_HERO_SCALE_OVERRIDE", "hero_scale", "install(legacy_cls)",
+              "combat_feel", "HitStop")),
+          "9bz the report must classify every source construct")
+    check(all(token in _hf_text for token in ("DEVIASI", "BELUM", "Diport")),
+          "9bz the report must use the same Diport / BELUM / DEVIASI vocabulary")
+    check(_hf_text.count("|") > 200, "9bz the report must stay tabular")
 
 if _bf_doc.is_file() and _bf_path.is_file():
     _bf_text = _bf_doc.read_text(encoding="utf-8")

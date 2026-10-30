@@ -1,0 +1,1322 @@
+{
+ "bundle": {
+  "lines": 16769,
+  "namespace_count": 6,
+  "namespaces": {
+   "_NS_grimjaw": [
+    "draw_grimjaw",
+    "draw_hero"
+   ],
+   "_NS_kaizen": [
+    "draw_kaizen",
+    "draw_boss"
+   ],
+   "_NS_sylara": [
+    "draw_sylara",
+    "draw_boss"
+   ],
+   "_NS_thorne": [
+    "draw_thorne",
+    "draw_boss"
+   ],
+   "_NS_vex": [
+    "draw_vex",
+    "draw_boss"
+   ],
+   "_NS_zephyr": [
+    "draw_zephyr",
+    "draw_boss"
+   ]
+  },
+  "renderer_functions": 12,
+  "v1_installs": {
+   "grimjaw": {
+    "module": "grimjaw_v1",
+    "same_namespace": true
+   },
+   "kaizen": {
+    "module": "kaizen_v1",
+    "same_namespace": true
+   },
+   "sylara": {
+    "module": "sylara_v1",
+    "same_namespace": true
+   },
+   "vex": {
+    "module": "vex_v1",
+    "same_namespace": true
+   }
+  }
+ },
+ "combat_feel": {
+  "classes": [
+   "ScreenShake",
+   "HitStop"
+  ],
+  "constants": {
+   "FIXED_DT": 0.016666666666666666,
+   "HIT_STOP_ENABLED": true,
+   "HIT_STOP_MAX": 0.08,
+   "HIT_STOP_MIN": 0.03
+  },
+  "functions": [
+   "hit_stop",
+   "shake",
+   "should_freeze_frame",
+   "frame_dt",
+   "fx_dt",
+   "amount",
+   "reset",
+   "sync_settings",
+   "stats"
+  ],
+  "hit_stop": {
+   "MAX_FRAMES": 5,
+   "MAX_SECONDS": 0.08,
+   "MIN_SECONDS": 0.03
+  },
+  "lines": 311
+ },
+ "folder": {
+  "files": 34,
+  "fx_modules": 27,
+  "lines": 101262,
+  "per_file_lines": {
+   "__init__.py": 3374,
+   "_bundle.py": 16769,
+   "abaddon_fx.py": 1129,
+   "alchemist_fx.py": 2665,
+   "ancient_apparition_fx.py": 2808,
+   "combat_feel.py": 311,
+   "gorath_fx.py": 2928,
+   "gornak_fx.py": 3014,
+   "gravefang_fx.py": 2713,
+   "gravewake_fx.py": 2403,
+   "grimjaw_fx.py": 3034,
+   "grimjaw_v1.py": 2699,
+   "ignis_drachorn_fx.py": 3230,
+   "kaizen_fx.py": 2909,
+   "kaizen_v1.py": 1419,
+   "khalros_fx.py": 1904,
+   "krobellus_fx.py": 2114,
+   "kunkka_fx.py": 2363,
+   "nyxara_fx.py": 2596,
+   "nyzrak_fx.py": 2207,
+   "pyrenth_fx.py": 3942,
+   "razak_fx.py": 2952,
+   "sylara_fx.py": 3532,
+   "sylara_v1.py": 2567,
+   "syrentha_fx.py": 2404,
+   "thalgryn_fx.py": 1674,
+   "varkul_fx.py": 2568,
+   "vex_fx.py": 3783,
+   "vex_v1.py": 1529,
+   "vhalzun_fx.py": 2626,
+   "vokrahn_fx.py": 3596,
+   "xerathis_fx.py": 1936,
+   "zephyr_fx.py": 2096,
+   "zharok_fx.py": 3468
+  },
+  "v1_modules": 4
+ },
+ "fx": {
+  "abaddon_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "stats",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem"
+   ],
+   "caps": {
+    "MAX_IMPACTS": 8,
+    "MAX_PARTICLES": 57,
+    "MAX_PROJECTILES": 6
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "AbaddonProjectile",
+    "ImpactFX",
+    "Scorch",
+    "SwingTrail",
+    "AbaddonFXDirector"
+   ],
+   "defs": 29,
+   "lines": 1129,
+   "missing_api": [
+    "ProjectileSystem"
+   ]
+  },
+  "alchemist_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_IMPACTS": 4,
+    "MAX_PARTICLES": 102,
+    "MAX_PROJECTILES": 8,
+    "MAX_SKILLS": 2
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "AlchemistProjectile",
+    "ProjectileSystem",
+    "SkillFX",
+    "AlchemistFXDirector"
+   ],
+   "defs": 52,
+   "lines": 2665,
+   "missing_api": [
+    "stats"
+   ]
+  },
+  "ancient_apparition_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_IMPACTS": 4,
+    "MAX_PARTICLES": 102,
+    "MAX_PROJECTILES": 9,
+    "MAX_SKILLS": 2
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SlashTrail",
+    "ApparitionProjectile",
+    "ProjectileSystem",
+    "ImpactFX",
+    "SkillFX",
+    "ApparitionFXDirector"
+   ],
+   "defs": 59,
+   "lines": 2808,
+   "missing_api": [
+    "stats"
+   ]
+  },
+  "gorath_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "stats",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_IMPACTS": 4,
+    "MAX_PARTICLES": 102,
+    "MAX_PROJECTILES": 9,
+    "MAX_SKILLS": 2
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "GorathProjectile",
+    "ProjectileSystem",
+    "SkillFX",
+    "GorathFXDirector"
+   ],
+   "defs": 55,
+   "lines": 2928,
+   "missing_api": []
+  },
+  "gornak_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_IMPACTS": 4,
+    "MAX_PARTICLES": 102,
+    "MAX_PROJECTILES": 9,
+    "MAX_SKILLS": 2
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "GornakProjectile",
+    "ProjectileSystem",
+    "SkillFX",
+    "GornakFXDirector"
+   ],
+   "defs": 50,
+   "lines": 3014,
+   "missing_api": [
+    "stats"
+   ]
+  },
+  "gravefang_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "stats",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_AFTERIMAGES": 8,
+    "MAX_DIRECTORS": 12,
+    "MAX_IMPACTS": 4,
+    "MAX_PARTICLES": 144,
+    "MAX_PROJECTILES": 6,
+    "MAX_SKILLS": 2
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "BaseProjectile",
+    "BoneShardProjectile",
+    "BoulderProjectile",
+    "ProjectileSystem",
+    "SkillFX",
+    "GravefangFXDirector"
+   ],
+   "defs": 52,
+   "lines": 2713,
+   "missing_api": []
+  },
+  "gravewake_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_IMPACTS": 4,
+    "MAX_PARTICLES": 102,
+    "MAX_PROJECTILES": 9,
+    "MAX_SKILLS": 2
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "GravewakeProjectile",
+    "ProjectileSystem",
+    "SkillFX",
+    "GravewakeFXDirector"
+   ],
+   "defs": 55,
+   "lines": 2403,
+   "missing_api": [
+    "stats"
+   ]
+  },
+  "grimjaw_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_PARTICLES": 108,
+    "MAX_PROJECTILES": 12
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "GrimjawProjectile",
+    "ProjectileSystem",
+    "SkillFX",
+    "GrimjawFXDirector"
+   ],
+   "defs": 46,
+   "lines": 3034,
+   "missing_api": [
+    "stats"
+   ]
+  },
+  "ignis_drachorn_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "stats",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_DIRECTORS": 12,
+    "MAX_IMPACTS": 5,
+    "MAX_PARTICLES": 126,
+    "MAX_PROJECTILES": 12,
+    "MAX_SKILLS": 3
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "BaseProjectile",
+    "FireOrbProjectile",
+    "MeteorProjectile",
+    "ProjectileSystem",
+    "Afterimage",
+    "SkillFX",
+    "IgnisFXDirector"
+   ],
+   "defs": 62,
+   "lines": 3230,
+   "missing_api": []
+  },
+  "kaizen_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_IMPACTS": 4,
+    "MAX_PARTICLES": 96,
+    "MAX_PROJECTILES": 8,
+    "MAX_SKILLS": 2
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "KaizenProjectile",
+    "ProjectileSystem",
+    "SkillFX",
+    "KaizenFXDirector"
+   ],
+   "defs": 45,
+   "lines": 2909,
+   "missing_api": [
+    "stats"
+   ]
+  },
+  "khalros_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "stats",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem"
+   ],
+   "caps": {
+    "MAX_IMPACTS": 9,
+    "MAX_PARTICLES": 72,
+    "MAX_PROJECTILES": 7
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "KhalrosProjectile",
+    "ImpactFX",
+    "Scorch",
+    "SwingTrail",
+    "KhalrosSkillFX",
+    "KhalrosRenderer",
+    "_LocalShake",
+    "KhalrosFXDirector"
+   ],
+   "defs": 38,
+   "lines": 1904,
+   "missing_api": [
+    "ProjectileSystem"
+   ]
+  },
+  "krobellus_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_IMPACTS": 4,
+    "MAX_PARTICLES": 132,
+    "MAX_PROJECTILES": 4,
+    "MAX_SKILLS": 2
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "SoulBolt",
+    "ProjectileSystem",
+    "SkillFX",
+    "KrobellusFXDirector"
+   ],
+   "defs": 40,
+   "lines": 2114,
+   "missing_api": [
+    "stats"
+   ]
+  },
+  "kunkka_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_IMPACTS": 4,
+    "MAX_PARTICLES": 102,
+    "MAX_PROJECTILES": 9,
+    "MAX_SKILLS": 2
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "KunkkaProjectile",
+    "ProjectileSystem",
+    "SkillFX",
+    "KunkkaFXDirector"
+   ],
+   "defs": 52,
+   "lines": 2363,
+   "missing_api": [
+    "stats"
+   ]
+  },
+  "nyxara_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "stats",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_AFTERIMAGES": 8,
+    "MAX_DIRECTORS": 12,
+    "MAX_IMPACTS": 4,
+    "MAX_PARTICLES": 132,
+    "MAX_PROJECTILES": 6,
+    "MAX_SKILLS": 2
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "BaseProjectile",
+    "NetherOrbProjectile",
+    "NetherBlastProjectile",
+    "ProjectileSystem",
+    "SkillFX",
+    "NyxaraFXDirector"
+   ],
+   "defs": 48,
+   "lines": 2596,
+   "missing_api": []
+  },
+  "nyzrak_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_IMPACTS": 4,
+    "MAX_PARTICLES": 102,
+    "MAX_PROJECTILES": 10,
+    "MAX_SKILLS": 2
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "NyzrakProjectile",
+    "ProjectileSystem",
+    "SkillFX",
+    "NyzrakFXDirector"
+   ],
+   "defs": 45,
+   "lines": 2207,
+   "missing_api": [
+    "stats"
+   ]
+  },
+  "pyrenth_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "stats",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_AFTERIMAGES": 7,
+    "MAX_DIRECTORS": 12,
+    "MAX_IMPACTS": 5,
+    "MAX_PARTICLES": 120,
+    "MAX_PROJECTILES": 13,
+    "MAX_SKILLS": 3
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "BaseProjectile",
+    "DoomBoltProjectile",
+    "SoulEmberProjectile",
+    "ProjectileSystem",
+    "Afterimage",
+    "SkillFX",
+    "PyrenthFXDirector"
+   ],
+   "defs": 74,
+   "lines": 3942,
+   "missing_api": []
+  },
+  "razak_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_IMPACTS": 4,
+    "MAX_PARTICLES": 102,
+    "MAX_PROJECTILES": 7,
+    "MAX_SKILLS": 2
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "RazakProjectile",
+    "ProjectileSystem",
+    "SkillFX",
+    "RazakFXDirector"
+   ],
+   "defs": 55,
+   "lines": 2952,
+   "missing_api": [
+    "stats"
+   ]
+  },
+  "sylara_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_IMPACTS": 4,
+    "MAX_PARTICLES": 99,
+    "MAX_PROJECTILES": 9,
+    "MAX_SKILLS": 2
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "SylaraProjectile",
+    "ProjectileSystem",
+    "SkillFX",
+    "SylaraFXDirector"
+   ],
+   "defs": 59,
+   "lines": 3532,
+   "missing_api": [
+    "stats"
+   ]
+  },
+  "syrentha_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_IMPACTS": 4,
+    "MAX_PARTICLES": 102,
+    "MAX_PROJECTILES": 9,
+    "MAX_SKILLS": 2
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "SyrenthaProjectile",
+    "ProjectileSystem",
+    "SkillFX",
+    "SyrenthaFXDirector"
+   ],
+   "defs": 54,
+   "lines": 2404,
+   "missing_api": [
+    "stats"
+   ]
+  },
+  "thalgryn_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_IMPACTS": 4,
+    "MAX_PARTICLES": 102,
+    "MAX_PROJECTILES": 9,
+    "MAX_SKILLS": 2
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "ImpactSystem",
+    "ThalgrynProjectile",
+    "ProjectileSystem",
+    "SkillFX",
+    "ThalgrynFXDirector"
+   ],
+   "defs": 45,
+   "lines": 1674,
+   "missing_api": [
+    "stats"
+   ]
+  },
+  "varkul_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "stats",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_IMPACTS": 4,
+    "MAX_PARTICLES": 114,
+    "MAX_PROJECTILES": 10,
+    "MAX_SKILLS": 3
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "FrostBoltProjectile",
+    "ChainFrostOrbProjectile",
+    "ProjectileSystem",
+    "SkillFX",
+    "VarkulFXDirector"
+   ],
+   "defs": 57,
+   "lines": 2568,
+   "missing_api": []
+  },
+  "vex_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_IMPACTS": 4,
+    "MAX_PARTICLES": 102,
+    "MAX_PROJECTILES": 10,
+    "MAX_SKILLS": 2
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "VexProjectile",
+    "ProjectileSystem",
+    "SkillFX",
+    "VexFXDirector"
+   ],
+   "defs": 56,
+   "lines": 3783,
+   "missing_api": [
+    "stats"
+   ]
+  },
+  "vhalzun_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "stats",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_AFTERIMAGES": 8,
+    "MAX_DIRECTORS": 12,
+    "MAX_IMPACTS": 4,
+    "MAX_PARTICLES": 132,
+    "MAX_PROJECTILES": 6,
+    "MAX_SKILLS": 2
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "BaseProjectile",
+    "SoulOrbProjectile",
+    "ReaperScytheProjectile",
+    "ProjectileSystem",
+    "SkillFX",
+    "VhalzunFXDirector"
+   ],
+   "defs": 49,
+   "lines": 2626,
+   "missing_api": []
+  },
+  "vokrahn_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "stats",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_AFTERIMAGES": 7,
+    "MAX_DIRECTORS": 12,
+    "MAX_IMPACTS": 5,
+    "MAX_PARTICLES": 120,
+    "MAX_PROJECTILES": 13,
+    "MAX_SKILLS": 3
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "BaseProjectile",
+    "ChaosBoltProjectile",
+    "ChaosBrandProjectile",
+    "ProjectileSystem",
+    "Afterimage",
+    "SkillFX",
+    "VokrahnFXDirector"
+   ],
+   "defs": 74,
+   "lines": 3596,
+   "missing_api": []
+  },
+  "xerathis_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "stats",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_IMPACTS": 4,
+    "MAX_PARTICLES": 114,
+    "MAX_PROJECTILES": 10,
+    "MAX_SKILLS": 3
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "XerathisProjectile",
+    "ProjectileSystem",
+    "SkillFX",
+    "XerathisFXDirector"
+   ],
+   "defs": 49,
+   "lines": 1936,
+   "missing_api": []
+  },
+  "zephyr_fx.py": {
+   "api": [
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_PARTICLES": 96,
+    "MAX_PROJECTILES": 14
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "ZephyrProjectile",
+    "ProjectileSystem",
+    "SkillFX",
+    "ZephyrFXDirector"
+   ],
+   "defs": 30,
+   "lines": 2096,
+   "missing_api": [
+    "attach",
+    "owns",
+    "stats"
+   ]
+  },
+  "zharok_fx.py": {
+   "api": [
+    "attach",
+    "owns",
+    "tick",
+    "draw_ground_layer",
+    "draw_live_layer",
+    "reset_all",
+    "stats",
+    "total_particles",
+    "MAX_PARTICLES",
+    "Particle",
+    "ParticleSystem",
+    "ProjectileSystem"
+   ],
+   "caps": {
+    "MAX_AFTERIMAGES": 7,
+    "MAX_DIRECTORS": 12,
+    "MAX_IMPACTS": 5,
+    "MAX_PARTICLES": 120,
+    "MAX_PROJECTILES": 13,
+    "MAX_SKILLS": 3
+   },
+   "classes": [
+    "Particle",
+    "ParticleSystem",
+    "SwingTrail",
+    "ImpactFX",
+    "BaseProjectile",
+    "FireArrowProjectile",
+    "SoulSkullProjectile",
+    "ProjectileSystem",
+    "Afterimage",
+    "SkillFX",
+    "ZharokFXDirector"
+   ],
+   "defs": 70,
+   "lines": 3468,
+   "missing_api": []
+  }
+ },
+ "governor": {
+  "atk_quant_floor": {
+   "high": 3,
+   "low": 6,
+   "medium": 4
+  },
+  "base_heroes": 1.0,
+  "ground_budget": {
+   "high": 6,
+   "low": 2,
+   "medium": 3
+  },
+  "load_exp": 1.5,
+  "load_min": 0.1,
+  "load_smooth": 0.4,
+  "max_hero_render": {
+   "high": 8,
+   "low": 3,
+   "medium": 4
+  },
+  "particle_cap": 140,
+  "particle_floor": 56,
+  "particle_ratio": {
+   "high": 0.7,
+   "low": 0.2,
+   "medium": 0.4
+  },
+  "projectile_cap": 18,
+  "projectile_floor": 10,
+  "skill_projectile_cap": 10,
+  "skill_projectile_floor": 5,
+  "skill_projectile_gate": 10,
+  "skill_quant_floor": {
+   "high": 4,
+   "low": 12,
+   "medium": 8
+  },
+  "tokens_gated": true
+ },
+ "live_fx": {
+  "bus_functions": [
+   "_install_global_fx_caps",
+   "_skill_quant",
+   "_atk_quant",
+   "begin_fx_frame",
+   "fx_frame",
+   "_fx_busy",
+   "count_busy_fx_heroes",
+   "_reset_fx_ground_budget",
+   "_live_fx_pre",
+   "_live_fx_post"
+  ],
+  "contract": [
+   "attach",
+   "owns",
+   "tick",
+   "draw_ground_layer",
+   "draw_live_layer",
+   "reset_all",
+   "stats",
+   "total_particles",
+   "MAX_PARTICLES",
+   "Particle",
+   "ParticleSystem",
+   "ProjectileSystem"
+  ],
+  "heroes": [
+   "abaddon",
+   "alchemist",
+   "ancient_apparition",
+   "gorath",
+   "gornak",
+   "gravefang",
+   "gravewake",
+   "grimjaw",
+   "ignis_drachorn",
+   "kaizen",
+   "khalros",
+   "krobellus",
+   "kunkka",
+   "nyxara",
+   "nyzrak",
+   "pyrenth",
+   "razak",
+   "sylara",
+   "syrentha",
+   "thalgryn",
+   "varkul",
+   "vex",
+   "vhalzun",
+   "vokrahn",
+   "xerathis",
+   "zephyr",
+   "zharok"
+  ],
+  "heroes_kind": "set",
+  "paths": {
+   "abaddon": "heroes.abaddon_fx",
+   "alchemist": "heroes.alchemist_fx",
+   "ancient_apparition": "heroes.ancient_apparition_fx",
+   "gorath": "heroes.gorath_fx",
+   "gornak": "heroes.gornak_fx",
+   "gravefang": "heroes.gravefang_fx",
+   "gravewake": "heroes.gravewake_fx",
+   "grimjaw": "heroes.grimjaw_fx",
+   "ignis_drachorn": "heroes.ignis_drachorn_fx",
+   "kaizen": "heroes.kaizen_fx",
+   "khalros": "heroes.khalros_fx",
+   "krobellus": "heroes.krobellus_fx",
+   "kunkka": "heroes.kunkka_fx",
+   "nyxara": "heroes.nyxara_fx",
+   "nyzrak": "heroes.nyzrak_fx",
+   "pyrenth": "heroes.pyrenth_fx",
+   "razak": "heroes.razak_fx",
+   "sylara": "heroes.sylara_fx",
+   "syrentha": "heroes.syrentha_fx",
+   "thalgryn": "heroes.thalgryn_fx",
+   "varkul": "heroes.varkul_fx",
+   "vex": "heroes.vex_fx",
+   "vhalzun": "heroes.vhalzun_fx",
+   "vokrahn": "heroes.vokrahn_fx",
+   "xerathis": "heroes.xerathis_fx",
+   "zephyr": "heroes.zephyr_fx",
+   "zharok": "heroes.zharok_fx"
+  }
+ },
+ "renderers": {
+  "aliases": {
+   "grimjaw": 46,
+   "kaizen": 62,
+   "sylara": 63,
+   "thorne": 38,
+   "vex": 65,
+   "zephyr": 70
+  },
+  "heroes": [
+   "grimjaw",
+   "kaizen",
+   "sylara",
+   "thorne",
+   "vex",
+   "zephyr"
+  ],
+  "scale": {
+   "anim_phases": 8,
+   "atk_quant": 4,
+   "clamp_max": 1.7,
+   "clamp_min": 0.4,
+   "default_scale": 0.65,
+   "global_scale": 0.78,
+   "ground_budget_default": [
+    99
+   ],
+   "ground_env_opt_out": true,
+   "ref_aspect": 1.6,
+   "scale_override": {},
+   "skill_quant": 6,
+   "target_height": 65,
+   "width_weight": 0.0
+  }
+ },
+ "skill_quant_ladder": {
+  "thresholds": [
+   2,
+   4,
+   6
+  ],
+  "values": [
+   "HERO_SKILL_QUANT",
+   "4",
+   "8",
+   "12"
+  ]
+ },
+ "v1": {
+  "grimjaw_v1.py": {
+   "functions": [
+    "install"
+   ],
+   "install_args": "legacy_cls",
+   "lines": 2699,
+   "subclasses_legacy": true
+  },
+  "kaizen_v1.py": {
+   "functions": [
+    "install"
+   ],
+   "install_args": "legacy_cls",
+   "lines": 1419,
+   "subclasses_legacy": true
+  },
+  "sylara_v1.py": {
+   "functions": [
+    "install"
+   ],
+   "install_args": "legacy_cls",
+   "lines": 2567,
+   "subclasses_legacy": true
+  },
+  "vex_v1.py": {
+   "functions": [
+    "install"
+   ],
+   "install_args": "legacy_cls",
+   "lines": 1529,
+   "subclasses_legacy": true
+  }
+ }
+}

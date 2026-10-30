@@ -50,7 +50,7 @@ Tes native Godot 4.7.2 headless terakhir yang jumlah pemeriksaannya tercatat (br
 
 Run native terbaru untuk lapisan 9bt adalah commit `0411b28` ([run 41030476536](https://github.com/dharmawantoxi/mystic-arena/actions/runs/41030476536)) dan lulus tanpa kegagalan; jumlah pemeriksaannya tidak terbaca dari artefak di lingkungan kerja ini, jadi angka 1.505.443 di atas tetap merujuk run `f4e840b`.
 
-Validator statis terakhir yang tersedia lulus **22.017 pemeriksaan**. Itu berbeda dari tes native dan tidak menggantikan bukti runtime, screenshot, perangkat, atau audio.
+Validator statis terakhir yang tersedia lulus **22.077 pemeriksaan**. Itu berbeda dari tes native dan tidak menggantikan bukti runtime, screenshot, perangkat, atau audio.
 
 #### Triase 23 kegagalan tes native sebelumnya
 
@@ -175,6 +175,21 @@ Kedua berkas di `hero_skills/` sudah dipetakan penuh; rincian per konstruksi ada
 Deviasi yang dicatat: shake skill berbagi `EffectManager` dengan shake bos (akumulasi `max` per tick, sama seperti sumber); throttle dan volume hanya berlaku di jalur skill, `play()` biasa tetap tanpa throttle.
 
 Yang **belum** dibuktikan: hasil audio/visual di perangkat nyata — suite membuktikan keputusan (intensitas, volume, tim), bukan suara atau guncangan yang benar-benar terlihat/terdengar.
+
+### Folder `heroes/` (layer 9bz, 30 Oktober 2026)
+
+Ke-34 modul `heroes/` (101.262 baris) sudah dipetakan; rincian per berkas ada di [`HEROES_FOLDER_MIGRATION.md`](HEROES_FOLDER_MIGRATION.md). Folder ini dua lapisan sekaligus, dan statusnya **tidak** seragam — itu inti laporan ini.
+
+* **Pipeline renderer sudah diport lewat bake, bukan skrip.** `HERO_RENDERERS` (6 starter), `_get_hero_scale` (`HERO_GLOBAL_SCALE` 0.78, target tinggi 65 px, aspek rujukan 1.6, bobot lebar 0.0, fallback 0.65, klamp 0.40–1.70), cache sprite/pose, dan `HERO_ANIM_PHASES` 8 semuanya tertanam di `data/art/heroes.json` (222 hero, 228 atlas, `meta.hero_scale` ∈ 0.312–1.326) dan dibaca `scripts/ui/hero_art.gd`/`hero_anim.gd`.
+* **Empat `*_v1.py` diklasifikasikan "Diport (bake)", bukan usang.** `_bundle.py` menjalankan `install(legacy_cls)` yang mengembalikan subclass `_NS_<hero>`, jadi renderer **efektif** kaizen/vex/grimjaw/sylara adalah implementasi pixel-art V1 — dan itulah yang dirender ke atlas (kaizen 0.4971, grimjaw 0.4609, sylara 0.6259, vex 0.5895).
+* **`combat_feel.py` sudah punya rumah native.** `HitStop` (jepit 0.03–0.08 s, `round(seconds/FIXED_DT)`, min 1, cap 5 langkah, jendela terpanjang) ada di `scripts/match/hit_stop_runtime.gd`; tabel permintaan direktor FX (`SOURCE_CAST_HIT_STOP_SECONDS` kaizen 0.021/0.024/0.04, grimjaw 0.027/0.024/0.04, sylara 0.02, vex 0.021/0.025/0.04) memakai angka mentah sumber, lalu runtime yang menaikkannya ke lantai 0.03 s = 2 langkah beku — diuji langsung di suite.
+* **Layer baru: bus FX hidup + governor beban combat.** `scripts/ui/hero_fx_bus.gd` memegang registri 27 hero `_LIVE_FX_HEROES`, `begin_fx_frame`/`fx_frame`, `count_busy_fx_heroes` (ikut menghitung bos lewat `boss_type`), guard `_portrait_hd`, dan anggaran lapisan tanah (`_FX_GROUND_LEFT` + saklar `MYSTIC_FX_GROUND=0`). `scripts/settings/fx_governor.gd` memegang angka `mobile/perf.py`: smoothing 0.40, satu hero bebas, target `max(0.10, (1/n)^1.5)`, token 140/18/10 dengan lantai 56/10/5, serta preset `particle_ratio` 0.20/0.40/0.70, lantai pose skill 12/8/4, attack 6/4/3, anggaran tanah 2/3/6, render penuh 3/4/8.
+
+Dua aturan sumber yang dikunci tes: **frame FX tidak pernah dilewati** (beban turun lewat intensitas, bukan frekuensi gambar) dan **anggaran tanah hanya memotong gambar** — `attach()` + `tick()` tetap jalan supaya simulasi FX hero tidak membeku.
+
+Deviasi yang tercatat: (1) atlas memakai quantum pose tetap 3/2 sementara sumber memilih 4/6 + tangga 2/4/6 dan lantai preset; (2) tanda tangan gambar direktor menjadi `draw_*_layer(unit)` karena surface/offset disuntik saat konstruksi; (3) cap spawn tidak lagi monkey-patch, penegakannya lewat `guard_spawn()` + `claim_*`/`refund_*` yang harus dipanggil tiap direktor; (4) anggaran `max_hero_render` diekspos demi paritas angka tetapi tidak dipakai karena atlas statis; (5) trik `sys.modules` (`_install_aliases`, `_EXTRA`) diganti `preload` eksplisit.
+
+**Yang belum — dan ini gap terbesar yang tersisa di seluruh migrasi:** 27 modul `*_fx.py` (72.594 baris, 1.400 fungsi, `MAX_PARTICLES` 57–144) belum punya padanan native; hanya hook hit-stop-nya yang sudah masuk tabel battle. Fondasinya (bus, governor, kontrak 12 entry point, anggaran, cap token) sudah siap dan beruji, tetapi visual/koreografi FX tiap hero belum ada. Rencana tiga gelombang ada di laporan folder. Sampai itu selesai, `heroes/` **tidak** boleh disebut selesai.
 
 ### Membandingkan capture Godot dari PC (layar sentuh)
 
