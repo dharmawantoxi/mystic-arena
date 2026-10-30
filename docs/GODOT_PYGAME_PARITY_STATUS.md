@@ -38,7 +38,7 @@ Tidak akan mengubah aturan, UI, atau data Pygame agar tes Godot lulus. Jika ada 
 |---|---|---|
 | Data dan aturan domain | Banyak katalog dan aturan numerik memiliki source oracle serta replay native. Cakupannya terlihat di `godot_rebuild/tests/` dan kontrak sistem. | Katalog lengkap bukan bukti semua 54 level dapat dimainkan dengan perilaku dan alur produksi yang sama. README Godot menyebut level 2–54 sebagai mode uji eksperimental; kampanye penuh/balance final belum lulus parity end-to-end. |
 | HUD dan dock mobile | Layout dock punya oracle Pygame; geometri, teks, warna, tombol, dan hit-test dibandingkan. Popup kastil/upgrade ditambahkan lewat PR #348 dengan pemeriksaan geometri dan tes tap scene. | Belum ada render screenshot berpasangan untuk memastikan hasil font, anti-alias, clipping, layering, dan scaling sama pada runtime. Tes geometri tidak membuktikan kesamaan piksel. |
-| Kontrol dan overlay | Ada tes native/source untuk banyak jalur input, popup, pause, touch, serta transaksi UI. | Suite native terakhir yang tersedia masih gagal pada beberapa grup input/tactical, lifecycle shield, menu/render, hasil/progres, dan projectile; semua kegagalan perlu ditriase sebelum parity bisa dinyatakan selesai. |
+| Kontrol dan overlay | Ada tes native/source untuk banyak jalur input, popup, pause, touch, serta transaksi UI. | Suite native kini lulus tanpa kegagalan pada grup input/tactical, lifecycle shield, menu/render, hasil/progres dan projectile; triase 23 kegagalan sebelumnya dicatat di bawah. Bukti ini tetap headless, bukan screenshot/piksel. |
 | Seni, animasi, dan efek | Banyak aset dibake dari sumber Pygame; draw-operation dan urutan layer memiliki oracle. | Belum ada pixel-diff end-to-end. Rasterizer, blending alpha, font metrics, dan backend renderer Godot dapat berbeda dari Pygame meskipun parameter/komposisi sumber sama. Efek runtime dan semua state animasi belum dibuktikan identik melalui screenshot/video. |
 | 54 level dan sesi penuh | Katalog level serta sejumlah aturan level mempunyai tes sumber. | Prototipe Godot masih mengidentifikasi level 2–54 sebagai eksperimental; match panjang, progression, seluruh kombinasi boss/minion, dan keseimbangan belum dibuktikan setara dalam permainan penuh. |
 | Android/perangkat | Ada implementasi serta tes otomatis untuk sebagian logika touch/mobile dan adaptive quality. | Belum ada bukti ekspor dan run terverifikasi pada perangkat Android fisik untuk resolusi/safe-area, multitouch, lifecycle background, renderer GPU, audio, performa, dan thermal. |
@@ -46,9 +46,19 @@ Tidak akan mengubah aturan, UI, atau data Pygame agar tes Godot lulus. Jika ada 
 
 ### Hasil runtime terakhir yang diketahui
 
-Tes native Godot 4.7.2 headless terakhir pada perubahan PR #348 menjalankan 1.505.221 pemeriksaan dan melaporkan **23 kegagalan**. Kegagalan mencakup label/tata letak menu, fixture/jam projectile hero, fallback scene, hasil dan progres pertandingan, lifecycle shield, input/tactical pointer/keyboard. Log juga memuat tiga akses indeks array yang tidak valid. Tes popup kastil dan tap upgrade yang ditambahkan pada PR tersebut tidak termasuk grup yang gagal. Hasil ini bukan bukti bahwa 23 kegagalan sudah terisolasi pada main; status akhirnya harus diperiksa dan tes dirapikan.
+Tes native Godot 4.7.2 headless terakhir (branch `arena/a5ab95fe-mystic-arena`, commit `4eea6f7`, [run 40994717039](https://github.com/dharmawantoxi/mystic-arena/actions/runs/40994717039)) menjalankan 1.505.296 pemeriksaan dan melaporkan **0 kegagalan** serta tanpa `SCRIPT ERROR`. Sebelumnya run PR #348 menjalankan 1.505.221 pemeriksaan dengan **23 kegagalan**; seluruhnya sudah ditriase dan diperbaiki, dan penyebabnya dicatat di tabel triase di bawah.
 
-Validator statis terakhir yang tersedia lulus **21.682 pemeriksaan**. Itu berbeda dari tes native dan tidak menghapus daftar kegagalan runtime di atas.
+Validator statis terakhir yang tersedia lulus **21.677 pemeriksaan**. Itu berbeda dari tes native dan tidak menggantikan bukti runtime, screenshot, perangkat, atau audio.
+
+#### Triase 23 kegagalan tes native sebelumnya
+
+| Gejala | Akar masalah | Perbaikan |
+|---|---|---|
+| Suite painter, level-stat, tactical, controller, touch, popup gagal berantai; tiga `SCRIPT ERROR: Invalid access of index '0'` | Sumber memulai pertandingan dengan roster hero kosong (`Game.heroes = []`; Kaizen hanya dimiliki, disummon lewat `try_buy_hero`), sedangkan suite lama membaca `player_hero_ids[0]`/`player_roster()[0]` yang kosong. Suite yang error berhenti di tengah sehingga sisa pemeriksaannya tidak pernah jalan. | Suite memanggil transaksi nyata `PrototypeBattle.buy_player_hero("kaizen")` sebelum memakai hero, dan fixture touch menyummon hero merah di spawn merah untuk gestur follow. |
+| `MainMenu buttons match the source two-button row...` | `SourceUiButton` menggambar label sendiri, tetapi teks native yang tak terlihat tetap menaikkan minimum size sehingga tinggi menjadi 53 px dan tombol SETTINGS melebar ke 507 px karena label hasil lokalisasi. | Teks native tombol memakai ukuran font netral; rect sumber 300×50 / 360×50 kini dipertahankan. Bukti tata letak juga mengikuti `fit`/origin viewport, bukan asumsi 1:1. |
+| `Muted labels use TEXT_DIM`, `The menu eyebrow uses CYAN` | Suite masih mengharapkan menu eksperimental lama (8 dim + cyan). Sumber 9bv18 dan validator statis menetapkan 6 TEXT_DIM, 1 GOLD, 0 CYAN. | Suite diselaraskan dengan palet sumber 9bv18. |
+| `Shield scene lifecycle does not leak nodes` | Baseline suite ini diambil saat app masih di dalam match karena suite popup sebelumnya berhenti akibat error indeks; hitungan akhir (menu) lalu terlihat seperti kebocoran 161 node. | Kebocoran kini dilaporkan sebagai census path node, dan baseline valid setelah suite popup selesai. |
+| `Retry records its independent minion kill`, `Defeat retry accumulates totals...` | Restart membangun world baru tanpa hero hidup, sehingga kill pada percobaan kedua tidak pernah terjadi. | Fixture level-stat menyummon starter pada setiap world baru. |
 
 ## Catatan screenshot yang dikirim
 

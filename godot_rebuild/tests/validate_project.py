@@ -3263,8 +3263,10 @@ check("loop AI scene aktif" in _upgrade_contract_doc,
 
 check("parity penuh **belum tercapai" in _parity_doc,
       "Parity status document must clearly state that full parity is not complete")
-check("1.505.221 pemeriksaan dan melaporkan **23 kegagalan**" in _parity_doc,
-      "Parity status document must disclose the latest known native-suite failures")
+check("1.505.296 pemeriksaan dan melaporkan **0 kegagalan**" in _parity_doc
+      and "23 kegagalan" in _parity_doc
+      and "Triase 23 kegagalan tes native sebelumnya" in _parity_doc,
+      "Parity status document must disclose the latest native-suite result and keep its triage record")
 check("Godot/Pygame" in _parity_doc and "godot_rebuild/" in _parity_doc,
       "Parity status document must identify the reference and current Godot project")
 

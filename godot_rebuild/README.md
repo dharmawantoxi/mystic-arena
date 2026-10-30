@@ -180,6 +180,13 @@ Font disalin dari `assets/fonts/` di root repo, bukan dari hasil migrasi lama. L
 
 ## Pengujian
 
+### Status validasi (30 Oktober 2026, triase kegagalan native)
+
+- **Suite native lulus penuh:** import engine **Godot 4.7.2** + **1.505.296 pemeriksaan** tanpa kegagalan dan tanpa `SCRIPT ERROR` pada commit `4eea6f7` ([run 40994717039](https://github.com/dharmawantoxi/mystic-arena/actions/runs/40994717039)).
+- **23 kegagalan run sebelumnya sudah ditriase:** roster hero kosong di awal pertandingan (sumber `Game.heroes = []`), minimum size tombol sumber yang membengkak karena teks native tak terlihat, palet menu 9bv18, dan baseline lifecycle yang tercemar suite yang berhenti karena `SCRIPT ERROR`. Rincian per gejala ada di [status parity](../docs/GODOT_PYGAME_PARITY_STATUS.md).
+- **Validator statis:** 21.677 pemeriksaan lulus, termasuk guardrail baru untuk dokumentasi status parity.
+- **Tetap belum diverifikasi:** tampilan GPU/screenshot berpasangan, resize secara visual, Windows fisik, touchscreen, Android, audio, dan performa perangkat. CI headless bukan pengganti tes ini.
+
 ### Status validasi (25 September 2026, sesi nexus)
 
 - **Checkpoint merged `main`:** import engine **Godot 4.7.2**, **1.905 pemeriksaan** pada commit `7c96c83` ([run 36153883271](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36153883271)), annotation **Native Godot tests**.
