@@ -1,0 +1,2713 @@
+{
+ "boss_classes": {
+  "abaddon": "true",
+  "aelyrion": "mini",
+  "aeralith": "mini",
+  "akahime": "mini",
+  "akaroth": "mini",
+  "akashari": "mini",
+  "akirakumo": "true",
+  "akiraze": "mini",
+  "alchemist": "true",
+  "ancient_apparition": "true",
+  "astraelion": "mini",
+  "aurelian": "mini",
+  "aurelion": "true",
+  "aurelix": "mini",
+  "aurelyssa": "mini",
+  "aurethzar": "true",
+  "aurex": "mini",
+  "auroth": "mini",
+  "azkharion": "mini",
+  "azureth": "mini",
+  "bhorgathul": "mini",
+  "broggmar": "mini",
+  "brumhar": "mini",
+  "celwynn": "mini",
+  "cogsworth": "true",
+  "cryssalia": "mini",
+  "deidara": "true",
+  "dorakai": "mini",
+  "drakar": "mini",
+  "drav": "mini",
+  "emberwick": "mini",
+  "garumenshi": "mini",
+  "ghrakmaal": "mini",
+  "gorath": "mini",
+  "gornak": "mini",
+  "gravefang": "mini",
+  "gravewake": "mini",
+  "grimjack": "mini",
+  "grimkor": "true",
+  "grimstalker": "mini",
+  "grondarthul": "mini",
+  "grondmauris": "true",
+  "hitokage": "mini",
+  "hollowbane": "true",
+  "ignakhor": "mini",
+  "ignirus": "mini",
+  "ignis_drachorn": "true",
+  "infrakzaar": "mini",
+  "kaedrin": "mini",
+  "kaeldris": "mini",
+  "kaelthar": "mini",
+  "kaelthorn": "mini",
+  "kaelthys": "mini",
+  "kaelvyrn": "mini",
+  "kaerinya": "true",
+  "kaerissa": "mini",
+  "kaervosth": "mini",
+  "kagetsuka": "true",
+  "kaineroth": "true",
+  "kairenji": "mini",
+  "kaithros": "true",
+  "kaizoku_raijin": "mini",
+  "kaoruken": "mini",
+  "karzhul": "mini",
+  "kassadin": "mini",
+  "kazreth": "mini",
+  "kazuren": "mini",
+  "kazureth": "mini",
+  "kenshiro": "mini",
+  "khalros": "mini",
+  "khalzaredh": "mini",
+  "khazan": "mini",
+  "korokai": "mini",
+  "krobellus": "true",
+  "krognarr": "mini",
+  "kryvoxar": "mini",
+  "kunkka": "true",
+  "kurogari": "mini",
+  "kyrenzai": "true",
+  "kyumirra": "mini",
+  "leoric": "mini",
+  "luminar": "mini",
+  "lyrenya": "mini",
+  "lyrienne": "mini",
+  "lyssarethys": "true",
+  "malzareth": "mini",
+  "malzeroth": "true",
+  "molgravar": "true",
+  "morgath": "mini",
+  "morkhaera": "mini",
+  "morkhelvis": "mini",
+  "morthraxis": "true",
+  "morthyrax": "mini",
+  "morvaenthir": "mini",
+  "morvaeth": "mini",
+  "morvaeth2": "mini",
+  "morvakhul": "mini",
+  "morvath": "mini",
+  "morvein": "mini",
+  "morvekhar": "mini",
+  "morvyssk": "mini",
+  "naraka": "true",
+  "nazulmor": "true",
+  "nexthyrius": "true",
+  "nixweaver": "mini",
+  "nyrellieth": "true",
+  "nyrethzalv": "true",
+  "nyxallaria": "mini",
+  "nyxara": "mini",
+  "nyxarath": "true",
+  "nyxareth": "true",
+  "nyxareva": "mini",
+  "nyxariel": "mini",
+  "nyxaris": "true",
+  "nyxaroth": "mini",
+  "nyxharr": "true",
+  "nyxraal": "mini",
+  "nyxthrael": "mini",
+  "nyzrak": "mini",
+  "obanai": "mini",
+  "okeanora": "true",
+  "pyraena": "true",
+  "pyraethis": "true",
+  "pyraklos": "mini",
+  "pyrenth": "mini",
+  "pyrhaan": "mini",
+  "rakzhan": "mini",
+  "ravokkar": "true",
+  "raz": "mini",
+  "razak": "mini",
+  "rynvara": "mini",
+  "sanguire": "mini",
+  "sanguiveth": "mini",
+  "sasori": "mini",
+  "seiryukong": "true",
+  "selunara": "mini",
+  "seraphienne": "true",
+  "sethrakhar": "mini",
+  "shimorakh": "mini",
+  "shirotaka": "mini",
+  "sirakzan": "mini",
+  "solara": "mini",
+  "solareth": "true",
+  "solvanth": "mini",
+  "solvarin": "true",
+  "sunakage": "true",
+  "sylvantheros": "mini",
+  "syrentha": "mini",
+  "syrindra": "mini",
+  "thalakryon": "true",
+  "thalgryn": "mini",
+  "thalryndel": "true",
+  "thargoroth": "mini",
+  "thoraz": "mini",
+  "thorgaruk": "mini",
+  "thornvaegrim": "mini",
+  "thorvak": "mini",
+  "thorvin": "mini",
+  "tsukiyora": "true",
+  "urgharun": "mini",
+  "ursath": "mini",
+  "vaelindra": "true",
+  "vaelkorr": "mini",
+  "vaelmyrra": "true",
+  "vaerith": "mini",
+  "valekris": "mini",
+  "valthar": "mini",
+  "vardrok": "mini",
+  "vargrath": "mini",
+  "vargroth": "mini",
+  "varkul": "mini",
+  "varkuthar": "mini",
+  "velmyrth": "mini",
+  "verdanix": "mini",
+  "veshtrax": "mini",
+  "vessyra": "mini",
+  "vhaerinth": "mini",
+  "vhaerith": "mini",
+  "vhalzun": "mini",
+  "vhorethzir": "true",
+  "vhyssarion": "mini",
+  "vokrahn": "mini",
+  "vorenmarr": "mini",
+  "vorgath": "mini",
+  "vorthakul": "mini",
+  "vraskhan": "mini",
+  "vulkareth": "mini",
+  "vyraeth": "mini",
+  "wiro": "mini",
+  "xaelmoran": "true",
+  "xaerissa": "mini",
+  "xareth": "mini",
+  "xarnathul": "mini",
+  "xarnthuul": "mini",
+  "xelnarath": "true",
+  "xerakhotep": "mini",
+  "xerakkuth": "mini",
+  "xerathis": "mini",
+  "xharokh": "mini",
+  "xirthalis": "mini",
+  "xyrael": "mini",
+  "yamako": "true",
+  "yhoranth": "mini",
+  "yomigetsu": "true",
+  "zahkareth": "mini",
+  "zarethyr": "true",
+  "zhaeris": "mini",
+  "zharakzuul": "true",
+  "zharok": "mini",
+  "zhyrakaan": "mini",
+  "zhyvrek": "mini",
+  "zorashi": "mini",
+  "zorathiel": "mini",
+  "zorothrax": "mini",
+  "zulkhaven": "mini",
+  "zyvareth": "true"
+ },
+ "build_input_consumers": {
+  "LEVEL_TRUE_BOSS": [
+   "tools/convert_to_godot.py"
+  ],
+  "MELEE_ROLE_HINTS": [
+   "tools/convert_to_godot.py",
+   "tools/test_boss_data_parity.py"
+  ],
+  "MINI_BOSS_WAVES": [
+   "tools/convert_to_godot.py"
+  ],
+  "TRUE_BOSS_ABILITY_CURVE": [
+   "tools/convert_to_godot.py"
+  ],
+  "TRUE_BOSS_DMG_CURVE": [
+   "tools/convert_to_godot.py"
+  ],
+  "TRUE_BOSS_HP_CURVE": [
+   "tools/convert_to_godot.py"
+  ]
+ },
+ "counts": {
+  "draw_definitions": 219,
+  "draw_functions": 217,
+  "files": 61,
+  "index_entries": 216,
+  "level_modules": 54,
+  "mini_bosses": 162,
+  "renderers": 3,
+  "smart_ai": 79,
+  "structural": 4,
+  "total_bosses": 216,
+  "true_bosses": 54
+ },
+ "curves": {
+  "ability": {
+   "ignis_drachorn": 423,
+   "krobellus": 441,
+   "kunkka": 459,
+   "nyxarath": 477,
+   "vhorethzir": 495
+  },
+  "damage": {
+   "alchemist": 150,
+   "ancient_apparition": 152,
+   "kunkka": 172,
+   "nyxarath": 175,
+   "solareth": 318
+  },
+  "hp": {
+   "aurethzar": 62000,
+   "deidara": 164000,
+   "grimkor": 148000,
+   "grondmauris": 121000,
+   "kaerinya": 128000,
+   "kagetsuka": 160000,
+   "kaineroth": 152000,
+   "krobellus": 52000,
+   "kunkka": 54000,
+   "kyrenzai": 136000,
+   "lyssarethys": 124000,
+   "malzeroth": 113000,
+   "molgravar": 88000,
+   "morthraxis": 83000,
+   "naraka": 60000,
+   "nexthyrius": 85000,
+   "nyrellieth": 104000,
+   "nyrethzalv": 102000,
+   "nyxarath": 56000,
+   "nyxharr": 106000,
+   "okeanora": 95000,
+   "seraphienne": 90000,
+   "solareth": 92000,
+   "sunakage": 167000,
+   "thalakryon": 64000,
+   "thalryndel": 144000,
+   "vaelindra": 80000,
+   "vaelmyrra": 97000,
+   "xaelmoran": 140000,
+   "xelnarath": 132000,
+   "zarethyr": 99000,
+   "zharakzuul": 117000,
+   "zyvareth": 156000
+  }
+ },
+ "draw_functions": {
+  "level1": [
+   "draw_gornak",
+   "draw_morgath",
+   "draw_drakar",
+   "draw_abaddon"
+  ],
+  "level10": [
+   "draw_krognarr",
+   "draw_raz",
+   "draw_vraskhan",
+   "draw_aurethzar"
+  ],
+  "level11": [
+   "draw_aeralith",
+   "draw_aurex",
+   "draw_nyxareva",
+   "draw_thalakryon"
+  ],
+  "level12": [
+   "draw_aurelix",
+   "draw_aurelyssa",
+   "draw_vargrath",
+   "draw_nazulmor"
+  ],
+  "level13": [
+   "draw_kaeldris",
+   "draw_pyraklos",
+   "draw_velmyrth",
+   "draw_solvarin"
+  ],
+  "level14": [
+   "draw_azureth",
+   "draw_luminar",
+   "draw_solara",
+   "draw_pyraethis"
+  ],
+  "level15": [
+   "draw_auroth",
+   "draw_morvein",
+   "draw_thorvak",
+   "draw_yamako"
+  ],
+  "level16": [
+   "draw_ignirus",
+   "draw_leoric",
+   "draw_shirotaka",
+   "draw_seiryukong"
+  ],
+  "level17": [
+   "draw_kaelthorn",
+   "draw_solvanth",
+   "draw_xyrael",
+   "draw_nyxareth"
+  ],
+  "level18": [
+   "draw_cryssalia",
+   "draw_kaelthar",
+   "draw_morkhaera",
+   "draw_aurelion"
+  ],
+  "level19": [
+   "draw_akahime",
+   "draw_nyxthrael",
+   "draw_sylvantheros",
+   "draw_vaelindra"
+  ],
+  "level2": [
+   "draw_razak",
+   "draw_khalros",
+   "draw_gorath",
+   "draw_alchemist"
+  ],
+  "level20": [
+   "draw_astraelion",
+   "draw_morvaenthir",
+   "draw_thornvaegrim",
+   "draw_morthraxis"
+  ],
+  "level21": [
+   "draw_kurogari",
+   "draw_morvekhar",
+   "draw_vorgath",
+   "draw_nexthyrius"
+  ],
+  "level22": [
+   "draw_grimstalker",
+   "draw_kryvoxar",
+   "draw_vargroth",
+   "draw_molgravar"
+  ],
+  "level23": [
+   "draw_drav",
+   "draw_lyrienne",
+   "draw_valthar",
+   "draw_seraphienne"
+  ],
+  "level24": [
+   "draw_khalzaredh",
+   "draw_nyxaroth",
+   "draw_veshtrax",
+   "draw_solareth"
+  ],
+  "level25": [
+   "draw_grimjack",
+   "draw_morvaeth",
+   "draw_vulkareth",
+   "draw_okeanora"
+  ],
+  "level26": [
+   "draw_aelyrion",
+   "draw_kaervosth",
+   "draw_morvyssk",
+   "draw_vaelmyrra"
+  ],
+  "level27": [
+   "draw_kyumirra",
+   "draw_morvakhul",
+   "draw_nyxariel",
+   "draw_zarethyr"
+  ],
+  "level28": [
+   "draw_morthyrax",
+   "draw_sanguiveth",
+   "draw_xerakhotep",
+   "draw_nyrethzalv"
+  ],
+  "level29": [
+   "draw_ignakhor",
+   "draw_kazureth",
+   "draw_sethrakhar",
+   "draw_nyrellieth"
+  ],
+  "level3": [
+   "draw_varkul",
+   "draw_xerathis",
+   "draw_nyzrak",
+   "draw_ancient_apparition"
+  ],
+  "level30": [
+   "draw_kaelvyrn",
+   "draw_thorvin",
+   "draw_xaerissa",
+   "draw_nyxharr"
+  ],
+  "level31": [
+   "draw_celwynn",
+   "draw_rynvara",
+   "draw_syrindra",
+   "draw_ravokkar"
+  ],
+  "level32": [
+   "draw_ghrakmaal",
+   "draw_selunara",
+   "draw_vessyra",
+   "draw_malzeroth"
+  ],
+  "level33": [
+   "draw_rakzhan",
+   "draw_sirakzan",
+   "draw_valekris",
+   "draw_zharakzuul"
+  ],
+  "level34": [
+   "draw_infrakzaar",
+   "draw_xarnathul",
+   "draw_zhyrakaan",
+   "draw_grondmauris"
+  ],
+  "level35": [
+   "draw_kaerissa",
+   "draw_thorgaruk",
+   "draw_zorathiel",
+   "draw_lyssarethys"
+  ],
+  "level36": [
+   "draw_nyxallaria",
+   "draw_vhaerinth",
+   "draw_xharokh",
+   "draw_kaerinya"
+  ],
+  "level37": [
+   "draw_kazreth",
+   "draw_varkuthar",
+   "draw_zhyvrek",
+   "draw_xelnarath"
+  ],
+  "level38": [
+   "draw_azkharion",
+   "draw_thargoroth",
+   "draw_zahkareth",
+   "draw_kyrenzai"
+  ],
+  "level39": [
+   "draw_bhorgathul",
+   "draw_morkhelvis",
+   "draw_vorthakul",
+   "draw_xaelmoran"
+  ],
+  "level4": [
+   "draw_zharok",
+   "draw_pyrenth",
+   "draw_vokrahn",
+   "draw_ignis_drachorn"
+  ],
+  "level40": [
+   "draw_urgharun",
+   "draw_yhoranth",
+   "draw_zulkhaven",
+   "draw_thalryndel"
+  ],
+  "level41": [
+   "draw_emberwick",
+   "draw_grondarthul",
+   "draw_xareth",
+   "draw_grimkor"
+  ],
+  "level42": [
+   "draw_kaedrin",
+   "draw_morvaeth",
+   "draw_vardrok",
+   "draw_kaineroth"
+  ],
+  "level43": [
+   "draw_nixweaver",
+   "draw_nyxraal",
+   "draw_xarnthuul",
+   "draw_zyvareth"
+  ],
+  "level44": [
+   "draw_lyrenya",
+   "draw_vyraeth",
+   "draw_zorothrax",
+   "draw_kagetsuka"
+  ],
+  "level45": [
+   "draw_akiraze",
+   "draw_brumhar",
+   "draw_zorashi",
+   "draw_deidara"
+  ],
+  "level46": [
+   "draw_akaroth",
+   "draw_kassadin",
+   "draw_shimorakh",
+   "draw_sunakage"
+  ],
+  "level47": [
+   "draw_kaizoku_raijin",
+   "draw_kaizoku_raijin",
+   "draw_korokai",
+   "draw_verdanix",
+   "draw_pyraena"
+  ],
+  "level48": [
+   "draw_ursath",
+   "draw_broggmar",
+   "draw_ursath",
+   "draw_zhaeris",
+   "draw_cogsworth"
+  ],
+  "level49": [
+   "draw_kairenji",
+   "draw_karzhul",
+   "draw_xerakkuth",
+   "draw_yomigetsu"
+  ],
+  "level5": [
+   "draw_nyxara",
+   "draw_gravefang",
+   "draw_morgath",
+   "draw_vhalzun",
+   "draw_krobellus"
+  ],
+  "level50": [
+   "draw_kaelthys",
+   "draw_kaoruken",
+   "draw_vaelkorr",
+   "draw_akirakumo"
+  ],
+  "level51": [
+   "draw_aurelian",
+   "draw_morvath",
+   "draw_pyrhaan",
+   "draw_kaithros"
+  ],
+  "level52": [
+   "draw_garumenshi",
+   "draw_thoraz",
+   "draw_vhaerith",
+   "draw_nyxaris"
+  ],
+  "level53": [
+   "draw_dorakai",
+   "draw_hitokage",
+   "draw_kazuren",
+   "draw_tsukiyora"
+  ],
+  "level54": [
+   "draw_obanai",
+   "draw_sanguire",
+   "draw_sasori",
+   "draw_hollowbane"
+  ],
+  "level6": [
+   "draw_gravewake",
+   "draw_syrentha",
+   "draw_thalgryn",
+   "draw_kunkka"
+  ],
+  "level7": [
+   "draw_malzareth",
+   "draw_akashari",
+   "draw_vorenmarr",
+   "draw_nyxarath"
+  ],
+  "level8": [
+   "draw_xirthalis",
+   "draw_vhyssarion",
+   "draw_vaerith",
+   "draw_vhorethzir"
+  ],
+  "level9": [
+   "draw_kenshiro",
+   "draw_khazan",
+   "draw_wiro",
+   "draw_naraka"
+  ]
+ },
+ "draw_namespaces": {
+  "level1": [
+   "_NS_gornak",
+   "_NS_morgath",
+   "_NS_drakar",
+   "_NS_abaddon"
+  ],
+  "level10": [
+   "_NS_krognarr",
+   "_NS_raz",
+   "_NS_vraskhan",
+   "_NS_aurethzar"
+  ],
+  "level11": [
+   "_NS_aeralith",
+   "_NS_aurex_omega",
+   "_NS_nyxareva",
+   "_NS_thalakryon"
+  ],
+  "level12": [
+   "_NS_aurelix",
+   "_NS_aurelyssa",
+   "_NS_vargrath",
+   "_NS_nazulmor"
+  ],
+  "level13": [
+   "_NS_kaeldris",
+   "_NS_pyraklos",
+   "_NS_velmyrth",
+   "_NS_solvarin"
+  ],
+  "level14": [
+   "_NS_azureth",
+   "_NS_luminar",
+   "_NS_solara",
+   "_NS_pyraethis"
+  ],
+  "level15": [
+   "_NS_auroth",
+   "_NS_morvein",
+   "_NS_thorvak",
+   "_NS_yamako"
+  ],
+  "level16": [
+   "_NS_ignirus",
+   "_NS_leoric",
+   "_NS_shirotaka",
+   "_NS_seiryukong"
+  ],
+  "level17": [
+   "_NS_kaelthorn",
+   "_NS_solvanth",
+   "_NS_xyrael",
+   "_NS_nyxareth"
+  ],
+  "level18": [
+   "_NS_cryssalia",
+   "_NS_kaelthar",
+   "_NS_morkhaera",
+   "_NS_aurelion"
+  ],
+  "level19": [
+   "_NS_akahime",
+   "_NS_nyxthrael",
+   "_NS_sylvantheros",
+   "_NS_vaelindra"
+  ],
+  "level2": [
+   "_NS_khalros",
+   "_NS_gorath",
+   "_NS_alchemist"
+  ],
+  "level20": [
+   "_NS_astraelion",
+   "_NS_morvaenthir",
+   "_NS_thornvaegrim",
+   "_NS_morthraxis"
+  ],
+  "level21": [
+   "_NS_kurogari",
+   "_NS_morvekhar",
+   "_NS_vorgath",
+   "_NS_nexthyrius"
+  ],
+  "level22": [
+   "_NS_grimstalker",
+   "_NS_kryvoxar",
+   "_NS_vargroth",
+   "_NS_molgravar"
+  ],
+  "level23": [
+   "_NS_drav",
+   "_NS_lyrienne",
+   "_NS_valthar",
+   "_NS_seraphienne"
+  ],
+  "level24": [
+   "_NS_khalzaredh",
+   "_NS_nyxaroth",
+   "_NS_veshtrax",
+   "_NS_solareth"
+  ],
+  "level25": [
+   "_NS_grimjack",
+   "_NS_morvaeth",
+   "_NS_vulkareth",
+   "_NS_okeanora"
+  ],
+  "level26": [
+   "_NS_aelyrion",
+   "_NS_kaervosth",
+   "_NS_morvyssk",
+   "_NS_vaelmyrra"
+  ],
+  "level27": [
+   "_NS_kyumirra",
+   "_NS_morvakhul",
+   "_NS_nyxariel",
+   "_NS_zarethyr"
+  ],
+  "level28": [
+   "_NS_morthyrax",
+   "_NS_sanguiveth",
+   "_NS_xerakhotep",
+   "_NS_nyrethzalv"
+  ],
+  "level29": [
+   "_NS_ignakhor",
+   "_NS_kazureth",
+   "_NS_sethrakhar",
+   "_NS_nyrellieth"
+  ],
+  "level3": [
+   "_NS_varkul",
+   "_NS_xerathis",
+   "_NS_ancient_apparition"
+  ],
+  "level30": [
+   "_NS_kaelvyrn",
+   "_NS_thorvin",
+   "_NS_xaerissa",
+   "_NS_nyxharr"
+  ],
+  "level31": [
+   "_NS_celwynn",
+   "_NS_rynvara",
+   "_NS_syrindra",
+   "_NS_ravokkar"
+  ],
+  "level32": [
+   "_NS_ghrakmaal",
+   "_NS_selunara",
+   "_NS_vessyra",
+   "_NS_malzeroth"
+  ],
+  "level33": [
+   "_NS_rakzhan",
+   "_NS_sirakzan",
+   "_NS_valekris",
+   "_NS_zharakzuul"
+  ],
+  "level34": [
+   "_NS_infrakzaar",
+   "_NS_xarnathul",
+   "_NS_zhyrakaan",
+   "_NS_grondmauris"
+  ],
+  "level35": [
+   "_NS_kaerissa",
+   "_NS_thorgaruk",
+   "_NS_zorathiel",
+   "_NS_lyssarethys"
+  ],
+  "level36": [
+   "_NS_nyxallaria",
+   "_NS_vhaerinth",
+   "_NS_xharokh",
+   "_NS_kaerinya"
+  ],
+  "level37": [
+   "_NS_kazreth",
+   "_NS_varkuthar",
+   "_NS_zhyvrek",
+   "_NS_xelnarath"
+  ],
+  "level38": [
+   "_NS_azkharion",
+   "_NS_thargoroth",
+   "_NS_zahkareth",
+   "_NS_kyrenzai"
+  ],
+  "level39": [
+   "_NS_bhorgathul",
+   "_NS_morkhelvis",
+   "_NS_vorthakul",
+   "_NS_xaelmoran"
+  ],
+  "level4": [
+   "_NS_zharok",
+   "_NS_pyrenth",
+   "_NS_vokrahn",
+   "_NS_ignis_drachorn"
+  ],
+  "level40": [
+   "_NS_urgharun",
+   "_NS_yhoranth",
+   "_NS_zulkhaven",
+   "_NS_thalryndel"
+  ],
+  "level41": [
+   "_NS_emberwick",
+   "_NS_grondarthul",
+   "_NS_xareth",
+   "_NS_grimkor"
+  ],
+  "level42": [
+   "_NS_kaedrin",
+   "_NS_morvaeth",
+   "_NS_vardrok",
+   "_NS_kaineroth"
+  ],
+  "level43": [
+   "_NS_nixweaver",
+   "_NS_nyxraal",
+   "_NS_xarnthuul",
+   "_NS_zyvareth"
+  ],
+  "level44": [
+   "_NS_lyrenya",
+   "_NS_vyraeth",
+   "_NS_zorothrax",
+   "_NS_kagetsuka"
+  ],
+  "level45": [
+   "_NS_akiraze",
+   "_NS_brumhar",
+   "_NS_zorashi",
+   "_NS_deidara"
+  ],
+  "level46": [
+   "_NS_akaroth",
+   "_NS_kassadin",
+   "_NS_shimorakh",
+   "_NS_sunakage"
+  ],
+  "level47": [
+   "_NS_kaizoku_raijin",
+   "_NS_korokai",
+   "_NS_verdanix",
+   "_NS_pyraena"
+  ],
+  "level48": [
+   "_NS_broggmar",
+   "_NS_ursath",
+   "_NS_zhaeris",
+   "_NS_cogsworth"
+  ],
+  "level49": [
+   "_NS_kairenji",
+   "_NS_karzhul",
+   "_NS_xerakkuth",
+   "_NS_yomigetsu"
+  ],
+  "level5": [
+   "_NS_nyxara",
+   "_NS_gravefang",
+   "_NS_vhalzun",
+   "_NS_krobellus"
+  ],
+  "level50": [
+   "_NS_kaelthys",
+   "_NS_kaoruken",
+   "_NS_vaelkorr",
+   "_NS_akirakumo"
+  ],
+  "level51": [
+   "_NS_aurelian",
+   "_NS_morvath",
+   "_NS_pyrhaan",
+   "_NS_kaithros"
+  ],
+  "level52": [
+   "_NS_garumenshi",
+   "_NS_thoraz",
+   "_NS_vhaerith",
+   "_NS_nyxaris"
+  ],
+  "level53": [
+   "_NS_dorakai",
+   "_NS_hitokage",
+   "_NS_kazuren",
+   "_NS_tsukiyora"
+  ],
+  "level54": [
+   "_NS_obanai",
+   "_NS_sanguire",
+   "_NS_sasori",
+   "_NS_hollowbane"
+  ],
+  "level6": [
+   "_NS_gravewake",
+   "_NS_syrentha",
+   "_NS_kunkka"
+  ],
+  "level7": [
+   "_NS_malzareth",
+   "_NS_akashari",
+   "_NS_vorenmarr",
+   "_NS_nyxarath"
+  ],
+  "level8": [
+   "_NS_xirthalis",
+   "_NS_vhyssarion",
+   "_NS_vaerith",
+   "_NS_vhorethzir"
+  ],
+  "level9": [
+   "_NS_kenshiro",
+   "_NS_khazan",
+   "_NS_wiro",
+   "_NS_naraka"
+  ]
+ },
+ "files": {
+  "__init__.py": 1,
+  "_boss_index.py": 228,
+  "base_boss.py": 8488,
+  "boss_data.py": 11842,
+  "level1.py": 10193,
+  "level10.py": 6534,
+  "level11.py": 4907,
+  "level12.py": 6572,
+  "level13.py": 6707,
+  "level14.py": 5987,
+  "level15.py": 6434,
+  "level16.py": 6158,
+  "level17.py": 5931,
+  "level18.py": 7225,
+  "level19.py": 6432,
+  "level2.py": 10774,
+  "level20.py": 6774,
+  "level21.py": 5118,
+  "level22.py": 4922,
+  "level23.py": 5760,
+  "level24.py": 5768,
+  "level25.py": 6538,
+  "level26.py": 5307,
+  "level27.py": 5701,
+  "level28.py": 6256,
+  "level29.py": 6894,
+  "level3.py": 5685,
+  "level30.py": 5760,
+  "level31.py": 6166,
+  "level32.py": 5903,
+  "level33.py": 5970,
+  "level34.py": 5544,
+  "level35.py": 5477,
+  "level36.py": 5560,
+  "level37.py": 6137,
+  "level38.py": 5950,
+  "level39.py": 5194,
+  "level4.py": 11116,
+  "level40.py": 5371,
+  "level41.py": 4669,
+  "level42.py": 4927,
+  "level43.py": 4802,
+  "level44.py": 4784,
+  "level45.py": 5251,
+  "level46.py": 6172,
+  "level47.py": 6247,
+  "level48.py": 5793,
+  "level49.py": 6945,
+  "level5.py": 6335,
+  "level50.py": 5960,
+  "level51.py": 6139,
+  "level52.py": 6166,
+  "level53.py": 6188,
+  "level54.py": 5202,
+  "level6.py": 6228,
+  "level7.py": 5398,
+  "level8.py": 5595,
+  "level9.py": 7727,
+  "nyzrak_v4.py": 2663,
+  "razak_v4.py": 3239,
+  "thalgryn_v4.py": 1737
+ },
+ "hero_unlock_costs": {
+  "abaddon": 700,
+  "aelyrion": 3600,
+  "aeralith": 1450,
+  "akahime": 2450,
+  "akaroth": 7500,
+  "akashari": 1200,
+  "akirakumo": 8200,
+  "akiraze": 7300,
+  "alchemist": 750,
+  "ancient_apparition": 800,
+  "astraelion": 2600,
+  "aurelian": 8450,
+  "aurelion": 2900,
+  "aurelix": 1550,
+  "aurelyssa": 1550,
+  "aurethzar": 2100,
+  "aurex": 1500,
+  "auroth": 1850,
+  "azkharion": 5900,
+  "azureth": 1700,
+  "bhorgathul": 6100,
+  "broggmar": 7900,
+  "brumhar": 7350,
+  "celwynn": 4500,
+  "cogsworth": 7800,
+  "cryssalia": 2300,
+  "deidara": 7200,
+  "dorakai": 8650,
+  "drakar": 600,
+  "drav": 3100,
+  "emberwick": 6500,
+  "garumenshi": 8550,
+  "ghrakmaal": 4700,
+  "gorath": 750,
+  "gornak": 500,
+  "gravefang": 1100,
+  "gravewake": 1000,
+  "grimjack": 3450,
+  "grimkor": 6400,
+  "grimstalker": 2950,
+  "grondarthul": 6550,
+  "grondmauris": 5000,
+  "hitokage": 8700,
+  "hollowbane": 9000,
+  "ignakhor": 4100,
+  "ignirus": 2000,
+  "ignis_drachorn": 850,
+  "infrakzaar": 5100,
+  "kaedrin": 6700,
+  "kaeldris": 1650,
+  "kaelthar": 2350,
+  "kaelthorn": 2150,
+  "kaelthys": 8300,
+  "kaelvyrn": 4300,
+  "kaerinya": 5400,
+  "kaerissa": 5300,
+  "kaervosth": 3650,
+  "kagetsuka": 7000,
+  "kaineroth": 6600,
+  "kairenji": 8150,
+  "kaithros": 8400,
+  "kaizoku_raijin": 7700,
+  "kaoruken": 8350,
+  "karzhul": 8200,
+  "kassadin": 7550,
+  "kazreth": 5700,
+  "kazuren": 8600,
+  "kazureth": 4200,
+  "kenshiro": 1300,
+  "khalros": 700,
+  "khalzaredh": 3250,
+  "khazan": 1350,
+  "korokai": 7750,
+  "krobellus": 1500,
+  "krognarr": 1400,
+  "kryvoxar": 3000,
+  "kunkka": 900,
+  "kurogari": 2800,
+  "kyrenzai": 5800,
+  "kyumirra": 3750,
+  "leoric": 2050,
+  "luminar": 1750,
+  "lyrenya": 7100,
+  "lyrienne": 3200,
+  "lyssarethys": 5200,
+  "malzareth": 1100,
+  "malzeroth": 4600,
+  "molgravar": 3300,
+  "morgath": 550,
+  "morkhaera": 2400,
+  "morkhelvis": 6150,
+  "morthraxis": 3100,
+  "morthyrax": 3950,
+  "morvaenthir": 2650,
+  "morvaeth": 3500,
+  "morvaeth2": 6750,
+  "morvakhul": 3800,
+  "morvath": 8500,
+  "morvein": 1900,
+  "morvekhar": 3000,
+  "morvyssk": 3700,
+  "naraka": 2000,
+  "nazulmor": 2300,
+  "nexthyrius": 3200,
+  "nixweaver": 6900,
+  "nyrellieth": 4000,
+  "nyrethzalv": 3900,
+  "nyxallaria": 5500,
+  "nyxara": 950,
+  "nyxarath": 1000,
+  "nyxareth": 2800,
+  "nyxareva": 1500,
+  "nyxariel": 3850,
+  "nyxaris": 8600,
+  "nyxaroth": 3350,
+  "nyxharr": 4200,
+  "nyxraal": 6950,
+  "nyxthrael": 2500,
+  "nyzrak": 850,
+  "obanai": 8750,
+  "okeanora": 3600,
+  "pyraena": 7600,
+  "pyraethis": 2500,
+  "pyraklos": 1700,
+  "pyrenth": 750,
+  "pyrhaan": 8400,
+  "rakzhan": 4900,
+  "ravokkar": 4400,
+  "raz": 1400,
+  "razak": 650,
+  "rynvara": 4550,
+  "sanguire": 8700,
+  "sanguiveth": 4000,
+  "sasori": 8800,
+  "seiryukong": 2700,
+  "selunara": 4750,
+  "seraphienne": 3400,
+  "sethrakhar": 4250,
+  "shimorakh": 7600,
+  "shirotaka": 2100,
+  "sirakzan": 4950,
+  "solara": 1800,
+  "solareth": 3500,
+  "solvanth": 2200,
+  "solvarin": 2400,
+  "sunakage": 7400,
+  "sylvantheros": 2550,
+  "syrentha": 1100,
+  "syrindra": 4600,
+  "thalakryon": 2200,
+  "thalgryn": 1200,
+  "thalryndel": 6200,
+  "thargoroth": 5950,
+  "thoraz": 8600,
+  "thorgaruk": 5350,
+  "thornvaegrim": 2700,
+  "thorvak": 1950,
+  "thorvin": 4350,
+  "tsukiyora": 8800,
+  "urgharun": 6300,
+  "ursath": 7950,
+  "vaelindra": 3000,
+  "vaelkorr": 8250,
+  "vaelmyrra": 3700,
+  "vaerith": 1200,
+  "valekris": 5000,
+  "valthar": 3300,
+  "vardrok": 6800,
+  "vargrath": 1600,
+  "vargroth": 3100,
+  "varkul": 750,
+  "varkuthar": 5750,
+  "velmyrth": 1700,
+  "verdanix": 7800,
+  "veshtrax": 3400,
+  "vessyra": 4800,
+  "vhaerinth": 5550,
+  "vhaerith": 8500,
+  "vhalzun": 1200,
+  "vhorethzir": 1000,
+  "vhyssarion": 1200,
+  "vokrahn": 850,
+  "vorenmarr": 1300,
+  "vorgath": 2900,
+  "vorthakul": 6200,
+  "vraskhan": 1400,
+  "vulkareth": 3550,
+  "vyraeth": 7150,
+  "wiro": 1300,
+  "xaelmoran": 6000,
+  "xaerissa": 4400,
+  "xareth": 6600,
+  "xarnathul": 5150,
+  "xarnthuul": 7000,
+  "xelnarath": 5600,
+  "xerakhotep": 4050,
+  "xerakkuth": 8100,
+  "xerathis": 800,
+  "xharokh": 5600,
+  "xirthalis": 1200,
+  "xyrael": 2250,
+  "yamako": 2600,
+  "yhoranth": 6350,
+  "yomigetsu": 8000,
+  "zahkareth": 6000,
+  "zarethyr": 3800,
+  "zhaeris": 8000,
+  "zharakzuul": 4800,
+  "zharok": 650,
+  "zhyrakaan": 5200,
+  "zhyvrek": 5800,
+  "zorashi": 7400,
+  "zorathiel": 5400,
+  "zorothrax": 7200,
+  "zulkhaven": 6400,
+  "zyvareth": 6800
+ },
+ "hero_unlock_names": {
+  "abaddon": "Abaddon",
+  "aelyrion": "Aelyrion",
+  "aeralith": "Aeralith",
+  "akahime": "Akahime",
+  "akaroth": "Akaroth",
+  "akashari": "Akashari",
+  "akirakumo": "Akirakumo",
+  "akiraze": "Akiraze",
+  "alchemist": "Alchemist",
+  "ancient_apparition": "Ancient Apparition",
+  "astraelion": "Astraelion",
+  "aurelian": "Aurelian",
+  "aurelion": "Aurelion",
+  "aurelix": "Aurelix",
+  "aurelyssa": "Aurelyssa",
+  "aurethzar": "Aureth'zar",
+  "aurex": "Aurex",
+  "auroth": "Auroth",
+  "azkharion": "Azkharion",
+  "azureth": "Azureth",
+  "bhorgathul": "Bhor'gathul",
+  "broggmar": "Broggmar",
+  "brumhar": "Brumhar",
+  "celwynn": "Celwynn",
+  "cogsworth": "Cogsworth",
+  "cryssalia": "Cryssalia",
+  "deidara": "Deidara",
+  "dorakai": "Dorakai",
+  "drakar": "Drakar",
+  "drav": "Drav",
+  "emberwick": "Emberwick",
+  "garumenshi": "Garumenshi",
+  "ghrakmaal": "Ghrakmaal",
+  "gorath": "Gorath",
+  "gornak": "Gornak",
+  "gravefang": "Gravefang",
+  "gravewake": "Gravewake",
+  "grimjack": "Grimjack",
+  "grimkor": "Grimkor",
+  "grimstalker": "Grimstalker",
+  "grondarthul": "Grondarthul",
+  "grondmauris": "Grondmauris",
+  "hitokage": "Hitokage",
+  "hollowbane": "Kurosaki Hollowbane",
+  "ignakhor": "Ignakhor",
+  "ignirus": "Ignirus",
+  "ignis_drachorn": "Ignis Drachorn",
+  "infrakzaar": "Infrakzaar",
+  "kaedrin": "Kaedrin",
+  "kaeldris": "Kaeldris",
+  "kaelthar": "Kaelthar",
+  "kaelthorn": "Kaelthorn",
+  "kaelthys": "Kaelthys",
+  "kaelvyrn": "Kaelvyrn",
+  "kaerinya": "Kaerinya",
+  "kaerissa": "Kaerissa",
+  "kaervosth": "Kaervosth",
+  "kagetsuka": "Kagetsuka",
+  "kaineroth": "Kaineroth",
+  "kairenji": "Kairenji",
+  "kaithros": "Kaithros",
+  "kaizoku_raijin": "Kaizoku Raijin",
+  "kaoruken": "Kaoruken",
+  "karzhul": "Karzhul",
+  "kassadin": "Kassadin",
+  "kazreth": "Kazreth",
+  "kazuren": "Kazuren",
+  "kazureth": "Kazureth",
+  "kenshiro": "Kenshiro",
+  "khalros": "Khalros",
+  "khalzaredh": "Khal'zaredh",
+  "khazan": "Khazan",
+  "korokai": "Korokai",
+  "krobellus": "Krobellus",
+  "krognarr": "Krognarr",
+  "kryvoxar": "Kryvoxar",
+  "kunkka": "Kunkka",
+  "kurogari": "Kurogari",
+  "kyrenzai": "Kyrenzai",
+  "kyumirra": "Kyumirra",
+  "leoric": "Leoric",
+  "luminar": "Luminar",
+  "lyrenya": "Lyrenya",
+  "lyrienne": "Lyrienne",
+  "lyssarethys": "Lyssarethys",
+  "malzareth": "Malzareth",
+  "malzeroth": "Malzeroth",
+  "molgravar": "Molgravar",
+  "morgath": "Morgath",
+  "morkhaera": "Mor'khaera",
+  "morkhelvis": "Mor'khelvis",
+  "morthraxis": "Morthraxis",
+  "morthyrax": "Morthyrax",
+  "morvaenthir": "Morvaenthir",
+  "morvaeth": "Morvaeth",
+  "morvaeth2": "Morvaeth",
+  "morvakhul": "Morvakhul",
+  "morvath": "Morvath",
+  "morvein": "Morvein",
+  "morvekhar": "Morvekhar",
+  "morvyssk": "Morvyssk",
+  "naraka": "Naraka",
+  "nazulmor": "Nazulmor",
+  "nexthyrius": "Nexthyrius",
+  "nixweaver": "Nixweaver",
+  "nyrellieth": "Nyrellieth",
+  "nyrethzalv": "Nyreth'zalvarin",
+  "nyxallaria": "Nyxallaria",
+  "nyxara": "Nyxara",
+  "nyxarath": "Nyxarath",
+  "nyxareth": "Nyxareth",
+  "nyxareva": "Nyxareva",
+  "nyxariel": "Nyxariel",
+  "nyxaris": "Nyxaris",
+  "nyxaroth": "Nyxaroth",
+  "nyxharr": "Nyxharr",
+  "nyxraal": "Nyxraal",
+  "nyxthrael": "Nyxthrael",
+  "nyzrak": "Nyzrak",
+  "obanai": "Obanai",
+  "okeanora": "Okeanora",
+  "pyraena": "Pyraena",
+  "pyraethis": "Pyraethis",
+  "pyraklos": "Pyraklos",
+  "pyrenth": "Pyrenth",
+  "pyrhaan": "Pyrhaan",
+  "rakzhan": "Rakzhan",
+  "ravokkar": "Ravokkar",
+  "raz": "Raz",
+  "razak": "Razak",
+  "rynvara": "Rynvara",
+  "sanguire": "Sanguire Voxthal",
+  "sanguiveth": "Sanguiveth",
+  "sasori": "Sasori",
+  "seiryukong": "Seiryukong",
+  "selunara": "Selunara",
+  "seraphienne": "Seraphienne",
+  "sethrakhar": "Seth'rakhaar",
+  "shimorakh": "Shimorakh",
+  "shirotaka": "Shirotaka",
+  "sirakzan": "Sirakzan",
+  "solara": "Solara",
+  "solareth": "Solareth",
+  "solvanth": "Solvanth",
+  "solvarin": "Solvarin",
+  "sunakage": "Sunakage",
+  "sylvantheros": "Sylvantheros",
+  "syrentha": "Syrentha",
+  "syrindra": "Syrindra",
+  "thalakryon": "Thalakryon",
+  "thalgryn": "Thalgryn",
+  "thalryndel": "Thal'ryndel",
+  "thargoroth": "Thargoroth",
+  "thoraz": "Thoraz",
+  "thorgaruk": "Thorgaruk",
+  "thornvaegrim": "Thornvaegrim",
+  "thorvak": "Thorvak",
+  "thorvin": "Thorvin",
+  "tsukiyora": "Tsukiyora",
+  "urgharun": "Ur'gharun",
+  "ursath": "Ursath",
+  "vaelindra": "Vaelindra",
+  "vaelkorr": "Vaelkorr",
+  "vaelmyrra": "Vaelmyrra",
+  "vaerith": "Vaerith",
+  "valekris": "Valekris",
+  "valthar": "Valthar",
+  "vardrok": "Vardrok",
+  "vargrath": "Vargrath",
+  "vargroth": "Vargroth",
+  "varkul": "Varkul",
+  "varkuthar": "Varkuthar",
+  "velmyrth": "Velmyrth",
+  "verdanix": "Verdanix",
+  "veshtrax": "Veshtrax",
+  "vessyra": "Vessyra",
+  "vhaerinth": "Vhaerinth",
+  "vhaerith": "Vhaerith",
+  "vhalzun": "Vhalzun",
+  "vhorethzir": "Vhoreth'zir",
+  "vhyssarion": "Vhyssarion",
+  "vokrahn": "Vokrahn",
+  "vorenmarr": "Vorenmarr",
+  "vorgath": "Vorgath",
+  "vorthakul": "Vor'thakul",
+  "vraskhan": "Vraskhan",
+  "vulkareth": "Vulkareth",
+  "vyraeth": "Vyraeth",
+  "wiro": "Wiro",
+  "xaelmoran": "Xael'moran",
+  "xaerissa": "Xaerissa",
+  "xareth": "Xareth",
+  "xarnathul": "Xarnathul",
+  "xarnthuul": "Xarn'thuul",
+  "xelnarath": "Xel'Narath",
+  "xerakhotep": "Xerakhotep",
+  "xerakkuth": "Xerakkuth",
+  "xerathis": "Xerathis",
+  "xharokh": "Xharokh",
+  "xirthalis": "Xir'thalis",
+  "xyrael": "Xy'rael",
+  "yamako": "Yamako",
+  "yhoranth": "Yh'oranth",
+  "yomigetsu": "Yomigetsu",
+  "zahkareth": "Zahkareth",
+  "zarethyr": "Zarethyr",
+  "zhaeris": "Zhaeris",
+  "zharakzuul": "Zharakzuul",
+  "zharok": "Zharok",
+  "zhyrakaan": "Zhyrakaan",
+  "zhyvrek": "Zhyvrek",
+  "zorashi": "Zorashi",
+  "zorathiel": "Zorathiel",
+  "zorothrax": "Zorothrax",
+  "zulkhaven": "Zul'khaven",
+  "zyvareth": "Zyvareth"
+ },
+ "index": {
+  "abaddon": [
+   "level1",
+   "draw_abaddon"
+  ],
+  "aelyrion": [
+   "level26",
+   "draw_aelyrion"
+  ],
+  "aeralith": [
+   "level11",
+   "draw_aeralith"
+  ],
+  "akahime": [
+   "level19",
+   "draw_akahime"
+  ],
+  "akaroth": [
+   "level46",
+   "draw_akaroth"
+  ],
+  "akashari": [
+   "level7",
+   "draw_akashari"
+  ],
+  "akirakumo": [
+   "level50",
+   "draw_akirakumo"
+  ],
+  "akiraze": [
+   "level45",
+   "draw_akiraze"
+  ],
+  "alchemist": [
+   "level2",
+   "draw_alchemist"
+  ],
+  "ancient_apparition": [
+   "level3",
+   "draw_ancient_apparition"
+  ],
+  "astraelion": [
+   "level20",
+   "draw_astraelion"
+  ],
+  "aurelian": [
+   "level51",
+   "draw_aurelian"
+  ],
+  "aurelion": [
+   "level18",
+   "draw_aurelion"
+  ],
+  "aurelix": [
+   "level12",
+   "draw_aurelix"
+  ],
+  "aurelyssa": [
+   "level12",
+   "draw_aurelyssa"
+  ],
+  "aurethzar": [
+   "level10",
+   "draw_aurethzar"
+  ],
+  "aurex": [
+   "level11",
+   "draw_aurex"
+  ],
+  "auroth": [
+   "level15",
+   "draw_auroth"
+  ],
+  "azkharion": [
+   "level38",
+   "draw_azkharion"
+  ],
+  "azureth": [
+   "level14",
+   "draw_azureth"
+  ],
+  "bhorgathul": [
+   "level39",
+   "draw_bhorgathul"
+  ],
+  "broggmar": [
+   "level48",
+   "draw_broggmar"
+  ],
+  "brumhar": [
+   "level45",
+   "draw_brumhar"
+  ],
+  "celwynn": [
+   "level31",
+   "draw_celwynn"
+  ],
+  "cogsworth": [
+   "level48",
+   "draw_cogsworth"
+  ],
+  "cryssalia": [
+   "level18",
+   "draw_cryssalia"
+  ],
+  "deidara": [
+   "level45",
+   "draw_deidara"
+  ],
+  "dorakai": [
+   "level53",
+   "draw_dorakai"
+  ],
+  "drakar": [
+   "level1",
+   "draw_drakar"
+  ],
+  "drav": [
+   "level23",
+   "draw_drav"
+  ],
+  "emberwick": [
+   "level41",
+   "draw_emberwick"
+  ],
+  "garumenshi": [
+   "level52",
+   "draw_garumenshi"
+  ],
+  "ghrakmaal": [
+   "level32",
+   "draw_ghrakmaal"
+  ],
+  "gorath": [
+   "level2",
+   "draw_gorath"
+  ],
+  "gornak": [
+   "level1",
+   "draw_gornak"
+  ],
+  "gravefang": [
+   "level5",
+   "draw_gravefang"
+  ],
+  "gravewake": [
+   "level6",
+   "draw_gravewake"
+  ],
+  "grimjack": [
+   "level25",
+   "draw_grimjack"
+  ],
+  "grimkor": [
+   "level41",
+   "draw_grimkor"
+  ],
+  "grimstalker": [
+   "level22",
+   "draw_grimstalker"
+  ],
+  "grondarthul": [
+   "level41",
+   "draw_grondarthul"
+  ],
+  "grondmauris": [
+   "level34",
+   "draw_grondmauris"
+  ],
+  "hitokage": [
+   "level53",
+   "draw_hitokage"
+  ],
+  "hollowbane": [
+   "level54",
+   "draw_hollowbane"
+  ],
+  "ignakhor": [
+   "level29",
+   "draw_ignakhor"
+  ],
+  "ignirus": [
+   "level16",
+   "draw_ignirus"
+  ],
+  "ignis_drachorn": [
+   "level4",
+   "draw_ignis_drachorn"
+  ],
+  "infrakzaar": [
+   "level34",
+   "draw_infrakzaar"
+  ],
+  "kaedrin": [
+   "level42",
+   "draw_kaedrin"
+  ],
+  "kaeldris": [
+   "level13",
+   "draw_kaeldris"
+  ],
+  "kaelthar": [
+   "level18",
+   "draw_kaelthar"
+  ],
+  "kaelthorn": [
+   "level17",
+   "draw_kaelthorn"
+  ],
+  "kaelthys": [
+   "level50",
+   "draw_kaelthys"
+  ],
+  "kaelvyrn": [
+   "level30",
+   "draw_kaelvyrn"
+  ],
+  "kaerinya": [
+   "level36",
+   "draw_kaerinya"
+  ],
+  "kaerissa": [
+   "level35",
+   "draw_kaerissa"
+  ],
+  "kaervosth": [
+   "level26",
+   "draw_kaervosth"
+  ],
+  "kagetsuka": [
+   "level44",
+   "draw_kagetsuka"
+  ],
+  "kaineroth": [
+   "level42",
+   "draw_kaineroth"
+  ],
+  "kairenji": [
+   "level49",
+   "draw_kairenji"
+  ],
+  "kaithros": [
+   "level51",
+   "draw_kaithros"
+  ],
+  "kaizoku_raijin": [
+   "level47",
+   "draw_kaizoku_raijin"
+  ],
+  "kaoruken": [
+   "level50",
+   "draw_kaoruken"
+  ],
+  "karzhul": [
+   "level49",
+   "draw_karzhul"
+  ],
+  "kassadin": [
+   "level46",
+   "draw_kassadin"
+  ],
+  "kazreth": [
+   "level37",
+   "draw_kazreth"
+  ],
+  "kazuren": [
+   "level53",
+   "draw_kazuren"
+  ],
+  "kazureth": [
+   "level29",
+   "draw_kazureth"
+  ],
+  "kenshiro": [
+   "level9",
+   "draw_kenshiro"
+  ],
+  "khalros": [
+   "level2",
+   "draw_khalros"
+  ],
+  "khalzaredh": [
+   "level24",
+   "draw_khalzaredh"
+  ],
+  "khazan": [
+   "level9",
+   "draw_khazan"
+  ],
+  "korokai": [
+   "level47",
+   "draw_korokai"
+  ],
+  "krobellus": [
+   "level5",
+   "draw_krobellus"
+  ],
+  "krognarr": [
+   "level10",
+   "draw_krognarr"
+  ],
+  "kryvoxar": [
+   "level22",
+   "draw_kryvoxar"
+  ],
+  "kunkka": [
+   "level6",
+   "draw_kunkka"
+  ],
+  "kurogari": [
+   "level21",
+   "draw_kurogari"
+  ],
+  "kyrenzai": [
+   "level38",
+   "draw_kyrenzai"
+  ],
+  "kyumirra": [
+   "level27",
+   "draw_kyumirra"
+  ],
+  "leoric": [
+   "level16",
+   "draw_leoric"
+  ],
+  "luminar": [
+   "level14",
+   "draw_luminar"
+  ],
+  "lyrenya": [
+   "level44",
+   "draw_lyrenya"
+  ],
+  "lyrienne": [
+   "level23",
+   "draw_lyrienne"
+  ],
+  "lyssarethys": [
+   "level35",
+   "draw_lyssarethys"
+  ],
+  "malzareth": [
+   "level7",
+   "draw_malzareth"
+  ],
+  "malzeroth": [
+   "level32",
+   "draw_malzeroth"
+  ],
+  "molgravar": [
+   "level22",
+   "draw_molgravar"
+  ],
+  "morgath": [
+   "level1",
+   "draw_morgath"
+  ],
+  "morkhaera": [
+   "level18",
+   "draw_morkhaera"
+  ],
+  "morkhelvis": [
+   "level39",
+   "draw_morkhelvis"
+  ],
+  "morthraxis": [
+   "level20",
+   "draw_morthraxis"
+  ],
+  "morthyrax": [
+   "level28",
+   "draw_morthyrax"
+  ],
+  "morvaenthir": [
+   "level20",
+   "draw_morvaenthir"
+  ],
+  "morvaeth": [
+   "level25",
+   "draw_morvaeth"
+  ],
+  "morvaeth2": [
+   "level42",
+   "draw_morvaeth"
+  ],
+  "morvakhul": [
+   "level27",
+   "draw_morvakhul"
+  ],
+  "morvath": [
+   "level51",
+   "draw_morvath"
+  ],
+  "morvein": [
+   "level15",
+   "draw_morvein"
+  ],
+  "morvekhar": [
+   "level21",
+   "draw_morvekhar"
+  ],
+  "morvyssk": [
+   "level26",
+   "draw_morvyssk"
+  ],
+  "naraka": [
+   "level9",
+   "draw_naraka"
+  ],
+  "nazulmor": [
+   "level12",
+   "draw_nazulmor"
+  ],
+  "nexthyrius": [
+   "level21",
+   "draw_nexthyrius"
+  ],
+  "nixweaver": [
+   "level43",
+   "draw_nixweaver"
+  ],
+  "nyrellieth": [
+   "level29",
+   "draw_nyrellieth"
+  ],
+  "nyrethzalv": [
+   "level28",
+   "draw_nyrethzalv"
+  ],
+  "nyxallaria": [
+   "level36",
+   "draw_nyxallaria"
+  ],
+  "nyxara": [
+   "level5",
+   "draw_nyxara"
+  ],
+  "nyxarath": [
+   "level7",
+   "draw_nyxarath"
+  ],
+  "nyxareth": [
+   "level17",
+   "draw_nyxareth"
+  ],
+  "nyxareva": [
+   "level11",
+   "draw_nyxareva"
+  ],
+  "nyxariel": [
+   "level27",
+   "draw_nyxariel"
+  ],
+  "nyxaris": [
+   "level52",
+   "draw_nyxaris"
+  ],
+  "nyxaroth": [
+   "level24",
+   "draw_nyxaroth"
+  ],
+  "nyxharr": [
+   "level30",
+   "draw_nyxharr"
+  ],
+  "nyxraal": [
+   "level43",
+   "draw_nyxraal"
+  ],
+  "nyxthrael": [
+   "level19",
+   "draw_nyxthrael"
+  ],
+  "nyzrak": [
+   "level3",
+   "draw_nyzrak"
+  ],
+  "obanai": [
+   "level54",
+   "draw_obanai"
+  ],
+  "okeanora": [
+   "level25",
+   "draw_okeanora"
+  ],
+  "pyraena": [
+   "level47",
+   "draw_pyraena"
+  ],
+  "pyraethis": [
+   "level14",
+   "draw_pyraethis"
+  ],
+  "pyraklos": [
+   "level13",
+   "draw_pyraklos"
+  ],
+  "pyrenth": [
+   "level4",
+   "draw_pyrenth"
+  ],
+  "pyrhaan": [
+   "level51",
+   "draw_pyrhaan"
+  ],
+  "rakzhan": [
+   "level33",
+   "draw_rakzhan"
+  ],
+  "ravokkar": [
+   "level31",
+   "draw_ravokkar"
+  ],
+  "raz": [
+   "level10",
+   "draw_raz"
+  ],
+  "razak": [
+   "level2",
+   "draw_razak"
+  ],
+  "rynvara": [
+   "level31",
+   "draw_rynvara"
+  ],
+  "sanguire": [
+   "level54",
+   "draw_sanguire"
+  ],
+  "sanguiveth": [
+   "level28",
+   "draw_sanguiveth"
+  ],
+  "sasori": [
+   "level54",
+   "draw_sasori"
+  ],
+  "seiryukong": [
+   "level16",
+   "draw_seiryukong"
+  ],
+  "selunara": [
+   "level32",
+   "draw_selunara"
+  ],
+  "seraphienne": [
+   "level23",
+   "draw_seraphienne"
+  ],
+  "sethrakhar": [
+   "level29",
+   "draw_sethrakhar"
+  ],
+  "shimorakh": [
+   "level46",
+   "draw_shimorakh"
+  ],
+  "shirotaka": [
+   "level16",
+   "draw_shirotaka"
+  ],
+  "sirakzan": [
+   "level33",
+   "draw_sirakzan"
+  ],
+  "solara": [
+   "level14",
+   "draw_solara"
+  ],
+  "solareth": [
+   "level24",
+   "draw_solareth"
+  ],
+  "solvanth": [
+   "level17",
+   "draw_solvanth"
+  ],
+  "solvarin": [
+   "level13",
+   "draw_solvarin"
+  ],
+  "sunakage": [
+   "level46",
+   "draw_sunakage"
+  ],
+  "sylvantheros": [
+   "level19",
+   "draw_sylvantheros"
+  ],
+  "syrentha": [
+   "level6",
+   "draw_syrentha"
+  ],
+  "syrindra": [
+   "level31",
+   "draw_syrindra"
+  ],
+  "thalakryon": [
+   "level11",
+   "draw_thalakryon"
+  ],
+  "thalgryn": [
+   "level6",
+   "draw_thalgryn"
+  ],
+  "thalryndel": [
+   "level40",
+   "draw_thalryndel"
+  ],
+  "thargoroth": [
+   "level38",
+   "draw_thargoroth"
+  ],
+  "thoraz": [
+   "level52",
+   "draw_thoraz"
+  ],
+  "thorgaruk": [
+   "level35",
+   "draw_thorgaruk"
+  ],
+  "thornvaegrim": [
+   "level20",
+   "draw_thornvaegrim"
+  ],
+  "thorvak": [
+   "level15",
+   "draw_thorvak"
+  ],
+  "thorvin": [
+   "level30",
+   "draw_thorvin"
+  ],
+  "tsukiyora": [
+   "level53",
+   "draw_tsukiyora"
+  ],
+  "urgharun": [
+   "level40",
+   "draw_urgharun"
+  ],
+  "ursath": [
+   "level48",
+   "draw_ursath"
+  ],
+  "vaelindra": [
+   "level19",
+   "draw_vaelindra"
+  ],
+  "vaelkorr": [
+   "level50",
+   "draw_vaelkorr"
+  ],
+  "vaelmyrra": [
+   "level26",
+   "draw_vaelmyrra"
+  ],
+  "vaerith": [
+   "level8",
+   "draw_vaerith"
+  ],
+  "valekris": [
+   "level33",
+   "draw_valekris"
+  ],
+  "valthar": [
+   "level23",
+   "draw_valthar"
+  ],
+  "vardrok": [
+   "level42",
+   "draw_vardrok"
+  ],
+  "vargrath": [
+   "level12",
+   "draw_vargrath"
+  ],
+  "vargroth": [
+   "level22",
+   "draw_vargroth"
+  ],
+  "varkul": [
+   "level3",
+   "draw_varkul"
+  ],
+  "varkuthar": [
+   "level37",
+   "draw_varkuthar"
+  ],
+  "velmyrth": [
+   "level13",
+   "draw_velmyrth"
+  ],
+  "verdanix": [
+   "level47",
+   "draw_verdanix"
+  ],
+  "veshtrax": [
+   "level24",
+   "draw_veshtrax"
+  ],
+  "vessyra": [
+   "level32",
+   "draw_vessyra"
+  ],
+  "vhaerinth": [
+   "level36",
+   "draw_vhaerinth"
+  ],
+  "vhaerith": [
+   "level52",
+   "draw_vhaerith"
+  ],
+  "vhalzun": [
+   "level5",
+   "draw_vhalzun"
+  ],
+  "vhorethzir": [
+   "level8",
+   "draw_vhorethzir"
+  ],
+  "vhyssarion": [
+   "level8",
+   "draw_vhyssarion"
+  ],
+  "vokrahn": [
+   "level4",
+   "draw_vokrahn"
+  ],
+  "vorenmarr": [
+   "level7",
+   "draw_vorenmarr"
+  ],
+  "vorgath": [
+   "level21",
+   "draw_vorgath"
+  ],
+  "vorthakul": [
+   "level39",
+   "draw_vorthakul"
+  ],
+  "vraskhan": [
+   "level10",
+   "draw_vraskhan"
+  ],
+  "vulkareth": [
+   "level25",
+   "draw_vulkareth"
+  ],
+  "vyraeth": [
+   "level44",
+   "draw_vyraeth"
+  ],
+  "wiro": [
+   "level9",
+   "draw_wiro"
+  ],
+  "xaelmoran": [
+   "level39",
+   "draw_xaelmoran"
+  ],
+  "xaerissa": [
+   "level30",
+   "draw_xaerissa"
+  ],
+  "xareth": [
+   "level41",
+   "draw_xareth"
+  ],
+  "xarnathul": [
+   "level34",
+   "draw_xarnathul"
+  ],
+  "xarnthuul": [
+   "level43",
+   "draw_xarnthuul"
+  ],
+  "xelnarath": [
+   "level37",
+   "draw_xelnarath"
+  ],
+  "xerakhotep": [
+   "level28",
+   "draw_xerakhotep"
+  ],
+  "xerakkuth": [
+   "level49",
+   "draw_xerakkuth"
+  ],
+  "xerathis": [
+   "level3",
+   "draw_xerathis"
+  ],
+  "xharokh": [
+   "level36",
+   "draw_xharokh"
+  ],
+  "xirthalis": [
+   "level8",
+   "draw_xirthalis"
+  ],
+  "xyrael": [
+   "level17",
+   "draw_xyrael"
+  ],
+  "yamako": [
+   "level15",
+   "draw_yamako"
+  ],
+  "yhoranth": [
+   "level40",
+   "draw_yhoranth"
+  ],
+  "yomigetsu": [
+   "level49",
+   "draw_yomigetsu"
+  ],
+  "zahkareth": [
+   "level38",
+   "draw_zahkareth"
+  ],
+  "zarethyr": [
+   "level27",
+   "draw_zarethyr"
+  ],
+  "zhaeris": [
+   "level48",
+   "draw_zhaeris"
+  ],
+  "zharakzuul": [
+   "level33",
+   "draw_zharakzuul"
+  ],
+  "zharok": [
+   "level4",
+   "draw_zharok"
+  ],
+  "zhyrakaan": [
+   "level34",
+   "draw_zhyrakaan"
+  ],
+  "zhyvrek": [
+   "level37",
+   "draw_zhyvrek"
+  ],
+  "zorashi": [
+   "level45",
+   "draw_zorashi"
+  ],
+  "zorathiel": [
+   "level35",
+   "draw_zorathiel"
+  ],
+  "zorothrax": [
+   "level44",
+   "draw_zorothrax"
+  ],
+  "zulkhaven": [
+   "level40",
+   "draw_zulkhaven"
+  ],
+  "zyvareth": [
+   "level43",
+   "draw_zyvareth"
+  ]
+ },
+ "level_true_boss": {
+  "1": "abaddon",
+  "10": "aurethzar",
+  "11": "thalakryon",
+  "12": "nazulmor",
+  "13": "solvarin",
+  "14": "pyraethis",
+  "15": "yamako",
+  "16": "seiryukong",
+  "17": "nyxareth",
+  "18": "aurelion",
+  "19": "vaelindra",
+  "2": "alchemist",
+  "20": "morthraxis",
+  "21": "nexthyrius",
+  "22": "molgravar",
+  "23": "seraphienne",
+  "24": "solareth",
+  "25": "okeanora",
+  "26": "vaelmyrra",
+  "27": "zarethyr",
+  "28": "nyrethzalv",
+  "29": "nyrellieth",
+  "3": "ancient_apparition",
+  "30": "nyxharr",
+  "31": "ravokkar",
+  "32": "malzeroth",
+  "33": "zharakzuul",
+  "34": "grondmauris",
+  "35": "lyssarethys",
+  "36": "kaerinya",
+  "37": "xelnarath",
+  "38": "kyrenzai",
+  "39": "xaelmoran",
+  "4": "ignis_drachorn",
+  "40": "thalryndel",
+  "41": "grimkor",
+  "42": "kaineroth",
+  "43": "zyvareth",
+  "44": "kagetsuka",
+  "45": "deidara",
+  "46": "sunakage",
+  "47": "pyraena",
+  "48": "cogsworth",
+  "49": "yomigetsu",
+  "5": "krobellus",
+  "50": "akirakumo",
+  "51": "kaithros",
+  "52": "nyxaris",
+  "53": "tsukiyora",
+  "54": "hollowbane",
+  "6": "kunkka",
+  "7": "nyxarath",
+  "8": "vhorethzir",
+  "9": "naraka"
+ },
+ "melee_role_hinta": [
+  "assassin",
+  "beast",
+  "berserker",
+  "brawler",
+  "bruiser",
+  "charger",
+  "demon lord",
+  "duelist",
+  "fighter",
+  "ghoul",
+  "guardian",
+  "knight",
+  "kunoichi",
+  "lancer",
+  "moon demon",
+  "ninja",
+  "scorpion",
+  "shinigami",
+  "slayer",
+  "swordsman",
+  "tank",
+  "terror",
+  "tidehunter",
+  "vampire",
+  "voidwalker",
+  "warlord",
+  "warrior"
+ ],
+ "mini_waves": {
+  "10": "morgath",
+  "15": "drakar",
+  "5": "gornak"
+ },
+ "renderer_namespaces": {
+  "nyzrak_v4.py": [
+   "_NS_nyzrak"
+  ],
+  "razak_v4.py": [
+   "_NS_razak"
+  ],
+  "thalgryn_v4.py": [
+   "_NS_thalgryn"
+  ]
+ },
+ "renderers": {
+  "cited_outside_bosses": {
+   "nyzrak_v4.py": [
+    "heroes/nyzrak_fx.py",
+    "tools/test_level3_masterwork.py"
+   ],
+   "razak_v4.py": [
+    "heroes/razak_fx.py",
+    "tools/test_level2_masterwork.py",
+    "tools/test_razak_rewrite.py"
+   ],
+   "thalgryn_v4.py": [
+    "heroes/thalgryn_fx.py",
+    "tools/convert_to_godot.py"
+   ]
+  },
+  "exported_by": {
+   "nyzrak_v4": {
+    "bundle": "level3.py",
+    "namespace": "_NS_nyzrak"
+   },
+   "razak_v4": {
+    "bundle": "level2.py",
+    "namespace": "_NS_razak"
+   },
+   "thalgryn_v4": {
+    "bundle": "level6.py",
+    "namespace": "_NS_thalgryn"
+   }
+  }
+ },
+ "shadowed_draw_functions": [
+  "level47.draw_kaizoku_raijin",
+  "level48.draw_ursath"
+ ],
+ "shared_draw_functions": [],
+ "smart_ai": [
+  "abaddon",
+  "alchemist",
+  "ancient_apparition",
+  "ignis_drachorn",
+  "gornak",
+  "morgath",
+  "drakar",
+  "razak",
+  "khalros",
+  "gorath",
+  "varkul",
+  "xerathis",
+  "nyzrak",
+  "zharok",
+  "pyrenth",
+  "vokrahn",
+  "nyxara",
+  "gravefang",
+  "vhalzun",
+  "kunkka",
+  "gravewake",
+  "syrentha",
+  "thalgryn",
+  "nyxarath",
+  "vhorethzir",
+  "vaerith",
+  "xirthalis",
+  "vhyssarion",
+  "kenshiro",
+  "khazan",
+  "wiro",
+  "naraka",
+  "krognarr",
+  "raz",
+  "vraskhan",
+  "aurethzar",
+  "aeralith",
+  "aurex",
+  "nyxareva",
+  "thalakryon",
+  "aurelix",
+  "aurelyssa",
+  "vargrath",
+  "nazulmor",
+  "kaeldris",
+  "pyraklos",
+  "velmyrth",
+  "solvarin",
+  "malzareth",
+  "akashari",
+  "vorenmarr",
+  "azureth",
+  "luminar",
+  "solara",
+  "pyraethis",
+  "auroth",
+  "morvein",
+  "thorvak",
+  "yamako",
+  "ignirus",
+  "leoric",
+  "shirotaka",
+  "seiryukong",
+  "kaelthorn",
+  "solvanth",
+  "xyrael",
+  "nyxareth",
+  "cryssalia",
+  "kaelthar",
+  "morkhaera",
+  "aurelion",
+  "akahime",
+  "nyxthrael",
+  "sylvantheros",
+  "vaelindra",
+  "astraelion",
+  "morvaenthir",
+  "thornvaegrim",
+  "morthraxis"
+ ],
+ "smart_ai_dispatch": [
+  "abaddon",
+  "alchemist",
+  "ancient_apparition",
+  "ignis_drachorn",
+  "gornak",
+  "morgath",
+  "drakar",
+  "razak",
+  "khalros",
+  "gorath",
+  "varkul",
+  "xerathis",
+  "nyzrak",
+  "zharok",
+  "pyrenth",
+  "vokrahn",
+  "nyxara",
+  "gravefang",
+  "vhalzun",
+  "kunkka",
+  "gravewake",
+  "syrentha",
+  "thalgryn",
+  "nyxarath",
+  "vhorethzir",
+  "vaerith",
+  "xirthalis",
+  "vhyssarion",
+  "kenshiro",
+  "khazan",
+  "wiro",
+  "naraka",
+  "krognarr",
+  "raz",
+  "vraskhan",
+  "aurethzar",
+  "aeralith",
+  "aurex",
+  "nyxareva",
+  "thalakryon",
+  "aurelix",
+  "aurelyssa",
+  "vargrath",
+  "nazulmor",
+  "kaeldris",
+  "pyraklos",
+  "velmyrth",
+  "solvarin",
+  "malzareth",
+  "akashari",
+  "vorenmarr",
+  "azureth",
+  "luminar",
+  "solara",
+  "pyraethis",
+  "auroth",
+  "morvein",
+  "thorvak",
+  "yamako",
+  "ignirus",
+  "leoric",
+  "shirotaka",
+  "seiryukong",
+  "kaelthorn",
+  "solvanth",
+  "xyrael",
+  "nyxareth",
+  "cryssalia",
+  "kaelthar",
+  "morkhaera",
+  "aurelion",
+  "akahime",
+  "nyxthrael",
+  "sylvantheros",
+  "vaelindra",
+  "astraelion",
+  "morvaenthir",
+  "thornvaegrim",
+  "morthraxis"
+ ],
+ "smart_ai_methods": [
+  "_smart_ai_abaddon",
+  "_smart_ai_aeralith",
+  "_smart_ai_akahime",
+  "_smart_ai_akashari",
+  "_smart_ai_alchemist",
+  "_smart_ai_ancient_apparition",
+  "_smart_ai_astraelion",
+  "_smart_ai_aurelion",
+  "_smart_ai_aurelix",
+  "_smart_ai_aurelyssa",
+  "_smart_ai_aurethzar",
+  "_smart_ai_aurex",
+  "_smart_ai_auroth",
+  "_smart_ai_azureth",
+  "_smart_ai_cryssalia",
+  "_smart_ai_drakar",
+  "_smart_ai_gorath",
+  "_smart_ai_gornak",
+  "_smart_ai_gravefang",
+  "_smart_ai_gravewake",
+  "_smart_ai_ignirus",
+  "_smart_ai_ignis_drachorn",
+  "_smart_ai_kaeldris",
+  "_smart_ai_kaelthar",
+  "_smart_ai_kaelthorn",
+  "_smart_ai_kenshiro",
+  "_smart_ai_khalros",
+  "_smart_ai_khazan",
+  "_smart_ai_krognarr",
+  "_smart_ai_kunkka",
+  "_smart_ai_leoric",
+  "_smart_ai_luminar",
+  "_smart_ai_malzareth",
+  "_smart_ai_morgath",
+  "_smart_ai_morkhaera",
+  "_smart_ai_morthraxis",
+  "_smart_ai_morvaenthir",
+  "_smart_ai_morvein",
+  "_smart_ai_naraka",
+  "_smart_ai_nazulmor",
+  "_smart_ai_nyxara",
+  "_smart_ai_nyxarath",
+  "_smart_ai_nyxareth",
+  "_smart_ai_nyxareva",
+  "_smart_ai_nyxthrael",
+  "_smart_ai_nyzrak",
+  "_smart_ai_pyraethis",
+  "_smart_ai_pyraklos",
+  "_smart_ai_pyrenth",
+  "_smart_ai_raz",
+  "_smart_ai_razak",
+  "_smart_ai_seiryukong",
+  "_smart_ai_shirotaka",
+  "_smart_ai_solara",
+  "_smart_ai_solvanth",
+  "_smart_ai_solvarin",
+  "_smart_ai_sylvantheros",
+  "_smart_ai_syrentha",
+  "_smart_ai_thalakryon",
+  "_smart_ai_thalgryn",
+  "_smart_ai_thornvaegrim",
+  "_smart_ai_thorvak",
+  "_smart_ai_vaelindra",
+  "_smart_ai_vaerith",
+  "_smart_ai_vargrath",
+  "_smart_ai_varkul",
+  "_smart_ai_velmyrth",
+  "_smart_ai_vhalzun",
+  "_smart_ai_vhorethzir",
+  "_smart_ai_vhyssarion",
+  "_smart_ai_vokrahn",
+  "_smart_ai_vorenmarr",
+  "_smart_ai_vraskhan",
+  "_smart_ai_wiro",
+  "_smart_ai_xerathis",
+  "_smart_ai_xirthalis",
+  "_smart_ai_xyrael",
+  "_smart_ai_yamako",
+  "_smart_ai_zharok"
+ ],
+ "source": "bosses/ (Pygame, read-only oracle)",
+ "structural": {
+  "__init__.py": 1,
+  "_boss_index.py": 228,
+  "base_boss.py": 8488,
+  "boss_data.py": 11842
+ },
+ "unindexed_draw_functions": [
+  "level5.draw_morgath"
+ ],
+ "unused_level_modules": []
+}
