@@ -90,21 +90,37 @@ func run_scene(menu: Node, check: Callable) -> void:
 		"CreditsButton": Rect2(460.0, 576.0, 360.0, 50.0),
 		"QuitButton": Rect2(460.0, 629.0, 360.0, 50.0),
 	}
+	# The source frame is laid out with `fit` around a centred origin (stretch aspect
+	# `expand`), so the proof is the 1280x720 source rect reproduced at the live
+	# viewport rather than a hard-coded 1:1 assumption.
+	var fit := minf(menu.size.x / 1280.0, menu.size.y / 720.0)
+	var origin := (menu.size - Vector2(1280.0, 720.0) * fit) * 0.5
 	var misplaced: Array = []
 	for button_name in expected:
 		var button := menu.get_node("%" + button_name) as Control
 		var rect: Rect2 = expected[button_name]
+		var want := Rect2(origin + rect.position * fit, rect.size * fit)
 		var placed := (
-			is_equal_approx(button.position.x, rect.position.x)
-			and is_equal_approx(button.position.y, rect.position.y)
-			and is_equal_approx(button.size.x, rect.size.x)
-			and is_equal_approx(button.size.y, rect.size.y)
+			is_equal_approx(button.position.x, want.position.x)
+			and is_equal_approx(button.position.y, want.position.y)
+			and is_equal_approx(button.size.x, want.size.x)
+			and is_equal_approx(button.size.y, want.size.y)
 		)
 		if not button.visible or not placed:
-			misplaced.append(
-				(
-					"%s visible=%s position=%s size=%s want=%s"
-					% [button_name, button.visible, button.position, button.size, rect]
+			(
+				misplaced
+				. append(
+					(
+						"%s visible=%s position=%s size=%s want=%s viewport=%s"
+						% [
+							button_name,
+							button.visible,
+							button.position,
+							button.size,
+							want,
+							menu.size,
+						]
+					)
 				)
 			)
 	check.call(

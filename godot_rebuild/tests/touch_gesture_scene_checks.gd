@@ -13,6 +13,8 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	var world = session.world
 	session.set_physics_process(false)
 	world.set_ai_enabled(false)
+	# Source `Game.try_buy_hero`: touch selection needs an owned live hero.
+	world.buy_player_hero("kaizen")
 	var hero = world.player_roster()[0]
 	var hero_point: Vector2 = screen.arena.get_global_transform_with_canvas() * hero.position
 

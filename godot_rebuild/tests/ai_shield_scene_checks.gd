@@ -79,26 +79,30 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	)
 
 
-## Instance-id snapshot of every node under the root, so a leak names itself.
+## Node-path census of the root, so a leak names the nodes that appeared. Paths are
+## compared instead of instance IDs because a fresh screen legitimately reuses the
+## same paths as the screen it replaced.
 func _snapshot(tree: SceneTree) -> Dictionary:
-	var ids := {}
-	_collect_ids(tree.root, ids)
-	return ids
+	var census := {}
+	_collect_paths(tree.root, census)
+	return census
 
 
-func _collect_ids(node: Node, into: Dictionary) -> void:
-	into[node.get_instance_id()] = String(node.get_path())
+func _collect_paths(node: Node, into: Dictionary) -> void:
+	var path := String(node.get_path())
+	into[path] = int(into.get(path, 0)) + 1
 	for child in node.get_children():
-		_collect_ids(child, into)
+		_collect_paths(child, into)
 
 
 func _leaked_paths(tree: SceneTree, snapshot: Dictionary) -> Array:
 	var now := {}
-	_collect_ids(tree.root, now)
+	_collect_paths(tree.root, now)
 	var extra: Array = []
-	for id in now:
-		if not snapshot.has(id):
-			extra.append(now[id])
+	for path in now:
+		var added := int(now[path]) - int(snapshot.get(path, 0))
+		for _copy in range(maxi(0, added)):
+			extra.append(path)
 	extra.sort()
 	return extra.slice(0, 8)
 

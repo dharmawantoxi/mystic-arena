@@ -115,6 +115,9 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 
 
 func _kill_red_minion(world) -> bool:
+	# Every retry builds a fresh world with an empty live roster.
+	if world.player_hero_ids.is_empty():
+		world.buy_player_hero("kaizen")
 	if world.player_hero_ids.is_empty():
 		return false
 	var hero = world.get_unit(world.player_hero_ids[0])

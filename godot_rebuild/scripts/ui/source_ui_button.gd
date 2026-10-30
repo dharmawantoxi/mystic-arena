@@ -5,6 +5,10 @@ const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
 const UiSkin = preload("res://scripts/ui/ui_skin.gd")
 const IconBadge = preload("res://scripts/ui/source_icon_badge.gd")
 
+## The source frames paint their own text, so the native Button text is only a
+## data carrier for the label child and must never inflate the source rect.
+const NATIVE_FONT_SIZE := 1
+
 @export_enum("button", "tab") var source_kind := "button"
 @export var source_style_key := "play"
 @export var icon_name := ""
@@ -31,7 +35,7 @@ func _ready() -> void:
 	]:
 		add_theme_color_override(color_name, Color(1.0, 1.0, 1.0, 0.0))
 	add_theme_font_override("font", UI_THEME.STRONG_FONT)
-	add_theme_font_size_override("font_size", label_font_size)
+	add_theme_font_size_override("font_size", NATIVE_FONT_SIZE)
 	_label = Label.new()
 	_label.name = "SourceLabel"
 	_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -75,7 +79,6 @@ func set_source_active(active: bool) -> void:
 
 func set_label_font_size(value: int) -> void:
 	label_font_size = maxi(8, value)
-	add_theme_font_size_override("font_size", label_font_size)
 	if is_instance_valid(_label):
 		_label.add_theme_font_size_override("font_size", label_font_size)
 		_last_size = Vector2(-1.0, -1.0)
