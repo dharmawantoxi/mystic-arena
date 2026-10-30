@@ -50,7 +50,7 @@ Tes native Godot 4.7.2 headless terakhir yang jumlah pemeriksaannya tercatat (br
 
 Run native terbaru untuk lapisan 9bt adalah commit `0411b28` ([run 41030476536](https://github.com/dharmawantoxi/mystic-arena/actions/runs/41030476536)) dan lulus tanpa kegagalan; jumlah pemeriksaannya tidak terbaca dari artefak di lingkungan kerja ini, jadi angka 1.505.443 di atas tetap merujuk run `f4e840b`.
 
-Validator statis terakhir yang tersedia lulus **21.827 pemeriksaan**. Itu berbeda dari tes native dan tidak menggantikan bukti runtime, screenshot, perangkat, atau audio.
+Validator statis terakhir yang tersedia lulus **21.878 pemeriksaan**. Itu berbeda dari tes native dan tidak menggantikan bukti runtime, screenshot, perangkat, atau audio.
 
 #### Triase 23 kegagalan tes native sebelumnya
 
@@ -141,6 +141,15 @@ Karena itu teks rata kanan dan label tactical yang di tengah bergeser 1–3 px d
 Deviasi yang disengaja: sumber menggambar tombol tactical **dua kali** (gambar kedua meninggalkan busur aksen), dan itu tidak ditiru. Efek visualnya sisa goresan; port hanya menggambar satu kali.
 
 Yang **belum** dibuktikan: font sungguhan baru diverifikasi lewat metrik TTF di luar Godot; tidak ada executable Godot di lingkungan kerja ini, jadi hasil render, hinting, dan anti-alias Barlow-Bold pada runtime masih harus dilihat pengguna di PC/perangkat.
+
+### Folder `mobile/` (layer 9bv20–9bv21, 30 Oktober 2026)
+
+Seluruh 20 berkas di `mobile/` sudah dipetakan ke Godot; rincian per berkas ada di [`MOBILE_FOLDER_MIGRATION.md`](MOBILE_FOLDER_MIGRATION.md). Ringkasnya: `sidepanel.py`, `touch.py`, `combat_audio.py`, dan `cloud_save.py` sudah diport sebelumnya; **putaran ini menambahkan dua port baru** dan menandai lima berkas sebagai tidak relevan untuk Godot (internal pygame/SDL).
+
+* **`platform_utils.py` → `scripts/platform/mobile_platform.gd` (9bv20).** Sebelumnya Godot tidak punya lapisan layar mobile sama sekali: tidak ada safe area, tidak ada mode tampilan tersimpan, tidak ada pemetaan koordinat jendela → logis, tidak ada getar/layar-awet. Sekarang semuanya fungsi murni yang dikanonkan `tests/mobile_platform_source_oracle.py` (menjalankan fungsi asli di bawah shim pygame): skala/offset letterbox, `window_to_logical`/`finger_to_logical`/`pointer_to_logical`, safe area `(28, 10, 1224, 700)`, jalur popup panel kanan `(1294, 277)` / `(1294, 430)`, dan mode `scaled_vsync`/`scaled`/`native` dari env → berkas → default. Deviasi: immersive mode milik export preset Android, dan `present()` adalah tugas `canvas_items`.
+* **`hud.py` → `scripts/ui/touch_hud_layout.gd` (9bv21).** Tombol sentuh pemain (PAUSE/FPS di bawah chip emas, SKIP saat cinematic, REPLAY/NEXT LEVEL/MENU saat menang/kalah, BACK) sebelumnya tidak ada di Godot — layar prototipe memakai bar container desktop. Port ini membawa rect dan *hit rect* sumber (pad 24 px, lantai 80 px), aturan visibilitas, animasi tekan 0,12, hit-test urutan terbalik, dan terjemahan aksi `apply_hud_action` termasuk `protect_tower` yang hanya meneruskan tower biru terpilih. Painter (lingkaran/kapsul/glow radial/cincin cooldown) **belum** — itu layer berikutnya, dan HUD ini belum dipasang di scene.
+
+Kuirk sumber yang dipertahankan: `sync` tidak pernah menampilkan BACK (harus dipicu pemanggil lain), FPS tetap tampil di layar menu, dan `blocks()` ikut menganimasikan tombol karena memanggil `hit_test` yang sama.
 
 ### Membandingkan capture Godot dari PC (layar sentuh)
 

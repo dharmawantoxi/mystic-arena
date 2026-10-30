@@ -1,0 +1,877 @@
+{
+  "source": "mobile/platform_utils.py",
+  "logical_size": [
+    1280,
+    720
+  ],
+  "display_modes": [
+    "scaled_vsync",
+    "scaled",
+    "native"
+  ],
+  "default_mode": "scaled_vsync",
+  "safe_margin": 28,
+  "zona_popup_y": 430,
+  "zona_bawah_h": 120,
+  "refresh": [
+    {
+      "window": [
+        1280,
+        720
+      ],
+      "scale": 1.0,
+      "offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "window": [
+        1624,
+        720
+      ],
+      "scale": 1.0,
+      "offset": [
+        172.0,
+        0.0
+      ]
+    },
+    {
+      "window": [
+        2436,
+        1080
+      ],
+      "scale": 1.5,
+      "offset": [
+        258.0,
+        0.0
+      ]
+    },
+    {
+      "window": [
+        1920,
+        1080
+      ],
+      "scale": 1.5,
+      "offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "window": [
+        1024,
+        768
+      ],
+      "scale": 0.8,
+      "offset": [
+        0.0,
+        96.0
+      ]
+    },
+    {
+      "window": [
+        800,
+        480
+      ],
+      "scale": 0.625,
+      "offset": [
+        0.0,
+        15.0
+      ]
+    }
+  ],
+  "conversions": [
+    {
+      "window": [
+        1280,
+        720
+      ],
+      "window_points": [
+        {
+          "window": [
+            0.0,
+            0.0
+          ],
+          "logical": [
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "window": [
+            1.0,
+            1.0
+          ],
+          "logical": [
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "window": [
+            640.0,
+            360.0
+          ],
+          "logical": [
+            640.0,
+            360.0
+          ]
+        },
+        {
+          "window": [
+            1280.0,
+            720.0
+          ],
+          "logical": [
+            1280.0,
+            720.0
+          ]
+        },
+        {
+          "window": [
+            1920.0,
+            180.0
+          ],
+          "logical": [
+            1920.0,
+            180.0
+          ]
+        }
+      ],
+      "finger_points": [
+        {
+          "finger": [
+            0.5,
+            0.5
+          ],
+          "logical": [
+            640.0,
+            360.0
+          ]
+        },
+        {
+          "finger": [
+            0.25,
+            0.75
+          ],
+          "logical": [
+            320.0,
+            540.0
+          ]
+        },
+        {
+          "finger": [
+            1.0,
+            1.0
+          ],
+          "logical": [
+            1280.0,
+            720.0
+          ]
+        }
+      ]
+    },
+    {
+      "window": [
+        1624,
+        720
+      ],
+      "window_points": [
+        {
+          "window": [
+            0.0,
+            0.0
+          ],
+          "logical": [
+            -172.0,
+            0.0
+          ]
+        },
+        {
+          "window": [
+            1.0,
+            1.0
+          ],
+          "logical": [
+            -171.0,
+            1.0
+          ]
+        },
+        {
+          "window": [
+            812.0,
+            360.0
+          ],
+          "logical": [
+            640.0,
+            360.0
+          ]
+        },
+        {
+          "window": [
+            1624.0,
+            720.0
+          ],
+          "logical": [
+            1452.0,
+            720.0
+          ]
+        },
+        {
+          "window": [
+            2436.0,
+            180.0
+          ],
+          "logical": [
+            2264.0,
+            180.0
+          ]
+        }
+      ],
+      "finger_points": [
+        {
+          "finger": [
+            0.5,
+            0.5
+          ],
+          "logical": [
+            640.0,
+            360.0
+          ]
+        },
+        {
+          "finger": [
+            0.25,
+            0.75
+          ],
+          "logical": [
+            234.0,
+            540.0
+          ]
+        },
+        {
+          "finger": [
+            1.0,
+            1.0
+          ],
+          "logical": [
+            1452.0,
+            720.0
+          ]
+        }
+      ]
+    },
+    {
+      "window": [
+        2436,
+        1080
+      ],
+      "window_points": [
+        {
+          "window": [
+            0.0,
+            0.0
+          ],
+          "logical": [
+            -172.0,
+            0.0
+          ]
+        },
+        {
+          "window": [
+            1.0,
+            1.0
+          ],
+          "logical": [
+            -171.333333,
+            0.666667
+          ]
+        },
+        {
+          "window": [
+            1218.0,
+            540.0
+          ],
+          "logical": [
+            640.0,
+            360.0
+          ]
+        },
+        {
+          "window": [
+            2436.0,
+            1080.0
+          ],
+          "logical": [
+            1452.0,
+            720.0
+          ]
+        },
+        {
+          "window": [
+            3654.0,
+            270.0
+          ],
+          "logical": [
+            2264.0,
+            180.0
+          ]
+        }
+      ],
+      "finger_points": [
+        {
+          "finger": [
+            0.5,
+            0.5
+          ],
+          "logical": [
+            640.0,
+            360.0
+          ]
+        },
+        {
+          "finger": [
+            0.25,
+            0.75
+          ],
+          "logical": [
+            234.0,
+            540.0
+          ]
+        },
+        {
+          "finger": [
+            1.0,
+            1.0
+          ],
+          "logical": [
+            1452.0,
+            720.0
+          ]
+        }
+      ]
+    },
+    {
+      "window": [
+        1920,
+        1080
+      ],
+      "window_points": [
+        {
+          "window": [
+            0.0,
+            0.0
+          ],
+          "logical": [
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "window": [
+            1.0,
+            1.0
+          ],
+          "logical": [
+            0.666667,
+            0.666667
+          ]
+        },
+        {
+          "window": [
+            960.0,
+            540.0
+          ],
+          "logical": [
+            640.0,
+            360.0
+          ]
+        },
+        {
+          "window": [
+            1920.0,
+            1080.0
+          ],
+          "logical": [
+            1280.0,
+            720.0
+          ]
+        },
+        {
+          "window": [
+            2880.0,
+            270.0
+          ],
+          "logical": [
+            1920.0,
+            180.0
+          ]
+        }
+      ],
+      "finger_points": [
+        {
+          "finger": [
+            0.5,
+            0.5
+          ],
+          "logical": [
+            640.0,
+            360.0
+          ]
+        },
+        {
+          "finger": [
+            0.25,
+            0.75
+          ],
+          "logical": [
+            320.0,
+            540.0
+          ]
+        },
+        {
+          "finger": [
+            1.0,
+            1.0
+          ],
+          "logical": [
+            1280.0,
+            720.0
+          ]
+        }
+      ]
+    },
+    {
+      "window": [
+        1024,
+        768
+      ],
+      "window_points": [
+        {
+          "window": [
+            0.0,
+            0.0
+          ],
+          "logical": [
+            0.0,
+            -120.0
+          ]
+        },
+        {
+          "window": [
+            1.0,
+            1.0
+          ],
+          "logical": [
+            1.25,
+            -118.75
+          ]
+        },
+        {
+          "window": [
+            512.0,
+            384.0
+          ],
+          "logical": [
+            640.0,
+            360.0
+          ]
+        },
+        {
+          "window": [
+            1024.0,
+            768.0
+          ],
+          "logical": [
+            1280.0,
+            840.0
+          ]
+        },
+        {
+          "window": [
+            1536.0,
+            192.0
+          ],
+          "logical": [
+            1920.0,
+            120.0
+          ]
+        }
+      ],
+      "finger_points": [
+        {
+          "finger": [
+            0.5,
+            0.5
+          ],
+          "logical": [
+            640.0,
+            360.0
+          ]
+        },
+        {
+          "finger": [
+            0.25,
+            0.75
+          ],
+          "logical": [
+            320.0,
+            600.0
+          ]
+        },
+        {
+          "finger": [
+            1.0,
+            1.0
+          ],
+          "logical": [
+            1280.0,
+            840.0
+          ]
+        }
+      ]
+    },
+    {
+      "window": [
+        800,
+        480
+      ],
+      "window_points": [
+        {
+          "window": [
+            0.0,
+            0.0
+          ],
+          "logical": [
+            0.0,
+            -24.0
+          ]
+        },
+        {
+          "window": [
+            1.0,
+            1.0
+          ],
+          "logical": [
+            1.6,
+            -22.4
+          ]
+        },
+        {
+          "window": [
+            400.0,
+            240.0
+          ],
+          "logical": [
+            640.0,
+            360.0
+          ]
+        },
+        {
+          "window": [
+            800.0,
+            480.0
+          ],
+          "logical": [
+            1280.0,
+            744.0
+          ]
+        },
+        {
+          "window": [
+            1200.0,
+            120.0
+          ],
+          "logical": [
+            1920.0,
+            168.0
+          ]
+        }
+      ],
+      "finger_points": [
+        {
+          "finger": [
+            0.5,
+            0.5
+          ],
+          "logical": [
+            640.0,
+            360.0
+          ]
+        },
+        {
+          "finger": [
+            0.25,
+            0.75
+          ],
+          "logical": [
+            320.0,
+            552.0
+          ]
+        },
+        {
+          "finger": [
+            1.0,
+            1.0
+          ],
+          "logical": [
+            1280.0,
+            744.0
+          ]
+        }
+      ]
+    }
+  ],
+  "pointer": [
+    {
+      "mode": "native",
+      "points": [
+        {
+          "input": [
+            0.0,
+            0.0
+          ],
+          "logical": [
+            -172.0,
+            0.0
+          ]
+        },
+        {
+          "input": [
+            640.0,
+            360.0
+          ],
+          "logical": [
+            254.666667,
+            240.0
+          ]
+        },
+        {
+          "input": [
+            1300.0,
+            700.0
+          ],
+          "logical": [
+            694.666667,
+            466.666667
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "scaled_vsync",
+      "points": [
+        {
+          "input": [
+            0.0,
+            0.0
+          ],
+          "logical": [
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "input": [
+            640.0,
+            360.0
+          ],
+          "logical": [
+            640.0,
+            360.0
+          ]
+        },
+        {
+          "input": [
+            1300.0,
+            700.0
+          ],
+          "logical": [
+            1300.0,
+            700.0
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "scaled",
+      "points": [
+        {
+          "input": [
+            0.0,
+            0.0
+          ],
+          "logical": [
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "input": [
+            640.0,
+            360.0
+          ],
+          "logical": [
+            640.0,
+            360.0
+          ]
+        },
+        {
+          "input": [
+            1300.0,
+            700.0
+          ],
+          "logical": [
+            1300.0,
+            700.0
+          ]
+        }
+      ]
+    }
+  ],
+  "safe_area": [
+    {
+      "touch_mode": true,
+      "rect": [
+        28,
+        10,
+        1224,
+        700
+      ]
+    },
+    {
+      "touch_mode": false,
+      "rect": [
+        0,
+        0,
+        1280,
+        720
+      ]
+    }
+  ],
+  "panel": [
+    1280,
+    0,
+    344,
+    720
+  ],
+  "popups": [
+    {
+      "width": 316,
+      "height": 165,
+      "top": 12,
+      "popup_pos": [
+        1294.0,
+        277.0
+      ],
+      "bottom_pos": [
+        1294.0,
+        430.0
+      ]
+    },
+    {
+      "width": 336,
+      "height": 165,
+      "top": 12,
+      "popup_pos": [
+        1284.0,
+        277.0
+      ],
+      "bottom_pos": [
+        1284.0,
+        430.0
+      ]
+    },
+    {
+      "width": 344,
+      "height": 165,
+      "top": 12,
+      "popup_pos": null,
+      "bottom_pos": null
+    },
+    {
+      "width": 260,
+      "height": 200,
+      "top": 12,
+      "popup_pos": [
+        1322.0,
+        260.0
+      ],
+      "bottom_pos": [
+        1322.0,
+        400.0
+      ]
+    },
+    {
+      "width": 316,
+      "height": 600,
+      "top": 12,
+      "popup_pos": [
+        1294.0,
+        60.0
+      ],
+      "bottom_pos": [
+        1294.0,
+        8.0
+      ]
+    },
+    {
+      "width": 316,
+      "height": 165,
+      "top": 12,
+      "popup_pos": null,
+      "bottom_pos": null
+    }
+  ],
+  "display_mode": [
+    {
+      "env": "native",
+      "file": null,
+      "resolved": "native"
+    },
+    {
+      "env": "scaled",
+      "file": "native",
+      "resolved": "scaled"
+    },
+    {
+      "env": null,
+      "file": "scaled",
+      "resolved": "scaled"
+    },
+    {
+      "env": null,
+      "file": "bogus",
+      "resolved": "scaled_vsync"
+    },
+    {
+      "env": "bogus",
+      "file": null,
+      "resolved": "scaled_vsync"
+    },
+    {
+      "env": null,
+      "file": null,
+      "resolved": "scaled_vsync"
+    }
+  ],
+  "save_mode": [
+    {
+      "save": "scaled",
+      "ok": true,
+      "reloaded": "scaled"
+    },
+    {
+      "save": "native",
+      "ok": true,
+      "reloaded": "native"
+    },
+    {
+      "save": "nonsense",
+      "ok": true,
+      "reloaded": "scaled_vsync"
+    }
+  ],
+  "saved_file": "nonsense"
+}
