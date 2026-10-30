@@ -326,7 +326,15 @@ func _check_dock(fixture: Dictionary, check: Callable) -> void:
 func _check_menu(fixture: Dictionary, check: Callable) -> void:
 	var menu_block: Dictionary = fixture.get("menu", {})
 	var buttons: Dictionary = menu_block.get("buttons", {})
-	var source_rects: Dictionary = MainMenuScript.get_script_constant_map()["SOURCE_BUTTON_RECTS"]
+	# `get_script_constant_map()` is not static, so the call goes through a
+	# Variant: naming the script class directly makes the parser look for a
+	# static function and refuse to compile.
+	var script_resource: Variant = MainMenuScript
+	var constants: Dictionary = script_resource.get_script_constant_map()
+	var source_rects: Dictionary = constants.get("SOURCE_BUTTON_RECTS", {})
+	check.call(
+		source_rects.size() == 8, "The menu exposes its eight source button rects as one table"
+	)
 	var ok := true
 	for key in MENU_NODES:
 		var node_name: String = MENU_NODES[key]

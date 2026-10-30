@@ -6654,6 +6654,7 @@ check("    bh = 34" in _android_platform.replace("\n", "\n")
 check("Rect2i(1294, 14, 58, 58)" in _android_checks
       and '["y_after_status"] == 190' in _android_checks
       and '["y_after_heroes"] == 264' in _android_checks
+      and "script_resource.get_script_constant_map()" in _android_checks
       and "The eight menu buttons sit on the rects the phone capture measured" in _android_checks,
       "9bt the native suite must assert the captured dock and menu geometry")
 check("android-2026-10-30" in _parity_doc and "arena_rect" in _parity_doc,
