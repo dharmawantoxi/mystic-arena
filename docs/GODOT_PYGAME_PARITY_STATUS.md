@@ -46,9 +46,9 @@ Tidak akan mengubah aturan, UI, atau data Pygame agar tes Godot lulus. Jika ada 
 
 ### Hasil runtime terakhir yang diketahui
 
-Tes native Godot 4.7.2 headless terakhir (branch `arena/a5ab95fe-mystic-arena`, commit `f4e840b`, [run 41019560561](https://github.com/dharmawantoxi/mystic-arena/actions/runs/41019560561)) menjalankan 1.505.443 pemeriksaan (147 di antaranya suite impor slot Pygame: 112 domain + 35 scene) dan melaporkan **0 kegagalan** serta tanpa `SCRIPT ERROR`. Sebelumnya run PR #348 menjalankan 1.505.221 pemeriksaan dengan **23 kegagalan**; seluruhnya sudah ditriase dan diperbaiki, dan penyebabnya dicatat di tabel triase di bawah.
+Tes native Godot 4.7.2 headless terakhir yang jumlah pemeriksaannya tercatat (branch `arena/a5ab95fe-mystic-arena`, commit `f4e840b`, [run 41019560561](https://github.com/dharmawantoxi/mystic-arena/actions/runs/41019560561)) menjalankan 1.505.443 pemeriksaan (147 di antaranya suite impor slot Pygame: 112 domain + 35 scene) dan melaporkan **0 kegagalan** serta tanpa `SCRIPT ERROR`. Sebelumnya run PR #348 menjalankan 1.505.221 pemeriksaan dengan **23 kegagalan**; seluruhnya sudah ditriase dan diperbaiki, dan penyebabnya dicatat di tabel triase di bawah.
 
-Suite `tests/android_layout_checks.gd` (lapisan 9bt di bawah) menambah pemeriksaan geometri Android; jumlah total baru dicatat dari hasil CI branch ini, bukan ditebak di dokumen.
+Run native terbaru untuk lapisan 9bt adalah commit `0411b28` ([run 41030476536](https://github.com/dharmawantoxi/mystic-arena/actions/runs/41030476536)) dan lulus tanpa kegagalan; jumlah pemeriksaannya tidak terbaca dari artefak di lingkungan kerja ini, jadi angka 1.505.443 di atas tetap merujuk run `f4e840b`.
 
 Validator statis terakhir yang tersedia lulus **21.808 pemeriksaan**. Itu berbeda dari tes native dan tidak menggantikan bukti runtime, screenshot, perangkat, atau audio.
 
