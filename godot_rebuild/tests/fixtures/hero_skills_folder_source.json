@@ -1,0 +1,1010 @@
+{
+ "base_skill": {
+  "class_visual_duration": {},
+  "default_skill_range": 200,
+  "default_visual_duration": {
+   "e": 60,
+   "q": 60,
+   "r": 100,
+   "w": 90
+  },
+  "methods": [
+   "__init__",
+   "init_state",
+   "update_timers",
+   "cast_q",
+   "cast_w",
+   "cast_e",
+   "cast_r",
+   "_get_enemies",
+   "_get_enemies_in_range",
+   "_deal_aoe_damage",
+   "_apply_slow",
+   "_apply_stun",
+   "_shake_screen",
+   "_play_skill_sound",
+   "_add_popup",
+   "_check_q_cooldown",
+   "_check_w_cooldown",
+   "_check_e_cooldown",
+   "_check_r_cooldown",
+   "_skill_range",
+   "_acquire_target",
+   "_has_target",
+   "_get_visual_duration",
+   "_set_active_skill",
+   "_trigger_q_cooldown",
+   "_trigger_w_cooldown",
+   "_trigger_e_cooldown",
+   "_trigger_r_cooldown"
+  ],
+  "play_sound_default_volume": 0.7,
+  "require_target": true,
+  "target_range_slack": 1.15,
+  "triggers": {
+   "e": {
+    "shake": 6,
+    "volume": 0.7
+   },
+   "q": {
+    "shake": 8,
+    "volume": 0.7
+   },
+   "r": {
+    "shake": 15,
+    "volume": 1.0
+   },
+   "w": {
+    "shake": 5,
+    "volume": 0.6
+   }
+  }
+ },
+ "boss_hero_skills": {
+  "cast_range_floor": 140,
+  "cast_shake": {
+   "e": 8,
+   "q": 10,
+   "r": 15,
+   "w": 8
+  },
+  "fallback": {
+   "aoe_range": [
+    150,
+    200
+   ],
+   "multipliers": {
+    "e": 1.5,
+    "q": 1.0,
+    "r": 2.5,
+    "w": 1.2
+   },
+   "visual_duration": 40
+  },
+  "methods": [
+   "init_state",
+   "update_timers",
+   "_get_visual_duration",
+   "_generic_cast",
+   "_fallback_cast",
+   "cast_q",
+   "cast_w",
+   "cast_e",
+   "cast_r",
+   "_cast_q_mana_break",
+   "_cast_w_blink",
+   "_cast_e_counterspell",
+   "_cast_r_mana_void",
+   "_cast_q_spark_wraith",
+   "_cast_w_flux",
+   "_cast_e_magnetic_field",
+   "_cast_r_tempest_double",
+   "_cast_q_battle_hunger",
+   "_cast_w_counter_helix",
+   "_cast_e_berserkers_call",
+   "_cast_r_culling_blade",
+   "_cast_q_mist_coil",
+   "_cast_w_aphotic_shield",
+   "_cast_e_darkness_gale",
+   "_cast_r_death_sever",
+   "_cast_q_acid_spray",
+   "_cast_w_unstable_concoction",
+   "_cast_e_chemical_rage",
+   "_cast_r_greevils_greed",
+   "_cast_q_ice_vortex",
+   "_cast_w_chilling_touch",
+   "_cast_e_ice_blast",
+   "_cast_r_cold_feet",
+   "_cast_q_arctic_burn",
+   "_cast_w_splinter_blast",
+   "_cast_e_winters_curse",
+   "_cast_r_cold_embrace",
+   "_cast_q_dragon_breath",
+   "_cast_w_dragon_tail",
+   "_cast_e_dragon_blood",
+   "_cast_r_elder_dragon_form",
+   "_cast_q_krobellus_exorcism",
+   "_cast_w_krobellus_silence",
+   "_cast_e_krobellus_siphon",
+   "_cast_r_krobellus_crypt",
+   "_cast_q_vhalzun_death_pulse",
+   "_cast_w_vhalzun_heartstopper",
+   "_cast_e_vhalzun_reapers_scythe",
+   "_cast_r_vhalzun_ghost_shroud",
+   "_cast_q_kunkka_tide",
+   "_cast_w_kunkka_xmark",
+   "_cast_e_kunkka_ghost",
+   "_cast_r_kunkka_torrent",
+   "_cast_q_nyxarath_shadowraze",
+   "_cast_w_nyxarath_necro",
+   "_cast_e_nyxarath_presence",
+   "_cast_r_nyxarath_requiem",
+   "_cast_q_gravewake_anchor",
+   "_cast_w_gravewake_tide",
+   "_cast_e_gravewake_shell",
+   "_cast_r_gravewake_ravage",
+   "_cast_q_syrentha_riptide",
+   "_cast_w_syrentha_song",
+   "_cast_e_syrentha_mirror",
+   "_cast_r_syrentha_siren",
+   "_cast_q_thalgryn_waveform",
+   "_cast_w_thalgryn_adaptive",
+   "_cast_e_thalgryn_morph",
+   "_cast_r_thalgryn_replicate",
+   "_cast_q_malzareth_disruption",
+   "_cast_w_malzareth_soul",
+   "_cast_e_malzareth_poison",
+   "_cast_r_malzareth_disillusion",
+   "_cast_q_akashari_strike",
+   "_cast_w_akashari_blink",
+   "_cast_e_akashari_scream",
+   "_cast_r_akashari_sonic",
+   "_cast_q_vorenmarr_bonds",
+   "_cast_w_vorenmarr_power",
+   "_cast_e_vorenmarr_upheaval",
+   "_cast_r_vorenmarr_golem",
+   "_cast_q_kenshiro_swiftslash",
+   "_cast_w_kenshiro_assault",
+   "_cast_e_kenshiro_gale",
+   "_cast_r_kenshiro_supremacy",
+   "_cast_q_khazan_chained",
+   "_cast_w_khazan_leap",
+   "_cast_e_khazan_spin",
+   "_cast_r_khazan_vanish",
+   "_cast_q_wiro_windcut",
+   "_cast_w_wiro_whirl",
+   "_cast_e_wiro_dash",
+   "_cast_r_wiro_typhoon",
+   "_cast_q_naraka_chaos",
+   "_cast_w_naraka_shadowstep",
+   "_cast_e_naraka_hammer",
+   "_cast_r_naraka_execution",
+   "_cast_q_krognarr_strike",
+   "_cast_w_krognarr_seismic",
+   "_cast_e_krognarr_rampart",
+   "_cast_r_krognarr_eruption",
+   "_cast_q_raz_overdrive",
+   "_cast_w_raz_searing",
+   "_cast_e_raz_surge",
+   "_cast_r_raz_gloom",
+   "_cast_q_vraskhan_thorned",
+   "_cast_w_vraskhan_leap",
+   "_cast_e_vraskhan_deathslash",
+   "_cast_r_vraskhan_omni",
+   "_cast_q_aurethzar_marksman",
+   "_cast_w_aurethzar_piercing",
+   "_cast_e_aurethzar_frost",
+   "_cast_r_aurethzar_thunder",
+   "_cast_q_aeralith_tailwind",
+   "_cast_w_aeralith_windblade",
+   "_cast_e_aeralith_vacuum",
+   "_cast_r_aeralith_skyrider",
+   "_cast_q_aurex_shieldcrash",
+   "_cast_w_aurex_voltblast",
+   "_cast_e_aurex_aegis",
+   "_cast_r_aurex_spin",
+   "_cast_q_nyxareva_darkslash",
+   "_cast_w_nyxareva_mortalwound",
+   "_cast_e_nyxareva_sacrifice",
+   "_cast_r_nyxareva_avatar",
+   "_cast_q_thalakryon_bolt",
+   "_cast_w_thalakryon_aquashield",
+   "_cast_e_thalakryon_tidalrage",
+   "_cast_r_thalakryon_metamorph",
+   "_cast_q_aurelix_timebomb",
+   "_cast_w_aurelix_will",
+   "_cast_e_aurelix_shockwave",
+   "_cast_r_aurelix_transcend",
+   "_cast_q_aurelyssa_whirlwind",
+   "_cast_w_aurelyssa_sweep",
+   "_cast_e_aurelyssa_wings",
+   "_cast_r_aurelyssa_phantom",
+   "_cast_q_vargrath_bloodthirst",
+   "_cast_w_vargrath_charge",
+   "_cast_e_vargrath_devilstrike",
+   "_cast_r_vargrath_souldom",
+   "_cast_q_nazulmor_typhoon",
+   "_cast_w_nazulmor_aquashield",
+   "_cast_e_nazulmor_tidalrage",
+   "_cast_r_nazulmor_chaotic",
+   "_cast_q_kaeldris_overwhelming",
+   "_cast_w_kaeldris_press",
+   "_cast_e_kaeldris_moment",
+   "_cast_r_kaeldris_duel",
+   "_cast_q_pyraklos_spearmars",
+   "_cast_w_pyraklos_rebuke",
+   "_cast_e_pyraklos_bulwark",
+   "_cast_r_pyraklos_arena",
+   "_cast_q_velmyrth_dagger",
+   "_cast_w_velmyrth_strike",
+   "_cast_e_velmyrth_blur",
+   "_cast_r_velmyrth_coup",
+   "_cast_q_solvarin_purification",
+   "_cast_w_solvarin_repel",
+   "_cast_e_solvarin_degen",
+   "_cast_r_solvarin_guardian",
+   "_cast_q_azureth_arcanebolt",
+   "_cast_w_azureth_concussive",
+   "_cast_e_azureth_ancientseal",
+   "_cast_r_azureth_mysticflare",
+   "_cast_q_luminar_illuminate",
+   "_cast_w_luminar_blindinglight",
+   "_cast_e_luminar_wisp",
+   "_cast_r_luminar_spiritform",
+   "_cast_q_solara_starbreaker",
+   "_cast_w_solara_celestialhammer",
+   "_cast_e_solara_luminosity",
+   "_cast_r_solara_solarguardian",
+   "_cast_q_pyraethis_icarusdive",
+   "_cast_w_pyraethis_firespirits",
+   "_cast_e_pyraethis_sunray",
+   "_cast_r_pyraethis_supernova",
+   "_cast_q_auroth_ionicedge",
+   "_cast_w_auroth_ward",
+   "_cast_e_auroth_consecration",
+   "_cast_r_auroth_guardian",
+   "_cast_q_morvein_puncture",
+   "_cast_w_morvein_violentstrike",
+   "_cast_e_morvein_spectralcharge",
+   "_cast_r_morvein_phantomform",
+   "_cast_q_thorvak_seed",
+   "_cast_w_thorvak_natureswrath",
+   "_cast_e_thorvak_vengeance",
+   "_cast_r_thorvak_dryad",
+   "_cast_q_yamako_deepforest",
+   "_cast_w_yamako_woodcreation",
+   "_cast_e_yamako_woodgolem",
+   "_cast_r_yamako_kannon",
+   "_cast_q_ignirus_searingtorrent",
+   "_cast_w_ignirus_flameshot",
+   "_cast_e_ignirus_burstfireball",
+   "_cast_r_ignirus_vengeance",
+   "_cast_q_leoric_fearlesscharge",
+   "_cast_w_leoric_sacredhammer",
+   "_cast_e_leoric_concealblast",
+   "_cast_r_leoric_immortality",
+   "_cast_q_shirotaka_hiraishin",
+   "_cast_w_shirotaka_waterboundary",
+   "_cast_e_shirotaka_shadowclones",
+   "_cast_r_shirotaka_paperbomb",
+   "_cast_q_seiryukong_boundless",
+   "_cast_w_seiryukong_treedance",
+   "_cast_e_seiryukong_jingusoldiers",
+   "_cast_r_seiryukong_wukong",
+   "_cast_q_kaelthorn_bravestfighter",
+   "_cast_w_kaelthorn_justiceblade",
+   "_cast_e_kaelthorn_defendersassault",
+   "_cast_r_kaelthorn_chivalryfists",
+   "_cast_q_solvanth_ringpunishment",
+   "_cast_w_solvanth_gloriouspathway",
+   "_cast_e_solvanth_laworder",
+   "_cast_r_solvanth_wrath",
+   "_cast_q_xyrael_finch",
+   "_cast_w_xyrael_defiant",
+   "_cast_e_xyrael_tempest",
+   "_cast_r_xyrael_lightness",
+   "_cast_q_nyxareth_starsplit",
+   "_cast_w_nyxareth_realworld",
+   "_cast_e_nyxareth_spacetime",
+   "_cast_r_nyxareth_astrorealm",
+   "_cast_q_cryssalia_frostshock",
+   "_cast_w_cryssalia_bitterfrost",
+   "_cast_e_cryssalia_frostbites",
+   "_cast_r_cryssalia_coldest",
+   "_cast_q_kaelthar_chargingfist",
+   "_cast_w_kaelthar_quake",
+   "_cast_e_kaelthar_fistcrack",
+   "_cast_r_kaelthar_fistbreak",
+   "_cast_q_morkhaera_spiritburst",
+   "_cast_w_morkhaera_airstrike",
+   "_cast_e_morkhaera_energyimpact",
+   "_cast_r_morkhaera_ethereal",
+   "_cast_q_aurelion_callcourage",
+   "_cast_w_aurelion_guardianassault",
+   "_cast_e_aurelion_kingscommand",
+   "_cast_r_aurelion_kingssummon",
+   "_cast_q_akahime_petalbarrage",
+   "_cast_w_akahime_soulscroll",
+   "_cast_e_akahime_shadow",
+   "_cast_r_akahime_higanbana",
+   "_cast_q_nyxthrael_ambush",
+   "_cast_w_nyxthrael_nightfall",
+   "_cast_e_nyxthrael_darknightfall",
+   "_cast_r_nyxthrael_shadowbringer",
+   "_cast_q_sylvantheros_sprout",
+   "_cast_w_sylvantheros_teleport",
+   "_cast_e_sylvantheros_treants",
+   "_cast_r_sylvantheros_wrath",
+   "_cast_q_vaelindra_energywave",
+   "_cast_w_vaelindra_spacering",
+   "_cast_e_vaelindra_violetrequiem",
+   "_cast_r_vaelindra_realm",
+   "_cast_q_astraelion_swordfall",
+   "_cast_w_astraelion_spiritblade",
+   "_cast_e_astraelion_forceescape",
+   "_cast_r_astraelion_zeroreturn",
+   "_cast_q_morvaenthir_soulfragment",
+   "_cast_w_morvaenthir_spiritbind",
+   "_cast_e_morvaenthir_essence",
+   "_cast_r_morvaenthir_shadowrealm",
+   "_cast_q_thornvaegrim_bramble",
+   "_cast_w_thornvaegrim_twistedadvance",
+   "_cast_e_thornvaegrim_saplingthrow",
+   "_cast_r_thornvaegrim_grasp",
+   "_cast_q_morthraxis_batimpale",
+   "_cast_w_morthraxis_sanguine",
+   "_cast_e_morthraxis_phantommob",
+   "_cast_r_morthraxis_baleful"
+  ],
+  "registry": {
+   "abaddon": {
+    "e": "_cast_e_darkness_gale",
+    "q": "_cast_q_mist_coil",
+    "r": "_cast_r_death_sever",
+    "w": "_cast_w_aphotic_shield"
+   },
+   "aeralith": {
+    "e": "_cast_e_aeralith_vacuum",
+    "q": "_cast_q_aeralith_tailwind",
+    "r": "_cast_r_aeralith_skyrider",
+    "w": "_cast_w_aeralith_windblade"
+   },
+   "akahime": {
+    "e": "_cast_e_akahime_shadow",
+    "q": "_cast_q_akahime_petalbarrage",
+    "r": "_cast_r_akahime_higanbana",
+    "w": "_cast_w_akahime_soulscroll"
+   },
+   "akashari": {
+    "e": "_cast_e_akashari_scream",
+    "q": "_cast_q_akashari_strike",
+    "r": "_cast_r_akashari_sonic",
+    "w": "_cast_w_akashari_blink"
+   },
+   "alchemist": {
+    "e": "_cast_e_chemical_rage",
+    "q": "_cast_q_acid_spray",
+    "r": "_cast_r_greevils_greed",
+    "w": "_cast_w_unstable_concoction"
+   },
+   "ancient_apparition": {
+    "e": "_cast_e_ice_blast",
+    "q": "_cast_q_ice_vortex",
+    "r": "_cast_r_cold_feet",
+    "w": "_cast_w_chilling_touch"
+   },
+   "astraelion": {
+    "e": "_cast_e_astraelion_forceescape",
+    "q": "_cast_q_astraelion_swordfall",
+    "r": "_cast_r_astraelion_zeroreturn",
+    "w": "_cast_w_astraelion_spiritblade"
+   },
+   "aurelion": {
+    "e": "_cast_e_aurelion_kingscommand",
+    "q": "_cast_q_aurelion_callcourage",
+    "r": "_cast_r_aurelion_kingssummon",
+    "w": "_cast_w_aurelion_guardianassault"
+   },
+   "aurelix": {
+    "e": "_cast_e_aurelix_shockwave",
+    "q": "_cast_q_aurelix_timebomb",
+    "r": "_cast_r_aurelix_transcend",
+    "w": "_cast_w_aurelix_will"
+   },
+   "aurelyssa": {
+    "e": "_cast_e_aurelyssa_wings",
+    "q": "_cast_q_aurelyssa_whirlwind",
+    "r": "_cast_r_aurelyssa_phantom",
+    "w": "_cast_w_aurelyssa_sweep"
+   },
+   "aurethzar": {
+    "e": "_cast_e_aurethzar_frost",
+    "q": "_cast_q_aurethzar_marksman",
+    "r": "_cast_r_aurethzar_thunder",
+    "w": "_cast_w_aurethzar_piercing"
+   },
+   "aurex": {
+    "e": "_cast_e_aurex_aegis",
+    "q": "_cast_q_aurex_shieldcrash",
+    "r": "_cast_r_aurex_spin",
+    "w": "_cast_w_aurex_voltblast"
+   },
+   "auroth": {
+    "e": "_cast_e_auroth_consecration",
+    "q": "_cast_q_auroth_ionicedge",
+    "r": "_cast_r_auroth_guardian",
+    "w": "_cast_w_auroth_ward"
+   },
+   "azureth": {
+    "e": "_cast_e_azureth_ancientseal",
+    "q": "_cast_q_azureth_arcanebolt",
+    "r": "_cast_r_azureth_mysticflare",
+    "w": "_cast_w_azureth_concussive"
+   },
+   "cryssalia": {
+    "e": "_cast_e_cryssalia_frostbites",
+    "q": "_cast_q_cryssalia_frostshock",
+    "r": "_cast_r_cryssalia_coldest",
+    "w": "_cast_w_cryssalia_bitterfrost"
+   },
+   "drakar": {
+    "e": "_cast_e_berserkers_call",
+    "q": "_cast_q_battle_hunger",
+    "r": "_cast_r_culling_blade",
+    "w": "_cast_w_counter_helix"
+   },
+   "gornak": {
+    "e": "_cast_e_counterspell",
+    "q": "_cast_q_mana_break",
+    "r": "_cast_r_mana_void",
+    "w": "_cast_w_blink"
+   },
+   "gravewake": {
+    "e": "_cast_e_gravewake_shell",
+    "q": "_cast_q_gravewake_anchor",
+    "r": "_cast_r_gravewake_ravage",
+    "w": "_cast_w_gravewake_tide"
+   },
+   "ignirus": {
+    "e": "_cast_e_ignirus_burstfireball",
+    "q": "_cast_q_ignirus_searingtorrent",
+    "r": "_cast_r_ignirus_vengeance",
+    "w": "_cast_w_ignirus_flameshot"
+   },
+   "ignis_drachorn": {
+    "e": "_cast_e_dragon_blood",
+    "q": "_cast_q_dragon_breath",
+    "r": "_cast_r_elder_dragon_form",
+    "w": "_cast_w_dragon_tail"
+   },
+   "kaeldris": {
+    "e": "_cast_e_kaeldris_moment",
+    "q": "_cast_q_kaeldris_overwhelming",
+    "r": "_cast_r_kaeldris_duel",
+    "w": "_cast_w_kaeldris_press"
+   },
+   "kaelthar": {
+    "e": "_cast_e_kaelthar_fistcrack",
+    "q": "_cast_q_kaelthar_chargingfist",
+    "r": "_cast_r_kaelthar_fistbreak",
+    "w": "_cast_w_kaelthar_quake"
+   },
+   "kaelthorn": {
+    "e": "_cast_e_kaelthorn_defendersassault",
+    "q": "_cast_q_kaelthorn_bravestfighter",
+    "r": "_cast_r_kaelthorn_chivalryfists",
+    "w": "_cast_w_kaelthorn_justiceblade"
+   },
+   "kenshiro": {
+    "e": "_cast_e_kenshiro_gale",
+    "q": "_cast_q_kenshiro_swiftslash",
+    "r": "_cast_r_kenshiro_supremacy",
+    "w": "_cast_w_kenshiro_assault"
+   },
+   "khazan": {
+    "e": "_cast_e_khazan_spin",
+    "q": "_cast_q_khazan_chained",
+    "r": "_cast_r_khazan_vanish",
+    "w": "_cast_w_khazan_leap"
+   },
+   "krobellus": {
+    "e": "_cast_e_krobellus_siphon",
+    "q": "_cast_q_krobellus_exorcism",
+    "r": "_cast_r_krobellus_crypt",
+    "w": "_cast_w_krobellus_silence"
+   },
+   "krognarr": {
+    "e": "_cast_e_krognarr_rampart",
+    "q": "_cast_q_krognarr_strike",
+    "r": "_cast_r_krognarr_eruption",
+    "w": "_cast_w_krognarr_seismic"
+   },
+   "kunkka": {
+    "e": "_cast_e_kunkka_ghost",
+    "q": "_cast_q_kunkka_tide",
+    "r": "_cast_r_kunkka_torrent",
+    "w": "_cast_w_kunkka_xmark"
+   },
+   "leoric": {
+    "e": "_cast_e_leoric_concealblast",
+    "q": "_cast_q_leoric_fearlesscharge",
+    "r": "_cast_r_leoric_immortality",
+    "w": "_cast_w_leoric_sacredhammer"
+   },
+   "luminar": {
+    "e": "_cast_e_luminar_wisp",
+    "q": "_cast_q_luminar_illuminate",
+    "r": "_cast_r_luminar_spiritform",
+    "w": "_cast_w_luminar_blindinglight"
+   },
+   "malzareth": {
+    "e": "_cast_e_malzareth_poison",
+    "q": "_cast_q_malzareth_disruption",
+    "r": "_cast_r_malzareth_disillusion",
+    "w": "_cast_w_malzareth_soul"
+   },
+   "morgath": {
+    "e": "_cast_e_magnetic_field",
+    "q": "_cast_q_spark_wraith",
+    "r": "_cast_r_tempest_double",
+    "w": "_cast_w_flux"
+   },
+   "morkhaera": {
+    "e": "_cast_e_morkhaera_energyimpact",
+    "q": "_cast_q_morkhaera_spiritburst",
+    "r": "_cast_r_morkhaera_ethereal",
+    "w": "_cast_w_morkhaera_airstrike"
+   },
+   "morthraxis": {
+    "e": "_cast_e_morthraxis_phantommob",
+    "q": "_cast_q_morthraxis_batimpale",
+    "r": "_cast_r_morthraxis_baleful",
+    "w": "_cast_w_morthraxis_sanguine"
+   },
+   "morvaenthir": {
+    "e": "_cast_e_morvaenthir_essence",
+    "q": "_cast_q_morvaenthir_soulfragment",
+    "r": "_cast_r_morvaenthir_shadowrealm",
+    "w": "_cast_w_morvaenthir_spiritbind"
+   },
+   "morvein": {
+    "e": "_cast_e_morvein_spectralcharge",
+    "q": "_cast_q_morvein_puncture",
+    "r": "_cast_r_morvein_phantomform",
+    "w": "_cast_w_morvein_violentstrike"
+   },
+   "naraka": {
+    "e": "_cast_e_naraka_hammer",
+    "q": "_cast_q_naraka_chaos",
+    "r": "_cast_r_naraka_execution",
+    "w": "_cast_w_naraka_shadowstep"
+   },
+   "nazulmor": {
+    "e": "_cast_e_nazulmor_tidalrage",
+    "q": "_cast_q_nazulmor_typhoon",
+    "r": "_cast_r_nazulmor_chaotic",
+    "w": "_cast_w_nazulmor_aquashield"
+   },
+   "nyxarath": {
+    "e": "_cast_e_nyxarath_presence",
+    "q": "_cast_q_nyxarath_shadowraze",
+    "r": "_cast_r_nyxarath_requiem",
+    "w": "_cast_w_nyxarath_necro"
+   },
+   "nyxareth": {
+    "e": "_cast_e_nyxareth_spacetime",
+    "q": "_cast_q_nyxareth_starsplit",
+    "r": "_cast_r_nyxareth_astrorealm",
+    "w": "_cast_w_nyxareth_realworld"
+   },
+   "nyxareva": {
+    "e": "_cast_e_nyxareva_sacrifice",
+    "q": "_cast_q_nyxareva_darkslash",
+    "r": "_cast_r_nyxareva_avatar",
+    "w": "_cast_w_nyxareva_mortalwound"
+   },
+   "nyxthrael": {
+    "e": "_cast_e_nyxthrael_darknightfall",
+    "q": "_cast_q_nyxthrael_ambush",
+    "r": "_cast_r_nyxthrael_shadowbringer",
+    "w": "_cast_w_nyxthrael_nightfall"
+   },
+   "nyzrak": {
+    "e": "_cast_e_winters_curse",
+    "q": "_cast_q_arctic_burn",
+    "r": "_cast_r_cold_embrace",
+    "w": "_cast_w_splinter_blast"
+   },
+   "pyraethis": {
+    "e": "_cast_e_pyraethis_sunray",
+    "q": "_cast_q_pyraethis_icarusdive",
+    "r": "_cast_r_pyraethis_supernova",
+    "w": "_cast_w_pyraethis_firespirits"
+   },
+   "pyraklos": {
+    "e": "_cast_e_pyraklos_bulwark",
+    "q": "_cast_q_pyraklos_spearmars",
+    "r": "_cast_r_pyraklos_arena",
+    "w": "_cast_w_pyraklos_rebuke"
+   },
+   "raz": {
+    "e": "_cast_e_raz_surge",
+    "q": "_cast_q_raz_overdrive",
+    "r": "_cast_r_raz_gloom",
+    "w": "_cast_w_raz_searing"
+   },
+   "seiryukong": {
+    "e": "_cast_e_seiryukong_jingusoldiers",
+    "q": "_cast_q_seiryukong_boundless",
+    "r": "_cast_r_seiryukong_wukong",
+    "w": "_cast_w_seiryukong_treedance"
+   },
+   "shirotaka": {
+    "e": "_cast_e_shirotaka_shadowclones",
+    "q": "_cast_q_shirotaka_hiraishin",
+    "r": "_cast_r_shirotaka_paperbomb",
+    "w": "_cast_w_shirotaka_waterboundary"
+   },
+   "solara": {
+    "e": "_cast_e_solara_luminosity",
+    "q": "_cast_q_solara_starbreaker",
+    "r": "_cast_r_solara_solarguardian",
+    "w": "_cast_w_solara_celestialhammer"
+   },
+   "solvanth": {
+    "e": "_cast_e_solvanth_laworder",
+    "q": "_cast_q_solvanth_ringpunishment",
+    "r": "_cast_r_solvanth_wrath",
+    "w": "_cast_w_solvanth_gloriouspathway"
+   },
+   "solvarin": {
+    "e": "_cast_e_solvarin_degen",
+    "q": "_cast_q_solvarin_purification",
+    "r": "_cast_r_solvarin_guardian",
+    "w": "_cast_w_solvarin_repel"
+   },
+   "sylvantheros": {
+    "e": "_cast_e_sylvantheros_treants",
+    "q": "_cast_q_sylvantheros_sprout",
+    "r": "_cast_r_sylvantheros_wrath",
+    "w": "_cast_w_sylvantheros_teleport"
+   },
+   "syrentha": {
+    "e": "_cast_e_syrentha_mirror",
+    "q": "_cast_q_syrentha_riptide",
+    "r": "_cast_r_syrentha_siren",
+    "w": "_cast_w_syrentha_song"
+   },
+   "thalakryon": {
+    "e": "_cast_e_thalakryon_tidalrage",
+    "q": "_cast_q_thalakryon_bolt",
+    "r": "_cast_r_thalakryon_metamorph",
+    "w": "_cast_w_thalakryon_aquashield"
+   },
+   "thalgryn": {
+    "e": "_cast_e_thalgryn_morph",
+    "q": "_cast_q_thalgryn_waveform",
+    "r": "_cast_r_thalgryn_replicate",
+    "w": "_cast_w_thalgryn_adaptive"
+   },
+   "thornvaegrim": {
+    "e": "_cast_e_thornvaegrim_saplingthrow",
+    "q": "_cast_q_thornvaegrim_bramble",
+    "r": "_cast_r_thornvaegrim_grasp",
+    "w": "_cast_w_thornvaegrim_twistedadvance"
+   },
+   "thorvak": {
+    "e": "_cast_e_thorvak_vengeance",
+    "q": "_cast_q_thorvak_seed",
+    "r": "_cast_r_thorvak_dryad",
+    "w": "_cast_w_thorvak_natureswrath"
+   },
+   "vaelindra": {
+    "e": "_cast_e_vaelindra_violetrequiem",
+    "q": "_cast_q_vaelindra_energywave",
+    "r": "_cast_r_vaelindra_realm",
+    "w": "_cast_w_vaelindra_spacering"
+   },
+   "vargrath": {
+    "e": "_cast_e_vargrath_devilstrike",
+    "q": "_cast_q_vargrath_bloodthirst",
+    "r": "_cast_r_vargrath_souldom",
+    "w": "_cast_w_vargrath_charge"
+   },
+   "velmyrth": {
+    "e": "_cast_e_velmyrth_blur",
+    "q": "_cast_q_velmyrth_dagger",
+    "r": "_cast_r_velmyrth_coup",
+    "w": "_cast_w_velmyrth_strike"
+   },
+   "vhalzun": {
+    "e": "_cast_e_vhalzun_reapers_scythe",
+    "q": "_cast_q_vhalzun_death_pulse",
+    "r": "_cast_r_vhalzun_ghost_shroud",
+    "w": "_cast_w_vhalzun_heartstopper"
+   },
+   "vorenmarr": {
+    "e": "_cast_e_vorenmarr_upheaval",
+    "q": "_cast_q_vorenmarr_bonds",
+    "r": "_cast_r_vorenmarr_golem",
+    "w": "_cast_w_vorenmarr_power"
+   },
+   "vraskhan": {
+    "e": "_cast_e_vraskhan_deathslash",
+    "q": "_cast_q_vraskhan_thorned",
+    "r": "_cast_r_vraskhan_omni",
+    "w": "_cast_w_vraskhan_leap"
+   },
+   "wiro": {
+    "e": "_cast_e_wiro_dash",
+    "q": "_cast_q_wiro_windcut",
+    "r": "_cast_r_wiro_typhoon",
+    "w": "_cast_w_wiro_whirl"
+   },
+   "xyrael": {
+    "e": "_cast_e_xyrael_tempest",
+    "q": "_cast_q_xyrael_finch",
+    "r": "_cast_r_xyrael_lightness",
+    "w": "_cast_w_xyrael_defiant"
+   },
+   "yamako": {
+    "e": "_cast_e_yamako_woodgolem",
+    "q": "_cast_q_yamako_deepforest",
+    "r": "_cast_r_yamako_kannon",
+    "w": "_cast_w_yamako_woodcreation"
+   }
+  },
+  "visual_overrides": {
+   "nyzrak": {
+    "e": 70,
+    "q": 50,
+    "r": 90,
+    "w": 50
+   },
+   "vhalzun": {
+    "e": 60,
+    "q": 60,
+    "r": 100,
+    "w": 80
+   }
+  }
+ },
+ "counts": {
+  "base_skill_methods": 28,
+  "boss_hero_methods": 273,
+  "bundle_classes": 15,
+  "files": 2,
+  "registry_bosses": 66,
+  "registry_casts": 264,
+  "starter_kits": 6,
+  "starter_methods": 39
+ },
+ "files": {
+  "__init__.py": 129,
+  "_bundle.py": 5220
+ },
+ "handler_registry": {
+  "aliased_submodules": [
+   "boss_hero_skills",
+   "grimjaw_skills",
+   "kaizen_skills",
+   "sylara_skills",
+   "thorne_skills",
+   "vex_skills",
+   "zephyr_skills"
+  ],
+  "aliased_symbols": {
+   "boss_hero_skills": [
+    "BaseSkill",
+    "BossHeroSkills",
+    "math"
+   ],
+   "grimjaw_skills": [
+    "BaseSkill",
+    "GrimjawSkills",
+    "math"
+   ],
+   "kaizen_skills": [
+    "BaseSkill",
+    "KaizenSkills",
+    "math"
+   ],
+   "sylara_skills": [
+    "BaseSkill",
+    "HERO_TYPES",
+    "SylaraSkills",
+    "math"
+   ],
+   "thorne_skills": [
+    "BaseSkill",
+    "ThorneSkills",
+    "math"
+   ],
+   "vex_skills": [
+    "BaseSkill",
+    "VexSkills",
+    "math"
+   ],
+   "zephyr_skills": [
+    "BaseSkill",
+    "ZephyrSkills",
+    "math"
+   ]
+  },
+  "auto_registers_every_boss_type": true,
+  "functions": [
+   "register_handler",
+   "get_skill_handler"
+  ],
+  "keeps_legacy_import_paths": true,
+  "plain_submodules": [
+   "base_skill"
+  ],
+  "registered_classes": [
+   "KaizenSkills",
+   "GrimjawSkills",
+   "SylaraSkills",
+   "VexSkills",
+   "ThorneSkills",
+   "ZephyrSkills"
+  ],
+  "registered_starters": [
+   "kaizen",
+   "grimjaw",
+   "sylara",
+   "vex",
+   "thorne",
+   "zephyr"
+  ]
+ },
+ "source": "hero_skills/ (Pygame, read-only oracle)",
+ "starter_kits": {
+  "grimjaw": {
+   "methods": [
+    "init_state",
+    "update_timers",
+    "cast_q",
+    "cast_w",
+    "cast_e",
+    "cast_r"
+   ],
+   "namespace": "_NS_grimjaw_skills",
+   "require_target": null,
+   "shake": {
+    "e": 6,
+    "q": 8,
+    "r": 15,
+    "w": 5
+   },
+   "visual_duration": {
+    "e": 60,
+    "q": 180,
+    "r": 90,
+    "w": 90
+   }
+  },
+  "kaizen": {
+   "methods": [
+    "init_state",
+    "update_timers",
+    "cast_q",
+    "_cast_steel_wind",
+    "_cast_dash_strike",
+    "cast_w",
+    "cast_e",
+    "cast_r"
+   ],
+   "namespace": "_NS_kaizen_skills",
+   "require_target": null,
+   "shake": {
+    "e": 6,
+    "q": 8,
+    "r": 15,
+    "w": 5
+   },
+   "visual_duration": {
+    "e": 60,
+    "q": 60,
+    "r": 100,
+    "w": 90
+   }
+  },
+  "sylara": {
+   "methods": [
+    "init_state",
+    "update_timers",
+    "cast_q",
+    "cast_w",
+    "cast_e",
+    "cast_r",
+    "_release_powershot"
+   ],
+   "namespace": "_NS_sylara_skills",
+   "require_target": null,
+   "shake": {
+    "e": 6,
+    "q": 8,
+    "r": 15,
+    "w": 5
+   },
+   "visual_duration": {
+    "e": 150,
+    "q": 180,
+    "r": 60,
+    "w": 180
+   }
+  },
+  "thorne": {
+   "methods": [
+    "init_state",
+    "update_timers",
+    "cast_q",
+    "cast_w",
+    "cast_e",
+    "cast_r"
+   ],
+   "namespace": "_NS_thorne_skills",
+   "require_target": null,
+   "shake": {
+    "e": 8,
+    "q": 6,
+    "r": 15,
+    "w": 5
+   },
+   "visual_duration": {
+    "e": 60,
+    "q": 40,
+    "r": 120,
+    "w": 100
+   }
+  },
+  "vex": {
+   "methods": [
+    "init_state",
+    "update_timers",
+    "cast_q",
+    "cast_w",
+    "cast_e",
+    "cast_r"
+   ],
+   "namespace": "_NS_vex_skills",
+   "require_target": null,
+   "shake": {
+    "e": 6,
+    "q": 8,
+    "r": 15,
+    "w": 5
+   },
+   "visual_duration": {
+    "e": 60,
+    "q": 40,
+    "r": 80,
+    "w": 100
+   }
+  },
+  "zephyr": {
+   "methods": [
+    "init_state",
+    "update_timers",
+    "cast_q",
+    "cast_w",
+    "cast_e",
+    "cast_r"
+   ],
+   "namespace": "_NS_zephyr_skills",
+   "require_target": null,
+   "shake": {
+    "e": 6,
+    "q": 8,
+    "r": 15,
+    "w": 5
+   },
+   "visual_duration": {
+    "e": 180,
+    "q": 240,
+    "r": 240,
+    "w": 180
+   }
+  }
+ }
+}

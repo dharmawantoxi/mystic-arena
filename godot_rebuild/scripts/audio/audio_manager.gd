@@ -29,11 +29,14 @@ const STREAMS := {
 ## Layer 9ar: `combat_audio.init()` raises the mixer to 24 channels and
 ## `play()` takes an idle one without stealing; the pool mirrors that.
 const COMBAT_CHANNELS := 24
+## Source `SoundManager.throttle_ms` default for a name it does not list.
+const SFX_THROTTLE_MS := 50
 
 var music: AudioStreamPlayer
 var effects: AudioStreamPlayer
 var ambient: AudioStreamPlayer
 var combat_players: Array[AudioStreamPlayer] = []
+var _sfx_throttle := {}
 var enabled := true
 var master_volume := DEFAULT_MASTER_VOLUME
 var sfx_volume := DEFAULT_SFX_VOLUME
@@ -149,7 +152,31 @@ func play(key: String) -> void:
 	if stream == null:
 		return
 	effects.stream = stream
+	# A scaled skill cast leaves its own volume on the shared player; a plain
+	# play restores the source mix volume (master*sfx).
+	_apply_player_volume(effects, combat_global_volume())
 	effects.play()
+
+
+## Source `SoundManager.play(name, volume_mult)`: same per-name throttle (50 ms
+## default) and `master * sfx * volume_mult` volume, clamped. `hero_skill` is
+## the only sound the Pygame skill triggers play, and it is not in
+## `throttle_ms`, so it uses the 50 ms default.
+func play_scaled(key: String, volume_mult: float) -> bool:
+	if not enabled or effects == null:
+		return false
+	var stream := _stream(key)
+	if stream == null:
+		return false
+	var now := Time.get_ticks_msec()
+	var last := int(_sfx_throttle.get(key, -SFX_THROTTLE_MS))
+	if now - last < SFX_THROTTLE_MS:
+		return false
+	_sfx_throttle[key] = now
+	effects.stream = stream
+	_apply_player_volume(effects, clampf(combat_global_volume() * volume_mult, 0.0, 1.0))
+	effects.play()
+	return true
 
 
 func get_volume(channel: String) -> float:

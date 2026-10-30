@@ -162,6 +162,12 @@ from debuff_payload_reach_source_oracle import source_fixture as debuff_payload_
 from hero_marker_source_oracle import source_fixture as hero_marker_fixture
 from miasma_tick_delivery_source_oracle import source_fixture as miasma_tick_delivery_fixture
 from bosses_folder_source_oracle import source_fixture as bosses_folder_fixture
+from hero_skills_folder_source_oracle import source_fixture as hero_skills_fixture
+from heroes_folder_source_oracle import source_fixture as heroes_folder_fixture
+from levels_folder_source_oracle import source_fixture as levels_folder_fixture
+from levels_folder_source_oracle import check_native as levels_folder_readers
+from map_components_source_oracle import source_fixture as map_components_fixture
+from map_components_source_oracle import palette_payload as map_components_palette
 check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
       "Item structure arm suite must be preloaded")
 check("ItemStructureArmChecks.new().run(_check)" in ai_tests,
@@ -2468,6 +2474,471 @@ if _bf_path.is_file():
           "9bx no boss is both a recipe kit and a shared-fallback boss")
     check(sorted(_bf_recipes | set(_bf_shared_ids)) == sorted(_bf["index"]),
           "9bx recipe kits plus shared fallback cover the whole 216-boss roster")
+# ── 9by: the whole `hero_skills/` folder ──────────────────────────────
+# The folder is two files but it owns the `BaseSkill` helper API, the 66-recipe
+# `BossHeroSkills` registry, the six starter kits and the handler registry.
+_hs_path = ROOT / "tests/fixtures/hero_skills_folder_source.json"
+check(_hs_path.is_file(), "9by hero_skills/ inventory needs a source oracle fixture")
+check("HeroSkillsFolderChecks.new().run(_check)" in ai_tests
+      and 'const HeroSkillsFolderChecks = preload("res://tests/hero_skills_folder_checks.gd")'
+      in ai_tests, "9by hero_skills/ folder suite must be preloaded and run")
+_hs_doc = ROOT.parent / "docs/HERO_SKILLS_FOLDER_MIGRATION.md"
+check(_hs_doc.is_file(), "9by the hero_skills/ migration report must ship")
+if _hs_path.is_file():
+    _hs = hero_skills_fixture()
+    check(_hs == json.loads(_hs_path.read_text(encoding="utf-8")),
+          "9by hero_skills/ inventory drifted from the source folder")
+    _hs_counts = _hs["counts"]
+    check((_hs_counts["files"], _hs_counts["base_skill_methods"], _hs_counts["boss_hero_methods"],
+           _hs_counts["registry_bosses"], _hs_counts["registry_casts"], _hs_counts["starter_kits"],
+           _hs_counts["starter_methods"]) == (2, 28, 273, 66, 264, 6, 39),
+          "9by 2 files: 28 BaseSkill methods, 273 BossHeroSkills methods, 66 recipes / "
+          "264 casts, 6 starter kits / 39 methods")
+    _hs_base = _hs["base_skill"]
+    check(_hs_base["require_target"] and _hs_base["target_range_slack"] == 1.15
+          and _hs_base["default_skill_range"] == 200,
+          "9by the source targeting guard is require-target with 1.15 slack and a 200 px fallback")
+    check(_hs_base["default_visual_duration"] == {"q": 60, "w": 90, "e": 60, "r": 100}
+          and _hs_base["class_visual_duration"] == {},
+          "9by the shared visual duration is 60/90/60/100 with no class override")
+    _hs_triggers = _hs_base["triggers"]
+    check((_hs_triggers["q"]["shake"], _hs_triggers["w"]["shake"],
+           _hs_triggers["e"]["shake"], _hs_triggers["r"]["shake"]) == (8, 5, 6, 15)
+          and (_hs_triggers["q"]["volume"], _hs_triggers["w"]["volume"],
+               _hs_triggers["e"]["volume"], _hs_triggers["r"]["volume"]) == (0.7, 0.6, 0.7, 1.0),
+          "9by the BaseSkill triggers shake 8/5/6/15 and play at 0.7/0.6/0.7/1.0")
+    _hs_boss = _hs["boss_hero_skills"]
+    check(_hs_boss["cast_shake"] == {"q": 10, "w": 8, "e": 8, "r": 15}
+          and _hs_boss["cast_range_floor"] == 140,
+          "9by BossHeroSkills shakes 10/8/8/15 and gates the cast at max(skill_range, 140)")
+    check(_hs_boss["visual_overrides"] == {
+        "nyzrak": {"q": 50, "w": 50, "e": 70, "r": 90},
+        "vhalzun": {"q": 60, "w": 80, "e": 60, "r": 100},
+    }, "9by the two per-hero boss visual overrides are nyzrak and vhalzun")
+    check(_hs_boss["fallback"]["multipliers"] == {"q": 1.0, "w": 1.2, "e": 1.5, "r": 2.5}
+          and _hs_boss["fallback"]["aoe_range"] == [150, 200]
+          and _hs_boss["fallback"]["visual_duration"] == 40,
+          "9by _fallback_cast keeps its multipliers, AOE radii and 40-tick visual")
+    check(_hs["starter_kits"]["thorne"]["shake"] == {"q": 6, "w": 5, "e": 8, "r": 15},
+          "9by thorne keeps the source's swapped Q/E shake amounts")
+    check(_hs["handler_registry"]["functions"] == ["register_handler", "get_skill_handler"]
+          and len(_hs["handler_registry"]["aliased_submodules"]) == 7
+          and _hs["handler_registry"]["registered_starters"] ==
+          ["kaizen", "grimjaw", "sylara", "vex", "thorne", "zephyr"]
+          and _hs["handler_registry"]["auto_registers_every_boss_type"],
+          "9by __init__.py keeps its registry API, seven aliases and boss auto-registration")
+
+# The cast feedback (shake + `hero_skill` sound) is the one behaviour the folder
+# had no native home for before this layer.
+_hs_feedback = (ROOT / "scripts/combat/skill_feedback.gd").read_text(encoding="utf-8")
+check("const DEFAULT_SHAKE := {\"q\": 8, \"w\": 5, \"e\": 6, \"r\": 15}" in _hs_feedback
+      and "const BOSS_SHAKE := {\"q\": 10, \"w\": 8, \"e\": 8, \"r\": 15}" in _hs_feedback
+      and "const VOLUME := {\"q\": 0.7, \"w\": 0.6, \"e\": 0.7, \"r\": 1.0}" in _hs_feedback
+      and '"thorne": {"q": 6, "w": 5, "e": 8, "r": 15}' in _hs_feedback,
+      "9by skill_feedback.gd must carry the source shake and volume tables")
+check('const SOUND := "hero_skill"' in _hs_feedback
+      and "if int(hero.team) != BLUE:" in _hs_feedback
+      and "AudioRuntime.play_scaled(SOUND, volume)" in _hs_feedback,
+      "9by the cast sound stays blue-only with the source volume multiplier")
+_hs_battle = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+check(_hs_battle.count("_trigger_source_cast_feedback(hero_id,") == 4
+      and "skill_feedback = SkillFeedback.apply(self, get_unit(hero_id), skill)"
+      in _hs_battle,
+      "9by all four cast entry points must apply the source feedback")
+_hs_audio = (ROOT / "scripts/audio/audio_manager.gd").read_text(encoding="utf-8")
+check("const SFX_THROTTLE_MS := 50" in _hs_audio
+      and "func play_scaled(key: String, volume_mult: float) -> bool:" in _hs_audio
+      and "clampf(combat_global_volume() * volume_mult, 0.0, 1.0)" in _hs_audio,
+      "9by the sound manager must reproduce the 50 ms throttle and scaled volume")
+check("_apply_player_volume(effects, combat_global_volume())" in _hs_audio,
+      "9by a plain play must restore the mix volume after a scaled cast")
+_hs_runtime = (ROOT / "scripts/audio/audio_runtime.gd").read_text(encoding="utf-8")
+check("static func play_scaled(key: String, volume_mult: float) -> bool:" in _hs_runtime,
+      "9by AudioRuntime must expose the scaled play")
+if _hs_doc.is_file() and _hs_path.is_file():
+    _hs_text = _hs_doc.read_text(encoding="utf-8")
+    _hs_unnamed = sorted(name for name in _hs["files"] if "`%s`" % name not in _hs_text)
+    check(not _hs_unnamed, f"9by the report must name both files: {_hs_unnamed}")
+    check(all(token in _hs_text for token in (
+        "BaseSkill", "BossHeroSkills", "SKILL_VISUAL_DURATION", "BOSS_HERO_VISUAL_DURATION",
+        "_SKILL_REGISTRY", "_fallback_cast", "REQUIRE_TARGET", "_shake_screen",
+        "_play_skill_sound", "register_handler", "_install_aliases", "SkillFeedback")),
+        "9by the report must classify every source construct")
+    check(_hs_text.count("|") > 80, "9by the report must stay tabular")
+
+# ── 9bz: the whole `heroes/` folder (34 modules, 101.262 lines) ────────
+# `heroes/` is two layers in one folder: the renderer pipeline (baked into the
+# atlas manifest on the Godot side) and 27 live-FX directors plus the shared bus
+# and combat-load governor that drive them.
+_hf_path = ROOT / "tests/fixtures/heroes_folder_source.json"
+check(_hf_path.is_file(), "9bz heroes/ inventory needs a source oracle fixture")
+check("HeroesFolderChecks.new().run(_check)" in ai_tests
+      and 'const HeroesFolderChecks = preload("res://tests/heroes_folder_checks.gd")'
+      in ai_tests, "9bz heroes/ folder suite must be preloaded and run")
+_hf_doc = ROOT.parent / "docs/HEROES_FOLDER_MIGRATION.md"
+check(_hf_doc.is_file(), "9bz the heroes/ migration report must ship")
+check((ROOT / "scripts/ui/hero_fx_bus.gd").is_file()
+      and (ROOT / "scripts/settings/fx_governor.gd").is_file(),
+      "9bz the live-FX bus and its combat-load governor must exist natively")
+if _hf_path.is_file():
+    _hf = heroes_folder_fixture()
+    check(_hf == json.loads(_hf_path.read_text(encoding="utf-8")),
+          "9bz heroes/ inventory drifted from the source folder")
+    _hf_folder = _hf["folder"]
+    check((_hf_folder["files"], _hf_folder["lines"], _hf_folder["fx_modules"],
+           _hf_folder["v1_modules"]) == (34, 101262, 27, 4),
+          "9bz 34 modules / 101.262 lines: 27 live-FX directors, 4 _v1 renderers")
+    check(_hf_folder["per_file_lines"]["__init__.py"] == 3374
+          and _hf_folder["per_file_lines"]["_bundle.py"] == 16769
+          and _hf_folder["per_file_lines"]["combat_feel.py"] == 311,
+          "9bz the bus, the bundle and the feel layer keep their source sizes")
+    _hf_live = _hf["live_fx"]
+    check(len(_hf_live["heroes"]) == 27 == len(_hf_live["paths"])
+          and _hf_live["heroes_kind"] == "set",
+          "9bz the live-FX registry is a 27-hero set with one module path each")
+    check(_hf_live["contract"] == ["attach", "owns", "tick", "draw_ground_layer",
+                                   "draw_live_layer", "reset_all", "stats",
+                                   "total_particles", "MAX_PARTICLES", "Particle",
+                                   "ParticleSystem", "ProjectileSystem"],
+          "9bz every director exposes the same twelve entry points")
+    check(all(name in _hf_live["bus_functions"] for name in (
+              "begin_fx_frame", "fx_frame", "count_busy_fx_heroes", "_fx_busy",
+              "_reset_fx_ground_budget", "_live_fx_pre", "_live_fx_post",
+              "_install_global_fx_caps", "_skill_quant", "_atk_quant")),
+          "9bz the bus owns the frame counter, busy count, budgets and pose quanta")
+    _hf_governor = _hf["governor"]
+    check((_hf_governor["load_smooth"], _hf_governor["base_heroes"],
+           _hf_governor["load_min"], _hf_governor["load_exp"]) == (0.40, 1.0, 0.10, 1.5),
+          "9bz the combat-load governor smooths at 0.40 with a 0.10 floor and 1.5 exponent")
+    check((_hf_governor["particle_cap"], _hf_governor["projectile_cap"],
+           _hf_governor["skill_projectile_cap"]) == (140, 18, 10)
+          and (_hf_governor["particle_floor"], _hf_governor["projectile_floor"],
+               _hf_governor["skill_projectile_floor"]) == (56, 10, 5),
+          "9bz spawn tokens are 140/18/10 with 56/10/5 floors")
+    check(_hf_governor["particle_ratio"] == {"low": 0.20, "medium": 0.40, "high": 0.70}
+          and _hf_governor["skill_quant_floor"] == {"low": 12, "medium": 8, "high": 4}
+          and _hf_governor["atk_quant_floor"] == {"low": 6, "medium": 4, "high": 3},
+          "9bz the presets keep their particle ratio and both pose floors")
+    check(_hf_governor["ground_budget"] == {"low": 2, "medium": 3, "high": 6}
+          and _hf_governor["max_hero_render"] == {"low": 3, "medium": 4, "high": 8},
+          "9bz the presets keep the ground-FX and full-render budgets")
+    _hf_scale = _hf["renderers"]["scale"]
+    check((_hf_scale["global_scale"], _hf_scale["target_height"], _hf_scale["ref_aspect"],
+           _hf_scale["width_weight"], _hf_scale["default_scale"]) == (0.78, 65, 1.6, 0.0, 0.65)
+          and (_hf_scale["clamp_min"], _hf_scale["clamp_max"]) == (0.40, 1.70),
+          "9bz the measured-scale formula keeps 0.78 / 65 px / 1.6 / clamp 0.40-1.70")
+    check((_hf_scale["anim_phases"], _hf_scale["atk_quant"], _hf_scale["skill_quant"])
+          == (8, 4, 6)
+          and _hf["skill_quant_ladder"]["thresholds"] == [2, 4, 6],
+          "9bz 8 animation phases, source quanta 4/6 and the 2/4/6 busy ladder")
+    check(sorted(_hf["renderers"]["heroes"]) == ["grimjaw", "kaizen", "sylara", "thorne",
+                                                "vex", "zephyr"]
+          and len(_hf["renderers"]["aliases"]) == 6,
+          "9bz the six HERO_RENDERERS starters are the six aliased namespaces")
+    check(_hf["bundle"]["namespace_count"] == 6
+          and sorted(_hf["bundle"]["v1_installs"]) == ["grimjaw", "kaizen", "sylara", "vex"],
+          "9bz _bundle.py installs the four _v1 renderers over their own namespace")
+    check(all(len(_hf["v1"][name]["functions"]) == 1 and _hf["v1"][name]["install_args"]
+              == "legacy_cls" and _hf["v1"][name]["subclasses_legacy"]
+              for name in _hf["v1"]),
+          "9bz every _v1 module is an install(legacy_cls) subclass, not a dead file")
+    check(_hf["combat_feel"]["constants"]["HIT_STOP_MIN"] == 0.03
+          and _hf["combat_feel"]["constants"]["HIT_STOP_MAX"] == 0.08
+          and _hf["combat_feel"]["hit_stop"]["MAX_FRAMES"] == 5,
+          "9bz combat_feel keeps the 0.03-0.08 s clamp and the 5-step cap")
+    check(sum(1 for name in _hf["fx"] if "MAX_PARTICLES" in _hf["fx"][name]["caps"]) == 27,
+          "9bz all 27 directors declare a particle cap")
+    check(all(not ({"tick", "draw_ground_layer", "draw_live_layer"}
+                   & set(_hf["fx"][name]["missing_api"])) for name in _hf["fx"]),
+          "9bz all 27 directors expose tick plus both draw layers")
+    check([name for name in _hf["fx"] if "attach" in _hf["fx"][name]["missing_api"]]
+          == ["zephyr_fx.py"]
+          and [name for name in _hf["fx"] if "stats" in _hf["fx"][name]["missing_api"]].__len__()
+          == 15,
+          "9bz attach/owns are optional (zephyr omits them) and 15 directors omit stats")
+
+_hf_governor_gd = (ROOT / "scripts/settings/fx_governor.gd").read_text(encoding="utf-8")
+check("const LOAD_SMOOTH := 0.40" in _hf_governor_gd
+      and "const LOAD_MIN := 0.10" in _hf_governor_gd
+      and "const PARTICLE_CAP := 140" in _hf_governor_gd
+      and "const PARTICLE_FLOOR := 56" in _hf_governor_gd,
+      "9bz fx_governor.gd must carry the source smoothing, floor and token caps")
+check("static func set_fx_load(active_count: int) -> void:" in _hf_governor_gd
+      and "static func reset_fx_load() -> void:" in _hf_governor_gd
+      and "static func allow_skill_projectile() -> bool:" in _hf_governor_gd,
+      "9bz the governor must expose the load feed, reset and one-way skill gate")
+_hf_bus_gd = (ROOT / "scripts/ui/hero_fx_bus.gd").read_text(encoding="utf-8")
+check("const GROUND_BUDGET_UNLIMITED := 99" in _hf_bus_gd
+      and "const HERO_SKILL_QUANT := 6" in _hf_bus_gd
+      and "static func begin_fx_frame(active_count: int = 0) -> int:" in _hf_bus_gd
+      and "static func count_busy_fx_heroes(units: Array) -> int:" in _hf_bus_gd,
+      "9bz the bus must own the frame tick, busy count and 99-slot ground default")
+check("Budget gone: keep the simulation alive, skip only the drawing." in _hf_bus_gd
+      and "_ground_left <= 0:" in _hf_bus_gd
+      and "_tick(director)" in _hf_bus_gd.split("_ground_left <= 0:", 1)[1],
+      "9bz an exhausted ground budget must still attach and tick the director")
+check("bool(_attr(unit, \"_portrait_hd\", false))" in _hf_bus_gd,
+      "9bz HD portrait rendering must opt out of the world FX layer")
+
+if _hf_doc.is_file() and _hf_path.is_file():
+    _hf_text = _hf_doc.read_text(encoding="utf-8")
+    _hf_unnamed = sorted(name for name in _hf["folder"]["per_file_lines"]
+                         if "`%s`" % name not in _hf_text)
+    check(not _hf_unnamed, f"9bz the report must name all 34 modules: {_hf_unnamed}")
+    check(all("`%s_fx.py`" % hero_id in _hf_text for hero_id in _hf["live_fx"]["heroes"]),
+          "9bz the report must list all 27 live-FX directors")
+    check(all(token in _hf_text for token in (
+              "HERO_RENDERERS", "_LIVE_FX_HEROES", "begin_fx_frame", "count_busy_fx_heroes",
+              "_FX_GROUND_LEFT", "MYSTIC_FX_GROUND", "particle_ratio", "skill_quant_floor",
+              "HERO_GLOBAL_SCALE", "_HERO_SCALE_OVERRIDE", "hero_scale", "install(legacy_cls)",
+              "combat_feel", "HitStop")),
+          "9bz the report must classify every source construct")
+    check(all(token in _hf_text for token in ("DEVIASI", "BELUM", "Diport")),
+          "9bz the report must use the same Diport / BELUM / DEVIASI vocabulary")
+    check(_hf_text.count("|") > 200, "9bz the report must stay tabular")
+
+# ── 9ca: the whole `levels/` folder (2 modules, 54 levels) ─────────────
+# Small folder, wide blast radius: enemy scaling, starting economy, castle
+# tiers, map theme, boss line-up, meta gold and the unlock chain all come from
+# these 54 dictionaries. The data was already native; this layer pins the
+# accounting of every key plus the four helper semantics.
+_lv_path = ROOT / "tests/fixtures/levels_folder_source.json"
+check(_lv_path.is_file(), "9ca levels/ inventory needs a source oracle fixture")
+check("LevelsFolderChecks.new().run(_check)" in ai_tests
+      and 'const LevelsFolderChecks = preload("res://tests/levels_folder_checks.gd")'
+      in ai_tests, "9ca levels/ folder suite must be preloaded and run")
+_lv_doc = ROOT.parent / "docs/LEVELS_FOLDER_MIGRATION.md"
+check(_lv_doc.is_file(), "9ca the levels/ migration report must ship")
+_lv_catalog = (ROOT / "scripts/match/level_catalog.gd").read_text(encoding="utf-8")
+check("static func count() -> int:" in _lv_catalog
+      and "static func all_configs() -> Array[Dictionary]:" in _lv_catalog
+      and "static func is_level_unlocked(number: int, completed: Array) -> bool:"
+      in _lv_catalog, "9ca the catalog must expose count(), all_configs() and the list gate")
+if _lv_path.is_file():
+    _lv = levels_folder_fixture()
+    check(_lv == json.loads(_lv_path.read_text(encoding="utf-8")),
+          "9ca levels/ inventory drifted from the source folder")
+    _lv_folder = _lv["folder"]
+    check((_lv_folder["count"], _lv_folder["lines"]) == (2, 2354)
+          and _lv_folder["files"] == {"__init__.py": 7, "level_data.py": 2347},
+          "9ca levels/ is two modules: a 7-line shim and the 2.347-line table")
+    check(_lv["reexports"] == ["ALL_LEVELS", "get_level_config", "get_level_count",
+                               "is_level_unlocked", "get_next_level"],
+          "9ca __init__.py re-exports the registry and the four helpers")
+    _lv_levels = _lv["levels"]
+    _lv_agg = _lv["aggregates"]
+    check((_lv_levels["count"], _lv_agg["key_count"],
+           _lv_agg["levels_with_every_key"]) == (54, 17, 54),
+          "9ca 54 levels, 17 keys each, no level missing a key")
+    check(_lv_levels["order"] == list(range(1, 55))
+          and _lv_agg["order_is_sequential"]
+          and _lv_agg["level_numbers_match_keys"],
+          "9ca ALL_LEVELS is the 1..54 order and matches every level_number")
+    check(len(_lv_agg["themes"]) == 54
+          and all(count == 1 for count in _lv_agg["themes"].values()),
+          "9ca the 54 levels use 54 distinct map themes, one level each")
+    check(len(_lv_agg["hp_mults"]) == 54
+          and _lv_agg["hp_mults"][0] == 1.0 and _lv_agg["hp_mults"][-1] == 1.54,
+          "9ca the 54 HP multipliers run 1.0 - 1.54 with no duplicates")
+    check(_lv_agg["starting_gold"] == [1000]
+          and _lv_agg["starting_castle_levels"] == [1]
+          and _lv_agg["castle_start_levels"] == [1],
+          "9ca every level opens on 1000 gold and tier-1 castles")
+    check(_lv_agg["reward_win"] == [3000] and _lv_agg["reward_replay"] == [1500]
+          and _lv_agg["reward_lose"] == [0],
+          "9ca meta gold is flat 3000 / 1500 / 0")
+    check(_lv_agg["mini_boss_counts"] == {"3": 54}
+          and _lv_agg["mini_boss_wave_keys"] == [10, 15, 17, 18, 20, 25]
+          and _lv_agg["mini_boss_wave_sets"]["10,18,25"] == 49,
+          "9ca every level carries three mini bosses on the 10/18/25 slot layout")
+    check(_lv_agg["unlock_chain_is_predecessor"],
+          "9ca every level above one unlocks from its predecessor")
+    check(len(_lv_agg["true_boss_types"]) == 54
+          and len(_lv_agg["mini_boss_types"]) == 162
+          and _lv_agg["boss_refs_total"] == 216
+          and not set(_lv_agg["true_boss_types"]) & set(_lv_agg["mini_boss_types"]),
+          "9ca 54 true + 162 mini bosses cover the 216-boss roster exactly once")
+    _lv_helpers = _lv["helpers"]
+    check(_lv_helpers["names"] == ["get_level_config", "get_level_count",
+                                   "get_next_level", "is_level_unlocked"]
+          and _lv_helpers["get_level_config"]["linear_over_all_levels"]
+          and _lv_helpers["get_level_count"]["returns_len_all_levels"],
+          "9ca the folder exposes the four helpers with their source lookup shape")
+    check(_lv_helpers["is_level_unlocked"]["none_unlock_after_means_unlocked"]
+          and _lv_helpers["is_level_unlocked"]["membership_in_completed"]
+          and _lv_helpers["is_level_unlocked"]["missing_config_is_locked"]
+          and _lv_helpers["get_next_level"]["guards_against_level_count"]
+          and _lv_helpers["get_next_level"]["guards_against_missing_config"]
+          and _lv_helpers["get_next_level"]["returns_none_at_end"],
+          "9ca the unlock and next-level guards keep their source conditions")
+    check(_lv["readers"]["dead_in_source"] == ["bgm_track", "meta_gold_reward_lose"],
+          "9ca only bgm_track and meta_gold_reward_lose are unread by the runtime")
+    _lv_readers = levels_folder_readers(_lv)
+    check(not _lv_readers["live_without_native_consumer"],
+          f"9ca every runtime-read key needs a Godot consumer: "
+          f"{_lv_readers['live_without_native_consumer']}")
+    check(_lv_readers["dead_in_native"] == _lv_readers["dead_in_source"],
+          f"9ca the dead keys must stay dead on both sides: {_lv_readers['dead_in_native']}")
+_lv_battle = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+check('float(level_config.get("enemy_hp_mult", 1.0)) * 1.15' in _lv_battle
+      and 'float(level_config.get("enemy_damage_mult", 1.0)) * 1.10' in _lv_battle
+      and 'enemy_speed_mult = float(level_config.get("enemy_speed_mult", 1.0))' in _lv_battle,
+      "9ca hard mode must apply the source 1.15 / 1.10 / raw speed multipliers")
+check('var source: Dictionary = level_config.get("mini_bosses", {})' in _lv_battle
+      and "for raw_key in source.keys():" in _lv_battle,
+      "9ca the mini-boss order must come from the source dictionary order")
+
+if _lv_doc.is_file() and _lv_path.is_file():
+    _lv_text = _lv_doc.read_text(encoding="utf-8")
+    _lv_unnamed = sorted(name for name in _lv["folder"]["files"]
+                         if "`%s`" % name not in _lv_text)
+    check(not _lv_unnamed, f"9ca the report must name both modules: {_lv_unnamed}")
+    check(all("`%s`" % key in _lv_text for key in _lv_agg["keys"]),
+          "9ca the report must classify all seventeen level keys")
+    check(all(token in _lv_text for token in (
+              "ALL_LEVELS", "get_level_config", "get_level_count", "is_level_unlocked",
+              "get_next_level", "mini_bosses", "_roll_mini_boss_schedule",
+              "enemy_hp_mult", "map_theme", "theme_palette.json", "boss_stats.json",
+              "bgm_track", "meta_gold_reward_lose")),
+          "9ca the report must classify every source construct")
+    check(all(token in _lv_text for token in ("DEVIASI", "BELUM", "Diport")),
+          "9ca the report must use the same Diport / BELUM / DEVIASI vocabulary")
+    check(_lv_text.count("|") > 150, "9ca the report must stay tabular")
+
+# ── 9cb: the whole `map_components/` folder (2 files, 7 merged modules) ─────
+# The map renderer: 52 palette colours, 54 theme dictionaries, three path and
+# decoration generators, four static rasterisers and three pixel layers, all
+# merged into one 7.403-line bundle. This layer pins the accounting: 194
+# classified symbols with a target file and token each, the executed seed-42
+# geometry, and the palette JSON that stops the rasterisers from hard-coding
+# source colours.
+_mc_path = ROOT / "tests/fixtures/map_components_source.json"
+check(_mc_path.is_file(), "9cb map_components/ inventory needs a source oracle fixture")
+check("MapComponentsChecks.new().run(_check)" in ai_tests
+      and 'const MapComponentsChecks = preload("res://tests/map_components_checks.gd")'
+      in ai_tests, "9cb map_components/ folder suite must be preloaded and run")
+_mc_doc = ROOT.parent / "docs/MAP_COMPONENTS_FOLDER_MIGRATION.md"
+check(_mc_doc.is_file(), "9cb the map_components/ migration report must ship")
+_mc_palette_path = ROOT / "data/levels/map_palette.json"
+check(_mc_palette_path.is_file(), "9cb the palette data must ship as JSON")
+_mc_palette_gd = (ROOT / "scripts/ui/map_palette.gd")
+check(_mc_palette_gd.is_file() and "res://data/levels/map_palette.json"
+      in _mc_palette_gd.read_text(encoding="utf-8"),
+      "9cb the palette loader must read the shipped JSON")
+if _mc_path.is_file():
+    _mc = map_components_fixture()
+    check(_mc == json.loads(_mc_path.read_text(encoding="utf-8")),
+          "9cb map_components/ inventory drifted from the source folder")
+    check(_mc_palette_path.is_file()
+          and json.loads(_mc_palette_path.read_text(encoding="utf-8"))
+          == map_components_palette(_mc),
+          "9cb data/levels/map_palette.json drifted from palettes.py")
+    _mc_folder = _mc["folder"]
+    check((_mc_folder["count"], _mc_folder["lines"]) == (2, 7504)
+          and _mc_folder["files"] == {"__init__.py": 101, "_bundle.py": 7403},
+          "9cb map_components/ is a 7.403-line bundle plus a 101-line shim")
+    _mc_modules = _mc["modules"]
+    check([row["module"] for row in _mc_modules] == [
+              "palettes", "themes", "generators", "static_renderer",
+              "dynamic_renderer", "decoration_renderer", "shop_renderer"]
+          and [row["lines"] for row in _mc_modules] == [94, 4530, 294, 374, 733, 1091, 252]
+          and sum(row["lines"] for row in _mc_modules) == 7368
+          and _mc_modules[0]["start"] == 36
+          and sum(row["lines"] for row in _mc_modules) == 7403 - 35,
+          "9cb the seven merged modules tile the 7.403-line bundle after a 35-line header")
+    check(_mc["palette"]["tile_size"] == 16 and len(_mc["palette"]["colors"]) == 52,
+          "9cb palettes.py is 52 colours and TILE_SIZE 16")
+    check(_mc["themes"]["count"] == 54 and len(_mc["themes"]["consts"]) == 54
+          and _mc["themes"]["key_count"] == 77,
+          "9cb themes.py is 54 dictionaries over a 77-key union")
+    check(_mc["fallback"]["equals_forest"] and _mc["fallback"]["known_returns_self"],
+          "9cb get_theme falls back to FOREST_THEME")
+    _mc_dynamic = json.loads((ROOT / "data/art/map_dynamic.json").read_text(encoding="utf-8"))
+    _mc_theme_drift = []
+    for _key, _row in _mc["themes"]["meta"].items():
+        _theme = _mc_dynamic["themes"].get(_key, {}).get("theme", {})
+        if (str(_theme.get("name", "")) != str(_row["name"])
+                or str(_theme.get("boss_identity", "")) != str(_row["boss_identity"])
+                or str(_theme.get("particle_type", "")) != str(_row["particle_type"])
+                or len(_theme) != _row["key_count"]
+                or sorted(k for k, v in _theme.items() if v is True) != _row["gate_keys"]):
+            _mc_theme_drift.append(_key)
+    check(not _mc_theme_drift,
+          f"9cb all 54 themes must match map_dynamic.json: {_mc_theme_drift}")
+    _mc_layout = _mc_dynamic["layout"]
+    _mc_decor = _mc["generators"]["decorations"]
+    _mc_layout_drift = [key for key in _mc_layout
+                        if key != "river_points" and _mc_layout[key] != _mc_decor[key]]
+    check(not _mc_layout_drift and _mc_layout["river_points"]
+          == _mc["generators"]["river"]["points"],
+          f"9cb the runtime layout must equal the executed seed 42 output: "
+          f"{_mc_layout_drift}")
+    check(_mc["generators"]["lanes"]["counts"] == [111, 65, 101]
+          and _mc["generators"]["river"]["count"] == 61
+          and _mc["generators"]["repeatable"],
+          "9cb the generators reproduce 3 lanes, a 61-point river and repeatable decorations")
+    check(_mc["generators"]["counts"]["boss_landmarks"] == 30
+          and _mc["generators"]["counts"]["dark_trees"] == 8
+          and len(_mc["generators"]["counts"]) == 14,
+          "9cb the 14 decoration arrays keep their seed-42 counts")
+    check(_mc["decoration_reads"] == ["bones", "boss_landmarks", "crystals_blue",
+                                      "gravestones", "rocks_mossy", "torch_stones"]
+          and _mc["bake_only_arrays"] == ["boss_landmarks", "crystals_blue"],
+          "9cb the two bake-only arrays must be classified, not dropped")
+    check([row["argument"] for row in _mc["seeds"]] == ["42", "", "100", ""]
+          and [row["kind"] for row in _mc["seeds"]] == ["fixed", "entropy", "fixed", "entropy"],
+          "9cb the folder seeds 42 and 100, then reseeds entropy twice")
+    check(len(_mc["aliases"]["aliased"]) == 7 and len(_mc["aliases"]["extra"]) == 3
+          and len(_mc["aliases"]["plain"]) == 4
+          and {"DecorationRenderer", "DynamicRenderer", "PathGenerator",
+               "ShopRenderer", "StaticRenderer", "DecorationGenerator"}
+          <= set(_mc["aliases"]["reexports"]),
+          "9cb the sys.modules shim keeps seven namespaces and six class re-exports")
+    check(_mc["symbol_count"] == 194 and len(_mc["classification"]) == 194
+          and _mc["classification_kinds"] == {"bake": 39, "data": 112, "executed": 9,
+                                              "internal": 1, "meta": 2, "native": 31},
+          "9cb all 194 folder symbols carry a kind: "
+          f"{_mc['classification_kinds']}")
+    check(not _mc["stale_entries"], f"9cb stale classifications: {_mc['stale_entries']}")
+    _mc_broken = sorted(name for name, entry in _mc["classification"].items()
+                        if not (ROOT.parent / entry["target"]).is_file()
+                        or entry["token"] not in (ROOT.parent / entry["target"]).read_text(
+                            encoding="utf-8"))
+    check(not _mc_broken,
+          f"9cb every classification needs a file and a line behind it: {_mc_broken}")
+for _tiles in ("wall_tiles.gd", "lane_tiles.gd", "river_tiles.gd"):
+    _tiles_text = (ROOT / "scripts/ui" / _tiles).read_text(encoding="utf-8")
+    check('preload("res://scripts/ui/map_palette.gd")' in _tiles_text
+          and "Color8(12, 8, 12)" not in _tiles_text
+          and "Color8(175, 175, 185)" not in _tiles_text,
+          f"9cb {_tiles} must read the palette instead of hard-coded stone colours")
+check("static func create_paths() -> Array[PackedVector2Array]:" in
+      (ROOT / "scripts/data/lane_layout.gd").read_text(encoding="utf-8"),
+      "9cb lane_layout.gd must keep the ported spline entry point")
+
+if _mc_doc.is_file() and _mc_path.is_file():
+    _mc_text = _mc_doc.read_text(encoding="utf-8")
+    _mc_modules_names = [row["module"] for row in _mc["modules"]]
+    _mc_unnamed = [name for name in _mc_modules_names if "`%s.py`" % name not in _mc_text]
+    check(not _mc_unnamed, f"9cb the report must name all seven merged modules: {_mc_unnamed}")
+    _mc_class_rows = {name.split(":", 1)[1].split(".")[0]
+                      for name in _mc["classification"] if "." in name}
+    _mc_class_unnamed = sorted({name for name in _mc_class_rows | set(_mc["classes"])
+                                if "`%s`" % name not in _mc_text
+                                and "`%s." % name not in _mc_text})
+    check(not _mc_class_unnamed,
+          f"9cb the report must classify every class: {_mc_class_unnamed}")
+    check(all(kind in _mc_text for kind in ("native", "data", "bake", "executed",
+                                            "meta", "internal")),
+          "9cb the report must explain all six classification kinds")
+    check(all(token in _mc_text for token in (
+              "map_palette.json", "theme_palette.json", "map_dynamic.json",
+              "river_path.json", "terrain_tiles.json", "wall_tiles.json",
+              "map_overlay.json", "seed 42", "boss_landmarks", "crystals_blue",
+              "get_theme", "TILE_SIZE", "Haunted Veil")),
+          "9cb the report must cover the data files, the seeds and the bake-only arrays")
+    check(_mc_text.count("|") > 150, "9cb the report must stay tabular")
+
 if _bf_doc.is_file() and _bf_path.is_file():
     _bf_text = _bf_doc.read_text(encoding="utf-8")
     _bf_unnamed = sorted(name for name in _bf["files"] if "`%s`" % name not in _bf_text)

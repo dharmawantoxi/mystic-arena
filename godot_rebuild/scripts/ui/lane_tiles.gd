@@ -4,6 +4,7 @@ extends RefCounted
 ## Bresenham approximation, not Pygame's rasterizer.
 
 const DATA := "res://data/levels/lane_tiles.json"
+const MapPalette = preload("res://scripts/ui/map_palette.gd")
 const BOUNDS := Rect2i(0, 0, 1280, 720)
 static var _commands: Array = []
 
@@ -26,13 +27,11 @@ static func raster(palette: Dictionary) -> Image:
 		palette["path_stone_4"],
 		palette["path_moss"],
 		palette["path_crack"],
-		palette["radiant_moss"],
-		Color8(12, 8, 12),
-		Color8(55, 55, 65),
-		Color8(95, 95, 105),
-		Color8(135, 135, 145),
-		Color8(175, 175, 185)
+		palette["radiant_moss"]
 	]
+	colors.append_array(
+		MapPalette.palette(["outline", "stone_dark", "stone_mid", "stone_light", "stone_high"])
+	)
 	for row in commands():
 		var ink: Color = colors[int(row[0])]
 		if int(row[5]) == -1:

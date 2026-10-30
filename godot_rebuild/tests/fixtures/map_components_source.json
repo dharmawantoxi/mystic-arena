@@ -1,0 +1,5469 @@
+{
+ "aliases": {
+  "aliased": [
+   "generators",
+   "static_renderer",
+   "shop_renderer",
+   "palettes",
+   "themes",
+   "dynamic_renderer",
+   "decoration_renderer"
+  ],
+  "extra": {
+   "generators": [
+    "CRYSTAL_BLUE_L",
+    "SCREEN_HEIGHT",
+    "SCREEN_WIDTH",
+    "TILE_SIZE",
+    "math",
+    "random"
+   ],
+   "shop_renderer": [
+    "CRYSTAL_BLUE_D",
+    "CRYSTAL_BLUE_H",
+    "CRYSTAL_BLUE_L",
+    "CRYSTAL_BLUE_M",
+    "CRYSTAL_RED_D",
+    "CRYSTAL_RED_H",
+    "CRYSTAL_RED_L",
+    "CRYSTAL_RED_M",
+    "DEAD_TREE_1",
+    "DEAD_TREE_2",
+    "DEAD_TREE_3",
+    "DIRE_ASH",
+    "DIRE_BURNT",
+    "DIRE_EARTH_1",
+    "DIRE_EARTH_2",
+    "DIRE_EARTH_3",
+    "DIRE_EARTH_4",
+    "FIRE_D",
+    "FIRE_H",
+    "FIRE_L",
+    "FIRE_M",
+    "OUTLINE",
+    "PATH_CRACK",
+    "PATH_MOSS",
+    "PATH_STONE_1",
+    "PATH_STONE_2",
+    "PATH_STONE_3",
+    "PATH_STONE_4",
+    "RADIANT_GRASS_1",
+    "RADIANT_GRASS_2",
+    "RADIANT_GRASS_3",
+    "RADIANT_GRASS_4",
+    "RADIANT_GRASS_HIGH",
+    "RADIANT_MOSS",
+    "RIVER_DEEP",
+    "RIVER_FOAM",
+    "RIVER_GLOW",
+    "RIVER_LIGHT",
+    "RIVER_MID",
+    "SHADOW",
+    "STONE_DARK",
+    "STONE_HIGH",
+    "STONE_LIGHT",
+    "STONE_MID",
+    "TILE_SIZE",
+    "TRANSITION_1",
+    "TRANSITION_2",
+    "TREE_LEAVES_D",
+    "TREE_LEAVES_H",
+    "TREE_LEAVES_L",
+    "TREE_LEAVES_M",
+    "TREE_TRUNK_D",
+    "TREE_TRUNK_L",
+    "pygame"
+   ],
+   "static_renderer": [
+    "OUTLINE",
+    "TILE_SIZE",
+    "math",
+    "pygame",
+    "random"
+   ]
+  },
+  "plain": {
+   "decoration_renderer": [
+    "CRYSTAL_BLUE_D",
+    "CRYSTAL_BLUE_H",
+    "CRYSTAL_BLUE_L",
+    "CRYSTAL_BLUE_M",
+    "CRYSTAL_RED_D",
+    "CRYSTAL_RED_H",
+    "CRYSTAL_RED_L",
+    "CRYSTAL_RED_M",
+    "DEAD_TREE_1",
+    "DEAD_TREE_2",
+    "DEAD_TREE_3",
+    "DIRE_ASH",
+    "DIRE_BURNT",
+    "DIRE_EARTH_1",
+    "DIRE_EARTH_2",
+    "DIRE_EARTH_3",
+    "DIRE_EARTH_4",
+    "DecorationRenderer",
+    "FIRE_D",
+    "FIRE_H",
+    "FIRE_L",
+    "FIRE_M",
+    "OUTLINE",
+    "PATH_CRACK",
+    "PATH_MOSS",
+    "PATH_STONE_1",
+    "PATH_STONE_2",
+    "PATH_STONE_3",
+    "PATH_STONE_4",
+    "RADIANT_GRASS_1",
+    "RADIANT_GRASS_2",
+    "RADIANT_GRASS_3",
+    "RADIANT_GRASS_4",
+    "RADIANT_GRASS_HIGH",
+    "RADIANT_MOSS",
+    "RIVER_DEEP",
+    "RIVER_FOAM",
+    "RIVER_GLOW",
+    "RIVER_LIGHT",
+    "RIVER_MID",
+    "SHADOW",
+    "STONE_DARK",
+    "STONE_HIGH",
+    "STONE_LIGHT",
+    "STONE_MID",
+    "TILE_SIZE",
+    "TRANSITION_1",
+    "TRANSITION_2",
+    "TREE_LEAVES_D",
+    "TREE_LEAVES_H",
+    "TREE_LEAVES_L",
+    "TREE_LEAVES_M",
+    "TREE_TRUNK_D",
+    "TREE_TRUNK_L",
+    "_draw_true_boss_decorations",
+    "_draw_true_boss_decorations_filled",
+    "_original_true_boss_decorations",
+    "math",
+    "pygame",
+    "random"
+   ],
+   "dynamic_renderer": [
+    "CRYSTAL_BLUE_D",
+    "CRYSTAL_BLUE_H",
+    "CRYSTAL_BLUE_L",
+    "CRYSTAL_BLUE_M",
+    "CRYSTAL_RED_D",
+    "CRYSTAL_RED_H",
+    "CRYSTAL_RED_L",
+    "CRYSTAL_RED_M",
+    "DEAD_TREE_1",
+    "DEAD_TREE_2",
+    "DEAD_TREE_3",
+    "DIRE_ASH",
+    "DIRE_BURNT",
+    "DIRE_EARTH_1",
+    "DIRE_EARTH_2",
+    "DIRE_EARTH_3",
+    "DIRE_EARTH_4",
+    "DynamicRenderer",
+    "FIRE_D",
+    "FIRE_H",
+    "FIRE_L",
+    "FIRE_M",
+    "OUTLINE",
+    "PATH_CRACK",
+    "PATH_MOSS",
+    "PATH_STONE_1",
+    "PATH_STONE_2",
+    "PATH_STONE_3",
+    "PATH_STONE_4",
+    "RADIANT_GRASS_1",
+    "RADIANT_GRASS_2",
+    "RADIANT_GRASS_3",
+    "RADIANT_GRASS_4",
+    "RADIANT_GRASS_HIGH",
+    "RADIANT_MOSS",
+    "RIVER_DEEP",
+    "RIVER_FOAM",
+    "RIVER_GLOW",
+    "RIVER_LIGHT",
+    "RIVER_MID",
+    "SHADOW",
+    "STONE_DARK",
+    "STONE_HIGH",
+    "STONE_LIGHT",
+    "STONE_MID",
+    "TILE_SIZE",
+    "TRANSITION_1",
+    "TRANSITION_2",
+    "TREE_LEAVES_D",
+    "TREE_LEAVES_H",
+    "TREE_LEAVES_L",
+    "TREE_LEAVES_M",
+    "TREE_TRUNK_D",
+    "TREE_TRUNK_L",
+    "_boss_draw_particles",
+    "_boss_dynamic_draw",
+    "_boss_init_particles",
+    "_boss_update",
+    "_draw_boss_environment",
+    "_original_dynamic_draw",
+    "_original_dynamic_draw_particles",
+    "_original_dynamic_init_particles",
+    "_original_dynamic_update",
+    "math",
+    "pygame",
+    "random"
+   ],
+   "palettes": [
+    "CRYSTAL_BLUE_D",
+    "CRYSTAL_BLUE_H",
+    "CRYSTAL_BLUE_L",
+    "CRYSTAL_BLUE_M",
+    "CRYSTAL_RED_D",
+    "CRYSTAL_RED_H",
+    "CRYSTAL_RED_L",
+    "CRYSTAL_RED_M",
+    "DEAD_TREE_1",
+    "DEAD_TREE_2",
+    "DEAD_TREE_3",
+    "DIRE_ASH",
+    "DIRE_BURNT",
+    "DIRE_EARTH_1",
+    "DIRE_EARTH_2",
+    "DIRE_EARTH_3",
+    "DIRE_EARTH_4",
+    "FIRE_D",
+    "FIRE_H",
+    "FIRE_L",
+    "FIRE_M",
+    "OUTLINE",
+    "PATH_CRACK",
+    "PATH_MOSS",
+    "PATH_STONE_1",
+    "PATH_STONE_2",
+    "PATH_STONE_3",
+    "PATH_STONE_4",
+    "RADIANT_GRASS_1",
+    "RADIANT_GRASS_2",
+    "RADIANT_GRASS_3",
+    "RADIANT_GRASS_4",
+    "RADIANT_GRASS_HIGH",
+    "RADIANT_MOSS",
+    "RIVER_DEEP",
+    "RIVER_FOAM",
+    "RIVER_GLOW",
+    "RIVER_LIGHT",
+    "RIVER_MID",
+    "SHADOW",
+    "STONE_DARK",
+    "STONE_HIGH",
+    "STONE_LIGHT",
+    "STONE_MID",
+    "TILE_SIZE",
+    "TRANSITION_1",
+    "TRANSITION_2",
+    "TREE_LEAVES_D",
+    "TREE_LEAVES_H",
+    "TREE_LEAVES_L",
+    "TREE_LEAVES_M",
+    "TREE_TRUNK_D",
+    "TREE_TRUNK_L"
+   ],
+   "themes": [
+    "ABYSSAL_THEME",
+    "ABYSS_THEME",
+    "CELESTIALPEAKS_THEME",
+    "COSMIC_THEME",
+    "CRIMSON_THEME",
+    "ELDRITCH_THEME",
+    "ETERNALFLAME_THEME",
+    "PRIMORDIAL_THEME",
+    "ROYAL_THEME",
+    "SANCTUM_THEME",
+    "VIOLET_THEME",
+    "DESERT_THEME",
+    "FOREST_THEME",
+    "HAUNTED_THEME",
+    "ICE_THEME",
+    "NETHERVENOM_THEME",
+    "OCEAN_THEME",
+    "RADIANT_THEME",
+    "SOULFORGED_THEME",
+    "THEMES",
+    "VOLCANIC_THEME",
+    "get_theme"
+   ]
+  },
+  "reexports": [
+   "*",
+   "DecorationGenerator",
+   "DecorationRenderer",
+   "DynamicRenderer",
+   "PathGenerator",
+   "ShopRenderer",
+   "StaticRenderer"
+  ]
+ },
+ "bake_only_arrays": [
+  "boss_landmarks",
+  "crystals_blue"
+ ],
+ "classes": {
+  "DecorationRenderer": {
+   "methods": [
+    "draw_all",
+    "_draw_dark_trees",
+    "_draw_dark_pine",
+    "_draw_dark_oak",
+    "_draw_twisted_tree",
+    "_draw_dead_trees",
+    "_draw_gravestones",
+    "_draw_bones",
+    "_draw_ancient_ruins",
+    "_draw_rocks",
+    "_draw_dark_bushes",
+    "_draw_spike_traps",
+    "_draw_mushrooms",
+    "_draw_crystals_blue",
+    "_draw_crystals_red",
+    "_draw_glow_flowers",
+    "_draw_cactus",
+    "_draw_palm_trees",
+    "_draw_sand_dunes",
+    "_draw_crystals_amber",
+    "_draw_frozen_trees",
+    "_draw_ice_crystals",
+    "_draw_snow_drifts"
+   ],
+   "nested": {}
+  },
+  "DynamicRenderer": {
+   "methods": [
+    "__init__",
+    "_cached_surf",
+    "_init_particles",
+    "_init_fog",
+    "update",
+    "draw",
+    "_draw_fog",
+    "_draw_river_animation",
+    "_draw_shop_glow",
+    "_draw_shop_smoke",
+    "_draw_particles",
+    "_draw_torches",
+    "_draw_flame_a",
+    "_draw_flame_b",
+    "_draw_flame_c"
+   ],
+   "nested": {}
+  },
+  "_NS_generators": {
+   "methods": [],
+   "nested": {
+    "DecorationGenerator": [
+     "__init__",
+     "generate_all",
+     "_is_valid",
+     "_too_close_to_lane",
+     "_too_close_to_river",
+     "_too_close_to_base",
+     "_too_close_to_shop",
+     "_is_radiant",
+     "_is_dire"
+    ],
+    "PathGenerator": [
+     "make_curved_path",
+     "generate_lanes",
+     "generate_river"
+    ]
+   }
+  },
+  "_NS_shop_renderer": {
+   "methods": [],
+   "nested": {
+    "ShopRenderer": [
+     "draw",
+     "_draw_building",
+     "_draw_pixel_text"
+    ]
+   }
+  },
+  "_NS_static_renderer": {
+   "methods": [],
+   "nested": {
+    "StaticRenderer": [
+     "draw_terrain",
+     "draw_terrain_details",
+     "draw_river",
+     "draw_lane",
+     "_draw_cobblestone_tile",
+     "_draw_lane_border_stone",
+     "draw_border_wall",
+     "_draw_dark_stone_block",
+     "_draw_wall_spike"
+    ]
+   }
+  }
+ },
+ "classification": {
+  "__init__:aliases": {
+   "kind": "meta",
+   "note": "",
+   "target": "map_components/__init__.py",
+   "token": "_EXTRA"
+  },
+  "__init__:reexports": {
+   "kind": "meta",
+   "note": "",
+   "target": "map_components/__init__.py",
+   "token": "_install_aliases"
+  },
+  "boss:_boss_draw_particles": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/dynamic_map_layout.gd",
+   "token": "static func _particle_ops("
+  },
+  "boss:_boss_dynamic_draw": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/dynamic_map_layout.gd",
+   "token": "static func _boss_ops("
+  },
+  "boss:_boss_init_particles": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/dynamic_map_renderer.gd",
+   "token": "func _update_boss_particles(particle_type: String) -> void:"
+  },
+  "boss:_boss_update": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/dynamic_map_renderer.gd",
+   "token": "func update() -> void:"
+  },
+  "boss:_draw_boss_environment": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/dynamic_map_layout.gd",
+   "token": "static func _boss_ops("
+  },
+  "boss:_draw_true_boss_decorations": {
+   "kind": "bake",
+   "note": "runs inside draw_all, so the overlay bake carries it",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "boss:_draw_true_boss_decorations_filled": {
+   "kind": "bake",
+   "note": "runs inside draw_all, so the overlay bake carries it",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "decoration_renderer:DecorationRenderer._draw_ancient_ruins": {
+   "kind": "bake",
+   "note": "draw_all is the bake entry point and calls this method",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "decoration_renderer:DecorationRenderer._draw_bones": {
+   "kind": "bake",
+   "note": "draw_all is the bake entry point and calls this method",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "decoration_renderer:DecorationRenderer._draw_cactus": {
+   "kind": "bake",
+   "note": "draw_all is the bake entry point and calls this method",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "decoration_renderer:DecorationRenderer._draw_crystals_amber": {
+   "kind": "bake",
+   "note": "draw_all is the bake entry point and calls this method",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "decoration_renderer:DecorationRenderer._draw_crystals_blue": {
+   "kind": "bake",
+   "note": "draw_all is the bake entry point and calls this method",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "decoration_renderer:DecorationRenderer._draw_crystals_red": {
+   "kind": "bake",
+   "note": "draw_all is the bake entry point and calls this method",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "decoration_renderer:DecorationRenderer._draw_dark_bushes": {
+   "kind": "bake",
+   "note": "draw_all is the bake entry point and calls this method",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "decoration_renderer:DecorationRenderer._draw_dark_oak": {
+   "kind": "bake",
+   "note": "draw_all is the bake entry point and calls this method",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "decoration_renderer:DecorationRenderer._draw_dark_pine": {
+   "kind": "bake",
+   "note": "draw_all is the bake entry point and calls this method",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "decoration_renderer:DecorationRenderer._draw_dark_trees": {
+   "kind": "bake",
+   "note": "draw_all is the bake entry point and calls this method",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "decoration_renderer:DecorationRenderer._draw_dead_trees": {
+   "kind": "bake",
+   "note": "draw_all is the bake entry point and calls this method",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "decoration_renderer:DecorationRenderer._draw_frozen_trees": {
+   "kind": "bake",
+   "note": "draw_all is the bake entry point and calls this method",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "decoration_renderer:DecorationRenderer._draw_glow_flowers": {
+   "kind": "bake",
+   "note": "draw_all is the bake entry point and calls this method",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "decoration_renderer:DecorationRenderer._draw_gravestones": {
+   "kind": "bake",
+   "note": "draw_all is the bake entry point and calls this method",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "decoration_renderer:DecorationRenderer._draw_ice_crystals": {
+   "kind": "bake",
+   "note": "draw_all is the bake entry point and calls this method",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "decoration_renderer:DecorationRenderer._draw_mushrooms": {
+   "kind": "bake",
+   "note": "draw_all is the bake entry point and calls this method",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "decoration_renderer:DecorationRenderer._draw_palm_trees": {
+   "kind": "bake",
+   "note": "draw_all is the bake entry point and calls this method",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "decoration_renderer:DecorationRenderer._draw_rocks": {
+   "kind": "bake",
+   "note": "draw_all is the bake entry point and calls this method",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "decoration_renderer:DecorationRenderer._draw_sand_dunes": {
+   "kind": "bake",
+   "note": "draw_all is the bake entry point and calls this method",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "decoration_renderer:DecorationRenderer._draw_snow_drifts": {
+   "kind": "bake",
+   "note": "draw_all is the bake entry point and calls this method",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "decoration_renderer:DecorationRenderer._draw_spike_traps": {
+   "kind": "bake",
+   "note": "draw_all is the bake entry point and calls this method",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "decoration_renderer:DecorationRenderer._draw_twisted_tree": {
+   "kind": "bake",
+   "note": "draw_all is the bake entry point and calls this method",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "decoration_renderer:DecorationRenderer.draw_all": {
+   "kind": "bake",
+   "note": "draw_all is the bake entry point and calls this method",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "dynamic_renderer:DynamicRenderer.__init__": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/dynamic_map_renderer.gd",
+   "token": "func configure(requested: String, level: String = \"high\") -> void:"
+  },
+  "dynamic_renderer:DynamicRenderer._cached_surf": {
+   "kind": "internal",
+   "note": "400-entry pygame surface memo; Godot rebuilds the op list instead",
+   "target": "godot_rebuild/scripts/ui/dynamic_map_renderer.gd",
+   "token": "\"res://data/art/map_dynamic.json\""
+  },
+  "dynamic_renderer:DynamicRenderer._draw_flame_a": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/dynamic_map_layout.gd",
+   "token": "static func _flame_a(result: Array, tx: int, ty: int, palette: Dictionary) -> void:"
+  },
+  "dynamic_renderer:DynamicRenderer._draw_flame_b": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/dynamic_map_layout.gd",
+   "token": "static func _flame_b(result: Array, tx: int, ty: int, palette: Dictionary) -> void:"
+  },
+  "dynamic_renderer:DynamicRenderer._draw_flame_c": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/dynamic_map_layout.gd",
+   "token": "static func _flame_c(result: Array, tx: int, ty: int, palette: Dictionary) -> void:"
+  },
+  "dynamic_renderer:DynamicRenderer._draw_fog": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/dynamic_map_layout.gd",
+   "token": "static func _fog_ops(renderer) -> Array:"
+  },
+  "dynamic_renderer:DynamicRenderer._draw_particles": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/dynamic_map_layout.gd",
+   "token": "static func _particle_ops(renderer) -> Array:"
+  },
+  "dynamic_renderer:DynamicRenderer._draw_river_animation": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/dynamic_map_layout.gd",
+   "token": "static func _river_ops(renderer, t: int) -> Array:"
+  },
+  "dynamic_renderer:DynamicRenderer._draw_shop_glow": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/dynamic_map_layout.gd",
+   "token": "static func _shop_glow_ops(renderer, t: int) -> Array:"
+  },
+  "dynamic_renderer:DynamicRenderer._draw_shop_smoke": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/dynamic_map_layout.gd",
+   "token": "static func _shop_smoke_ops(renderer, t: int) -> Array:"
+  },
+  "dynamic_renderer:DynamicRenderer._draw_torches": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/dynamic_map_layout.gd",
+   "token": "static func torch_ops(renderer, t: int) -> Array:"
+  },
+  "dynamic_renderer:DynamicRenderer._init_fog": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/dynamic_map_renderer.gd",
+   "token": "func configure_state(state: Dictionary) -> void:"
+  },
+  "dynamic_renderer:DynamicRenderer._init_particles": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/dynamic_map_renderer.gd",
+   "token": "func configure_state(state: Dictionary) -> void:"
+  },
+  "dynamic_renderer:DynamicRenderer.draw": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/dynamic_map_renderer.gd",
+   "token": "func draw(canvas: CanvasItem, t: int) -> void:"
+  },
+  "dynamic_renderer:DynamicRenderer.update": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/dynamic_map_renderer.gd",
+   "token": "func update() -> void:"
+  },
+  "generators:DecorationGenerator.__init__": {
+   "kind": "executed",
+   "note": "seed 42 positions are pinned by executing the source in this oracle",
+   "target": "godot_rebuild/tests/map_components_source_oracle.py",
+   "token": "def generated(bundle):"
+  },
+  "generators:DecorationGenerator._is_dire": {
+   "kind": "executed",
+   "note": "seed 42 positions are pinned by executing the source in this oracle",
+   "target": "godot_rebuild/tests/map_components_source_oracle.py",
+   "token": "def generated(bundle):"
+  },
+  "generators:DecorationGenerator._is_radiant": {
+   "kind": "executed",
+   "note": "seed 42 positions are pinned by executing the source in this oracle",
+   "target": "godot_rebuild/tests/map_components_source_oracle.py",
+   "token": "def generated(bundle):"
+  },
+  "generators:DecorationGenerator._is_valid": {
+   "kind": "executed",
+   "note": "seed 42 positions are pinned by executing the source in this oracle",
+   "target": "godot_rebuild/tests/map_components_source_oracle.py",
+   "token": "def generated(bundle):"
+  },
+  "generators:DecorationGenerator._too_close_to_base": {
+   "kind": "executed",
+   "note": "seed 42 positions are pinned by executing the source in this oracle",
+   "target": "godot_rebuild/tests/map_components_source_oracle.py",
+   "token": "def generated(bundle):"
+  },
+  "generators:DecorationGenerator._too_close_to_lane": {
+   "kind": "executed",
+   "note": "seed 42 positions are pinned by executing the source in this oracle",
+   "target": "godot_rebuild/tests/map_components_source_oracle.py",
+   "token": "def generated(bundle):"
+  },
+  "generators:DecorationGenerator._too_close_to_river": {
+   "kind": "executed",
+   "note": "seed 42 positions are pinned by executing the source in this oracle",
+   "target": "godot_rebuild/tests/map_components_source_oracle.py",
+   "token": "def generated(bundle):"
+  },
+  "generators:DecorationGenerator._too_close_to_shop": {
+   "kind": "executed",
+   "note": "seed 42 positions are pinned by executing the source in this oracle",
+   "target": "godot_rebuild/tests/map_components_source_oracle.py",
+   "token": "def generated(bundle):"
+  },
+  "generators:DecorationGenerator.generate_all": {
+   "kind": "executed",
+   "note": "seed 42 positions are pinned by executing the source in this oracle",
+   "target": "godot_rebuild/tests/map_components_source_oracle.py",
+   "token": "def generated(bundle):"
+  },
+  "generators:PathGenerator.generate_lanes": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/data/lane_layout.gd",
+   "token": "static func create_paths("
+  },
+  "generators:PathGenerator.generate_river": {
+   "kind": "native",
+   "note": "fixed control points, 61 points",
+   "target": "godot_rebuild/scripts/ui/terrain_palette.gd",
+   "token": "river_path.json"
+  },
+  "generators:PathGenerator.make_curved_path": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/data/lane_layout.gd",
+   "token": "static func curved_path("
+  },
+  "generators:bake.ancient_ruins": {
+   "kind": "bake",
+   "note": "painted once into the overlay; no runtime reader",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "generators:bake.boss_landmarks": {
+   "kind": "bake",
+   "note": "painted once into the overlay; no runtime reader",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "generators:bake.crystals_blue": {
+   "kind": "bake",
+   "note": "painted once into the overlay; no runtime reader",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "generators:bake.crystals_red": {
+   "kind": "bake",
+   "note": "painted once into the overlay; no runtime reader",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "generators:bake.dark_bushes": {
+   "kind": "bake",
+   "note": "painted once into the overlay; no runtime reader",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "generators:bake.dark_trees": {
+   "kind": "bake",
+   "note": "painted once into the overlay; no runtime reader",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "generators:bake.dead_trees": {
+   "kind": "bake",
+   "note": "painted once into the overlay; no runtime reader",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "generators:bake.glow_flowers": {
+   "kind": "bake",
+   "note": "painted once into the overlay; no runtime reader",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "generators:bake.mushrooms_dark": {
+   "kind": "bake",
+   "note": "painted once into the overlay; no runtime reader",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "generators:bake.spike_traps": {
+   "kind": "bake",
+   "note": "painted once into the overlay; no runtime reader",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "DecorationRenderer.draw_all"
+  },
+  "generators:data.bones": {
+   "kind": "data",
+   "note": "read every frame by the dynamic renderer",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"bones\":["
+  },
+  "generators:data.gravestones": {
+   "kind": "data",
+   "note": "read every frame by the dynamic renderer",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"gravestones\":["
+  },
+  "generators:data.rocks_mossy": {
+   "kind": "data",
+   "note": "read every frame by the dynamic renderer",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"rocks_mossy\":["
+  },
+  "generators:data.torch_stones": {
+   "kind": "data",
+   "note": "read every frame by the dynamic renderer",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"torch_stones\":["
+  },
+  "palettes:CRYSTAL_BLUE_D": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"crystal_blue_d\":"
+  },
+  "palettes:CRYSTAL_BLUE_H": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"crystal_blue_h\":"
+  },
+  "palettes:CRYSTAL_BLUE_L": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"crystal_blue_l\":"
+  },
+  "palettes:CRYSTAL_BLUE_M": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"crystal_blue_m\":"
+  },
+  "palettes:CRYSTAL_RED_D": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"crystal_red_d\":"
+  },
+  "palettes:CRYSTAL_RED_H": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"crystal_red_h\":"
+  },
+  "palettes:CRYSTAL_RED_L": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"crystal_red_l\":"
+  },
+  "palettes:CRYSTAL_RED_M": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"crystal_red_m\":"
+  },
+  "palettes:DEAD_TREE_1": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"dead_tree_1\":"
+  },
+  "palettes:DEAD_TREE_2": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"dead_tree_2\":"
+  },
+  "palettes:DEAD_TREE_3": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"dead_tree_3\":"
+  },
+  "palettes:DIRE_ASH": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"dire_ash\":"
+  },
+  "palettes:DIRE_BURNT": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"dire_burnt\":"
+  },
+  "palettes:DIRE_EARTH_1": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"dire_earth_1\":"
+  },
+  "palettes:DIRE_EARTH_2": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"dire_earth_2\":"
+  },
+  "palettes:DIRE_EARTH_3": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"dire_earth_3\":"
+  },
+  "palettes:DIRE_EARTH_4": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"dire_earth_4\":"
+  },
+  "palettes:FIRE_D": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"fire_d\":"
+  },
+  "palettes:FIRE_H": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"fire_h\":"
+  },
+  "palettes:FIRE_L": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"fire_l\":"
+  },
+  "palettes:FIRE_M": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"fire_m\":"
+  },
+  "palettes:OUTLINE": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"outline\":"
+  },
+  "palettes:PATH_CRACK": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"path_crack\":"
+  },
+  "palettes:PATH_MOSS": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"path_moss\":"
+  },
+  "palettes:PATH_STONE_1": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"path_stone_1\":"
+  },
+  "palettes:PATH_STONE_2": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"path_stone_2\":"
+  },
+  "palettes:PATH_STONE_3": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"path_stone_3\":"
+  },
+  "palettes:PATH_STONE_4": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"path_stone_4\":"
+  },
+  "palettes:RADIANT_GRASS_1": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"radiant_grass_1\":"
+  },
+  "palettes:RADIANT_GRASS_2": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"radiant_grass_2\":"
+  },
+  "palettes:RADIANT_GRASS_3": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"radiant_grass_3\":"
+  },
+  "palettes:RADIANT_GRASS_4": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"radiant_grass_4\":"
+  },
+  "palettes:RADIANT_GRASS_HIGH": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"radiant_grass_high\":"
+  },
+  "palettes:RADIANT_MOSS": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"radiant_moss\":"
+  },
+  "palettes:RIVER_DEEP": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"river_deep\":"
+  },
+  "palettes:RIVER_FOAM": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"river_foam\":"
+  },
+  "palettes:RIVER_GLOW": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"river_glow\":"
+  },
+  "palettes:RIVER_LIGHT": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"river_light\":"
+  },
+  "palettes:RIVER_MID": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"river_mid\":"
+  },
+  "palettes:SHADOW": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"shadow\":"
+  },
+  "palettes:STONE_DARK": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"stone_dark\":"
+  },
+  "palettes:STONE_HIGH": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"stone_high\":"
+  },
+  "palettes:STONE_LIGHT": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"stone_light\":"
+  },
+  "palettes:STONE_MID": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"stone_mid\":"
+  },
+  "palettes:TILE_SIZE": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"tile_size\":"
+  },
+  "palettes:TRANSITION_1": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"transition_1\":"
+  },
+  "palettes:TRANSITION_2": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"transition_2\":"
+  },
+  "palettes:TREE_LEAVES_D": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"tree_leaves_d\":"
+  },
+  "palettes:TREE_LEAVES_H": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"tree_leaves_h\":"
+  },
+  "palettes:TREE_LEAVES_L": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"tree_leaves_l\":"
+  },
+  "palettes:TREE_LEAVES_M": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"tree_leaves_m\":"
+  },
+  "palettes:TREE_TRUNK_D": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"tree_trunk_d\":"
+  },
+  "palettes:TREE_TRUNK_L": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/levels/map_palette.json",
+   "token": "\"tree_trunk_l\":"
+  },
+  "shop_renderer:ShopRenderer._draw_building": {
+   "kind": "bake",
+   "note": "",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "ShopRenderer.draw"
+  },
+  "shop_renderer:ShopRenderer._draw_pixel_text": {
+   "kind": "bake",
+   "note": "",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "ShopRenderer.draw"
+  },
+  "shop_renderer:ShopRenderer.draw": {
+   "kind": "bake",
+   "note": "",
+   "target": "godot_rebuild/bake/bake_map_overlay.py",
+   "token": "ShopRenderer.draw"
+  },
+  "static_renderer:StaticRenderer._draw_cobblestone_tile": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/lane_tiles.gd",
+   "token": "res://data/levels/lane_tiles.json"
+  },
+  "static_renderer:StaticRenderer._draw_dark_stone_block": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/wall_tiles.gd",
+   "token": "res://data/levels/wall_tiles.json"
+  },
+  "static_renderer:StaticRenderer._draw_lane_border_stone": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/lane_tiles.gd",
+   "token": "res://data/levels/lane_tiles.json"
+  },
+  "static_renderer:StaticRenderer._draw_wall_spike": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/wall_tiles.gd",
+   "token": "res://data/levels/wall_tiles.json"
+  },
+  "static_renderer:StaticRenderer.draw_border_wall": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/wall_tiles.gd",
+   "token": "res://data/levels/wall_tiles.json"
+  },
+  "static_renderer:StaticRenderer.draw_lane": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/lane_tiles.gd",
+   "token": "res://data/levels/lane_tiles.json"
+  },
+  "static_renderer:StaticRenderer.draw_river": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/river_tiles.gd",
+   "token": "res://data/levels/river_tiles.json"
+  },
+  "static_renderer:StaticRenderer.draw_terrain": {
+   "kind": "native",
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/terrain_tiles.gd",
+   "token": "res://data/levels/terrain_tiles.json"
+  },
+  "static_renderer:StaticRenderer.draw_terrain_details": {
+   "kind": "bake",
+   "note": "seeded 100, then reseeded from entropy: baked once",
+   "target": "godot_rebuild/bake/bake_map_base.py",
+   "token": "StaticRenderer.draw_terrain_details"
+  },
+  "themes:ABYSSAL_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"abyssal\":{\"states\""
+  },
+  "themes:ABYSSTIDE_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"abysstide\":{\"states\""
+  },
+  "themes:ABYSS_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"abyss\":{\"states\""
+  },
+  "themes:ASTRAL_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"astral\":{\"states\""
+  },
+  "themes:CELESTIALPEAKS_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"celestialpeaks\":{\"states\""
+  },
+  "themes:COSMIC_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"cosmic\":{\"states\""
+  },
+  "themes:CRIMSONDEVOURER_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"crimsondevourer\":{\"states\""
+  },
+  "themes:CRIMSONMATRIARCH_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"crimsonmatriarch\":{\"states\""
+  },
+  "themes:CRIMSON_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"crimson\":{\"states\""
+  },
+  "themes:CROWEYE_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"croweye\":{\"states\""
+  },
+  "themes:CRYSTALSTORM_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"crystalstorm\":{\"states\""
+  },
+  "themes:DESERT_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"desert\":{\"states\""
+  },
+  "themes:EARTHBORN_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"earthborn\":{\"states\""
+  },
+  "themes:ELDRITCH_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"eldritch\":{\"states\""
+  },
+  "themes:ELEMENTWEAVE_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"elementweave\":{\"states\""
+  },
+  "themes:EMBERLION_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"emberlion\":{\"states\""
+  },
+  "themes:EMBERWEAVER_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"emberweaver\":{\"states\""
+  },
+  "themes:EMPYREAN_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"empyrean\":{\"states\""
+  },
+  "themes:ETERNALFLAME_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"eternalflame\":{\"states\""
+  },
+  "themes:ETERNALWARLORD_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"eternalwarlord\":{\"states\""
+  },
+  "themes:EXPLOSIVEART_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"explosiveart\":{\"states\""
+  },
+  "themes:FOREST_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"forest\":{\"states\""
+  },
+  "themes:FROSTVEIL_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"frostveil\":{\"states\""
+  },
+  "themes:HAUNTED_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"haunted\":{\"states\""
+  },
+  "themes:HEARTBANE_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"heartbane\":{\"states\""
+  },
+  "themes:HEXBOUND_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"hexbound\":{\"states\""
+  },
+  "themes:HOLLOWBANE_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"hollowbane\":{\"states\""
+  },
+  "themes:ICE_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"ice\":{\"states\""
+  },
+  "themes:LUNARHERALD_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"lunarherald\":{\"states\""
+  },
+  "themes:MOONBORN_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"moonborn\":{\"states\""
+  },
+  "themes:MOONFANG_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"moonfang\":{\"states\""
+  },
+  "themes:MOONREAPER_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"moonreaper\":{\"states\""
+  },
+  "themes:NETHERVENOM_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"nethervenom\":{\"states\""
+  },
+  "themes:OCEAN_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"ocean\":{\"states\""
+  },
+  "themes:OUTLAW_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"outlaw\":{\"states\""
+  },
+  "themes:PRIMORDIAL_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"primordial\":{\"states\""
+  },
+  "themes:RADIANT_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"radiant\":{\"states\""
+  },
+  "themes:ROYAL_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"royal\":{\"states\""
+  },
+  "themes:SANCTUM_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"sanctum\":{\"states\""
+  },
+  "themes:SANDSHADOW_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"sandshadow\":{\"states\""
+  },
+  "themes:SAWMILL_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"sawmill\":{\"states\""
+  },
+  "themes:SHADOWCHAIN_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"shadowchain\":{\"states\""
+  },
+  "themes:SKYFURY_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"skyfury\":{\"states\""
+  },
+  "themes:SOLARIS_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"solaris\":{\"states\""
+  },
+  "themes:SOULFORGED_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"soulforged\":{\"states\""
+  },
+  "themes:SPECTRAL_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"spectral\":{\"states\""
+  },
+  "themes:SUNDERED_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"sundered\":{\"states\""
+  },
+  "themes:SUNFIST_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"sunfist\":{\"states\""
+  },
+  "themes:TEMPEST_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"tempest\":{\"states\""
+  },
+  "themes:THEMES": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"themes\":{"
+  },
+  "themes:VIOLET_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"violet\":{\"states\""
+  },
+  "themes:VOIDBOUND_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"voidbound\":{\"states\""
+  },
+  "themes:VOIDWING_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"voidwing\":{\"states\""
+  },
+  "themes:VOLCANIC_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"volcanic\":{\"states\""
+  },
+  "themes:WARSHADE_THEME": {
+   "kind": "data",
+   "note": "",
+   "target": "godot_rebuild/data/art/map_dynamic.json",
+   "token": "\"warshade\":{\"states\""
+  },
+  "themes:get_theme": {
+   "kind": "native",
+   "note": "unknown theme falls back to forest, like the source",
+   "target": "godot_rebuild/scripts/ui/terrain_palette.gd",
+   "token": "palettes.get(\"forest\""
+  }
+ },
+ "classification_kinds": {
+  "bake": 39,
+  "data": 112,
+  "executed": 9,
+  "internal": 1,
+  "meta": 2,
+  "native": 31
+ },
+ "decoration_reads": [
+  "bones",
+  "boss_landmarks",
+  "crystals_blue",
+  "gravestones",
+  "rocks_mossy",
+  "torch_stones"
+ ],
+ "fallback": {
+  "equals_forest": true,
+  "known_returns_self": true,
+  "unknown_name": "__missing__"
+ },
+ "folder": {
+  "count": 2,
+  "files": {
+   "__init__.py": 101,
+   "_bundle.py": 7403
+  },
+  "lines": 7504
+ },
+ "functions": {
+  "_boss_draw_particles": [
+   "self",
+   "surface",
+   "t"
+  ],
+  "_boss_dynamic_draw": [
+   "self",
+   "surface",
+   "t"
+  ],
+  "_boss_init_particles": [
+   "self"
+  ],
+  "_boss_update": [
+   "self",
+   "t"
+  ],
+  "_draw_boss_environment": [
+   "self",
+   "surface",
+   "t"
+  ],
+  "_draw_true_boss_decorations": [
+   "surf",
+   "mr"
+  ],
+  "_draw_true_boss_decorations_filled": [
+   "surf",
+   "mr"
+  ],
+  "get_theme": [
+   "theme_name"
+  ]
+ },
+ "generators": {
+  "counts": {
+   "ancient_ruins": 4,
+   "bones": 4,
+   "boss_landmarks": 30,
+   "crystals_blue": 4,
+   "crystals_red": 2,
+   "dark_bushes": 3,
+   "dark_trees": 8,
+   "dead_trees": 5,
+   "glow_flowers": 6,
+   "gravestones": 1,
+   "mushrooms_dark": 6,
+   "rocks_mossy": 8,
+   "spike_traps": 2,
+   "torch_stones": 18
+  },
+  "decorations": {
+   "ancient_ruins": [
+    [
+     832,
+     304,
+     "arch"
+    ],
+    [
+     624,
+     480,
+     "wall"
+    ],
+    [
+     352,
+     240,
+     "arch"
+    ],
+    [
+     1232,
+     592,
+     "pillar"
+    ]
+   ],
+   "bones": [
+    [
+     208,
+     224,
+     "skull"
+    ],
+    [
+     864,
+     160,
+     "skeleton"
+    ],
+    [
+     1104,
+     368,
+     "rib"
+    ],
+    [
+     848,
+     176,
+     "skeleton"
+    ]
+   ],
+   "boss_landmarks": [
+    [
+     544,
+     160,
+     3
+    ],
+    [
+     688,
+     496,
+     3
+    ],
+    [
+     352,
+     272,
+     3
+    ],
+    [
+     352,
+     256,
+     0
+    ],
+    [
+     896,
+     464,
+     2
+    ],
+    [
+     464,
+     464,
+     3
+    ],
+    [
+     496,
+     544,
+     1
+    ],
+    [
+     592,
+     480,
+     3
+    ],
+    [
+     736,
+     448,
+     1
+    ],
+    [
+     480,
+     512,
+     2
+    ],
+    [
+     800,
+     208,
+     0
+    ],
+    [
+     848,
+     240,
+     0
+    ],
+    [
+     544,
+     144,
+     2
+    ],
+    [
+     1072,
+     384,
+     0
+    ],
+    [
+     896,
+     544,
+     0
+    ],
+    [
+     1104,
+     320,
+     3
+    ],
+    [
+     992,
+     480,
+     2
+    ],
+    [
+     704,
+     224,
+     3
+    ],
+    [
+     528,
+     464,
+     3
+    ],
+    [
+     1008,
+     544,
+     3
+    ],
+    [
+     864,
+     288,
+     2
+    ],
+    [
+     512,
+     160,
+     1
+    ],
+    [
+     688,
+     160,
+     1
+    ],
+    [
+     1008,
+     528,
+     3
+    ],
+    [
+     736,
+     224,
+     0
+    ],
+    [
+     560,
+     528,
+     0
+    ],
+    [
+     352,
+     192,
+     2
+    ],
+    [
+     496,
+     576,
+     3
+    ],
+    [
+     960,
+     496,
+     2
+    ],
+    [
+     1200,
+     672,
+     0
+    ]
+   ],
+   "crystals_blue": [
+    [
+     1216,
+     624,
+     11
+    ],
+    [
+     544,
+     528,
+     14
+    ],
+    [
+     912,
+     464,
+     11
+    ],
+    [
+     160,
+     448,
+     13
+    ]
+   ],
+   "crystals_red": [
+    [
+     544,
+     240,
+     7
+    ],
+    [
+     528,
+     208,
+     9
+    ]
+   ],
+   "dark_bushes": [
+    [
+     416,
+     432,
+     16
+    ],
+    [
+     32,
+     560,
+     12
+    ],
+    [
+     768,
+     464,
+     12
+    ]
+   ],
+   "dark_trees": [
+    [
+     240,
+     576,
+     16,
+     2
+    ],
+    [
+     432,
+     576,
+     20,
+     0
+    ],
+    [
+     352,
+     464,
+     20,
+     1
+    ],
+    [
+     208,
+     416,
+     16,
+     1
+    ],
+    [
+     960,
+     576,
+     16,
+     1
+    ],
+    [
+     672,
+     432,
+     20,
+     0
+    ],
+    [
+     464,
+     608,
+     24,
+     1
+    ],
+    [
+     464,
+     528,
+     20,
+     1
+    ]
+   ],
+   "dead_trees": [
+    [
+     480,
+     160,
+     22
+    ],
+    [
+     1120,
+     304,
+     22
+    ],
+    [
+     720,
+     144,
+     18
+    ],
+    [
+     960,
+     32,
+     22
+    ],
+    [
+     432,
+     176,
+     18
+    ]
+   ],
+   "glow_flowers": [
+    [
+     656,
+     560,
+     [
+      100,
+      200,
+      150
+     ]
+    ],
+    [
+     432,
+     464,
+     [
+      255,
+      200,
+      100
+     ]
+    ],
+    [
+     704,
+     512,
+     [
+      255,
+      200,
+      100
+     ]
+    ],
+    [
+     1088,
+     528,
+     [
+      150,
+      100,
+      200
+     ]
+    ],
+    [
+     208,
+     336,
+     [
+      100,
+      200,
+      150
+     ]
+    ],
+    [
+     544,
+     528,
+     [
+      100,
+      170,
+      240
+     ]
+    ]
+   ],
+   "gravestones": [
+    [
+     912,
+     256
+    ]
+   ],
+   "mushrooms_dark": [
+    [
+     480,
+     560,
+     [
+      100,
+      60,
+      130
+     ]
+    ],
+    [
+     256,
+     176,
+     [
+      100,
+      20,
+      60
+     ]
+    ],
+    [
+     272,
+     144,
+     [
+      80,
+      40,
+      80
+     ]
+    ],
+    [
+     464,
+     384,
+     [
+      60,
+      80,
+      150
+     ]
+    ],
+    [
+     576,
+     560,
+     [
+      100,
+      60,
+      130
+     ]
+    ],
+    [
+     304,
+     304,
+     [
+      60,
+      80,
+      150
+     ]
+    ]
+   ],
+   "rocks_mossy": [
+    [
+     752,
+     240,
+     20,
+     false
+    ],
+    [
+     528,
+     128,
+     16,
+     false
+    ],
+    [
+     336,
+     272,
+     12,
+     false
+    ],
+    [
+     384,
+     448,
+     12,
+     true
+    ],
+    [
+     864,
+     272,
+     16,
+     false
+    ],
+    [
+     352,
+     128,
+     16,
+     false
+    ],
+    [
+     480,
+     224,
+     16,
+     false
+    ],
+    [
+     496,
+     256,
+     12,
+     false
+    ]
+   ],
+   "spike_traps": [
+    [
+     864,
+     288
+    ],
+    [
+     496,
+     224
+    ]
+   ],
+   "torch_stones": [
+    [
+     120,
+     32
+    ],
+    [
+     120,
+     688
+    ],
+    [
+     320,
+     32
+    ],
+    [
+     320,
+     688
+    ],
+    [
+     520,
+     32
+    ],
+    [
+     520,
+     688
+    ],
+    [
+     720,
+     32
+    ],
+    [
+     720,
+     688
+    ],
+    [
+     920,
+     32
+    ],
+    [
+     920,
+     688
+    ],
+    [
+     1120,
+     32
+    ],
+    [
+     1120,
+     688
+    ],
+    [
+     32,
+     120
+    ],
+    [
+     1248,
+     120
+    ],
+    [
+     32,
+     320
+    ],
+    [
+     1248,
+     320
+    ],
+    [
+     32,
+     520
+    ],
+    [
+     1248,
+     520
+    ]
+   ]
+  },
+  "lane_points": [
+   [
+    [
+     90,
+     590
+    ],
+    [
+     89,
+     582
+    ],
+    [
+     89,
+     572
+    ],
+    [
+     88,
+     560
+    ],
+    [
+     87,
+     546
+    ],
+    [
+     86,
+     532
+    ],
+    [
+     86,
+     517
+    ],
+    [
+     85,
+     502
+    ],
+    [
+     85,
+     487
+    ],
+    [
+     84,
+     473
+    ],
+    [
+     85,
+     460
+    ],
+    [
+     85,
+     447
+    ],
+    [
+     85,
+     435
+    ],
+    [
+     86,
+     423
+    ],
+    [
+     87,
+     411
+    ],
+    [
+     88,
+     399
+    ],
+    [
+     89,
+     387
+    ],
+    [
+     90,
+     375
+    ],
+    [
+     91,
+     363
+    ],
+    [
+     93,
+     351
+    ],
+    [
+     95,
+     340
+    ],
+    [
+     96,
+     327
+    ],
+    [
+     98,
+     314
+    ],
+    [
+     100,
+     301
+    ],
+    [
+     102,
+     288
+    ],
+    [
+     105,
+     275
+    ],
+    [
+     107,
+     262
+    ],
+    [
+     110,
+     250
+    ],
+    [
+     113,
+     238
+    ],
+    [
+     116,
+     228
+    ],
+    [
+     120,
+     220
+    ],
+    [
+     123,
+     212
+    ],
+    [
+     128,
+     207
+    ],
+    [
+     132,
+     203
+    ],
+    [
+     137,
+     200
+    ],
+    [
+     142,
+     197
+    ],
+    [
+     147,
+     195
+    ],
+    [
+     152,
+     192
+    ],
+    [
+     158,
+     189
+    ],
+    [
+     164,
+     185
+    ],
+    [
+     170,
+     180
+    ],
+    [
+     175,
+     173
+    ],
+    [
+     181,
+     165
+    ],
+    [
+     187,
+     157
+    ],
+    [
+     193,
+     148
+    ],
+    [
+     199,
+     139
+    ],
+    [
+     206,
+     129
+    ],
+    [
+     213,
+     121
+    ],
+    [
+     221,
+     113
+    ],
+    [
+     230,
+     105
+    ],
+    [
+     240,
+     100
+    ],
+    [
+     251,
+     95
+    ],
+    [
+     263,
+     91
+    ],
+    [
+     275,
+     87
+    ],
+    [
+     289,
+     85
+    ],
+    [
+     303,
+     82
+    ],
+    [
+     318,
+     80
+    ],
+    [
+     333,
+     79
+    ],
+    [
+     348,
+     77
+    ],
+    [
+     364,
+     76
+    ],
+    [
+     380,
+     75
+    ],
+    [
+     395,
+     73
+    ],
+    [
+     412,
+     72
+    ],
+    [
+     428,
+     71
+    ],
+    [
+     445,
+     71
+    ],
+    [
+     463,
+     70
+    ],
+    [
+     480,
+     70
+    ],
+    [
+     498,
+     70
+    ],
+    [
+     515,
+     70
+    ],
+    [
+     532,
+     70
+    ],
+    [
+     550,
+     70
+    ],
+    [
+     567,
+     70
+    ],
+    [
+     584,
+     70
+    ],
+    [
+     601,
+     70
+    ],
+    [
+     618,
+     71
+    ],
+    [
+     635,
+     71
+    ],
+    [
+     652,
+     72
+    ],
+    [
+     669,
+     72
+    ],
+    [
+     686,
+     73
+    ],
+    [
+     703,
+     74
+    ],
+    [
+     720,
+     75
+    ],
+    [
+     736,
+     75
+    ],
+    [
+     752,
+     76
+    ],
+    [
+     769,
+     77
+    ],
+    [
+     785,
+     77
+    ],
+    [
+     801,
+     78
+    ],
+    [
+     817,
+     79
+    ],
+    [
+     833,
+     80
+    ],
+    [
+     848,
+     81
+    ],
+    [
+     864,
+     83
+    ],
+    [
+     880,
+     85
+    ],
+    [
+     895,
+     86
+    ],
+    [
+     910,
+     88
+    ],
+    [
+     925,
+     89
+    ],
+    [
+     940,
+     91
+    ],
+    [
+     955,
+     93
+    ],
+    [
+     970,
+     96
+    ],
+    [
+     985,
+     98
+    ],
+    [
+     1000,
+     101
+    ],
+    [
+     1015,
+     105
+    ],
+    [
+     1030,
+     110
+    ],
+    [
+     1045,
+     115
+    ],
+    [
+     1062,
+     122
+    ],
+    [
+     1079,
+     129
+    ],
+    [
+     1097,
+     138
+    ],
+    [
+     1114,
+     146
+    ],
+    [
+     1130,
+     154
+    ],
+    [
+     1146,
+     162
+    ],
+    [
+     1159,
+     169
+    ],
+    [
+     1171,
+     175
+    ],
+    [
+     1180,
+     180
+    ]
+   ],
+   [
+    [
+     170,
+     550
+    ],
+    [
+     179,
+     539
+    ],
+    [
+     193,
+     525
+    ],
+    [
+     208,
+     509
+    ],
+    [
+     226,
+     491
+    ],
+    [
+     244,
+     472
+    ],
+    [
+     263,
+     453
+    ],
+    [
+     282,
+     435
+    ],
+    [
+     300,
+     420
+    ],
+    [
+     317,
+     404
+    ],
+    [
+     334,
+     388
+    ],
+    [
+     351,
+     372
+    ],
+    [
+     369,
+     356
+    ],
+    [
+     387,
+     342
+    ],
+    [
+     404,
+     331
+    ],
+    [
+     422,
+     323
+    ],
+    [
+     440,
+     320
+    ],
+    [
+     458,
+     322
+    ],
+    [
+     476,
+     330
+    ],
+    [
+     496,
+     342
+    ],
+    [
+     515,
+     356
+    ],
+    [
+     533,
+     370
+    ],
+    [
+     550,
+     384
+    ],
+    [
+     566,
+     394
+    ],
+    [
+     580,
+     400
+    ],
+    [
+     591,
+     400
+    ],
+    [
+     600,
+     398
+    ],
+    [
+     608,
+     393
+    ],
+    [
+     615,
+     387
+    ],
+    [
+     621,
+     380
+    ],
+    [
+     626,
+     372
+    ],
+    [
+     633,
+     365
+    ],
+    [
+     640,
+     360
+    ],
+    [
+     646,
+     354
+    ],
+    [
+     653,
+     347
+    ],
+    [
+     658,
+     339
+    ],
+    [
+     665,
+     332
+    ],
+    [
+     671,
+     326
+    ],
+    [
+     679,
+     321
+    ],
+    [
+     688,
+     319
+    ],
+    [
+     700,
+     320
+    ],
+    [
+     713,
+     325
+    ],
+    [
+     729,
+     335
+    ],
+    [
+     746,
+     349
+    ],
+    [
+     765,
+     363
+    ],
+    [
+     783,
+     377
+    ],
+    [
+     803,
+     389
+    ],
+    [
+     821,
+     397
+    ],
+    [
+     840,
+     400
+    ],
+    [
+     857,
+     396
+    ],
+    [
+     875,
+     388
+    ],
+    [
+     892,
+     377
+    ],
+    [
+     910,
+     363
+    ],
+    [
+     928,
+     347
+    ],
+    [
+     945,
+     331
+    ],
+    [
+     962,
+     315
+    ],
+    [
+     980,
+     300
+    ],
+    [
+     997,
+     284
+    ],
+    [
+     1016,
+     266
+    ],
+    [
+     1035,
+     247
+    ],
+    [
+     1053,
+     228
+    ],
+    [
+     1071,
+     210
+    ],
+    [
+     1086,
+     194
+    ],
+    [
+     1100,
+     180
+    ],
+    [
+     1110,
+     170
+    ]
+   ],
+   [
+    [
+     130,
+     630
+    ],
+    [
+     137,
+     631
+    ],
+    [
+     147,
+     632
+    ],
+    [
+     158,
+     634
+    ],
+    [
+     171,
+     637
+    ],
+    [
+     185,
+     639
+    ],
+    [
+     199,
+     641
+    ],
+    [
+     214,
+     644
+    ],
+    [
+     230,
+     646
+    ],
+    [
+     245,
+     648
+    ],
+    [
+     260,
+     650
+    ],
+    [
+     274,
+     651
+    ],
+    [
+     289,
+     652
+    ],
+    [
+     305,
+     654
+    ],
+    [
+     320,
+     655
+    ],
+    [
+     336,
+     656
+    ],
+    [
+     353,
+     657
+    ],
+    [
+     369,
+     658
+    ],
+    [
+     386,
+     658
+    ],
+    [
+     403,
+     659
+    ],
+    [
+     420,
+     660
+    ],
+    [
+     437,
+     660
+    ],
+    [
+     454,
+     660
+    ],
+    [
+     472,
+     660
+    ],
+    [
+     490,
+     660
+    ],
+    [
+     508,
+     660
+    ],
+    [
+     527,
+     660
+    ],
+    [
+     545,
+     660
+    ],
+    [
+     563,
+     660
+    ],
+    [
+     581,
+     660
+    ],
+    [
+     600,
+     660
+    ],
+    [
+     618,
+     659
+    ],
+    [
+     636,
+     659
+    ],
+    [
+     654,
+     659
+    ],
+    [
+     672,
+     658
+    ],
+    [
+     691,
+     658
+    ],
+    [
+     709,
+     657
+    ],
+    [
+     727,
+     657
+    ],
+    [
+     745,
+     656
+    ],
+    [
+     762,
+     655
+    ],
+    [
+     780,
+     655
+    ],
+    [
+     796,
+     654
+    ],
+    [
+     813,
+     653
+    ],
+    [
+     830,
+     652
+    ],
+    [
+     846,
+     652
+    ],
+    [
+     863,
+     651
+    ],
+    [
+     879,
+     650
+    ],
+    [
+     894,
+     649
+    ],
+    [
+     910,
+     648
+    ],
+    [
+     925,
+     646
+    ],
+    [
+     940,
+     645
+    ],
+    [
+     954,
+     643
+    ],
+    [
+     968,
+     642
+    ],
+    [
+     982,
+     641
+    ],
+    [
+     995,
+     640
+    ],
+    [
+     1008,
+     639
+    ],
+    [
+     1021,
+     637
+    ],
+    [
+     1034,
+     634
+    ],
+    [
+     1046,
+     631
+    ],
+    [
+     1058,
+     626
+    ],
+    [
+     1070,
+     620
+    ],
+    [
+     1081,
+     612
+    ],
+    [
+     1093,
+     602
+    ],
+    [
+     1104,
+     592
+    ],
+    [
+     1116,
+     580
+    ],
+    [
+     1126,
+     568
+    ],
+    [
+     1137,
+     555
+    ],
+    [
+     1146,
+     541
+    ],
+    [
+     1155,
+     528
+    ],
+    [
+     1163,
+     514
+    ],
+    [
+     1170,
+     500
+    ],
+    [
+     1175,
+     485
+    ],
+    [
+     1179,
+     469
+    ],
+    [
+     1182,
+     452
+    ],
+    [
+     1184,
+     435
+    ],
+    [
+     1185,
+     418
+    ],
+    [
+     1186,
+     400
+    ],
+    [
+     1187,
+     384
+    ],
+    [
+     1188,
+     368
+    ],
+    [
+     1188,
+     353
+    ],
+    [
+     1190,
+     340
+    ],
+    [
+     1191,
+     328
+    ],
+    [
+     1192,
+     317
+    ],
+    [
+     1193,
+     307
+    ],
+    [
+     1194,
+     298
+    ],
+    [
+     1194,
+     289
+    ],
+    [
+     1195,
+     281
+    ],
+    [
+     1195,
+     273
+    ],
+    [
+     1195,
+     265
+    ],
+    [
+     1195,
+     257
+    ],
+    [
+     1195,
+     250
+    ],
+    [
+     1194,
+     241
+    ],
+    [
+     1193,
+     233
+    ],
+    [
+     1191,
+     225
+    ],
+    [
+     1189,
+     217
+    ],
+    [
+     1187,
+     209
+    ],
+    [
+     1185,
+     202
+    ],
+    [
+     1184,
+     195
+    ],
+    [
+     1182,
+     189
+    ],
+    [
+     1180,
+     184
+    ],
+    [
+     1180,
+     180
+    ]
+   ]
+  ],
+  "lanes": {
+   "counts": [
+    111,
+    65,
+    101
+   ],
+   "first": [
+    [
+     90,
+     590
+    ],
+    [
+     89,
+     582
+    ]
+   ],
+   "last": [
+    [
+     1171,
+     175
+    ],
+    [
+     1180,
+     180
+    ]
+   ]
+  },
+  "repeatable": true,
+  "river": {
+   "count": 61,
+   "first": [
+    [
+     0,
+     200
+    ],
+    [
+     8,
+     204
+    ]
+   ],
+   "last": [
+    [
+     1271,
+     515
+    ],
+    [
+     1280,
+     520
+    ]
+   ],
+   "points": [
+    [
+     0,
+     200
+    ],
+    [
+     8,
+     204
+    ],
+    [
+     19,
+     209
+    ],
+    [
+     32,
+     215
+    ],
+    [
+     46,
+     222
+    ],
+    [
+     62,
+     230
+    ],
+    [
+     79,
+     237
+    ],
+    [
+     96,
+     246
+    ],
+    [
+     114,
+     254
+    ],
+    [
+     132,
+     262
+    ],
+    [
+     150,
+     270
+    ],
+    [
+     167,
+     277
+    ],
+    [
+     185,
+     286
+    ],
+    [
+     203,
+     295
+    ],
+    [
+     222,
+     304
+    ],
+    [
+     241,
+     313
+    ],
+    [
+     261,
+     322
+    ],
+    [
+     281,
+     330
+    ],
+    [
+     303,
+     338
+    ],
+    [
+     326,
+     344
+    ],
+    [
+     350,
+     350
+    ],
+    [
+     375,
+     353
+    ],
+    [
+     402,
+     356
+    ],
+    [
+     430,
+     358
+    ],
+    [
+     459,
+     359
+    ],
+    [
+     489,
+     359
+    ],
+    [
+     519,
+     359
+    ],
+    [
+     550,
+     359
+    ],
+    [
+     580,
+     359
+    ],
+    [
+     610,
+     359
+    ],
+    [
+     640,
+     360
+    ],
+    [
+     669,
+     360
+    ],
+    [
+     699,
+     360
+    ],
+    [
+     729,
+     360
+    ],
+    [
+     760,
+     360
+    ],
+    [
+     790,
+     360
+    ],
+    [
+     820,
+     360
+    ],
+    [
+     849,
+     361
+    ],
+    [
+     877,
+     363
+    ],
+    [
+     904,
+     366
+    ],
+    [
+     930,
+     370
+    ],
+    [
+     953,
+     375
+    ],
+    [
+     976,
+     381
+    ],
+    [
+     998,
+     389
+    ],
+    [
+     1018,
+     397
+    ],
+    [
+     1038,
+     406
+    ],
+    [
+     1057,
+     415
+    ],
+    [
+     1076,
+     424
+    ],
+    [
+     1094,
+     433
+    ],
+    [
+     1112,
+     442
+    ],
+    [
+     1130,
+     450
+    ],
+    [
+     1147,
+     457
+    ],
+    [
+     1165,
+     465
+    ],
+    [
+     1183,
+     473
+    ],
+    [
+     1200,
+     482
+    ],
+    [
+     1217,
+     490
+    ],
+    [
+     1233,
+     497
+    ],
+    [
+     1247,
+     504
+    ],
+    [
+     1260,
+     510
+    ],
+    [
+     1271,
+     515
+    ],
+    [
+     1280,
+     520
+    ]
+   ]
+  },
+  "seed": 42
+ },
+ "modules": [
+  {
+   "end": 129,
+   "lines": 94,
+   "module": "palettes",
+   "start": 36
+  },
+  {
+   "end": 4659,
+   "lines": 4530,
+   "module": "themes",
+   "start": 130
+  },
+  {
+   "end": 4953,
+   "lines": 294,
+   "module": "generators",
+   "start": 4660
+  },
+  {
+   "end": 5327,
+   "lines": 374,
+   "module": "static_renderer",
+   "start": 4954
+  },
+  {
+   "end": 6060,
+   "lines": 733,
+   "module": "dynamic_renderer",
+   "start": 5328
+  },
+  {
+   "end": 7151,
+   "lines": 1091,
+   "module": "decoration_renderer",
+   "start": 6061
+  },
+  {
+   "end": 7403,
+   "lines": 252,
+   "module": "shop_renderer",
+   "start": 7152
+  }
+ ],
+ "palette": {
+  "colors": {
+   "CRYSTAL_BLUE_D": [
+    25,
+    55,
+    100
+   ],
+   "CRYSTAL_BLUE_H": [
+    200,
+    230,
+    255
+   ],
+   "CRYSTAL_BLUE_L": [
+    100,
+    170,
+    240
+   ],
+   "CRYSTAL_BLUE_M": [
+    55,
+    100,
+    170
+   ],
+   "CRYSTAL_RED_D": [
+    100,
+    20,
+    30
+   ],
+   "CRYSTAL_RED_H": [
+    255,
+    180,
+    200
+   ],
+   "CRYSTAL_RED_L": [
+    230,
+    80,
+    100
+   ],
+   "CRYSTAL_RED_M": [
+    170,
+    40,
+    55
+   ],
+   "DEAD_TREE_1": [
+    28,
+    20,
+    18
+   ],
+   "DEAD_TREE_2": [
+    55,
+    42,
+    35
+   ],
+   "DEAD_TREE_3": [
+    85,
+    68,
+    55
+   ],
+   "DIRE_ASH": [
+    60,
+    55,
+    50
+   ],
+   "DIRE_BURNT": [
+    30,
+    20,
+    18
+   ],
+   "DIRE_EARTH_1": [
+    45,
+    32,
+    28
+   ],
+   "DIRE_EARTH_2": [
+    65,
+    45,
+    38
+   ],
+   "DIRE_EARTH_3": [
+    85,
+    60,
+    48
+   ],
+   "DIRE_EARTH_4": [
+    105,
+    78,
+    62
+   ],
+   "FIRE_D": [
+    140,
+    40,
+    15
+   ],
+   "FIRE_H": [
+    255,
+    240,
+    150
+   ],
+   "FIRE_L": [
+    255,
+    180,
+    60
+   ],
+   "FIRE_M": [
+    220,
+    90,
+    25
+   ],
+   "OUTLINE": [
+    12,
+    8,
+    12
+   ],
+   "PATH_CRACK": [
+    30,
+    25,
+    20
+   ],
+   "PATH_MOSS": [
+    65,
+    90,
+    45
+   ],
+   "PATH_STONE_1": [
+    58,
+    52,
+    45
+   ],
+   "PATH_STONE_2": [
+    85,
+    76,
+    65
+   ],
+   "PATH_STONE_3": [
+    115,
+    105,
+    90
+   ],
+   "PATH_STONE_4": [
+    145,
+    130,
+    108
+   ],
+   "RADIANT_GRASS_1": [
+    28,
+    55,
+    32
+   ],
+   "RADIANT_GRASS_2": [
+    38,
+    72,
+    42
+   ],
+   "RADIANT_GRASS_3": [
+    52,
+    92,
+    55
+   ],
+   "RADIANT_GRASS_4": [
+    68,
+    115,
+    70
+   ],
+   "RADIANT_GRASS_HIGH": [
+    90,
+    145,
+    85
+   ],
+   "RADIANT_MOSS": [
+    55,
+    90,
+    40
+   ],
+   "RIVER_DEEP": [
+    15,
+    28,
+    45
+   ],
+   "RIVER_FOAM": [
+    180,
+    210,
+    230
+   ],
+   "RIVER_GLOW": [
+    80,
+    150,
+    200
+   ],
+   "RIVER_LIGHT": [
+    50,
+    90,
+    130
+   ],
+   "RIVER_MID": [
+    30,
+    55,
+    88
+   ],
+   "SHADOW": [
+    0,
+    0,
+    0
+   ],
+   "STONE_DARK": [
+    55,
+    55,
+    65
+   ],
+   "STONE_HIGH": [
+    175,
+    175,
+    185
+   ],
+   "STONE_LIGHT": [
+    135,
+    135,
+    145
+   ],
+   "STONE_MID": [
+    95,
+    95,
+    105
+   ],
+   "TRANSITION_1": [
+    55,
+    55,
+    42
+   ],
+   "TRANSITION_2": [
+    75,
+    68,
+    50
+   ],
+   "TREE_LEAVES_D": [
+    18,
+    42,
+    22
+   ],
+   "TREE_LEAVES_H": [
+    80,
+    130,
+    70
+   ],
+   "TREE_LEAVES_L": [
+    55,
+    95,
+    55
+   ],
+   "TREE_LEAVES_M": [
+    32,
+    65,
+    35
+   ],
+   "TREE_TRUNK_D": [
+    32,
+    20,
+    15
+   ],
+   "TREE_TRUNK_L": [
+    58,
+    38,
+    25
+   ]
+  },
+  "tile_size": 16
+ },
+ "runtime_arrays": [
+  "bones",
+  "boss_landmarks",
+  "crystals_blue",
+  "dire_shop_pos",
+  "gravestones",
+  "map_height",
+  "map_width",
+  "radiant_shop_pos",
+  "river_points",
+  "rocks_mossy",
+  "torch_stones"
+ ],
+ "seeds": [
+  {
+   "argument": "42",
+   "kind": "fixed",
+   "line": 4747
+  },
+  {
+   "argument": "",
+   "kind": "entropy",
+   "line": 4889
+  },
+  {
+   "argument": "100",
+   "kind": "fixed",
+   "line": 5062
+  },
+  {
+   "argument": "",
+   "kind": "entropy",
+   "line": 5074
+  }
+ ],
+ "stale_entries": [],
+ "symbol_count": 194,
+ "themes": {
+  "consts": {
+   "abyss": "ABYSS_THEME",
+   "abyssal": "ABYSSAL_THEME",
+   "abysstide": "ABYSSTIDE_THEME",
+   "astral": "ASTRAL_THEME",
+   "celestialpeaks": "CELESTIALPEAKS_THEME",
+   "cosmic": "COSMIC_THEME",
+   "crimson": "CRIMSON_THEME",
+   "crimsondevourer": "CRIMSONDEVOURER_THEME",
+   "crimsonmatriarch": "CRIMSONMATRIARCH_THEME",
+   "croweye": "CROWEYE_THEME",
+   "crystalstorm": "CRYSTALSTORM_THEME",
+   "desert": "DESERT_THEME",
+   "earthborn": "EARTHBORN_THEME",
+   "eldritch": "ELDRITCH_THEME",
+   "elementweave": "ELEMENTWEAVE_THEME",
+   "emberlion": "EMBERLION_THEME",
+   "emberweaver": "EMBERWEAVER_THEME",
+   "empyrean": "EMPYREAN_THEME",
+   "eternalflame": "ETERNALFLAME_THEME",
+   "eternalwarlord": "ETERNALWARLORD_THEME",
+   "explosiveart": "EXPLOSIVEART_THEME",
+   "forest": "FOREST_THEME",
+   "frostveil": "FROSTVEIL_THEME",
+   "haunted": "HAUNTED_THEME",
+   "heartbane": "HEARTBANE_THEME",
+   "hexbound": "HEXBOUND_THEME",
+   "hollowbane": "HOLLOWBANE_THEME",
+   "ice": "ICE_THEME",
+   "lunarherald": "LUNARHERALD_THEME",
+   "moonborn": "MOONBORN_THEME",
+   "moonfang": "MOONFANG_THEME",
+   "moonreaper": "MOONREAPER_THEME",
+   "nethervenom": "NETHERVENOM_THEME",
+   "ocean": "OCEAN_THEME",
+   "outlaw": "OUTLAW_THEME",
+   "primordial": "PRIMORDIAL_THEME",
+   "radiant": "RADIANT_THEME",
+   "royal": "ROYAL_THEME",
+   "sanctum": "SANCTUM_THEME",
+   "sandshadow": "SANDSHADOW_THEME",
+   "sawmill": "SAWMILL_THEME",
+   "shadowchain": "SHADOWCHAIN_THEME",
+   "skyfury": "SKYFURY_THEME",
+   "solaris": "SOLARIS_THEME",
+   "soulforged": "SOULFORGED_THEME",
+   "spectral": "SPECTRAL_THEME",
+   "sundered": "SUNDERED_THEME",
+   "sunfist": "SUNFIST_THEME",
+   "tempest": "TEMPEST_THEME",
+   "violet": "VIOLET_THEME",
+   "voidbound": "VOIDBOUND_THEME",
+   "voidwing": "VOIDWING_THEME",
+   "volcanic": "VOLCANIC_THEME",
+   "warshade": "WARSHADE_THEME"
+  },
+  "count": 54,
+  "key_count": 77,
+  "keys": [
+   "ambient_tint",
+   "arena_highlight",
+   "arena_stone",
+   "ash_high",
+   "bone_highlight",
+   "bone_white",
+   "border_highlight",
+   "border_stone",
+   "boss_identity",
+   "boss_title",
+   "causeway_dark",
+   "causeway_mid",
+   "dire_ash",
+   "dire_burnt",
+   "dire_earth_1",
+   "dire_earth_2",
+   "dire_earth_3",
+   "dire_earth_4",
+   "fog_color",
+   "fog_count",
+   "fog_enabled",
+   "gate_highlight",
+   "gate_stone",
+   "has_ancient_ruins",
+   "has_bones",
+   "has_cactus",
+   "has_crypt_gates",
+   "has_crystals_blue",
+   "has_crystals_red",
+   "has_cursed_candles",
+   "has_dark_bushes",
+   "has_dark_trees",
+   "has_dead_trees",
+   "has_ectoplasm_pools",
+   "has_frozen_trees",
+   "has_ghost_lights",
+   "has_glow_flowers",
+   "has_gravestones",
+   "has_ice_crystals",
+   "has_mushrooms_dark",
+   "has_palm_trees",
+   "has_rocks_mossy",
+   "has_sand_dunes",
+   "has_snow_drifts",
+   "has_spike_traps",
+   "has_spirit_wisps",
+   "has_torch_stones",
+   "level_identity",
+   "name",
+   "obelisk_highlight",
+   "obelisk_stone",
+   "particle_colors_dire",
+   "particle_colors_radiant",
+   "particle_count",
+   "particle_type",
+   "path_crack",
+   "path_moss",
+   "path_stone_1",
+   "path_stone_2",
+   "path_stone_3",
+   "path_stone_4",
+   "radiant_grass_1",
+   "radiant_grass_2",
+   "radiant_grass_3",
+   "radiant_grass_4",
+   "radiant_grass_high",
+   "radiant_moss",
+   "rift_violet",
+   "river_deep",
+   "river_foam",
+   "river_glow",
+   "river_light",
+   "river_mid",
+   "soul_teal",
+   "transition_1",
+   "transition_2",
+   "void_black"
+  ],
+  "meta": {
+   "abyss": {
+    "boss_identity": "nyxarath",
+    "boss_title": "The Soul Eater",
+    "color_keys": 2,
+    "fog_count": 20,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_crystals_red",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_rocks_mossy",
+     "has_spike_traps",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "Shadow Abyss",
+    "particle_count": 55,
+    "particle_type": "ember"
+   },
+   "abyssal": {
+    "boss_identity": "thalakryon",
+    "boss_title": "The Abyssal Sovereign",
+    "color_keys": 2,
+    "fog_count": 22,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_crystals_blue",
+     "has_glow_flowers",
+     "has_rocks_mossy",
+     "has_sand_dunes",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "Abyssal Depths",
+    "particle_count": 60,
+    "particle_type": "ember"
+   },
+   "abysstide": {
+    "boss_identity": "okeanora",
+    "boss_title": "The Deepborn Oracle",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_crystals_blue",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Deepborn Oracle",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "astral": {
+    "boss_identity": "zarethyr",
+    "boss_title": "The Astral Sovereign",
+    "color_keys": 2,
+    "fog_count": 16,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_crystals_blue",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Astral Sovereign",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "celestialpeaks": {
+    "boss_identity": "seiryukong",
+    "boss_title": "The Celestial Simian",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_crystals_blue",
+     "has_dark_trees",
+     "has_glow_flowers",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "Celestial Peaks",
+    "particle_count": 55,
+    "particle_type": "snow"
+   },
+   "cosmic": {
+    "boss_identity": "nyxareth",
+    "boss_title": "The Cosmic Sovereign",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_crystals_blue",
+     "has_glow_flowers",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "Cosmic Expanse",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "crimson": {
+    "boss_identity": "morthraxis",
+    "boss_title": "The Crimson Sovereign",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_crystals_red",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "Crimson Dominion",
+    "particle_count": 55,
+    "particle_type": "firefly"
+   },
+   "crimsondevourer": {
+    "boss_identity": "kyrenzai",
+    "boss_title": "The Crimson Devourer",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_crystals_red",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Crimson Devourer",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "crimsonmatriarch": {
+    "boss_identity": "vaelmyrra",
+    "boss_title": "The Crimson Matriarch",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_crystals_red",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_spike_traps",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Crimson Matriarch",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "croweye": {
+    "boss_identity": "kaineroth",
+    "boss_title": "The Crow-Eyed",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_crystals_red",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Crow-Eyed",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "crystalstorm": {
+    "boss_identity": "zyvareth",
+    "boss_title": "The Stormherald",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_crystals_blue",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Stormherald",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "desert": {
+    "boss_identity": "alchemist",
+    "boss_title": "The Chemical Conqueror",
+    "color_keys": 2,
+    "fog_count": 20,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_cactus",
+     "has_crystals_red",
+     "has_dead_trees",
+     "has_mushrooms_dark",
+     "has_palm_trees",
+     "has_rocks_mossy",
+     "has_sand_dunes",
+     "has_spike_traps",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "Desert",
+    "particle_count": 40,
+    "particle_type": "acid"
+   },
+   "earthborn": {
+    "boss_identity": "grondmauris",
+    "boss_title": "The Earthborn",
+    "color_keys": 2,
+    "fog_count": 16,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Earthborn",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "eldritch": {
+    "boss_identity": "nazulmor",
+    "boss_title": "The Deepborn Herald",
+    "color_keys": 2,
+    "fog_count": 22,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_crystals_blue",
+     "has_glow_flowers",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "Eldritch Depths",
+    "particle_count": 60,
+    "particle_type": "ember"
+   },
+   "elementweave": {
+    "boss_identity": "xaelmoran",
+    "boss_title": "The Elemental Weaver",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_crystals_blue",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Elemental Weaver",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "emberlion": {
+    "boss_identity": "kaithros",
+    "boss_title": "The Emberlion Ronin",
+    "color_keys": 2,
+    "fog_count": 16,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_crystals_red",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_spike_traps",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Emberlion Ronin",
+    "particle_count": 50,
+    "particle_type": "ember"
+   },
+   "emberweaver": {
+    "boss_identity": "pyraena",
+    "boss_title": "The Emberweaver",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_crystals_red",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Emberweaver",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "empyrean": {
+    "boss_identity": "seraphienne",
+    "boss_title": "The Empyrean Executioner",
+    "color_keys": 2,
+    "fog_count": 16,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_crystals_blue",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_glow_flowers",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Empyrean Executioner",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "eternalflame": {
+    "boss_identity": "pyraethis",
+    "boss_title": "The Eternal Firebird",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_crystals_red",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "Eternal Flame",
+    "particle_count": 55,
+    "particle_type": "ember"
+   },
+   "eternalwarlord": {
+    "boss_identity": "kagetsuka",
+    "boss_title": "The Eternal Warlord",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_crystals_red",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Eternal Warlord",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "explosiveart": {
+    "boss_identity": "deidara",
+    "boss_title": "The Explosive Artist",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_crystals_red",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_sand_dunes",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Explosive Artist",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "forest": {
+    "boss_identity": "abaddon",
+    "boss_title": "Lord of Avernus",
+    "color_keys": 2,
+    "fog_count": 15,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_crystals_blue",
+     "has_crystals_red",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_spike_traps",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "Forest",
+    "particle_count": 30,
+    "particle_type": "ash"
+   },
+   "frostveil": {
+    "boss_identity": "nyrellieth",
+    "boss_title": "The Frost-Veiled Huntress",
+    "color_keys": 2,
+    "fog_count": 16,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_crystals_blue",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_frozen_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_ice_crystals",
+     "has_rocks_mossy",
+     "has_snow_drifts",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Frost-Veiled Huntress",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "haunted": {
+    "boss_identity": "",
+    "boss_title": "",
+    "color_keys": 2,
+    "fog_count": 12,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_crypt_gates",
+     "has_crystals_blue",
+     "has_cursed_candles",
+     "has_dark_bushes",
+     "has_dead_trees",
+     "has_ectoplasm_pools",
+     "has_ghost_lights",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_spirit_wisps",
+     "has_torch_stones"
+    ],
+    "key_count": 69,
+    "name": "Haunted Veil",
+    "particle_count": 34,
+    "particle_type": "spirit"
+   },
+   "heartbane": {
+    "boss_identity": "lyssarethys",
+    "boss_title": "The Heartbane",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_crystals_red",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Heartbane",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "hexbound": {
+    "boss_identity": "malzeroth",
+    "boss_title": "The Hexbound Sovereign",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_spike_traps",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Hexbound Sovereign",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "hollowbane": {
+    "boss_identity": "hollowbane",
+    "boss_title": "The Substitute Shinigami",
+    "color_keys": 2,
+    "fog_count": 17,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_crystals_blue",
+     "has_crystals_red",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_spike_traps",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Substitute Shinigami",
+    "particle_count": 55,
+    "particle_type": "ember"
+   },
+   "ice": {
+    "boss_identity": "ancient_apparition",
+    "boss_title": "The Frozen Eternity",
+    "color_keys": 2,
+    "fog_count": 25,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_crystals_blue",
+     "has_frozen_trees",
+     "has_glow_flowers",
+     "has_ice_crystals",
+     "has_rocks_mossy",
+     "has_snow_drifts",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "Ice",
+    "particle_count": 60,
+    "particle_type": "snow"
+   },
+   "lunarherald": {
+    "boss_identity": "nyxaris",
+    "boss_title": "The Lunar Herald",
+    "color_keys": 2,
+    "fog_count": 17,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_crystals_blue",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_spike_traps",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Lunar Herald",
+    "particle_count": 55,
+    "particle_type": "firefly"
+   },
+   "moonborn": {
+    "boss_identity": "tsukiyora",
+    "boss_title": "The Moon-Born Sovereign",
+    "color_keys": 2,
+    "fog_count": 17,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_crystals_blue",
+     "has_crystals_red",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_spike_traps",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Moon-Born Sovereign",
+    "particle_count": 55,
+    "particle_type": "firefly"
+   },
+   "moonfang": {
+    "boss_identity": "akirakumo",
+    "boss_title": "The Moonfang Prince",
+    "color_keys": 2,
+    "fog_count": 17,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_crystals_blue",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_spike_traps",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Moonfang Prince",
+    "particle_count": 55,
+    "particle_type": "firefly"
+   },
+   "moonreaper": {
+    "boss_identity": "yomigetsu",
+    "boss_title": "The Moonreaper",
+    "color_keys": 2,
+    "fog_count": 16,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_crystals_blue",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_spike_traps",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Moonreaper",
+    "particle_count": 50,
+    "particle_type": "firefly"
+   },
+   "nethervenom": {
+    "boss_identity": "vhorethzir",
+    "boss_title": "The Nethervenom Wyrm",
+    "color_keys": 2,
+    "fog_count": 22,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_spike_traps",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "Nethervenom Expanse",
+    "particle_count": 60,
+    "particle_type": "ember"
+   },
+   "ocean": {
+    "boss_identity": "kunkka",
+    "boss_title": "The Admiral of the Fleet",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_crystals_blue",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_palm_trees",
+     "has_rocks_mossy",
+     "has_sand_dunes",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "Admiral's Cove",
+    "particle_count": 45,
+    "particle_type": "mist"
+   },
+   "outlaw": {
+    "boss_identity": "ravokkar",
+    "boss_title": "The Outlaw King",
+    "color_keys": 2,
+    "fog_count": 16,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_cactus",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_gravestones",
+     "has_rocks_mossy",
+     "has_sand_dunes",
+     "has_spike_traps",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Outlaw King",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "primordial": {
+    "boss_identity": "yamako",
+    "boss_title": "The Primordial Woodshaper",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_glow_flowers",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "Primordial Grove",
+    "particle_count": 55,
+    "particle_type": "firefly"
+   },
+   "radiant": {
+    "boss_identity": "aurethzar",
+    "boss_title": "The Radiant Dawn",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_glow_flowers",
+     "has_rocks_mossy",
+     "has_sand_dunes",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "Radiant Expanse",
+    "particle_count": 55,
+    "particle_type": "ember"
+   },
+   "royal": {
+    "boss_identity": "aurelion",
+    "boss_title": "The Golden Sovereign",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_crystals_blue",
+     "has_glow_flowers",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "Royal Citadel",
+    "particle_count": 55,
+    "particle_type": "firefly"
+   },
+   "sanctum": {
+    "boss_identity": "solvarin",
+    "boss_title": "The Holy Paladin Warden",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_crystals_blue",
+     "has_glow_flowers",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "Silver Sanctum",
+    "particle_count": 55,
+    "particle_type": "ember"
+   },
+   "sandshadow": {
+    "boss_identity": "sunakage",
+    "boss_title": "The Sand Shadow",
+    "color_keys": 2,
+    "fog_count": 16,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_cactus",
+     "has_crystals_red",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_gravestones",
+     "has_palm_trees",
+     "has_rocks_mossy",
+     "has_sand_dunes",
+     "has_spike_traps",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Sand Shadow",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "sawmill": {
+    "boss_identity": "grimkor",
+    "boss_title": "The Sawmill Warlord",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_spike_traps",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Sawmill Warlord",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "shadowchain": {
+    "boss_identity": "nyrethzalv",
+    "boss_title": "The Forsaken Empress of Shadow-Chains",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_spike_traps",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Forsaken Empress",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "skyfury": {
+    "boss_identity": "cogsworth",
+    "boss_title": "The Skyfury",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_crystals_blue",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_spike_traps",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Skyfury",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "solaris": {
+    "boss_identity": "solareth",
+    "boss_title": "The Sunborn Herald",
+    "color_keys": 2,
+    "fog_count": 16,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_cactus",
+     "has_crystals_red",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_palm_trees",
+     "has_rocks_mossy",
+     "has_sand_dunes",
+     "has_spike_traps",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Sunborn Herald",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "soulforged": {
+    "boss_identity": "naraka",
+    "boss_title": "The Lost Soul",
+    "color_keys": 2,
+    "fog_count": 22,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_crystals_blue",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_rocks_mossy",
+     "has_spike_traps",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "Soulforged Expanse",
+    "particle_count": 60,
+    "particle_type": "ember"
+   },
+   "spectral": {
+    "boss_identity": "nexthyrius",
+    "boss_title": "The Chained Hollow",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_crystals_blue",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Hollow Veil",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "sundered": {
+    "boss_identity": "molgravar",
+    "boss_title": "The Colossus of the Sundered Peak",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_crystals_red",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_spike_traps",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Sundered Peak",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "sunfist": {
+    "boss_identity": "kaerinya",
+    "boss_title": "The Sunfist",
+    "color_keys": 2,
+    "fog_count": 16,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_crystals_blue",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Sunfist",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "tempest": {
+    "boss_identity": "thalryndel",
+    "boss_title": "The Tempest Weaver",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_crystals_blue",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Tempest Weaver",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "violet": {
+    "boss_identity": "vaelindra",
+    "boss_title": "The Violet Sovereign",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_crystals_blue",
+     "has_glow_flowers",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "Violet Court",
+    "particle_count": 55,
+    "particle_type": "firefly"
+   },
+   "voidbound": {
+    "boss_identity": "zharakzuul",
+    "boss_title": "The Voidbound Sovereign",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Voidbound Sovereign",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "voidwing": {
+    "boss_identity": "xelnarath",
+    "boss_title": "The Void Sovereign",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Void Sovereign",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   },
+   "volcanic": {
+    "boss_identity": "ignis_drachorn",
+    "boss_title": "The Molten Sovereign",
+    "color_keys": 2,
+    "fog_count": 22,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_crystals_red",
+     "has_dead_trees",
+     "has_glow_flowers",
+     "has_rocks_mossy",
+     "has_spike_traps",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "Volcanic",
+    "particle_count": 50,
+    "particle_type": "ember"
+   },
+   "warshade": {
+    "boss_identity": "nyxharr",
+    "boss_title": "The Shadow of War",
+    "color_keys": 2,
+    "fog_count": 18,
+    "fog_enabled": true,
+    "gate_keys": [
+     "fog_enabled",
+     "has_ancient_ruins",
+     "has_bones",
+     "has_crystals_blue",
+     "has_dark_bushes",
+     "has_dark_trees",
+     "has_dead_trees",
+     "has_gravestones",
+     "has_mushrooms_dark",
+     "has_rocks_mossy",
+     "has_spike_traps",
+     "has_torch_stones"
+    ],
+    "key_count": 55,
+    "name": "The Shadow of War",
+    "particle_count": 60,
+    "particle_type": "firefly"
+   }
+  },
+  "names": [
+   "abyss",
+   "abyssal",
+   "abysstide",
+   "astral",
+   "celestialpeaks",
+   "cosmic",
+   "crimson",
+   "crimsondevourer",
+   "crimsonmatriarch",
+   "croweye",
+   "crystalstorm",
+   "desert",
+   "earthborn",
+   "eldritch",
+   "elementweave",
+   "emberlion",
+   "emberweaver",
+   "empyrean",
+   "eternalflame",
+   "eternalwarlord",
+   "explosiveart",
+   "forest",
+   "frostveil",
+   "haunted",
+   "heartbane",
+   "hexbound",
+   "hollowbane",
+   "ice",
+   "lunarherald",
+   "moonborn",
+   "moonfang",
+   "moonreaper",
+   "nethervenom",
+   "ocean",
+   "outlaw",
+   "primordial",
+   "radiant",
+   "royal",
+   "sanctum",
+   "sandshadow",
+   "sawmill",
+   "shadowchain",
+   "skyfury",
+   "solaris",
+   "soulforged",
+   "spectral",
+   "sundered",
+   "sunfist",
+   "tempest",
+   "violet",
+   "voidbound",
+   "voidwing",
+   "volcanic",
+   "warshade"
+  ]
+ }
+}

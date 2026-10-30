@@ -50,7 +50,7 @@ Tes native Godot 4.7.2 headless terakhir yang jumlah pemeriksaannya tercatat (br
 
 Run native terbaru untuk lapisan 9bt adalah commit `0411b28` ([run 41030476536](https://github.com/dharmawantoxi/mystic-arena/actions/runs/41030476536)) dan lulus tanpa kegagalan; jumlah pemeriksaannya tidak terbaca dari artefak di lingkungan kerja ini, jadi angka 1.505.443 di atas tetap merujuk run `f4e840b`.
 
-Validator statis terakhir yang tersedia lulus **21.933 pemeriksaan**. Itu berbeda dari tes native dan tidak menggantikan bukti runtime, screenshot, perangkat, atau audio.
+Validator statis terakhir yang tersedia lulus **22.127 pemeriksaan**. Itu berbeda dari tes native dan tidak menggantikan bukti runtime, screenshot, perangkat, atau audio.
 
 #### Triase 23 kegagalan tes native sebelumnya
 
@@ -162,6 +162,47 @@ Seluruh 61 berkas di `bosses/` sudah dipetakan ke Godot; rincian per berkas ada 
 * **Koreksi penting soal harga hero bos:** `unlock_cost` di `data/heroes/*.tres` memang **0**, bukan salah tulis. `_core.py` menimpa `hero_unlock["cost"]` untuk seluruh 216 hero dengan kebijakan final starter 0 / mini 4.500 / true 4.500, dan nilai `cost` mentah tetap tersimpan apa adanya di `.tres` (dan kini dikunci suite). Jangan "memperbaiki" harga menjadi 4.500.
 
 Yang **belum** dibuktikan untuk folder ini: komposit pertandingan di perangkat Android nyata (sprite bos sendiri sudah di-bake dan di-decode di tes), serta level 2–54 yang bosnya siap tetapi konfigurasi gelombang penuhnya belum.
+
+### Folder `hero_skills/` (layer 9by, 30 Oktober 2026)
+
+Kedua berkas di `hero_skills/` sudah dipetakan penuh; rincian per konstruksi ada di [`HERO_SKILLS_FOLDER_MIGRATION.md`](HERO_SKILLS_FOLDER_MIGRATION.md). Folder ini kecil di disk (2 berkas, 5.348 baris) tetapi memuat API dasar yang diwarisi semua kit hero, registri 66 resep bos, dan enam kit starter.
+
+* **`__init__.py`** — registri `register_handler`/`get_skill_handler`, tujuh nama submodul alias (`_install_aliases`), dan auto-register 6 starter + 216 bos. API-nya sudah digantikan resolver native (`NATIVE_SKILLS`, `BossRecipeRegistry`, `SourceSharedBossSkills`); peta aliasnya diklasifikasikan **N/A** karena hanya jembatan `sys.modules` untuk berkas yang sudah digabung ke `_bundle.py`.
+* **`_bundle.py`** — `BaseSkill` (28 method: sweep musuh, stun `max`, guard `REQUIRE_TARGET` dengan slack 1.15, `SKILL_VISUAL_DURATION`) sudah diport ke `skill_common.gd`/`boss_skill_common.gd`/`_has_q_target`; `BossHeroSkills` (273 method, `_SKILL_REGISTRY` 66 bos / 264 cast, `_fallback_cast` 150 bos, override `BOSS_HERO_VISUAL_DURATION` nyzrak+vhalzun) sudah diport ke 20 modul `boss_level_*_skills.gd` + `alchemist_skills.gd` + `source_shared_boss_skills.gd`; enam kit starter ada di lima skrip native dan satu jalur inline `minion_battle.gd` (kaizen).
+
+**Satu perilaku yang belum punya rumah native dan diport di layer ini:** setiap cast sukses di sumber menjalankan `_shake_screen` dan `_play_skill_sound` di dalam `_trigger_{q,w,e,r}_cooldown`, tetapi jalur skill Godot tidak menghasilkan keduanya dan `AudioManager` belum menerima `volume_mult`. Sekarang ada `scripts/combat/skill_feedback.gd` (tabel `DEFAULT_SHAKE` 8/5/6/15, `BOSS_SHAKE` 10/8/8/15 untuk 216 bos, `STARTER_SHAKE` dengan thorne yang menukar Q=6/E=8, `VOLUME` 0.7/0.6/0.7/1.0), `AudioManager.play_scaled` (throttle 50 ms per nama + `master*sfx*volume_mult`), dan pemanggilan di keempat titik masuk cast `prototype_battle.gd`. Kuirk sumber yang dipertahankan: tim merah tetap mengguncang layar tetapi tidak memutar suara, karena sumber memfilter suara dengan `team == "blue"` saja.
+
+Deviasi yang dicatat: shake skill berbagi `EffectManager` dengan shake bos (akumulasi `max` per tick, sama seperti sumber); throttle dan volume hanya berlaku di jalur skill, `play()` biasa tetap tanpa throttle.
+
+Yang **belum** dibuktikan: hasil audio/visual di perangkat nyata — suite membuktikan keputusan (intensitas, volume, tim), bukan suara atau guncangan yang benar-benar terlihat/terdengar.
+
+### Folder `heroes/` (layer 9bz, 30 Oktober 2026)
+
+Ke-34 modul `heroes/` (101.262 baris) sudah dipetakan; rincian per berkas ada di [`HEROES_FOLDER_MIGRATION.md`](HEROES_FOLDER_MIGRATION.md). Folder ini dua lapisan sekaligus, dan statusnya **tidak** seragam — itu inti laporan ini.
+
+* **Pipeline renderer sudah diport lewat bake, bukan skrip.** `HERO_RENDERERS` (6 starter), `_get_hero_scale` (`HERO_GLOBAL_SCALE` 0.78, target tinggi 65 px, aspek rujukan 1.6, bobot lebar 0.0, fallback 0.65, klamp 0.40–1.70), cache sprite/pose, dan `HERO_ANIM_PHASES` 8 semuanya tertanam di `data/art/heroes.json` (222 hero, 228 atlas, `meta.hero_scale` ∈ 0.312–1.326) dan dibaca `scripts/ui/hero_art.gd`/`hero_anim.gd`.
+* **Empat `*_v1.py` diklasifikasikan "Diport (bake)", bukan usang.** `_bundle.py` menjalankan `install(legacy_cls)` yang mengembalikan subclass `_NS_<hero>`, jadi renderer **efektif** kaizen/vex/grimjaw/sylara adalah implementasi pixel-art V1 — dan itulah yang dirender ke atlas (kaizen 0.4971, grimjaw 0.4609, sylara 0.6259, vex 0.5895).
+* **`combat_feel.py` sudah punya rumah native.** `HitStop` (jepit 0.03–0.08 s, `round(seconds/FIXED_DT)`, min 1, cap 5 langkah, jendela terpanjang) ada di `scripts/match/hit_stop_runtime.gd`; tabel permintaan direktor FX (`SOURCE_CAST_HIT_STOP_SECONDS` kaizen 0.021/0.024/0.04, grimjaw 0.027/0.024/0.04, sylara 0.02, vex 0.021/0.025/0.04) memakai angka mentah sumber, lalu runtime yang menaikkannya ke lantai 0.03 s = 2 langkah beku — diuji langsung di suite.
+* **Layer baru: bus FX hidup + governor beban combat.** `scripts/ui/hero_fx_bus.gd` memegang registri 27 hero `_LIVE_FX_HEROES`, `begin_fx_frame`/`fx_frame`, `count_busy_fx_heroes` (ikut menghitung bos lewat `boss_type`), guard `_portrait_hd`, dan anggaran lapisan tanah (`_FX_GROUND_LEFT` + saklar `MYSTIC_FX_GROUND=0`). `scripts/settings/fx_governor.gd` memegang angka `mobile/perf.py`: smoothing 0.40, satu hero bebas, target `max(0.10, (1/n)^1.5)`, token 140/18/10 dengan lantai 56/10/5, serta preset `particle_ratio` 0.20/0.40/0.70, lantai pose skill 12/8/4, attack 6/4/3, anggaran tanah 2/3/6, render penuh 3/4/8.
+
+Dua aturan sumber yang dikunci tes: **frame FX tidak pernah dilewati** (beban turun lewat intensitas, bukan frekuensi gambar) dan **anggaran tanah hanya memotong gambar** — `attach()` + `tick()` tetap jalan supaya simulasi FX hero tidak membeku.
+
+Deviasi yang tercatat: (1) atlas memakai quantum pose tetap 3/2 sementara sumber memilih 4/6 + tangga 2/4/6 dan lantai preset; (2) tanda tangan gambar direktor menjadi `draw_*_layer(unit)` karena surface/offset disuntik saat konstruksi; (3) cap spawn tidak lagi monkey-patch, penegakannya lewat `guard_spawn()` + `claim_*`/`refund_*` yang harus dipanggil tiap direktor; (4) anggaran `max_hero_render` diekspos demi paritas angka tetapi tidak dipakai karena atlas statis; (5) trik `sys.modules` (`_install_aliases`, `_EXTRA`) diganti `preload` eksplisit.
+
+**Yang belum — dan ini gap terbesar yang tersisa di seluruh migrasi:** 27 modul `*_fx.py` (72.594 baris, 1.400 fungsi, `MAX_PARTICLES` 57–144) belum punya padanan native; hanya hook hit-stop-nya yang sudah masuk tabel battle. Fondasinya (bus, governor, kontrak 12 entry point, anggaran, cap token) sudah siap dan beruji, tetapi visual/koreografi FX tiap hero belum ada. Rencana tiga gelombang ada di laporan folder. Sampai itu selesai, `heroes/` **tidak** boleh disebut selesai.
+
+### Folder `levels/` (layer 9ca, 30 Oktober 2026)
+
+Kedua modul `levels/` (2.354 baris) sudah dipetakan; rincian per berkas dan per level ada di [`LEVELS_FOLDER_MIGRATION.md`](LEVELS_FOLDER_MIGRATION.md). Folder ini kecil tetapi menjadi sumber scaling musuh, ekonomi pembuka, tier kastil, tema peta, susunan bos, meta gold dan rantai unlock untuk 54 level.
+
+* **Data 54 level sudah identik kata per kata** dengan `level_data.py`: `data/levels/level_1..54.json` membawa 17 kunci per level (tidak ada level yang bolong), dan `levels_folder_source_oracle.py` membandingkan seluruh 54 kamus, bukan sampel. `level_catalog_source_oracle.py` (layer lama) sudah menjaga hal yang sama untuk 54 berkas.
+* **Empat helper sumber punya padanan native** di `scripts/match/level_catalog.gd`: `get_level_config` (pencarian linear `ALL_LEVELS`), `get_level_count` → `count()`, `is_level_unlocked` (null = terbuka, selain itu butuh level prasyarat), `get_next_level`. Ditambah `all_configs()` untuk `ALL_LEVELS`. Dua deviasi sentinel dicatat: `None` sumber → `{}`/`-1` native.
+* **Setiap kunci yang dibaca runtime punya konsumen native**, dan audit itu dijalankan ulang oleh validator: `live_without_native_consumer` kosong. Dua kunci mati di kedua sisi (`bgm_track`, `meta_gold_reward_lose`) diklasifikasikan data-only, bukan diasumsikan berfungsi.
+* **Integritas roster:** 54 bos sejati + 162 mini bos = 216, persis roster `boss_stats.json` tanpa tumpang tindih; 54 `map_theme` semuanya ada di `theme_palette.json`.
+* **Kunci wave `mini_bosses` adalah input bake, bukan runtime.** `_roll_mini_boss_schedule` menyampel ulang wave (normal/hard 11–30, easy 20–40) lalu `zip` ke nilai kamus, jadi yang bertahan hanya urutan bos; kunci 10/15/17/18/20/25 hanya dipakai `bosses/boss_data.py` (`_slot_of_mini_wave`) saat memanggang statistik. Godot meniru keduanya dan suite memeriksa urutan serta rentang wave hasil roll.
+* **Wiring pertandingan diuji langsung:** mode hard mengalikan `enemy_hp_mult × 1.15`, `enemy_damage_mult × 1.10`, dan membiarkan `enemy_speed_mult` apa adanya (sama seperti `_core.py:1477-1479`); level 1 membuka dengan gold sumber.
+
+**Yang BELUM:** layar pemilih level (state `LEVEL_SELECT` + `_draw_level_select` di Pygame) tidak punya padanan native. Seluruh data yang dibutuhkannya sudah tersedia dan beruji, tetapi layarnya sendiri belum diport — dan itu lapisan UI, bukan isi folder `levels/`. Seperti layer lain, belum ada bukti screenshot/perangkat.
 
 ### Membandingkan capture Godot dari PC (layar sentuh)
 
