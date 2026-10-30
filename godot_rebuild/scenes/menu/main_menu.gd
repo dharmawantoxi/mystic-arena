@@ -14,6 +14,7 @@ const ProgressStore = preload("res://scripts/match/level_progress_store.gd")
 const LevelStats = preload("res://scripts/match/level_stats.gd")
 const HeroUnlockStore = preload("res://scripts/match/hero_unlock_store.gd")
 const SaveSlotStore = preload("res://scripts/match/save_slot_store.gd")
+const PygameSaveImport = preload("res://scripts/match/pygame_save_import.gd")
 const MetaHeroShopPanel = preload("res://scripts/ui/meta_hero_shop_panel.gd")
 const TopupFlow = preload("res://scripts/match/topup_flow.gd")
 const TopupCurrency = preload("res://scripts/match/topup_currency.gd")
@@ -25,6 +26,7 @@ const SourceUiButton = preload("res://scripts/ui/source_ui_button.gd")
 
 const SOURCE_MENU_SIZE := Vector2(1280.0, 720.0)
 var slot_path_template := SaveSlotStore.PATH_TEMPLATE
+var pygame_import_template := PygameSaveImport.STAGED_TEMPLATE
 var progress_path := SaveSlotStore.current_path(slot_path_template)
 var active_slot := SaveSlotStore.get_current_slot()
 var hero_shop_panel: MetaHeroShopPanel
@@ -335,6 +337,7 @@ func _build_save_slots() -> void:
 	save_slot_panel.name = "SaveSlotPanel"
 	save_slot_panel.slot_requested.connect(_select_save_slot)
 	save_slot_panel.delete_requested.connect(_delete_save_slot)
+	save_slot_panel.import_requested.connect(_import_pygame_saves)
 	save_slot_panel.closed.connect(_on_save_slots_closed)
 	add_child(save_slot_panel)
 	var cloud := get_tree().root.get_node_or_null("CloudSave")
@@ -435,6 +438,28 @@ func _delete_save_slot(slot: int) -> void:
 	if slot == active_slot:
 		refresh_levels()
 	save_slot_panel.refresh_slots(SaveSlotStore.all_slot_info(slot_path_template), active_slot)
+
+
+func _import_pygame_saves() -> void:
+	var report := PygameSaveImport.import_staged_slots(
+		pygame_import_template, slot_path_template, -1.0, true
+	)
+	if (report.get("imported", []) as Array).is_empty():
+		AudioRuntime.play("ui_error")
+	else:
+		AudioRuntime.play("ui_click")
+	if save_slot_panel != null:
+		save_slot_panel.refresh_slots(SaveSlotStore.all_slot_info(slot_path_template), active_slot)
+		save_slot_panel.show_import_report(report)
+	refresh_levels()
+	_update_active_slot_label()
+
+
+func configure_pygame_import_template(template: String) -> bool:
+	if not template.contains("%d"):
+		return false
+	pygame_import_template = template
+	return true
 
 
 func _update_active_slot_label() -> void:

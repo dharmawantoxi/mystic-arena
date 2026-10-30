@@ -18,6 +18,9 @@ const HERO_ROSTER = preload("res://scripts/data/hero_roster.gd").DEFINITIONS
 const MAX_LEVEL := 54
 const DIFFICULTIES: Array[String] = ["normal", "hard"]
 const MARKER := "pygame"
+## Where the player (or QA) drops a copied Pygame slot file. Slot N of Pygame is
+## imported into save game N; the Python directory itself is never read.
+const STAGED_TEMPLATE := "user://pygame_slot_%d.json"
 
 
 ## `_system.py::SaveManager.load` backfill list. Values are duplicated per call so
@@ -164,6 +167,61 @@ static func import_file(
 		"slot": slot,
 		"state": stored if not stored.is_empty() else state,
 		"report": result.get("report", {}),
+	}
+
+
+static func staged_path(slot: int, staged_template: String = STAGED_TEMPLATE) -> String:
+	if not SaveSlotStore.valid_slot(slot) or not staged_template.contains("%d"):
+		return ""
+	return staged_template % slot
+
+
+static func staged_slots(staged_template: String = STAGED_TEMPLATE) -> Array[int]:
+	var result: Array[int] = []
+	for slot in range(1, SaveSlotStore.SLOT_COUNT + 1):
+		var path := staged_path(slot, staged_template)
+		if not path.is_empty() and FileAccess.file_exists(path):
+			result.append(slot)
+	return result
+
+
+## Import every staged file into the save game with the same number. The menu only
+## has to render the returned `lines`; the Pygame files stay untouched.
+static func import_staged_slots(
+	staged_template: String = STAGED_TEMPLATE,
+	path_template: String = SaveSlotStore.PATH_TEMPLATE,
+	now: float = -1.0,
+	overwrite: bool = true
+) -> Dictionary:
+	if now < 0.0:
+		now = Time.get_unix_time_from_system()
+	var imported: Array[int] = []
+	var refused: Array = []
+	var lines: Array[String] = []
+	for slot in range(1, SaveSlotStore.SLOT_COUNT + 1):
+		var source := staged_path(slot, staged_template)
+		if source.is_empty() or not FileAccess.file_exists(source):
+			continue
+		var result := import_file(source, slot, path_template, now, overwrite)
+		if bool(result.get("ok", false)):
+			var state: Dictionary = result.get("state", {})
+			imported.append(slot)
+			var level := int(state.get("last_played_level", 1))
+			var gold := int(state.get("meta_gold", 0))
+			lines.append("Slot %d imported: Level %d · Hero Gold %d" % [slot, level, gold])
+		else:
+			var reason := String(result.get("reason", ""))
+			refused.append({"slot": slot, "reason": reason})
+			lines.append("Slot %d refused: %s" % [slot, reason])
+	if lines.is_empty():
+		lines.append(
+			"No staged Pygame save found. Copy slot_N.json as user://pygame_slot_N.json first."
+		)
+	return {
+		"ok": not imported.is_empty(),
+		"imported": imported,
+		"refused": refused,
+		"lines": lines,
 	}
 
 

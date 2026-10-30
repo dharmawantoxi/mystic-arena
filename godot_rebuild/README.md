@@ -360,7 +360,7 @@ sinkronisasi cloud dan save Python yang berjalan langsung belum ada (impor
 salinan slot Pygame dibahas di bagian berikutnya), begitu pula reward
 boss/shop permanen dan parity map/theme. Uji juga pada Windows sebelum distribusi.
 
-## Impor slot save Pygame (domain + oracle, belum ada tombol)
+## Impor slot save Pygame (panel save, oracle, suite scene)
 
 `scripts/match/pygame_save_import.gd` memindahkan arti berkas slot Pygame
 (`SAVE_DIR/slot_1.json`…`slot_3.json`) ke envelope slot native. Berkas sumber
@@ -398,9 +398,25 @@ hero asing/duplikat, level di luar batas, statistik rusak, kesulitan asing,
 gold negatif/string, JSON terpotong, JSON bukan objek) dan menyimpan hasilnya
 di `tests/fixtures/pygame_save_import_source.json`. Suite
 `tests/pygame_save_import_checks.gd` membandingkan impor dengan fixture itu
-termasuk penulisan nyata ke `user://` dan pembersihannya. **Belum ada tombol
-menu/slot untuk impor**, jadi pemain belum bisa memigrasi progres tanpa langkah
-manual; jangan mengklaim parity save sampai UI dan pengujian perangkat ada.
+termasuk penulisan nyata ke `user://` dan pembersihannya.
+
+### Tombol impor di layar save
+
+Panel slot save kini punya baris **PYGAME SAVE IMPORT**: tombol `IMPORT`
+membuka konfirmasi (slot yang cocok akan diganti, berkas Pygame tidak diubah),
+lalu menu menjalankan `PygameSaveImport.import_staged_slots()` dan menampilkan
+ringkasannya di panel (`Slot 1 imported: Level 4 · Hero Gold 7250`,
+`Slot 2 refused: invalid_json`). Panel tetap request-only: ia hanya memancarkan
+`import_requested` dan merender laporan; pembacaan berkas, penulisan slot,
+`refresh_levels()` dan pemilihan slot tetap milik `MainMenu`/`SaveSlotStore`.
+`configure_pygame_import_template()` memberi suite path `user://` terisolasi.
+
+Alurnya diuji headless oleh `tests/pygame_save_import_scene_checks.gd` dengan
+klik tombol sungguhan: konfirmasi dan pembatalan, impor tanpa berkas (tidak
+menulis apa pun), slot 1 terimpor + slot 2 rusak ditolak tanpa menyentuh save,
+kartu slot dan pilihan level/difficulty ikut menyegarkan, impor ulang mengganti
+slot yang sama, dan hitungan node kembali ke baseline. **Belum diuji pada
+perangkat Android nyata**, jadi migrasi pemain belum boleh diklaim selesai.
 
 ## Reset AI tanpa seed
 

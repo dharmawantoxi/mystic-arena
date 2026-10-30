@@ -1012,6 +1012,22 @@ check("HERO_ROSTER" in pygame_import and "slot_occupied" in pygame_import,
 check("pygame_save_import_source.json" in pygame_import_checks
       and "_cleanup()" in pygame_import_checks,
       "Pygame import suite must replay the source fixture and clean its slots")
+check("PygameSaveImportSceneChecks.new().run(self, app, _check)" in ai_tests,
+      "Pygame import scene suite must run")
+_pygame_import_panel = (ROOT / "scripts/ui/save_slot_panel.gd").read_text(encoding="utf-8")
+_pygame_import_menu = (ROOT / "scenes/menu/main_menu.gd").read_text(encoding="utf-8")
+check("signal import_requested" in _pygame_import_panel
+      and "import_requested.emit()" in _pygame_import_panel
+      and "show_import_report" in _pygame_import_panel,
+      "Save-slot panel must expose the import as a request plus a report")
+check("pygame_save_import" not in _pygame_import_panel
+      and "SaveSlotStore.save_state" not in _pygame_import_panel
+      and "FileAccess.open(" not in _pygame_import_panel,
+      "Save-slot panel must not read staged files or write saves itself")
+check("save_slot_panel.import_requested.connect(_import_pygame_saves)" in _pygame_import_menu
+      and "PygameSaveImport.import_staged_slots(" in _pygame_import_menu
+      and "func configure_pygame_import_template" in _pygame_import_menu,
+      "Main menu must own the staged-file import and its isolated template")
 
 from level_stats_source_oracle import source_fixture as level_stats_source_fixture
 level_stats_fixture_path = ROOT / "tests/fixtures/level_stats_source.json"

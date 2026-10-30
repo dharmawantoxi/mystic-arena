@@ -27,7 +27,7 @@ Koreksi ruang lingkup terbaru: **semua hal yang pemain alami di Pygame Android/m
 | Alur UI | Boot/menu, slot/progres, pilih level, hero shop, settings, help/credits, match HUD, shop/forge, pause, hasil, reward/unlock, retry/replay dan navigasi/back. | Ada coverage UI dan beberapa tes interaksi; suite native terakhir masih gagal pada kelompok menu, hasil/progres, dan input. Belum ada replay lengkap semua alur dari awal sampai akhir. |
 | Input Android/mobile | Hitbox dan koordinat sentuh, tap/hold/drag, multi-touch, jeda/back, focus/background/resume, orientation, aspect ratio, safe area, haptics dan respons kontrol. | Sebagian aturan memiliki oracle/tes otomatis; uji end-to-end pada perangkat Android fisik dan seluruh ukuran/orientasi belum ada. |
 | Presentasi dan audio | Sprite/map, animasi, layer/order, font, ukuran/posisi HUD, efek, transisi, musik/SFX, volume/mute dan timing. | Banyak aset/operasi gambar source-backed, tetapi belum ada pasangan screenshot/video/audio runtime untuk menyatakan hasilnya identik. |
-| Save dan layanan | Slot, progression, achievement/reward, cloud sync/conflict, top-up/pembelian dan pemulihan data. | Godot memiliki jalur data/fitur tersendiri. Impor berkas slot Pygame kini ada sebagai lapisan domain + oracle + suite native (lihat bagian *Impor save Pygame*), tetapi belum punya tombol/menu, jadi perilaku pemain belum setara. Kesetaraan format penuh, cloud lintas engine dan alur pembayaran end-to-end belum terbukti. |
+| Save dan layanan | Slot, progression, achievement/reward, cloud sync/conflict, top-up/pembelian dan pemulihan data. | Godot memiliki jalur data/fitur tersendiri. Impor berkas slot Pygame ada sebagai domain + oracle + suite native dan kini punya tombol di panel save (lihat bagian *Impor save Pygame*), tetapi belum diuji pada perangkat Android nyata. Kesetaraan format penuh, cloud lintas engine dan alur pembayaran end-to-end belum terbukti. |
 | Distribusi Android | Build bersih, install/upgrade, lifecycle OS, renderer GPU, performa/memori/thermal dan audio pada perangkat yang didukung. | Belum ada hasil sertifikasi pada perangkat nyata yang membuktikan parity Pygame Android ↔ Godot Android. |
 
 Tidak akan mengubah aturan, UI, atau data Pygame agar tes Godot lulus. Jika ada selisih, sumber Pygame menentukan hasil yang benar; perbaikan dilakukan di `godot_rebuild/`. Untuk render lintas vendor GPU, targetkan perangkat/resolusi referensi yang ditetapkan; jangan menyamakan hasil satu screenshot dengan parity keseluruhan.
@@ -42,7 +42,7 @@ Tidak akan mengubah aturan, UI, atau data Pygame agar tes Godot lulus. Jika ada 
 | Seni, animasi, dan efek | Banyak aset dibake dari sumber Pygame; draw-operation dan urutan layer memiliki oracle. | Belum ada pixel-diff end-to-end. Rasterizer, blending alpha, font metrics, dan backend renderer Godot dapat berbeda dari Pygame meskipun parameter/komposisi sumber sama. Efek runtime dan semua state animasi belum dibuktikan identik melalui screenshot/video. |
 | 54 level dan sesi penuh | Katalog level serta sejumlah aturan level mempunyai tes sumber. | Prototipe Godot masih mengidentifikasi level 2–54 sebagai eksperimental; match panjang, progression, seluruh kombinasi boss/minion, dan keseimbangan belum dibuktikan setara dalam permainan penuh. |
 | Android/perangkat | Ada implementasi serta tes otomatis untuk sebagian logika touch/mobile dan adaptive quality. | Belum ada bukti ekspor dan run terverifikasi pada perangkat Android fisik untuk resolusi/safe-area, multitouch, lifecycle background, renderer GPU, audio, performa, dan thermal. |
-| Save, cloud, pembayaran | Godot memiliki modul dan penyimpanan pengembangan sendiri; lihat kontrak terkait. Impor slot Pygame (`scripts/match/pygame_save_import.gd`) direplay terhadap 11 berkas slot sumber lewat oracle read-only. | Belum ada jalur UI untuk impor, jadi migrasi belum bisa dilakukan pemain tanpa langkah manual. Kesetaraan cloud antar-engine dan alur pembayaran end-to-end belum terbukti. File progres Godot tetap terpisah dari save Pygame sampai impor dijalankan. |
+| Save, cloud, pembayaran | Godot memiliki modul dan penyimpanan pengembangan sendiri; lihat kontrak terkait. Impor slot Pygame (`scripts/match/pygame_save_import.gd`) direplay terhadap 11 berkas slot sumber lewat oracle read-only, dan tombol impor di panel save diuji headless dengan klik sungguhan. | Belum ada uji pada perangkat Android nyata (salinan berkas ke `user://` masih langkah manual). Kesetaraan cloud antar-engine dan alur pembayaran end-to-end belum terbukti. File progres Godot tetap terpisah dari save Pygame sampai impor dijalankan. |
 
 ### Hasil runtime terakhir yang diketahui
 
@@ -72,6 +72,7 @@ Bukti yang ada:
 * Suite native `tests/pygame_save_import_checks.gd` membandingkan hasil impor dengan fixture itu, termasuk jalur tulis nyata ke `user://` (slot terisi tidak ditimpa tanpa izin, slot kosong/4 ditolak, sumber hilang/JSON rusak ditolak tanpa menulis apa pun, berkas sumber tetap utuh).
 * `validate_project.py` menjaga agar oracle tetap dijalankan CI dan agar modul impor hanya menulis lewat lapisan slot native.
 * Suite native menambah 112 pemeriksaan: total run `bc76823` menjadi 1.505.408 pemeriksaan, 0 kegagalan, tanpa `SCRIPT ERROR`.
+* Suite scene `tests/pygame_save_import_scene_checks.gd` menjalankan alur tombol impor di panel save (konfirmasi, batal, tanpa berkas, slot terimpor, slot rusak ditolak, impor ulang, pembersihan node) tanpa menyentuh save pengguna.
 
 Perbedaan yang disengaja beserta alasannya:
 
@@ -84,7 +85,9 @@ Perbedaan yang disengaja beserta alasannya:
 | `replay_reward_counts` | Tidak ada di save Pygame | Slot hasil impor mulai dengan ledger kosong; `import_source: "pygame"` menandai asal slot | Ledger hadiah replay adalah fitur Godot; level yang sudah selesai tetap dianggap selesai. Diterima jika: slot hasil impor lolos `LevelProgressStore._valid` dan tidak ada hadiah replay ganda yang diklaim otomatis. |
 | `slot_last_played` saat impor | `save()` selalu mencap waktu sekarang | Impor memakai jalur `SaveSlotStore.save_state`, jadi mencap waktu impor; `slot_created` dari berkas sumber dipertahankan | Mengikuti semantik "menyimpan = bermain sekarang" milik sumber. Diterima jika: `slot_created` sumber tidak hilang dan kartu slot menampilkan waktu impor. |
 
-Yang **belum** ada dan tidak diklaim: tombol/menu impor (jadi pemain belum bisa melakukan migrasi tanpa langkah manual), kesetaraan cloud antar-engine, dan alur pembayaran/top-up. Sampai tombolnya ada dan diuji di perangkat, baris "Save dan layanan" tetap belum setara.
+Jalur pemain sekarang: salin `slot_N.json` menjadi `user://pygame_slot_N.json`, buka panel save dari menu, tekan **IMPORT**, lalu konfirmasi. Panel menampilkan hasil per slot (`Slot 1 imported: Level 4 · Hero Gold 7250`, `Slot 2 refused: invalid_json`) dan kartu slot menyegarkan diri. Panel tetap request-only; menu yang membaca berkas, memanggil impor, dan menulis slot.
+
+Yang **belum** ada dan tidak diklaim: salinan berkas masih langkah manual (belum ada tombol "pilih berkas" Android/SAF), belum ada uji impor pada perangkat Android nyata, kesetaraan cloud antar-engine, dan alur pembayaran/top-up. Sampai uji perangkat ada, baris "Save dan layanan" tetap belum setara.
 
 ## Catatan screenshot yang dikirim
 
