@@ -75,7 +75,9 @@
           "pos": [
             22,
             89
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "0",
@@ -87,7 +89,9 @@
           "pos": [
             24,
             106
-          ]
+          ],
+          "style": "body_bold",
+          "size": 22
         },
         {
           "text": "GOLD",
@@ -99,7 +103,9 @@
           "pos": [
             24,
             130
-          ]
+          ],
+          "style": "body",
+          "size": 13
         },
         {
           "text": "EASY",
@@ -111,7 +117,9 @@
           "pos": [
             24,
             152
-          ]
+          ],
+          "style": "body",
+          "size": 12
         },
         {
           "text": "HEROES",
@@ -123,7 +131,9 @@
           "pos": [
             22,
             195
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "No heroes",
@@ -135,7 +145,9 @@
           "pos": [
             24,
             220
-          ]
+          ],
+          "style": "body",
+          "size": 14
         },
         {
           "text": "TACTICAL COMMANDS (HOLD)",
@@ -147,7 +159,9 @@
           "pos": [
             22,
             269
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "GATHER [G]",
@@ -159,7 +173,9 @@
           "pos": [
             137,
             298
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "PROTECT TOWER [T]",
@@ -171,7 +187,9 @@
           "pos": [
             113,
             336
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "PROTECT CASTLE [C]",
@@ -183,7 +201,9 @@
           "pos": [
             109,
             374
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "ATTACK BOSS [B]",
@@ -195,7 +215,9 @@
           "pos": [
             120,
             412
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "ATTACK DMG DEALER [D]",
@@ -207,7 +229,9 @@
           "pos": [
             99,
             450
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         }
       ],
       "rects": [
@@ -609,7 +633,9 @@
           "pos": [
             22,
             89
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "98.8K",
@@ -621,7 +647,9 @@
           "pos": [
             24,
             106
-          ]
+          ],
+          "style": "body_bold",
+          "size": 22
         },
         {
           "text": "GOLD",
@@ -633,7 +661,9 @@
           "pos": [
             24,
             130
-          ]
+          ],
+          "style": "body",
+          "size": 13
         },
         {
           "text": "HARD",
@@ -645,7 +675,9 @@
           "pos": [
             24,
             152
-          ]
+          ],
+          "style": "body",
+          "size": 12
         },
         {
           "text": "LV 5",
@@ -657,7 +689,9 @@
           "pos": [
             292,
             108
-          ]
+          ],
+          "style": "body_bold",
+          "size": 16
         },
         {
           "text": "Wave 12",
@@ -669,7 +703,9 @@
           "pos": [
             271,
             128
-          ]
+          ],
+          "style": "body",
+          "size": 13
         },
         {
           "text": "HEROES",
@@ -681,7 +717,9 @@
           "pos": [
             22,
             195
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "Kaizen",
@@ -693,7 +731,9 @@
           "pos": [
             23,
             212
-          ]
+          ],
+          "style": "body_bold",
+          "size": 15
         },
         {
           "text": "Lv3",
@@ -705,7 +745,9 @@
           "pos": [
             299,
             214
-          ]
+          ],
+          "style": "body",
+          "size": 12
         },
         {
           "text": "Thorne the L",
@@ -717,7 +759,9 @@
           "pos": [
             23,
             254
-          ]
+          ],
+          "style": "body_bold",
+          "size": 15
         },
         {
           "text": "Lv7",
@@ -729,7 +773,9 @@
           "pos": [
             299,
             256
-          ]
+          ],
+          "style": "body",
+          "size": 12
         },
         {
           "text": "Vex",
@@ -741,7 +787,9 @@
           "pos": [
             23,
             296
-          ]
+          ],
+          "style": "body_bold",
+          "size": 15
         },
         {
           "text": "Lv3",
@@ -753,7 +801,9 @@
           "pos": [
             299,
             298
-          ]
+          ],
+          "style": "body",
+          "size": 12
         },
         {
           "text": "TACTICAL COMMANDS (HOLD)",
@@ -765,7 +815,9 @@
           "pos": [
             22,
             353
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "GATHER [G]",
@@ -777,7 +829,9 @@
           "pos": [
             137,
             382
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "PROTECT TOWER [T]",
@@ -789,7 +843,9 @@
           "pos": [
             113,
             420
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "PROTECT CASTLE [C]",
@@ -801,7 +857,9 @@
           "pos": [
             109,
             458
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "ATTACK BOSS [B]",
@@ -813,7 +871,9 @@
           "pos": [
             120,
             496
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "HOLD",
@@ -825,7 +885,9 @@
           "pos": [
             288,
             496
-          ]
+          ],
+          "style": "body",
+          "size": 11
         },
         {
           "text": "ATTACK DMG DEALER [D]",
@@ -837,7 +899,9 @@
           "pos": [
             99,
             534
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         }
       ],
       "rects": [
@@ -1582,7 +1646,9 @@
           "pos": [
             22,
             89
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "4,321",
@@ -1594,7 +1660,9 @@
           "pos": [
             24,
             106
-          ]
+          ],
+          "style": "body_bold",
+          "size": 22
         },
         {
           "text": "GOLD",
@@ -1606,7 +1674,9 @@
           "pos": [
             24,
             130
-          ]
+          ],
+          "style": "body",
+          "size": 13
         },
         {
           "text": "NORMAL",
@@ -1618,7 +1688,9 @@
           "pos": [
             24,
             152
-          ]
+          ],
+          "style": "body",
+          "size": 12
         },
         {
           "text": "LV 1 [SHIELDED]",
@@ -1630,7 +1702,9 @@
           "pos": [
             215,
             108
-          ]
+          ],
+          "style": "body",
+          "size": 12
         },
         {
           "text": "Wave 1 (Shield)",
@@ -1642,7 +1716,9 @@
           "pos": [
             215,
             128
-          ]
+          ],
+          "style": "body",
+          "size": 13
         },
         {
           "text": "HEROES",
@@ -1654,7 +1730,9 @@
           "pos": [
             22,
             195
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "Kaizen",
@@ -1666,7 +1744,9 @@
           "pos": [
             23,
             212
-          ]
+          ],
+          "style": "body_bold",
+          "size": 15
         },
         {
           "text": "Lv3",
@@ -1678,7 +1758,9 @@
           "pos": [
             299,
             214
-          ]
+          ],
+          "style": "body",
+          "size": 12
         },
         {
           "text": "Thorne the L",
@@ -1690,7 +1772,9 @@
           "pos": [
             23,
             250
-          ]
+          ],
+          "style": "body_bold",
+          "size": 15
         },
         {
           "text": "Lv7",
@@ -1702,7 +1786,9 @@
           "pos": [
             299,
             252
-          ]
+          ],
+          "style": "body",
+          "size": 12
         },
         {
           "text": "Vex",
@@ -1714,7 +1800,9 @@
           "pos": [
             23,
             288
-          ]
+          ],
+          "style": "body_bold",
+          "size": 15
         },
         {
           "text": "Lv3",
@@ -1726,7 +1814,9 @@
           "pos": [
             299,
             290
-          ]
+          ],
+          "style": "body",
+          "size": 12
         },
         {
           "text": "Sylara",
@@ -1738,7 +1828,9 @@
           "pos": [
             23,
             326
-          ]
+          ],
+          "style": "body_bold",
+          "size": 15
         },
         {
           "text": "Lv3",
@@ -1750,7 +1842,9 @@
           "pos": [
             299,
             328
-          ]
+          ],
+          "style": "body",
+          "size": 12
         },
         {
           "text": "Grimjaw",
@@ -1762,7 +1856,9 @@
           "pos": [
             23,
             364
-          ]
+          ],
+          "style": "body_bold",
+          "size": 15
         },
         {
           "text": "Lv3",
@@ -1774,7 +1870,9 @@
           "pos": [
             299,
             366
-          ]
+          ],
+          "style": "body",
+          "size": 12
         },
         {
           "text": "TACTICAL COMMANDS (HOLD)",
@@ -1786,7 +1884,9 @@
           "pos": [
             22,
             417
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "GATHER [G]",
@@ -1798,7 +1898,9 @@
           "pos": [
             137,
             446
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "PROTECT TOWER [T]",
@@ -1810,7 +1912,9 @@
           "pos": [
             113,
             484
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "PROTECT CASTLE [C]",
@@ -1822,7 +1926,9 @@
           "pos": [
             109,
             522
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "ATTACK BOSS [B]",
@@ -1834,7 +1940,9 @@
           "pos": [
             120,
             560
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "ATTACK DMG DEALER [D]",
@@ -1846,7 +1954,9 @@
           "pos": [
             99,
             598
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         }
       ],
       "rects": [
@@ -2753,7 +2863,9 @@
           "pos": [
             22,
             89
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "10.0K",
@@ -2765,7 +2877,9 @@
           "pos": [
             24,
             106
-          ]
+          ],
+          "style": "body_bold",
+          "size": 22
         },
         {
           "text": "GOLD",
@@ -2777,7 +2891,9 @@
           "pos": [
             24,
             130
-          ]
+          ],
+          "style": "body",
+          "size": 13
         },
         {
           "text": "NORMAL",
@@ -2789,7 +2905,9 @@
           "pos": [
             24,
             152
-          ]
+          ],
+          "style": "body",
+          "size": 12
         },
         {
           "text": "LV 3",
@@ -2801,7 +2919,9 @@
           "pos": [
             292,
             108
-          ]
+          ],
+          "style": "body_bold",
+          "size": 16
         },
         {
           "text": "Wave 10",
@@ -2813,7 +2933,9 @@
           "pos": [
             271,
             128
-          ]
+          ],
+          "style": "body",
+          "size": 13
         },
         {
           "text": "HEROES",
@@ -2825,7 +2947,9 @@
           "pos": [
             22,
             195
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "Kaizen",
@@ -2837,7 +2961,9 @@
           "pos": [
             23,
             212
-          ]
+          ],
+          "style": "body_bold",
+          "size": 15
         },
         {
           "text": "Lv3",
@@ -2849,7 +2975,9 @@
           "pos": [
             299,
             214
-          ]
+          ],
+          "style": "body",
+          "size": 12
         },
         {
           "text": "Thorne the L",
@@ -2861,7 +2989,9 @@
           "pos": [
             23,
             250
-          ]
+          ],
+          "style": "body_bold",
+          "size": 15
         },
         {
           "text": "Lv7",
@@ -2873,7 +3003,9 @@
           "pos": [
             299,
             252
-          ]
+          ],
+          "style": "body",
+          "size": 12
         },
         {
           "text": "Vex",
@@ -2885,7 +3017,9 @@
           "pos": [
             23,
             288
-          ]
+          ],
+          "style": "body_bold",
+          "size": 15
         },
         {
           "text": "Lv3",
@@ -2897,7 +3031,9 @@
           "pos": [
             299,
             290
-          ]
+          ],
+          "style": "body",
+          "size": 12
         },
         {
           "text": "Sylara",
@@ -2909,7 +3045,9 @@
           "pos": [
             23,
             326
-          ]
+          ],
+          "style": "body_bold",
+          "size": 15
         },
         {
           "text": "Lv3",
@@ -2921,7 +3059,9 @@
           "pos": [
             299,
             328
-          ]
+          ],
+          "style": "body",
+          "size": 12
         },
         {
           "text": "Grimjaw",
@@ -2933,7 +3073,9 @@
           "pos": [
             23,
             364
-          ]
+          ],
+          "style": "body_bold",
+          "size": 15
         },
         {
           "text": "Lv3",
@@ -2945,7 +3087,9 @@
           "pos": [
             299,
             366
-          ]
+          ],
+          "style": "body",
+          "size": 12
         },
         {
           "text": "+2 more",
@@ -2957,7 +3101,9 @@
           "pos": [
             23,
             400
-          ]
+          ],
+          "style": "body",
+          "size": 12
         },
         {
           "text": "TACTICAL COMMANDS (HOLD)",
@@ -2969,7 +3115,9 @@
           "pos": [
             22,
             431
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "GATHER [G]",
@@ -2981,7 +3129,9 @@
           "pos": [
             137,
             460
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "PROTECT TOWER [T]",
@@ -2993,7 +3143,9 @@
           "pos": [
             113,
             498
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "PROTECT CASTLE [C]",
@@ -3005,7 +3157,9 @@
           "pos": [
             109,
             536
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "ATTACK BOSS [B]",
@@ -3017,7 +3171,9 @@
           "pos": [
             120,
             574
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "ATTACK DMG DEALER [D]",
@@ -3029,7 +3185,9 @@
           "pos": [
             99,
             612
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         }
       ],
       "rects": [
@@ -3958,7 +4116,9 @@
           "pos": [
             22,
             89
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "1,234",
@@ -3970,7 +4130,9 @@
           "pos": [
             24,
             106
-          ]
+          ],
+          "style": "body_bold",
+          "size": 22
         },
         {
           "text": "GOLD",
@@ -3982,7 +4144,9 @@
           "pos": [
             24,
             130
-          ]
+          ],
+          "style": "body",
+          "size": 13
         },
         {
           "text": "NORMAL",
@@ -3994,7 +4158,9 @@
           "pos": [
             24,
             152
-          ]
+          ],
+          "style": "body",
+          "size": 12
         },
         {
           "text": "LV 2 [SHIELDED]",
@@ -4006,7 +4172,9 @@
           "pos": [
             215,
             108
-          ]
+          ],
+          "style": "body",
+          "size": 12
         },
         {
           "text": "Wave 3 (Shield)",
@@ -4018,7 +4186,9 @@
           "pos": [
             215,
             128
-          ]
+          ],
+          "style": "body",
+          "size": 13
         },
         {
           "text": "HEROES",
@@ -4030,7 +4200,9 @@
           "pos": [
             22,
             195
-          ]
+          ],
+          "style": "body_bold",
+          "size": 13
         },
         {
           "text": "Kaizen",
@@ -4042,7 +4214,9 @@
           "pos": [
             23,
             212
-          ]
+          ],
+          "style": "body_bold",
+          "size": 15
         },
         {
           "text": "Lv3",
@@ -4054,7 +4228,9 @@
           "pos": [
             299,
             214
-          ]
+          ],
+          "style": "body",
+          "size": 12
         },
         {
           "text": "Thorne the L",
@@ -4066,7 +4242,9 @@
           "pos": [
             23,
             254
-          ]
+          ],
+          "style": "body_bold",
+          "size": 15
         },
         {
           "text": "Lv7",
@@ -4078,7 +4256,9 @@
           "pos": [
             299,
             256
-          ]
+          ],
+          "style": "body",
+          "size": 12
         }
       ],
       "rects": [

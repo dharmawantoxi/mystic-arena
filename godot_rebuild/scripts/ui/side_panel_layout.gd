@@ -24,6 +24,11 @@ const REFRESH_MS := 250
 const MIN_TAP := 80
 const PAD := 14
 const TEXT_H := 12
+## `_render._STYLE_FONT_MAP` styles used by the panel: the source calls
+## `get_font(size, "body_bold")` for box titles, the gold amount, "LV n", hero
+## names and the tactical labels, and the default `body` for everything else.
+const STYLE_BODY := "body"
+const STYLE_BOLD := "body_bold"
 const STATUS_Y := 84
 const STATUS_H := 96
 const HERO_ROW := 42
@@ -141,9 +146,16 @@ static func _inflate(rect: Rect2i, dx: int, dy: int) -> Rect2i:
 ## snapshot keys: state, gold, difficulty, wave (-1 = None), level (-1 =
 ## None), shield_active, heroes [{name, alive, level, hp, max_hp, ready}],
 ## has_boss, has_enemy_hero, held, press {action: 0..1}.
+## `measure` sizes the regular strings and `measure_bold` the ones the source
+## renders with `body_bold` (Barlow-Bold): the gold amount, "LV n" and the
+## tactical labels. Right-aligned and centred bold text therefore uses the
+## bold width, exactly like `SidePanel` (`font.render(...).get_width()`).
 ## Result: texts/rects/circles in panel-local coordinates, buttons keyed by
 ## action with screen rects, and the y after each section.
-static func build(snapshot: Dictionary, panel: Rect2i, measure: Callable) -> Dictionary:
+static func build(
+	snapshot: Dictionary, panel: Rect2i, measure: Callable, measure_bold := Callable()
+) -> Dictionary:
+	var measure_strong: Callable = measure_bold if measure_bold.is_valid() else measure
 	var out := {
 		"texts": [],
 		"rects": [],
@@ -167,11 +179,11 @@ static func build(snapshot: Dictionary, panel: Rect2i, measure: Callable) -> Dic
 		for key in TACTICAL_KEYS:
 			out["buttons"][key] = _placeholder(key, panel)
 		return out
-	var y := _status(out, snapshot, panel, measure, STATUS_Y)
+	var y := _status(out, snapshot, panel, measure, measure_strong, STATUS_Y)
 	out["y_after_status"] = y
 	y = _heroes(out, snapshot, panel, measure, y)
 	out["y_after_heroes"] = y
-	y = _tactical(out, snapshot, panel, measure, y)
+	y = _tactical(out, snapshot, panel, measure, measure_strong, y)
 	out["y_after_tactical"] = y
 	return out
 
@@ -217,7 +229,16 @@ static func _placeholder(action: String, panel: Rect2i) -> Dictionary:
 static func _text(
 	out: Dictionary, text: String, color: Color, size: int, pos: Vector2i, bold := false
 ) -> void:
-	out["texts"].append({"text": text, "color": color, "size": size, "pos": pos, "bold": bold})
+	out["texts"].append(
+		{
+			"text": text,
+			"color": color,
+			"size": size,
+			"pos": pos,
+			"bold": bold,
+			"style": STYLE_BOLD if bold else STYLE_BODY,
+		}
+	)
 
 
 static func _rect(out: Dictionary, color: Color, rect: Rect2i, width: int, radius: int) -> void:
@@ -236,7 +257,12 @@ static func _width(measure: Callable, text: String, size: int) -> int:
 
 
 static func _status(
-	out: Dictionary, snapshot: Dictionary, panel: Rect2i, measure: Callable, y: int
+	out: Dictionary,
+	snapshot: Dictionary,
+	panel: Rect2i,
+	measure: Callable,
+	measure_bold: Callable,
+	y: int
 ) -> int:
 	var w := panel.size.x - PAD * 2
 	var x := PAD
@@ -244,7 +270,7 @@ static func _status(
 	var gold := int(snapshot.get("gold", 0))
 	var gold_text := format_gold(gold)
 	var gold_size := 22
-	if _width(measure, gold_text, gold_size) > int(float(w) * 0.55):
+	if _width(measure_bold, gold_text, gold_size) > int(float(w) * 0.55):
 		gold_size = 18
 	_text(out, gold_text, EMAS, gold_size, Vector2i(x + 10, y + 22), true)
 	_text(out, "GOLD", DIM, 13, Vector2i(x + 10, y + 46))
@@ -267,7 +293,7 @@ static func _status(
 			_text(out, text, SHIELD_BLUE, 12, Vector2i(right - _width(measure, text, 12), ry))
 		else:
 			var text := "LV %d" % level
-			_text(out, text, FG, 16, Vector2i(right - _width(measure, text, 16), ry), true)
+			_text(out, text, FG, 16, Vector2i(right - _width(measure_bold, text, 16), ry), true)
 		ry += 20
 	if wave >= 0:
 		var wave_text := "Wave %d (Shield)" % wave if wave < 10 else "Wave %d" % wave
@@ -339,7 +365,12 @@ static func _heroes(
 
 
 static func _tactical(
-	out: Dictionary, snapshot: Dictionary, panel: Rect2i, measure: Callable, y: int
+	out: Dictionary,
+	snapshot: Dictionary,
+	panel: Rect2i,
+	measure: Callable,
+	measure_bold: Callable,
+	y: int
 ) -> int:
 	var hidden := String(snapshot.get("state", "")) != "playing"
 	var w := panel.size.x - PAD * 2
@@ -407,7 +438,7 @@ static func _tactical(
 			label,
 			text_color,
 			13,
-			Vector2i(cx - _width(measure, label, 13) / 2, cy - TEXT_H / 2),
+			Vector2i(cx - _width(measure_bold, label, 13) / 2, cy - TEXT_H / 2),
 			true
 		)
 		if on_hold:

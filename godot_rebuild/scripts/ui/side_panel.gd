@@ -18,6 +18,10 @@ const BuildPopupLayout = preload("res://scripts/ui/build_popup_layout.gd")
 const HeroPanelLayout = preload("res://scripts/ui/hero_panel_layout.gd")
 const CastlePanelLayout = preload("res://scripts/ui/castle_panel_layout.gd")
 const HeroPanelFont = preload("res://assets/fonts/Barlow-SemiBold.ttf")
+## `_render._STYLE_FONT_MAP` (layer 9bv17): the panel strings that pass
+## "body_bold" in the source (box titles, the gold amount, "LV n", hero names,
+## tactical labels) must be drawn and measured with Barlow-Bold.
+const SourceFonts = preload("res://scripts/ui/source_fonts.gd")
 const BuildPopupBodyFont = preload("res://assets/fonts/Barlow-Regular.ttf")
 const BuildPopupTitleFont = preload("res://assets/fonts/Cinzel.ttf")
 
@@ -119,15 +123,25 @@ func update_snapshot(next: Dictionary, now_ms: int = Time.get_ticks_msec()) -> v
 		return
 	var build_input := snapshot.duplicate()
 	build_input["press"] = press.duplicate()
-	layout = Layout.build(build_input, panel, _measure)
+	layout = Layout.build(build_input, panel, _measure, _measure_bold)
 	for key in press.keys():
 		press[key] = maxf(0.0, float(press[key]) - PRESS_DECAY)
 	_built_at = now_ms
 	queue_redraw()
 
 
+## `measure` / `measure_bold` are handed to `SidePanelLayout.build`: the layout
+## measures each string with the face the source renders it with, so bold
+## right-aligned / centred strings land on the source pixel.
 func _measure(text: String, font_size: int) -> int:
-	var font := get_theme_default_font()
+	return _measure_with(SourceFonts.REGULAR, text, font_size)
+
+
+func _measure_bold(text: String, font_size: int) -> int:
+	return _measure_with(SourceFonts.BOLD, text, font_size)
+
+
+func _measure_with(font: Font, text: String, font_size: int) -> int:
 	if font == null:
 		return 7 * text.length()
 	return int(ceilf(font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x))
@@ -186,13 +200,10 @@ func _draw() -> void:
 		_round_rect(entry["rect"], entry["color"], int(entry["width"]), int(entry["radius"]))
 	for entry in layout["circles"]:
 		draw_circle(Vector2(entry["center"]), float(entry["radius"]), entry["color"])
-	var font := get_theme_default_font()
-	if font == null:
-		_draw_build_popup_overlay()
-		_draw_hero_panel_overlay()
-		_draw_castle_panel_overlay()
-		return
 	for entry in layout["texts"]:
+		# `style` is the source style string the oracle records: "body" ->
+		# Barlow-Regular, "body_bold" -> Barlow-Bold.
+		var font := SourceFonts.for_style(String(entry.get("style", "body")))
 		var font_size := int(entry["size"])
 		var pos: Vector2i = entry["pos"]
 		var ascent := font.get_ascent(font_size)

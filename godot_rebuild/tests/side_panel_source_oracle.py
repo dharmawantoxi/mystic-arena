@@ -10,8 +10,13 @@ the user (no-ops in the source).
 This oracle runs the REAL `SidePanel` under a recording pygame shim (Rect
 math, draw calls and text renders are captured, fonts measure 7 px per
 glyph) against scripted fake games, and writes every layout number, string,
-colour and hit-test decision so `scripts/ui/side_panel_layout.gd` replays
-them exactly.
+colour, font style and hit-test decision so
+`scripts/ui/side_panel_layout.gd` replays them exactly.
+
+Each recorded text also keeps the `style` the source passed to
+`get_font(size, style)` (`body` -> Barlow-Regular, `body_bold` ->
+Barlow-Bold) and its pixel size, so the port must draw the same string with
+the same weight (layer 9bv19).
 
 Run: python godot_rebuild/tests/side_panel_source_oracle.py
 """
@@ -74,8 +79,12 @@ class Rect:
 
 
 class Text:
-    def __init__(self, text, color):
+    def __init__(self, text, color, style="body", size=13):
         self.text, self.color = text, tuple(color)
+        # `_render.get_font(size, style)` maps body -> Barlow-Regular and
+        # body_bold -> Barlow-Bold, so the recorded style is the source's own
+        # answer to "is this string bold?".
+        self.style, self.size = style, int(size)
         self.w, self.h = GLYPH_W * len(text), 12
 
     def get_width(self):
@@ -97,7 +106,7 @@ class Font:
         self.size, self.style = size, style
 
     def render(self, text, _aa, color):
-        return Text(str(text), color)
+        return Text(str(text), color, self.style, self.size)
 
 
 class Surface:
@@ -117,7 +126,7 @@ class Surface:
     def blit(self, src, dest):
         if isinstance(src, Text):
             pos = dest.tuple()[:2] if isinstance(dest, Rect) else tuple(dest)
-            self.log.append(("text", src.text, src.color, pos))
+            self.log.append(("text", src.text, src.color, pos, src.style, src.size))
         else:
             self.log.append(("blit",))
 
@@ -210,7 +219,8 @@ def _snapshot(panel, game, panel_width):
     y_status = panel._gambar_status(buf, game, 84)
     y_hero = panel._gambar_hero(buf, game, y_status)
     y_tac = panel._gambar_tactical(buf, game, y_hero)
-    texts = [{"text": e[1], "color": list(e[2]), "pos": list(e[3])} for e in buf.log if e[0] == "text"]
+    texts = [{"text": e[1], "color": list(e[2]), "pos": list(e[3]),
+              "style": e[4], "size": e[5]} for e in buf.log if e[0] == "text"]
     rects = [{"color": list(e[1]), "rect": list(e[2]), "width": e[3], "radius": e[4]}
              for e in buf.log if e[0] == "rect"]
     circles = [{"color": list(e[1]), "center": list(e[2]), "radius": e[3]}

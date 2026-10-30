@@ -7187,6 +7187,61 @@ check("const SourceFontsChecks = preload(\"res://tests/source_fonts_checks.gd\")
 check("Native filename mirrors _font_path for" in _sf_checks
       and "matches the source bytes" in _sf_checks,
       "9bv17 native suite must replay the style map and the TTF hashes")
+# ── Layer 9bv19: side-panel font weights follow `_render._STYLE_FONT_MAP` ──
+# `mobile/sidepanel.py` renders box titles, the gold amount, "LV n", hero names
+# and the tactical labels with `get_font(size, "body_bold")` (Barlow-Bold) and
+# measures every string with the font it renders with. The port used the theme
+# default (Barlow-Regular) for all of them, so bold strings were too light and
+# right-aligned/centred strings sat a few pixels off.
+_sp_paint_text = (ROOT / "scripts/ui/side_panel.gd").read_text(encoding="utf-8")
+check("const SourceFonts = preload(\"res://scripts/ui/source_fonts.gd\")" in _sp_paint_text
+      and "func _measure_bold(text: String, font_size: int) -> int:" in _sp_paint_text
+      and "return _measure_with(SourceFonts.REGULAR, text, font_size)" in _sp_paint_text
+      and "return _measure_with(SourceFonts.BOLD, text, font_size)" in _sp_paint_text,
+      "9bv19 the side panel must measure body/body_bold with the two source faces")
+check("SourceFonts.for_style(String(entry.get(\"style\", \"body\")))" in _sp_paint_text
+      and "get_theme_default_font()" not in _sp_paint_text,
+      "9bv19 every panel string must be painted with its recorded style, not the theme default")
+check("Layout.build(build_input, panel, _measure, _measure_bold)" in _sp_paint_text,
+      "9bv19 the panel must hand both measures to the layout")
+_sp_layout_text = (ROOT / "scripts/ui/side_panel_layout.gd").read_text(encoding="utf-8")
+check("const STYLE_BODY := \"body\"" in _sp_layout_text
+      and "const STYLE_BOLD := \"body_bold\"" in _sp_layout_text
+      and "\"style\": STYLE_BOLD if bold else STYLE_BODY," in _sp_layout_text
+      and "measure_bold := Callable()" in _sp_layout_text,
+      "9bv19 layout texts must carry the source style and accept a bold measure")
+check("if _width(measure_bold, gold_text, gold_size) > int(float(w) * 0.55):" in _sp_layout_text
+      and "_width(measure_bold, text, 16)" in _sp_layout_text
+      and "_width(measure_bold, label, 13) / 2" in _sp_layout_text,
+      "9bv19 the gold fallback, the level and the tactical labels must use the bold width")
+_sp_oracle_text = (ROOT / "tests/side_panel_source_oracle.py").read_text(encoding="utf-8")
+check("(\"text\", src.text, src.color, pos, src.style, src.size)" in _sp_oracle_text
+      and "\"style\": e[4], \"size\": e[5]}" in _sp_oracle_text
+      and "self.style, self.size = style, int(size)" in _sp_oracle_text,
+      "9bv19 the side panel oracle must record the style each string was rendered with")
+_sp_fixture_path = ROOT / "tests/fixtures/side_panel_source.json"
+if _sp_fixture_path.is_file():
+    _sp_fixture = json.loads(_sp_fixture_path.read_text(encoding="utf-8"))
+    _sp_texts = [text for snap in _sp_fixture["snapshots"].values() for text in snap["texts"]]
+    check({text["style"] for text in _sp_texts} == {"body", "body_bold"}
+          and all(isinstance(text["size"], int) and text["size"] > 0 for text in _sp_texts),
+          "9bv19 every recorded panel string must carry a source style and a real size")
+    _sp_bold = {text["text"] for text in _sp_texts if text["style"] == "body_bold"}
+    _sp_regular = {text["text"] for text in _sp_texts if text["style"] == "body"}
+    check({"STATUS", "GATHER [G]", "Kaizen", "ATTACK DMG DEALER [D]"} <= _sp_bold
+          and {"GOLD", "HOLD", "Lv3", "Wave 12", "HEROES"} & _sp_bold == {"HEROES"}
+          and {"GOLD", "HOLD", "Lv3", "Wave 12"} <= _sp_regular,
+          "9bv19 the oracle must keep titles/gold/level/names/labels bold and GOLD/HOLD/Lv/wave regular")
+_sp_layer_checks = (ROOT / "tests/side_panel_checks.gd").read_text(encoding="utf-8")
+check("the bold face is wider than the regular face at the same size" in _sp_layer_checks
+      and "a centred tactical label is centred with the bold width" in _sp_layer_checks
+      and "the right-aligned bold level uses the bold width" in _sp_layer_checks
+      and "the gold size fallback triggers on the bold width (18 vs 22)" in _sp_layer_checks,
+      "9bv19 native suite must pin the bold face, the bold widths and the gold fallback")
+check("and String(got[\"style\"]) == String(want[\"style\"])" in _sp_layer_checks
+      and "and int(got[\"size\"]) == int(want[\"size\"])" in _sp_layer_checks,
+      "9bv19 the fixture replay must compare the source style and size per string")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

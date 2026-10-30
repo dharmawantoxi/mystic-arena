@@ -6,11 +6,18 @@ extends RefCounted
 
 const Layout = preload("res://scripts/ui/side_panel_layout.gd")
 const SidePanel = preload("res://scripts/ui/side_panel.gd")
+const SourceFonts = preload("res://scripts/ui/source_fonts.gd")
 const FIXTURE := "res://tests/fixtures/side_panel_source.json"
 
 
 static func _measure(text: String, _size: int) -> int:
 	return 7 * text.length()
+
+
+static func _measure_wide(text: String, _size: int) -> int:
+	# A second width for the `body_bold` probe; real metrics arrive through
+	# `SidePanel._measure_bold`.
+	return 12 * text.length()
 
 
 static func _rect(values: Array) -> Rect2i:
@@ -32,6 +39,7 @@ func run(check: Callable) -> void:
 	for name in snapshots:
 		_snapshot_checks(String(name), snapshots[name], panel, check)
 	_hit_checks(data, panel, check)
+	_style_checks(data, panel, check)
 	_control_checks(panel, check)
 
 
@@ -101,12 +109,23 @@ func _snapshot_checks(name: String, expected: Dictionary, panel: Rect2i, check: 
 	for index in range(mini(texts.size(), built["texts"].size())):
 		var want: Dictionary = texts[index]
 		var got: Dictionary = built["texts"][index]
+		# `style` is what the source passed to `get_font(size, style)`; the
+		# rebuild must pick the same face (body -> Barlow-Regular,
+		# body_bold -> Barlow-Bold) for the same string.
 		var same: bool = (
 			String(got["text"]) == String(want["text"])
 			and got["color"] == _color(want["color"])
 			and got["pos"] == Vector2i(int(want["pos"][0]), int(want["pos"][1]))
+			and int(got["size"]) == int(want["size"])
+			and String(got["style"]) == String(want["style"])
+			and bool(got["bold"]) == (String(want["style"]) == Layout.STYLE_BOLD)
 		)
-		check.call(same, tag + "text %d '%s' matches" % [index, want["text"]])
+		check.call(
+			same,
+			tag
+			+ "text %d '%s' (%s %d) matches"
+			% [index, want["text"], want["style"], int(want["size"])]
+		)
 	var rects: Array = expected["rects"]
 	check.call(built["rects"].size() == rects.size(), tag + "rect count matches")
 	for index in range(mini(rects.size(), built["rects"].size())):
@@ -150,6 +169,106 @@ func _snapshot_checks(name: String, expected: Dictionary, panel: Rect2i, check: 
 			check.call(got["rect"] == _rect(want["rect"]), tag + "button %s rect matches" % key)
 
 
+## The source renders `body_bold` strings with Barlow-Bold and measures them
+## with the same font, so a right-aligned or centred bold string sits on a
+## different pixel than the regular face would put it. These checks pin the
+## style->face lookup and the fact that the layout measures bold strings with
+## the bold width (the earlier port measured everything with one face).
+func _style_checks(data: Dictionary, panel: Rect2i, check: Callable) -> void:
+	check.call(
+		SourceFonts.for_style(Layout.STYLE_BOLD) == SourceFonts.BOLD
+		and SourceFonts.for_style(Layout.STYLE_BODY) == SourceFonts.REGULAR,
+		"panel styles resolve to the source body/body_bold faces"
+	)
+	check.call(
+		SourceFonts.file_for_style(Layout.STYLE_BOLD) == "Barlow-Bold.ttf",
+		"body_bold is Barlow-Bold, not SemiBold"
+	)
+	var styles_seen: Dictionary = {}
+	for name in data["snapshots"]:
+		for entry in data["snapshots"][name]["texts"]:
+			styles_seen[String(entry["style"])] = true
+	var known := true
+	for style in styles_seen:
+		if not SourceFonts.has_style(String(style)):
+			known = false
+	check.call(
+		known and styles_seen.has(Layout.STYLE_BOLD) and styles_seen.has(Layout.STYLE_BODY),
+		"the oracle records only source styles, and the panel uses both weights"
+	)
+	var snapshot := {
+		"state": "playing",
+		"gold": 12345,
+		"difficulty": "normal",
+		"wave": 4,
+		"level": 7,
+		"shield_active": false,
+		"heroes":
+		[
+			{
+				"name": "Kaizen",
+				"alive": true,
+				"level": 3,
+				"hp": 50.0,
+				"max_hp": 100.0,
+				"ready": [],
+			}
+		],
+		"has_boss": true,
+		"has_enemy_hero": true,
+		"held": "gather",
+		"press": {},
+	}
+	var regular := Layout.build(snapshot, panel, _measure)
+	var bold := Layout.build(snapshot, panel, _measure, _measure_wide)
+	var gather: Rect2i = bold["buttons"]["gather"]["rect"]
+	var cx := gather.position.x - panel.position.x + gather.size.x / 2
+	var expect_gather := cx - _measure_wide("GATHER [G]", 13) / 2
+	var regular_gather := cx - _measure("GATHER [G]", 13) / 2
+	var gather_pos := Vector2i(-1, -1)
+	var level_pos := Vector2i(-1, -1)
+	for entry in bold["texts"]:
+		var entry_pos: Vector2i = entry["pos"]
+		if String(entry["text"]) == "GATHER [G]":
+			gather_pos = entry_pos
+		elif String(entry["text"]) == "LV 7":
+			level_pos = entry_pos
+	check.call(
+		gather_pos.x == expect_gather and gather_pos.x != regular_gather,
+		"a centred tactical label is centred with the bold width"
+	)
+	var right := panel.size.x - 14 - 10
+	check.call(
+		level_pos.x == right - _measure_wide("LV 7", 16),
+		"the right-aligned bold level uses the bold width"
+	)
+	# The gold font-size fallback compares the rendered width against 55 % of
+	# the box; the source measures with the bold face it renders with.
+	# 316 px box -> 173 px budget; the 15 glyph string measures 105 px in the
+	# regular probe and 180 px in the bold one.
+	var long_gold := snapshot.duplicate()
+	long_gold["gold"] = 123456789012000
+	var threshold := Layout.build(long_gold, panel, _measure, _measure_wide)
+	var plain_threshold := Layout.build(long_gold, panel, _measure)
+	var bold_size := 0
+	var regular_size := 0
+	for entry in threshold["texts"]:
+		if String(entry["text"]) == Layout.format_gold(123456789012000):
+			bold_size = int(entry["size"])
+	for entry in plain_threshold["texts"]:
+		if String(entry["text"]) == Layout.format_gold(123456789012000):
+			regular_size = int(entry["size"])
+	check.call(
+		bold_size == 18 and regular_size == 22,
+		"the gold size fallback triggers on the bold width (18 vs 22)"
+	)
+	check.call(
+		regular["texts"].size() == bold["texts"].size()
+		and int(regular["y_after_tactical"]) == int(bold["y_after_tactical"]),
+		"the bold width only moves strings, never the box geometry"
+	)
+
+
 func _hit_checks(data: Dictionary, panel: Rect2i, check: Callable) -> void:
 	var five: Dictionary = data["snapshots"]["five"]
 	var built := Layout.build(five["input"], panel, _measure)
@@ -191,7 +310,24 @@ func _control_checks(panel: Rect2i, check: Callable) -> void:
 	var changed := {"state": "defeat", "gold": 5, "heroes": []}
 	control.update_snapshot(changed, 1260)
 	check.call(control._built_at == 1260, "a state change refreshes immediately")
+	check.call(
+		control._measure("TACTICAL", 13) == _font_width(SourceFonts.REGULAR, "TACTICAL", 13),
+		"the regular measure uses Barlow-Regular"
+	)
+	check.call(
+		control._measure_bold("TACTICAL", 13) == _font_width(SourceFonts.BOLD, "TACTICAL", 13),
+		"the bold measure uses Barlow-Bold"
+	)
+	check.call(
+		control._measure_bold("TACTICAL COMMANDS (HOLD)", 13)
+		> control._measure("TACTICAL COMMANDS (HOLD)", 13),
+		"the bold face is wider than the regular face at the same size"
+	)
 	check.call(control._press_at(Vector2i(1323, 43)) == "pause", "panel press hits PAUSE")
 	control.update_snapshot({"state": "menu"}, 1300)
 	check.call(control.layout.is_empty(), "leaving gameplay clears the panel")
 	control.free()
+
+
+static func _font_width(font: Font, text: String, size: int) -> int:
+	return int(ceilf(font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x))
