@@ -1,6 +1,6 @@
 # Mystic Arena — MOBA Tower Defense (pygame → Android)
 
-> **Godot — proyek baru dari nol:** buka [`godot_rebuild/project.godot`](godot_rebuild/project.godot) dengan Godot **4.7.2 standard**. [Panduan menjalankan di Windows dan status pengujian](godot_rebuild/README.md). Sudah ada fondasi, laboratorium minion/tower/nexus, serta **Pertandingan awal** dengan wave otomatis, gold, build/sell serta upgrade Archer level 1–6 yang lulus tes native; **belum port gameplay penuh**. Tidak memakai hasil migrasi Godot lama. Bagian Python dan panduan lama di bawah tetap disimpan sebagai referensi.
+> **Godot — proyek aktif:** buka [`godot_rebuild/project.godot`](godot_rebuild/project.godot) dengan Godot **4.7.2 standard**. [Panduan proyek dan tes](godot_rebuild/README.md) · [status parity dan gap yang belum selesai](docs/GODOT_PYGAME_PARITY_STATUS.md). Godot belum setara penuh dengan Pygame; dokumen parity mencatat bukti yang tersedia dan kekurangannya. Bagian Python tetap menjadi referensi/oracle dan tidak diubah demi port.
 
 Game tower-defense/MOBA berbasis **pygame-ce**, 54 level, 200+ boss,
 6 hero dengan skill Q/W/E/R, dan 20+ tema peta.
@@ -109,8 +109,7 @@ Uji regresi:
 ### Upgrade terbaru: Varkul V3 Combat FX + Swing Arc
 
 Renderer Varkul (Frost Sorcerer, mini-boss level3) ditulis ulang
-mengikuti standar **Thorne v2 / Xerathis v3**
-(detail lengkap: [docs/AUDIT_ULANG_DARI_AWAL.md](docs/AUDIT_ULANG_DARI_AWAL.md)).
+mengikuti standar **Thorne v2 / Xerathis v3**.
 Sapuan staff kini **berbasis ark**: sudut staff diinterpolasi lewat tabel
 `_NS_varkul.STAFF_ARC` (anticipation → wind-up → swing → impact →
 follow-through → recovery) yang dibaca renderer canvas DAN lapisan hidup
@@ -129,8 +128,7 @@ Uji regresi + preview:
 ### Upgrade terbaru: Ignis Drachorn V3 Combat FX + Elder Dragon Form
 
 Sistem visual & rasa-gameplay **Ignis Drachorn** (true boss level4) ditulis
-ulang total mengikuti standar **Varkul v3 / Gornak v3**
-(detail lengkap: [docs/AUDIT_ULANG_DARI_AWAL.md](docs/AUDIT_ULANG_DARI_AWAL.md)).
+ulang total mengikuti standar **Varkul v3 / Gornak v3**.
 Renderer memakai urutan lapisan tegas (bayangan → tungkai belakang → badan →
 armor → kepala → senjata → tungkai depan → highlight → FX serang → FX skill →
 partikel) di atas komposit siluet + rim `lighting.apply_to_rig`. Ayunan pedang
@@ -215,9 +213,7 @@ Uji regresi: `python tools/test_zephyr_masterwork.py`.
 
 ### Contoh maksimal kelima: Grimjaw Masterwork
 
-> Renderer Grimjaw kini **doodle sketch v4** (lihat
-> [docs/AUDIT_ULANG_DARI_AWAL.md](docs/AUDIT_ULANG_DARI_AWAL.md));
-> deskripsi pixel-masterwork di bawah berlaku untuk v2 (historis).
+> Renderer Grimjaw kini **doodle sketch v4**; deskripsi pixel-masterwork di bawah berlaku untuk v2 (historis).
 
 Grimjaw (Juggernaut — *The Blade Fury*) kini menerima upgrade penuh yang
 sama: kumpulan body-part statis lama (torso/pauldron/head-mask/hair
@@ -430,7 +426,6 @@ Terukur: render berat (lapisan hidup penuh + impact per 10 frame) median
 **≈ 2.9 ms/frame**, partikel aktif ≤ 170 dan **0** setelah 400 frame tanpa
 tempur, entri surface cache 110/384.
 
-Detail lengkap: **[docs/AUDIT_ULANG_DARI_AWAL.md](docs/AUDIT_ULANG_DARI_AWAL.md)**.
 Uji regresi: `python -m pytest tools/test_gornak_v3_combat.py -q` (60 cek) dan
 `python tools/test_gornak_masterwork.py` (16 cek, tetap hijau).
 
@@ -525,7 +520,6 @@ Sistem tempurnya kini ditulis ulang mengikuti arsitektur Gornak v3:
   hidup aktif, renderer melompati 4 FX in-canvas-nya — dan semuanya kembali
   otomatis sebagai fallback kalau modul FX gagal dimuat.
 
-Detail lengkap: **[docs/AUDIT_ULANG_DARI_AWAL.md](docs/AUDIT_ULANG_DARI_AWAL.md)**.
 Uji regresi: `python -m pytest tools/test_grimjaw_v3_combat.py -q` (58 cek),
 `tools/test_grimjaw_masterwork.py` + `tools/test_grimjaw_swing_arah.py`
 (19 cek, tetap hijau).
@@ -799,8 +793,7 @@ lama dan baru dengan jam virtual + drift floor
 per (tipe, pose) menahan cache bila selisihnya > 0,35 terhadap jalur
 langsung, dan pose/tipe ber-FX satu-shot (krobellus dkk.) tetap digambar
 langsung supaya tidak ada FX yang hilang atau terpotong.
-Rincian diagnosa, angka, dan katup pengaman:
-[docs/AUDIT_ULANG_DARI_AWAL.md](docs/AUDIT_ULANG_DARI_AWAL.md).
+Rincian diagnosa, angka, dan katup pengaman dikunci oleh pengujian regresi di bawah.
 
 ```bash
 python tools/test_boss_hero_smooth_parity.py --all   # 16 pemeriksaan, 216 boss

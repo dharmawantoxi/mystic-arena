@@ -1,0 +1,72 @@
+# Status parity Godot ↔ Pygame
+
+**Tanggal audit:** 2026-10-30  
+**Sumber kebenaran:** Pygame Android/mobile di root repository.  
+**Target port yang diaudit:** `godot_rebuild/` (proyek Godot aktif).  
+**Kesimpulan:** parity penuh **belum tercapai dan belum boleh diklaim**.
+
+Dokumen ini menggantikan rencana migrasi, handoff status, dan work-log lama. Ini adalah satu-satunya ringkasan status parity; kontrak teknis per sistem dan runbook tetap terpisah. Semua koreksi untuk parity harus dilakukan di Godot, bukan dengan mengubah Pygame agar cocok dengan port.
+
+Dokumen status/historis yang dihapus karena duplikat atau usang: `AUDIT_ULANG_DARI_AWAL.md`, `RENCANA_MIGRASI_GODOT_DARI_NOL.md`, `STATUS_GODOT_REBUILD.md`, `PETA_SISA_MIGRASI.md`, `HERO_MIGRATION_PROGRESS.md`, `CARA_CONVERT_TANPA_HAPUS_PYGAME.md`, dan `PLAYSTORE_RELEASE.md`. Dokumen kontrak dan runbook yang masih dipakai tidak dihapus; dua runbook lama yang menunjuk proyek `godot/` diberi label LEGACY.
+
+## Batas bukti audit
+
+Audit ini membandingkan implementasi dan tes yang ada pada checkout `main` (`0c5eca4`) serta mencatat hasil tes runtime terakhir yang tersedia dari PR #348. Ia **bukan** sertifikasi build Android atau pixel-diff lengkap: checkout saat audit ini tidak memiliki executable Godot maupun Pygame terpasang, dan belum tersedia pasangan screenshot Godot/Pygame dari keadaan game yang sama.
+
+Di repository ada ratusan tes native dan source oracle yang mengeksekusi atau merekam perilaku Pygame. Oracle data/domain dan draw-operation dapat membuktikan angka, urutan, teks, geometri, warna, serta hit-test tertentu. Itu tidak otomatis membuktikan tampilan akhir GPU, semua state gameplay, atau seluruh perangkat identik. Beberapa skrip lama di `tools/test_godot_*_parity.py` masih menunjuk proyek historis `godot/`; skrip tersebut bukan validasi untuk proyek aktif `godot_rebuild/` dan tidak dihitung sebagai bukti parity proyek aktif.
+
+## Definisi target: parity seluruh game, bukan visual saja
+
+Koreksi ruang lingkup terbaru: **semua hal yang pemain alami di Pygame Android/mobile harus berperilaku sama di Godot**. Gambar yang sama saja tidak cukup; begitu pula aturan numerik yang sama saja. Matriks di bawah menjadi cakupan wajib audit/port:
+
+| Sub-sistem | Yang wajib sama | Status berdasarkan bukti yang tersedia |
+|---|---|---|
+| Simulasi pertandingan | Tick order, gerak, targeting, damage/mitigasi, cooldown/status, proyektil, death/reward, wave/spawn, ekonomi, transaksi, menang/kalah, dan aturan RNG/replay yang memengaruhi hasil. | Banyak aturan domain memiliki source oracle/replay; parity semua kombinasi dan satu kampanye produksi penuh belum terbukti. Suite native terakhir masih memiliki kegagalan yang dicatat di bawah. |
+| Konten | Semua level 1–54, tema/map, minion, tower, hero/skill, boss/miniboss, item, unlock dan harga. | Katalog besar tersedia dan sebagian diuji terhadap sumber; tersedianya data/registry tidak membuktikan semua konten playable dan setara. README proyek masih menandai level 2–54 sebagai eksperimental. |
+| AI dan perintah | Policy/rekrutmen/build/upgrade/item/shield, target choice, auto-cast/skill priority, tactical commands, serta perilaku kedua tim pada keadaan sama. | Komponen native dan source tests tersedia, tetapi interaksi keseluruhan dalam pertandingan penuh belum disertifikasi per level/roster. |
+| Alur UI | Boot/menu, slot/progres, pilih level, hero shop, settings, help/credits, match HUD, shop/forge, pause, hasil, reward/unlock, retry/replay dan navigasi/back. | Ada coverage UI dan beberapa tes interaksi; suite native terakhir masih gagal pada kelompok menu, hasil/progres, dan input. Belum ada replay lengkap semua alur dari awal sampai akhir. |
+| Input Android/mobile | Hitbox dan koordinat sentuh, tap/hold/drag, multi-touch, jeda/back, focus/background/resume, orientation, aspect ratio, safe area, haptics dan respons kontrol. | Sebagian aturan memiliki oracle/tes otomatis; uji end-to-end pada perangkat Android fisik dan seluruh ukuran/orientasi belum ada. |
+| Presentasi dan audio | Sprite/map, animasi, layer/order, font, ukuran/posisi HUD, efek, transisi, musik/SFX, volume/mute dan timing. | Banyak aset/operasi gambar source-backed, tetapi belum ada pasangan screenshot/video/audio runtime untuk menyatakan hasilnya identik. |
+| Save dan layanan | Slot, progression, achievement/reward, cloud sync/conflict, top-up/pembelian dan pemulihan data. | Godot memiliki jalur data/fitur tersendiri; kesetaraan format, migrasi save Pygame, cloud lintas engine dan alur pembayaran end-to-end belum terbukti. |
+| Distribusi Android | Build bersih, install/upgrade, lifecycle OS, renderer GPU, performa/memori/thermal dan audio pada perangkat yang didukung. | Belum ada hasil sertifikasi pada perangkat nyata yang membuktikan parity Pygame Android ↔ Godot Android. |
+
+Tidak akan mengubah aturan, UI, atau data Pygame agar tes Godot lulus. Jika ada selisih, sumber Pygame menentukan hasil yang benar; perbaikan dilakukan di `godot_rebuild/`. Untuk render lintas vendor GPU, targetkan perangkat/resolusi referensi yang ditetapkan; jangan menyamakan hasil satu screenshot dengan parity keseluruhan.
+
+## Temuan utama
+
+| Area | Yang sudah dibandingkan/dites | Yang masih kurang |
+|---|---|---|
+| Data dan aturan domain | Banyak katalog dan aturan numerik memiliki source oracle serta replay native. Cakupannya terlihat di `godot_rebuild/tests/` dan kontrak sistem. | Katalog lengkap bukan bukti semua 54 level dapat dimainkan dengan perilaku dan alur produksi yang sama. README Godot menyebut level 2–54 sebagai mode uji eksperimental; kampanye penuh/balance final belum lulus parity end-to-end. |
+| HUD dan dock mobile | Layout dock punya oracle Pygame; geometri, teks, warna, tombol, dan hit-test dibandingkan. Popup kastil/upgrade ditambahkan lewat PR #348 dengan pemeriksaan geometri dan tes tap scene. | Belum ada render screenshot berpasangan untuk memastikan hasil font, anti-alias, clipping, layering, dan scaling sama pada runtime. Tes geometri tidak membuktikan kesamaan piksel. |
+| Kontrol dan overlay | Ada tes native/source untuk banyak jalur input, popup, pause, touch, serta transaksi UI. | Suite native terakhir yang tersedia masih gagal pada beberapa grup input/tactical, lifecycle shield, menu/render, hasil/progres, dan projectile; semua kegagalan perlu ditriase sebelum parity bisa dinyatakan selesai. |
+| Seni, animasi, dan efek | Banyak aset dibake dari sumber Pygame; draw-operation dan urutan layer memiliki oracle. | Belum ada pixel-diff end-to-end. Rasterizer, blending alpha, font metrics, dan backend renderer Godot dapat berbeda dari Pygame meskipun parameter/komposisi sumber sama. Efek runtime dan semua state animasi belum dibuktikan identik melalui screenshot/video. |
+| 54 level dan sesi penuh | Katalog level serta sejumlah aturan level mempunyai tes sumber. | Prototipe Godot masih mengidentifikasi level 2–54 sebagai eksperimental; match panjang, progression, seluruh kombinasi boss/minion, dan keseimbangan belum dibuktikan setara dalam permainan penuh. |
+| Android/perangkat | Ada implementasi serta tes otomatis untuk sebagian logika touch/mobile dan adaptive quality. | Belum ada bukti ekspor dan run terverifikasi pada perangkat Android fisik untuk resolusi/safe-area, multitouch, lifecycle background, renderer GPU, audio, performa, dan thermal. |
+| Save, cloud, pembayaran | Godot memiliki modul dan penyimpanan pengembangan sendiri; lihat kontrak terkait. | Kompatibilitas/migrasi save Pygame, kesetaraan cloud antar-engine, dan alur pembayaran end-to-end belum terbukti sebagai parity. File progres Godot terpisah dari save Pygame. |
+
+### Hasil runtime terakhir yang diketahui
+
+Tes native Godot 4.7.2 headless terakhir pada perubahan PR #348 menjalankan 1.505.221 pemeriksaan dan melaporkan **23 kegagalan**. Kegagalan mencakup label/tata letak menu, fixture/jam projectile hero, fallback scene, hasil dan progres pertandingan, lifecycle shield, input/tactical pointer/keyboard. Log juga memuat tiga akses indeks array yang tidak valid. Tes popup kastil dan tap upgrade yang ditambahkan pada PR tersebut tidak termasuk grup yang gagal. Hasil ini bukan bukti bahwa 23 kegagalan sudah terisolasi pada main; status akhirnya harus diperiksa dan tes dirapikan.
+
+Validator statis terakhir yang tersedia lulus **21.682 pemeriksaan**. Itu berbeda dari tes native dan tidak menghapus daftar kegagalan runtime di atas.
+
+## Catatan screenshot yang dikirim
+
+Gambar pengguna berukuran 1384×768. **Jika itu ukuran viewport game yang sebenarnya**, rasionya sekitar 1,80:1. Pygame menghitung lebar area game dari tinggi logis 720 px; lebar logisnya menjadi sekitar 1298 px, sehingga sisa untuk dock kanan hanya sekitar 18 px. `mobile/platform_utils.py` hanya membuat dock jika sisa ruang minimal 120 px. Maka dock/popup memang disembunyikan pada ukuran tersebut; ini perilaku sumber yang harus diikuti Godot, bukan bukti bahwa popup gagal bekerja. Jika gambar telah dipotong atau diubah ukurannya saat dikirim, ukur viewport asli sebelum memakai hitungan ini.
+
+## Acceptance criteria untuk menyatakan parity
+
+1. Gunakan build Pygame Android sebagai oracle; jangan mengubahnya demi port.
+2. Rekam screenshot Pygame dan Godot dari **seed, level, state, resolusi viewport, skala, dan waktu simulasi yang sama**. Uji minimal 1280×720, 16:9, serta satu ultrawide Android yang benar-benar dipakai; catat kapan dock aktif menurut aturan sumber.
+3. Bandingkan alur visual utama: menu, pertandingan, HUD/dock, seleksi hero/struktur, shop/forge, pause, intro/efek, menang/kalah, dan settings. Simpan pasangan screenshot dan pixel-diff/overlay untuk setiap gap.
+4. Rekam urutan input yang sama (tap, hold, drag, multi-touch, keyboard/controller bila tersedia) dan bandingkan hasil state/domain, bukan hanya tampilan.
+5. Selesaikan atau jelaskan setiap kegagalan tes native; tidak ada kegagalan parity yang belum ditriase.
+6. Validasi ekspor dan interaksi pada perangkat Android nyata sebelum mengklaim parity Android.
+
+Perbedaan yang disengaja harus dicatat per kasus beserta alasan dan acceptance criteria; jangan menandainya sebagai "sama" hanya karena tes statis lulus.
+
+## Rujukan aktif
+
+- Proyek/tes Godot: [`godot_rebuild/README.md`](../godot_rebuild/README.md), [`godot_rebuild/tests/`](../godot_rebuild/tests/).
+- Sumber mobile Pygame: [`mobile/sidepanel.py`](../mobile/sidepanel.py), [`mobile/platform_utils.py`](../mobile/platform_utils.py), [`mobile/hud.py`](../mobile/hud.py), serta `_core.py`, `_render.py`, `_entity.py`, `_system.py`.
+- Kontrak domain yang tetap dipakai: [`godot_rebuild/MATCH_CONTRACT.md`](../godot_rebuild/MATCH_CONTRACT.md), [`godot_rebuild/AI_CONTRACT.md`](../godot_rebuild/AI_CONTRACT.md), dan kontrak combat/upgrade di folder yang sama.

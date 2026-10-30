@@ -57,6 +57,6 @@ memerlukan atribut `attack_timer` yang tidak ada di sumber.
 
 Fixture source dan suite native lama tetap dijalankan. CI Godot 4.7.2 hijau
 pada main `8119e31` (run 36329618088). Progres batch, batas konteks sesi dan
-pesan lanjutan: [HERO_MIGRATION_PROGRESS.md](HERO_MIGRATION_PROGRESS.md).
+pesan lanjutan: [status parity](../docs/GODOT_PYGAME_PARITY_STATUS.md).
 Placeholder polygon/warna hero dan titik proyektil tetap sederhana; bukan
 art final, bukan klaim AIPlayer, item/forge atau seluruh pertandingan selesai.

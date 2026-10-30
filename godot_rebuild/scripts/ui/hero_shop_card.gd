@@ -10,7 +10,7 @@ const HeroPortrait = preload("res://scripts/ui/hero_portrait.gd")
 
 const CARD_WIDTH := 485.0
 # Tall enough for the three wrapped text lines the longest rows need once the
-# portrait has taken its share of the width (see PETA_SISA_MIGRASI.md).
+# portrait has taken its share of the width (see docs/GODOT_PYGAME_PARITY_STATUS.md).
 const CARD_HEIGHT := 112.0
 const PORTRAIT_SIZE := 64.0
 const PORTRAIT_INSET := 10.0

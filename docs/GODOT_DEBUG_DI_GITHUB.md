@@ -1,5 +1,7 @@
 # Godot di GitHub — menjalankan & men-debug tanpa memasang apa pun
 
+> **LEGACY:** panduan ini menggunakan proyek lama pada path `godot/` dan tidak berlaku untuk port aktif `godot_rebuild/`. Jangan gunakan hasilnya sebagai bukti parity saat ini. Untuk status/kriteria aktif, lihat [Status parity Godot ↔ Pygame](GODOT_PYGAME_PARITY_STATUS.md).
+
 > **Ringkas:** tab **Actions → Godot Debug Run** menjalankan game sungguhan di
 > layar virtual (Xvfb) dan mengunggah **screenshot tiap N detik + `run.log` +
 > `report.json` + (opsional) video** sebagai artifact. Untuk memakai **editor
@@ -10,9 +12,7 @@
 > (`godot/scenes/debug/DebugRun.tscn`). Tidak ada logika debug yang hanya hidup
 > di CI.
 
-Halaman ini untuk **menjalankan/melihat/memburu bug**, bukan mengukur paritas.
-Audit paritas tetap di [AUDIT_ULANG_DARI_AWAL.md](AUDIT_ULANG_DARI_AWAL.md) dan
-`../godot/README.md`.
+Halaman ini legacy; jangan gunakan untuk menjalankan atau mengukur proyek aktif. Status dan kriteria parity yang berlaku ada di [Status parity Godot ↔ Pygame](GODOT_PYGAME_PARITY_STATUS.md).
 
 | Berkas | Tugas |
 |---|---|

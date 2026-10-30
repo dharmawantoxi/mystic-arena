@@ -120,7 +120,7 @@ CI Godot 4.7.2 hijau pada main `8119e31`
 ([run 36329618088](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36329618088)),
 semua suite lama tetap. Target 222 tercapai (PR #292 sudah merge).
 Catatan batch dan pesan
-kelanjutan: [HERO_MIGRATION_PROGRESS.md](HERO_MIGRATION_PROGRESS.md).
+kelanjutan: [status parity](../docs/GODOT_PYGAME_PARITY_STATUS.md).
 Item/Forge player-side sudah dipindahkan bertahap di layer 5f–5f-4; belum
 ada panel Forge terpisah untuk hero AI di sumber. AIPlayer penuh sudah ditutup
 (layer 6a–6f + `ai_match_integration_checks.gd`; koreksi 9ak); rebalance dan
@@ -1369,7 +1369,7 @@ Lapisan **9aj** menutup slice art siluet hero arena. Rencananya sudah mendarat l
 
 Perbaikan produksi: `_generic_outline` menyebar seluruh kode lewat `spread = fingerprint * 48271 + 1021`, mengambil jumlah sisi dari `spread % 4` (7-10), dan wobble dari digit basis-5 `spread` (`(spread / 5^i) % 5 - 2` dikali 0.06). Terukur pada roster penuh: **222/222 siluet unik** (0 tabrakan), sisi {7, 8, 9, 10} untuk 220 hero generik, reach generik 1000-1120, Kaizen 1150 (8 sisi), Thorne 1154 (12 sisi) - semuanya di bawah `MAX_REACH` 1200 sehingga cincin tim dan arc seleksi tetap membingkai. `body()` tidak diubah (kontrak placeholder 4-6 sisi untuk 222 hero masih dipaku `grimjaw_checks._markers`), dan `fill()` tetap opaque serta stabil.
 
-Oracle `hero_marker_source_oracle.py` mencerminkan algoritma marker (fingerprint, outline Kaizen/Thorne, spread basis-5) dan menulis golden fixture `hero_marker_source.json`: per hero `family`, `sides`, `x_hash`/`y_hash` dari vertex terkuantisasi 1e-4, `reach_milli`, plus `shape` (roster 222, distinct_outlines 222, collisions 0, families {generic 220, kaizen 1, thorne 1}, sides [7,8,9,10,12], max_reach_milli 1154, digest). Kuantisasi 1e-4 dipilih supaya perbedaan bit terakhir `cos`/`sin` antara oracle Python dan Godot tidak jadi alarm palsu, sementara perubahan bentuk nyata tetap menggeser hash. Suite `hero_marker_checks.gd` kini merekomputasi seluruh 222 entri dari `silhouette()` produksi (jumlah sisi, dua hash, reach, 222/222 unik, batas `MAX_REACH`) di samping kontrak lama (placeholder 4-6 sisi, sampel enam hero, fill opaque/stabil, Kaizen lebih ramping dari Thorne). `validate_project.py` memin preload + run suite, keberadaan fixture, anti-drift oracle, dan wiring view (`HeroMarker.silhouette(` ada, `HeroMarker.body(` tidak ada di `prototype_view.gd`); oraclenya dijalankan CI. Baris status `PETA_SISA_MIGRASI.md` yang masih menyebut `hero_marker.gd` placeholder sudah dikoreksi.
+Oracle `hero_marker_source_oracle.py` mencerminkan algoritma marker (fingerprint, outline Kaizen/Thorne, spread basis-5) dan menulis golden fixture `hero_marker_source.json`: per hero `family`, `sides`, `x_hash`/`y_hash` dari vertex terkuantisasi 1e-4, `reach_milli`, plus `shape` (roster 222, distinct_outlines 222, collisions 0, families {generic 220, kaizen 1, thorne 1}, sides [7,8,9,10,12], max_reach_milli 1154, digest). Kuantisasi 1e-4 dipilih supaya perbedaan bit terakhir `cos`/`sin` antara oracle Python dan Godot tidak jadi alarm palsu, sementara perubahan bentuk nyata tetap menggeser hash. Suite `hero_marker_checks.gd` kini merekomputasi seluruh 222 entri dari `silhouette()` produksi (jumlah sisi, dua hash, reach, 222/222 unik, batas `MAX_REACH`) di samping kontrak lama (placeholder 4-6 sisi, sampel enam hero, fill opaque/stabil, Kaizen lebih ramping dari Thorne). `validate_project.py` memin preload + run suite, keberadaan fixture, anti-drift oracle, dan wiring view (`HeroMarker.silhouette(` ada, `HeroMarker.body(` tidak ada di `prototype_view.gd`); oraclenya dijalankan CI. Status parity saat ini dipusatkan di `../docs/GODOT_PYGAME_PARITY_STATUS.md`; detail algoritma dan bukti marker tetap dicatat di kontrak ini dan tesnya.
 
 Batas slice 9aj: hanya `hero_marker.gd::_generic_outline`, suite marker, registrasi, dan docs. `body()`/`fill()`/`silhouette()` Kaizen-Thorne, view, `hero_portrait.gd`, lengan boss, store debuff, hero, balance, FX, UI, project settings, sumber Python, dan `lighting.py` tidak diubah.
 
@@ -1386,13 +1386,12 @@ delapan lengan sumber (build, buy_hero, upgrade_hero, buy_item, upgrade_tower,
 regen_shield, castle_shield, upgrade_nexus), `ai_items.gd`/`ai_shields.gd`/
 `ai_upgrades.gd` membaca `draft.reserve()` live dan memakai urutan kills
 descending stabil, serta HUD `PrototypeMatch.tscn` punya tombol shield pemain.
-Yang dikoreksi in-place: baris status usang di dokumen ini (Status paket,
-bullet reserve, penutup roster, scheduler upgrade, shield scene),
-`SHIELD_CONTRACT.md`, `NEXUS_CONTRACT.md`, `UPGRADE_CONTRACT.md`,
-`HERO_MIGRATION_PROGRESS.md` (banner pembaruan + pesan siap-salin), dan baris
-"efektif tinggal AIPlayer penuh" di `PETA_SISA_MIGRASI.md`.
-`validate_project.py` mendapat pin anti-drift 9ak: frase stale dilarang muncul
-lagi dan setiap klaim terkoreksi diikat ke anchor kode di atas.
+Yang dikoreksi in-place pada lapisan ini: baris status usang di dokumen ini
+(Status paket, bullet reserve, penutup roster, scheduler upgrade, shield scene),
+`SHIELD_CONTRACT.md`, `NEXUS_CONTRACT.md`, dan `UPGRADE_CONTRACT.md`. Catatan
+lapisan ini menjelaskan rekonsiliasi historis; ringkasan parity terkini ada di
+[`../docs/GODOT_PYGAME_PARITY_STATUS.md`](../docs/GODOT_PYGAME_PARITY_STATUS.md).
+Validasi tetap diikat ke anchor kode di atas.
 
 Batas slice 9ak: hanya dokumen + `validate_project.py`. Tidak ada perubahan
 kode produksi, oracle, fixture, atau suite GDScript baru (fakta dokumen/wiring

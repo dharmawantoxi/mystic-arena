@@ -38,10 +38,7 @@ Yang dijalankan adalah kode pygame SUNGGUHAN, bukan rumus yang disalin:
 CATATAN (temuan audit pada kode pygame, disimpan di fixture):
 `EffectManager.add_hit_particles` membaca `mobile.perf.Quality` — default
 desktop/HIGH adalah `particles=True`, `particle_ratio=0.70`, jadi pygame
-sebenarnya membulatkan `count` menjadi 4→3, 6→4, 10→7. Lapisan adaptive
-quality belum ada di Godot (lihat AUDIT_ULANG_DARI_AWAL.md §3), jadi port
-memakai rasio 1.0 (jumlah penuh) dan faktanya direkam di `py_quality` supaya
-selisihnya terlihat, bukan terkubur.
+sebenarnya membulatkan `count` menjadi 4→3, 6→4, 10→7. Catatan ini mengunci keputusan port historis `godot/`; jangan gunakan sebagai bukti runtime `godot_rebuild/`. Gap parity aktif dicatat di `docs/GODOT_PYGAME_PARITY_STATUS.md`.
 
 Jalankan:
   python3 tools/test_render_parity.py                  # gate drift + kunci statis Godot

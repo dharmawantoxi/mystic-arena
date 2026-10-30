@@ -27,7 +27,7 @@ dalam hitungan milidetik. Yang dikerjakan:
      dilaporkan apa adanya.
 
 Regenerasi fixture HANYA bila localization.py berubah — pygame tidak pernah
-disetel mengikuti Godot (aturan docs/AUDIT_ULANG_DARI_AWAL.md).
+disetel mengikuti Godot (aturan docs/GODOT_PYGAME_PARITY_STATUS.md).
 """
 import argparse
 import json

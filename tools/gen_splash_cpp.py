@@ -1210,7 +1210,7 @@ def emit_h(funcs):
 //             tangan)
 // Regenerasi: python3 tools/gen_splash_cpp.py
 // Cek CI    : python3 tools/gen_splash_cpp.py --check
-// Desain    : docs/AUDIT_ULANG_DARI_AWAL.md
+// Desain    : docs/GODOT_PYGAME_PARITY_STATUS.md
 //
 // Port splash_screen.py ke Godot C++ GDExtension: lapisan MODEL (timing +
 // fade, alpha judul, gerak/twinkle partikel, gradien + vignette latar,
