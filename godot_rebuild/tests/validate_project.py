@@ -168,6 +168,7 @@ from levels_folder_source_oracle import source_fixture as levels_folder_fixture
 from levels_folder_source_oracle import check_native as levels_folder_readers
 from map_components_source_oracle import source_fixture as map_components_fixture
 from map_components_source_oracle import palette_payload as map_components_palette
+from minions_source_oracle import source_fixture as minions_fixture
 check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
       "Item structure arm suite must be preloaded")
 check("ItemStructureArmChecks.new().run(_check)" in ai_tests,
@@ -2938,6 +2939,125 @@ if _mc_doc.is_file() and _mc_path.is_file():
               "get_theme", "TILE_SIZE", "Haunted Veil")),
           "9cb the report must cover the data files, the seeds and the bake-only arrays")
     check(_mc_text.count("|") > 150, "9cb the report must stay tabular")
+
+# ── 9cc: the whole `minions/` folder (2 files, 5 renderer namespaces) ───────
+# The bodies are baked atlases (layer 9bk); this layer ports and pins the live
+# overlay half of `base_renderer.py`: HP bar, slow aura, slash arcs, hurt flash,
+# cache key and the five-type registry. The oracle imports the bundle against a
+# recording pygame stub, so the primitives are the ones the source actually asks
+# for, not a transcription.
+_mn_path = ROOT / "tests/fixtures/minions_source.json"
+check(_mn_path.is_file(), "9cc minions/ inventory needs a source oracle fixture")
+check("MinionsChecks.new().run(_check)" in ai_tests
+      and 'const MinionsChecks = preload("res://tests/minions_checks.gd")' in ai_tests,
+      "9cc minions/ folder suite must be preloaded and run")
+_mn_doc = ROOT.parent / "docs/MINIONS_FOLDER_MIGRATION.md"
+check(_mn_doc.is_file(), "9cc the minions/ migration report must ship")
+_mn_overlay = ROOT / "scripts/ui/minion_overlay.gd"
+check(_mn_overlay.is_file(), "9cc the live overlay module must exist")
+if _mn_overlay.is_file():
+    _mn_overlay_text = _mn_overlay.read_text(encoding="utf-8")
+    check(all(token in _mn_overlay_text for token in (
+              "static func hp_bar_ops(", "static func slow_aura_ops(",
+              "static func slash_ops(", "static func hurt_color(",
+              "static func cache_key(", "static func overlay_ops(",
+              "const TYPES :=", "POINT_SCALE")),
+          "9cc the overlay module must expose the whole base_renderer surface")
+if _mn_path.is_file():
+    _mn = minions_fixture()
+    check(_mn == json.loads(_mn_path.read_text(encoding="utf-8")),
+          "9cc minions/ inventory drifted from the source folder")
+    _mn_folder = _mn["folder"]
+    check((_mn_folder["count"], _mn_folder["lines"]) == (2, 9626)
+          and _mn_folder["files"] == {"__init__.py": 95, "_bundle.py": 9531},
+          "9cc minions/ is a 9.531-line bundle plus a 95-line shim")
+    _mn_modules = _mn["modules"]
+    check([row["module"] for row in _mn_modules] == [
+              "base_renderer", "goblin", "orc", "troll", "undead", "dark_rider"]
+          and [row["lines"] for row in _mn_modules] == [302, 1897, 1798, 1905, 1850, 1746]
+          and sum(row["lines"] for row in _mn_modules) == 9531 - 33,
+          "9cc the six merged modules tile the bundle after its 33-line header")
+    check(_mn["constants"] == {"MINION_CACHE_ENABLED": True, "OUTLINE": [24, 20, 25],
+                               "SHADOW": [0, 0, 0], "_CANVAS_H": 120, "_CANVAS_W": 120,
+                               "_RENDERING_TO_CACHE": False, "_SHADOW_CACHE": {}},
+          "9cc base_renderer keeps its seven constants")
+    check(_mn["method_counts"] == {"dark_rider": 34, "goblin": 37, "orc": 33,
+                                   "troll": 36, "undead": 38}
+          and sum(_mn["method_counts"].values()) == 178,
+          "9cc the five namespaces hold 178 renderer methods")
+    check(_mn["dead_helpers"] == ["apply_hurt_flash", "calculate_animation_offsets",
+                                  "draw_shadow"],
+          f"9cc the three uncalled helpers must be named: {_mn['dead_helpers']}")
+    _mn_live = [name for name in ("draw_hp_bar", "draw_slow_effect", "draw_slash_effects",
+                                  "_minion_cache_key", "cached_minion_draw")
+                if not _mn["dead"][name]["inside"]]
+    check(not _mn_live, f"9cc the live helpers must be called inside the bundle: {_mn_live}")
+    check(_mn["aliases"]["aliased"] == ["goblin", "orc", "troll", "undead",
+                                        "dark_rider", "base_renderer"]
+          and _mn["aliases"]["reexports"] == ["draw_dark_rider", "draw_goblin",
+                                              "draw_orc", "draw_troll", "draw_undead"]
+          and _mn["aliases"]["registry"] == ["goblin", "orc", "troll", "undead",
+                                             "dark_rider"],
+          "9cc the shim keeps five namespaces, five draw exports and the registry")
+    check(_mn["dispatch"] == {"cache_hook": True, "direct_call": True,
+                              "warns_on_unknown": True},
+          "9cc render_minion keeps the cache hook, the direct call and the warning")
+    _mn_overlay_facts = _mn["overlay"]
+    check((len(_mn_overlay_facts["hp_bar"]), len(_mn_overlay_facts["slow_aura"]),
+           len(_mn_overlay_facts["slash"]), len(_mn_overlay_facts["hurt_flash"]),
+           len(_mn_overlay_facts["cache_keys"]), len(_mn_overlay_facts["offsets"]),
+           len(_mn_overlay_facts["shadow"])) == (8, 4, 7, 4, 5, 5, 3),
+          "9cc the oracle must replay 8 HP bars, 4 auras, 7 slashes and 5 keys")
+    check(_mn_overlay_facts["cache_guarded"] == []
+          and _mn_overlay_facts["canvas"] == [120, 120]
+          and _mn_overlay_facts["scale"] == 10000,
+          "9cc the cache guard hides overlays and the canvas stays 120 x 120")
+    _mn_bar_shapes = [len(row["ops"]) for row in _mn_overlay_facts["hp_bar"]]
+    check(_mn_bar_shapes == [3, 3, 3, 3, 2, 3, 3, 2],
+          f"9cc an HP bar is at most three rects: {_mn_bar_shapes}")
+    check(_mn["hp_bar_paths"] == {"base_renderer": [6, 18], "goblin": [6, 18],
+                                  "orc": [8, 18], "troll": [8, 18], "undead": [8, 18],
+                                  "dark_rider": [12, 22]},
+          f"9cc the per-renderer bar offsets must be pinned: {_mn['hp_bar_paths']}")
+    check(_mn["symbol_count"] == 201 and len(_mn["classification"]) == 201
+          and _mn["classification_kinds"] == {"bake": 184, "dead": 3, "delegated": 1,
+                                              "meta": 1, "native": 12},
+          "9cc all 201 folder symbols carry a kind: "
+          f"{_mn['classification_kinds']}")
+    _mn_broken = sorted(name for name, entry in _mn["classification"].items()
+                        if not (ROOT.parent / entry["target"]).is_file()
+                        or entry["token"] not in (ROOT.parent / entry["target"]).read_text(
+                            encoding="utf-8"))
+    check(not _mn_broken,
+          f"9cc every classification needs a target and a token: {_mn_broken}")
+    _mn_source_only = sorted(name for name, entry in _mn["classification"].items()
+                             if not entry["target"].startswith("godot_rebuild/"))
+    check(_mn_source_only == ["shim:_install_aliases"],
+          f"9cc only the shim entry may live outside the project: {_mn_source_only}")
+_mn_manifest = json.loads((ROOT / "data/art/minions.json").read_text(encoding="utf-8"))
+check(len(_mn_manifest["atlases"]) == 50 and _mn_manifest["states"] == {"atk": 13,
+                                                                        "idle": 4,
+                                                                        "walk": 8},
+      "9cc the baked atlas grid must stay 50 sheets over 25 poses")
+_mn_fx = json.loads((ROOT / "data/art/minion_combat_fx.json").read_text(encoding="utf-8"))
+check(len(_mn_fx["key_cases"]) == 75 and _mn_fx["angle_steps"] == 32
+      and _mn_fx["slash_life"] == 12 and _mn_fx["death_life"] == 20,
+      "9cc the slash bake must keep 75 cases over 32 angle steps")
+
+if _mn_doc.is_file() and _mn_path.is_file():
+    _mn_text = _mn_doc.read_text(encoding="utf-8")
+    _mn_unnamed = [row["module"] for row in _mn["modules"]
+                   if "`%s.py`" % row["module"] not in _mn_text]
+    check(not _mn_unnamed,
+          f"9cc the report must name all six merged modules: {_mn_unnamed}")
+    check(all("`%s`" % name in _mn_text for name in _mn["dead_helpers"]),
+          "9cc the report must name the three dead helpers")
+    check(all(token in _mn_text for token in (
+              "minion_overlay.gd", "minion_art.gd", "hp_bar", "slow_aura",
+              "slash_ops", "hurt_color", "cache_key", "120 x 120",
+              "MINION_RENDERERS", "bake_minion_atlas.py", "minion_combat_fx.json")),
+          "9cc the report must cover the overlay functions and the atlas bake")
+    check(_mn_text.count("|") > 150, "9cc the report must stay tabular")
 
 if _bf_doc.is_file() and _bf_path.is_file():
     _bf_text = _bf_doc.read_text(encoding="utf-8")
