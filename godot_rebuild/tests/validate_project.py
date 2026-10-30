@@ -149,6 +149,8 @@ from balance_baseline_source_oracle import balance_baseline as balance_baseline_
 from sprite_lighting_source_oracle import lighting_fixture as sprite_lighting_fixture
 from combat_audio_source_oracle import source_fixture as combat_audio_fixture
 from side_panel_source_oracle import source_fixture as side_panel_fixture
+from mobile_platform_source_oracle import source_fixture as mobile_platform_fixture
+from touch_hud_source_oracle import source_fixture as touch_hud_fixture
 from splash_screen_source_oracle import source_fixture as splash_screen_fixture
 from topup_source_oracle import source_fixture as topup_fixture
 from level_intro_draw_source_oracle import source_fixture as level_intro_draw_fixture
@@ -7241,6 +7243,112 @@ check("the bold face is wider than the regular face at the same size" in _sp_lay
 check("and String(got[\"style\"]) == String(want[\"style\"])" in _sp_layer_checks
       and "and int(got[\"size\"]) == int(want[\"size\"])" in _sp_layer_checks,
       "9bv19 the fixture replay must compare the source style and size per string")
+
+# ── Layer 9bv20: mobile/platform_utils.py as a native screen layer ──
+_mp_path = ROOT / "scripts/platform/mobile_platform.gd"
+check(_mp_path.is_file(), "9bv20 mobile platform layer must exist")
+if _mp_path.is_file():
+    _mp_text = _mp_path.read_text(encoding="utf-8")
+    check("const DISPLAY_MODES: Array[String] = [\"scaled_vsync\", \"scaled\", \"native\"]"
+          in _mp_text
+          and "const MODE_FILE := \"display_mode.txt\"" in _mp_text
+          and "const MODE_ENV := \"MYSTIC_DISPLAY_MODE\"" in _mp_text,
+          "9bv20 display modes, file name and env override must match platform_utils")
+    check("static func safe_area(touch_mode: bool) -> Rect2i:" in _mp_text
+          and "SAFE_TOP" in _mp_text and "SAFE_BOTTOM" in _mp_text,
+          "9bv20 safe area must keep the source notch/gesture insets")
+    check("static func window_scale_offset(window: Vector2i) -> Dictionary:" in _mp_text
+          and "static func window_to_logical(point: Vector2, scale: float, offset: Vector2)"
+          in _mp_text
+          and "static func finger_to_logical(" in _mp_text
+          and "static func pointer_to_logical(mode: String, point: Vector2, scale: float, offset: Vector2)"
+          in _mp_text,
+          "9bv20 window/finger/pointer mapping must be pure and complete")
+    check("static func panel_popup_pos(panel: Rect2i, width: int, height: int, top := 12) -> Variant:"
+          in _mp_text
+          and "static func panel_pos_bawah(panel: Rect2i, width: int, height: int) -> Variant:"
+          in _mp_text
+          and "const ZONA_POPUP_Y := 430" in _mp_text
+          and "const ZONA_BAWAH_H := 120" in _mp_text,
+          "9bv20 right-panel popup routes must keep the source lanes")
+    check("static func resolve_display_mode(env_mode: String, file_text: String) -> String:"
+          in _mp_text
+          and "static func save_display_mode(mode: String) -> bool:" in _mp_text
+          and "OS.get_user_data_dir()" in _mp_text,
+          "9bv20 the persisted display mode must resolve env -> file -> default")
+    check("Input.vibrate_handheld(ms)" in _mp_text
+          and "DisplayServer.screen_set_keep_on(enable)" in _mp_text,
+          "9bv20 vibration and keep-screen-on must use the engine calls")
+    check("immersive" in _mp_text and "export preset" in _mp_text,
+          "9bv20 immersive mode deviation must stay documented in the module")
+check((ROOT / "tests/fixtures/mobile_platform_source.json").is_file(),
+      "9bv20 mobile platform fixture must exist")
+if (ROOT / "tests/fixtures/mobile_platform_source.json").is_file():
+    check(mobile_platform_fixture() == json.loads(
+        (ROOT / "tests/fixtures/mobile_platform_source.json").read_text(encoding="utf-8")),
+          "9bv20 mobile platform fixture must not drift from mobile/platform_utils.py")
+check("python godot_rebuild/tests/mobile_platform_source_oracle.py" in workflow,
+      "9bv20 CI must run the mobile platform oracle")
+check('const MobilePlatformChecks = preload("res://tests/mobile_platform_checks.gd")' in ai_tests
+      and "MobilePlatformChecks.new().run(_check)" in ai_tests,
+      "9bv20 mobile platform suite must be registered in the native runner")
+_mp_checks = (ROOT / "tests/mobile_platform_checks.gd").read_text(encoding="utf-8")
+check("letterbox offset for a" in _mp_checks
+      and "finger %s maps to %s on" in _mp_checks
+      and "without a right panel both popup routes fall back" in _mp_checks
+      and "the saved display mode loads back" in _mp_checks,
+      "9bv20 native suite must replay scales, fingers, popup routes and the saved mode")
+
+# ── Layer 9bv21: mobile/hud.py touch HUD layout, state and input ──
+_th_path = ROOT / "scripts/ui/touch_hud_layout.gd"
+check(_th_path.is_file(), "9bv21 touch HUD layout must exist")
+if _th_path.is_file():
+    _th_text = _th_path.read_text(encoding="utf-8")
+    check("const MIN_TAP := 80" in _th_text and "const TAP_PAD := 24" in _th_text
+          and "const PRESS_DECAY := 0.12" in _th_text,
+          "9bv21 HUD must keep the 80 px tap floor, 24 px pad and 0.12 press decay")
+    check("const KEYS: Array[String] = [\"pause\", \"debug\", \"skip\", \"replay\", \"next_level\", \"menu\", \"back\"]"
+          in _th_text,
+          "9bv21 HUD buttons must keep the source dict order")
+    check("static func build(safe: Rect2i) -> Dictionary:" in _th_text
+          and "static func sync(" in _th_text
+          and "static func hit_test(buttons: Dictionary, pos: Vector2i) -> String:" in _th_text
+          and "static func blocks(buttons: Dictionary, pos: Vector2i) -> bool:" in _th_text
+          and "static func action_intent(" in _th_text,
+          "9bv21 layout, sync, hit-test, blocks and action routing must exist")
+    check("# `back` is deliberately untouched" in _th_text
+          and "because the source rule only" in _th_text,
+          "9bv21 source quirks (never-shown BACK, always-on FPS) must stay documented")
+check((ROOT / "tests/fixtures/touch_hud_source.json").is_file(),
+      "9bv21 touch HUD fixture must exist")
+if (ROOT / "tests/fixtures/touch_hud_source.json").is_file():
+    check(touch_hud_fixture() == json.loads(
+        (ROOT / "tests/fixtures/touch_hud_source.json").read_text(encoding="utf-8")),
+          "9bv21 touch HUD fixture must not drift from mobile/hud.py")
+check("python godot_rebuild/tests/touch_hud_source_oracle.py" in workflow,
+      "9bv21 CI must run the touch HUD oracle")
+check('const TouchHudChecks = preload("res://tests/touch_hud_checks.gd")' in ai_tests
+      and "TouchHudChecks.new().run(_check)" in ai_tests,
+      "9bv21 touch HUD suite must be registered in the native runner")
+_th_checks = (ROOT / "tests/touch_hud_checks.gd").read_text(encoding="utf-8")
+check("hit rect matches (24 px pad, 80 px floor)" in _th_checks
+      and "The dock moves PAUSE/FPS out of the arena but never reshapes anything" in _th_checks
+      and "press animation decays once per sync" in _th_checks
+      and "only a blue selected tower is passed to protect_tower" in _th_checks,
+      "9bv21 native suite must replay geometry, dock overrides, decay and tactical routing")
+_mobile_doc = ROOT.parent / "docs/MOBILE_FOLDER_MIGRATION.md"
+check(_mobile_doc.is_file(), "the mobile folder inventory must be documented")
+if _mobile_doc.is_file():
+    _mobile_text = _mobile_doc.read_text(encoding="utf-8")
+    check(all(name in _mobile_text for name in (
+              "platform_utils.py", "sidepanel.py", "hud.py", "touch.py", "combat_audio.py",
+              "cloud_save.py", "perf.py", "spritecache.py", "fastblit.py", "blitwatch.py",
+              "diagnostics.py", "_bench_core.py", "bootcheck.py", "buildinfo.py", "debug.py",
+              "kaizen_review.py", "vex_review.py", "grimjaw_review.py", "sylara_review.py",
+              "__init__.py")),
+          "the mobile inventory must cover all 20 files in mobile/")
+    check(_mobile_text.count("|") > 60,
+          "the mobile inventory must stay a per-file table")
 
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
