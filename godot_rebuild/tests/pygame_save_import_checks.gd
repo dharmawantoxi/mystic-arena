@@ -15,7 +15,7 @@ const SOURCE := "user://pygame_import_source_test.json"
 
 func run(check: Callable) -> void:
 	_cleanup()
-	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(FIXTURE))
+	var parsed: Variant = _parse(FileAccess.get_file_as_string(FIXTURE))
 	check.call(parsed is Dictionary, "Pygame save-import fixture parses")
 	if not (parsed is Dictionary):
 		return
@@ -29,7 +29,10 @@ func run(check: Callable) -> void:
 	var faithful := {}
 	for case in cases:
 		var record: Dictionary = case
-		var result := Import.normalize(record.parsed, clock)
+		# Parse the recorded file text: the drop report follows the key order of
+		# the file, and JSON.stringify'd fixture copies would sort it away.
+		var source: Variant = _parse(String(record.raw_text))
+		var result := Import.normalize(source, clock)
 		var expected: Dictionary = record.expected
 		if bool(expected.ok):
 			check.call(
@@ -47,7 +50,7 @@ func run(check: Callable) -> void:
 				"Slot file '%s' is refused with %s" % [String(record.name), String(expected.reason)]
 			)
 		check.call(
-			Import.normalize(record.parsed, clock) == result,
+			Import.normalize(source, clock) == result,
 			"Slot file '%s' imports deterministically" % String(record.name)
 		)
 
@@ -121,7 +124,7 @@ func _check_faithful(
 		legacy.slot_created == clock and legacy.slot_last_played == clock,
 		"Legacy slot without metadata is stamped at import time like source load()"
 	)
-	var preview := Import.preview(_case(fixture.cases, "full").parsed, clock)
+	var preview := Import.preview(_parse(String(_case(fixture.cases, "full").raw_text)), clock)
 	check.call(preview.ok and preview.highest_level == 4, "Preview reports the highest level")
 	check.call(preview.completed == 3, "Preview counts completed levels")
 	check.call(preview.heroes == 2 and preview.bosses == 1, "Preview counts the collections")
@@ -160,7 +163,7 @@ func _check_import_files(cases: Array, clock: float, check: Callable) -> void:
 	check.call(Slots.slot_exists(1, TEMPLATE), "The import writes the atomic slot file")
 	var stored := Slots.load_state(1, TEMPLATE)
 	check.call(_matches(imported.state, stored), "The import reports the stored profile")
-	var expected: Dictionary = Import.normalize(full.parsed, clock).state.duplicate(true)
+	var expected: Dictionary = Import.normalize(_parse(raw), clock).state.duplicate(true)
 	expected["slot_last_played"] = clock
 	check.call(_matches(stored, expected), "Stored slot keeps the imported profile")
 	var info := Slots.slot_info(1, TEMPLATE)
@@ -236,6 +239,15 @@ func _check_refusals(cases: Array, clock: float, check: Callable) -> void:
 		),
 		"A missing source file is refused"
 	)
+
+
+func _parse(text: String) -> Variant:
+	# Instance parsing keeps a syntax error out of the log: the runner fails on
+	# any `ERROR:` line, and a refused Pygame file is an expected outcome here.
+	var decoder := JSON.new()
+	if decoder.parse(text) != OK:
+		return null
+	return decoder.data
 
 
 func _case(cases: Array, name: String) -> Dictionary:
