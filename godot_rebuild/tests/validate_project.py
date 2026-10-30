@@ -3304,7 +3304,7 @@ check("loop AI scene aktif" in _upgrade_contract_doc,
 
 check("parity penuh **belum tercapai" in _parity_doc,
       "Parity status document must clearly state that full parity is not complete")
-check("1.505.408 pemeriksaan" in _parity_doc
+check("1.505.443 pemeriksaan" in _parity_doc
       and "melaporkan **0 kegagalan**" in _parity_doc
       and "23 kegagalan" in _parity_doc
       and "Triase 23 kegagalan tes native sebelumnya" in _parity_doc,
