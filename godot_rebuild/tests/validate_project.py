@@ -169,6 +169,8 @@ from levels_folder_source_oracle import check_native as levels_folder_readers
 from map_components_source_oracle import source_fixture as map_components_fixture
 from map_components_source_oracle import palette_payload as map_components_palette
 from minions_source_oracle import source_fixture as minions_fixture
+from towers_source_oracle import source_fixture as towers_fixture
+from towers_source_oracle import catalog_payload as towers_catalog_payload
 check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
       "Item structure arm suite must be preloaded")
 check("ItemStructureArmChecks.new().run(_check)" in ai_tests,
@@ -3058,6 +3060,174 @@ if _mn_doc.is_file() and _mn_path.is_file():
               "MINION_RENDERERS", "bake_minion_atlas.py", "minion_combat_fx.json")),
           "9cc the report must cover the overlay functions and the atlas bake")
     check(_mn_text.count("|") > 150, "9cc the report must stay tabular")
+
+# ── 9cd: the whole `towers/` folder (2 files, 4 renderer namespaces) ──────
+# The bodies are baked sheets (layer 9bl); this layer ports and pins the live
+# geometry half of `towers/_bundle.py`: the four spawn helpers, the four HP-bar
+# anchors, the level clamp, the palettes/LEVEL_CONFIGS the bake reads and the
+# `TOWER_RENDERERS` dispatch. The oracle imports the bundle against a stub
+# pygame, so the integers are the ones the source actually returns.
+_tw_path = ROOT / "tests/fixtures/towers_source.json"
+_tw_catalog = ROOT / "data/towers/render_catalog.json"
+_tw_module = ROOT / "scripts/ui/tower_render_catalog.gd"
+check(_tw_path.is_file(), "9cd towers/ inventory needs a source oracle fixture")
+check(_tw_catalog.is_file(), "9cd the towers/ render catalog must ship as data")
+check(_tw_module.is_file(), "9cd the towers/ catalog module must exist")
+check("TowersChecks.new().run(_check)" in ai_tests
+      and 'const TowersChecks = preload("res://tests/towers_checks.gd")' in ai_tests,
+      "9cd towers/ folder suite must be preloaded and run")
+_tw_doc = ROOT.parent / "docs/TOWERS_FOLDER_MIGRATION.md"
+check(_tw_doc.is_file(), "9cd the towers/ migration report must ship")
+if _tw_module.is_file():
+    _tw_text = _tw_module.read_text(encoding="utf-8")
+    check(all(token in _tw_text for token in (
+              "static func archer_position(", "static func cannon_position(",
+              "static func ice_position(", "static func mage_position(",
+              "static func position(", "static func top_y(",
+              "static func palette(", "static func level_configs(",
+              "const TYPES :=", "const SCALE := 0.7", "const CANNON_BARREL_OFFSET :=")),
+          "9cd the catalog module must expose the whole towers/ runtime surface")
+if _tw_path.is_file():
+    _tw = towers_fixture()
+    check(_tw == json.loads(_tw_path.read_text(encoding="utf-8")),
+          "9cd towers/ inventory drifted from the source folder")
+    _tw_folder = _tw["folder"]
+    check((_tw_folder["count"], _tw_folder["lines"]) == (2, 7368)
+          and _tw_folder["files"] == {"__init__.py": 94, "_bundle.py": 7274},
+          "9cd towers/ is a 7.274-line bundle plus a 94-line shim")
+    _tw_modules = _tw["modules"]
+    check([row["module"] for row in _tw_modules] == ["base_renderer", "archer_tower",
+                                                     "cannon_tower", "ice_tower",
+                                                     "mage_tower"]
+          and [row["lines"] for row in _tw_modules] == [379, 1786, 1771, 1709, 1600]
+          and sum(row["lines"] for row in _tw_modules) == 7274 - 29,
+          "9cd the five merged sections tile the bundle after its 29-line header")
+    check(_tw["constants"] == {"FIRE_ORANGE": [255, 150, 40], "FIRE_PINK": [255, 100, 200],
+                               "FIRE_PURPLE": [200, 40, 100], "FIRE_YELLOW": [255, 220, 100],
+                               "OUTLINE": [30, 25, 35]},
+          "9cd base_renderer keeps its five colours")
+    check(_tw["method_counts"] == {"archer": 37, "cannon": 27, "ice": 34, "mage": 31}
+          and sum(_tw["method_counts"].values()) == 129,
+          "9cd the four namespaces hold 129 renderer methods")
+    check(_tw["dead_helpers"] == [
+              "base:draw_aura", "base:draw_ground_shadow", "base:draw_metal_plate",
+              "base:draw_muzzle_flash", "base:draw_rivet", "base:draw_shield_emblem",
+              "base:draw_sparks", "base:draw_stone_block_pattern", "base:draw_torch",
+              "base:get_team_palette", "cannon:_draw_cannon", "ice:_draw_crystal_group",
+              "ice:_draw_crystal_spike_detailed", "ice:_draw_floating_shards"],
+          f"9cd the 14 unreachable symbols must be named: {_tw['dead_helpers']}")
+    _tw_live = sorted(name for name, row in _tw["dead"].items() if row["reachable"])
+    check("archer:get_archer_bow_position" in _tw_live
+          and "cannon:draw_cannon" in _tw_live
+          and not [name for name in _tw["dead_helpers"] if name in _tw_live],
+          "9cd the live entry points must stay reachable and the dead ones must not")
+    check(_tw["dispatch"]["registry"] == ["archer", "cannon", "ice", "mage"]
+          and _tw["dispatch"]["cache_hook_count"] == 4
+          and _tw["dispatch"]["warns_on_unknown"] is True
+          and _tw["dispatch"]["direct_call"] is True,
+          "9cd render_tower keeps four renderers, a cache hook and the warning")
+    check(_tw["entry"]["get_archer_bow_position"]["calls"] == ["_entity.py:1149",
+                                                               "_entity.py:901",
+                                                               "_entity.py:949"]
+          and "_entity.py:1346" in _tw["entry"]["render_tower"]["imports"]
+          and _tw["entry"]["render_tower"]["imports"] == ["_entity.py:1346",
+                                                          "tools/convert_to_godot.py:2341"],
+          "9cd the spawn helpers and the dispatcher must be reached from _entity.py")
+    _tw_levels = _tw["level_configs"]
+    check({name: [row["tower_h"] for _, row in sorted(rows.items(), key=lambda pair: int(pair[0]))]
+           for name, rows in _tw_levels.items()} == {
+               "archer": [38, 42, 46, 52, 56, 62], "cannon": [38, 42, 46, 52, 56, 62],
+               "ice": [40, 44, 48, 54, 58, 64], "mage": [45, 48, 52, 56, 60, 66]},
+          "9cd every LEVEL_CONFIGS keeps its six tower heights")
+    check([_tw_levels["cannon"][str(level)]["cannon_tier"] for level in range(1, 7)]
+          == ["basic", "basic", "bronze", "iron", "twin", "legendary"],
+          "9cd the cannon tiers must stay basic/basic/bronze/iron/twin/legendary")
+    check(len(_tw["palettes"]) == 4
+          and all(sorted(rows) == ["blue", "red"] for rows in _tw["palettes"].values())
+          and {name: len(rows["blue"]) for name, rows in _tw["palettes"].items()}
+          == {"archer": 44, "cannon": 51, "ice": 39, "mage": 47},
+          "9cd four palettes, two teams, the sampled key counts")
+    _tw_anchors = _tw["anchors"]
+    check((len(_tw_anchors["positions"]), len(_tw_anchors["top_y"])) == (192, 64)
+          and _tw_anchors["scale"] == 0.7 and _tw_anchors["canvas"] == [140, 165]
+          and _tw_anchors["ground_cy"] == 153 and _tw_anchors["final_y_offset"] == -94,
+          "9cd the oracle must replay 192 spawn points and 64 HP-bar anchors")
+    _tw_bow = [row for row in _tw_anchors["positions"]
+               if row["type"] == "archer" and row["level"] == 1 and row["x"] == 400]
+    check(sorted((row["face"], row["out"][0]) for row in _tw_bow) == [(-1, 395), (1, 404)],
+          f"9cd the archer bow must flip 7px either side of centre: {_tw_bow}")
+    _tw_recoil = sorted((row["recoil"], row["out"][0]) for row in _tw_anchors["positions"]
+                        if row["type"] == "cannon" and row["level"] == 6 and row["x"] == 400
+                        and row["face"] == 1)
+    check(_tw_recoil == [(0, 415), (3, 418), (7, 422)],
+          f"9cd the cannon recoil offset must push the muzzle forward: {_tw_recoil}")
+    _tw_clamp = sorted({row["level"]: row["out"] for row in _tw_anchors["top_y"]
+                        if row["type"] == "mage" and row["x"] == 400}.items())
+    check([value for level, value in _tw_clamp if level == 0] ==
+          [value for level, value in _tw_clamp if level == 1]
+          and [value for level, value in _tw_clamp if level == 7] ==
+          [value for level, value in _tw_clamp if level == 6],
+          "9cd out-of-range levels must clamp to 1 and 6")
+    check(_tw["symbol_count"] == 163 and len(_tw["classification"]) == 163
+          and _tw["classification_kinds"] == {"bake": 125, "data": 13, "dead": 14,
+                                              "meta": 1, "native": 10},
+          "9cd all 163 folder symbols carry a kind: "
+          f"{_tw['classification_kinds']}")
+    _tw_broken = sorted(name for name, entry in _tw["classification"].items()
+                        if not (ROOT.parent / entry["target"]).is_file()
+                        or entry["token"] not in (ROOT.parent / entry["target"]).read_text(
+                            encoding="utf-8"))
+    check(not _tw_broken,
+          f"9cd every classification needs a target and a token: {_tw_broken}")
+    _tw_source_only = sorted(name for name, entry in _tw["classification"].items()
+                            if not entry["target"].startswith("godot_rebuild/"))
+    check(_tw_source_only == ["shim:_install_aliases"],
+          f"9cd only the shim entry may live outside the project: {_tw_source_only}")
+    if _tw_catalog.is_file():
+        check(towers_catalog_payload(_tw)
+              == json.loads(_tw_catalog.read_text(encoding="utf-8")),
+              "9cd the shipped render catalog drifted from the source tables")
+_tw_structures = json.loads((ROOT / "data/art/structures.json").read_text(encoding="utf-8"))
+check(len(_tw_structures["towers"]) == 42
+      and _tw_structures["tower_levels"] == {"archer": [1, 2, 3, 4, 5, 6],
+                                             "cannon": [2, 3, 4, 5, 6],
+                                             "ice": [2, 3, 4, 5, 6],
+                                             "mage": [2, 3, 4, 5, 6]},
+      "9cd the baked tower grid must stay 42 sheets over the reachable levels")
+check(_tw_structures["tower_top_y"] == {
+          "archer": {"1": -28, "2": -31, "3": -33, "4": -40, "5": -43, "6": -50},
+          "cannon": {"2": -31, "3": -34, "4": -39, "5": -41, "6": -50},
+          "ice": {"2": -35, "3": -42, "4": -47, "5": -47, "6": -61},
+          "mage": {"2": -42, "3": -48, "4": -51, "5": -52, "6": -63}},
+      "9cd the baked HP-bar offsets must keep the source values")
+_siege_text = (ROOT / "scripts/combat/siege_battle.gd").read_text(encoding="utf-8")
+check("const CANNON_MUZZLE := [[38, 17], [42, 17], [46, 18], [52, 20], [56, 15], [62, 22]]"
+      in _siege_text
+      and "const ICE_CRYSTAL := [40, 44, 48, 54, 58, 64]" in _siege_text
+      and "const MAGE_CRYSTAL := [45, 48, 52, 56, 60, 66]" in _siege_text,
+      "9cd the in-match muzzle rows must stay the LEVEL_CONFIGS tower heights")
+_fx_text = (ROOT / "scripts/ui/tower_fx_layout.gd").read_text(encoding="utf-8")
+check("const BOW_HEIGHTS := [38, 42, 46, 52, 56, 62]" in _fx_text,
+      "9cd the live bow glow must stay on the archer platform heights")
+
+if _tw_doc.is_file() and _tw_path.is_file():
+    _tw_report = _tw_doc.read_text(encoding="utf-8")
+    _tw_unnamed = [row["module"] for row in _tw["modules"]
+                   if "`%s.py`" % row["module"] not in _tw_report]
+    check(not _tw_unnamed,
+          f"9cd the report must name all five merged modules: {_tw_unnamed}")
+    _tw_unnamed_dead = [name for name in _tw["dead_helpers"]
+                        if "`%s`" % name.split(":")[-1] not in _tw_report]
+    check(not _tw_unnamed_dead,
+          f"9cd the report must name every dead symbol: {_tw_unnamed_dead}")
+    check(all(token in _tw_report for token in (
+              "tower_render_catalog.gd", "render_catalog.json", "bake_structure_atlas.py",
+              "structure_art.gd", "TOWER_RENDERERS", "LEVEL_CONFIGS",
+              "get_archer_bow_position", "get_cannon_muzzle_position",
+              "get_ice_crystal_position", "get_mage_crystal_position",
+              "get_archer_top_y", "140 x 165", "-94", "_get_palette", "recoil")),
+          "9cd the report must cover the anchor helpers and the atlas bake")
+    check(_tw_report.count("|") > 150, "9cd the report must stay tabular")
 
 if _bf_doc.is_file() and _bf_path.is_file():
     _bf_text = _bf_doc.read_text(encoding="utf-8")

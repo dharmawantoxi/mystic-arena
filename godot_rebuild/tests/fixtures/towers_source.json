@@ -1,0 +1,7312 @@
+{
+ "anchors": {
+  "canvas": [
+   140,
+   165
+  ],
+  "final_y_offset": -94,
+  "ground_cy": 153,
+  "positions": [
+   {
+    "face": 1,
+    "level": 0,
+    "out": [
+     404,
+     278
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 0,
+    "out": [
+     395,
+     278
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 1,
+    "out": [
+     404,
+     278
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 1,
+    "out": [
+     395,
+     278
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 2,
+    "out": [
+     404,
+     276
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 2,
+    "out": [
+     395,
+     276
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 3,
+    "out": [
+     404,
+     273
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 3,
+    "out": [
+     395,
+     273
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 4,
+    "out": [
+     404,
+     269
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 4,
+    "out": [
+     395,
+     269
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 5,
+    "out": [
+     404,
+     266
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 5,
+    "out": [
+     395,
+     266
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 6,
+    "out": [
+     404,
+     262
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 6,
+    "out": [
+     395,
+     262
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 7,
+    "out": [
+     404,
+     262
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 7,
+    "out": [
+     395,
+     262
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 0,
+    "out": [
+     421,
+     263
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 0,
+    "out": [
+     412,
+     263
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 1,
+    "out": [
+     421,
+     263
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 1,
+    "out": [
+     412,
+     263
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 2,
+    "out": [
+     421,
+     261
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 2,
+    "out": [
+     412,
+     261
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 3,
+    "out": [
+     421,
+     258
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 3,
+    "out": [
+     412,
+     258
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 4,
+    "out": [
+     421,
+     254
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 4,
+    "out": [
+     412,
+     254
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 5,
+    "out": [
+     421,
+     251
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 5,
+    "out": [
+     412,
+     251
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 6,
+    "out": [
+     421,
+     247
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 6,
+    "out": [
+     412,
+     247
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 7,
+    "out": [
+     421,
+     247
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 7,
+    "out": [
+     412,
+     247
+    ],
+    "recoil": 0,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 0,
+    "out": [
+     411,
+     276
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 0,
+    "out": [
+     414,
+     276
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 0,
+    "out": [
+     418,
+     276
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 0,
+    "out": [
+     388,
+     276
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 0,
+    "out": [
+     390,
+     276
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 0,
+    "out": [
+     395,
+     276
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 1,
+    "out": [
+     411,
+     276
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 1,
+    "out": [
+     414,
+     276
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 1,
+    "out": [
+     418,
+     276
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 1,
+    "out": [
+     388,
+     276
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 1,
+    "out": [
+     390,
+     276
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 1,
+    "out": [
+     395,
+     276
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 2,
+    "out": [
+     411,
+     273
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 2,
+    "out": [
+     414,
+     273
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 2,
+    "out": [
+     418,
+     273
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 2,
+    "out": [
+     388,
+     273
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 2,
+    "out": [
+     390,
+     273
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 2,
+    "out": [
+     395,
+     273
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 3,
+    "out": [
+     412,
+     271
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 3,
+    "out": [
+     415,
+     271
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 3,
+    "out": [
+     419,
+     271
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 3,
+    "out": [
+     387,
+     271
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 3,
+    "out": [
+     390,
+     271
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 3,
+    "out": [
+     394,
+     271
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 4,
+    "out": [
+     414,
+     266
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 4,
+    "out": [
+     416,
+     266
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 4,
+    "out": [
+     421,
+     266
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 4,
+    "out": [
+     386,
+     266
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 4,
+    "out": [
+     388,
+     266
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 4,
+    "out": [
+     393,
+     266
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 5,
+    "out": [
+     410,
+     264
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 5,
+    "out": [
+     413,
+     264
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 5,
+    "out": [
+     417,
+     264
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 5,
+    "out": [
+     389,
+     264
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 5,
+    "out": [
+     392,
+     264
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 5,
+    "out": [
+     396,
+     264
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 6,
+    "out": [
+     415,
+     259
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 6,
+    "out": [
+     418,
+     259
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 6,
+    "out": [
+     422,
+     259
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 6,
+    "out": [
+     384,
+     259
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 6,
+    "out": [
+     387,
+     259
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 6,
+    "out": [
+     391,
+     259
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 7,
+    "out": [
+     415,
+     259
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 7,
+    "out": [
+     418,
+     259
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 7,
+    "out": [
+     422,
+     259
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 7,
+    "out": [
+     384,
+     259
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 7,
+    "out": [
+     387,
+     259
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 7,
+    "out": [
+     391,
+     259
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 0,
+    "out": [
+     428,
+     261
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 0,
+    "out": [
+     431,
+     261
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 0,
+    "out": [
+     435,
+     261
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 0,
+    "out": [
+     405,
+     261
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 0,
+    "out": [
+     407,
+     261
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 0,
+    "out": [
+     412,
+     261
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 1,
+    "out": [
+     428,
+     261
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 1,
+    "out": [
+     431,
+     261
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 1,
+    "out": [
+     435,
+     261
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 1,
+    "out": [
+     405,
+     261
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 1,
+    "out": [
+     407,
+     261
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 1,
+    "out": [
+     412,
+     261
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 2,
+    "out": [
+     428,
+     258
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 2,
+    "out": [
+     431,
+     258
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 2,
+    "out": [
+     435,
+     258
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 2,
+    "out": [
+     405,
+     258
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 2,
+    "out": [
+     407,
+     258
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 2,
+    "out": [
+     412,
+     258
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 3,
+    "out": [
+     429,
+     256
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 3,
+    "out": [
+     432,
+     256
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 3,
+    "out": [
+     436,
+     256
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 3,
+    "out": [
+     404,
+     256
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 3,
+    "out": [
+     407,
+     256
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 3,
+    "out": [
+     411,
+     256
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 4,
+    "out": [
+     431,
+     251
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 4,
+    "out": [
+     433,
+     251
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 4,
+    "out": [
+     438,
+     251
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 4,
+    "out": [
+     403,
+     251
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 4,
+    "out": [
+     405,
+     251
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 4,
+    "out": [
+     410,
+     251
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 5,
+    "out": [
+     427,
+     249
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 5,
+    "out": [
+     430,
+     249
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 5,
+    "out": [
+     434,
+     249
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 5,
+    "out": [
+     406,
+     249
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 5,
+    "out": [
+     409,
+     249
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 5,
+    "out": [
+     413,
+     249
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 6,
+    "out": [
+     432,
+     244
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 6,
+    "out": [
+     435,
+     244
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 6,
+    "out": [
+     439,
+     244
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 6,
+    "out": [
+     401,
+     244
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 6,
+    "out": [
+     404,
+     244
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 6,
+    "out": [
+     408,
+     244
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 7,
+    "out": [
+     432,
+     244
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 7,
+    "out": [
+     435,
+     244
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 7,
+    "out": [
+     439,
+     244
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 7,
+    "out": [
+     401,
+     244
+    ],
+    "recoil": 0,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 7,
+    "out": [
+     404,
+     244
+    ],
+    "recoil": 3,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 7,
+    "out": [
+     408,
+     244
+    ],
+    "recoil": 7,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 0,
+    "out": [
+     400,
+     278
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 0,
+    "out": [
+     400,
+     278
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 1,
+    "out": [
+     400,
+     278
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 1,
+    "out": [
+     400,
+     278
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 2,
+    "out": [
+     400,
+     275
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 2,
+    "out": [
+     400,
+     275
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 3,
+    "out": [
+     400,
+     272
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 3,
+    "out": [
+     400,
+     272
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 4,
+    "out": [
+     400,
+     268
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 4,
+    "out": [
+     400,
+     268
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 5,
+    "out": [
+     400,
+     265
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 5,
+    "out": [
+     400,
+     265
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 6,
+    "out": [
+     400,
+     261
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 6,
+    "out": [
+     400,
+     261
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 7,
+    "out": [
+     400,
+     261
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 7,
+    "out": [
+     400,
+     261
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 0,
+    "out": [
+     417,
+     263
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 0,
+    "out": [
+     417,
+     263
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 1,
+    "out": [
+     417,
+     263
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 1,
+    "out": [
+     417,
+     263
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 2,
+    "out": [
+     417,
+     260
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 2,
+    "out": [
+     417,
+     260
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 3,
+    "out": [
+     417,
+     257
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 3,
+    "out": [
+     417,
+     257
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 4,
+    "out": [
+     417,
+     253
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 4,
+    "out": [
+     417,
+     253
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 5,
+    "out": [
+     417,
+     250
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 5,
+    "out": [
+     417,
+     250
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 6,
+    "out": [
+     417,
+     246
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 6,
+    "out": [
+     417,
+     246
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 7,
+    "out": [
+     417,
+     246
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 7,
+    "out": [
+     417,
+     246
+    ],
+    "recoil": 0,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 0,
+    "out": [
+     400,
+     271
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 0,
+    "out": [
+     400,
+     271
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 1,
+    "out": [
+     400,
+     271
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 1,
+    "out": [
+     400,
+     271
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 2,
+    "out": [
+     400,
+     269
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 2,
+    "out": [
+     400,
+     269
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 3,
+    "out": [
+     400,
+     266
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 3,
+    "out": [
+     400,
+     266
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 4,
+    "out": [
+     400,
+     263
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 4,
+    "out": [
+     400,
+     263
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 5,
+    "out": [
+     400,
+     260
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 5,
+    "out": [
+     400,
+     260
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 6,
+    "out": [
+     400,
+     256
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 6,
+    "out": [
+     400,
+     256
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 7,
+    "out": [
+     400,
+     256
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": -1,
+    "level": 7,
+    "out": [
+     400,
+     256
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "face": 1,
+    "level": 0,
+    "out": [
+     417,
+     256
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 0,
+    "out": [
+     417,
+     256
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 1,
+    "out": [
+     417,
+     256
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 1,
+    "out": [
+     417,
+     256
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 2,
+    "out": [
+     417,
+     254
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 2,
+    "out": [
+     417,
+     254
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 3,
+    "out": [
+     417,
+     251
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 3,
+    "out": [
+     417,
+     251
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 4,
+    "out": [
+     417,
+     248
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 4,
+    "out": [
+     417,
+     248
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 5,
+    "out": [
+     417,
+     245
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 5,
+    "out": [
+     417,
+     245
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 6,
+    "out": [
+     417,
+     241
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 6,
+    "out": [
+     417,
+     241
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": 1,
+    "level": 7,
+    "out": [
+     417,
+     241
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "face": -1,
+    "level": 7,
+    "out": [
+     417,
+     241
+    ],
+    "recoil": 0,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   }
+  ],
+  "scale": 0.7,
+  "top_y": [
+   {
+    "level": 0,
+    "out": 271,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 1,
+    "out": 271,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 2,
+    "out": 269,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 3,
+    "out": 266,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 4,
+    "out": 259,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 5,
+    "out": 256,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 6,
+    "out": 249,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 7,
+    "out": 249,
+    "type": "archer",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 0,
+    "out": 256,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 1,
+    "out": 256,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 2,
+    "out": 254,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 3,
+    "out": 251,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 4,
+    "out": 244,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 5,
+    "out": 241,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 6,
+    "out": 234,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 7,
+    "out": 234,
+    "type": "archer",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 0,
+    "out": 271,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 1,
+    "out": 271,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 2,
+    "out": 268,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 3,
+    "out": 265,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 4,
+    "out": 260,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 5,
+    "out": 258,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 6,
+    "out": 249,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 7,
+    "out": 249,
+    "type": "cannon",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 0,
+    "out": 256,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 1,
+    "out": 256,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 2,
+    "out": 253,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 3,
+    "out": 250,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 4,
+    "out": 245,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 5,
+    "out": 243,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 6,
+    "out": 234,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 7,
+    "out": 234,
+    "type": "cannon",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 0,
+    "out": 266,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 1,
+    "out": 266,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 2,
+    "out": 264,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 3,
+    "out": 257,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 4,
+    "out": 252,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 5,
+    "out": 252,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 6,
+    "out": 238,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 7,
+    "out": 238,
+    "type": "ice",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 0,
+    "out": 251,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 1,
+    "out": 251,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 2,
+    "out": 249,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 3,
+    "out": 242,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 4,
+    "out": 237,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 5,
+    "out": 237,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 6,
+    "out": 223,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 7,
+    "out": 223,
+    "type": "ice",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 0,
+    "out": 259,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 1,
+    "out": 259,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 2,
+    "out": 257,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 3,
+    "out": 251,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 4,
+    "out": 248,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 5,
+    "out": 247,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 6,
+    "out": 236,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 7,
+    "out": 236,
+    "type": "mage",
+    "x": 400,
+    "y": 300
+   },
+   {
+    "level": 0,
+    "out": 244,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 1,
+    "out": 244,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 2,
+    "out": 242,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 3,
+    "out": 236,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 4,
+    "out": 233,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 5,
+    "out": 232,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 6,
+    "out": 221,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   },
+   {
+    "level": 7,
+    "out": 221,
+    "type": "mage",
+    "x": 417,
+    "y": 285
+   }
+  ]
+ },
+ "classes": {
+  "_NS_archer_tower": [
+   "_clamp_color",
+   "_aacircle",
+   "_aapoly",
+   "_get_palette",
+   "get_archer_bow_position",
+   "get_archer_top_y",
+   "draw_archer",
+   "_draw_archer_full",
+   "_render_base",
+   "_draw_shadow",
+   "_draw_ground_base",
+   "_draw_main_tower",
+   "_draw_chunky_brick",
+   "_draw_battlements",
+   "_draw_merlon",
+   "_draw_platform",
+   "_draw_flags",
+   "_draw_single_flag",
+   "_draw_shield",
+   "_draw_torch",
+   "_draw_arrow_bucket_ground",
+   "_draw_barrel",
+   "_draw_scroll",
+   "_draw_center_roof",
+   "_draw_annex",
+   "_render_archer",
+   "_draw_archer",
+   "_draw_hood",
+   "_draw_helmet_iron",
+   "_draw_helmet_golden",
+   "_draw_cape",
+   "_draw_quiver",
+   "_draw_bow",
+   "_draw_flame_head",
+   "_draw_magic_head",
+   "_draw_magic_aura",
+   "_render_effects"
+  ],
+  "_NS_cannon_tower": [
+   "_clamp_color",
+   "_aacircle",
+   "_aapoly",
+   "_get_palette",
+   "get_cannon_muzzle_position",
+   "get_cannon_top_y",
+   "draw_cannon",
+   "_draw_cannon_full",
+   "_render_base",
+   "_draw_shadow",
+   "_draw_ground_base",
+   "_draw_main_tower",
+   "_draw_chunky_brick",
+   "_draw_battlements",
+   "_draw_merlon",
+   "_draw_shield",
+   "_draw_torch",
+   "_draw_arched_door",
+   "_draw_cannonball_crate",
+   "_draw_ammo_storage",
+   "_draw_annex",
+   "_render_cannon",
+   "_draw_cannon_platform",
+   "_draw_cannon_v2",
+   "_draw_small_cannonball_crate",
+   "_draw_cannon",
+   "_render_effects"
+  ],
+  "_NS_ice_tower": [
+   "_clamp_color",
+   "_aacircle",
+   "_aapoly",
+   "_get_palette",
+   "get_ice_crystal_position",
+   "get_ice_top_y",
+   "draw_ice",
+   "_draw_ice_full",
+   "_render_base",
+   "_draw_shadow",
+   "_draw_ground_base",
+   "_draw_ground_crystals",
+   "_draw_single_crystal",
+   "_draw_main_tower",
+   "_draw_chunky_brick",
+   "_draw_battlements",
+   "_draw_merlon",
+   "_draw_corner_spikes",
+   "_draw_crystal_spike",
+   "_draw_shield",
+   "_draw_crystal_torch",
+   "_draw_glowing_door",
+   "_render_crystal_cluster",
+   "_draw_cluster_tier1",
+   "_draw_cluster_tier2",
+   "_draw_cluster_tier3",
+   "_draw_cluster_tier4",
+   "_draw_simple_crystal",
+   "_draw_mini_crystal",
+   "_draw_crystal_base",
+   "_draw_crystal_group",
+   "_draw_crystal_spike_detailed",
+   "_draw_floating_shards",
+   "_render_effects"
+  ],
+  "_NS_mage_tower": [
+   "_clamp_color",
+   "_aacircle",
+   "_aapoly",
+   "_get_palette",
+   "get_mage_crystal_position",
+   "get_mage_top_y",
+   "draw_mage",
+   "_draw_mage_full",
+   "_render_base",
+   "_draw_shadow",
+   "_draw_ground_base",
+   "_draw_ground_crystals",
+   "_draw_ground_crystal",
+   "_draw_main_tower",
+   "_draw_chunky_brick",
+   "_draw_purple_window",
+   "_draw_main_roof",
+   "_draw_side_tower",
+   "_draw_shield",
+   "_draw_magic_torch",
+   "_draw_glowing_door",
+   "_draw_alchemy_table",
+   "_draw_cauldron",
+   "_render_top_crystal",
+   "_draw_horn_holder",
+   "_draw_crystal_small",
+   "_draw_crystal_medium",
+   "_draw_crystal_twin",
+   "_draw_crystal_legendary",
+   "_draw_faceted_crystal",
+   "_render_effects"
+  ]
+ },
+ "classification": {
+  "archer:HAS_AACIRCLE": {
+   "kind": "bake",
+   "line": 73,
+   "note": "anti-aliasing switch the baked renderer reads",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "pygame.Surface((800, 600)"
+  },
+  "archer:LEVEL_CONFIGS": {
+   "kind": "data",
+   "line": 71,
+   "note": "tower_h / *_tier inputs of the live anchor geometry",
+   "target": "godot_rebuild/data/towers/render_catalog.json",
+   "token": "\"level_configs\""
+  },
+  "archer:_BASE_CACHE": {
+   "kind": "bake",
+   "line": 61,
+   "note": "per-(face, shoot flash) frame memo cleared before every bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "_TOWER_SPRITE_CACHE.clear()"
+  },
+  "archer:_aacircle": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_aapoly": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_clamp_color": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_annex": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_archer": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_archer_full": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_arrow_bucket_ground": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_barrel": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_battlements": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_bow": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_cape": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_center_roof": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_chunky_brick": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_flags": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_flame_head": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_ground_base": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_helmet_golden": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_helmet_iron": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_hood": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_magic_aura": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_magic_head": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_main_tower": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_merlon": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_platform": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_quiver": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_scroll": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_shadow": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_shield": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_single_flag": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_draw_torch": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_get_palette": {
+   "kind": "data",
+   "line": 333,
+   "note": "colour table the bake reads; native copy keeps it inspectable",
+   "target": "godot_rebuild/data/towers/render_catalog.json",
+   "token": "\"palettes\""
+  },
+  "archer:_render_archer": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_render_base": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:_render_effects": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "archer:draw_archer": {
+   "kind": "bake",
+   "line": 57,
+   "note": "body pixels baked per (type, team, level, facing, shoot step)",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower_type, team, level)"
+  },
+  "archer:get_archer_bow_position": {
+   "kind": "native",
+   "line": 102,
+   "note": "bullet spawn point; face/recoil/level clamp are behavioural",
+   "target": "godot_rebuild/scripts/ui/tower_render_catalog.gd",
+   "token": "static func archer_position("
+  },
+  "archer:get_archer_top_y": {
+   "kind": "native",
+   "line": 145,
+   "note": "HP bar anchor; also pinned by the baked `tower_top_y` manifest",
+   "target": "godot_rebuild/scripts/ui/tower_render_catalog.gd",
+   "token": "static func top_y("
+  },
+  "base:FIRE_ORANGE": {
+   "kind": "data",
+   "line": 333,
+   "note": "fire/outline colours used by the palettes of both teams",
+   "target": "godot_rebuild/data/towers/render_catalog.json",
+   "token": "\"palettes\""
+  },
+  "base:FIRE_PINK": {
+   "kind": "data",
+   "line": 333,
+   "note": "fire/outline colours used by the palettes of both teams",
+   "target": "godot_rebuild/data/towers/render_catalog.json",
+   "token": "\"palettes\""
+  },
+  "base:FIRE_PURPLE": {
+   "kind": "data",
+   "line": 333,
+   "note": "fire/outline colours used by the palettes of both teams",
+   "target": "godot_rebuild/data/towers/render_catalog.json",
+   "token": "\"palettes\""
+  },
+  "base:FIRE_YELLOW": {
+   "kind": "data",
+   "line": 333,
+   "note": "fire/outline colours used by the palettes of both teams",
+   "target": "godot_rebuild/data/towers/render_catalog.json",
+   "token": "\"palettes\""
+  },
+  "base:OUTLINE": {
+   "kind": "data",
+   "line": 333,
+   "note": "fire/outline colours used by the palettes of both teams",
+   "target": "godot_rebuild/data/towers/render_catalog.json",
+   "token": "\"palettes\""
+  },
+  "base:draw_aura": {
+   "kind": "dead",
+   "line": 272,
+   "note": "no renderer calls it; the aura is per-namespace `_draw_magic_aura`",
+   "target": "godot_rebuild/tests/towers_source_oracle.py",
+   "token": "def dead_helpers("
+  },
+  "base:draw_ground_shadow": {
+   "kind": "dead",
+   "line": 272,
+   "note": "each namespace has a private `_draw_shadow`/`_draw_ground_base`",
+   "target": "godot_rebuild/tests/towers_source_oracle.py",
+   "token": "def dead_helpers("
+  },
+  "base:draw_metal_plate": {
+   "kind": "dead",
+   "line": 272,
+   "note": "no renderer calls it",
+   "target": "godot_rebuild/tests/towers_source_oracle.py",
+   "token": "def dead_helpers("
+  },
+  "base:draw_muzzle_flash": {
+   "kind": "dead",
+   "line": 272,
+   "note": "the live flash is `_entity.Tower.draw` + `tower_fx_layout.gd`",
+   "target": "godot_rebuild/tests/towers_source_oracle.py",
+   "token": "def dead_helpers("
+  },
+  "base:draw_rivet": {
+   "kind": "dead",
+   "line": 272,
+   "note": "only called by the dead `draw_metal_plate`",
+   "target": "godot_rebuild/tests/towers_source_oracle.py",
+   "token": "def dead_helpers("
+  },
+  "base:draw_shield_emblem": {
+   "kind": "dead",
+   "line": 272,
+   "note": "each namespace has a private `_draw_shield` instead",
+   "target": "godot_rebuild/tests/towers_source_oracle.py",
+   "token": "def dead_helpers("
+  },
+  "base:draw_sparks": {
+   "kind": "dead",
+   "line": 272,
+   "note": "no renderer calls it",
+   "target": "godot_rebuild/tests/towers_source_oracle.py",
+   "token": "def dead_helpers("
+  },
+  "base:draw_stone_block_pattern": {
+   "kind": "dead",
+   "line": 272,
+   "note": "each namespace bakes its own brick pass",
+   "target": "godot_rebuild/tests/towers_source_oracle.py",
+   "token": "def dead_helpers("
+  },
+  "base:draw_torch": {
+   "kind": "dead",
+   "line": 272,
+   "note": "each namespace has a private `_draw_torch` that it actually calls",
+   "target": "godot_rebuild/tests/towers_source_oracle.py",
+   "token": "def dead_helpers("
+  },
+  "base:get_team_palette": {
+   "kind": "dead",
+   "line": 272,
+   "note": "every namespace ships its own `_get_palette`; nothing calls this one",
+   "target": "godot_rebuild/tests/towers_source_oracle.py",
+   "token": "def dead_helpers("
+  },
+  "cannon:HAS_AACIRCLE": {
+   "kind": "bake",
+   "line": 73,
+   "note": "anti-aliasing switch the baked renderer reads",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "pygame.Surface((800, 600)"
+  },
+  "cannon:LEVEL_CONFIGS": {
+   "kind": "data",
+   "line": 71,
+   "note": "tower_h / *_tier inputs of the live anchor geometry",
+   "target": "godot_rebuild/data/towers/render_catalog.json",
+   "token": "\"level_configs\""
+  },
+  "cannon:_BASE_CACHE": {
+   "kind": "bake",
+   "line": 61,
+   "note": "per-(face, shoot flash) frame memo cleared before every bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "_TOWER_SPRITE_CACHE.clear()"
+  },
+  "cannon:_aacircle": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "cannon:_aapoly": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "cannon:_clamp_color": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "cannon:_draw_ammo_storage": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "cannon:_draw_annex": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "cannon:_draw_arched_door": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "cannon:_draw_battlements": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "cannon:_draw_cannon": {
+   "kind": "dead",
+   "line": 272,
+   "note": "unreachable from draw_cannon/get_cannon_muzzle_position/get_cannon_top_y",
+   "target": "godot_rebuild/tests/towers_source_oracle.py",
+   "token": "def dead_helpers("
+  },
+  "cannon:_draw_cannon_full": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "cannon:_draw_cannon_platform": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "cannon:_draw_cannon_v2": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "cannon:_draw_cannonball_crate": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "cannon:_draw_chunky_brick": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "cannon:_draw_ground_base": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "cannon:_draw_main_tower": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "cannon:_draw_merlon": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "cannon:_draw_shadow": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "cannon:_draw_shield": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "cannon:_draw_small_cannonball_crate": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "cannon:_draw_torch": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "cannon:_get_palette": {
+   "kind": "data",
+   "line": 333,
+   "note": "colour table the bake reads; native copy keeps it inspectable",
+   "target": "godot_rebuild/data/towers/render_catalog.json",
+   "token": "\"palettes\""
+  },
+  "cannon:_render_base": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "cannon:_render_cannon": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "cannon:_render_effects": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "cannon:draw_cannon": {
+   "kind": "bake",
+   "line": 57,
+   "note": "body pixels baked per (type, team, level, facing, shoot step)",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower_type, team, level)"
+  },
+  "cannon:get_cannon_muzzle_position": {
+   "kind": "native",
+   "line": 109,
+   "note": "bullet spawn point; face/recoil/level clamp are behavioural",
+   "target": "godot_rebuild/scripts/ui/tower_render_catalog.gd",
+   "token": "static func cannon_position("
+  },
+  "cannon:get_cannon_top_y": {
+   "kind": "native",
+   "line": 145,
+   "note": "HP bar anchor; also pinned by the baked `tower_top_y` manifest",
+   "target": "godot_rebuild/scripts/ui/tower_render_catalog.gd",
+   "token": "static func top_y("
+  },
+  "ice:HAS_AACIRCLE": {
+   "kind": "bake",
+   "line": 73,
+   "note": "anti-aliasing switch the baked renderer reads",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "pygame.Surface((800, 600)"
+  },
+  "ice:LEVEL_CONFIGS": {
+   "kind": "data",
+   "line": 71,
+   "note": "tower_h / *_tier inputs of the live anchor geometry",
+   "target": "godot_rebuild/data/towers/render_catalog.json",
+   "token": "\"level_configs\""
+  },
+  "ice:_BASE_CACHE": {
+   "kind": "bake",
+   "line": 61,
+   "note": "per-(face, shoot flash) frame memo cleared before every bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "_TOWER_SPRITE_CACHE.clear()"
+  },
+  "ice:_aacircle": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_aapoly": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_clamp_color": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_draw_battlements": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_draw_chunky_brick": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_draw_cluster_tier1": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_draw_cluster_tier2": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_draw_cluster_tier3": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_draw_cluster_tier4": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_draw_corner_spikes": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_draw_crystal_base": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_draw_crystal_group": {
+   "kind": "dead",
+   "line": 272,
+   "note": "unreachable from draw_ice/get_ice_crystal_position/get_ice_top_y",
+   "target": "godot_rebuild/tests/towers_source_oracle.py",
+   "token": "def dead_helpers("
+  },
+  "ice:_draw_crystal_spike": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_draw_crystal_spike_detailed": {
+   "kind": "dead",
+   "line": 272,
+   "note": "unreachable from draw_ice/get_ice_crystal_position/get_ice_top_y",
+   "target": "godot_rebuild/tests/towers_source_oracle.py",
+   "token": "def dead_helpers("
+  },
+  "ice:_draw_crystal_torch": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_draw_floating_shards": {
+   "kind": "dead",
+   "line": 272,
+   "note": "unreachable from draw_ice/get_ice_crystal_position/get_ice_top_y",
+   "target": "godot_rebuild/tests/towers_source_oracle.py",
+   "token": "def dead_helpers("
+  },
+  "ice:_draw_glowing_door": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_draw_ground_base": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_draw_ground_crystals": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_draw_ice_full": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_draw_main_tower": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_draw_merlon": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_draw_mini_crystal": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_draw_shadow": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_draw_shield": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_draw_simple_crystal": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_draw_single_crystal": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_get_palette": {
+   "kind": "data",
+   "line": 333,
+   "note": "colour table the bake reads; native copy keeps it inspectable",
+   "target": "godot_rebuild/data/towers/render_catalog.json",
+   "token": "\"palettes\""
+  },
+  "ice:_render_base": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_render_crystal_cluster": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:_render_effects": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "ice:draw_ice": {
+   "kind": "bake",
+   "line": 57,
+   "note": "body pixels baked per (type, team, level, facing, shoot step)",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower_type, team, level)"
+  },
+  "ice:get_ice_crystal_position": {
+   "kind": "native",
+   "line": 120,
+   "note": "bullet spawn point; face/recoil/level clamp are behavioural",
+   "target": "godot_rebuild/scripts/ui/tower_render_catalog.gd",
+   "token": "static func ice_position("
+  },
+  "ice:get_ice_top_y": {
+   "kind": "native",
+   "line": 145,
+   "note": "HP bar anchor; also pinned by the baked `tower_top_y` manifest",
+   "target": "godot_rebuild/scripts/ui/tower_render_catalog.gd",
+   "token": "static func top_y("
+  },
+  "mage:HAS_AACIRCLE": {
+   "kind": "bake",
+   "line": 73,
+   "note": "anti-aliasing switch the baked renderer reads",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "pygame.Surface((800, 600)"
+  },
+  "mage:LEVEL_CONFIGS": {
+   "kind": "data",
+   "line": 71,
+   "note": "tower_h / *_tier inputs of the live anchor geometry",
+   "target": "godot_rebuild/data/towers/render_catalog.json",
+   "token": "\"level_configs\""
+  },
+  "mage:_BASE_CACHE": {
+   "kind": "bake",
+   "line": 61,
+   "note": "per-(face, shoot flash) frame memo cleared before every bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "_TOWER_SPRITE_CACHE.clear()"
+  },
+  "mage:_aacircle": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_aapoly": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_clamp_color": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_draw_alchemy_table": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_draw_cauldron": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_draw_chunky_brick": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_draw_crystal_legendary": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_draw_crystal_medium": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_draw_crystal_small": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_draw_crystal_twin": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_draw_faceted_crystal": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_draw_glowing_door": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_draw_ground_base": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_draw_ground_crystal": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_draw_ground_crystals": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_draw_horn_holder": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_draw_mage_full": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_draw_magic_torch": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_draw_main_roof": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_draw_main_tower": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_draw_purple_window": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_draw_shadow": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_draw_shield": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_draw_side_tower": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_get_palette": {
+   "kind": "data",
+   "line": 333,
+   "note": "colour table the bake reads; native copy keeps it inspectable",
+   "target": "godot_rebuild/data/towers/render_catalog.json",
+   "token": "\"palettes\""
+  },
+  "mage:_render_base": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_render_effects": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:_render_top_crystal": {
+   "kind": "bake",
+   "line": 73,
+   "note": "private draw helper; pixels land in the baked sheet",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower._draw_tower_body("
+  },
+  "mage:draw_mage": {
+   "kind": "bake",
+   "line": 57,
+   "note": "body pixels baked per (type, team, level, facing, shoot step)",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower_type, team, level)"
+  },
+  "mage:get_mage_crystal_position": {
+   "kind": "native",
+   "line": 125,
+   "note": "bullet spawn point; face/recoil/level clamp are behavioural",
+   "target": "godot_rebuild/scripts/ui/tower_render_catalog.gd",
+   "token": "static func mage_position("
+  },
+  "mage:get_mage_top_y": {
+   "kind": "native",
+   "line": 145,
+   "note": "HP bar anchor; also pinned by the baked `tower_top_y` manifest",
+   "target": "godot_rebuild/scripts/ui/tower_render_catalog.gd",
+   "token": "static func top_y("
+  },
+  "module:archer_tower": {
+   "kind": "bake",
+   "line": 24,
+   "note": "namespace body is driven by the real Tower._draw_tower_body",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "TOWER_TYPES = ("
+  },
+  "module:cannon_tower": {
+   "kind": "bake",
+   "line": 24,
+   "note": "namespace body is driven by the real Tower._draw_tower_body",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "TOWER_TYPES = ("
+  },
+  "module:ice_tower": {
+   "kind": "bake",
+   "line": 24,
+   "note": "namespace body is driven by the real Tower._draw_tower_body",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "TOWER_TYPES = ("
+  },
+  "module:mage_tower": {
+   "kind": "bake",
+   "line": 24,
+   "note": "namespace body is driven by the real Tower._draw_tower_body",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "TOWER_TYPES = ("
+  },
+  "shim:TOWER_RENDERERS": {
+   "kind": "native",
+   "line": 25,
+   "note": "registry of the four draw functions",
+   "target": "godot_rebuild/scripts/ui/tower_render_catalog.gd",
+   "token": "const TYPES :="
+  },
+  "shim:_install_aliases": {
+   "kind": "meta",
+   "line": 10,
+   "note": "sys.modules plumbing",
+   "target": "towers/__init__.py",
+   "token": "_install_aliases"
+  },
+  "shim:render_tower": {
+   "kind": "native",
+   "line": 97,
+   "note": "dispatcher replaced by type lookup",
+   "target": "godot_rebuild/scripts/ui/tower_render_catalog.gd",
+   "token": "static func has_type("
+  }
+ },
+ "classification_kinds": {
+  "bake": 125,
+  "data": 13,
+  "dead": 14,
+  "meta": 1,
+  "native": 10
+ },
+ "constants": {
+  "FIRE_ORANGE": [
+   255,
+   150,
+   40
+  ],
+  "FIRE_PINK": [
+   255,
+   100,
+   200
+  ],
+  "FIRE_PURPLE": [
+   200,
+   40,
+   100
+  ],
+  "FIRE_YELLOW": [
+   255,
+   220,
+   100
+  ],
+  "OUTLINE": [
+   30,
+   25,
+   35
+  ]
+ },
+ "dead": {
+  "archer:_aacircle": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_aapoly": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_clamp_color": {
+   "inside": 0,
+   "outside": 198,
+   "reachable": true,
+   "samples": [
+    "heroes/alchemist_fx.py:479",
+    "heroes/alchemist_fx.py:484",
+    "heroes/alchemist_fx.py:502"
+   ]
+  },
+  "archer:_draw_annex": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_archer": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_archer_full": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_arrow_bucket_ground": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_barrel": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_battlements": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_bow": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_cape": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_center_roof": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_chunky_brick": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_flags": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_flame_head": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_ground_base": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_helmet_golden": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_helmet_iron": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_hood": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_magic_aura": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_magic_head": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_main_tower": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_merlon": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_platform": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_quiver": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_scroll": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_shadow": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_shield": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_single_flag": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_draw_torch": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_get_palette": {
+   "inside": 0,
+   "outside": 1,
+   "reachable": true,
+   "samples": [
+    "_entity.py:1830"
+   ]
+  },
+  "archer:_render_archer": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_render_base": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:_render_effects": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:draw_archer": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "archer:get_archer_bow_position": {
+   "inside": 0,
+   "outside": 3,
+   "reachable": true,
+   "samples": [
+    "_entity.py:901",
+    "_entity.py:1149",
+    "_entity.py:949"
+   ]
+  },
+  "archer:get_archer_top_y": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "base:draw_aura": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": false,
+   "samples": []
+  },
+  "base:draw_ground_shadow": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": false,
+   "samples": []
+  },
+  "base:draw_metal_plate": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": false,
+   "samples": []
+  },
+  "base:draw_muzzle_flash": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": false,
+   "samples": []
+  },
+  "base:draw_rivet": {
+   "inside": 1,
+   "outside": 0,
+   "reachable": false,
+   "samples": [
+    "towers/_bundle.py:407"
+   ]
+  },
+  "base:draw_shield_emblem": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": false,
+   "samples": []
+  },
+  "base:draw_sparks": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": false,
+   "samples": []
+  },
+  "base:draw_stone_block_pattern": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": false,
+   "samples": []
+  },
+  "base:draw_torch": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": false,
+   "samples": []
+  },
+  "base:get_team_palette": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": false,
+   "samples": []
+  },
+  "cannon:_aacircle": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "cannon:_aapoly": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "cannon:_clamp_color": {
+   "inside": 0,
+   "outside": 198,
+   "reachable": true,
+   "samples": [
+    "heroes/alchemist_fx.py:479",
+    "heroes/alchemist_fx.py:484",
+    "heroes/alchemist_fx.py:502"
+   ]
+  },
+  "cannon:_draw_ammo_storage": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "cannon:_draw_annex": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "cannon:_draw_arched_door": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "cannon:_draw_battlements": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "cannon:_draw_cannon": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": false,
+   "samples": []
+  },
+  "cannon:_draw_cannon_full": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "cannon:_draw_cannon_platform": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "cannon:_draw_cannon_v2": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "cannon:_draw_cannonball_crate": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "cannon:_draw_chunky_brick": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "cannon:_draw_ground_base": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "cannon:_draw_main_tower": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "cannon:_draw_merlon": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "cannon:_draw_shadow": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "cannon:_draw_shield": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "cannon:_draw_small_cannonball_crate": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "cannon:_draw_torch": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "cannon:_get_palette": {
+   "inside": 0,
+   "outside": 1,
+   "reachable": true,
+   "samples": [
+    "_entity.py:1830"
+   ]
+  },
+  "cannon:_render_base": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "cannon:_render_cannon": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "cannon:_render_effects": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "cannon:draw_cannon": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "cannon:get_cannon_muzzle_position": {
+   "inside": 0,
+   "outside": 1,
+   "reachable": true,
+   "samples": [
+    "_entity.py:969"
+   ]
+  },
+  "cannon:get_cannon_top_y": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_aacircle": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_aapoly": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_clamp_color": {
+   "inside": 0,
+   "outside": 198,
+   "reachable": true,
+   "samples": [
+    "heroes/alchemist_fx.py:479",
+    "heroes/alchemist_fx.py:484",
+    "heroes/alchemist_fx.py:502"
+   ]
+  },
+  "ice:_draw_battlements": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_draw_chunky_brick": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_draw_cluster_tier1": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_draw_cluster_tier2": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_draw_cluster_tier3": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_draw_cluster_tier4": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_draw_corner_spikes": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_draw_crystal_base": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_draw_crystal_group": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": false,
+   "samples": []
+  },
+  "ice:_draw_crystal_spike": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_draw_crystal_spike_detailed": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": false,
+   "samples": []
+  },
+  "ice:_draw_crystal_torch": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_draw_floating_shards": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": false,
+   "samples": []
+  },
+  "ice:_draw_glowing_door": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_draw_ground_base": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_draw_ground_crystals": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_draw_ice_full": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_draw_main_tower": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_draw_merlon": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_draw_mini_crystal": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_draw_shadow": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_draw_shield": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_draw_simple_crystal": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_draw_single_crystal": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_get_palette": {
+   "inside": 0,
+   "outside": 1,
+   "reachable": true,
+   "samples": [
+    "_entity.py:1830"
+   ]
+  },
+  "ice:_render_base": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_render_crystal_cluster": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:_render_effects": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:draw_ice": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "ice:get_ice_crystal_position": {
+   "inside": 0,
+   "outside": 1,
+   "reachable": true,
+   "samples": [
+    "_entity.py:995"
+   ]
+  },
+  "ice:get_ice_top_y": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_aacircle": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_aapoly": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_clamp_color": {
+   "inside": 0,
+   "outside": 198,
+   "reachable": true,
+   "samples": [
+    "heroes/alchemist_fx.py:479",
+    "heroes/alchemist_fx.py:484",
+    "heroes/alchemist_fx.py:502"
+   ]
+  },
+  "mage:_draw_alchemy_table": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_draw_cauldron": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_draw_chunky_brick": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_draw_crystal_legendary": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_draw_crystal_medium": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_draw_crystal_small": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_draw_crystal_twin": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_draw_faceted_crystal": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_draw_glowing_door": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_draw_ground_base": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_draw_ground_crystal": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_draw_ground_crystals": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_draw_horn_holder": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_draw_mage_full": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_draw_magic_torch": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_draw_main_roof": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_draw_main_tower": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_draw_purple_window": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_draw_shadow": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_draw_shield": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_draw_side_tower": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_get_palette": {
+   "inside": 0,
+   "outside": 1,
+   "reachable": true,
+   "samples": [
+    "_entity.py:1830"
+   ]
+  },
+  "mage:_render_base": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_render_effects": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:_render_top_crystal": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:draw_mage": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  },
+  "mage:get_mage_crystal_position": {
+   "inside": 0,
+   "outside": 1,
+   "reachable": true,
+   "samples": [
+    "_entity.py:1022"
+   ]
+  },
+  "mage:get_mage_top_y": {
+   "inside": 0,
+   "outside": 0,
+   "reachable": true,
+   "samples": []
+  }
+ },
+ "dead_helpers": [
+  "base:draw_aura",
+  "base:draw_ground_shadow",
+  "base:draw_metal_plate",
+  "base:draw_muzzle_flash",
+  "base:draw_rivet",
+  "base:draw_shield_emblem",
+  "base:draw_sparks",
+  "base:draw_stone_block_pattern",
+  "base:draw_torch",
+  "base:get_team_palette",
+  "cannon:_draw_cannon",
+  "ice:_draw_crystal_group",
+  "ice:_draw_crystal_spike_detailed",
+  "ice:_draw_floating_shards"
+ ],
+ "dispatch": {
+  "cache_hook_count": 4,
+  "cache_hooks": [
+   "archer",
+   "cannon",
+   "ice",
+   "mage"
+  ],
+  "direct_call": true,
+  "registry": [
+   "archer",
+   "cannon",
+   "ice",
+   "mage"
+  ],
+  "renderers": {
+   "archer": "draw_archer",
+   "cannon": "draw_cannon",
+   "ice": "draw_ice",
+   "mage": "draw_mage"
+  },
+  "spawn_helpers": {
+   "archer": "get_archer_bow_position",
+   "cannon": "get_cannon_muzzle_position",
+   "ice": "get_ice_crystal_position",
+   "mage": "get_mage_crystal_position"
+  },
+  "top_helpers": {
+   "archer": "get_archer_top_y",
+   "cannon": "get_cannon_top_y",
+   "ice": "get_ice_top_y",
+   "mage": "get_mage_top_y"
+  },
+  "warns_on_unknown": true
+ },
+ "entry": {
+  "TOWER_RENDERERS": {
+   "calls": [],
+   "imports": [
+    "tools/convert_to_godot.py:2433"
+   ],
+   "module": "towers"
+  },
+  "get_archer_bow_position": {
+   "calls": [
+    "_entity.py:1149",
+    "_entity.py:901",
+    "_entity.py:949"
+   ],
+   "imports": [
+    "_entity.py:1144"
+   ],
+   "module": "towers.archer_tower"
+  },
+  "get_archer_top_y": {
+   "calls": [],
+   "imports": [
+    "_entity.py:1182"
+   ],
+   "module": "towers.archer_tower"
+  },
+  "get_cannon_muzzle_position": {
+   "calls": [
+    "_entity.py:969"
+   ],
+   "imports": [
+    "_entity.py:967"
+   ],
+   "module": "towers.cannon_tower"
+  },
+  "get_cannon_top_y": {
+   "calls": [],
+   "imports": [
+    "_entity.py:1185"
+   ],
+   "module": "towers.cannon_tower"
+  },
+  "get_ice_crystal_position": {
+   "calls": [
+    "_entity.py:995"
+   ],
+   "imports": [
+    "_entity.py:993"
+   ],
+   "module": "towers.ice_tower"
+  },
+  "get_ice_top_y": {
+   "calls": [],
+   "imports": [
+    "_entity.py:1188"
+   ],
+   "module": "towers.ice_tower"
+  },
+  "get_mage_crystal_position": {
+   "calls": [
+    "_entity.py:1022"
+   ],
+   "imports": [
+    "_entity.py:1016"
+   ],
+   "module": "towers.mage_tower"
+  },
+  "get_mage_top_y": {
+   "calls": [],
+   "imports": [
+    "_entity.py:1191"
+   ],
+   "module": "towers.mage_tower"
+  },
+  "render_tower": {
+   "calls": [
+    "_entity.py:1357",
+    "_entity.py:1376",
+    "tools/convert_to_godot.py:2357"
+   ],
+   "imports": [
+    "_entity.py:1346",
+    "tools/convert_to_godot.py:2341"
+   ],
+   "module": "towers"
+  }
+ },
+ "folder": {
+  "count": 2,
+  "files": {
+   "__init__.py": 94,
+   "_bundle.py": 7274
+  },
+  "lines": 7368
+ },
+ "functions": {
+  "draw_aura": [
+   "surface",
+   "x",
+   "y",
+   "team",
+   "size"
+  ],
+  "draw_ground_shadow": [
+   "surface",
+   "x",
+   "y",
+   "w",
+   "h"
+  ],
+  "draw_metal_plate": [
+   "surface",
+   "x",
+   "y",
+   "w",
+   "h",
+   "palette"
+  ],
+  "draw_muzzle_flash": [
+   "surface",
+   "x",
+   "y",
+   "intensity",
+   "size",
+   "color_style"
+  ],
+  "draw_rivet": [
+   "surface",
+   "x",
+   "y",
+   "palette"
+  ],
+  "draw_shield_emblem": [
+   "surface",
+   "x",
+   "y",
+   "team",
+   "palette"
+  ],
+  "draw_sparks": [
+   "surface",
+   "x",
+   "y",
+   "count",
+   "length",
+   "color"
+  ],
+  "draw_stone_block_pattern": [
+   "surface",
+   "x",
+   "y",
+   "w",
+   "h",
+   "palette",
+   "brick_h"
+  ],
+  "draw_torch": [
+   "surface",
+   "x",
+   "y",
+   "timer",
+   "palette",
+   "team",
+   "side_offset"
+  ],
+  "get_team_palette": [
+   "team"
+  ]
+ },
+ "level_configs": {
+  "archer": {
+   "1": {
+    "annex": false,
+    "archer_tier": "basic",
+    "has_shield": false,
+    "num_flags": 2,
+    "num_torches": 1,
+    "roof_center": false,
+    "tower_h": 38,
+    "tower_w": 46
+   },
+   "2": {
+    "annex": true,
+    "archer_tier": "ranger",
+    "has_shield": true,
+    "num_flags": 2,
+    "num_torches": 1,
+    "roof_center": false,
+    "tower_h": 42,
+    "tower_w": 50
+   },
+   "3": {
+    "annex": true,
+    "archer_tier": "marksman",
+    "has_shield": true,
+    "num_flags": 4,
+    "num_torches": 2,
+    "roof_center": false,
+    "tower_h": 46,
+    "tower_w": 54
+   },
+   "4": {
+    "annex": true,
+    "archer_tier": "elite",
+    "has_shield": true,
+    "num_flags": 4,
+    "num_torches": 2,
+    "roof_center": true,
+    "tower_h": 52,
+    "tower_w": 58
+   },
+   "5": {
+    "annex": true,
+    "archer_tier": "elite_twin",
+    "has_shield": true,
+    "num_flags": 4,
+    "num_torches": 2,
+    "roof_center": true,
+    "tower_h": 56,
+    "tower_w": 62
+   },
+   "6": {
+    "annex": true,
+    "archer_tier": "legendary",
+    "has_shield": true,
+    "num_flags": 4,
+    "num_torches": 2,
+    "roof_center": true,
+    "tower_h": 62,
+    "tower_w": 68
+   }
+  },
+  "cannon": {
+   "1": {
+    "annex": false,
+    "cannon_tier": "basic",
+    "has_ammo": false,
+    "has_shield": false,
+    "num_torches": 1,
+    "snow_drips": false,
+    "tower_h": 38,
+    "tower_w": 46
+   },
+   "2": {
+    "annex": true,
+    "cannon_tier": "basic",
+    "has_ammo": false,
+    "has_shield": true,
+    "num_torches": 1,
+    "snow_drips": false,
+    "tower_h": 42,
+    "tower_w": 50
+   },
+   "3": {
+    "annex": true,
+    "cannon_tier": "bronze",
+    "has_ammo": true,
+    "has_shield": true,
+    "num_torches": 2,
+    "snow_drips": false,
+    "tower_h": 46,
+    "tower_w": 54
+   },
+   "4": {
+    "annex": true,
+    "cannon_tier": "iron",
+    "has_ammo": true,
+    "has_shield": true,
+    "num_torches": 2,
+    "snow_drips": true,
+    "tower_h": 52,
+    "tower_w": 58
+   },
+   "5": {
+    "annex": true,
+    "cannon_tier": "twin",
+    "has_ammo": true,
+    "has_shield": true,
+    "num_torches": 2,
+    "snow_drips": true,
+    "tower_h": 56,
+    "tower_w": 62
+   },
+   "6": {
+    "annex": true,
+    "cannon_tier": "legendary",
+    "has_ammo": true,
+    "has_shield": true,
+    "num_torches": 2,
+    "snow_drips": true,
+    "tower_h": 62,
+    "tower_w": 68
+   }
+  },
+  "ice": {
+   "1": {
+    "corner_spikes": 0,
+    "crystal_tier": "small",
+    "ground_crystals": 0,
+    "has_shield": false,
+    "icicle_rim": false,
+    "num_torches": 0,
+    "tower_h": 40,
+    "tower_w": 46
+   },
+   "2": {
+    "corner_spikes": 0,
+    "crystal_tier": "small",
+    "ground_crystals": 2,
+    "has_shield": true,
+    "icicle_rim": false,
+    "num_torches": 0,
+    "tower_h": 44,
+    "tower_w": 50
+   },
+   "3": {
+    "corner_spikes": 4,
+    "crystal_tier": "medium",
+    "ground_crystals": 4,
+    "has_shield": true,
+    "icicle_rim": false,
+    "num_torches": 0,
+    "tower_h": 48,
+    "tower_w": 54
+   },
+   "4": {
+    "corner_spikes": 4,
+    "crystal_tier": "medium",
+    "ground_crystals": 4,
+    "has_shield": true,
+    "icicle_rim": true,
+    "num_torches": 2,
+    "tower_h": 54,
+    "tower_w": 58
+   },
+   "5": {
+    "corner_spikes": 4,
+    "crystal_tier": "twin",
+    "ground_crystals": 6,
+    "has_shield": true,
+    "icicle_rim": true,
+    "num_torches": 2,
+    "tower_h": 58,
+    "tower_w": 62
+   },
+   "6": {
+    "corner_spikes": 4,
+    "crystal_tier": "legendary",
+    "ground_crystals": 8,
+    "has_shield": true,
+    "icicle_rim": true,
+    "num_torches": 2,
+    "tower_h": 64,
+    "tower_w": 68
+   }
+  },
+  "mage": {
+   "1": {
+    "crystal_tier": "small",
+    "has_alchemy": false,
+    "has_cauldron": false,
+    "has_flags": false,
+    "has_shield": false,
+    "num_ground_crystals": 0,
+    "num_side_towers": 0,
+    "num_torches": 0,
+    "tower_h": 45,
+    "tower_w": 46
+   },
+   "2": {
+    "crystal_tier": "small",
+    "has_alchemy": false,
+    "has_cauldron": true,
+    "has_flags": false,
+    "has_shield": true,
+    "num_ground_crystals": 3,
+    "num_side_towers": 0,
+    "num_torches": 0,
+    "tower_h": 48,
+    "tower_w": 50
+   },
+   "3": {
+    "crystal_tier": "medium",
+    "has_alchemy": true,
+    "has_cauldron": true,
+    "has_flags": true,
+    "has_shield": true,
+    "num_ground_crystals": 4,
+    "num_side_towers": 1,
+    "num_torches": 0,
+    "tower_h": 52,
+    "tower_w": 54
+   },
+   "4": {
+    "crystal_tier": "medium",
+    "has_alchemy": true,
+    "has_cauldron": true,
+    "has_flags": true,
+    "has_shield": true,
+    "num_ground_crystals": 6,
+    "num_side_towers": 2,
+    "num_torches": 2,
+    "tower_h": 56,
+    "tower_w": 58
+   },
+   "5": {
+    "crystal_tier": "twin",
+    "has_alchemy": true,
+    "has_cauldron": true,
+    "has_flags": true,
+    "has_shield": true,
+    "num_ground_crystals": 6,
+    "num_side_towers": 2,
+    "num_torches": 2,
+    "tower_h": 60,
+    "tower_w": 62
+   },
+   "6": {
+    "crystal_tier": "legendary",
+    "has_alchemy": true,
+    "has_cauldron": true,
+    "has_flags": true,
+    "has_shield": true,
+    "num_ground_crystals": 8,
+    "num_side_towers": 2,
+    "num_torches": 2,
+    "tower_h": 66,
+    "tower_w": 68
+   }
+  }
+ },
+ "method_counts": {
+  "archer": 37,
+  "cannon": 27,
+  "ice": 34,
+  "mage": 31
+ },
+ "modules": [
+  {
+   "end": 408,
+   "lines": 379,
+   "module": "base_renderer",
+   "start": 30
+  },
+  {
+   "end": 2194,
+   "lines": 1786,
+   "module": "archer_tower",
+   "start": 409
+  },
+  {
+   "end": 3965,
+   "lines": 1771,
+   "module": "cannon_tower",
+   "start": 2195
+  },
+  {
+   "end": 5674,
+   "lines": 1709,
+   "module": "ice_tower",
+   "start": 3966
+  },
+  {
+   "end": 7274,
+   "lines": 1600,
+   "module": "mage_tower",
+   "start": 5675
+  }
+ ],
+ "palettes": {
+  "archer": {
+   "blue": {
+    "fire_dark": [
+     180,
+     45,
+     15
+    ],
+    "fire_hot": [
+     255,
+     250,
+     200
+    ],
+    "fire_light": [
+     255,
+     220,
+     95
+    ],
+    "fire_mid": [
+     255,
+     130,
+     40
+    ],
+    "gold_dark": [
+     140,
+     95,
+     20
+    ],
+    "gold_high": [
+     255,
+     245,
+     165
+    ],
+    "gold_light": [
+     250,
+     215,
+     90
+    ],
+    "gold_mid": [
+     210,
+     160,
+     45
+    ],
+    "green_dark": [
+     50,
+     95,
+     40
+    ],
+    "green_darkest": [
+     25,
+     55,
+     20
+    ],
+    "green_high": [
+     175,
+     225,
+     135
+    ],
+    "green_light": [
+     130,
+     190,
+     95
+    ],
+    "green_mid": [
+     85,
+     145,
+     60
+    ],
+    "metal_dark": [
+     55,
+     60,
+     72
+    ],
+    "metal_high": [
+     225,
+     232,
+     245
+    ],
+    "metal_light": [
+     175,
+     183,
+     200
+    ],
+    "metal_mid": [
+     110,
+     118,
+     135
+    ],
+    "red_dark": [
+     170,
+     30,
+     30
+    ],
+    "red_darkest": [
+     100,
+     15,
+     15
+    ],
+    "red_high": [
+     255,
+     155,
+     155
+    ],
+    "red_light": [
+     245,
+     95,
+     95
+    ],
+    "red_mid": [
+     215,
+     55,
+     55
+    ],
+    "roof_dark": [
+     40,
+     70,
+     140
+    ],
+    "roof_high": [
+     185,
+     220,
+     250
+    ],
+    "roof_light": [
+     125,
+     170,
+     235
+    ],
+    "roof_mid": [
+     75,
+     115,
+     195
+    ],
+    "shadow": [
+     0,
+     0,
+     0
+    ],
+    "shadow_deep": [
+     15,
+     12,
+     20
+    ],
+    "shine": [
+     255,
+     255,
+     255
+    ],
+    "skin_dark": [
+     170,
+     120,
+     85
+    ],
+    "skin_light": [
+     245,
+     200,
+     165
+    ],
+    "skin_mid": [
+     215,
+     165,
+     125
+    ],
+    "stone_dark": [
+     150,
+     155,
+     168
+    ],
+    "stone_darkest": [
+     110,
+     115,
+     125
+    ],
+    "stone_edge": [
+     55,
+     60,
+     70
+    ],
+    "stone_light": [
+     220,
+     225,
+     235
+    ],
+    "stone_lightest": [
+     245,
+     248,
+     252
+    ],
+    "stone_mid": [
+     190,
+     195,
+     205
+    ],
+    "stone_shadow": [
+     75,
+     80,
+     90
+    ],
+    "wood_dark": [
+     100,
+     60,
+     28
+    ],
+    "wood_darkest": [
+     55,
+     32,
+     15
+    ],
+    "wood_high": [
+     240,
+     190,
+     130
+    ],
+    "wood_light": [
+     200,
+     145,
+     82
+    ],
+    "wood_mid": [
+     150,
+     95,
+     48
+    ]
+   },
+   "red": {
+    "fire_dark": [
+     140,
+     20,
+     90
+    ],
+    "fire_hot": [
+     255,
+     220,
+     255
+    ],
+    "fire_light": [
+     255,
+     135,
+     240
+    ],
+    "fire_mid": [
+     220,
+     55,
+     180
+    ],
+    "gold_dark": [
+     110,
+     72,
+     20
+    ],
+    "gold_high": [
+     245,
+     208,
+     130
+    ],
+    "gold_light": [
+     215,
+     168,
+     75
+    ],
+    "gold_mid": [
+     170,
+     118,
+     42
+    ],
+    "green_dark": [
+     95,
+     25,
+     30
+    ],
+    "green_darkest": [
+     55,
+     15,
+     20
+    ],
+    "green_high": [
+     225,
+     115,
+     120
+    ],
+    "green_light": [
+     190,
+     75,
+     80
+    ],
+    "green_mid": [
+     145,
+     45,
+     50
+    ],
+    "metal_dark": [
+     50,
+     38,
+     38
+    ],
+    "metal_high": [
+     210,
+     180,
+     180
+    ],
+    "metal_light": [
+     160,
+     128,
+     128
+    ],
+    "metal_mid": [
+     100,
+     78,
+     78
+    ],
+    "red_dark": [
+     110,
+     22,
+     25
+    ],
+    "red_darkest": [
+     60,
+     10,
+     12
+    ],
+    "red_high": [
+     245,
+     130,
+     130
+    ],
+    "red_light": [
+     215,
+     75,
+     78
+    ],
+    "red_mid": [
+     165,
+     42,
+     45
+    ],
+    "roof_dark": [
+     95,
+     20,
+     25
+    ],
+    "roof_high": [
+     245,
+     135,
+     140
+    ],
+    "roof_light": [
+     210,
+     80,
+     85
+    ],
+    "roof_mid": [
+     155,
+     45,
+     50
+    ],
+    "shadow": [
+     0,
+     0,
+     0
+    ],
+    "shadow_deep": [
+     10,
+     5,
+     8
+    ],
+    "shine": [
+     255,
+     240,
+     240
+    ],
+    "skin_dark": [
+     150,
+     105,
+     85
+    ],
+    "skin_light": [
+     220,
+     180,
+     160
+    ],
+    "skin_mid": [
+     190,
+     145,
+     125
+    ],
+    "stone_dark": [
+     125,
+     100,
+     100
+    ],
+    "stone_darkest": [
+     85,
+     65,
+     65
+    ],
+    "stone_edge": [
+     38,
+     28,
+     28
+    ],
+    "stone_light": [
+     205,
+     175,
+     175
+    ],
+    "stone_lightest": [
+     235,
+     210,
+     210
+    ],
+    "stone_mid": [
+     170,
+     140,
+     140
+    ],
+    "stone_shadow": [
+     55,
+     42,
+     42
+    ],
+    "wood_dark": [
+     80,
+     45,
+     22
+    ],
+    "wood_darkest": [
+     40,
+     22,
+     12
+    ],
+    "wood_high": [
+     215,
+     158,
+     100
+    ],
+    "wood_light": [
+     170,
+     110,
+     62
+    ],
+    "wood_mid": [
+     125,
+     75,
+     40
+    ]
+   }
+  },
+  "cannon": {
+   "blue": {
+    "ball_dark": [
+     25,
+     28,
+     35
+    ],
+    "ball_light": [
+     95,
+     105,
+     120
+    ],
+    "ball_mid": [
+     55,
+     62,
+     75
+    ],
+    "ball_shine": [
+     170,
+     180,
+     195
+    ],
+    "fire_dark": [
+     180,
+     45,
+     15
+    ],
+    "fire_hot": [
+     255,
+     250,
+     200
+    ],
+    "fire_light": [
+     255,
+     220,
+     95
+    ],
+    "fire_mid": [
+     255,
+     130,
+     40
+    ],
+    "gold_dark": [
+     150,
+     105,
+     25
+    ],
+    "gold_darkest": [
+     95,
+     60,
+     12
+    ],
+    "gold_high": [
+     255,
+     245,
+     165
+    ],
+    "gold_light": [
+     250,
+     215,
+     90
+    ],
+    "gold_mid": [
+     210,
+     160,
+     50
+    ],
+    "iron_dark": [
+     40,
+     45,
+     55
+    ],
+    "iron_darkest": [
+     18,
+     20,
+     25
+    ],
+    "iron_high": [
+     185,
+     192,
+     210
+    ],
+    "iron_light": [
+     130,
+     138,
+     155
+    ],
+    "iron_mid": [
+     75,
+     82,
+     95
+    ],
+    "metal_dark": [
+     55,
+     60,
+     72
+    ],
+    "metal_high": [
+     225,
+     232,
+     245
+    ],
+    "metal_light": [
+     175,
+     183,
+     200
+    ],
+    "metal_mid": [
+     110,
+     118,
+     135
+    ],
+    "roof_dark": [
+     40,
+     70,
+     140
+    ],
+    "roof_high": [
+     185,
+     220,
+     250
+    ],
+    "roof_light": [
+     125,
+     170,
+     235
+    ],
+    "roof_mid": [
+     75,
+     115,
+     195
+    ],
+    "shadow": [
+     0,
+     0,
+     0
+    ],
+    "shadow_deep": [
+     15,
+     12,
+     20
+    ],
+    "shield_dark": [
+     45,
+     80,
+     155
+    ],
+    "shield_darkest": [
+     25,
+     45,
+     100
+    ],
+    "shield_light": [
+     125,
+     170,
+     235
+    ],
+    "shield_mid": [
+     75,
+     120,
+     200
+    ],
+    "shine": [
+     255,
+     255,
+     255
+    ],
+    "smoke_dark": [
+     60,
+     60,
+     70
+    ],
+    "smoke_light": [
+     200,
+     200,
+     210
+    ],
+    "smoke_mid": [
+     140,
+     140,
+     155
+    ],
+    "snow_dark": [
+     200,
+     220,
+     235
+    ],
+    "snow_light": [
+     250,
+     253,
+     255
+    ],
+    "snow_mid": [
+     230,
+     240,
+     250
+    ],
+    "stone_dark": [
+     150,
+     155,
+     168
+    ],
+    "stone_darkest": [
+     110,
+     115,
+     125
+    ],
+    "stone_edge": [
+     55,
+     60,
+     70
+    ],
+    "stone_light": [
+     220,
+     225,
+     235
+    ],
+    "stone_lightest": [
+     245,
+     248,
+     252
+    ],
+    "stone_mid": [
+     190,
+     195,
+     205
+    ],
+    "stone_shadow": [
+     75,
+     80,
+     90
+    ],
+    "wood_dark": [
+     100,
+     60,
+     28
+    ],
+    "wood_darkest": [
+     55,
+     32,
+     15
+    ],
+    "wood_high": [
+     240,
+     190,
+     130
+    ],
+    "wood_light": [
+     200,
+     145,
+     82
+    ],
+    "wood_mid": [
+     150,
+     95,
+     48
+    ]
+   },
+   "red": {
+    "ball_dark": [
+     30,
+     15,
+     18
+    ],
+    "ball_light": [
+     105,
+     75,
+     78
+    ],
+    "ball_mid": [
+     60,
+     35,
+     38
+    ],
+    "ball_shine": [
+     175,
+     145,
+     148
+    ],
+    "fire_dark": [
+     140,
+     20,
+     90
+    ],
+    "fire_hot": [
+     255,
+     220,
+     255
+    ],
+    "fire_light": [
+     255,
+     135,
+     240
+    ],
+    "fire_mid": [
+     220,
+     55,
+     180
+    ],
+    "gold_dark": [
+     125,
+     78,
+     20
+    ],
+    "gold_darkest": [
+     75,
+     42,
+     8
+    ],
+    "gold_high": [
+     250,
+     210,
+     130
+    ],
+    "gold_light": [
+     225,
+     172,
+     72
+    ],
+    "gold_mid": [
+     180,
+     122,
+     42
+    ],
+    "iron_dark": [
+     50,
+     30,
+     32
+    ],
+    "iron_darkest": [
+     25,
+     15,
+     18
+    ],
+    "iron_high": [
+     195,
+     160,
+     162
+    ],
+    "iron_light": [
+     140,
+     105,
+     108
+    ],
+    "iron_mid": [
+     90,
+     60,
+     62
+    ],
+    "metal_dark": [
+     50,
+     38,
+     38
+    ],
+    "metal_high": [
+     210,
+     180,
+     180
+    ],
+    "metal_light": [
+     160,
+     128,
+     128
+    ],
+    "metal_mid": [
+     100,
+     78,
+     78
+    ],
+    "roof_dark": [
+     95,
+     20,
+     25
+    ],
+    "roof_high": [
+     245,
+     135,
+     140
+    ],
+    "roof_light": [
+     210,
+     80,
+     85
+    ],
+    "roof_mid": [
+     155,
+     45,
+     50
+    ],
+    "shadow": [
+     0,
+     0,
+     0
+    ],
+    "shadow_deep": [
+     10,
+     5,
+     8
+    ],
+    "shield_dark": [
+     130,
+     30,
+     35
+    ],
+    "shield_darkest": [
+     75,
+     15,
+     20
+    ],
+    "shield_light": [
+     225,
+     100,
+     105
+    ],
+    "shield_mid": [
+     185,
+     55,
+     60
+    ],
+    "shine": [
+     255,
+     240,
+     240
+    ],
+    "smoke_dark": [
+     60,
+     45,
+     55
+    ],
+    "smoke_light": [
+     200,
+     175,
+     185
+    ],
+    "smoke_mid": [
+     140,
+     115,
+     125
+    ],
+    "snow_dark": [
+     200,
+     210,
+     220
+    ],
+    "snow_light": [
+     245,
+     248,
+     252
+    ],
+    "snow_mid": [
+     225,
+     232,
+     240
+    ],
+    "stone_dark": [
+     125,
+     100,
+     100
+    ],
+    "stone_darkest": [
+     85,
+     65,
+     65
+    ],
+    "stone_edge": [
+     38,
+     28,
+     28
+    ],
+    "stone_light": [
+     205,
+     175,
+     175
+    ],
+    "stone_lightest": [
+     235,
+     210,
+     210
+    ],
+    "stone_mid": [
+     170,
+     140,
+     140
+    ],
+    "stone_shadow": [
+     55,
+     42,
+     42
+    ],
+    "wood_dark": [
+     80,
+     45,
+     22
+    ],
+    "wood_darkest": [
+     40,
+     22,
+     12
+    ],
+    "wood_high": [
+     215,
+     158,
+     100
+    ],
+    "wood_light": [
+     170,
+     110,
+     62
+    ],
+    "wood_mid": [
+     125,
+     75,
+     40
+    ]
+   }
+  },
+  "ice": {
+   "blue": {
+    "crystal_dark": [
+     55,
+     130,
+     220
+    ],
+    "crystal_darkest": [
+     25,
+     80,
+     160
+    ],
+    "crystal_high": [
+     210,
+     240,
+     255
+    ],
+    "crystal_light": [
+     160,
+     220,
+     255
+    ],
+    "crystal_mid": [
+     100,
+     180,
+     250
+    ],
+    "crystal_shine": [
+     245,
+     252,
+     255
+    ],
+    "door_glow_dark": [
+     30,
+     80,
+     180
+    ],
+    "door_glow_light": [
+     150,
+     210,
+     255
+    ],
+    "door_glow_mid": [
+     80,
+     160,
+     240
+    ],
+    "glow_dark": [
+     40,
+     100,
+     200
+    ],
+    "glow_hot": [
+     200,
+     235,
+     255
+    ],
+    "glow_light": [
+     140,
+     210,
+     255
+    ],
+    "glow_mid": [
+     80,
+     170,
+     240
+    ],
+    "gold_dark": [
+     150,
+     105,
+     25
+    ],
+    "gold_darkest": [
+     95,
+     60,
+     12
+    ],
+    "gold_high": [
+     255,
+     245,
+     165
+    ],
+    "gold_light": [
+     250,
+     215,
+     90
+    ],
+    "gold_mid": [
+     210,
+     160,
+     50
+    ],
+    "shadow": [
+     0,
+     0,
+     0
+    ],
+    "shadow_deep": [
+     10,
+     15,
+     30
+    ],
+    "shield_dark": [
+     40,
+     75,
+     150
+    ],
+    "shield_darkest": [
+     20,
+     40,
+     90
+    ],
+    "shield_light": [
+     120,
+     165,
+     235
+    ],
+    "shield_mid": [
+     70,
+     115,
+     200
+    ],
+    "shine": [
+     255,
+     255,
+     255
+    ],
+    "snow_dark": [
+     200,
+     220,
+     240
+    ],
+    "snow_light": [
+     250,
+     253,
+     255
+    ],
+    "snow_mid": [
+     230,
+     240,
+     250
+    ],
+    "stone_dark": [
+     135,
+     150,
+     175
+    ],
+    "stone_darkest": [
+     95,
+     110,
+     130
+    ],
+    "stone_edge": [
+     45,
+     55,
+     75
+    ],
+    "stone_light": [
+     210,
+     225,
+     240
+    ],
+    "stone_lightest": [
+     240,
+     248,
+     255
+    ],
+    "stone_mid": [
+     175,
+     190,
+     215
+    ],
+    "stone_shadow": [
+     65,
+     78,
+     100
+    ],
+    "wood_dark": [
+     100,
+     60,
+     28
+    ],
+    "wood_darkest": [
+     55,
+     32,
+     15
+    ],
+    "wood_light": [
+     200,
+     145,
+     82
+    ],
+    "wood_mid": [
+     150,
+     95,
+     48
+    ]
+   },
+   "red": {
+    "crystal_dark": [
+     170,
+     40,
+     100
+    ],
+    "crystal_darkest": [
+     100,
+     20,
+     60
+    ],
+    "crystal_high": [
+     255,
+     190,
+     225
+    ],
+    "crystal_light": [
+     245,
+     130,
+     200
+    ],
+    "crystal_mid": [
+     220,
+     80,
+     150
+    ],
+    "crystal_shine": [
+     255,
+     235,
+     250
+    ],
+    "door_glow_dark": [
+     140,
+     20,
+     80
+    ],
+    "door_glow_light": [
+     245,
+     130,
+     200
+    ],
+    "door_glow_mid": [
+     210,
+     60,
+     140
+    ],
+    "glow_dark": [
+     140,
+     30,
+     90
+    ],
+    "glow_hot": [
+     255,
+     200,
+     230
+    ],
+    "glow_light": [
+     240,
+     130,
+     190
+    ],
+    "glow_mid": [
+     200,
+     70,
+     140
+    ],
+    "gold_dark": [
+     125,
+     78,
+     20
+    ],
+    "gold_darkest": [
+     75,
+     42,
+     8
+    ],
+    "gold_high": [
+     250,
+     210,
+     130
+    ],
+    "gold_light": [
+     225,
+     172,
+     72
+    ],
+    "gold_mid": [
+     180,
+     122,
+     42
+    ],
+    "shadow": [
+     0,
+     0,
+     0
+    ],
+    "shadow_deep": [
+     15,
+     5,
+     15
+    ],
+    "shield_dark": [
+     140,
+     30,
+     70
+    ],
+    "shield_darkest": [
+     80,
+     15,
+     40
+    ],
+    "shield_light": [
+     235,
+     100,
+     165
+    ],
+    "shield_mid": [
+     195,
+     55,
+     115
+    ],
+    "shine": [
+     255,
+     240,
+     250
+    ],
+    "snow_dark": [
+     210,
+     200,
+     220
+    ],
+    "snow_light": [
+     250,
+     245,
+     252
+    ],
+    "snow_mid": [
+     235,
+     225,
+     240
+    ],
+    "stone_dark": [
+     140,
+     120,
+     150
+    ],
+    "stone_darkest": [
+     100,
+     80,
+     110
+    ],
+    "stone_edge": [
+     45,
+     30,
+     55
+    ],
+    "stone_light": [
+     215,
+     195,
+     220
+    ],
+    "stone_lightest": [
+     240,
+     225,
+     245
+    ],
+    "stone_mid": [
+     180,
+     160,
+     190
+    ],
+    "stone_shadow": [
+     65,
+     50,
+     75
+    ],
+    "wood_dark": [
+     80,
+     45,
+     22
+    ],
+    "wood_darkest": [
+     40,
+     22,
+     12
+    ],
+    "wood_light": [
+     170,
+     110,
+     62
+    ],
+    "wood_mid": [
+     125,
+     75,
+     40
+    ]
+   }
+  },
+  "mage": {
+   "blue": {
+    "flag_dark": [
+     100,
+     40,
+     145
+    ],
+    "flag_darkest": [
+     60,
+     20,
+     90
+    ],
+    "flag_light": [
+     205,
+     130,
+     235
+    ],
+    "flag_mid": [
+     155,
+     75,
+     205
+    ],
+    "glow_dark": [
+     100,
+     30,
+     150
+    ],
+    "glow_hot": [
+     250,
+     200,
+     255
+    ],
+    "glow_light": [
+     220,
+     140,
+     250
+    ],
+    "glow_mid": [
+     170,
+     70,
+     220
+    ],
+    "gold_dark": [
+     150,
+     105,
+     25
+    ],
+    "gold_darkest": [
+     95,
+     60,
+     12
+    ],
+    "gold_high": [
+     255,
+     245,
+     165
+    ],
+    "gold_light": [
+     250,
+     215,
+     90
+    ],
+    "gold_mid": [
+     210,
+     160,
+     50
+    ],
+    "magic_dark": [
+     110,
+     40,
+     170
+    ],
+    "magic_darkest": [
+     60,
+     20,
+     100
+    ],
+    "magic_high": [
+     245,
+     190,
+     255
+    ],
+    "magic_light": [
+     215,
+     130,
+     245
+    ],
+    "magic_mid": [
+     170,
+     80,
+     220
+    ],
+    "magic_shine": [
+     255,
+     230,
+     255
+    ],
+    "metal_dark": [
+     40,
+     40,
+     55
+    ],
+    "metal_high": [
+     200,
+     200,
+     220
+    ],
+    "metal_light": [
+     145,
+     145,
+     170
+    ],
+    "metal_mid": [
+     85,
+     85,
+     105
+    ],
+    "potion_green": [
+     80,
+     220,
+     130
+    ],
+    "potion_green_dark": [
+     30,
+     140,
+     60
+    ],
+    "potion_teal": [
+     80,
+     200,
+     220
+    ],
+    "potion_teal_dark": [
+     30,
+     130,
+     150
+    ],
+    "roof_dark": [
+     55,
+     75,
+     140
+    ],
+    "roof_darkest": [
+     30,
+     40,
+     90
+    ],
+    "roof_high": [
+     190,
+     220,
+     250
+    ],
+    "roof_light": [
+     140,
+     175,
+     230
+    ],
+    "roof_mid": [
+     95,
+     120,
+     190
+    ],
+    "shadow": [
+     0,
+     0,
+     0
+    ],
+    "shadow_deep": [
+     10,
+     5,
+     15
+    ],
+    "shine": [
+     255,
+     255,
+     255
+    ],
+    "stone_dark": [
+     140,
+     135,
+     160
+    ],
+    "stone_darkest": [
+     100,
+     95,
+     115
+    ],
+    "stone_edge": [
+     50,
+     45,
+     65
+    ],
+    "stone_light": [
+     215,
+     210,
+     230
+    ],
+    "stone_lightest": [
+     240,
+     238,
+     250
+    ],
+    "stone_mid": [
+     180,
+     175,
+     200
+    ],
+    "stone_shadow": [
+     70,
+     65,
+     85
+    ],
+    "wood_dark": [
+     100,
+     60,
+     28
+    ],
+    "wood_darkest": [
+     55,
+     32,
+     15
+    ],
+    "wood_high": [
+     240,
+     190,
+     130
+    ],
+    "wood_light": [
+     200,
+     145,
+     82
+    ],
+    "wood_mid": [
+     150,
+     95,
+     48
+    ]
+   },
+   "red": {
+    "flag_dark": [
+     135,
+     30,
+     45
+    ],
+    "flag_darkest": [
+     80,
+     15,
+     25
+    ],
+    "flag_light": [
+     240,
+     115,
+     140
+    ],
+    "flag_mid": [
+     195,
+     60,
+     80
+    ],
+    "glow_dark": [
+     140,
+     20,
+     50
+    ],
+    "glow_hot": [
+     255,
+     200,
+     220
+    ],
+    "glow_light": [
+     250,
+     130,
+     170
+    ],
+    "glow_mid": [
+     215,
+     55,
+     90
+    ],
+    "gold_dark": [
+     125,
+     78,
+     20
+    ],
+    "gold_darkest": [
+     75,
+     42,
+     8
+    ],
+    "gold_high": [
+     250,
+     210,
+     130
+    ],
+    "gold_light": [
+     225,
+     172,
+     72
+    ],
+    "gold_mid": [
+     180,
+     122,
+     42
+    ],
+    "magic_dark": [
+     170,
+     30,
+     60
+    ],
+    "magic_darkest": [
+     100,
+     15,
+     30
+    ],
+    "magic_high": [
+     255,
+     180,
+     210
+    ],
+    "magic_light": [
+     250,
+     120,
+     160
+    ],
+    "magic_mid": [
+     220,
+     60,
+     100
+    ],
+    "magic_shine": [
+     255,
+     230,
+     240
+    ],
+    "metal_dark": [
+     45,
+     35,
+     40
+    ],
+    "metal_high": [
+     210,
+     180,
+     185
+    ],
+    "metal_light": [
+     155,
+     130,
+     135
+    ],
+    "metal_mid": [
+     95,
+     75,
+     80
+    ],
+    "potion_green": [
+     220,
+     80,
+     120
+    ],
+    "potion_green_dark": [
+     140,
+     30,
+     60
+    ],
+    "potion_teal": [
+     220,
+     80,
+     100
+    ],
+    "potion_teal_dark": [
+     150,
+     30,
+     50
+    ],
+    "roof_dark": [
+     135,
+     40,
+     55
+    ],
+    "roof_darkest": [
+     80,
+     20,
+     30
+    ],
+    "roof_high": [
+     255,
+     175,
+     200
+    ],
+    "roof_light": [
+     240,
+     115,
+     145
+    ],
+    "roof_mid": [
+     195,
+     65,
+     90
+    ],
+    "shadow": [
+     0,
+     0,
+     0
+    ],
+    "shadow_deep": [
+     15,
+     5,
+     10
+    ],
+    "shine": [
+     255,
+     240,
+     240
+    ],
+    "stone_dark": [
+     130,
+     110,
+     115
+    ],
+    "stone_darkest": [
+     90,
+     75,
+     80
+    ],
+    "stone_edge": [
+     40,
+     25,
+     30
+    ],
+    "stone_light": [
+     210,
+     190,
+     195
+    ],
+    "stone_lightest": [
+     240,
+     220,
+     225
+    ],
+    "stone_mid": [
+     170,
+     150,
+     155
+    ],
+    "stone_shadow": [
+     60,
+     45,
+     50
+    ],
+    "wood_dark": [
+     80,
+     45,
+     22
+    ],
+    "wood_darkest": [
+     40,
+     22,
+     12
+    ],
+    "wood_high": [
+     215,
+     158,
+     100
+    ],
+    "wood_light": [
+     170,
+     110,
+     62
+    ],
+    "wood_mid": [
+     125,
+     75,
+     40
+    ]
+   }
+  }
+ },
+ "symbol_count": 163
+}
