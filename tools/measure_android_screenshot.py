@@ -19,11 +19,18 @@ Manual tool (needs Pillow), not part of CI:
 
     python -m pip install pillow
     python tools/measure_android_screenshot.py --write
+    python tools/measure_android_screenshot.py --self-test
+    python tools/measure_android_screenshot.py --compare shot.png --kind match
+
+`--compare` diffs any capture of the same screen (Pygame or Godot, any
+resolution) against the source layout, so a PC capture can be checked against
+the phone oracle with one command.
 """
 from __future__ import annotations
 
 import argparse
 import json
+import tempfile
 from pathlib import Path
 
 from PIL import Image
@@ -218,6 +225,10 @@ MENU_BUTTONS = {
     "quit": (460.0, 629.0, 360.0, 50.0),
 }
 
+TACTICAL_EXPECT = [
+    (1300.0, 288.0 + 38.0 * index, 304.0, 32.0) for index in range(5)
+]
+
 PANEL_BOXES = {
     # `mobile/sidepanel.py`: STATUS at y=84 (h 96), HEROES at y=190 (h 64),
     # TACTICAL at y=264 (h 210), all PAD=14 and 316 wide.
@@ -233,33 +244,57 @@ def rect_from_borders(rows: list, cols: list, index: int) -> list:
     return [cols[0], top, round(cols[-1] - cols[0] + 1.0, 1), round(bottom - top, 1)]
 
 
+def measure_menu_layout(shot: Shot) -> dict:
+    """Measured rect of every main-menu button on one capture."""
+    return {name: measure_button(shot, rect)["measured"] for name, rect in MENU_BUTTONS.items()}
+
+
+def measure_match_layout(shot: Shot) -> dict:
+    """Measured rect of the dock: panel, PAUSE ring, HUD boxes and tactical rows."""
+    rows = box_border_rows(shot)
+    cols = box_border_cols(shot, 130.0)
+    width = float(panel_width(shot.logical_width))
+    out = {}
+    out["panel"] = [round(cols[0] - 14.0, 1), 0.0, width, 720.0] if cols else [0.0, 0.0, 0.0, 0.0]
+    out["pause"] = pause_box(shot)
+    for index, name in enumerate(PANEL_BOXES):
+        if len(rows) >= (index + 1) * 2 and len(cols) >= 2:
+            out[name] = rect_from_borders(rows, cols, index)
+        else:
+            out[name] = [0.0, 0.0, 0.0, 0.0]
+    grey = grey_rows(shot)
+    button_x = column_bounds(shot, 302.0, dark=False)
+    for index, (top, bottom) in enumerate(grey[: len(TACTICAL_EXPECT)]):
+        if button_x[1] <= button_x[0]:
+            out["tactical_%d" % index] = [0.0, 0.0, 0.0, 0.0]
+            continue
+        # the 2 px frame is excluded from the flat fill band
+        out["tactical_%d" % index] = [
+            round(button_x[0] - 2.0, 1),
+            round(top - 2.0, 1),
+            round(button_x[1] - button_x[0] + 4.0, 1),
+            round(bottom - top + 4.0, 1),
+        ]
+    return out
+
+
 def build_fixture() -> dict:
     menu = Shot(SHOTS / "menu.jpg")
     match = Shot(SHOTS / "match.jpg")
-    rows = box_border_rows(match)
-    cols = box_border_cols(match, 130.0)
-    boxes = {}
-    for index, (name, expect) in enumerate(PANEL_BOXES.items()):
-        measured = rect_from_borders(rows, cols, index) if len(rows) >= (index + 1) * 2 else list(expect)
-        boxes[name] = {"expect": list(expect), "measured": measured}
-    grey = grey_rows(match)
-    button_x = column_bounds(match, 302.0, dark=False)
-    buttons = []
-    for index, (top, bottom) in enumerate(grey):
-        expect_y = 288.0 + index * 38.0
-        buttons.append(
-            {
-                "index": index,
-                "expect": [1300.0, expect_y, 304.0, 32.0],
-                # the 2 px frame is excluded from the flat fill band
-                "measured": [
-                    round(button_x[0] - 2.0, 1),
-                    round(top - 2.0, 1),
-                    round(button_x[1] - button_x[0] + 4.0, 1),
-                    round(bottom - top + 4.0, 1),
-                ],
-            }
-        )
+    dock = measure_match_layout(match)
+    boxes = {
+        name: {"expect": list(expect), "measured": dock[name]}
+        for name, expect in PANEL_BOXES.items()
+    }
+    buttons = [
+        {
+            "index": index,
+            "expect": list(expect),
+            "measured": dock.get("tactical_%d" % index, [0.0, 0.0, 0.0, 0.0]),
+        }
+        for index, expect in enumerate(TACTICAL_EXPECT)
+    ]
+    width = float(panel_width(menu.logical_width))
     return {
         "device": {
             "px": [menu.width, menu.height],
@@ -278,16 +313,8 @@ def build_fixture() -> dict:
         },
         "match": {
             "image": str((SHOTS / "match.jpg").relative_to(ROOT)),
-            "panel": {
-                "expect": [1280.0, 0.0, float(panel_width(menu.logical_width)), 720.0],
-                "measured": [
-                    cols[0] - 14.0 if cols else 0.0,
-                    0.0,
-                    float(panel_width(menu.logical_width)),
-                    720.0,
-                ],
-            },
-            "pause": {"expect": [1294.0, 14.0, 58.0, 58.0], "measured": pause_box(match)},
+            "panel": {"expect": [1280.0, 0.0, width, 720.0], "measured": dock["panel"]},
+            "pause": {"expect": [1294.0, 14.0, 58.0, 58.0], "measured": dock["pause"]},
             "boxes": boxes,
             "tactical_buttons": buttons,
             "colors": {
@@ -308,41 +335,109 @@ def build_fixture() -> dict:
     }
 
 
-def report(fixture: dict) -> None:
-    deltas = []
-    for name, entry in fixture["menu"]["buttons"].items():
-        for got, want in zip(entry["measured"], entry["expect"]):
-            deltas.append((abs(got - want), "menu." + name))
-    deltas.append(
-        (
-            abs(fixture["match"]["panel"]["measured"][0] - fixture["match"]["panel"]["expect"][0]),
-            "match.panel",
+def expected_layout(kind: str) -> dict:
+    """The source rects a capture of `kind` has to reproduce, in logical px."""
+    if kind == "menu":
+        return dict(MENU_BUTTONS)
+    expect = {
+        "panel": (1280.0, 0.0, 344.0, 720.0),
+        "pause": (1294.0, 14.0, 58.0, 58.0),
+    }
+    expect.update(PANEL_BOXES)
+    for index, rect in enumerate(TACTICAL_EXPECT):
+        expect["tactical_%d" % index] = rect
+    return expect
+
+
+def measure_layout(shot: Shot, kind: str) -> dict:
+    return measure_menu_layout(shot) if kind == "menu" else measure_match_layout(shot)
+
+
+def compare(path: Path, kind: str, tolerance: float) -> int:
+    """Diff one capture (Pygame or Godot, any resolution) against the source layout."""
+    shot = Shot(path)
+    expect = expected_layout(kind)
+    measured = measure_layout(shot, kind)
+    print(
+        "%s: %s  (%dx%d, scale %.2f, logical %dx%d)"
+        % (
+            kind,
+            path,
+            shot.width,
+            shot.height,
+            shot.scale,
+            shot.logical_width,
+            LOGICAL_HEIGHT,
         )
     )
-    for name, entry in fixture["match"]["boxes"].items():
-        for got, want in zip(entry["measured"], entry["expect"]):
-            deltas.append((abs(got - want), "match.boxes." + name))
-    for got, want in zip(fixture["match"]["pause"]["measured"], fixture["match"]["pause"]["expect"]):
-        deltas.append((abs(got - want), "match.pause"))
-    for entry in fixture["match"]["tactical_buttons"]:
-        for got, want in zip(entry["measured"], entry["expect"]):
-            deltas.append((abs(got - want), "match.tactical_button[%d]" % entry["index"]))
-    deltas.sort(reverse=True)
-    print("worst deltas (px, logical):")
-    for delta, label in deltas[:8]:
-        print("  %5.1f  %s" % (delta, label))
-    worst = deltas[0][0] if deltas else 0.0
-    print("worst delta overall: %.1f px" % worst)
-    if worst > 3.0:
-        raise SystemExit("layout and screenshot disagree by more than 3 logical px")
+    print("  %-22s %-26s %-26s %s" % ("element", "source", "measured", "max delta"))
+    worst = 0.0
+    missing = []
+    for name, want in expect.items():
+        got = measured.get(name, [0.0, 0.0, 0.0, 0.0])
+        if float(got[2]) <= 0.0 or float(got[3]) <= 0.0:
+            missing.append(name)
+            continue
+        delta = max(abs(float(a) - float(b)) for a, b in zip(got, want))
+        worst = max(worst, delta)
+        print(
+            "  %-22s %-26s %-26s %5.1f%s"
+            % (name, _fmt(want), _fmt(got), delta, "  <-- off" if delta > tolerance else "")
+        )
+    if missing:
+        print(
+            "  not found in this capture: %s (different game state? the reference match has"
+            " no heroes, no boss and no enemy hero, so all five tactical rows are disabled)"
+            % ", ".join(missing)
+        )
+    print("  worst delta %.1f px (tolerance %.1f)" % (worst, tolerance))
+    if missing or worst > tolerance:
+        print("  RESULT: MISMATCH")
+        return 1
+    print("  RESULT: OK")
+    return 0
+
+
+def _fmt(rect) -> str:
+    return "[%s]" % ", ".join("%.1f" % float(value) for value in rect)
+
+
+def self_test(tolerance: float) -> int:
+    """Prove the pipeline: the committed fixture must be reproducible from the
+    captures, and the same numbers must survive a different pixel scale."""
+    fixture = build_fixture()
+    committed = FIXTURE.read_text(encoding="utf-8") if FIXTURE.is_file() else ""
+    rebuilt = json.dumps(fixture, indent=2, sort_keys=True) + "\n"
+    status = 0
+    print("fixture reproducible:", "yes" if rebuilt == committed else "NO")
+    if rebuilt != committed:
+        print("  run --write and commit the result")
+        status = 1
+    for kind, image in (("menu", SHOTS / "menu.jpg"), ("match", SHOTS / "match.jpg")):
+        status |= compare(image, kind, tolerance)
+    scaled = Path(tempfile.mkdtemp()) / "menu_half.png"
+    source = Image.open(SHOTS / "menu.jpg").convert("RGB")
+    source.resize((source.width // 2, source.height // 2), Image.BILINEAR).save(scaled)
+    # At half resolution one logical px is 0.75 device px, so the 1 px source
+    # highlights quantise: allow exactly one extra px here.
+    print("scale independence (same layout at half resolution, tolerance +1 px):")
+    status |= compare(scaled, "menu", tolerance + 1.0)
+    return status
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--write", action="store_true")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--write", action="store_true", help="rewrite the reference fixture")
+    parser.add_argument("--compare", metavar="IMAGE", help="diff one capture against the source layout")
+    parser.add_argument("--kind", choices=["menu", "match"], default="menu")
+    parser.add_argument("--tolerance", type=float, default=3.0)
+    parser.add_argument("--self-test", action="store_true", help="re-measure the captures and check drift")
     args = parser.parse_args()
+    if args.compare:
+        raise SystemExit(compare(Path(args.compare), args.kind, args.tolerance))
+    if args.self_test:
+        raise SystemExit(self_test(args.tolerance))
     fixture = build_fixture()
-    report(fixture)
     text = json.dumps(fixture, indent=2, sort_keys=True) + "\n"
     if args.write:
         FIXTURE.parent.mkdir(parents=True, exist_ok=True)

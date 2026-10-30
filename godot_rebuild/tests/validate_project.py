@@ -6575,6 +6575,13 @@ check(_android_tool_path.is_file() and "--write" in _android_tool
       and "android_screenshot_reference.json" in _android_tool
       and "docs/screenshots/android-2026-10-30" in _android_tool,
       "9bt the measuring script must regenerate the fixture from the captures")
+check("--compare" in _android_tool and "--self-test" in _android_tool
+      and "def compare(" in _android_tool and "def measure_match_layout(" in _android_tool
+      and "def self_test(" in _android_tool,
+      "9bt the measuring script must diff a Godot capture against the phone layout")
+check("--compare" in _parity_doc and "--write-movie" in _parity_doc
+      and "is_touchscreen_available" in _parity_doc and "1624x720" in _parity_doc,
+      "9bt the parity doc must explain how a touchscreen PC capture is compared")
 check(_android_fixture_path.is_file(), "9bt the measured screenshot fixture must exist")
 _android_source = {
     "continue": [320, 311, 300, 50],

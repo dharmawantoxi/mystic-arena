@@ -50,7 +50,7 @@ Tes native Godot 4.7.2 headless terakhir yang jumlah pemeriksaannya tercatat (br
 
 Run native terbaru untuk lapisan 9bt adalah commit `0411b28` ([run 41030476536](https://github.com/dharmawantoxi/mystic-arena/actions/runs/41030476536)) dan lulus tanpa kegagalan; jumlah pemeriksaannya tidak terbaca dari artefak di lingkungan kerja ini, jadi angka 1.505.443 di atas tetap merujuk run `f4e840b`.
 
-Validator statis terakhir yang tersedia lulus **21.808 pemeriksaan**. Itu berbeda dari tes native dan tidak menggantikan bukti runtime, screenshot, perangkat, atau audio.
+Validator statis terakhir yang tersedia lulus **21.810 pemeriksaan**. Itu berbeda dari tes native dan tidak menggantikan bukti runtime, screenshot, perangkat, atau audio.
 
 #### Triase 23 kegagalan tes native sebelumnya
 
@@ -115,6 +115,17 @@ Perbaikan yang dipaksa bukti ini di `godot_rebuild/`:
 * **Bingkai menu dulu diperbesar & ditengahkan.** `menu_backdrop.cover_rect()` memakai *cover* (`maxf`) sehingga pada 1624×720 latar 1280×720 dinaikkan 27 % lalu dipotong atas-bawah, dan `main_menu.gd` menengahkan bingkai (`origin.x = 172`). Akibatnya tombol HERO SHOP akan berada di x=632, bukan 460 seperti di HP. Sekarang `arena_rect()` menempelkan bingkai di kiri pada 1:1 (hanya mengecil bila permukaan lebih kecil, dan *letterbox* vertikal pada layar tinggi), dan `MainMenu.tscn` memakai `SOURCE_BUTTON_RECTS` sebagai satu-satunya sumber angka tombol.
 * **Strip batu kanan tidak ada di menu.** Sumber mengecat dinding batu sekali ke sisa lebar permukaan (`_gambar_panel_samping`) sebelum layar apa pun digambar, jadi menu pun berlatar batu di 344 px kanan. Godot kini punya `scripts/ui/panel_stone.gd` (angka bata, gradasi, garis emas) + `scripts/ui/panel_backdrop.gd` untuk menu; `side_panel.gd` tetap memakai angka yang sama untuk dock pertandingan.
 * **Kabut menu menembus dock.** Lapisan kabut 1500 px dulu digambar melewati batas arena; kini dipotong ke 1280×720 (`_blit_clipped`), sama seperti blit sumber ke subsurface arena.
+
+### Membandingkan capture Godot dari PC (layar sentuh)
+
+Perangkat uji pengguna (PC dengan layar sentuh) memenuhi `DisplayServer.is_touchscreen_available()`, jadi jalur mobile aktif dan dock 344 px ikut tampil bila permukaan logisnya 1624×720 — bukan hanya di HP.
+
+1. Jalankan dengan permukaan yang sama seperti HP: `godot --path godot_rebuild --resolution 1624x720`. Proyek memakai `canvas_items` + `expand`, jadi kanvas logis = ukuran jendela ÷ skala; jendela 1920×1080 justru menghasilkan kanvas 1280×720 tanpa dock, sedangkan 1624×720 atau 2436×1080 menghasilkan 1624×720.
+2. Rekam tanpa border jendela: `godot --path godot_rebuild --resolution 1624x720 --write-movie C:/shots/menu.png --quit-after 90`. Movie writer Godot menulis deret PNG seukuran jendela; pakai frame terakhir.
+3. Bandingkan dengan oracle HP: `python tools/measure_android_screenshot.py --compare C:/shots/menu.png --kind menu` dan `--kind match` untuk dock. Skrip mengukur capture itu dengan pipeline yang sama seperti capture HP, mencetak delta per elemen, dan gagal bila ada yang melebihi 3 px (default `--tolerance 3`).
+4. `--self-test` membuktikan pipeline tidak bergeser antarsesi: fixture harus bisa dibuat ulang byte-per-byte dari dua capture HP, dan tata letak yang sama harus tetap terbaca pada resolusi lain (uji pada capture setengah resolusi, toleransi +1 px karena highlight 1 px terkuantisasi).
+
+Batas verifikasi lewat PC: `is_touchscreen_available()` bukan `OS.has_feature("android")`. Geometri dock/menu jadi bisa diuji di PC, tetapi cabang khusus Android (misalnya `world.level_intro_state(OS.has_feature("android"))`, lifecycle aplikasi, dan ekspor APK) tetap butuh perangkat atau emulator.
 
 Yang **belum** diklaim: pasangan screenshot Godot pada perangkat yang sama belum direkam (tidak ada perangkat/emulator di lingkungan kerja ini), jadi perbandingan saat ini satu arah — geometri Godot diverifikasi terhadap angka hasil ukur Pygame lewat `tests/android_layout_checks.gd`, bukan pixel-diff. Aturan dock tetap: dock hanya dibuat bila sisa lebar ≥ 120 px (`platform_utils`), jadi pada viewport 16:9 (1280×720) memang tidak ada dock, dan pada 2436×1080 ada.
 
