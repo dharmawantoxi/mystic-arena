@@ -32,6 +32,16 @@ for setting in (
 ):
     check(setting in project, f"Missing project contract: {setting}")
 
+# The desktop run window defaults to the logical surface of the 2436x1080
+# Android build so the 344 px dock is visible while checking parity on a touch
+# screen PC. The design base must stay 1280x720 and exports keep 1280x720.
+check('window/size/window_width_override=1624' in project
+      and 'window/size/window_height_override=720' in project
+      and 'window/size/viewport_width=1280' in project
+      and 'window/size/viewport_height=720' in project
+      and 'window/stretch/aspect="expand"' in project,
+      "Desktop run window must default to the 1624x720 Android surface over a 1280x720 base")
+
 source_files = [ROOT / "project.godot", *ROOT.rglob("*.gd"), *ROOT.rglob("*.tscn"), *ROOT.rglob("*.tres")]
 for path in source_files:
     if ".godot" in path.parts:

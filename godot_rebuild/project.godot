@@ -27,7 +27,11 @@ enabled=PackedStringArray("res://addons/mystic_cloud/plugin.cfg")
 [display]
 window/size/viewport_width=1280
 window/size/viewport_height=720
-window/size/window_width_override=1280
+; Run-window override only (F5 in the editor / desktop play). 1624x720 is the
+; logical surface of the 2436x1080 Android build, so the 344 px right dock is
+; visible while checking parity on a touch screen PC. The design base stays
+; 1280x720: canvas = window / min(window.x / 1280, window.y / 720).
+window/size/window_width_override=1624
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
