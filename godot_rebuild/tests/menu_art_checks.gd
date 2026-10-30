@@ -93,8 +93,9 @@ func run_scene(menu: Node, check: Callable) -> void:
 	# The source frame is laid out with `fit` around a centred origin (stretch aspect
 	# `expand`), so the proof is the 1280x720 source rect reproduced at the live
 	# viewport rather than a hard-coded 1:1 assumption.
-	var fit := minf(menu.size.x / 1280.0, menu.size.y / 720.0)
-	var origin := (menu.size - Vector2(1280.0, 720.0) * fit) * 0.5
+	var viewport_size: Vector2 = menu.size
+	var fit := minf(viewport_size.x / 1280.0, viewport_size.y / 720.0)
+	var origin := (viewport_size - Vector2(1280.0, 720.0) * fit) * 0.5
 	var misplaced: Array = []
 	for button_name in expected:
 		var button := menu.get_node("%" + button_name) as Control
