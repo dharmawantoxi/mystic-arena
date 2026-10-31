@@ -24,6 +24,13 @@ CloudSave="*res://scripts/match/cloud_save_runtime.gd"
 
 enabled=PackedStringArray("res://addons/mystic_cloud/plugin.cfg")
 
+[game]
+
+; The shipped game is the Android build, so the PC run keeps the mobile composition:
+; mobile HUD, TAP prompts, touch pause circle and the right dock (mounted by width).
+; `MYSTIC_FORCE_TOUCH=1` forces it on too; `false` restores the desktop-only layout.
+mobile_composition=true
+
 [display]
 window/size/viewport_width=1280
 window/size/viewport_height=720

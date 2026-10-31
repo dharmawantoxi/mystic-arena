@@ -8,6 +8,7 @@ extends RefCounted
 ## so the native shell writes the same lines with the same spacing.
 
 ## `print("=" * 60)`.
+const MobilePlatform = preload("res://scripts/platform/mobile_platform.gd")
 const RULE := "============================================================"
 const TITLE_LINE := "  MYSTIC ARENA - MOBILE BUILD"
 
@@ -52,6 +53,6 @@ static func collect(tree: SceneTree) -> PackedStringArray:
 		OS.get_version(),
 		"-",
 		ProjectSettings.globalize_path("user://"),
-		OS.has_feature("android"),
+		MobilePlatform.is_touch_mode(),
 		quality,
 	)

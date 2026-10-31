@@ -1022,7 +1022,7 @@ func _build_side_panel() -> void:
 func _layout_side_panel() -> void:
 	if side_panel == null:
 		return
-	var mobile := _is_mobile_device()
+	var mobile := _mobile_composition()
 	var viewport_width := int(get_viewport().get_visible_rect().size.x)
 	# `platform_utils.create_display` mounts the source dock from the *surface width*:
 	# `sisa = width - LOGICAL_WIDTH`, and the panel exists while `sisa >= 120`. That is a
@@ -1041,13 +1041,14 @@ func _dock_active() -> bool:
 	return side_panel != null and side_panel.is_active()
 
 
-## With the dock mounted the source mobile HUD owns every in-arena control: skills and the
-## auto-cast toggle live in the dock's hero panel, tower paths in the build popup, castle
-## upgrades and shields in the castle box. The exception is the tapped-tower box
-## (`PopupRenderer` for `popup_type == "tower"`), which still has no state builder (D2), so
-## the Godot command bar survives as its stand-in and only while a blue tower is selected.
+## In the mobile composition (always, on Android and on the PC run alike) the source HUD
+## owns every in-arena control: skills and the auto-cast toggle live in the dock's hero
+## panel, tower paths in the build popup, castle upgrades and shields in the castle box.
+## The exception is the tapped-tower box (`PopupRenderer` for `popup_type == "tower"`),
+## which still has no state builder (D2), so the Godot command bar survives as its stand-in
+## and only while a blue tower is selected.
 func _apply_dock_command_bar(tower: Structure, world: Prototype) -> void:
-	if not _dock_active():
+	if not _mobile_composition():
 		%HeroCommands.show()
 		return
 	%HeroCommands.hide()
@@ -1072,12 +1073,11 @@ func _cinematic_active(world: Prototype) -> bool:
 	return bool(boss_death.get("celebration_active", false))
 
 
-func _is_mobile_device() -> bool:
-	return (
-		OS.has_feature("android")
-		or OS.has_feature("ios")
-		or DisplayServer.is_touchscreen_available()
-	)
+## The mobile composition is the shipped one, so it is on for a PC run too
+## (`game/mobile_composition`, `MobilePlatform.forced_touch()`); Android and touchscreen
+## devices always get it. Layer 9cu.
+func _mobile_composition() -> bool:
+	return MobilePlatform.is_touch_mode()
 
 
 ## Use the same compact Android touch HUD as `mobile.hud.TouchHUD`: on 16:9
@@ -1126,6 +1126,10 @@ func _set_desktop_chrome_visible(show_chrome: bool) -> void:
 	%GameSpeedSelector.visible = show_chrome
 	%PauseButton.visible = show_chrome
 	%BackButton.visible = show_chrome
+	# `_layout_side_panel` hides these two when the dock mounts; restoring the desktop
+	# composition has to bring them back or the toggles stay invisible behind a shown bar.
+	%TacticalToggleButton.visible = show_chrome
+	%CommandDockToggle.visible = show_chrome
 	if ai_toggle != null:
 		ai_toggle.visible = show_chrome
 	if migration_status != null:
@@ -2011,7 +2015,7 @@ func _handle_shop_click(world: Prototype, local: Vector2) -> bool:
 
 func level_intro_state() -> Dictionary:
 	var world := match_session.world as Prototype
-	return world.level_intro_state(OS.has_feature("android"))
+	return world.level_intro_state(MobilePlatform.is_touch_mode())
 
 
 func boss_intro_state() -> Dictionary:
