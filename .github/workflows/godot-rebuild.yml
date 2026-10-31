@@ -106,6 +106,7 @@ jobs:
           python godot_rebuild/tests/player_recruit_source_oracle.py
           python godot_rebuild/tests/meta_hero_unlock_source_oracle.py
           python godot_rebuild/tests/tactical_command_source_oracle.py
+          python godot_rebuild/tests/ui_theme_source_oracle.py
           python godot_rebuild/tests/player_structure_command_source_oracle.py
           python godot_rebuild/tests/controller_source_oracle.py
           python godot_rebuild/tests/touch_gesture_source_oracle.py
