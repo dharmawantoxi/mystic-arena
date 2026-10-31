@@ -71,6 +71,7 @@ func deliver_pending_forge_items(hero: Object) -> Array:
 	return delivered
 
 
+# gdlint:disable=max-returns
 func buy(world: Object, item_id: String) -> Dictionary:
 	# Port of _try_buy: resolve the target, gate catalog/gold/slots/role, then
 	# equip a living hero or queue the order for a dead one, and only then debit
@@ -83,9 +84,13 @@ func buy(world: Object, item_id: String) -> Dictionary:
 		"hero_id": -1,
 		"cost": 0,
 		"queued": false,
+		# Source _try_buy SFX: `_play_error()` on every refused purchase,
+		# `_play_buy()` once the order lands, silence for an unknown id.
+		"sound": "",
 	}
 	if hero == null:
 		result["status"] = "no_hero"
+		result["sound"] = "ui_error"
 		_record(world, "buy", item_id, -1, "no_hero", 0, false)
 		return result
 	var data: Dictionary = hero.items.item(item_id)
@@ -94,20 +99,26 @@ func buy(world: Object, item_id: String) -> Dictionary:
 	result["cost"] = cost
 	# Silent refusals, exactly the source's bare `return`s: unknown item and a
 	# purse that cannot pay.
-	if data.is_empty() or player_gold(world) < cost:
+	if data.is_empty():
+		return result
+	if player_gold(world) < cost:
+		result["sound"] = "ui_error"
 		return result
 	# Queued orders count against the cap, like the source.
 	if hero.items.used_slots() + hero.pending_items.size() >= hero.items.max_slots():
 		result["status"] = "inventory_full"
+		result["sound"] = "ui_error"
 		_record(world, "buy", item_id, hero.id, "inventory_full", 0, false)
 		return result
 	if not _gates_pass(hero, data):
+		result["sound"] = "ui_error"
 		if bool(data.get("magic_only", false)):
 			result["status"] = "magic_only_denied"
 			_record(world, "buy", item_id, hero.id, "magic_only_denied", 0, false)
 		return result
 	if bool(hero.alive):
 		if not hero.items.add(item_id):
+			result["sound"] = "ui_error"
 			return result
 		hero.apply_item_change()
 		result["status"] = "forge_purchase"
@@ -116,6 +127,7 @@ func buy(world: Object, item_id: String) -> Dictionary:
 		result["status"] = "forge_queued"
 		result["queued"] = true
 	result["ok"] = true
+	result["sound"] = "ui_buy"
 	world.economy.spend(player_team, cost)
 	target_hero_id = int(hero.id)
 	_record(world, "buy", item_id, hero.id, String(result["status"]), cost, bool(result["queued"]))

@@ -9214,6 +9214,148 @@ if _hb_doc.is_file():
           "9cj the report must stay tabular with all five deviations")
 
 
+# ── Layer 9ck: hero_items.py (4133 lines, 98 symbols + 47 constants) ─────────
+from hero_items_source_oracle import build_fixture as hero_items_fixture
+
+_hi_oracle = ROOT.parent / "godot_rebuild/tests/hero_items_source_oracle.py"
+_hi_fixture = ROOT.parent / "godot_rebuild/tests/fixtures/hero_items_source.json"
+_hi_checks = ROOT.parent / "godot_rebuild/tests/hero_items_checks.gd"
+_hi_mech_gd = ROOT.parent / "godot_rebuild/scripts/match/item_mechanics.gd"
+_hi_mech_data = ROOT.parent / "godot_rebuild/data/ui/item_mechanics.json"
+_hi_panel = ROOT.parent / "godot_rebuild/scripts/ui/item_forge_panel.gd"
+_hi_shop = ROOT.parent / "godot_rebuild/scripts/match/item_shop_ui.gd"
+_hi_forge = ROOT.parent / "godot_rebuild/scripts/match/forge.gd"
+_hi_doc = ROOT.parent / "docs/HERO_ITEMS_FOLDER_MIGRATION.md"
+check(_hi_oracle.is_file() and _hi_fixture.is_file() and _hi_checks.is_file()
+      and _hi_mech_gd.is_file() and _hi_mech_data.is_file(),
+      "9ck the hero_items oracle, fixture, mechanics module and native suite must ship")
+check(_hi_doc.is_file(), "9ck the hero_items migration report must ship")
+check('const HeroItemsChecks = preload("res://tests/hero_items_checks.gd")' in ai_tests
+      and "HeroItemsChecks.new().run(_check)" in ai_tests,
+      "9ck the hero_items suite must be preloaded and run")
+check("python godot_rebuild/tests/hero_items_source_oracle.py --check" in workflow,
+      "9ck CI must run the hero_items oracle")
+_hi, _hi_groups = hero_items_fixture()
+check(_hi == json.loads(_hi_fixture.read_text(encoding="utf-8")),
+      "9ck the hero_items fixture must match live Python execution")
+check(json.loads(_hi_mech_data.read_text(encoding="utf-8")) == _hi_groups,
+      "9ck the baked mechanics table must match the live catalog")
+check(_hi["file"] == {"file": "hero_items.py", "lines": 4133, "classes": 3,
+                      "functions": 32, "methods": 63, "assigns": 47,
+                      "symbols": 98},
+      f"9ck hero_items.py must stay 4133 lines / 3 classes / 98 symbols: {_hi['file']}")
+check(len(_hi["sections"]) == 8
+      and [int(row["line"]) for row in _hi["sections"]]
+      == sorted({int(row["line"]) for row in _hi["sections"]}),
+      "9ck the eight section banners must stay in file order")
+check({name: len(rows) for name, rows in _hi["class_methods"].items()}
+      == {"HeroItemInventory": 44, "HeroItemRenderer": 3, "ItemShopUI": 16},
+      f"9ck the three classes must keep their method counts: {_hi['class_methods']}")
+check(_hi["symbols"]["count"] == 98
+      and _hi["symbols"]["kinds"] == {"data": 43, "dead": 3, "deviation": 3,
+                                      "folded": 1, "ported": 95}
+      and len(_hi["classification"]) == 145,
+      f"9ck all 98 symbols + 47 constants must carry a kind: {_hi['symbols']['kinds']}")
+_hi_broken = []
+_hi_untargeted = []
+for _hi_name, _hi_row in _hi["classification"].items():
+    if not _hi_row["target"] or not _hi_row["token"]:
+        if _hi_row["kind"] not in ("dead", "deviation"):
+            _hi_untargeted.append(_hi_name)
+        continue
+    _hi_target = ROOT.parent / "godot_rebuild" / _hi_row["target"]
+    if not _hi_target.is_file() or _hi_row["token"] not in _hi_target.read_text(
+            encoding="utf-8"):
+        _hi_broken.append(_hi_name)
+check(not _hi_broken,
+      f"9ck every classification needs a live target and token: {_hi_broken[:8]}")
+check(not _hi_untargeted,
+      f"9ck only dead/deviation rows may skip a Godot target: {_hi_untargeted[:8]}")
+check(sorted(_hi["symbols"]["dead"]) == sorted([
+          "HeroItemInventory.is_guarding", "HeroItemRenderer.slot_index_at",
+          "_alive_player_heroes"])
+      and sorted(_hi["symbols"]["deviations"]) == sorted([
+          "_get_game", "_ICON_CACHE", "_ITEMS_DIR"]),
+      "9ck the three dead symbols and three deviations must stay named")
+check(_hi["catalog"]["count"] == 33 and _hi["catalog"]["flat_cost"] == 4500
+      and _hi["catalog"]["max_slots"] == 6 and _hi["catalog"]["items_per_page"] == 8
+      and len(_hi["catalog"]["pages"]) == 6
+      and len(_hi["catalog"]["page_meta"]) == 6
+      and len(_hi["catalog"]["shop_order"]) == 33
+      and len(set(_hi["catalog"]["shop_order"])) == 33
+      and len({row["category"] for row in _hi["catalog"]["items"].values()}) == 25,
+      "9ck the catalog must stay 33 items / 25 categories / 6 pages of 8")
+check(_hi["catalog"]["class_overrides"] == {"abyss_breaker": "tank",
+                                            "tempest_vane": "tank"}
+      and _hi["catalog"]["magic_only"] == [
+          "astral_codex", "fulgur_scepter", "hex_idol", "rift_veil", "sage_scepter",
+          "spectral_charm", "vine_rod", "vital_stone"],
+      "9ck the two overrides and the MAGIC_ONLY list must keep their source items")
+check(_hi["labels"]["groups"] == ["stats", "passive", "active", "aura", "block",
+                                  "on_attack", "multishot", "bash"]
+      and len(_hi["labels"]["field"]) == 65 and len(_hi["labels"]["group"]) == 8
+      and len(_hi["labels"]["pct"]) == 28 and len(_hi["labels"]["frame"]) == 11,
+      "9ck the popup label tables must stay 65/8/28/11 in source order")
+check(len(_hi["format"]) == 157
+      and sum(len(rows) for rows in _hi["mechanics"]["id"].values()) == 300
+      and sum(len(rows) for rows in _hi["mechanics"]["en"].values()) == 300
+      and _hi["mechanics"]["id"]["dead_edge"] == [
+          ["header", "[STAT]"], ["bullet", "• Damage: 52"],
+          ["bullet", "• Peluang Crit: 25%"], ["bullet", "• Pengali Crit: x2"]]
+      and _hi["mechanics"]["en"]["octarine_core"][0] == ["header", "[STATS]"],
+      "9ck the 600 mechanics lines must keep their source text")
+check(_hi["magic"]["Anti-Mage"] is False and _hi["magic"]["Mage"] is True
+      and _hi["magic"][""] is False,
+      "9ck the magic gate must keep the Anti-Mage exception")
+_hi_mech_text = _hi_mech_gd.read_text(encoding="utf-8")
+check("const FIELD_LABELS := {" in _hi_mech_text
+      and "const GROUP_LABELS := {" in _hi_mech_text
+      and "const MECH_GROUPS := [" in _hi_mech_text
+      and "const PCT_KEYS := [" in _hi_mech_text
+      and "const FRAME_KEYS := [" in _hi_mech_text
+      and "static func fmt_value(" in _hi_mech_text
+      and "static func build(" in _hi_mech_text
+      and _hi_mech_text.count('": ["') == 73,
+      "9ck item_mechanics.gd must carry the five tables and both builders")
+_hi_panel_text = _hi_panel.read_text(encoding="utf-8")
+check('const ItemMechanics = preload("res://scripts/match/item_mechanics.gd")' in _hi_panel_text
+      and "ItemMechanics.build(" in _hi_panel_text
+      and "func _mechanics_lines(" in _hi_panel_text
+      and "func _is_english(" in _hi_panel_text
+      and "func _play_sound(" in _hi_panel_text
+      and '"ui_buy": 0.6' in _hi_panel_text
+      and "ItemForgeSlot_" in _hi_panel_text,
+      "9ck the Forge panel must render ItemMechanics text and play the source SFX")
+_hi_shop_text = _hi_shop.read_text(encoding="utf-8")
+_hi_forge_text = _hi_forge.read_text(encoding="utf-8")
+check("var last_sound :=" in _hi_shop_text
+      and '"ui_click"' in _hi_shop_text and '"ui_buy"' in _hi_shop_text
+      and '"ui_error"' in _hi_shop_text
+      and "inspect_item = \"\" if inspect_item == item_id else item_id" in _hi_shop_text
+      and '"sound"' in _hi_forge_text and 'result["sound"] = "ui_buy"' in _hi_forge_text,
+      "9ck click routing must keep the toggle and the source SFX ids")
+_hi_checks_text = _hi_checks.read_text(encoding="utf-8")
+check("98 callables/classes are classified" in _hi_checks_text
+      and "every classification token is present in its target" in _hi_checks_text
+      and "the mechanics headers + bullets match the source" in _hi_checks_text
+      and "every value formats like the source" in _hi_checks_text
+      and "the ported pages + class meta match the source" in _hi_checks_text
+      and "the magic role gate matches the source" in _hi_checks_text,
+      "9ck the native suite must replay inventory, classification, catalog and text")
+if _hi_doc.is_file():
+    _hi_report = _hi_doc.read_text(encoding="utf-8")
+    check(all(token in _hi_report for token in (
+              "hero_items.py", "item_mechanics.gd", "item_forge_panel.gd",
+              "hero_items_source_oracle.py", "hero_items_checks.gd",
+              "hero_item_inventory.gd", "item_shop_ui.gd", "forge.gd",
+              "hero_panel_layout.gd", "_build_item_mechanics", "_fmt_mech_value",
+              "_FIELD_LABELS", "ITEM_SHOP_ORDER", "slot_index_at", "is_guarding",
+              "ui_click", "ui_buy", "ui_error", "Anti-Mage")),
+          "9ck the report must cover every ported symbol and the deviations")
+    check(_hi_report.count("D6") > 0 and _hi_report.count("|") > 120,
+          "9ck the report must stay tabular with all six deviations")
+
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

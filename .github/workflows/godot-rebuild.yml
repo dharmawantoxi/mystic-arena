@@ -132,6 +132,7 @@ jobs:
           python godot_rebuild/tests/render_source_oracle.py --check
           python godot_rebuild/tests/system_source_oracle.py --check
           python godot_rebuild/tests/hero_balance_source_oracle.py --check
+          python godot_rebuild/tests/hero_items_source_oracle.py --check
           python godot_rebuild/tests/map_renderer_source_oracle.py
           python godot_rebuild/tests/dynamic_renderer_source_oracle.py
           PYTHONPATH=/tmp/nopygame python godot_rebuild/tests/effect_manager_source_oracle.py

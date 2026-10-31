@@ -6,7 +6,10 @@ extends Control
 
 const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
 const PopupAnimation = preload("res://scripts/ui/popup_animation.gd")
+const ItemMechanics = preload("res://scripts/match/item_mechanics.gd")
+const AudioRuntime = preload("res://scripts/audio/audio_runtime.gd")
 const PRESENTATION := "res://data/ui/item_shop_presentation.json"
+const MECHANICS := "res://data/ui/item_mechanics.json"
 const ICONS := "res://assets/art/items/"
 const ARENA_SIZE := Vector2(1280, 720)
 const PANEL_RECT := Rect2(90, 0, 1100, 720)
@@ -37,9 +40,12 @@ const SHOP_TEXT := {
 	"inventory_hint": "Ketuk item untuk info · klik kanan untuk menjatuhkan",
 	"select_hero": "Pilih hero penerima item di atas",
 }
-const DETAIL_SECTIONS := [
-	"stats", "passive", "on_attack", "multishot", "bash", "block", "active", "aura"
-]
+# Source `_play_click` / `_play_buy` / `_play_error` volume multipliers.
+const SOUND_VOLUME := {
+	"ui_click": 0.4,
+	"ui_buy": 0.6,
+	"ui_error": 0.4,
+}
 
 var world: Object = null
 var popup_animation := PopupAnimation.new()
@@ -60,6 +66,7 @@ var _detail_body: VBoxContainer
 var _detail_item := ""
 var _render_key := ""
 var _presentation_cache: Dictionary = {}
+var _mechanics_cache: Dictionary = {}
 
 
 func _init() -> void:
@@ -112,6 +119,7 @@ func press(button_id: String, button: int = 1) -> bool:
 	if shop() == null:
 		return false
 	var handled := bool(shop().handle_click(world, forge(), button_id, button))
+	_play_sound(String(shop().last_sound))
 	if is_inside_tree():
 		notify_redraw.call_deferred()
 	else:
@@ -179,10 +187,16 @@ func _input(event: InputEvent) -> void:
 							refresh()
 							get_viewport().set_input_as_handled()
 					elif not PANEL_RECT.has_point(point):
-						if mouse.button_index == MOUSE_BUTTON_LEFT:
-							shop_ui.click_outside_panel()
-						else:
-							shop_ui.is_open = false
+						shop_ui.click_outside_panel()
+						refresh()
+						get_viewport().set_input_as_handled()
+					elif mouse.button_index == MOUSE_BUTTON_RIGHT:
+						# Source: a right click anywhere closes the Forge, except on
+						# an owned slot, where it drops the item instead.
+						var hovered := get_viewport().gui_get_hovered_control()
+						if hovered != null and String(hovered.name).begins_with("ItemForgeSlot_"):
+							return
+						shop_ui.is_open = false
 						refresh()
 						get_viewport().set_input_as_handled()
 
@@ -633,6 +647,7 @@ func _build_slots(_shop_ui: Object) -> void:
 				_panel_style(Color8(30, 34, 50), _rgb(visual.get("glow", []), UI_THEME.GOLD), 2, 6)
 			)
 		var slot_id := "itemshop_slot_%d" % index
+		button.name = "ItemForgeSlot_%d" % index
 		button.pressed.connect(func() -> void: press(slot_id))
 		button.gui_input.connect(
 			func(event: InputEvent) -> void:
@@ -739,17 +754,21 @@ func _build_detail_content(item_id: String) -> void:
 	right_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	left.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	right_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	var section_index := 0
-	for section in DETAIL_SECTIONS:
-		if not data.has(section):
+	var accent := _rgb(data.get("glow", []), UI_THEME.BODY)
+	var column: VBoxContainer = left
+	for entry in _mechanics_lines(item_id):
+		var kind := String(entry[0])
+		var text := String(entry[1])
+		if kind == "header":
+			# Source prints "[STAT]" / "[AKTIF] Blood Frenzy" as a group title;
+			# every new group starts in the next of the two columns.
+			if column.get_child_count() > 0:
+				column = right_column if column == left else left
+			column.add_child(_label("", text, 16, accent, true))
 			continue
-		var target: VBoxContainer = left if section_index % 2 == 0 else right_column
-		target.add_child(
-			_section_label(
-				String(section).to_upper(), data[section], _rgb(data.get("glow", []), UI_THEME.BODY)
-			)
-		)
-		section_index += 1
+		var bullet := _label("", text, 15, UI_THEME.BODY)
+		bullet.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		column.add_child(bullet)
 	columns.add_child(left)
 	columns.add_child(right_column)
 	_detail_body.add_child(columns)
@@ -822,9 +841,38 @@ func _item_data(item_id: String) -> Dictionary:
 	return _presentation_cache.get(item_id, {})
 
 
+func _mechanics_lines(item_id: String) -> Array:
+	# Source _build_item_mechanics over the catalog groups of that item; the
+	# text itself is formatted by the ported ItemMechanics module.
+	if _mechanics_cache.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(MECHANICS))
+		if parsed is Dictionary:
+			_mechanics_cache = parsed
+	var groups: Variant = _mechanics_cache.get(item_id, {})
+	if not groups is Dictionary:
+		return []
+	return ItemMechanics.build(groups, _is_english())
+
+
+func _is_english() -> bool:
+	# Source reads its own language setting; the rebuild prefers the shared
+	# Localization runtime and only then falls back to the OS locale.
+	if is_inside_tree():
+		var runtime := get_tree().root.get_node_or_null("Localization")
+		if runtime != null and runtime.get("language") != null:
+			return String(runtime.get("language")).begins_with("en")
+	return OS.get_locale_language().to_lower().begins_with("en")
+
+
+func _play_sound(sound: String) -> void:
+	# Port of _play_click / _play_buy / _play_error, same ids and volumes.
+	if not SOUND_VOLUME.has(sound):
+		return
+	AudioRuntime.play_scaled(sound, float(SOUND_VOLUME[sound]))
+
+
 func _description(data: Dictionary) -> String:
-	var locale := OS.get_locale_language().to_lower()
-	if locale.begins_with("en"):
+	if _is_english():
 		return String(data.get("desc_en", data.get("desc", "")))
 	return String(data.get("desc", ""))
 
