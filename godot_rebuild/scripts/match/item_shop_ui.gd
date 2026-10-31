@@ -101,6 +101,9 @@ var page := 0
 var inspect_item := ""
 # Last "BUY FOR" announcement: {hero_id, dead} (source notifies a tr() text).
 var notice: Dictionary = {}
+# Source `_play_click` / `_play_buy` / `_play_error`: the sound the Control
+# plays for the click that just ran ("ui_click" / "ui_buy" / "ui_error").
+var last_sound := ""
 var pages: Array = []
 var page_meta: Array = []
 var _catalog_cache: Dictionary = {}
@@ -270,12 +273,14 @@ func item_cards(world: Object, forge: Object) -> Array:
 func handle_click(world: Object, forge: Object, button_id: String, button: int) -> bool:
 	# Port of handle_item_shop_click's routing (no hit tests: the Control that
 	# draws the panel already resolved which button id was pressed).
+	last_sound = ""
 	if not is_open:
 		return false
 	if inspect_item != "" and _catalog().get("items", {}).has(inspect_item):
 		return _handle_inspect_click(button_id)
 	if button_id == "itemshop_close":
 		is_open = false
+		_play_click()
 		return true
 	for prefix in CLICK_PREFIXES:
 		if not button_id.begins_with(String(prefix)):
@@ -292,8 +297,10 @@ func _handle_inspect_click(button_id: String) -> bool:
 		return true
 	if button_id != "itemshop_detail_close" and button_id != "itemshop_close":
 		inspect_item = ""
+		_play_click()
 		return true
 	inspect_item = ""
+	_play_click()
 	if button_id == "itemshop_close":
 		is_open = false
 	return true
@@ -309,17 +316,22 @@ func _dispatch(
 			var hero: Object = heroes[index]
 			forge.set_target(int(hero.id))
 			notice = {"hero_id": int(hero.id), "dead": not bool(hero.alive)}
+			_play_click()
 	elif prefix == "itemshop_page_":
 		var wanted := _parse_suffix(button_id, prefix)
 		if wanted >= 0 and wanted < page_count():
 			page = wanted
+			_play_click()
 	elif prefix == "itemshop_buy_":
-		forge.buy(world, button_id.replace(prefix, ""))
+		var bought: Dictionary = forge.buy(world, button_id.replace(prefix, ""))
+		last_sound = String(bought.get("sound", ""))
 	elif prefix == "itemshop_slot_":
 		_slot_click(world, forge, button_id, button)
 	else:
-		# itemshop_card_: open the detail popup for that item.
-		inspect_item = button_id.replace(prefix, "")
+		# itemshop_card_: tap the card again to close its detail popup.
+		var item_id := button_id.replace(prefix, "")
+		inspect_item = "" if inspect_item == item_id else item_id
+		_play_click()
 
 
 func _slot_click(world: Object, forge: Object, button_id: String, button: int) -> void:
@@ -329,10 +341,13 @@ func _slot_click(world: Object, forge: Object, button_id: String, button: int) -
 		return
 	if button == 3:
 		# Hold / right click on a slot drops the item (source: no refund).
-		forge.drop(world, slot)
+		var dropped: Dictionary = forge.drop(world, slot)
+		if bool(dropped.get("ok", false)):
+			_play_click()
 	elif button == 1 and shop_hero.items.slots[slot] != null:
 		# Tap a filled slot to inspect the item; empty slots stay inert.
 		inspect_item = String(shop_hero.items.slots[slot])
+		_play_click()
 
 
 func click_outside_panel() -> bool:
@@ -352,6 +367,10 @@ func notice_text() -> String:
 	if bool(notice.get("dead", false)):
 		text += " (delivery after respawn)"
 	return text
+
+
+func _play_click() -> void:
+	last_sound = "ui_click"
 
 
 func _parse_suffix(button_id: String, prefix: String) -> int:

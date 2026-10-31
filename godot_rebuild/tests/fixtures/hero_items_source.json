@@ -1,0 +1,5443 @@
+{
+ "file": {
+  "file": "hero_items.py",
+  "lines": 4133,
+  "classes": 3,
+  "functions": 32,
+  "methods": 63,
+  "assigns": 47,
+  "symbols": 98
+ },
+ "sections": [
+  {
+   "line": 1653,
+   "name": "ICON LOADING & CACHE"
+  },
+  {
+   "line": 1704,
+   "name": "INVENTARY per-hero"
+  },
+  {
+   "line": 2746,
+   "name": "Helper level multiplier (sama dengan HERO_LEVELS logic)"
+  },
+  {
+   "line": 2758,
+   "name": "AURA UPDATE (dipanggil sekali per frame dari Game.update)"
+  },
+  {
+   "line": 2934,
+   "name": "AI HELPER: saran item untuk hero"
+  },
+  {
+   "line": 3004,
+   "name": "UI: RENDERER 6 SLOT di HeroPanel"
+  },
+  {
+   "line": 3190,
+   "name": "UI: ITEM SHOP OVERLAY (bisa dibuka kapan pun - tanpa klik hero)"
+  },
+  {
+   "line": 3917,
+   "name": "CLICK HANDLER untuk ItemShopUI (dipanggil dari InputHandler)"
+  }
+ ],
+ "class_methods": {
+  "HeroItemInventory": [
+   "__init__",
+   "count",
+   "has",
+   "used_slots",
+   "add",
+   "remove",
+   "_on_item_changed",
+   "clear_on_death",
+   "_sum_stat",
+   "get_bonus_damage",
+   "get_bonus_hp",
+   "get_hp_pct",
+   "get_armor",
+   "get_hp_regen",
+   "get_max_hp",
+   "get_attack_speed_mult",
+   "get_lifesteal_pct",
+   "get_crit",
+   "get_cleave",
+   "get_cooldown_reduction",
+   "get_spell_vamp",
+   "get_skill_amp",
+   "get_evasion",
+   "get_move_speed_pct",
+   "get_heal_amp",
+   "get_slow_resist",
+   "get_range_bonus",
+   "has_true_strike",
+   "get_reflect_pct",
+   "get_gale_as_bonus",
+   "consume_empower_strike",
+   "get_block",
+   "get_armor_shred",
+   "get_on_attack_chain",
+   "get_bash",
+   "is_veiled",
+   "is_guarding",
+   "get_rend_crit",
+   "update",
+   "notify_damage_taken",
+   "roll_crit",
+   "on_basic_attack_hit",
+   "_on_hit_common",
+   "on_ranged_attack_hit"
+  ],
+  "HeroItemRenderer": [
+   "width",
+   "draw",
+   "slot_index_at"
+  ],
+  "ItemShopUI": [
+   "draw",
+   "_draw_hero_strip",
+   "_draw_no_hero_banner",
+   "_draw_panel",
+   "_draw_header",
+   "_draw_hero_info",
+   "_draw_owned_slots",
+   "_draw_close",
+   "_detail_rect",
+   "_draw_detail_popup",
+   "_page_count",
+   "_draw_page_tabs",
+   "_draw_item_grid",
+   "_draw_item_card",
+   "_localized_desc",
+   "_wrap_text"
+  ]
+ },
+ "symbols": {
+  "count": 98,
+  "items": [
+   "is_magic_hero",
+   "_apply_miasma",
+   "_tick_miasma",
+   "get_item_class",
+   "_build_shop_pages",
+   "_fmt_mech_value",
+   "_build_item_mechanics",
+   "get_icon",
+   "_apply_stun_to",
+   "_apply_silence_to",
+   "_apply_shred_to",
+   "_apply_amp_to",
+   "_fx_notify",
+   "_fx_chain",
+   "_hero_level_mult",
+   "update_auras",
+   "_collect_all_units",
+   "suggest_item_for_hero",
+   "_get_game",
+   "_player_heroes",
+   "_alive_player_heroes",
+   "pending_forge_items",
+   "deliver_pending_forge_items",
+   "_resolve_shop_target",
+   "_touch_hit",
+   "handle_item_shop_click",
+   "_try_buy",
+   "_try_drop",
+   "_notify",
+   "_play_click",
+   "_play_buy",
+   "_play_error",
+   "HeroItemInventory",
+   "HeroItemInventory.__init__",
+   "HeroItemInventory.count",
+   "HeroItemInventory.has",
+   "HeroItemInventory.used_slots",
+   "HeroItemInventory.add",
+   "HeroItemInventory.remove",
+   "HeroItemInventory._on_item_changed",
+   "HeroItemInventory.clear_on_death",
+   "HeroItemInventory._sum_stat",
+   "HeroItemInventory.get_bonus_damage",
+   "HeroItemInventory.get_bonus_hp",
+   "HeroItemInventory.get_hp_pct",
+   "HeroItemInventory.get_armor",
+   "HeroItemInventory.get_hp_regen",
+   "HeroItemInventory.get_max_hp",
+   "HeroItemInventory.get_attack_speed_mult",
+   "HeroItemInventory.get_lifesteal_pct",
+   "HeroItemInventory.get_crit",
+   "HeroItemInventory.get_cleave",
+   "HeroItemInventory.get_cooldown_reduction",
+   "HeroItemInventory.get_spell_vamp",
+   "HeroItemInventory.get_skill_amp",
+   "HeroItemInventory.get_evasion",
+   "HeroItemInventory.get_move_speed_pct",
+   "HeroItemInventory.get_heal_amp",
+   "HeroItemInventory.get_slow_resist",
+   "HeroItemInventory.get_range_bonus",
+   "HeroItemInventory.has_true_strike",
+   "HeroItemInventory.get_reflect_pct",
+   "HeroItemInventory.get_gale_as_bonus",
+   "HeroItemInventory.consume_empower_strike",
+   "HeroItemInventory.get_block",
+   "HeroItemInventory.get_armor_shred",
+   "HeroItemInventory.get_on_attack_chain",
+   "HeroItemInventory.get_bash",
+   "HeroItemInventory.is_veiled",
+   "HeroItemInventory.is_guarding",
+   "HeroItemInventory.get_rend_crit",
+   "HeroItemInventory.update",
+   "HeroItemInventory.notify_damage_taken",
+   "HeroItemInventory.roll_crit",
+   "HeroItemInventory.on_basic_attack_hit",
+   "HeroItemInventory._on_hit_common",
+   "HeroItemInventory.on_ranged_attack_hit",
+   "HeroItemRenderer",
+   "HeroItemRenderer.width",
+   "HeroItemRenderer.draw",
+   "HeroItemRenderer.slot_index_at",
+   "ItemShopUI",
+   "ItemShopUI.draw",
+   "ItemShopUI._draw_hero_strip",
+   "ItemShopUI._draw_no_hero_banner",
+   "ItemShopUI._draw_panel",
+   "ItemShopUI._draw_header",
+   "ItemShopUI._draw_hero_info",
+   "ItemShopUI._draw_owned_slots",
+   "ItemShopUI._draw_close",
+   "ItemShopUI._detail_rect",
+   "ItemShopUI._draw_detail_popup",
+   "ItemShopUI._page_count",
+   "ItemShopUI._draw_page_tabs",
+   "ItemShopUI._draw_item_grid",
+   "ItemShopUI._draw_item_card",
+   "ItemShopUI._localized_desc",
+   "ItemShopUI._wrap_text"
+  ],
+  "kinds": {
+   "ported": 95,
+   "deviation": 3,
+   "dead": 3,
+   "data": 43,
+   "folded": 1
+  },
+  "dead": [
+   "HeroItemInventory.is_guarding",
+   "HeroItemRenderer.slot_index_at",
+   "_alive_player_heroes"
+  ],
+  "deviations": [
+   "_get_game",
+   "_ICON_CACHE",
+   "_ITEMS_DIR"
+  ]
+ },
+ "classification": {
+  "is_magic_hero": {
+   "kind": "ported",
+   "target": "scripts/match/hero_items.gd",
+   "token": "func is_magic_hero("
+  },
+  "_apply_miasma": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func apply_miasma("
+  },
+  "_tick_miasma": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func tick_miasma("
+  },
+  "get_item_class": {
+   "kind": "ported",
+   "target": "scripts/match/item_shop_ui.gd",
+   "token": "func item_class("
+  },
+  "_build_shop_pages": {
+   "kind": "ported",
+   "target": "scripts/match/item_shop_ui.gd",
+   "token": "func _build_shop_pages("
+  },
+  "_fmt_mech_value": {
+   "kind": "ported",
+   "target": "scripts/match/item_mechanics.gd",
+   "token": "func fmt_value("
+  },
+  "_build_item_mechanics": {
+   "kind": "ported",
+   "target": "scripts/match/item_mechanics.gd",
+   "token": "func build("
+  },
+  "get_icon": {
+   "kind": "ported",
+   "target": "scripts/ui/item_forge_panel.gd",
+   "token": "func _icon("
+  },
+  "_apply_stun_to": {
+   "kind": "ported",
+   "target": "scripts/match/battle_item_effects.gd",
+   "token": "`_apply_stun_to(target, duration)`"
+  },
+  "_apply_silence_to": {
+   "kind": "ported",
+   "target": "scripts/match/battle_item_effects.gd",
+   "token": "`_apply_silence_to(target, duration)`"
+  },
+  "_apply_shred_to": {
+   "kind": "ported",
+   "target": "scripts/match/battle_item_effects.gd",
+   "token": "func apply_armor_shred("
+  },
+  "_apply_amp_to": {
+   "kind": "ported",
+   "target": "scripts/match/battle_item_effects.gd",
+   "token": "func apply_damage_amp("
+  },
+  "_fx_notify": {
+   "kind": "ported",
+   "target": "scripts/match/item_effects.gd",
+   "token": "func notify("
+  },
+  "_fx_chain": {
+   "kind": "ported",
+   "target": "scripts/match/item_effects.gd",
+   "token": "func chain_fx("
+  },
+  "_hero_level_mult": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func level_hp_mult("
+  },
+  "update_auras": {
+   "kind": "ported",
+   "target": "scripts/match/prototype_battle.gd",
+   "token": "func _update_auras("
+  },
+  "_collect_all_units": {
+   "kind": "ported",
+   "target": "scripts/match/prototype_battle.gd",
+   "token": "func _collect_all_units("
+  },
+  "suggest_item_for_hero": {
+   "kind": "ported",
+   "target": "scripts/match/hero_items.gd",
+   "token": "func suggest_item_for_hero("
+  },
+  "_get_game": {
+   "kind": "deviation",
+   "target": "",
+   "token": ""
+  },
+  "_player_heroes": {
+   "kind": "ported",
+   "target": "scripts/match/forge.gd",
+   "token": "func _player_heroes("
+  },
+  "_alive_player_heroes": {
+   "kind": "dead",
+   "target": "",
+   "token": ""
+  },
+  "pending_forge_items": {
+   "kind": "ported",
+   "target": "scripts/match/forge.gd",
+   "token": "func pending_forge_items("
+  },
+  "deliver_pending_forge_items": {
+   "kind": "ported",
+   "target": "scripts/match/forge.gd",
+   "token": "func deliver_pending_forge_items("
+  },
+  "_resolve_shop_target": {
+   "kind": "ported",
+   "target": "scripts/match/forge.gd",
+   "token": "func resolve_target("
+  },
+  "_touch_hit": {
+   "kind": "ported",
+   "target": "scripts/ui/item_forge_panel.gd",
+   "token": "func _input("
+  },
+  "handle_item_shop_click": {
+   "kind": "ported",
+   "target": "scripts/match/item_shop_ui.gd",
+   "token": "func handle_click("
+  },
+  "_try_buy": {
+   "kind": "ported",
+   "target": "scripts/match/forge.gd",
+   "token": "func buy("
+  },
+  "_try_drop": {
+   "kind": "ported",
+   "target": "scripts/match/forge.gd",
+   "token": "func drop("
+  },
+  "_notify": {
+   "kind": "ported",
+   "target": "scripts/match/item_shop_ui.gd",
+   "token": "func notice_text("
+  },
+  "_play_click": {
+   "kind": "ported",
+   "target": "scripts/match/item_shop_ui.gd",
+   "token": "\"ui_click\""
+  },
+  "_play_buy": {
+   "kind": "ported",
+   "target": "scripts/match/item_shop_ui.gd",
+   "token": "\"ui_buy\""
+  },
+  "_play_error": {
+   "kind": "ported",
+   "target": "scripts/match/item_shop_ui.gd",
+   "token": "\"ui_error\""
+  },
+  "HeroItemInventory": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func tick_auto("
+  },
+  "HeroItemInventory.__init__": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func _init("
+  },
+  "HeroItemInventory.count": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func count("
+  },
+  "HeroItemInventory.has": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func has("
+  },
+  "HeroItemInventory.used_slots": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func used_slots("
+  },
+  "HeroItemInventory.add": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func add("
+  },
+  "HeroItemInventory.remove": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func remove("
+  },
+  "HeroItemInventory._on_item_changed": {
+   "kind": "ported",
+   "target": "scripts/match/forge.gd",
+   "token": "hero.apply_item_change()"
+  },
+  "HeroItemInventory.clear_on_death": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func clear_on_death("
+  },
+  "HeroItemInventory._sum_stat": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func sum_stat("
+  },
+  "HeroItemInventory.get_bonus_damage": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_bonus_damage("
+  },
+  "HeroItemInventory.get_bonus_hp": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_bonus_hp("
+  },
+  "HeroItemInventory.get_hp_pct": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_hp_pct("
+  },
+  "HeroItemInventory.get_armor": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_armor("
+  },
+  "HeroItemInventory.get_hp_regen": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_hp_regen("
+  },
+  "HeroItemInventory.get_max_hp": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_max_hp("
+  },
+  "HeroItemInventory.get_attack_speed_mult": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_attack_speed_mult("
+  },
+  "HeroItemInventory.get_lifesteal_pct": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_lifesteal_pct("
+  },
+  "HeroItemInventory.get_crit": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_crit("
+  },
+  "HeroItemInventory.get_cleave": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_cleave("
+  },
+  "HeroItemInventory.get_cooldown_reduction": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_cooldown_reduction("
+  },
+  "HeroItemInventory.get_spell_vamp": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_spell_vamp("
+  },
+  "HeroItemInventory.get_skill_amp": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_skill_amp("
+  },
+  "HeroItemInventory.get_evasion": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_evasion("
+  },
+  "HeroItemInventory.get_move_speed_pct": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_move_speed_pct("
+  },
+  "HeroItemInventory.get_heal_amp": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_heal_amp("
+  },
+  "HeroItemInventory.get_slow_resist": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_slow_resist("
+  },
+  "HeroItemInventory.get_range_bonus": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_range_bonus("
+  },
+  "HeroItemInventory.has_true_strike": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func has_true_strike("
+  },
+  "HeroItemInventory.get_reflect_pct": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_reflect_pct("
+  },
+  "HeroItemInventory.get_gale_as_bonus": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_gale_as_bonus("
+  },
+  "HeroItemInventory.consume_empower_strike": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func consume_empower_strike("
+  },
+  "HeroItemInventory.get_block": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_block("
+  },
+  "HeroItemInventory.get_armor_shred": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_armor_shred("
+  },
+  "HeroItemInventory.get_on_attack_chain": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_on_attack_chain("
+  },
+  "HeroItemInventory.get_bash": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_bash("
+  },
+  "HeroItemInventory.is_veiled": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func is_veiled("
+  },
+  "HeroItemInventory.is_guarding": {
+   "kind": "dead",
+   "target": "",
+   "token": ""
+  },
+  "HeroItemInventory.get_rend_crit": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func get_rend_crit("
+  },
+  "HeroItemInventory.update": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func tick_timers("
+  },
+  "HeroItemInventory.notify_damage_taken": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func notify_damage_taken("
+  },
+  "HeroItemInventory.roll_crit": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func roll_crit("
+  },
+  "HeroItemInventory.on_basic_attack_hit": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func on_basic_attack_hit("
+  },
+  "HeroItemInventory._on_hit_common": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func _on_hit_common("
+  },
+  "HeroItemInventory.on_ranged_attack_hit": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func on_ranged_attack_hit("
+  },
+  "HeroItemRenderer": {
+   "kind": "ported",
+   "target": "scripts/ui/hero_panel_layout.gd",
+   "token": "func _item_slots("
+  },
+  "HeroItemRenderer.width": {
+   "kind": "ported",
+   "target": "scripts/ui/hero_panel_layout.gd",
+   "token": "static func item_slot_rect("
+  },
+  "HeroItemRenderer.draw": {
+   "kind": "ported",
+   "target": "scripts/ui/hero_panel_layout.gd",
+   "token": "func _draw_item_icon("
+  },
+  "HeroItemRenderer.slot_index_at": {
+   "kind": "dead",
+   "target": "",
+   "token": ""
+  },
+  "ItemShopUI": {
+   "kind": "ported",
+   "target": "scripts/ui/item_forge_panel.gd",
+   "token": "func _build_chrome("
+  },
+  "ItemShopUI.draw": {
+   "kind": "ported",
+   "target": "scripts/ui/item_forge_panel.gd",
+   "token": "func refresh("
+  },
+  "ItemShopUI._draw_hero_strip": {
+   "kind": "ported",
+   "target": "scripts/ui/item_forge_panel.gd",
+   "token": "func _build_hero_chips("
+  },
+  "ItemShopUI._draw_no_hero_banner": {
+   "kind": "ported",
+   "target": "scripts/ui/item_forge_panel.gd",
+   "token": "\"no_hero_banner\""
+  },
+  "ItemShopUI._draw_panel": {
+   "kind": "ported",
+   "target": "scripts/ui/item_forge_panel.gd",
+   "token": "func _build_chrome("
+  },
+  "ItemShopUI._draw_header": {
+   "kind": "ported",
+   "target": "scripts/ui/item_forge_panel.gd",
+   "token": "\"ITEM FORGE\""
+  },
+  "ItemShopUI._draw_hero_info": {
+   "kind": "ported",
+   "target": "scripts/match/item_shop_ui.gd",
+   "token": "func hero_chips("
+  },
+  "ItemShopUI._draw_owned_slots": {
+   "kind": "ported",
+   "target": "scripts/ui/item_forge_panel.gd",
+   "token": "func _build_slots("
+  },
+  "ItemShopUI._draw_close": {
+   "kind": "ported",
+   "target": "scripts/ui/item_forge_panel.gd",
+   "token": "\"close\""
+  },
+  "ItemShopUI._detail_rect": {
+   "kind": "ported",
+   "target": "scripts/ui/item_forge_panel.gd",
+   "token": "const DETAIL_RECT"
+  },
+  "ItemShopUI._draw_detail_popup": {
+   "kind": "ported",
+   "target": "scripts/ui/item_forge_panel.gd",
+   "token": "func _build_detail_content("
+  },
+  "ItemShopUI._page_count": {
+   "kind": "ported",
+   "target": "scripts/match/item_shop_ui.gd",
+   "token": "func page_count("
+  },
+  "ItemShopUI._draw_page_tabs": {
+   "kind": "ported",
+   "target": "scripts/ui/item_forge_panel.gd",
+   "token": "func _build_page_tabs("
+  },
+  "ItemShopUI._draw_item_grid": {
+   "kind": "ported",
+   "target": "scripts/ui/item_forge_panel.gd",
+   "token": "func _build_cards("
+  },
+  "ItemShopUI._draw_item_card": {
+   "kind": "ported",
+   "target": "scripts/ui/item_forge_panel.gd",
+   "token": "func _card_style("
+  },
+  "ItemShopUI._localized_desc": {
+   "kind": "ported",
+   "target": "scripts/ui/item_forge_panel.gd",
+   "token": "func _description("
+  },
+  "ItemShopUI._wrap_text": {
+   "kind": "ported",
+   "target": "scripts/ui/item_forge_panel.gd",
+   "token": "AUTOWRAP_WORD_SMART"
+  },
+  "MAX_ITEM_SLOTS": {
+   "kind": "data",
+   "target": "data/ai/item_catalog.json",
+   "token": "\"max_slots\": 6"
+  },
+  "ITEM_FLAT_COST": {
+   "kind": "data",
+   "target": "data/ai/item_catalog.json",
+   "token": "\"flat_cost\": 4500"
+  },
+  "CATEGORY_CRIT": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"crit\""
+  },
+  "CATEGORY_DAMAGE": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"damage\""
+  },
+  "CATEGORY_LIFESTEAL": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"lifesteal\""
+  },
+  "CATEGORY_TANK": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"tank\""
+  },
+  "CATEGORY_SPLASH": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"splash\""
+  },
+  "CATEGORY_AS_ARMOR": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"as_armor\""
+  },
+  "CATEGORY_AS": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"attack_speed\""
+  },
+  "CATEGORY_CASTER": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"caster\""
+  },
+  "CATEGORY_GUARD": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"guard\""
+  },
+  "CATEGORY_AGILITY": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"agility\""
+  },
+  "CATEGORY_SHRED": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"shred\""
+  },
+  "CATEGORY_UTILITY": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"utility\""
+  },
+  "CATEGORY_CONTROL": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"control\""
+  },
+  "CATEGORY_BURST": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"burst\""
+  },
+  "CATEGORY_STATIC": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"static\""
+  },
+  "CATEGORY_THORN": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"thorn\""
+  },
+  "CATEGORY_FROST": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"frost\""
+  },
+  "CATEGORY_PIERCE": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"pierce\""
+  },
+  "CATEGORY_ICE": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"ice\""
+  },
+  "CATEGORY_REACH": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"reach\""
+  },
+  "CATEGORY_POISON": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"poison\""
+  },
+  "CATEGORY_INFERNO": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"inferno\""
+  },
+  "CATEGORY_ARCANE": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"arcane\""
+  },
+  "CATEGORY_MORTAL": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"mortal\""
+  },
+  "CATEGORY_MYSTIC": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category\": \"mystic\""
+  },
+  "MAGIC_ROLE_KEYWORDS": {
+   "kind": "data",
+   "target": "scripts/match/hero_items.gd",
+   "token": "const MAGIC_ROLE_KEYWORDS"
+  },
+  "_MIASMA": {
+   "kind": "ported",
+   "target": "scripts/match/hero_item_inventory.gd",
+   "token": "func apply_miasma("
+  },
+  "ITEM_CATALOG": {
+   "kind": "data",
+   "target": "data/ai/item_catalog.json",
+   "token": "\"dead_edge\""
+  },
+  "CLASS_PHYSICAL": {
+   "kind": "data",
+   "target": "scripts/match/item_shop_ui.gd",
+   "token": "const CLASS_PHYSICAL"
+  },
+  "CLASS_MAGIC": {
+   "kind": "data",
+   "target": "scripts/match/item_shop_ui.gd",
+   "token": "const CLASS_MAGIC"
+  },
+  "CLASS_TANK": {
+   "kind": "data",
+   "target": "scripts/match/item_shop_ui.gd",
+   "token": "const CLASS_TANK"
+  },
+  "ITEM_CLASS_INFO": {
+   "kind": "data",
+   "target": "scripts/match/item_shop_ui.gd",
+   "token": "const CLASS_LABELS"
+  },
+  "_ITEM_CLASS_OVERRIDES": {
+   "kind": "data",
+   "target": "scripts/match/item_shop_ui.gd",
+   "token": "const CLASS_OVERRIDES"
+  },
+  "_MAP_CATEGORY_TO_CLASS": {
+   "kind": "data",
+   "target": "scripts/match/item_shop_ui.gd",
+   "token": "const CATEGORY_TO_CLASS"
+  },
+  "ITEMS_PER_PAGE": {
+   "kind": "data",
+   "target": "scripts/match/item_shop_ui.gd",
+   "token": "const ITEMS_PER_PAGE"
+  },
+  "CLASS_ITEM_ORDER": {
+   "kind": "data",
+   "target": "scripts/match/item_shop_ui.gd",
+   "token": "const CLASS_ITEM_ORDER"
+  },
+  "ITEM_SHOP_ORDER": {
+   "kind": "folded",
+   "target": "scripts/match/item_shop_ui.gd",
+   "token": "func _build_shop_pages("
+  },
+  "CATEGORY_INFO": {
+   "kind": "data",
+   "target": "data/ui/item_shop_presentation.json",
+   "token": "\"category_color\""
+  },
+  "_FIELD_LABELS": {
+   "kind": "data",
+   "target": "scripts/match/item_mechanics.gd",
+   "token": "const FIELD_LABELS"
+  },
+  "_GROUP_LABELS": {
+   "kind": "data",
+   "target": "scripts/match/item_mechanics.gd",
+   "token": "const GROUP_LABELS"
+  },
+  "_MECH_GROUPS": {
+   "kind": "data",
+   "target": "scripts/match/item_mechanics.gd",
+   "token": "const MECH_GROUPS"
+  },
+  "_PCT_KEYS": {
+   "kind": "data",
+   "target": "scripts/match/item_mechanics.gd",
+   "token": "const PCT_KEYS"
+  },
+  "_FRAME_KEYS": {
+   "kind": "data",
+   "target": "scripts/match/item_mechanics.gd",
+   "token": "const FRAME_KEYS"
+  },
+  "_ITEMS_DIR": {
+   "kind": "deviation",
+   "target": "",
+   "token": ""
+  },
+  "_ICON_CACHE": {
+   "kind": "deviation",
+   "target": "",
+   "token": ""
+  }
+ },
+ "catalog": {
+  "count": 33,
+  "items": {
+   "dead_edge": {
+    "name": "Dead Edge",
+    "category": "crit",
+    "cost": 4500,
+    "class": "physical",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "holy_rapier": {
+    "name": "Holy Rapier",
+    "category": "damage",
+    "cost": 4500,
+    "class": "physical",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": true
+   },
+   "demon_maw": {
+    "name": "Demon Maw",
+    "category": "lifesteal",
+    "cost": 4500,
+    "class": "physical",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "leviathan_heart": {
+    "name": "Leviathan Heart",
+    "category": "tank",
+    "cost": 4500,
+    "class": "tank",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "cleave_axe": {
+    "name": "Cleave Axe",
+    "category": "splash",
+    "cost": 4500,
+    "class": "physical",
+    "melee_only": true,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "steel_aegis": {
+    "name": "Steel Aegis",
+    "category": "as_armor",
+    "cost": 4500,
+    "class": "tank",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "moon_shard": {
+    "name": "Moon Shard",
+    "category": "attack_speed",
+    "cost": 4500,
+    "class": "physical",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "octarine_core": {
+    "name": "Octarine Core",
+    "category": "caster",
+    "cost": 4500,
+    "class": "magic",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "scarlet_bulwark": {
+    "name": "Scarlet Bulwark",
+    "category": "guard",
+    "cost": 5000,
+    "class": "tank",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "monarch_wings": {
+    "name": "Monarch Wings",
+    "category": "agility",
+    "cost": 5000,
+    "class": "physical",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "corroder": {
+    "name": "Corroder",
+    "category": "shred",
+    "cost": 4500,
+    "class": "physical",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "tempest_vane": {
+    "name": "Tempest Vane",
+    "category": "utility",
+    "cost": 5500,
+    "class": "tank",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "fenrir_chain": {
+    "name": "Fenrir Chain",
+    "category": "control",
+    "cost": 5250,
+    "class": "physical",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "sanguine_thorn": {
+    "name": "Sanguine Thorn",
+    "category": "burst",
+    "cost": 6000,
+    "class": "physical",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "abyss_breaker": {
+    "name": "Abyss Breaker",
+    "category": "control",
+    "cost": 5500,
+    "class": "tank",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "thunder_coil": {
+    "name": "Thunder Coil",
+    "category": "static",
+    "cost": 5250,
+    "class": "physical",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "razor_carapace": {
+    "name": "Razor Carapace",
+    "category": "thorn",
+    "cost": 5000,
+    "class": "tank",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "everfrost_guard": {
+    "name": "Everfrost Guard",
+    "category": "frost",
+    "cost": 5500,
+    "class": "tank",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "sundering_cudgel": {
+    "name": "Sundering Cudgel",
+    "category": "pierce",
+    "cost": 5000,
+    "class": "physical",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "frostbound_eye": {
+    "name": "Frostbound Eye",
+    "category": "ice",
+    "cost": 5250,
+    "class": "physical",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "gale_pike": {
+    "name": "Gale Pike",
+    "category": "reach",
+    "cost": 5250,
+    "class": "physical",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "basilisk_breath": {
+    "name": "Basilisk Breath",
+    "category": "poison",
+    "cost": 5750,
+    "class": "physical",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "solar_brand": {
+    "name": "Solar Brand",
+    "category": "inferno",
+    "cost": 5500,
+    "class": "tank",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "runic_gavel": {
+    "name": "Runic Gavel",
+    "category": "arcane",
+    "cost": 5250,
+    "class": "magic",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "searbrand": {
+    "name": "Searbrand",
+    "category": "mortal",
+    "cost": 5750,
+    "class": "tank",
+    "melee_only": false,
+    "magic_only": false,
+    "drops_on_death": false
+   },
+   "astral_codex": {
+    "name": "Astral Codex",
+    "category": "mystic",
+    "cost": 6000,
+    "class": "magic",
+    "melee_only": false,
+    "magic_only": true,
+    "drops_on_death": false
+   },
+   "sage_scepter": {
+    "name": "Sage Scepter",
+    "category": "caster",
+    "cost": 5000,
+    "class": "magic",
+    "melee_only": false,
+    "magic_only": true,
+    "drops_on_death": false
+   },
+   "fulgur_scepter": {
+    "name": "Fulgur Scepter",
+    "category": "burst",
+    "cost": 6000,
+    "class": "magic",
+    "melee_only": false,
+    "magic_only": true,
+    "drops_on_death": false
+   },
+   "hex_idol": {
+    "name": "Hex Idol",
+    "category": "control",
+    "cost": 5750,
+    "class": "magic",
+    "melee_only": false,
+    "magic_only": true,
+    "drops_on_death": false
+   },
+   "rift_veil": {
+    "name": "Rift Veil",
+    "category": "burst",
+    "cost": 5500,
+    "class": "magic",
+    "melee_only": false,
+    "magic_only": true,
+    "drops_on_death": false
+   },
+   "vital_stone": {
+    "name": "Vital Stone",
+    "category": "lifesteal",
+    "cost": 5250,
+    "class": "magic",
+    "melee_only": false,
+    "magic_only": true,
+    "drops_on_death": false
+   },
+   "vine_rod": {
+    "name": "Vine Rod",
+    "category": "control",
+    "cost": 5000,
+    "class": "magic",
+    "melee_only": false,
+    "magic_only": true,
+    "drops_on_death": false
+   },
+   "spectral_charm": {
+    "name": "Spectral Charm",
+    "category": "utility",
+    "cost": 5500,
+    "class": "magic",
+    "melee_only": false,
+    "magic_only": true,
+    "drops_on_death": false
+   }
+  },
+  "flat_cost": 4500,
+  "max_slots": 6,
+  "items_per_page": 8,
+  "class_overrides": {
+   "tempest_vane": "tank",
+   "abyss_breaker": "tank"
+  },
+  "magic_only": [
+   "astral_codex",
+   "fulgur_scepter",
+   "hex_idol",
+   "rift_veil",
+   "sage_scepter",
+   "spectral_charm",
+   "vine_rod",
+   "vital_stone"
+  ],
+  "class_order": {
+   "physical": [
+    "dead_edge",
+    "holy_rapier",
+    "demon_maw",
+    "cleave_axe",
+    "moon_shard",
+    "monarch_wings",
+    "corroder",
+    "fenrir_chain",
+    "sanguine_thorn",
+    "thunder_coil",
+    "sundering_cudgel",
+    "frostbound_eye",
+    "gale_pike",
+    "basilisk_breath"
+   ],
+   "magic": [
+    "octarine_core",
+    "runic_gavel",
+    "astral_codex",
+    "sage_scepter",
+    "fulgur_scepter",
+    "hex_idol",
+    "rift_veil",
+    "vital_stone",
+    "vine_rod",
+    "spectral_charm"
+   ],
+   "tank": [
+    "leviathan_heart",
+    "steel_aegis",
+    "scarlet_bulwark",
+    "tempest_vane",
+    "abyss_breaker",
+    "razor_carapace",
+    "everfrost_guard",
+    "solar_brand",
+    "searbrand"
+   ]
+  },
+  "pages": [
+   [
+    "dead_edge",
+    "holy_rapier",
+    "demon_maw",
+    "cleave_axe",
+    "moon_shard",
+    "monarch_wings",
+    "corroder",
+    "fenrir_chain"
+   ],
+   [
+    "sanguine_thorn",
+    "thunder_coil",
+    "sundering_cudgel",
+    "frostbound_eye",
+    "gale_pike",
+    "basilisk_breath"
+   ],
+   [
+    "octarine_core",
+    "runic_gavel",
+    "astral_codex",
+    "sage_scepter",
+    "fulgur_scepter",
+    "hex_idol",
+    "rift_veil",
+    "vital_stone"
+   ],
+   [
+    "vine_rod",
+    "spectral_charm"
+   ],
+   [
+    "leviathan_heart",
+    "steel_aegis",
+    "scarlet_bulwark",
+    "tempest_vane",
+    "abyss_breaker",
+    "razor_carapace",
+    "everfrost_guard",
+    "solar_brand"
+   ],
+   [
+    "searbrand"
+   ]
+  ],
+  "page_meta": [
+   [
+    "physical",
+    1,
+    2
+   ],
+   [
+    "physical",
+    2,
+    2
+   ],
+   [
+    "magic",
+    1,
+    2
+   ],
+   [
+    "magic",
+    2,
+    2
+   ],
+   [
+    "tank",
+    1,
+    2
+   ],
+   [
+    "tank",
+    2,
+    2
+   ]
+  ],
+  "shop_order": [
+   "dead_edge",
+   "holy_rapier",
+   "demon_maw",
+   "cleave_axe",
+   "moon_shard",
+   "monarch_wings",
+   "corroder",
+   "fenrir_chain",
+   "sanguine_thorn",
+   "thunder_coil",
+   "sundering_cudgel",
+   "frostbound_eye",
+   "gale_pike",
+   "basilisk_breath",
+   "octarine_core",
+   "runic_gavel",
+   "astral_codex",
+   "sage_scepter",
+   "fulgur_scepter",
+   "hex_idol",
+   "rift_veil",
+   "vital_stone",
+   "vine_rod",
+   "spectral_charm",
+   "leviathan_heart",
+   "steel_aegis",
+   "scarlet_bulwark",
+   "tempest_vane",
+   "abyss_breaker",
+   "razor_carapace",
+   "everfrost_guard",
+   "solar_brand",
+   "searbrand"
+  ]
+ },
+ "labels": {
+  "field": {
+   "damage": [
+    "Damage",
+    "Damage"
+   ],
+   "hp": [
+    "Max HP",
+    "Max HP"
+   ],
+   "hp_pct": [
+    "Max HP",
+    "Max HP"
+   ],
+   "hp_regen": [
+    "HP Regen",
+    "HP Regen"
+   ],
+   "armor": [
+    "Armor",
+    "Armor"
+   ],
+   "attack_speed": [
+    "Attack Speed",
+    "Attack Speed"
+   ],
+   "crit_chance": [
+    "Peluang Crit",
+    "Crit Chance"
+   ],
+   "crit_mult": [
+    "Pengali Crit",
+    "Crit Multiplier"
+   ],
+   "lifesteal": [
+    "Lifesteal",
+    "Lifesteal"
+   ],
+   "lifesteal_bonus": [
+    "Bonus Lifesteal",
+    "Lifesteal Bonus"
+   ],
+   "cooldown_reduction": [
+    "Cooldown Reduction",
+    "Cooldown Reduction"
+   ],
+   "spell_vamp": [
+    "Spell Lifesteal",
+    "Spell Lifesteal"
+   ],
+   "skill_amp": [
+    "Skill Amp",
+    "Skill Amp"
+   ],
+   "evasion": [
+    "Evasion",
+    "Evasion"
+   ],
+   "move_speed_pct": [
+    "Move Speed",
+    "Move Speed"
+   ],
+   "heal_amp": [
+    "Heal Diterima",
+    "Incoming Heal"
+   ],
+   "slow_resist": [
+    "Tahan Slow",
+    "Slow Resist"
+   ],
+   "range_bonus": [
+    "Bonus Jangkauan",
+    "Attack Range Bonus"
+   ],
+   "hp_threshold": [
+    "Ambang HP",
+    "HP Threshold"
+   ],
+   "duration": [
+    "Durasi",
+    "Duration"
+   ],
+   "cooldown": [
+    "Cooldown",
+    "Cooldown"
+   ],
+   "ally_radius": [
+    "Radius Sekutu",
+    "Ally Radius"
+   ],
+   "ally_armor": [
+    "Armor Sekutu",
+    "Ally Armor"
+   ],
+   "ally_attack_speed": [
+    "AS Sekutu",
+    "Ally Attack Speed"
+   ],
+   "base_block": [
+    "Block Dasar",
+    "Base Block"
+   ],
+   "max_hp_block_pct": [
+    "Block (% Max HP)",
+    "Block (% Max HP)"
+   ],
+   "stun": [
+    "Stun",
+    "Stun"
+   ],
+   "silence": [
+    "Silence",
+    "Silence"
+   ],
+   "silence_duration": [
+    "Durasi Silence",
+    "Silence Duration"
+   ],
+   "trigger_enemies": [
+    "Pemicu Musuh Dekat",
+    "Trigger Enemies"
+   ],
+   "trigger_radius": [
+    "Radius Pemicu",
+    "Trigger Radius"
+   ],
+   "root_radius": [
+    "Radius Root",
+    "Root Radius"
+   ],
+   "root_duration": [
+    "Durasi Root",
+    "Root Duration"
+   ],
+   "proc_chance": [
+    "Peluang Aktif",
+    "Proc Chance"
+   ],
+   "tick": [
+    "Interval Tick",
+    "Tick Interval"
+   ],
+   "targets": [
+    "Jumlah Target",
+    "Targets"
+   ],
+   "radius": [
+    "Radius",
+    "Radius"
+   ],
+   "slow": [
+    "Slow Gerak",
+    "Move Slow"
+   ],
+   "atk_slow": [
+    "Slow Serang",
+    "Attack Slow"
+   ],
+   "slow_duration": [
+    "Durasi Slow",
+    "Slow Duration"
+   ],
+   "burn_dps": [
+    "Bakar (dmg/dtk)",
+    "Burn (dmg/s)"
+   ],
+   "burn_duration": [
+    "Durasi Bakar",
+    "Burn Duration"
+   ],
+   "dash_distance": [
+    "Jarak Dorong",
+    "Dash Distance"
+   ],
+   "as_bonus": [
+    "Bonus Attack Speed",
+    "Attack Speed Bonus"
+   ],
+   "heal_pct": [
+    "Heal (% Max HP)",
+    "Heal (% Max HP)"
+   ],
+   "reflect_pct": [
+    "Pantulan Damage",
+    "Damage Reflect"
+   ],
+   "damage_amp": [
+    "Amplifikasi Damage",
+    "Damage Amp"
+   ],
+   "chance": [
+    "Peluang",
+    "Chance"
+   ],
+   "cleave_pct": [
+    "Splash Damage",
+    "Cleave Damage"
+   ],
+   "cleave_radius": [
+    "Radius Splash",
+    "Cleave Radius"
+   ],
+   "out_of_combat_regen_pct": [
+    "Regen Luar Tempur",
+    "Out-of-Combat Regen"
+   ],
+   "combat_timeout": [
+    "Timeout Tempur",
+    "Combat Timeout"
+   ],
+   "armor_shred": [
+    "Kikis Armor",
+    "Armor Shred"
+   ],
+   "charge_time": [
+    "Waktu Isi Muatan",
+    "Charge Time"
+   ],
+   "enemy_radius": [
+    "Radius Musuh",
+    "Enemy Radius"
+   ],
+   "enemy_armor_reduction": [
+    "Kurangi Armor Musuh",
+    "Enemy Armor Reduction"
+   ],
+   "enemy_atk_slow": [
+    "AS Musuh Berkurang",
+    "Enemy AS Reduction"
+   ],
+   "enemy_anti_heal": [
+    "Anti-Heal Musuh",
+    "Enemy Anti-Heal"
+   ],
+   "blind": [
+    "Musuh Melenceng",
+    "Enemy Miss Chance"
+   ],
+   "melee_block": [
+    "Block (Melee)",
+    "Block (Melee)"
+   ],
+   "ranged_block": [
+    "Block (Ranged)",
+    "Block (Ranged)"
+   ],
+   "anti_heal": [
+    "Anti-Heal",
+    "Anti-Heal"
+   ],
+   "max_hp_pct_per_tick": [
+    "Racun (% Max HP/tick)",
+    "Poison (% Max HP/tick)"
+   ],
+   "cap_damage": [
+    "Batas Damage",
+    "Damage Cap"
+   ],
+   "damage_pct": [
+    "Damage Tembakan Ekstra",
+    "Extra Shot Damage"
+   ]
+  },
+  "group": {
+   "stats": [
+    "STAT",
+    "STATS"
+   ],
+   "passive": [
+    "PASIF",
+    "PASSIVE"
+   ],
+   "active": [
+    "AKTIF",
+    "ACTIVE"
+   ],
+   "aura": [
+    "AURA",
+    "AURA"
+   ],
+   "block": [
+    "BLOCK",
+    "BLOCK"
+   ],
+   "on_attack": [
+    "EFEK SERANGAN",
+    "ON-ATTACK"
+   ],
+   "multishot": [
+    "MULTISHOT",
+    "MULTISHOT"
+   ],
+   "bash": [
+    "BASH",
+    "BASH"
+   ]
+  },
+  "groups": [
+   "stats",
+   "passive",
+   "active",
+   "aura",
+   "block",
+   "on_attack",
+   "multishot",
+   "bash"
+  ],
+  "pct": [
+   "anti_heal",
+   "atk_slow",
+   "blind",
+   "chance",
+   "cleave_pct",
+   "cooldown_reduction",
+   "crit_chance",
+   "damage_amp",
+   "damage_pct",
+   "enemy_anti_heal",
+   "enemy_atk_slow",
+   "evasion",
+   "heal_amp",
+   "heal_pct",
+   "hp_pct",
+   "hp_threshold",
+   "lifesteal",
+   "lifesteal_bonus",
+   "max_hp_block_pct",
+   "max_hp_pct_per_tick",
+   "move_speed_pct",
+   "out_of_combat_regen_pct",
+   "proc_chance",
+   "reflect_pct",
+   "skill_amp",
+   "slow",
+   "slow_resist",
+   "spell_vamp"
+  ],
+  "frame": [
+   "burn_duration",
+   "charge_time",
+   "combat_timeout",
+   "cooldown",
+   "duration",
+   "root_duration",
+   "silence",
+   "silence_duration",
+   "slow_duration",
+   "stun",
+   "tick"
+  ]
+ },
+ "format": [
+  {
+   "key": "ally_armor",
+   "value": 2,
+   "kind": "int",
+   "id": "2",
+   "en": "2"
+  },
+  {
+   "key": "ally_attack_speed",
+   "value": 10,
+   "kind": "int",
+   "id": "10",
+   "en": "10"
+  },
+  {
+   "key": "ally_radius",
+   "value": 320,
+   "kind": "int",
+   "id": "320",
+   "en": "320"
+  },
+  {
+   "key": "anti_heal",
+   "value": 0.45,
+   "kind": "float",
+   "id": "45%",
+   "en": "45%"
+  },
+  {
+   "key": "armor",
+   "value": 10,
+   "kind": "int",
+   "id": "10",
+   "en": "10"
+  },
+  {
+   "key": "armor",
+   "value": 4,
+   "kind": "int",
+   "id": "4",
+   "en": "4"
+  },
+  {
+   "key": "armor",
+   "value": 6,
+   "kind": "int",
+   "id": "6",
+   "en": "6"
+  },
+  {
+   "key": "armor",
+   "value": 8,
+   "kind": "int",
+   "id": "8",
+   "en": "8"
+  },
+  {
+   "key": "armor_shred",
+   "value": 6,
+   "kind": "int",
+   "id": "6",
+   "en": "6"
+  },
+  {
+   "key": "as_bonus",
+   "value": 55,
+   "kind": "int",
+   "id": "55",
+   "en": "55"
+  },
+  {
+   "key": "atk_slow",
+   "value": 0.28,
+   "kind": "float",
+   "id": "28%",
+   "en": "28%"
+  },
+  {
+   "key": "attack_speed",
+   "value": 25,
+   "kind": "int",
+   "id": "25",
+   "en": "25"
+  },
+  {
+   "key": "attack_speed",
+   "value": 30,
+   "kind": "int",
+   "id": "30",
+   "en": "30"
+  },
+  {
+   "key": "attack_speed",
+   "value": 60,
+   "kind": "int",
+   "id": "60",
+   "en": "60"
+  },
+  {
+   "key": "attack_speed",
+   "value": 65,
+   "kind": "int",
+   "id": "65",
+   "en": "65"
+  },
+  {
+   "key": "attack_speed",
+   "value": 75,
+   "kind": "int",
+   "id": "75",
+   "en": "75"
+  },
+  {
+   "key": "base_block",
+   "value": 35,
+   "kind": "int",
+   "id": "35",
+   "en": "35"
+  },
+  {
+   "key": "blind",
+   "value": 0.18,
+   "kind": "float",
+   "id": "18%",
+   "en": "18%"
+  },
+  {
+   "key": "burn_dps",
+   "value": 22,
+   "kind": "int",
+   "id": "22",
+   "en": "22"
+  },
+  {
+   "key": "burn_dps",
+   "value": 28,
+   "kind": "int",
+   "id": "28",
+   "en": "28"
+  },
+  {
+   "key": "burn_dps",
+   "value": 6,
+   "kind": "int",
+   "id": "6",
+   "en": "6"
+  },
+  {
+   "key": "burn_duration",
+   "value": 180,
+   "kind": "int",
+   "id": "3 dtk",
+   "en": "3s"
+  },
+  {
+   "key": "cap_damage",
+   "value": 60,
+   "kind": "int",
+   "id": "60",
+   "en": "60"
+  },
+  {
+   "key": "chance",
+   "value": 0.2,
+   "kind": "float",
+   "id": "20%",
+   "en": "20%"
+  },
+  {
+   "key": "chance",
+   "value": 0.22,
+   "kind": "float",
+   "id": "22%",
+   "en": "22%"
+  },
+  {
+   "key": "chance",
+   "value": 0.28,
+   "kind": "float",
+   "id": "28%",
+   "en": "28%"
+  },
+  {
+   "key": "chance",
+   "value": 0.3,
+   "kind": "float",
+   "id": "30%",
+   "en": "30%"
+  },
+  {
+   "key": "chance",
+   "value": 0.55,
+   "kind": "float",
+   "id": "55%",
+   "en": "55%"
+  },
+  {
+   "key": "charge_time",
+   "value": 540,
+   "kind": "int",
+   "id": "9 dtk",
+   "en": "9s"
+  },
+  {
+   "key": "cleave_pct",
+   "value": 0.5,
+   "kind": "float",
+   "id": "50%",
+   "en": "50%"
+  },
+  {
+   "key": "cleave_radius",
+   "value": 110,
+   "kind": "int",
+   "id": "110",
+   "en": "110"
+  },
+  {
+   "key": "combat_timeout",
+   "value": 300,
+   "kind": "int",
+   "id": "5 dtk",
+   "en": "5s"
+  },
+  {
+   "key": "cooldown",
+   "value": 1080,
+   "kind": "int",
+   "id": "18 dtk",
+   "en": "18s"
+  },
+  {
+   "key": "cooldown",
+   "value": 120,
+   "kind": "int",
+   "id": "2 dtk",
+   "en": "2s"
+  },
+  {
+   "key": "cooldown",
+   "value": 1200,
+   "kind": "int",
+   "id": "20 dtk",
+   "en": "20s"
+  },
+  {
+   "key": "cooldown",
+   "value": 140,
+   "kind": "int",
+   "id": "2.33333 dtk",
+   "en": "2.33333s"
+  },
+  {
+   "key": "cooldown",
+   "value": 1440,
+   "kind": "int",
+   "id": "24 dtk",
+   "en": "24s"
+  },
+  {
+   "key": "cooldown",
+   "value": 1500,
+   "kind": "int",
+   "id": "25 dtk",
+   "en": "25s"
+  },
+  {
+   "key": "cooldown",
+   "value": 1800,
+   "kind": "int",
+   "id": "30 dtk",
+   "en": "30s"
+  },
+  {
+   "key": "cooldown",
+   "value": 2400,
+   "kind": "int",
+   "id": "40 dtk",
+   "en": "40s"
+  },
+  {
+   "key": "cooldown",
+   "value": 2700,
+   "kind": "int",
+   "id": "45 dtk",
+   "en": "45s"
+  },
+  {
+   "key": "cooldown",
+   "value": 540,
+   "kind": "int",
+   "id": "9 dtk",
+   "en": "9s"
+  },
+  {
+   "key": "cooldown_reduction",
+   "value": 0.08,
+   "kind": "float",
+   "id": "8%",
+   "en": "8%"
+  },
+  {
+   "key": "cooldown_reduction",
+   "value": 0.1,
+   "kind": "float",
+   "id": "10%",
+   "en": "10%"
+  },
+  {
+   "key": "cooldown_reduction",
+   "value": 0.15,
+   "kind": "float",
+   "id": "15%",
+   "en": "15%"
+  },
+  {
+   "key": "cooldown_reduction",
+   "value": 0.18,
+   "kind": "float",
+   "id": "18%",
+   "en": "18%"
+  },
+  {
+   "key": "crit_chance",
+   "value": 0.25,
+   "kind": "float",
+   "id": "25%",
+   "en": "25%"
+  },
+  {
+   "key": "crit_mult",
+   "value": 1.5,
+   "kind": "float",
+   "id": "x1.5",
+   "en": "x1.5"
+  },
+  {
+   "key": "crit_mult",
+   "value": 2.0,
+   "kind": "float",
+   "id": "x2",
+   "en": "x2"
+  },
+  {
+   "key": "damage",
+   "value": 110,
+   "kind": "int",
+   "id": "110",
+   "en": "110"
+  },
+  {
+   "key": "damage",
+   "value": 120,
+   "kind": "int",
+   "id": "120",
+   "en": "120"
+  },
+  {
+   "key": "damage",
+   "value": 130,
+   "kind": "int",
+   "id": "130",
+   "en": "130"
+  },
+  {
+   "key": "damage",
+   "value": 15,
+   "kind": "int",
+   "id": "15",
+   "en": "15"
+  },
+  {
+   "key": "damage",
+   "value": 150,
+   "kind": "int",
+   "id": "150",
+   "en": "150"
+  },
+  {
+   "key": "damage",
+   "value": 18,
+   "kind": "int",
+   "id": "18",
+   "en": "18"
+  },
+  {
+   "key": "damage",
+   "value": 20,
+   "kind": "int",
+   "id": "20",
+   "en": "20"
+  },
+  {
+   "key": "damage",
+   "value": 25,
+   "kind": "int",
+   "id": "25",
+   "en": "25"
+  },
+  {
+   "key": "damage",
+   "value": 26,
+   "kind": "int",
+   "id": "26",
+   "en": "26"
+  },
+  {
+   "key": "damage",
+   "value": 28,
+   "kind": "int",
+   "id": "28",
+   "en": "28"
+  },
+  {
+   "key": "damage",
+   "value": 30,
+   "kind": "int",
+   "id": "30",
+   "en": "30"
+  },
+  {
+   "key": "damage",
+   "value": 300,
+   "kind": "int",
+   "id": "300",
+   "en": "300"
+  },
+  {
+   "key": "damage",
+   "value": 34,
+   "kind": "int",
+   "id": "34",
+   "en": "34"
+  },
+  {
+   "key": "damage",
+   "value": 35,
+   "kind": "int",
+   "id": "35",
+   "en": "35"
+  },
+  {
+   "key": "damage",
+   "value": 38,
+   "kind": "int",
+   "id": "38",
+   "en": "38"
+  },
+  {
+   "key": "damage",
+   "value": 40,
+   "kind": "int",
+   "id": "40",
+   "en": "40"
+  },
+  {
+   "key": "damage",
+   "value": 45,
+   "kind": "int",
+   "id": "45",
+   "en": "45"
+  },
+  {
+   "key": "damage",
+   "value": 48,
+   "kind": "int",
+   "id": "48",
+   "en": "48"
+  },
+  {
+   "key": "damage",
+   "value": 52,
+   "kind": "int",
+   "id": "52",
+   "en": "52"
+  },
+  {
+   "key": "damage",
+   "value": 55,
+   "kind": "int",
+   "id": "55",
+   "en": "55"
+  },
+  {
+   "key": "damage",
+   "value": 65,
+   "kind": "int",
+   "id": "65",
+   "en": "65"
+  },
+  {
+   "key": "damage",
+   "value": 80,
+   "kind": "int",
+   "id": "80",
+   "en": "80"
+  },
+  {
+   "key": "damage_amp",
+   "value": 0.15,
+   "kind": "float",
+   "id": "15%",
+   "en": "15%"
+  },
+  {
+   "key": "damage_amp",
+   "value": 0.3,
+   "kind": "float",
+   "id": "30%",
+   "en": "30%"
+  },
+  {
+   "key": "damage_pct",
+   "value": 0.7,
+   "kind": "float",
+   "id": "70%",
+   "en": "70%"
+  },
+  {
+   "key": "dash_distance",
+   "value": 130,
+   "kind": "int",
+   "id": "130",
+   "en": "130"
+  },
+  {
+   "key": "duration",
+   "value": 150,
+   "kind": "int",
+   "id": "2.5 dtk",
+   "en": "2.5s"
+  },
+  {
+   "key": "duration",
+   "value": 180,
+   "kind": "int",
+   "id": "3 dtk",
+   "en": "3s"
+  },
+  {
+   "key": "duration",
+   "value": 270,
+   "kind": "int",
+   "id": "4.5 dtk",
+   "en": "4.5s"
+  },
+  {
+   "key": "duration",
+   "value": 300,
+   "kind": "int",
+   "id": "5 dtk",
+   "en": "5s"
+  },
+  {
+   "key": "duration",
+   "value": 360,
+   "kind": "int",
+   "id": "6 dtk",
+   "en": "6s"
+  },
+  {
+   "key": "duration",
+   "value": 420,
+   "kind": "int",
+   "id": "7 dtk",
+   "en": "7s"
+  },
+  {
+   "key": "duration",
+   "value": 480,
+   "kind": "int",
+   "id": "8 dtk",
+   "en": "8s"
+  },
+  {
+   "key": "enemy_anti_heal",
+   "value": 0.4,
+   "kind": "float",
+   "id": "40%",
+   "en": "40%"
+  },
+  {
+   "key": "enemy_anti_heal",
+   "value": 0.5,
+   "kind": "float",
+   "id": "50%",
+   "en": "50%"
+  },
+  {
+   "key": "enemy_armor_reduction",
+   "value": 2,
+   "kind": "int",
+   "id": "2",
+   "en": "2"
+  },
+  {
+   "key": "enemy_atk_slow",
+   "value": 0.3,
+   "kind": "float",
+   "id": "30%",
+   "en": "30%"
+  },
+  {
+   "key": "enemy_radius",
+   "value": 280,
+   "kind": "int",
+   "id": "280",
+   "en": "280"
+  },
+  {
+   "key": "enemy_radius",
+   "value": 300,
+   "kind": "int",
+   "id": "300",
+   "en": "300"
+  },
+  {
+   "key": "enemy_radius",
+   "value": 320,
+   "kind": "int",
+   "id": "320",
+   "en": "320"
+  },
+  {
+   "key": "evasion",
+   "value": 0.28,
+   "kind": "float",
+   "id": "28%",
+   "en": "28%"
+  },
+  {
+   "key": "heal_amp",
+   "value": 0.16,
+   "kind": "float",
+   "id": "16%",
+   "en": "16%"
+  },
+  {
+   "key": "heal_pct",
+   "value": 0.25,
+   "kind": "float",
+   "id": "25%",
+   "en": "25%"
+  },
+  {
+   "key": "hp",
+   "value": 200,
+   "kind": "int",
+   "id": "200",
+   "en": "200"
+  },
+  {
+   "key": "hp",
+   "value": 230,
+   "kind": "int",
+   "id": "230",
+   "en": "230"
+  },
+  {
+   "key": "hp",
+   "value": 240,
+   "kind": "int",
+   "id": "240",
+   "en": "240"
+  },
+  {
+   "key": "hp",
+   "value": 250,
+   "kind": "int",
+   "id": "250",
+   "en": "250"
+  },
+  {
+   "key": "hp",
+   "value": 260,
+   "kind": "int",
+   "id": "260",
+   "en": "260"
+  },
+  {
+   "key": "hp",
+   "value": 280,
+   "kind": "int",
+   "id": "280",
+   "en": "280"
+  },
+  {
+   "key": "hp",
+   "value": 300,
+   "kind": "int",
+   "id": "300",
+   "en": "300"
+  },
+  {
+   "key": "hp",
+   "value": 320,
+   "kind": "int",
+   "id": "320",
+   "en": "320"
+  },
+  {
+   "key": "hp_pct",
+   "value": 0.35,
+   "kind": "float",
+   "id": "35%",
+   "en": "35%"
+  },
+  {
+   "key": "hp_regen",
+   "value": 2.0,
+   "kind": "float",
+   "id": "2.0",
+   "en": "2.0"
+  },
+  {
+   "key": "hp_regen",
+   "value": 3.0,
+   "kind": "float",
+   "id": "3.0",
+   "en": "3.0"
+  },
+  {
+   "key": "hp_regen",
+   "value": 4,
+   "kind": "int",
+   "id": "4",
+   "en": "4"
+  },
+  {
+   "key": "hp_regen",
+   "value": 5,
+   "kind": "int",
+   "id": "5",
+   "en": "5"
+  },
+  {
+   "key": "hp_regen",
+   "value": 6.0,
+   "kind": "float",
+   "id": "6.0",
+   "en": "6.0"
+  },
+  {
+   "key": "hp_regen",
+   "value": 8,
+   "kind": "int",
+   "id": "8",
+   "en": "8"
+  },
+  {
+   "key": "hp_threshold",
+   "value": 0.3,
+   "kind": "float",
+   "id": "30%",
+   "en": "30%"
+  },
+  {
+   "key": "hp_threshold",
+   "value": 0.35,
+   "kind": "float",
+   "id": "35%",
+   "en": "35%"
+  },
+  {
+   "key": "hp_threshold",
+   "value": 0.4,
+   "kind": "float",
+   "id": "40%",
+   "en": "40%"
+  },
+  {
+   "key": "hp_threshold",
+   "value": 0.45,
+   "kind": "float",
+   "id": "45%",
+   "en": "45%"
+  },
+  {
+   "key": "hp_threshold",
+   "value": 0.55,
+   "kind": "float",
+   "id": "55%",
+   "en": "55%"
+  },
+  {
+   "key": "lifesteal",
+   "value": 0.2,
+   "kind": "float",
+   "id": "20%",
+   "en": "20%"
+  },
+  {
+   "key": "lifesteal_bonus",
+   "value": 1.2,
+   "kind": "float",
+   "id": "120%",
+   "en": "120%"
+  },
+  {
+   "key": "max_hp_block_pct",
+   "value": 0.02,
+   "kind": "float",
+   "id": "2%",
+   "en": "2%"
+  },
+  {
+   "key": "max_hp_pct_per_tick",
+   "value": 0.022,
+   "kind": "float",
+   "id": "2.2%",
+   "en": "2.2%"
+  },
+  {
+   "key": "melee_block",
+   "value": 25,
+   "kind": "int",
+   "id": "25",
+   "en": "25"
+  },
+  {
+   "key": "move_speed_pct",
+   "value": 0.1,
+   "kind": "float",
+   "id": "10%",
+   "en": "10%"
+  },
+  {
+   "key": "move_speed_pct",
+   "value": 0.12,
+   "kind": "float",
+   "id": "12%",
+   "en": "12%"
+  },
+  {
+   "key": "out_of_combat_regen_pct",
+   "value": 0.015,
+   "kind": "float",
+   "id": "1.5%",
+   "en": "1.5%"
+  },
+  {
+   "key": "proc_chance",
+   "value": 0.2,
+   "kind": "float",
+   "id": "20%",
+   "en": "20%"
+  },
+  {
+   "key": "radius",
+   "value": 200,
+   "kind": "int",
+   "id": "200",
+   "en": "200"
+  },
+  {
+   "key": "radius",
+   "value": 240,
+   "kind": "int",
+   "id": "240",
+   "en": "240"
+  },
+  {
+   "key": "radius",
+   "value": 260,
+   "kind": "int",
+   "id": "260",
+   "en": "260"
+  },
+  {
+   "key": "radius",
+   "value": 280,
+   "kind": "int",
+   "id": "280",
+   "en": "280"
+  },
+  {
+   "key": "radius",
+   "value": 320,
+   "kind": "int",
+   "id": "320",
+   "en": "320"
+  },
+  {
+   "key": "range_bonus",
+   "value": 90,
+   "kind": "int",
+   "id": "90",
+   "en": "90"
+  },
+  {
+   "key": "ranged_block",
+   "value": 14,
+   "kind": "int",
+   "id": "14",
+   "en": "14"
+  },
+  {
+   "key": "reflect_pct",
+   "value": 0.85,
+   "kind": "float",
+   "id": "85%",
+   "en": "85%"
+  },
+  {
+   "key": "root_duration",
+   "value": 60,
+   "kind": "int",
+   "id": "1 dtk",
+   "en": "1s"
+  },
+  {
+   "key": "root_duration",
+   "value": 72,
+   "kind": "int",
+   "id": "1.2 dtk",
+   "en": "1.2s"
+  },
+  {
+   "key": "root_radius",
+   "value": 220,
+   "kind": "int",
+   "id": "220",
+   "en": "220"
+  },
+  {
+   "key": "silence",
+   "value": 150,
+   "kind": "int",
+   "id": "2.5 dtk",
+   "en": "2.5s"
+  },
+  {
+   "key": "silence_duration",
+   "value": 90,
+   "kind": "int",
+   "id": "1.5 dtk",
+   "en": "1.5s"
+  },
+  {
+   "key": "skill_amp",
+   "value": 0.1,
+   "kind": "float",
+   "id": "10%",
+   "en": "10%"
+  },
+  {
+   "key": "skill_amp",
+   "value": 0.15,
+   "kind": "float",
+   "id": "15%",
+   "en": "15%"
+  },
+  {
+   "key": "skill_amp",
+   "value": 0.25,
+   "kind": "float",
+   "id": "25%",
+   "en": "25%"
+  },
+  {
+   "key": "slow",
+   "value": 0.28,
+   "kind": "float",
+   "id": "28%",
+   "en": "28%"
+  },
+  {
+   "key": "slow",
+   "value": 0.45,
+   "kind": "float",
+   "id": "45%",
+   "en": "45%"
+  },
+  {
+   "key": "slow_duration",
+   "value": 210,
+   "kind": "int",
+   "id": "3.5 dtk",
+   "en": "3.5s"
+  },
+  {
+   "key": "slow_resist",
+   "value": 0.3,
+   "kind": "float",
+   "id": "30%",
+   "en": "30%"
+  },
+  {
+   "key": "spell_vamp",
+   "value": 0.05,
+   "kind": "float",
+   "id": "5%",
+   "en": "5%"
+  },
+  {
+   "key": "spell_vamp",
+   "value": 0.06,
+   "kind": "float",
+   "id": "6%",
+   "en": "6%"
+  },
+  {
+   "key": "spell_vamp",
+   "value": 0.08,
+   "kind": "float",
+   "id": "8%",
+   "en": "8%"
+  },
+  {
+   "key": "spell_vamp",
+   "value": 0.1,
+   "kind": "float",
+   "id": "10%",
+   "en": "10%"
+  },
+  {
+   "key": "spell_vamp",
+   "value": 0.12,
+   "kind": "float",
+   "id": "12%",
+   "en": "12%"
+  },
+  {
+   "key": "spell_vamp",
+   "value": 0.2,
+   "kind": "float",
+   "id": "20%",
+   "en": "20%"
+  },
+  {
+   "key": "stun",
+   "value": 15,
+   "kind": "int",
+   "id": "0.25 dtk",
+   "en": "0.25s"
+  },
+  {
+   "key": "stun",
+   "value": 150,
+   "kind": "int",
+   "id": "2.5 dtk",
+   "en": "2.5s"
+  },
+  {
+   "key": "stun",
+   "value": 54,
+   "kind": "int",
+   "id": "0.9 dtk",
+   "en": "0.9s"
+  },
+  {
+   "key": "stun",
+   "value": 72,
+   "kind": "int",
+   "id": "1.2 dtk",
+   "en": "1.2s"
+  },
+  {
+   "key": "targets",
+   "value": 2,
+   "kind": "int",
+   "id": "2",
+   "en": "2"
+  },
+  {
+   "key": "targets",
+   "value": 3,
+   "kind": "int",
+   "id": "3",
+   "en": "3"
+  },
+  {
+   "key": "targets",
+   "value": 4,
+   "kind": "int",
+   "id": "4",
+   "en": "4"
+  },
+  {
+   "key": "tick",
+   "value": 30,
+   "kind": "int",
+   "id": "0.5 dtk",
+   "en": "0.5s"
+  },
+  {
+   "key": "trigger_enemies",
+   "value": 2,
+   "kind": "int",
+   "id": "2",
+   "en": "2"
+  },
+  {
+   "key": "trigger_radius",
+   "value": 220,
+   "kind": "int",
+   "id": "220",
+   "en": "220"
+  }
+ ],
+ "mechanics": {
+  "id": {
+   "dead_edge": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Damage: 52"
+    ],
+    [
+     "bullet",
+     "• Peluang Crit: 25%"
+    ],
+    [
+     "bullet",
+     "• Pengali Crit: x2"
+    ]
+   ],
+   "holy_rapier": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Damage: 120"
+    ]
+   ],
+   "demon_maw": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Damage: 20"
+    ],
+    [
+     "bullet",
+     "• Armor: 4"
+    ],
+    [
+     "bullet",
+     "• Lifesteal: 20%"
+    ],
+    [
+     "header",
+     "[AKTIF] Blood Frenzy"
+    ],
+    [
+     "bullet",
+     "• Ambang HP: 35%"
+    ],
+    [
+     "bullet",
+     "• Bonus Lifesteal: 120%"
+    ],
+    [
+     "bullet",
+     "• Durasi: 5 dtk"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 25 dtk"
+    ]
+   ],
+   "leviathan_heart": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Max HP: 35%"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 6.0"
+    ],
+    [
+     "header",
+     "[PASIF] Leviathan Vitality"
+    ],
+    [
+     "bullet",
+     "• Regen Luar Tempur: 1.5%"
+    ],
+    [
+     "bullet",
+     "• Timeout Tempur: 5 dtk"
+    ]
+   ],
+   "cleave_axe": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Damage: 34"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 3.0"
+    ],
+    [
+     "header",
+     "[PASIF] Cleave"
+    ],
+    [
+     "bullet",
+     "• Splash Damage: 50%"
+    ],
+    [
+     "bullet",
+     "• Radius Splash: 110"
+    ]
+   ],
+   "steel_aegis": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Armor: 6"
+    ],
+    [
+     "bullet",
+     "• Attack Speed: 30"
+    ],
+    [
+     "header",
+     "[AURA] Steel Aura"
+    ],
+    [
+     "bullet",
+     "• Radius Sekutu: 320"
+    ],
+    [
+     "bullet",
+     "• Armor Sekutu: 2"
+    ],
+    [
+     "bullet",
+     "• AS Sekutu: 10"
+    ],
+    [
+     "bullet",
+     "• Radius Musuh: 320"
+    ],
+    [
+     "bullet",
+     "• Kurangi Armor Musuh: 2"
+    ]
+   ],
+   "moon_shard": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Attack Speed: 75"
+    ]
+   ],
+   "octarine_core": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Max HP: 300"
+    ],
+    [
+     "bullet",
+     "• Cooldown Reduction: 15%"
+    ],
+    [
+     "bullet",
+     "• Spell Lifesteal: 10%"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 2.0"
+    ]
+   ],
+   "scarlet_bulwark": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Max HP: 250"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 8"
+    ],
+    [
+     "bullet",
+     "• Armor: 6"
+    ],
+    [
+     "header",
+     "[AKTIF] Bulwark Guard"
+    ],
+    [
+     "bullet",
+     "• Ambang HP: 45%"
+    ],
+    [
+     "bullet",
+     "• Radius Sekutu: 320"
+    ],
+    [
+     "bullet",
+     "• Block Dasar: 35"
+    ],
+    [
+     "bullet",
+     "• Block (% Max HP): 2%"
+    ],
+    [
+     "bullet",
+     "• Durasi: 7 dtk"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 40 dtk"
+    ],
+    [
+     "header",
+     "[BLOCK]"
+    ],
+    [
+     "bullet",
+     "• Peluang: 55%"
+    ],
+    [
+     "bullet",
+     "• Block (Melee): 25"
+    ],
+    [
+     "bullet",
+     "• Block (Ranged): 14"
+    ]
+   ],
+   "monarch_wings": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Damage: 38"
+    ],
+    [
+     "bullet",
+     "• Attack Speed: 30"
+    ],
+    [
+     "bullet",
+     "• Evasion: 28%"
+    ]
+   ],
+   "corroder": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Damage: 65"
+    ],
+    [
+     "header",
+     "[PASIF] Corrosion"
+    ],
+    [
+     "bullet",
+     "• Kikis Armor: 6"
+    ],
+    [
+     "bullet",
+     "• Durasi: 6 dtk"
+    ]
+   ],
+   "tempest_vane": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Max HP: 250"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 4"
+    ],
+    [
+     "bullet",
+     "• Move Speed: 12%"
+    ],
+    [
+     "header",
+     "[AKTIF] Tempest Veil"
+    ],
+    [
+     "bullet",
+     "• Ambang HP: 40%"
+    ],
+    [
+     "bullet",
+     "• Durasi: 2.5 dtk"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 30 dtk"
+    ]
+   ],
+   "fenrir_chain": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Damage: 30"
+    ],
+    [
+     "bullet",
+     "• Attack Speed: 30"
+    ],
+    [
+     "bullet",
+     "• Max HP: 250"
+    ],
+    [
+     "header",
+     "[AKTIF] Binding Chains"
+    ],
+    [
+     "bullet",
+     "• Pemicu Musuh Dekat: 2"
+    ],
+    [
+     "bullet",
+     "• Radius Pemicu: 220"
+    ],
+    [
+     "bullet",
+     "• Radius Root: 220"
+    ],
+    [
+     "bullet",
+     "• Durasi Root: 1.2 dtk"
+    ],
+    [
+     "bullet",
+     "• Damage: 80"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 18 dtk"
+    ],
+    [
+     "header",
+     "[EFEK SERANGAN] Arc Chain"
+    ],
+    [
+     "bullet",
+     "• Peluang: 20%"
+    ],
+    [
+     "bullet",
+     "• Damage: 45"
+    ],
+    [
+     "bullet",
+     "• Jumlah Target: 3"
+    ],
+    [
+     "bullet",
+     "• Radius: 240"
+    ]
+   ],
+   "sanguine_thorn": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Damage: 25"
+    ],
+    [
+     "bullet",
+     "• Attack Speed: 60"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 5"
+    ],
+    [
+     "header",
+     "[AKTIF] Soul Rend"
+    ],
+    [
+     "bullet",
+     "• Durasi: 5 dtk"
+    ],
+    [
+     "bullet",
+     "• Pengali Crit: x1.5"
+    ],
+    [
+     "bullet",
+     "• Amplifikasi Damage: 30%"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 18 dtk"
+    ]
+   ],
+   "abyss_breaker": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Damage: 35"
+    ],
+    [
+     "bullet",
+     "• Max HP: 300"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 3"
+    ],
+    [
+     "bullet",
+     "• Heal Diterima: 16%"
+    ],
+    [
+     "bullet",
+     "• Tahan Slow: 30%"
+    ],
+    [
+     "header",
+     "[AKTIF] Overwhelm"
+    ],
+    [
+     "bullet",
+     "• Stun: 1.2 dtk"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 25 dtk"
+    ],
+    [
+     "header",
+     "[BASH]"
+    ],
+    [
+     "bullet",
+     "• Peluang: 22%"
+    ],
+    [
+     "bullet",
+     "• Damage: 55"
+    ],
+    [
+     "bullet",
+     "• Stun: 0.9 dtk"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 2.33333 dtk"
+    ]
+   ],
+   "thunder_coil": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Damage: 25"
+    ],
+    [
+     "bullet",
+     "• Attack Speed: 65"
+    ],
+    [
+     "header",
+     "[AKTIF] Static Charge"
+    ],
+    [
+     "bullet",
+     "• Peluang Aktif: 20%"
+    ],
+    [
+     "bullet",
+     "• Durasi: 8 dtk"
+    ],
+    [
+     "bullet",
+     "• Interval Tick: 0.5 dtk"
+    ],
+    [
+     "bullet",
+     "• Damage: 65"
+    ],
+    [
+     "bullet",
+     "• Jumlah Target: 4"
+    ],
+    [
+     "bullet",
+     "• Radius: 260"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 20 dtk"
+    ],
+    [
+     "header",
+     "[EFEK SERANGAN] Arc Lightning"
+    ],
+    [
+     "bullet",
+     "• Peluang: 22%"
+    ],
+    [
+     "bullet",
+     "• Damage: 40"
+    ],
+    [
+     "bullet",
+     "• Jumlah Target: 3"
+    ],
+    [
+     "bullet",
+     "• Radius: 240"
+    ]
+   ],
+   "razor_carapace": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Damage: 18"
+    ],
+    [
+     "bullet",
+     "• Armor: 8"
+    ],
+    [
+     "bullet",
+     "• Cooldown Reduction: 10%"
+    ],
+    [
+     "header",
+     "[AKTIF] Thornmail"
+    ],
+    [
+     "bullet",
+     "• Ambang HP: 55%"
+    ],
+    [
+     "bullet",
+     "• Pantulan Damage: 85%"
+    ],
+    [
+     "bullet",
+     "• Durasi: 4.5 dtk"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 25 dtk"
+    ]
+   ],
+   "everfrost_guard": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Armor: 10"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 5"
+    ],
+    [
+     "bullet",
+     "• Cooldown Reduction: 10%"
+    ],
+    [
+     "header",
+     "[AKTIF] Arctic Blast"
+    ],
+    [
+     "bullet",
+     "• Pemicu Musuh Dekat: 2"
+    ],
+    [
+     "bullet",
+     "• Radius: 280"
+    ],
+    [
+     "bullet",
+     "• Damage: 130"
+    ],
+    [
+     "bullet",
+     "• Slow Gerak: 45%"
+    ],
+    [
+     "bullet",
+     "• Durasi Slow: 3.5 dtk"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 24 dtk"
+    ],
+    [
+     "header",
+     "[AURA] Freezing Aura"
+    ],
+    [
+     "bullet",
+     "• Radius Musuh: 300"
+    ],
+    [
+     "bullet",
+     "• AS Musuh Berkurang: 30%"
+    ],
+    [
+     "bullet",
+     "• Anti-Heal Musuh: 40%"
+    ]
+   ],
+   "sundering_cudgel": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Damage: 48"
+    ],
+    [
+     "bullet",
+     "• Attack Speed: 25"
+    ],
+    [
+     "header",
+     "[BASH] Piercing Bash"
+    ],
+    [
+     "bullet",
+     "• Peluang: 28%"
+    ],
+    [
+     "bullet",
+     "• Damage: 55"
+    ],
+    [
+     "bullet",
+     "• Stun: 0.25 dtk"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 2 dtk"
+    ]
+   ],
+   "frostbound_eye": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Damage: 20"
+    ],
+    [
+     "bullet",
+     "• Max HP: 250"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 4"
+    ],
+    [
+     "header",
+     "[EFEK SERANGAN] Frostbite"
+    ],
+    [
+     "bullet",
+     "• Slow Gerak: 28%"
+    ],
+    [
+     "bullet",
+     "• Slow Serang: 28%"
+    ],
+    [
+     "bullet",
+     "• Anti-Heal: 45%"
+    ],
+    [
+     "bullet",
+     "• Durasi: 3 dtk"
+    ]
+   ],
+   "gale_pike": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Damage: 18"
+    ],
+    [
+     "bullet",
+     "• Attack Speed: 25"
+    ],
+    [
+     "bullet",
+     "• Max HP: 200"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 3"
+    ],
+    [
+     "bullet",
+     "• Bonus Jangkauan: 90"
+    ],
+    [
+     "header",
+     "[AKTIF] Gale Leap"
+    ],
+    [
+     "bullet",
+     "• Ambang HP: 40%"
+    ],
+    [
+     "bullet",
+     "• Jarak Dorong: 130"
+    ],
+    [
+     "bullet",
+     "• Bonus Attack Speed: 55"
+    ],
+    [
+     "bullet",
+     "• Durasi: 3 dtk"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 25 dtk"
+    ]
+   ],
+   "basilisk_breath": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Damage: 26"
+    ],
+    [
+     "bullet",
+     "• Attack Speed: 30"
+    ],
+    [
+     "bullet",
+     "• Max HP: 260"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 3"
+    ],
+    [
+     "header",
+     "[EFEK SERANGAN] Miasma"
+    ],
+    [
+     "bullet",
+     "• Racun (% Max HP/tick): 2.2%"
+    ],
+    [
+     "bullet",
+     "• Interval Tick: 0.5 dtk"
+    ],
+    [
+     "bullet",
+     "• Durasi: 3 dtk"
+    ],
+    [
+     "bullet",
+     "• Batas Damage: 60"
+    ],
+    [
+     "header",
+     "[MULTISHOT] Polycephaly"
+    ],
+    [
+     "bullet",
+     "• Peluang: 30%"
+    ],
+    [
+     "bullet",
+     "• Jumlah Target: 2"
+    ],
+    [
+     "bullet",
+     "• Radius: 200"
+    ],
+    [
+     "bullet",
+     "• Damage Tembakan Ekstra: 70%"
+    ]
+   ],
+   "solar_brand": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Damage: 30"
+    ],
+    [
+     "bullet",
+     "• Max HP: 280"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 5"
+    ],
+    [
+     "header",
+     "[AURA] Scorched Earth"
+    ],
+    [
+     "bullet",
+     "• Radius Musuh: 280"
+    ],
+    [
+     "bullet",
+     "• Bakar (dmg/dtk): 28"
+    ],
+    [
+     "bullet",
+     "• Musuh Melenceng: 18%"
+    ]
+   ],
+   "runic_gavel": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Damage: 28"
+    ],
+    [
+     "bullet",
+     "• Max HP: 250"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 4"
+    ],
+    [
+     "bullet",
+     "• Cooldown Reduction: 15%"
+    ],
+    [
+     "header",
+     "[PASIF] Empower Strike"
+    ],
+    [
+     "bullet",
+     "• Waktu Isi Muatan: 9 dtk"
+    ],
+    [
+     "bullet",
+     "• Damage: 130"
+    ]
+   ],
+   "searbrand": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Damage: 20"
+    ],
+    [
+     "bullet",
+     "• Max HP: 320"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 6"
+    ],
+    [
+     "bullet",
+     "• Cooldown Reduction: 15%"
+    ],
+    [
+     "header",
+     "[AKTIF] Brand Burst"
+    ],
+    [
+     "bullet",
+     "• Pemicu Musuh Dekat: 2"
+    ],
+    [
+     "bullet",
+     "• Radius: 320"
+    ],
+    [
+     "bullet",
+     "• Damage: 110"
+    ],
+    [
+     "bullet",
+     "• Bakar (dmg/dtk): 22"
+    ],
+    [
+     "bullet",
+     "• Durasi Bakar: 3 dtk"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 18 dtk"
+    ],
+    [
+     "header",
+     "[AURA] Cauterize"
+    ],
+    [
+     "bullet",
+     "• Radius Musuh: 300"
+    ],
+    [
+     "bullet",
+     "• Anti-Heal Musuh: 50%"
+    ],
+    [
+     "bullet",
+     "• Bakar (dmg/dtk): 6"
+    ]
+   ],
+   "astral_codex": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Max HP: 280"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 4"
+    ],
+    [
+     "bullet",
+     "• Cooldown Reduction: 18%"
+    ],
+    [
+     "bullet",
+     "• Spell Lifesteal: 12%"
+    ],
+    [
+     "bullet",
+     "• Skill Amp: 25%"
+    ],
+    [
+     "header",
+     "[AKTIF] Arcane Nova"
+    ],
+    [
+     "bullet",
+     "• Pemicu Musuh Dekat: 2"
+    ],
+    [
+     "bullet",
+     "• Radius: 260"
+    ],
+    [
+     "bullet",
+     "• Damage: 150"
+    ],
+    [
+     "bullet",
+     "• Durasi Silence: 1.5 dtk"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 24 dtk"
+    ]
+   ],
+   "sage_scepter": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Max HP: 200"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 3"
+    ],
+    [
+     "bullet",
+     "• Skill Amp: 15%"
+    ],
+    [
+     "bullet",
+     "• Spell Lifesteal: 8%"
+    ],
+    [
+     "bullet",
+     "• Cooldown Reduction: 8%"
+    ]
+   ],
+   "fulgur_scepter": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Damage: 15"
+    ],
+    [
+     "bullet",
+     "• Max HP: 200"
+    ],
+    [
+     "bullet",
+     "• Skill Amp: 10%"
+    ],
+    [
+     "bullet",
+     "• Spell Lifesteal: 8%"
+    ],
+    [
+     "header",
+     "[AKTIF] Energy Blast"
+    ],
+    [
+     "bullet",
+     "• Damage: 300"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 18 dtk"
+    ]
+   ],
+   "hex_idol": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Max HP: 250"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 4"
+    ],
+    [
+     "bullet",
+     "• Spell Lifesteal: 6%"
+    ],
+    [
+     "bullet",
+     "• Cooldown Reduction: 10%"
+    ],
+    [
+     "header",
+     "[AKTIF] Hexcraft"
+    ],
+    [
+     "bullet",
+     "• Stun: 2.5 dtk"
+    ],
+    [
+     "bullet",
+     "• Silence: 2.5 dtk"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 30 dtk"
+    ]
+   ],
+   "rift_veil": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Max HP: 260"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 4"
+    ],
+    [
+     "bullet",
+     "• Spell Lifesteal: 6%"
+    ],
+    [
+     "header",
+     "[AKTIF] Discord Field"
+    ],
+    [
+     "bullet",
+     "• Pemicu Musuh Dekat: 2"
+    ],
+    [
+     "bullet",
+     "• Radius: 320"
+    ],
+    [
+     "bullet",
+     "• Amplifikasi Damage: 15%"
+    ],
+    [
+     "bullet",
+     "• Durasi: 6 dtk"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 20 dtk"
+    ]
+   ],
+   "vital_stone": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Max HP: 320"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 6"
+    ],
+    [
+     "bullet",
+     "• Spell Lifesteal: 20%"
+    ],
+    [
+     "header",
+     "[AKTIF] Vitality Pact"
+    ],
+    [
+     "bullet",
+     "• Ambang HP: 35%"
+    ],
+    [
+     "bullet",
+     "• Heal (% Max HP): 25%"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 45 dtk"
+    ]
+   ],
+   "vine_rod": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Damage: 15"
+    ],
+    [
+     "bullet",
+     "• Max HP: 240"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 3"
+    ],
+    [
+     "bullet",
+     "• Spell Lifesteal: 5%"
+    ],
+    [
+     "header",
+     "[EFEK SERANGAN] Entangle"
+    ],
+    [
+     "bullet",
+     "• Durasi Root: 1 dtk"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 9 dtk"
+    ]
+   ],
+   "spectral_charm": [
+    [
+     "header",
+     "[STAT]"
+    ],
+    [
+     "bullet",
+     "• Max HP: 230"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 3"
+    ],
+    [
+     "bullet",
+     "• Move Speed: 10%"
+    ],
+    [
+     "bullet",
+     "• Spell Lifesteal: 6%"
+    ],
+    [
+     "header",
+     "[AKTIF] Spectral Form"
+    ],
+    [
+     "bullet",
+     "• Ambang HP: 30%"
+    ],
+    [
+     "bullet",
+     "• Durasi: 2.5 dtk"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 25 dtk"
+    ]
+   ]
+  },
+  "en": {
+   "dead_edge": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Damage: 52"
+    ],
+    [
+     "bullet",
+     "• Crit Chance: 25%"
+    ],
+    [
+     "bullet",
+     "• Crit Multiplier: x2"
+    ]
+   ],
+   "holy_rapier": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Damage: 120"
+    ]
+   ],
+   "demon_maw": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Damage: 20"
+    ],
+    [
+     "bullet",
+     "• Armor: 4"
+    ],
+    [
+     "bullet",
+     "• Lifesteal: 20%"
+    ],
+    [
+     "header",
+     "[ACTIVE] Blood Frenzy"
+    ],
+    [
+     "bullet",
+     "• HP Threshold: 35%"
+    ],
+    [
+     "bullet",
+     "• Lifesteal Bonus: 120%"
+    ],
+    [
+     "bullet",
+     "• Duration: 5s"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 25s"
+    ]
+   ],
+   "leviathan_heart": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Max HP: 35%"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 6.0"
+    ],
+    [
+     "header",
+     "[PASSIVE] Leviathan Vitality"
+    ],
+    [
+     "bullet",
+     "• Out-of-Combat Regen: 1.5%"
+    ],
+    [
+     "bullet",
+     "• Combat Timeout: 5s"
+    ]
+   ],
+   "cleave_axe": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Damage: 34"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 3.0"
+    ],
+    [
+     "header",
+     "[PASSIVE] Cleave"
+    ],
+    [
+     "bullet",
+     "• Cleave Damage: 50%"
+    ],
+    [
+     "bullet",
+     "• Cleave Radius: 110"
+    ]
+   ],
+   "steel_aegis": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Armor: 6"
+    ],
+    [
+     "bullet",
+     "• Attack Speed: 30"
+    ],
+    [
+     "header",
+     "[AURA] Steel Aura"
+    ],
+    [
+     "bullet",
+     "• Ally Radius: 320"
+    ],
+    [
+     "bullet",
+     "• Ally Armor: 2"
+    ],
+    [
+     "bullet",
+     "• Ally Attack Speed: 10"
+    ],
+    [
+     "bullet",
+     "• Enemy Radius: 320"
+    ],
+    [
+     "bullet",
+     "• Enemy Armor Reduction: 2"
+    ]
+   ],
+   "moon_shard": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Attack Speed: 75"
+    ]
+   ],
+   "octarine_core": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Max HP: 300"
+    ],
+    [
+     "bullet",
+     "• Cooldown Reduction: 15%"
+    ],
+    [
+     "bullet",
+     "• Spell Lifesteal: 10%"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 2.0"
+    ]
+   ],
+   "scarlet_bulwark": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Max HP: 250"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 8"
+    ],
+    [
+     "bullet",
+     "• Armor: 6"
+    ],
+    [
+     "header",
+     "[ACTIVE] Bulwark Guard"
+    ],
+    [
+     "bullet",
+     "• HP Threshold: 45%"
+    ],
+    [
+     "bullet",
+     "• Ally Radius: 320"
+    ],
+    [
+     "bullet",
+     "• Base Block: 35"
+    ],
+    [
+     "bullet",
+     "• Block (% Max HP): 2%"
+    ],
+    [
+     "bullet",
+     "• Duration: 7s"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 40s"
+    ],
+    [
+     "header",
+     "[BLOCK]"
+    ],
+    [
+     "bullet",
+     "• Chance: 55%"
+    ],
+    [
+     "bullet",
+     "• Block (Melee): 25"
+    ],
+    [
+     "bullet",
+     "• Block (Ranged): 14"
+    ]
+   ],
+   "monarch_wings": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Damage: 38"
+    ],
+    [
+     "bullet",
+     "• Attack Speed: 30"
+    ],
+    [
+     "bullet",
+     "• Evasion: 28%"
+    ]
+   ],
+   "corroder": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Damage: 65"
+    ],
+    [
+     "header",
+     "[PASSIVE] Corrosion"
+    ],
+    [
+     "bullet",
+     "• Armor Shred: 6"
+    ],
+    [
+     "bullet",
+     "• Duration: 6s"
+    ]
+   ],
+   "tempest_vane": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Max HP: 250"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 4"
+    ],
+    [
+     "bullet",
+     "• Move Speed: 12%"
+    ],
+    [
+     "header",
+     "[ACTIVE] Tempest Veil"
+    ],
+    [
+     "bullet",
+     "• HP Threshold: 40%"
+    ],
+    [
+     "bullet",
+     "• Duration: 2.5s"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 30s"
+    ]
+   ],
+   "fenrir_chain": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Damage: 30"
+    ],
+    [
+     "bullet",
+     "• Attack Speed: 30"
+    ],
+    [
+     "bullet",
+     "• Max HP: 250"
+    ],
+    [
+     "header",
+     "[ACTIVE] Binding Chains"
+    ],
+    [
+     "bullet",
+     "• Trigger Enemies: 2"
+    ],
+    [
+     "bullet",
+     "• Trigger Radius: 220"
+    ],
+    [
+     "bullet",
+     "• Root Radius: 220"
+    ],
+    [
+     "bullet",
+     "• Root Duration: 1.2s"
+    ],
+    [
+     "bullet",
+     "• Damage: 80"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 18s"
+    ],
+    [
+     "header",
+     "[ON-ATTACK] Arc Chain"
+    ],
+    [
+     "bullet",
+     "• Chance: 20%"
+    ],
+    [
+     "bullet",
+     "• Damage: 45"
+    ],
+    [
+     "bullet",
+     "• Targets: 3"
+    ],
+    [
+     "bullet",
+     "• Radius: 240"
+    ]
+   ],
+   "sanguine_thorn": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Damage: 25"
+    ],
+    [
+     "bullet",
+     "• Attack Speed: 60"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 5"
+    ],
+    [
+     "header",
+     "[ACTIVE] Soul Rend"
+    ],
+    [
+     "bullet",
+     "• Duration: 5s"
+    ],
+    [
+     "bullet",
+     "• Crit Multiplier: x1.5"
+    ],
+    [
+     "bullet",
+     "• Damage Amp: 30%"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 18s"
+    ]
+   ],
+   "abyss_breaker": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Damage: 35"
+    ],
+    [
+     "bullet",
+     "• Max HP: 300"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 3"
+    ],
+    [
+     "bullet",
+     "• Incoming Heal: 16%"
+    ],
+    [
+     "bullet",
+     "• Slow Resist: 30%"
+    ],
+    [
+     "header",
+     "[ACTIVE] Overwhelm"
+    ],
+    [
+     "bullet",
+     "• Stun: 1.2s"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 25s"
+    ],
+    [
+     "header",
+     "[BASH]"
+    ],
+    [
+     "bullet",
+     "• Chance: 22%"
+    ],
+    [
+     "bullet",
+     "• Damage: 55"
+    ],
+    [
+     "bullet",
+     "• Stun: 0.9s"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 2.33333s"
+    ]
+   ],
+   "thunder_coil": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Damage: 25"
+    ],
+    [
+     "bullet",
+     "• Attack Speed: 65"
+    ],
+    [
+     "header",
+     "[ACTIVE] Static Charge"
+    ],
+    [
+     "bullet",
+     "• Proc Chance: 20%"
+    ],
+    [
+     "bullet",
+     "• Duration: 8s"
+    ],
+    [
+     "bullet",
+     "• Tick Interval: 0.5s"
+    ],
+    [
+     "bullet",
+     "• Damage: 65"
+    ],
+    [
+     "bullet",
+     "• Targets: 4"
+    ],
+    [
+     "bullet",
+     "• Radius: 260"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 20s"
+    ],
+    [
+     "header",
+     "[ON-ATTACK] Arc Lightning"
+    ],
+    [
+     "bullet",
+     "• Chance: 22%"
+    ],
+    [
+     "bullet",
+     "• Damage: 40"
+    ],
+    [
+     "bullet",
+     "• Targets: 3"
+    ],
+    [
+     "bullet",
+     "• Radius: 240"
+    ]
+   ],
+   "razor_carapace": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Damage: 18"
+    ],
+    [
+     "bullet",
+     "• Armor: 8"
+    ],
+    [
+     "bullet",
+     "• Cooldown Reduction: 10%"
+    ],
+    [
+     "header",
+     "[ACTIVE] Thornmail"
+    ],
+    [
+     "bullet",
+     "• HP Threshold: 55%"
+    ],
+    [
+     "bullet",
+     "• Damage Reflect: 85%"
+    ],
+    [
+     "bullet",
+     "• Duration: 4.5s"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 25s"
+    ]
+   ],
+   "everfrost_guard": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Armor: 10"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 5"
+    ],
+    [
+     "bullet",
+     "• Cooldown Reduction: 10%"
+    ],
+    [
+     "header",
+     "[ACTIVE] Arctic Blast"
+    ],
+    [
+     "bullet",
+     "• Trigger Enemies: 2"
+    ],
+    [
+     "bullet",
+     "• Radius: 280"
+    ],
+    [
+     "bullet",
+     "• Damage: 130"
+    ],
+    [
+     "bullet",
+     "• Move Slow: 45%"
+    ],
+    [
+     "bullet",
+     "• Slow Duration: 3.5s"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 24s"
+    ],
+    [
+     "header",
+     "[AURA] Freezing Aura"
+    ],
+    [
+     "bullet",
+     "• Enemy Radius: 300"
+    ],
+    [
+     "bullet",
+     "• Enemy AS Reduction: 30%"
+    ],
+    [
+     "bullet",
+     "• Enemy Anti-Heal: 40%"
+    ]
+   ],
+   "sundering_cudgel": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Damage: 48"
+    ],
+    [
+     "bullet",
+     "• Attack Speed: 25"
+    ],
+    [
+     "header",
+     "[BASH] Piercing Bash"
+    ],
+    [
+     "bullet",
+     "• Chance: 28%"
+    ],
+    [
+     "bullet",
+     "• Damage: 55"
+    ],
+    [
+     "bullet",
+     "• Stun: 0.25s"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 2s"
+    ]
+   ],
+   "frostbound_eye": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Damage: 20"
+    ],
+    [
+     "bullet",
+     "• Max HP: 250"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 4"
+    ],
+    [
+     "header",
+     "[ON-ATTACK] Frostbite"
+    ],
+    [
+     "bullet",
+     "• Move Slow: 28%"
+    ],
+    [
+     "bullet",
+     "• Attack Slow: 28%"
+    ],
+    [
+     "bullet",
+     "• Anti-Heal: 45%"
+    ],
+    [
+     "bullet",
+     "• Duration: 3s"
+    ]
+   ],
+   "gale_pike": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Damage: 18"
+    ],
+    [
+     "bullet",
+     "• Attack Speed: 25"
+    ],
+    [
+     "bullet",
+     "• Max HP: 200"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 3"
+    ],
+    [
+     "bullet",
+     "• Attack Range Bonus: 90"
+    ],
+    [
+     "header",
+     "[ACTIVE] Gale Leap"
+    ],
+    [
+     "bullet",
+     "• HP Threshold: 40%"
+    ],
+    [
+     "bullet",
+     "• Dash Distance: 130"
+    ],
+    [
+     "bullet",
+     "• Attack Speed Bonus: 55"
+    ],
+    [
+     "bullet",
+     "• Duration: 3s"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 25s"
+    ]
+   ],
+   "basilisk_breath": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Damage: 26"
+    ],
+    [
+     "bullet",
+     "• Attack Speed: 30"
+    ],
+    [
+     "bullet",
+     "• Max HP: 260"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 3"
+    ],
+    [
+     "header",
+     "[ON-ATTACK] Miasma"
+    ],
+    [
+     "bullet",
+     "• Poison (% Max HP/tick): 2.2%"
+    ],
+    [
+     "bullet",
+     "• Tick Interval: 0.5s"
+    ],
+    [
+     "bullet",
+     "• Duration: 3s"
+    ],
+    [
+     "bullet",
+     "• Damage Cap: 60"
+    ],
+    [
+     "header",
+     "[MULTISHOT] Polycephaly"
+    ],
+    [
+     "bullet",
+     "• Chance: 30%"
+    ],
+    [
+     "bullet",
+     "• Targets: 2"
+    ],
+    [
+     "bullet",
+     "• Radius: 200"
+    ],
+    [
+     "bullet",
+     "• Extra Shot Damage: 70%"
+    ]
+   ],
+   "solar_brand": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Damage: 30"
+    ],
+    [
+     "bullet",
+     "• Max HP: 280"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 5"
+    ],
+    [
+     "header",
+     "[AURA] Scorched Earth"
+    ],
+    [
+     "bullet",
+     "• Enemy Radius: 280"
+    ],
+    [
+     "bullet",
+     "• Burn (dmg/s): 28"
+    ],
+    [
+     "bullet",
+     "• Enemy Miss Chance: 18%"
+    ]
+   ],
+   "runic_gavel": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Damage: 28"
+    ],
+    [
+     "bullet",
+     "• Max HP: 250"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 4"
+    ],
+    [
+     "bullet",
+     "• Cooldown Reduction: 15%"
+    ],
+    [
+     "header",
+     "[PASSIVE] Empower Strike"
+    ],
+    [
+     "bullet",
+     "• Charge Time: 9s"
+    ],
+    [
+     "bullet",
+     "• Damage: 130"
+    ]
+   ],
+   "searbrand": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Damage: 20"
+    ],
+    [
+     "bullet",
+     "• Max HP: 320"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 6"
+    ],
+    [
+     "bullet",
+     "• Cooldown Reduction: 15%"
+    ],
+    [
+     "header",
+     "[ACTIVE] Brand Burst"
+    ],
+    [
+     "bullet",
+     "• Trigger Enemies: 2"
+    ],
+    [
+     "bullet",
+     "• Radius: 320"
+    ],
+    [
+     "bullet",
+     "• Damage: 110"
+    ],
+    [
+     "bullet",
+     "• Burn (dmg/s): 22"
+    ],
+    [
+     "bullet",
+     "• Burn Duration: 3s"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 18s"
+    ],
+    [
+     "header",
+     "[AURA] Cauterize"
+    ],
+    [
+     "bullet",
+     "• Enemy Radius: 300"
+    ],
+    [
+     "bullet",
+     "• Enemy Anti-Heal: 50%"
+    ],
+    [
+     "bullet",
+     "• Burn (dmg/s): 6"
+    ]
+   ],
+   "astral_codex": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Max HP: 280"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 4"
+    ],
+    [
+     "bullet",
+     "• Cooldown Reduction: 18%"
+    ],
+    [
+     "bullet",
+     "• Spell Lifesteal: 12%"
+    ],
+    [
+     "bullet",
+     "• Skill Amp: 25%"
+    ],
+    [
+     "header",
+     "[ACTIVE] Arcane Nova"
+    ],
+    [
+     "bullet",
+     "• Trigger Enemies: 2"
+    ],
+    [
+     "bullet",
+     "• Radius: 260"
+    ],
+    [
+     "bullet",
+     "• Damage: 150"
+    ],
+    [
+     "bullet",
+     "• Silence Duration: 1.5s"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 24s"
+    ]
+   ],
+   "sage_scepter": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Max HP: 200"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 3"
+    ],
+    [
+     "bullet",
+     "• Skill Amp: 15%"
+    ],
+    [
+     "bullet",
+     "• Spell Lifesteal: 8%"
+    ],
+    [
+     "bullet",
+     "• Cooldown Reduction: 8%"
+    ]
+   ],
+   "fulgur_scepter": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Damage: 15"
+    ],
+    [
+     "bullet",
+     "• Max HP: 200"
+    ],
+    [
+     "bullet",
+     "• Skill Amp: 10%"
+    ],
+    [
+     "bullet",
+     "• Spell Lifesteal: 8%"
+    ],
+    [
+     "header",
+     "[ACTIVE] Energy Blast"
+    ],
+    [
+     "bullet",
+     "• Damage: 300"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 18s"
+    ]
+   ],
+   "hex_idol": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Max HP: 250"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 4"
+    ],
+    [
+     "bullet",
+     "• Spell Lifesteal: 6%"
+    ],
+    [
+     "bullet",
+     "• Cooldown Reduction: 10%"
+    ],
+    [
+     "header",
+     "[ACTIVE] Hexcraft"
+    ],
+    [
+     "bullet",
+     "• Stun: 2.5s"
+    ],
+    [
+     "bullet",
+     "• Silence: 2.5s"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 30s"
+    ]
+   ],
+   "rift_veil": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Max HP: 260"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 4"
+    ],
+    [
+     "bullet",
+     "• Spell Lifesteal: 6%"
+    ],
+    [
+     "header",
+     "[ACTIVE] Discord Field"
+    ],
+    [
+     "bullet",
+     "• Trigger Enemies: 2"
+    ],
+    [
+     "bullet",
+     "• Radius: 320"
+    ],
+    [
+     "bullet",
+     "• Damage Amp: 15%"
+    ],
+    [
+     "bullet",
+     "• Duration: 6s"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 20s"
+    ]
+   ],
+   "vital_stone": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Max HP: 320"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 6"
+    ],
+    [
+     "bullet",
+     "• Spell Lifesteal: 20%"
+    ],
+    [
+     "header",
+     "[ACTIVE] Vitality Pact"
+    ],
+    [
+     "bullet",
+     "• HP Threshold: 35%"
+    ],
+    [
+     "bullet",
+     "• Heal (% Max HP): 25%"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 45s"
+    ]
+   ],
+   "vine_rod": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Damage: 15"
+    ],
+    [
+     "bullet",
+     "• Max HP: 240"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 3"
+    ],
+    [
+     "bullet",
+     "• Spell Lifesteal: 5%"
+    ],
+    [
+     "header",
+     "[ON-ATTACK] Entangle"
+    ],
+    [
+     "bullet",
+     "• Root Duration: 1s"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 9s"
+    ]
+   ],
+   "spectral_charm": [
+    [
+     "header",
+     "[STATS]"
+    ],
+    [
+     "bullet",
+     "• Max HP: 230"
+    ],
+    [
+     "bullet",
+     "• HP Regen: 3"
+    ],
+    [
+     "bullet",
+     "• Move Speed: 10%"
+    ],
+    [
+     "bullet",
+     "• Spell Lifesteal: 6%"
+    ],
+    [
+     "header",
+     "[ACTIVE] Spectral Form"
+    ],
+    [
+     "bullet",
+     "• HP Threshold: 30%"
+    ],
+    [
+     "bullet",
+     "• Duration: 2.5s"
+    ],
+    [
+     "bullet",
+     "• Cooldown: 25s"
+    ]
+   ]
+  }
+ },
+ "magic": {
+  "Mage": true,
+  "Frost Mage": true,
+  "Warlock": true,
+  "Anti-Mage": false,
+  "Mage Hunter": true,
+  "Anti-Mage Mage": false,
+  "Marskman": false,
+  "Tank": false,
+  "": false,
+  "Starweaver": true,
+  "Hex Priestess": true,
+  "Eldritch Shaman": true,
+  "Pyromancer": true,
+  "Farseer": true
+ }
+}
