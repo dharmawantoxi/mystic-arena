@@ -171,6 +171,8 @@ from map_components_source_oracle import palette_payload as map_components_palet
 from minions_source_oracle import source_fixture as minions_fixture
 from towers_source_oracle import source_fixture as towers_fixture
 from towers_source_oracle import catalog_payload as towers_catalog_payload
+from ui_components_source_oracle import source_fixture as ui_components_fixture
+from ui_components_source_oracle import tower_data as ui_components_tower_data
 check('const ItemStructureArmChecks = preload("res://tests/item_structure_arm_checks.gd")' in ai_tests,
       "Item structure arm suite must be preloaded")
 check("ItemStructureArmChecks.new().run(_check)" in ai_tests,
@@ -3747,6 +3749,166 @@ check('const BossMiasmaKillCreditChecks = preload("res://tests/boss_miasma_kill_
       "9d production-path replay is registered")
 
 
+# ── 9ce: the whole `ui_components/` folder (2 files, 11 merged modules) ──
+# Eleven components merged into one 4.160-line bundle plus a `sys.modules`
+# shim. Most of the folder was native from earlier layers, so this layer
+# inventories and classifies all 122 symbols and ports the two halves that
+# were still missing: the shared `BaseUIComponent` toolbox with
+# `_popup_di_panel`, and `PopupRenderer.draw` for a tapped tower.
+_ui_fixture_path = ROOT / "tests/fixtures/ui_components_source.json"
+_ui_data_path = ROOT / "data/towers/upgrade_paths.json"
+_ui_base_path = ROOT / "scripts/ui/ui_component_base.gd"
+_ui_popup_path = ROOT / "scripts/ui/tower_popup_layout.gd"
+check(_ui_fixture_path.is_file(), "9ce ui_components/ inventory needs a source oracle fixture")
+check(_ui_data_path.is_file(), "9ce the tower popup tables must ship as data")
+check(_ui_base_path.is_file(), "9ce the shared ui-component toolbox must exist")
+check(_ui_popup_path.is_file(), "9ce the tower popup layout must exist")
+check("UiComponentsChecks.new().run(_check)" in ai_tests
+      and 'const UiComponentsChecks = preload("res://tests/ui_components_checks.gd")' in ai_tests,
+      "9ce ui_components/ folder suite must be preloaded and run")
+_ui_doc = ROOT.parent / "docs/UI_COMPONENTS_FOLDER_MIGRATION.md"
+check(_ui_doc.is_file(), "9ce the ui_components/ migration report must ship")
+if _ui_base_path.is_file():
+    _ui_base_text = _ui_base_path.read_text(encoding="utf-8")
+    check(all(token in _ui_base_text for token in (
+              "static func shadow_ops(", "static func hp_bar_ops(",
+              "static func close_button_ops(", "static func panel_position(",
+              "const HP_TRACK := [40, 0, 0, 255]", "const CIRCLE_GLOW := [255, 80, 80, 100]")),
+          "9ce the toolbox must expose the four shared helpers")
+if _ui_popup_path.is_file():
+    _ui_popup_text = _ui_popup_path.read_text(encoding="utf-8")
+    check(all(token in _ui_popup_text for token in (
+              "static func ops(", "static func build(", "static func geometry(",
+              "static func tower_specials(", "static func regen_section(",
+              "static func max_level_ops(", "static func path_buttons_ops(",
+              "static func path_button_ops(", "static func upgrade_button_ops(",
+              'const DATA_PATH := "res://data/towers/upgrade_paths.json"',
+              "const REGEN_SECTION_Y := 300", "const REGEN_MIN_LEVEL := 4")),
+          "9ce the tower popup must carry the whole PopupRenderer tower branch")
+_view_text = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+check("func tower_popup_draw_ops(" in _view_text
+      and "func _draw_tower_popup(" in _view_text
+      and "func _draw_pill_op(" in _view_text
+      and "func _draw_corner_ticks_op(" in _view_text
+      and "func _draw_icon_op(" in _view_text
+      and "func _draw_hp_bar_op(" in _view_text,
+      "9ce the arena view must paint the popup ops")
+_ui_order = _view_text[_view_text.index("const OVERLAY_ORDER :="):]
+_ui_order = _ui_order[:_ui_order.index("]")]
+check(_ui_order.index('"tower_popup"') > _ui_order.index('"build_popup"')
+      and _ui_order.index('"tower_popup"') < _ui_order.index('"hero_panel"'),
+      "9ce the tower popup paints between the build popup and the hero panel")
+if _ui_fixture_path.is_file():
+    _ui = ui_components_fixture()
+    check(_ui == json.loads(_ui_fixture_path.read_text(encoding="utf-8")),
+          "9ce ui_components/ inventory drifted from the source folder")
+    check(_ui["folder"]["count"] == 2 and _ui["folder"]["lines"] == 4300
+          and _ui["folder"]["files"] == {"_bundle.py": 4160, "__init__.py": 140},
+          "9ce ui_components/ is a 4.160-line bundle plus a 140-line shim")
+    check([row["module"] for row in _ui["modules"]] == [
+              "base_ui", "hero_portraits", "build_popup", "build_slots", "hero_panel",
+              "hero_shop", "hover_indicators", "notification", "overlay", "popup_renderer",
+              "shop_hints"],
+          "9ce the eleven merged modules must keep their order")
+    _ui_blocks = [(row["start"], row["end"]) for row in _ui["modules"]]
+    check(all(_ui_blocks[index][1] + 1 == _ui_blocks[index + 1][0]
+              for index in range(len(_ui_blocks) - 1))
+          and _ui_blocks[-1][1] == 4160,
+          "9ce the module blocks must tile the bundle from line 43 to 4.160")
+    check(_ui["symbols"]["count"] == 122 and _ui["symbols"]["modules"] == 11
+          and _ui["symbols"]["classes"] == 14 and _ui["symbols"]["methods"] == 88,
+          f"9ce the folder defines 11 modules, 14 classes and 88 methods: {_ui['symbols']}")
+    check(len(_ui["classification"]) == 122
+          and _ui["classification_kinds"] == {"bake": 5, "dead": 13, "deviation": 1,
+                                              "meta": 6, "native": 17, "ported": 80},
+          f"9ce all 122 folder symbols carry a kind: {_ui['classification_kinds']}")
+    _ui_broken = sorted(name for name, entry in _ui["classification"].items()
+                        if entry["target"] and (
+                            not (ROOT.parent / entry["target"]).is_file()
+                            or entry["token"] not in (ROOT.parent / entry["target"]).read_text(
+                                encoding="utf-8")))
+    check(not _ui_broken,
+          f"9ce every named classification needs a live target and token: {_ui_broken}")
+    _ui_source_only = sorted(name for name, entry in _ui["classification"].items()
+                             if not entry["target"])
+    check(all(_ui["classification"][name]["kind"] in ("dead", "deviation", "meta")
+              for name in _ui_source_only),
+          f"9ce only dead/deviation/meta rows may skip a Godot target: {_ui_source_only}")
+    check([row["name"] for row in _ui["stubs"]] == ["draw", "draw", "draw"],
+          "9ce three whole-body stubs: BaseUIComponent.draw and both Notification copies")
+    check(_ui["duplicates"]["Notification"]["copies"] == 2
+          and _ui["duplicates"]["Notification"]["identical"] is True
+          and _ui["duplicates"]["_FakeEntity"]["copies"] == 2
+          and _ui["duplicates"]["_make_fake_boss"]["copies"] == 2
+          and _ui["duplicates"]["_make_fake_hero"]["copies"] == 2,
+          "9ce the two Notification copies, two fake entities and two factory pairs")
+    check([row["symbol"] for row in _ui["dead_helpers"]] == [
+              "base_ui:BaseUIComponent._draw_shadow_rect",
+              "build_slots:BuildSlots._draw_blue_slot",
+              "build_slots:BuildSlots._draw_red_slot"],
+          "9ce the three never-called helpers must stay named")
+    check(_ui["notifications"]["lines"] == [8677, 8680, 8682],
+          "9ce the removed notification subsystem must be pinned to _core.py")
+    _ui_frames = {frame["label"]: frame for frame in _ui["tower_popup"]}
+    check(len(_ui_frames) == 10
+          and sum(len(frame["ops"]) for frame in _ui["tower_popup"]) == 253
+          and sum(len(frame["buttons"]) for frame in _ui["tower_popup"]) == 32,
+          "9ce the oracle must replay ten tower-popup frames (253 ops, 32 buttons)")
+    check(_ui_frames["path_lv1"]["buttons"]["popup_upgrade_path_mage"] == [644, 514, 167, 68]
+          and _ui_frames["path_lv1"]["buttons"]["popup_upgrade_path_archer"] == [465, 438, 167, 68],
+          "9ce the level-1 path grid must stay a 2x2 of 167x68 cards")
+    check(_ui_frames["max_level"]["buttons"]["popup_sell_tower"] == [565, 448, 150, 34]
+          and "popup_upgrade_tower" not in _ui_frames["max_level"]["buttons"],
+          "9ce MAX LEVEL keeps only the 150x34 sell pill")
+    check(_ui_frames["regen_buy"]["buttons"]["popup_regen_shield"] == [465, 570, 350, 36]
+          and "popup_regen_shield" not in _ui_frames["regen_on"]["buttons"],
+          "9ce the regen section sits at py+300 and disappears once active")
+    check(_ui_frames["panel_wide"]["buttons"]["popup_close"] == [1590, 146, 22, 22]
+          and _ui_frames["panel_wide"]["target_surface"] == [1624, 720]
+          and not any(op["kind"] == "line" for op in _ui_frames["panel_wide"]["ops"]),
+          "9ce a docked popup drops the connector line and follows the panel")
+    check(not any(op["kind"] == "shadow" for op in _ui_frames["upgrade_hover"]["ops"])
+          and any(op["kind"] == "shadow" for op in _ui_frames["upgrade_locked"]["ops"]),
+          "9ce cheap-alpha picks the shadow+gradient panel, flat draws the solid rect")
+    _ui_pills = [op for op in _ui_frames["upgrade_hover"]["ops"] if op["kind"] == "pill"]
+    check([(pill["id"], pill["hover"]) for pill in _ui_pills] == [
+              ("popup_upgrade_tower", True), ("popup_sell_tower", False)],
+          "9ce only the affordable upgrade pill hovers")
+    _ui_specials = {row["case"]["label"]: row["specials"] for row in _ui["specials"]}
+    check(_ui_specials["all"] == ["Splash 40", "Slow 35%", "Chain x3", "Double Shot",
+                                  "Burn 8/s", "AtkSlow 20%", "SkillDown 25%"]
+          and _ui_specials["plain"] == [],
+          "9ce `_get_tower_specials` keeps its order and formats")
+    _ui_panels = {row["case"]["label"]: row["result"] for row in _ui["popup_panel"]}
+    check(_ui_panels["classic"] is None
+          and _ui_panels["too_wide"] is None
+          and _ui_panels["wide_fit"] == {"x": 1288, "y": 140, "surface": [1624, 720]},
+          "9ce `_popup_di_panel` only relocates into a panel wide enough")
+if _ui_data_path.is_file():
+    check(ui_components_tower_data()
+          == json.loads(_ui_data_path.read_text(encoding="utf-8")),
+          "9ce the shipped tower popup tables drifted from _core.py")
+    _ui_tables = json.loads(_ui_data_path.read_text(encoding="utf-8"))
+    check(sorted(_ui_tables["types"]) == ["archer", "cannon", "ice", "mage"]
+          and sorted(_ui_tables["paths"]["archer"]) == ["1", "2", "3", "4", "5", "6"]
+          and _ui_tables["paths"]["archer"]["4"] == {
+              "hp": 1750, "damage": 72, "range": 210, "cd": 27, "cost": 550,
+              "desc": "Elite marksman"},
+          "9ce the archer table must stay the source upgrade row")
+if _ui_doc.is_file() and _ui_fixture_path.is_file():
+    _ui_report = _ui_doc.read_text(encoding="utf-8")
+    check(all(f"`{row['module']}`" in _ui_report for row in _ui["modules"]),
+          "9ce the report must name all eleven merged modules")
+    check(all(token in _ui_report for token in (
+              "ui_component_base.gd", "tower_popup_layout.gd", "upgrade_paths.json",
+              "_draw_tower_content", "_get_tower_specials", "_draw_regen_shield_section",
+              "_draw_tower_max_level", "_draw_tower_path_buttons", "_draw_single_path_button",
+              "_draw_tower_upgrade_button", "_draw_hp_bar", "_draw_shadow_rect",
+              "_draw_close_button", "_popup_di_panel", "panel_popup_pos",
+              "Notification", "_apply_grayscale", "cheap_alpha")),
+          "9ce the report must cover every ported symbol and the deviations")
+    check(_ui_report.count("|") > 120, "9ce the report must stay tabular")
+
 # ── 9e: the cleave splash arm on the active boss uses the source call shape ──
 from boss_item_cleave_damage_source_oracle import source_fixture as cleave_damage_fixture
 _cleave_dmg = cleave_damage_fixture()
@@ -6601,7 +6763,7 @@ check("if mgr is None or not mgr.is_controller_mode():" in _ih_draw
 check("var x := (SCREEN_WIDTH - total_w) >> 1" in _ih_layout and "const BAR_Y := 690" in _ih_layout,
       "9bv4 layout must keep the centred floor start and y = SCREEN_HEIGHT - 30")
 check('const InputHintLayout = preload("res://scripts/ui/input_hint_layout.gd")' in _ih_view
-      and re.search(r'"tactical_feedback",\s*"build_popup",\s*"hero_panel",\s*"end_overlay",\s*"input_hints",\s*"level_intro",',
+      and re.search(r'"tactical_feedback",\s*"build_popup",\s*(?:"tower_popup",\s*)?"hero_panel",\s*"end_overlay",\s*"input_hints",\s*"level_intro",',
                     _ih_view) is not None
       and '"input_hints":\n\t\t\t_draw_input_hints(world)' in _ih_view
       and "func input_hints_blocked(" in _ih_view,
@@ -6654,7 +6816,7 @@ check("if unlock_popup_timer < EndOverlayLayout.UNLOCK_DELAY:" in _eo_view
       and "Control.MOUSE_FILTER_IGNORE if result else Control.MOUSE_FILTER_STOP" in _eo_screen,
       "9bv6 view/screen must cap the timer like pygame and route PLAY NEXT LEVEL clicks")
 check('const EndOverlayLayout = preload("res://scripts/ui/end_overlay_layout.gd")' in _eo_view
-      and re.search(r'"tactical_feedback",\s*"build_popup",\s*"hero_panel",\s*"end_overlay",\s*"input_hints",',
+      and re.search(r'"tactical_feedback",\s*"build_popup",\s*(?:"tower_popup",\s*)?"hero_panel",\s*"end_overlay",\s*"input_hints",',
                     _eo_view) is not None
       and '"end_overlay":\n\t\t\t_draw_end_overlay(world)' in _eo_view
       and "state[\"animation_time\"] = world.tick_count" in _eo_view,
@@ -6722,7 +6884,7 @@ check("static func origin(slot_x: int, slot_y: int) -> Vector2i:" in _bp_layout
       and "def panel_popup_pos(w, h, atas=12):" in _bp_platform_utils,
       "9bv7 layout must keep fallback geometry and match the compact mobile panel helper")
 check('const BuildPopupLayout = preload("res://scripts/ui/build_popup_layout.gd")' in _bp_view
-      and '"tactical_feedback",\n\t"build_popup",\n\t"hero_panel",\n\t"end_overlay",' in _bp_view
+      and '"tactical_feedback",\n\t"build_popup",\n\t"tower_popup",\n\t"hero_panel",\n\t"end_overlay",' in _bp_view
       and '"build_popup":\n\t\t\t_draw_build_popup(world)' in _bp_view
       and "func build_popup_draw_ops(" in _bp_view
       and "build_popup_state.is_empty() or not world.is_running() or build_popup_state.has(\"panel_pos\")"
@@ -6800,7 +6962,7 @@ _hp_order = re.findall(r'"(\w+)"', _hp_order_match.group(1)) if _hp_order_match 
 check('const HeroPanelLayout = preload("res://scripts/ui/hero_panel_layout.gd")' in _hp_view
       and '"hero_panel":\n\t\t\t_draw_hero_panel(world)' in _hp_view
       and "func hero_panel_draw_ops(" in _hp_view
-      and re.search(r'"build_popup",\s*"hero_panel",\s*"end_overlay"', _hp_view) is not None
+      and re.search(r'"build_popup",\s*(?:"tower_popup",\s*)?"hero_panel",\s*"end_overlay"', _hp_view) is not None
       and bool(_hp_order) and _hp_order[-1] == "boss_death",
       "9bv8 view must paint after the build popup, before results, and leave boss death last")
 check('arena.set("hero_panel_state", hero_panel_state)' in _hp_screen
