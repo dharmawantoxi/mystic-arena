@@ -1205,7 +1205,7 @@ mobile_hud_checks = (ROOT / "tests/prototype_layout_checks.gd").read_text(encodi
 check('func _configure_mobile_hud(mobile: bool, docked: bool) -> void:' in shield_screen
       and '_configure_mobile_hud(mobile, docked)' in shield_screen
       and 'side_panel.configure(viewport_width)' in shield_screen
-      and 'OS.has_feature("android")' in shield_screen
+      and 'MobilePlatform.is_touch_mode()' in shield_screen
       and '%BottomBar.hide()' in shield_screen
       and 'screen._configure_mobile_hud(true, true)' in mobile_hud_checks
       and 'screen._configure_mobile_hud(true, false)' in mobile_hud_checks
@@ -9089,7 +9089,7 @@ if _mp_path.is_file():
           and "static func window_to_logical(point: Vector2, scale: float, offset: Vector2)"
           in _mp_text
           and "static func finger_to_logical(" in _mp_text
-          and "static func pointer_to_logical(mode: String, point: Vector2, scale: float, offset: Vector2)"
+          and "static func pointer_to_logical(\n\tmode: String, point: Vector2, scale: float, offset: Vector2\n) -> Vector2:"
           in _mp_text,
           "9bv20 window/finger/pointer mapping must be pure and complete")
     check("static func panel_popup_pos(panel: Rect2i, width: int, height: int, top := 12) -> Variant:"
@@ -10072,6 +10072,56 @@ check("## Right dock (side panel)" in
       and "layer 9ct" in (ROOT.parent / "docs/UI_VISUAL_PARITY_AUDIT.md").read_text(
           encoding="utf-8"),
       "9ct the dock activation rule must be documented")
+
+
+# Layer 9cu: the shipped game is the Android build, so a PC run keeps the mobile
+# composition instead of switching layouts. `platform_utils.FORCE_TOUCH`
+# (`MYSTIC_FORCE_TOUCH=1`) is the source switch; the rebuild also defaults the project
+# setting `game/mobile_composition` to true.
+_platform_gd = (ROOT / "scripts/platform/mobile_platform.gd").read_text(encoding="utf-8")
+_screen_gd = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+_report_gd = (ROOT / "scripts/app/startup_report.gd").read_text(encoding="utf-8")
+check('const FORCE_ENV := "MYSTIC_FORCE_TOUCH"' in _platform_gd
+      and 'const MOBILE_COMPOSITION_SETTING := "game/mobile_composition"' in _platform_gd,
+      "9cu the mobile composition needs the source force switch and a project setting")
+check("static func forced_touch() -> bool:" in _platform_gd
+      and 'if OS.get_environment(FORCE_ENV) == "1":' in _platform_gd
+      and "ProjectSettings.get_setting(MOBILE_COMPOSITION_SETTING, true)" in _platform_gd,
+      "9cu forced touch must follow MYSTIC_FORCE_TOUCH and default to mobile")
+check("static func is_touch_mode() -> bool:" in _platform_gd
+      and "return is_android() or forced_touch() or DisplayServer.is_touchscreen_available()"
+      in _platform_gd,
+      "9cu TOUCH_MODE must stay IS_ANDROID or FORCE_TOUCH")
+check("[game]" in project and "mobile_composition=true" in project,
+      "9cu the PC run must default to the mobile composition")
+check("func _mobile_composition() -> bool:" in _screen_gd
+      and "	return MobilePlatform.is_touch_mode()" in _screen_gd
+      and "_is_mobile_device" not in _screen_gd,
+      "9cu the playable screen must ask the platform layer, not the device class")
+check('OS.has_feature("android")' not in _screen_gd
+      and 'OS.has_feature("ios")' not in _screen_gd,
+      "9cu no playable-screen gate may bypass the mobile composition switch")
+check("world.level_intro_state(MobilePlatform.is_touch_mode())" in _screen_gd,
+      "9cu the intro prompt must follow the mobile composition (TAP TO BEGIN)")
+check("	if not _mobile_composition():\n		%HeroCommands.show()" in _screen_gd,
+      "9cu the D2 stand-in bar belongs to the mobile composition, not just the dock")
+check("MobilePlatform.is_touch_mode()" in _report_gd,
+      "9cu the startup banner must report the composition it actually uses")
+check("	%TacticalToggleButton.visible = show_chrome\n	%CommandDockToggle.visible = show_chrome"
+      in _screen_gd,
+      "9cu restoring the desktop composition must restore the dock toggles")
+_layout_checks_gd = (ROOT / "tests/prototype_layout_checks.gd").read_text(encoding="utf-8")
+check('const MobilePlatform = preload("res://scripts/platform/mobile_platform.gd")'
+      in _layout_checks_gd
+      and "PC run keeps the mobile composition (game/mobile_composition)" in _layout_checks_gd,
+      "9cu the scene proof must assert the mobile composition on a PC run")
+# The performance profile stays device-based on purpose: a desktop run keeps the HIGH
+# map profile and the 60 fps target even though it draws the mobile HUD.
+check('touch_mode = OS.has_feature("android")' in
+      (ROOT / "scripts/settings/adaptive_quality_runtime.gd").read_text(encoding="utf-8")
+      and 'touch_mode = OS.has_feature("android")' in
+      (ROOT / "scripts/settings/frame_rate_limit_runtime.gd").read_text(encoding="utf-8"),
+      "9cu the mobile composition must not downgrade the desktop performance profile")
 
 
 for error in errors:

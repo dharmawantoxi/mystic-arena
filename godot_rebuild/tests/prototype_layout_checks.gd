@@ -1,6 +1,8 @@
 extends RefCounted
 ## Playable-scene proof for the full-screen arena and compact overlay HUD.
 
+const MobilePlatform = preload("res://scripts/platform/mobile_platform.gd")
+
 
 func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	var baseline := tree.get_node_count()
@@ -25,6 +27,13 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	)
 	quality_runtime.call("apply_quality", previous_quality)
 	arena._sync_dynamic_map_quality()
+	# Layer 9cu: the shipped composition is the mobile one, so a PC run must report it too.
+	check.call(
+		screen._mobile_composition() == MobilePlatform.is_touch_mode()
+		and MobilePlatform.is_touch_mode()
+		and bool(ProjectSettings.get_setting("game/mobile_composition", false)),
+		"PC run keeps the mobile composition (game/mobile_composition)"
+	)
 	var top_bar: Control = screen.get_node("HUD/TopBar")
 	var bottom_bar: Control = screen.get_node("HUD/BottomBar")
 	var tactical_panel: Control = screen.get_node("%TacticalPanel")

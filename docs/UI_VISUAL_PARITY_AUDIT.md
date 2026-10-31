@@ -112,18 +112,58 @@ if sisa >= 120:                                      # panel sementara sisa >= 1
 |---|---------|
 | D2 | The tapped-tower popup (`TowerPopupLayout`) has no state builder in the playable screen and no press routing, so tower upgrade / sell / regen shield still depend on the Godot stand-in bar (F7). Closing D2 retires that bar. |
 | D8 | Dock content parity was not verified here: the stone backdrop, the 250 ms refresh cadence, combo/kill notifications and the “notifikasi dihapus” state all come from `mobile/sidepanel.py` and are covered only by `tests/side_panel_source_oracle.py` plus the native `side_panel_checks.gd`. |
-| D9 | On a 1280 px window (no dock) the desktop chrome stays as it was, including the `migration_status` readout; the source has no such window at all. |
+
+## Mobile composition on the PC run — layer 9cu
+
+The shipped game is the Android build, so the PC run keeps the **mobile composition**
+instead of switching to a desktop-only layout. Source rule:
+
+```python
+FORCE_TOUCH = os.environ.get("MYSTIC_FORCE_TOUCH", "0") == "1"
+TOUCH_MODE  = IS_ANDROID or FORCE_TOUCH          # mobile/platform_utils.py
+```
+
+Godot mirrors it in `scripts/platform/mobile_platform.gd`:
+
+```gdscript
+const FORCE_ENV := "MYSTIC_FORCE_TOUCH"
+const MOBILE_COMPOSITION_SETTING := "game/mobile_composition"   # project.godot: true
+
+static func forced_touch() -> bool:      # env "1" wins, then the project switch
+static func is_touch_mode() -> bool:     # is_android() or forced_touch() or touchscreen
+```
+
+`game/mobile_composition=true` is the default in `project.godot`, so a desktop run behaves
+like the phone build. What follows the switch:
+
+| Surface | Mobile composition (default) |
+|---|---|
+| Playable HUD (`_configure_mobile_hud`) | `TopBar`, the AI/QA toggle, the forge button, `migration_status`, `TacticalPanel` and the command bar are hidden; the touch pause circle sits at the source coordinates (`MobileTouchHudLayout.pause_rect()`), and the gold chip is drawn on the map as in `mobile.hud`. |
+| Right dock | mounted whenever the canvas leaves >= 120 px beside the 1280 arena (9ct), so the 1624x720 window shows the source dock. |
+| Intro / cinematic prompts | `TAP TO BEGIN`, `TAP` skip hints — `level_intro_state(MobilePlatform.is_touch_mode())` and `skip_hint_touch_mode`. |
+| Startup banner | `input : TOUCH`, because that is the composition in use. |
+
+Deliberately **not** switched: the performance profile. `adaptive_quality_runtime.gd` and
+`frame_rate_limit_runtime.gd` still key off `OS.has_feature("android")`, so a PC run keeps
+the HIGH map profile and the desktop fps target while drawing the mobile HUD. That split is
+pinned by a static check — a UI switch must not silently downgrade the desktop renderer.
+
+Deviation D10: the Pygame desktop build *without* `MYSTIC_FORCE_TOUCH` still shows its
+desktop composition; the rebuild defaults to the mobile one by product decision. Setting
+`game/mobile_composition=false` (or `MYSTIC_FORCE_TOUCH=0`) brings the old behaviour back.
 
 ## Open findings (registered, not fixed here)
 
 | # | Finding | Note |
 |---|---------|------|
-| D5 | `HUD/TopBar` (Item / Hero / AI:ON / Jeda / Taktik / Kontrol / Menu) and the `migration_status` label are Godot-only. | Narrowed by 9ct: both are hidden whenever the dock is mounted (any device). They only remain in the 1280 px window, where the source has no dock either. |
+| D5 | `HUD/TopBar` (Item / Hero / AI:ON / Jeda / Taktik / Kontrol / Menu) and the `migration_status` label are Godot-only. | Resolved for the shipped composition: 9ct hides them whenever the dock is mounted and 9cu makes the mobile HUD the default on every run, so they only come back if `game/mobile_composition=false`. |
 | D6 | Pause overlay is a themed `Control` dialog (`Permainan Dijeda` + 3 buttons) instead of `_core.py::_draw_pause_menu` (400x400 centred panel, `PAUSED` title at `title_font(56)`, `MODE: EASY/NORMAL/HARD` badge with `LOCKED`, divider, 4 buttons 300x48: RESUME / SETTINGS / MAIN MENU / QUIT GAME with icons). The dim layer it adds has no source counterpart. | Needs a `PauseMenuLayout` op list + drawn port, plus the SETTINGS submenu route. |
-| D7 | Intro under the top bar: the intro is drawn in the arena layer while `HUD/TopBar` is a `CanvasLayer(layer = 10)` panel, so the bar stays visible over the intro. | Fixed whenever the dock is mounted (the bar is hidden and the dock clears itself during cinematics, 9ct/F8); still open in the 1280 px window. |
+| D7 | Intro under the top bar: the intro is drawn in the arena layer while `HUD/TopBar` is a `CanvasLayer(layer = 10)` panel, so the bar stays visible over the intro. | Resolved with D5: in the mobile composition the bar is hidden and the dock clears itself during cinematics (9ct/F8). |
+| D10 | The PC run now defaults to the mobile composition (`game/mobile_composition=true`); Pygame's desktop build keeps its own layout unless `MYSTIC_FORCE_TOUCH=1`. | Product decision (9cu), reversible through the project setting. |
+| D11 | The mobile composition was not seen running here: the switch is argued from source, pinned statically and by the native scene proof. | A PC screenshot is still required before claiming it renders. |
 
 ## Not claimed
 
-* The patched build was not executed here; F1/F2 are argued from source and guarded by
-  `tests/validate_project.py` (block 9cs).
+* The patched build was not executed here; F1/F2 (9cs), F5–F8 (9ct) and the composition
+  switch (9cu) are argued from source and guarded by `tests/validate_project.py`.
 * D5–D7 are open. Pixel parity of the in-game frame is **not** established.

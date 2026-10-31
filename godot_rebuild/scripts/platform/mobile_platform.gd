@@ -37,6 +37,14 @@ const DEFAULT_MODE := "scaled_vsync"
 const MODE_FILE := "display_mode.txt"
 const MODE_ENV := "MYSTIC_DISPLAY_MODE"
 
+## `platform_utils.FORCE_TOUCH` (`MYSTIC_FORCE_TOUCH=1`) plus the project switch
+## `game/mobile_composition`, which defaults to **true**: the shipped game is the Android
+## build, so the PC run composes the mobile HUD, the touch prompts and the right dock
+## instead of switching to a desktop-only layout. `MYSTIC_FORCE_TOUCH=1` forces it on;
+## `false` in the project setting restores the old desktop composition.
+const FORCE_ENV := "MYSTIC_FORCE_TOUCH"
+const MOBILE_COMPOSITION_SETTING := "game/mobile_composition"
+
 ## `platform_utils._SAFE_MARGIN_LOGICAL`.
 const SAFE_MARGIN := 28
 const SAFE_TOP := 10
@@ -54,10 +62,18 @@ static func is_android() -> bool:
 	return OS.has_feature("android")
 
 
+## `MYSTIC_FORCE_TOUCH == "1"` wins, then the project switch; the default is mobile.
+static func forced_touch() -> bool:
+	if OS.get_environment(FORCE_ENV) == "1":
+		return true
+	var configured: Variant = ProjectSettings.get_setting(MOBILE_COMPOSITION_SETTING, true)
+	return bool(configured)
+
+
 ## `TOUCH_MODE = IS_ANDROID or FORCE_TOUCH`; the rebuild treats an available
 ## touchscreen as the same layout switch (the user's touch PC hits this too).
 static func is_touch_mode() -> bool:
-	return is_android() or DisplayServer.is_touchscreen_available()
+	return is_android() or forced_touch() or DisplayServer.is_touchscreen_available()
 
 
 ## `get_safe_area`: notch / punch-hole / gesture bar insets in logical space.
@@ -104,7 +120,9 @@ static func finger_to_logical(
 
 ## `pointer_to_logical`: in `scaled_*` modes SDL already translated the point,
 ## so the source returns it untouched; only `native` needs the mapping.
-static func pointer_to_logical(mode: String, point: Vector2, scale: float, offset: Vector2) -> Vector2:
+static func pointer_to_logical(
+	mode: String, point: Vector2, scale: float, offset: Vector2
+) -> Vector2:
 	if mode == "native":
 		return window_to_logical(point, scale, offset)
 	return point
