@@ -1,0 +1,1359 @@
+{
+ "file": {
+  "file": "_system.py",
+  "lines": 1125,
+  "sections": 6,
+  "classes": 6,
+  "methods": 47,
+  "top_functions": 3,
+  "assigns": 4
+ },
+ "sections": [
+  {
+   "name": "prelude",
+   "start": 1,
+   "end": 28,
+   "lines": 28
+  },
+  {
+   "name": "performance",
+   "start": 29,
+   "end": 188,
+   "lines": 160
+  },
+  {
+   "name": "fps_counter",
+   "start": 189,
+   "end": 387,
+   "lines": 199
+  },
+  {
+   "name": "fps_limiter",
+   "start": 388,
+   "end": 449,
+   "lines": 62
+  },
+  {
+   "name": "sound_manager",
+   "start": 450,
+   "end": 731,
+   "lines": 282
+  },
+  {
+   "name": "save_manager",
+   "start": 732,
+   "end": 1125,
+   "lines": 394
+  }
+ ],
+ "symbols": {
+  "count": 66,
+  "kinds": {
+   "data": 5,
+   "ported": 51,
+   "dead": 8,
+   "deviation": 2,
+   "folded": 0
+  }
+ },
+ "classification": {
+  "module:prelude": {
+   "kind": "data",
+   "target": "godot_rebuild/scripts/audio/audio_manager.gd",
+   "token": "const ROOT := \"res://assets/audio/\"",
+   "note": "folder sound + resolver path berkas audio"
+  },
+  "module:performance": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/spatial_grid.gd",
+   "token": "func query_range(",
+   "note": "culler + grid + dua helper modul"
+  },
+  "module:fps_counter": {
+   "kind": "dead",
+   "target": "",
+   "token": "",
+   "note": "hanya dipakai main_desktop_legacy.py; build Android memakai DebugOverlay"
+  },
+  "module:fps_limiter": {
+   "kind": "deviation",
+   "target": "godot_rebuild/scripts/settings/adaptive_quality_controller.gd",
+   "token": "const COOLDOWN_AFTER_LOWER := 180",
+   "note": "varian tick() lama; governor aktif = mobile/perf.py"
+  },
+  "module:sound_manager": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/audio/audio_manager.gd",
+   "token": "const THROTTLE_MS := {",
+   "note": "BGM + SFX + voice + ambient"
+  },
+  "module:save_manager": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/save_slot_store.gd",
+   "token": "static func save_state(",
+   "note": "tiga slot + metadata + level stats"
+  },
+  "class:FrustumCuller": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/ui/frustum_cull.gd",
+   "token": "static func is_visible(",
+   "note": "margin 80 px di luar 1280x720"
+  },
+  "class:FrustumCuller.is_visible": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/ui/frustum_cull.gd",
+   "token": "static func is_visible(",
+   "note": "predikat cull yang sama"
+  },
+  "class:SpatialGrid": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/spatial_grid.gd",
+   "token": "func query_range(",
+   "note": "bucket 60 px, satu sel per entitas"
+  },
+  "class:SpatialGrid.__init__": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/spatial_grid.gd",
+   "token": "func _init(",
+   "note": "cell_size 60"
+  },
+  "class:SpatialGrid.clear": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/spatial_grid.gd",
+   "token": "func clear(",
+   "note": ""
+  },
+  "class:SpatialGrid.insert": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/spatial_grid.gd",
+   "token": "func insert(",
+   "note": "satu bucket per entitas"
+  },
+  "class:SpatialGrid.query_range": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/spatial_grid.gd",
+   "token": "func query_range(",
+   "note": "urutan cx-luar, cy-dalam, box lalu jarak kuadrat"
+  },
+  "class:FPSCounter": {
+   "kind": "dead",
+   "target": "",
+   "token": "",
+   "note": "overlay F8 hanya di entry desktop legacy (bukan build Android)"
+  },
+  "class:FPSCounter.__new__": {
+   "kind": "dead",
+   "target": "",
+   "token": "",
+   "note": "singleton overlay legacy"
+  },
+  "class:FPSCounter.__init__": {
+   "kind": "dead",
+   "target": "",
+   "token": "",
+   "note": "state overlay legacy"
+  },
+  "class:FPSCounter._get_font": {
+   "kind": "dead",
+   "target": "",
+   "token": "",
+   "note": "cache font overlay legacy"
+  },
+  "class:FPSCounter.toggle": {
+   "kind": "dead",
+   "target": "",
+   "token": "",
+   "note": "tombol F8 hanya ada di entry desktop legacy"
+  },
+  "class:FPSCounter.update": {
+   "kind": "dead",
+   "target": "",
+   "token": "",
+   "note": "sampel FPS overlay legacy"
+  },
+  "class:FPSCounter.draw": {
+   "kind": "dead",
+   "target": "",
+   "token": "",
+   "note": "panel FPS legacy"
+  },
+  "class:AdaptiveQuality": {
+   "kind": "deviation",
+   "target": "godot_rebuild/scripts/settings/adaptive_quality_controller.gd",
+   "token": "const COOLDOWN_AFTER_LOWER := 180",
+   "note": "versi tick() 30 sampel ambang 50/35 digantikan governor aktif"
+  },
+  "class:AdaptiveQuality.__new__": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/settings/adaptive_quality_runtime.gd",
+   "token": "var controller = Controller.new()",
+   "note": "autoload runtime menggantikan singleton"
+  },
+  "class:AdaptiveQuality._init": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/settings/adaptive_quality_runtime.gd",
+   "token": "func _ready() -> void:",
+   "note": "inisialisasi runtime di _ready"
+  },
+  "class:AdaptiveQuality.tick": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/settings/frame_rate_limit_runtime.gd",
+   "token": "Engine.max_fps",
+   "note": "pacing pindah ke engine; sampel ke governor aktif"
+  },
+  "class:AdaptiveQuality.get_fps": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/settings/adaptive_quality_runtime.gd",
+   "token": "func update_fps(fps: float) -> void:",
+   "note": "governor aktif menerima fps dari engine"
+  },
+  "class:SoundManager": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/audio/audio_manager.gd",
+   "token": "var master_volume := DEFAULT_MASTER_VOLUME",
+   "note": "single facade: musik, sfx, voice, ambient"
+  },
+  "class:SoundManager.__new__": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/audio/audio_manager.gd",
+   "token": "var music: AudioStreamPlayer",
+   "note": "autoload Node menggantikan singleton Python"
+  },
+  "class:SoundManager.__init__": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/audio/audio_manager.gd",
+   "token": "func _ready() -> void:",
+   "note": "mixer disiapkan di _ready"
+  },
+  "class:SoundManager.load": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/audio/audio_manager.gd",
+   "token": "func _stream(key: String) -> AudioStream:",
+   "note": "stream dimuat dari tabel STREAMS"
+  },
+  "class:SoundManager.load_all": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/audio/audio_manager.gd",
+   "token": "const STREAMS := {",
+   "note": "daftar berkas tetap menggantikan load_all()"
+  },
+  "class:SoundManager.play": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/audio/audio_manager.gd",
+   "token": "func play(",
+   "note": ""
+  },
+  "class:SoundManager.play_positional": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/audio/audio_manager.gd",
+   "token": "func play_positional(",
+   "note": ""
+  },
+  "class:SoundManager.play_bgm": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/audio/audio_manager.gd",
+   "token": "func play_music(key: String) -> void:",
+   "note": "musik loop di player khusus"
+  },
+  "class:SoundManager.stop_bgm": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/audio/audio_manager.gd",
+   "token": "func stop_all() -> void:",
+   "note": "musik dihentikan bersama kanal lain"
+  },
+  "class:SoundManager.pause_bgm": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/audio/audio_manager.gd",
+   "token": "func pause_music() -> void:",
+   "note": "stream_paused pada player musik"
+  },
+  "class:SoundManager.resume_bgm": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/audio/audio_manager.gd",
+   "token": "func resume_music() -> void:",
+   "note": "lanjutkan musik"
+  },
+  "class:SoundManager.update_bgm_volume": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/audio/audio_manager.gd",
+   "token": "func _apply_mix() -> void:",
+   "note": "mix master*bgm dihitung ulang"
+  },
+  "class:SoundManager.play_ambient": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/audio/audio_manager.gd",
+   "token": "func play_ambient(",
+   "note": ""
+  },
+  "class:SoundManager.stop_ambient": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/audio/audio_manager.gd",
+   "token": "func stop_all() -> void:",
+   "note": "ambient ikut berhenti"
+  },
+  "class:SoundManager.set_master_volume": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/audio/audio_manager.gd",
+   "token": "func set_mix_volume(",
+   "note": "clamp 0..1 per kanal"
+  },
+  "class:SoundManager.stop_all": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/audio/audio_manager.gd",
+   "token": "func stop_all(",
+   "note": ""
+  },
+  "class:SaveManager": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/save_slot_store.gd",
+   "token": "const SLOT_COUNT := 3",
+   "note": "slot, metadata, migrasi legacy, level stats"
+  },
+  "class:SaveManager.get_slot_file": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/save_slot_store.gd",
+   "token": "static func slot_path(",
+   "note": "pola slot_%d.json"
+  },
+  "class:SaveManager.get_current_slot": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/save_slot_store.gd",
+   "token": "func get_current_slot(",
+   "note": ""
+  },
+  "class:SaveManager.set_current_slot": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/save_slot_store.gd",
+   "token": "func set_current_slot(",
+   "note": ""
+  },
+  "class:SaveManager.ensure_save_dir": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/save_slot_store.gd",
+   "token": "const PATH_TEMPLATE := \"user://slot_%d.json\"",
+   "note": "user:// sudah ada; tidak perlu makedirs"
+  },
+  "class:SaveManager.slot_exists": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/save_slot_store.gd",
+   "token": "func slot_exists(",
+   "note": ""
+  },
+  "class:SaveManager.migrate_legacy_save": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/save_slot_store.gd",
+   "token": "static func migrate_legacy(",
+   "note": "legacy -> slot 1 tanpa menimpa"
+  },
+  "class:SaveManager.save": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/save_slot_store.gd",
+   "token": "static func save_state(",
+   "note": "stempel slot_last_played + cloud upload"
+  },
+  "class:SaveManager.load": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/save_slot_store.gd",
+   "token": "static func load_state(",
+   "note": "backfill field default"
+  },
+  "class:SaveManager.get_empty_save": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/save_slot_store.gd",
+   "token": "static func empty_state(",
+   "note": "sepuluh field default yang sama"
+  },
+  "class:SaveManager.delete_slot": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/save_slot_store.gd",
+   "token": "func delete_slot(",
+   "note": ""
+  },
+  "class:SaveManager.get_slot_info": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/save_slot_store.gd",
+   "token": "static func slot_info(",
+   "note": "metadata untuk UI slot"
+  },
+  "class:SaveManager.get_all_slot_info": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/save_slot_store.gd",
+   "token": "static func all_slot_info(",
+   "note": "tiga slot, kosong = {}"
+  },
+  "class:SaveManager.format_playtime": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/save_slot_store.gd",
+   "token": "func format_playtime(",
+   "note": ""
+  },
+  "class:SaveManager.format_last_played": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/save_slot_store.gd",
+   "token": "func format_last_played(",
+   "note": ""
+  },
+  "class:SaveManager.get_level_stats": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/level_stats.gd",
+   "token": "static func get_level_stats(",
+   "note": "default tujuh field"
+  },
+  "class:SaveManager.update_level_stats": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/level_stats.gd",
+   "token": "static func update_level_stats(",
+   "note": "best score/time hanya saat menang"
+  },
+  "class:SaveManager.format_time": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/save_slot_store.gd",
+   "token": "func format_time(",
+   "note": ""
+  },
+  "top:_sound_path@21": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/audio/audio_manager.gd",
+   "token": "const ROOT := \"res://assets/audio/\"",
+   "note": "resolusi berkas audio"
+  },
+  "top:update_spatial_grid@147": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/spatial_grid.gd",
+   "token": "static func update_spatial_grid(",
+   "note": "hanya minion + hero yang hidup"
+  },
+  "top:query_enemies_in_range@170": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/spatial_grid.gd",
+   "token": "static func query_enemies_in_range(",
+   "note": "filter musuh di dalam loop kueri"
+  },
+  "assign:_SOUND_DIR": {
+   "kind": "data",
+   "target": "godot_rebuild/scripts/audio/audio_manager.gd",
+   "token": "const ROOT := \"res://assets/audio/\"",
+   "note": "folder berkas audio"
+  },
+  "assign:_grid": {
+   "kind": "data",
+   "target": "godot_rebuild/scripts/combat/spatial_grid.gd",
+   "token": "static var _shared: SpatialGrid",
+   "note": "singleton grid cell_size 60"
+  },
+  "assign:NUM_SLOTS": {
+   "kind": "data",
+   "target": "godot_rebuild/scripts/match/save_slot_store.gd",
+   "token": "const SLOT_COUNT := 3",
+   "note": "tiga slot save"
+  },
+  "assign:LEGACY_SAVE_FILE": {
+   "kind": "data",
+   "target": "godot_rebuild/scripts/match/save_slot_store.gd",
+   "token": "const LEGACY_PATH := ProgressStore.PATH",
+   "note": "progress.json lama -> slot 1"
+  }
+ },
+ "dead_helpers": [
+  "class:FPSCounter",
+  "class:FPSCounter.__init__",
+  "class:FPSCounter.__new__",
+  "class:FPSCounter._get_font",
+  "class:FPSCounter.draw",
+  "class:FPSCounter.toggle",
+  "class:FPSCounter.update",
+  "module:fps_counter"
+ ],
+ "duplicates": {},
+ "cull": {
+  "margin": 80,
+  "screen": [
+   1280,
+   720
+  ],
+  "cases": [
+   {
+    "x": 0,
+    "y": 0,
+    "radius": 30,
+    "visible": true
+   },
+   {
+    "x": 640,
+    "y": 360,
+    "radius": 30,
+    "visible": true
+   },
+   {
+    "x": -109.9,
+    "y": 0,
+    "radius": 30,
+    "visible": true
+   },
+   {
+    "x": -110,
+    "y": 0,
+    "radius": 30,
+    "visible": true
+   },
+   {
+    "x": -110.1,
+    "y": 0,
+    "radius": 30,
+    "visible": false
+   },
+   {
+    "x": 1389.9,
+    "y": 719,
+    "radius": 30,
+    "visible": true
+   },
+   {
+    "x": 1390,
+    "y": 720,
+    "radius": 30,
+    "visible": true
+   },
+   {
+    "x": 1390.1,
+    "y": 0,
+    "radius": 30,
+    "visible": false
+   },
+   {
+    "x": 0,
+    "y": 820,
+    "radius": 100,
+    "visible": true
+   },
+   {
+    "x": 0,
+    "y": 820.1,
+    "radius": 100,
+    "visible": true
+   },
+   {
+    "x": -1,
+    "y": -1,
+    "radius": 0,
+    "visible": true
+   },
+   {
+    "x": -80,
+    "y": -80,
+    "radius": 0,
+    "visible": true
+   },
+   {
+    "x": -80.1,
+    "y": -80,
+    "radius": 0,
+    "visible": false
+   }
+  ]
+ },
+ "grid": {
+  "cell_size": 60,
+  "entities": [
+   {
+    "id": "m1",
+    "x": 100.0,
+    "y": 100.0,
+    "team": "blue",
+    "alive": true
+   },
+   {
+    "id": "m2",
+    "x": 130.0,
+    "y": 100.0,
+    "team": "red",
+    "alive": true
+   },
+   {
+    "id": "m3",
+    "x": 190.0,
+    "y": 100.0,
+    "team": "red",
+    "alive": true
+   },
+   {
+    "id": "m4",
+    "x": 100.0,
+    "y": 130.0,
+    "team": "blue",
+    "alive": false
+   },
+   {
+    "id": "m5",
+    "x": 100.0,
+    "y": 190.0,
+    "team": "red",
+    "alive": true
+   },
+   {
+    "id": "m6",
+    "x": 40.0,
+    "y": 40.0,
+    "team": "blue",
+    "alive": true
+   },
+   {
+    "id": "m7",
+    "x": 220.0,
+    "y": 220.0,
+    "team": "red",
+    "alive": false
+   },
+   {
+    "id": "m8",
+    "x": -30.0,
+    "y": 10.0,
+    "team": "blue",
+    "alive": true
+   },
+   {
+    "id": "m9",
+    "x": 59.0,
+    "y": 59.0,
+    "team": "blue",
+    "alive": true
+   },
+   {
+    "id": "m10",
+    "x": 60.0,
+    "y": 60.0,
+    "team": "red",
+    "alive": true
+   }
+  ],
+  "buckets": {
+   "-1,0": [
+    "m8"
+   ],
+   "0,0": [
+    "m6",
+    "m9"
+   ],
+   "1,1": [
+    "m1",
+    "m10"
+   ],
+   "1,2": [
+    "m4"
+   ],
+   "1,3": [
+    "m5"
+   ],
+   "2,1": [
+    "m2"
+   ],
+   "3,1": [
+    "m3"
+   ],
+   "3,3": [
+    "m7"
+   ]
+  },
+  "bucket_count": 8,
+  "indexed_ids": [
+   "m1",
+   "m10",
+   "m2",
+   "m3",
+   "m4",
+   "m5",
+   "m6",
+   "m7",
+   "m8",
+   "m9"
+  ],
+  "queries": [
+   {
+    "x": 100,
+    "y": 100,
+    "radius": 50,
+    "team": null,
+    "ids": [
+     "m1",
+     "m4",
+     "m2"
+    ]
+   },
+   {
+    "x": 100,
+    "y": 100,
+    "radius": 50,
+    "team": "blue",
+    "ids": [
+     "m2"
+    ]
+   },
+   {
+    "x": 100,
+    "y": 100,
+    "radius": 50,
+    "team": "red",
+    "ids": [
+     "m1"
+    ]
+   },
+   {
+    "x": 100,
+    "y": 100,
+    "radius": 200,
+    "team": null,
+    "ids": [
+     "m8",
+     "m6",
+     "m9",
+     "m1",
+     "m10",
+     "m4",
+     "m5",
+     "m2",
+     "m3",
+     "m7"
+    ]
+   },
+   {
+    "x": 0,
+    "y": 0,
+    "radius": 120,
+    "team": null,
+    "ids": [
+     "m8",
+     "m6",
+     "m9",
+     "m10"
+    ]
+   },
+   {
+    "x": -40,
+    "y": 0,
+    "radius": 60,
+    "team": null,
+    "ids": [
+     "m8"
+    ]
+   },
+   {
+    "x": 240,
+    "y": 240,
+    "radius": 100,
+    "team": "red",
+    "ids": []
+   },
+   {
+    "x": 700,
+    "y": 700,
+    "radius": 60,
+    "team": null,
+    "ids": []
+   }
+  ],
+  "global_queries": [
+   {
+    "x": 100,
+    "y": 100,
+    "radius": 60,
+    "team": null,
+    "ids": [
+     "m9",
+     "m1",
+     "m10",
+     "m2"
+    ]
+   },
+   {
+    "x": 100,
+    "y": 100,
+    "radius": 120,
+    "team": "red",
+    "ids": [
+     "m6",
+     "m9",
+     "m1"
+    ]
+   }
+  ],
+  "global_bucket_count": 6
+ },
+ "fps_counter": {
+  "singleton": true,
+  "history_size": 120,
+  "snapshots": [
+   {
+    "frame": 10,
+    "fps": 60.0,
+    "avg": 60.0,
+    "min": 60.0,
+    "max": 60.0,
+    "history": 10
+   },
+   {
+    "frame": 20,
+    "fps": 20.0,
+    "avg": 47.0,
+    "min": 20.0,
+    "max": 60.0,
+    "history": 20
+   },
+   {
+    "frame": 22,
+    "fps": 20.0,
+    "avg": 47.0,
+    "min": 20.0,
+    "max": 60.0,
+    "history": 22
+   },
+   {
+    "frame": 24,
+    "fps": 20.0,
+    "avg": 47.0,
+    "min": 20.0,
+    "max": 60.0,
+    "history": 24
+   }
+  ],
+  "toggled_on": true,
+  "toggled_off": false,
+  "enabled_after_twice": true
+ },
+ "adaptive_quality": {
+  "singleton": true,
+  "high_threshold": 50,
+  "medium_threshold": 35,
+  "history_size": 30,
+  "levels": [
+   "high",
+   "high",
+   "high",
+   "high",
+   "high",
+   "high",
+   "high",
+   "high",
+   "high",
+   "high",
+   "high",
+   "high",
+   "high",
+   "high",
+   "high",
+   "high",
+   "high",
+   "high",
+   "medium",
+   "medium",
+   "medium",
+   "medium",
+   "medium",
+   "medium",
+   "medium",
+   "medium",
+   "medium",
+   "medium",
+   "medium",
+   "medium",
+   "medium",
+   "medium",
+   "medium",
+   "medium",
+   "medium",
+   "medium"
+  ],
+  "capped_history": 30,
+  "get_fps": 55.0,
+  "clock_ticks": 76
+ },
+ "sound": {
+  "enabled": true,
+  "volumes": {
+   "master": 0.9,
+   "sfx": 0.6,
+   "voice": 0.5,
+   "bgm": 0.35,
+   "ambient": 0.25
+  },
+  "throttle_ms": {
+   "goblin_spawn": 200,
+   "minion_death": 120,
+   "tower_destroyed": 300,
+   "bullet_hit": 40,
+   "nexus_hit": 300,
+   "ui_click": 50
+  },
+  "loaded": [
+   "ambient_forest",
+   "defeat",
+   "explosion",
+   "goblin_spawn",
+   "hero_skill",
+   "hero_spawn",
+   "minion_death",
+   "nexus_hit",
+   "tower_destroyed",
+   "ui_buy",
+   "ui_click",
+   "ui_error",
+   "ui_sell",
+   "ui_upgrade",
+   "victory",
+   "wave_start"
+  ],
+  "missing": [
+   "bullet_hit.wav"
+  ],
+  "categories": {
+   "ambient_forest": "ambient",
+   "defeat": "sfx",
+   "explosion": "sfx",
+   "goblin_spawn": "voice",
+   "hero_skill": "sfx",
+   "hero_spawn": "sfx",
+   "minion_death": "sfx",
+   "nexus_hit": "sfx",
+   "tower_destroyed": "sfx",
+   "ui_buy": "sfx",
+   "ui_click": "sfx",
+   "ui_error": "sfx",
+   "ui_sell": "sfx",
+   "ui_upgrade": "sfx",
+   "victory": "sfx",
+   "wave_start": "sfx"
+  },
+  "timeline": [
+   {
+    "name": "ui_click",
+    "tick": 0,
+    "plays": 0
+   },
+   {
+    "name": "ui_click",
+    "tick": 30,
+    "plays": 0
+   },
+   {
+    "name": "ui_click",
+    "tick": 60,
+    "plays": 1
+   },
+   {
+    "name": "nexus_hit",
+    "tick": 80,
+    "plays": 1
+   },
+   {
+    "name": "nexus_hit",
+    "tick": 200,
+    "plays": 1
+   },
+   {
+    "name": "nexus_hit",
+    "tick": 400,
+    "plays": 2
+   },
+   {
+    "name": "minion_death",
+    "tick": 400,
+    "plays": 3
+   },
+   {
+    "name": "minion_death",
+    "tick": 450,
+    "plays": 3
+   }
+  ],
+  "playback": [
+   {
+    "channel": 0,
+    "sound": "ui_click.wav",
+    "volume": 0.42,
+    "loops": 0,
+    "fade_ms": 0
+   },
+   {
+    "channel": 1,
+    "sound": "nexus_hit.wav",
+    "volume": 0.42,
+    "loops": 0,
+    "fade_ms": 0
+   },
+   {
+    "channel": 2,
+    "sound": "minion_death.wav",
+    "volume": 0.42,
+    "loops": 0,
+    "fade_ms": 0
+   }
+  ],
+  "positional": [
+   {
+    "channel": 3,
+    "sound": "goblin_spawn.wav",
+    "volume": 0.35,
+    "loops": 0,
+    "fade_ms": 0
+   },
+   {
+    "channel": 4,
+    "sound": "ui_buy.wav",
+    "volume": 0.42,
+    "loops": 0,
+    "fade_ms": 0
+   },
+   {
+    "channel": 5,
+    "sound": "ui_buy.wav",
+    "volume": 0.21,
+    "loops": 0,
+    "fade_ms": 0
+   },
+   {
+    "channel": 6,
+    "sound": "ui_buy.wav",
+    "volume": 0.063,
+    "loops": 0,
+    "fade_ms": 0
+   },
+   {
+    "channel": 7,
+    "sound": "ui_buy.wav",
+    "volume": 0.1575,
+    "loops": 0,
+    "fade_ms": 0
+   }
+  ],
+  "bgm": {
+   "loads": [
+    "bgm_battle.wav"
+   ],
+   "volumes": [
+    0.245
+   ],
+   "plays": [
+    {
+     "loops": -1,
+     "fade_ms": 3000
+    }
+   ],
+   "current": "bgm_battle.wav",
+   "paused": false
+  },
+  "paused": {
+   "paused": true,
+   "pause_calls": 1
+  },
+  "resumed": {
+   "paused": false,
+   "unpause_calls": 1
+  },
+  "after_master": {
+   "master": 0.9,
+   "music_volume": 0.315
+  },
+  "master_clamped": 1.0,
+  "stopped": {
+   "current": null,
+   "fadeouts": [
+    1000
+   ]
+  },
+  "ambient": {
+   "plays": [
+    {
+     "channel": 8,
+     "sound": "ambient_forest.wav",
+     "volume": 0.14,
+     "loops": -1,
+     "fade_ms": 2000
+    }
+   ],
+   "channel_volume": 0.14
+  },
+  "ambient_after_master": 0.225,
+  "ambient_stopped": {
+   "channel_cleared": true,
+   "fade": 1200,
+   "busy": false
+  },
+  "mixer": {
+   "num_channels": 32,
+   "stop_calls": 1,
+   "music_stops": 1
+  }
+ },
+ "positional": [
+  {
+   "x": 100.0,
+   "y": 100.0,
+   "player_x": 100.0,
+   "player_y": 100.0,
+   "max_distance": 800,
+   "volume_mult": 1.0,
+   "distance": 0.0,
+   "plays": true,
+   "falloff": 1.0,
+   "volume_mult_final": 1.0
+  },
+  {
+   "x": 400.0,
+   "y": 100.0,
+   "player_x": 0.0,
+   "player_y": 100.0,
+   "max_distance": 800,
+   "volume_mult": 1.0,
+   "distance": 400.0,
+   "plays": true,
+   "falloff": 0.5,
+   "volume_mult_final": 0.5
+  },
+  {
+   "x": 760.0,
+   "y": 100.0,
+   "player_x": 0.0,
+   "player_y": 100.0,
+   "max_distance": 800,
+   "volume_mult": 1.0,
+   "distance": 760.0,
+   "plays": true,
+   "falloff": 0.15,
+   "volume_mult_final": 0.15
+  },
+  {
+   "x": 800.0,
+   "y": 100.0,
+   "player_x": 0.0,
+   "player_y": 100.0,
+   "max_distance": 800,
+   "volume_mult": 1.0,
+   "distance": 800.0,
+   "plays": true,
+   "falloff": 0.15,
+   "volume_mult_final": 0.15
+  },
+  {
+   "x": 900.0,
+   "y": 100.0,
+   "player_x": 0.0,
+   "player_y": 100.0,
+   "max_distance": 800,
+   "volume_mult": 1.0,
+   "distance": 900.0,
+   "plays": false,
+   "falloff": 0.0,
+   "volume_mult_final": 0.0
+  },
+  {
+   "x": 200.0,
+   "y": 100.0,
+   "player_x": 0.0,
+   "player_y": 100.0,
+   "max_distance": 800,
+   "volume_mult": 0.5,
+   "distance": 200.0,
+   "plays": true,
+   "falloff": 0.75,
+   "volume_mult_final": 0.375
+  },
+  {
+   "x": 0.0,
+   "y": 0.0,
+   "player_x": 0.0,
+   "player_y": 0.0,
+   "max_distance": 0.0,
+   "volume_mult": 1.0,
+   "distance": 0.0,
+   "plays": true,
+   "falloff": 1.0,
+   "volume_mult_final": 1.0
+  }
+ ],
+ "save": {
+  "num_slots": 3,
+  "legacy_file": "progress.json",
+  "empty": {
+   "unlocked_bosses": [],
+   "purchased_heroes": [],
+   "meta_gold": 0,
+   "completed_levels": [],
+   "last_played_level": 1,
+   "slot_created": 1700000000.0,
+   "slot_last_played": 1700000000.0,
+   "slot_playtime_seconds": 0,
+   "level_stats": {},
+   "run_difficulty": null
+  },
+  "slot_files": [
+   "slot_1.json",
+   "slot_2.json",
+   "slot_3.json"
+  ],
+  "default_slot": 1,
+  "set_slot_valid": 2,
+  "set_slot_invalid": 2,
+  "migrated": true,
+  "migrated_again": false,
+  "legacy_files": [
+   "progress_backup.json.old"
+  ],
+  "migrated_keys": [
+   "completed_levels",
+   "meta_gold",
+   "slot_created",
+   "slot_last_played",
+   "slot_playtime_seconds"
+  ],
+  "migrated_meta_gold": 777,
+  "slot_info_after_migration": {
+   "slot_num": 1,
+   "meta_gold": 777,
+   "completed_levels": [
+    3
+   ],
+   "highest_level": 3,
+   "last_played_level": 1,
+   "purchased_heroes": [],
+   "unlocked_bosses": [],
+   "slot_created": 1700000000.0,
+   "slot_last_played": 1700000000.0,
+   "playtime_seconds": 0
+  },
+  "saved_exists": true,
+  "saved_keys": [
+   "completed_levels",
+   "meta_gold",
+   "slot_created",
+   "slot_last_played"
+  ],
+  "saved_last_played": 1700000000.0,
+  "loaded_keys": [
+   "completed_levels",
+   "last_played_level",
+   "level_stats",
+   "meta_gold",
+   "purchased_heroes",
+   "run_difficulty",
+   "slot_created",
+   "slot_last_played",
+   "slot_playtime_seconds",
+   "unlocked_bosses"
+  ],
+  "loaded_meta_gold": 123,
+  "loaded_last_played_level": 1,
+  "loaded_run_difficulty": null,
+  "slot_info": {
+   "slot_num": 2,
+   "meta_gold": 123,
+   "completed_levels": [
+    1,
+    2
+   ],
+   "highest_level": 2,
+   "last_played_level": 1,
+   "purchased_heroes": [],
+   "unlocked_bosses": [],
+   "slot_created": 1700000000.0,
+   "slot_last_played": 1700000000.0,
+   "playtime_seconds": 0
+  },
+  "slot_info_missing": null,
+  "all_slot_info": [
+   true,
+   true,
+   false
+  ],
+  "deleted": true,
+  "deleted_missing": false,
+  "slot_exists_after_delete": false,
+  "playtime": [
+   "0m",
+   "0m",
+   "1m",
+   "59m",
+   "1h 0m",
+   "1h 1m",
+   "2h 2m"
+  ],
+  "last_played": [
+   "Never",
+   "Just now",
+   "2m ago",
+   "2h ago",
+   "1d ago",
+   "06 Nov 2023",
+   "22 Jul 2023"
+  ],
+  "time": [
+   "--:--",
+   "0:05",
+   "1:05",
+   "10:00",
+   "59:59"
+  ],
+  "stats_default": {
+   "best_score": 0,
+   "best_time_seconds": 0,
+   "total_attempts": 0,
+   "wins": 0,
+   "total_kills": 0,
+   "max_combo": 0,
+   "total_playtime_seconds": 0
+  },
+  "stats_loss": {
+   "flags": [
+    false,
+    false
+   ],
+   "stats": {
+    "best_score": 0,
+    "best_time_seconds": 0,
+    "total_attempts": 1,
+    "wins": 0,
+    "total_kills": 5,
+    "max_combo": 7,
+    "total_playtime_seconds": 120
+   }
+  },
+  "stats_win": {
+   "flags": [
+    true,
+    true
+   ],
+   "stats": {
+    "best_score": 1200,
+    "best_time_seconds": 240,
+    "total_attempts": 2,
+    "wins": 1,
+    "total_kills": 14,
+    "max_combo": 11,
+    "total_playtime_seconds": 210
+   }
+  },
+  "stats_win_worse": {
+   "flags": [
+    false,
+    false
+   ],
+   "stats": {
+    "best_score": 1200,
+    "best_time_seconds": 240,
+    "total_attempts": 3,
+    "wins": 2,
+    "total_kills": 15,
+    "max_combo": 11,
+    "total_playtime_seconds": 240
+   }
+  },
+  "stats_aliases": true,
+  "stats_saved": {
+   "best_score": 1200,
+   "best_time_seconds": 240,
+   "total_attempts": 3,
+   "wins": 2,
+   "total_kills": 15,
+   "max_combo": 11,
+   "total_playtime_seconds": 240
+  }
+ }
+}

@@ -31,16 +31,35 @@ const STREAMS := {
 const COMBAT_CHANNELS := 24
 ## Source `SoundManager.throttle_ms` default for a name it does not list.
 const SFX_THROTTLE_MS := 50
+## Layer 9ci: `SoundManager.throttle_ms` itself (ms per sound name).
+const THROTTLE_MS := {
+	"goblin_spawn": 200,
+	"minion_death": 120,
+	"tower_destroyed": 300,
+	"bullet_hit": 40,
+	"nexus_hit": 300,
+	"ui_click": 50,
+}
+## `SoundManager.voice_volume` / the fade timings of the BGM + ambient paths.
+const VOICE_VOLUME := 0.5
+const BGM_FADE_MS := 2000
+const BGM_STOP_FADE_MS := 1000
+const AMBIENT_FADE_MS := 2000
+const AMBIENT_STOP_FADE_MS := 1500
+## `SoundManager.play_positional`: full falloff at 800 px, floored at 0.15 and silent
+## past the radius.
+const POSITIONAL_MAX_DISTANCE := 800.0
+const POSITIONAL_MIN_VOLUME := 0.15
 
 var music: AudioStreamPlayer
 var effects: AudioStreamPlayer
 var ambient: AudioStreamPlayer
 var combat_players: Array[AudioStreamPlayer] = []
-var _sfx_throttle := {}
 var enabled := true
 var master_volume := DEFAULT_MASTER_VOLUME
 var sfx_volume := DEFAULT_SFX_VOLUME
 var bgm_volume := DEFAULT_BGM_VOLUME
+var _sfx_throttle := {}
 
 
 func _ready() -> void:
@@ -77,6 +96,41 @@ func _stream(key: String) -> AudioStream:
 	if not STREAMS.has(key):
 		return null
 	return load(ROOT + String(STREAMS[key])) as AudioStream
+
+
+## `SoundManager.throttle_ms.get(name, 50)`.
+static func throttle_ms_for(sound_name: String) -> int:
+	return int(THROTTLE_MS.get(sound_name, SFX_THROTTLE_MS))
+
+
+## `SoundManager.play_positional`'s distance term: linear falloff from the listener,
+## floored at `POSITIONAL_MIN_VOLUME`; 0 past `max_distance` (the source returns early).
+static func positional_falloff(
+	x: float,
+	y: float,
+	player_x: float,
+	player_y: float,
+	max_distance: float = POSITIONAL_MAX_DISTANCE
+) -> float:
+	var distance := Vector2(x - player_x, y - player_y).length()
+	if max_distance <= 0.0 or distance > max_distance:
+		return 0.0
+	return maxf(POSITIONAL_MIN_VOLUME, 1.0 - distance / max_distance)
+
+
+## Source `play_positional`: distance term times the caller's multiplier, clamped.
+static func positional_volume(
+	x: float,
+	y: float,
+	player_x: float,
+	player_y: float,
+	max_distance: float = POSITIONAL_MAX_DISTANCE,
+	volume_mult: float = 1.0
+) -> float:
+	var falloff := positional_falloff(x, y, player_x, player_y, max_distance)
+	if falloff <= 0.0:
+		return 0.0
+	return clampf(volume_mult * falloff, 0.0, 1.0)
 
 
 ## Source `_volume_global`: master*sfx, 0 when sound is disabled.
@@ -158,25 +212,72 @@ func play(key: String) -> void:
 	effects.play()
 
 
-## Source `SoundManager.play(name, volume_mult)`: same per-name throttle (50 ms
-## default) and `master * sfx * volume_mult` volume, clamped. `hero_skill` is
-## the only sound the Pygame skill triggers play, and it is not in
-## `throttle_ms`, so it uses the 50 ms default.
-func play_scaled(key: String, volume_mult: float) -> bool:
+## Source `SoundManager.play(name, volume_mult)`: the per-name throttle from
+## `throttle_ms` (50 ms for a name it does not list) and a
+## `master * category * volume_mult` volume, clamped. Layer 9ci added the real table
+## and the `voice`/`ambient` category volumes; `hero_skill` is not listed there, so the
+## Pygame skill cast keeps its 50 ms gate.
+func play_scaled(key: String, volume_mult: float, category: String = "sfx") -> bool:
 	if not enabled or effects == null:
 		return false
 	var stream := _stream(key)
 	if stream == null:
 		return false
 	var now := Time.get_ticks_msec()
-	var last := int(_sfx_throttle.get(key, -SFX_THROTTLE_MS))
-	if now - last < SFX_THROTTLE_MS:
+	var spacing := throttle_ms_for(key)
+	var last := int(_sfx_throttle.get(key, -spacing))
+	if now - last < spacing:
 		return false
 	_sfx_throttle[key] = now
+	var base_volume := sfx_volume
+	if category == "voice":
+		base_volume = VOICE_VOLUME
+	elif category == "ambient":
+		base_volume = AMBIENT_VOLUME
 	effects.stream = stream
-	_apply_player_volume(effects, clampf(combat_global_volume() * volume_mult, 0.0, 1.0))
+	_apply_player_volume(effects, clampf(master_volume * base_volume * volume_mult, 0.0, 1.0))
 	effects.play()
 	return true
+
+
+## `SoundManager.play_positional(name, x, y, player_x, player_y, max_distance,
+## volume_mult)`: the falloff feeds the ordinary throttled `play`.
+func play_positional(
+	key: String,
+	x: float,
+	y: float,
+	player_x: float,
+	player_y: float,
+	max_distance: float = POSITIONAL_MAX_DISTANCE,
+	volume_mult: float = 1.0
+) -> bool:
+	var falloff := positional_falloff(x, y, player_x, player_y, max_distance)
+	if falloff <= 0.0:
+		return false
+	return play_scaled(key, volume_mult * falloff)
+
+
+## `SoundManager.pause_bgm` / `resume_bgm`.
+func pause_music() -> void:
+	if enabled and music != null and music.playing:
+		music.stream_paused = true
+
+
+func resume_music() -> void:
+	if enabled and music != null and music.stream_paused:
+		music.stream_paused = false
+
+
+## `SoundManager.stop_all`: mixer channels and the music stream.
+func stop_all() -> void:
+	if not enabled:
+		return
+	effects.stop()
+	ambient.stop()
+	music.stop()
+	for player in combat_players:
+		if is_instance_valid(player):
+			player.stop()
 
 
 func get_volume(channel: String) -> float:
