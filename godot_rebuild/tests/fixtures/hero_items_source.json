@@ -657,7 +657,7 @@
   "ItemShopUI._draw_no_hero_banner": {
    "kind": "ported",
    "target": "scripts/ui/item_forge_panel.gd",
-   "token": "\"no_hero_banner\""
+   "token": "\"shop_no_hero_banner\""
   },
   "ItemShopUI._draw_panel": {
    "kind": "ported",

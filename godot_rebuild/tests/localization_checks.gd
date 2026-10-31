@@ -2,8 +2,13 @@ extends RefCounted
 ## Native tests for source language data, persistence, formatting, and fallback.
 
 const Store = preload("res://scripts/settings/language_store.gd")
+const LocalizationText = preload("res://scripts/settings/localization_text.gd")
+const ItemShop = preload("res://scripts/match/item_shop_ui.gd")
 const CATALOG := "res://data/localization_catalog.json"
 const CONTRACT := "res://tests/fixtures/localization_source_contract.json"
+const TRANSLATE_FIXTURE := "res://tests/fixtures/localization_translate_source.json"
+const PANEL_SCRIPT := "res://scripts/ui/item_forge_panel.gd"
+const SHOP_SCRIPT := "res://scripts/match/item_shop_ui.gd"
 const TEST_PATH := "user://localization_native_test.json"
 
 
@@ -122,8 +127,145 @@ func run(check: Callable) -> void:
 		runtime.language == "id" and Store.load_language(TEST_PATH) == "id",
 		"language cycle persists the wrapped selection"
 	)
+	_localization_matrix(check, runtime)
+	_shop_copy(check, runtime)
 	runtime.load_settings(original_path)
 	_remove_test_files()
+
+
+func _localization_matrix(check: Callable, runtime: Variant) -> void:
+	# Source localization.py is executed by the oracle; this replay proves the
+	# native runtime renders the same 224x2 strings and tr() edge behaviour.
+	var fixture: Variant = JSON.parse_string(FileAccess.get_file_as_string(TRANSLATE_FIXTURE))
+	check.call(fixture is Dictionary, "python tr() render fixture parses")
+	if not fixture is Dictionary:
+		return
+	var values: Dictionary = {}
+	for key in fixture.values:
+		var raw: Variant = fixture.values[key]
+		values[key] = int(raw) if typeof(raw) == TYPE_FLOAT else raw
+	var mismatches: Array = []
+	for language in fixture.languages:
+		if not runtime.set_language(String(language)):
+			mismatches.append("language:" + String(language))
+			continue
+		var expected: Dictionary = fixture.renders[String(language)]
+		for key in expected:
+			if runtime.translate(String(key), values) != String(expected[key]):
+				mismatches.append("%s/%s" % [language, key])
+	check.call(
+		mismatches.is_empty(),
+		"translate() reproduces every source tr() render: %s" % str(mismatches.slice(0, 3))
+	)
+	var edges: Dictionary = fixture.edges
+	check.call(
+		(
+			runtime.translate("queued", {"count": true}) == String(edges.bool_value)
+			and runtime.translate("queued", {"count": 4.0}) == String(edges.float_value)
+			and runtime.translate("menu_play", {"page": 9}) == String(edges.extra_value)
+			and runtime.translate(String(edges.unknown_key)) == String(edges.unknown_key)
+		),
+		"bool, float, surplus values and unknown keys match Python tr()"
+	)
+	var raw_missing: Array = []
+	for language in edges.missing_value:
+		runtime.set_language(String(language))
+		if runtime.translate("queued") != String(edges.missing_value[language]):
+			raw_missing.append(language)
+	check.call(raw_missing.is_empty(), "a missing value keeps the raw tr() template")
+	var percent: Dictionary = edges.percent_template
+	var percent_missing: Array = []
+	for language in percent.renders:
+		runtime.set_language(String(language))
+		if runtime.translate(String(percent.key), values) != String(percent.renders[language]):
+			percent_missing.append(language)
+	check.call(percent_missing.is_empty(), "percent templates stay untouched like tr()")
+	runtime.set_language("en")
+	var labels: Dictionary = fixture.labels
+	check.call(
+		(
+			runtime.get_language() == "en"
+			and runtime.get_language_label("id") == String(labels.id)
+			and runtime.get_language_label("en") == String(labels.en)
+			and runtime.get_language_label("xx") == String(labels.unknown)
+			and runtime.get_language_label("") == String(labels.empty)
+			and runtime.get_language_label() == String(labels.empty)
+		),
+		"get_language() and get_language_label() mirror localization.py"
+	)
+	check.call(
+		(
+			not runtime.set_language("fr")
+			and runtime.get_language() == "en"
+			and Store.decode_language('{"version": 1, "language": "fr"}') == "id"
+			and String(edges.invalid_language.after) == "id"
+		),
+		"unknown codes are rejected while stored preferences fall back to Indonesian"
+	)
+	runtime.set_language("id")
+
+
+func _shop_copy(check: Callable, runtime: Variant) -> void:
+	# ITEM FORGE copy must come from the same tr() keys as hero_items.py.
+	var tree := Engine.get_main_loop() as SceneTree
+	var host := Node.new()
+	tree.root.add_child(host)
+	runtime.set_language("id")
+	var indonesian_dead: String = LocalizationText.translate(host, "dead", "dead")
+	runtime.set_language("en")
+	var english_dead: String = LocalizationText.translate(host, "dead", "dead")
+	check.call(
+		(
+			indonesian_dead == "MATI"
+			and english_dead == "DEAD"
+			and LocalizationText.translate(null, "dead", "dead") == "dead"
+			and LocalizationText.translate(null, "queued", "+{count} queue", {"count": 2}) == "+2 queue"
+		),
+		"panel tr() bridge follows the runtime and falls back without one"
+	)
+	var suffix: String = LocalizationText.translate(host, "delivery_after_respawn", "(x)")
+	var shop: Object = ItemShop.new()
+	shop.notice = {"hero_id": 2, "dead": true}
+	var dead_notice: String = String(shop.notice_text(suffix))
+	shop.notice = {"hero_id": 2, "dead": false}
+	check.call(
+		(
+			dead_notice == "BUY FOR: hero 2 (delivered after respawn)"
+			and String(shop.notice_text(suffix)) == "BUY FOR: hero 2"
+		),
+		"BUY FOR notice localises its respawn suffix like the source"
+	)
+	var panel_source := FileAccess.get_file_as_string(PANEL_SCRIPT)
+	var shop_source := FileAccess.get_file_as_string(SHOP_SCRIPT)
+	var tokens := [
+		"_text(\"item_card_detail_hint\")",
+		"_text(\"shop_no_hero_banner\")",
+		"_text(\"shop_no_hero_yet\")",
+		"_text(\"item_detail_owned\"",
+		"_text(\"item_detail_description\")",
+		"_text(\"item_detail_stats\")",
+		"_text(\"item_detail_flavor\")",
+		"_text(\"item_detail_close_hint\")",
+		"_text(\"delivery_after_respawn\")",
+		"_text(\"item_inventory_hint\")",
+		"_text(\"queued\"",
+		"hero_chips(world, forge(), localizer)",
+	]
+	var absent: Array = []
+	for token in tokens:
+		if panel_source.find(String(token)) < 0:
+			absent.append(token)
+	check.call(absent.is_empty(), "ITEM FORGE copy routes through tr() keys: %s" % str(absent))
+	check.call(
+		(
+			shop_source.find("_text(localizer, \"dead\"") >= 0
+			and shop_source.find("_text(localizer, \"queued\"") >= 0
+			and shop_source.find("func hero_chips(world: Object, forge: Object, localizer: Object = null)")
+			>= 0
+		),
+		"hero chips localise dead and queued through the injected runtime"
+	)
+	host.queue_free()
 
 
 func _remove_test_files() -> void:

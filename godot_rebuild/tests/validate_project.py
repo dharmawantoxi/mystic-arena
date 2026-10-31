@@ -1396,6 +1396,78 @@ check('Localization="*res://scripts/settings/localization_runtime.gd"' in projec
 check("LocalizationChecks.new().run(_check)" in ai_tests
       and "await LocalizationSceneChecks.new().run(root.get_tree(), app, _check)" in ai_tests,
       "Localization native and playable-scene tests must be registered")
+# Layer 9cm: localization.py closed out (tr() render matrix + ITEM FORGE copy).
+from localization_source_oracle import translate_fixture as localization_translate_fixture
+import ast as _loc_ast
+_loc_repo = ROOT.parent
+_loc_functions = [node.name for node in _loc_ast.parse(
+    (_loc_repo / "localization.py").read_text(encoding="utf-8")).body
+    if isinstance(node, _loc_ast.FunctionDef)]
+check(_loc_functions == ["set_language", "get_language", "get_language_label", "tr"],
+      f"9cm localization.py must keep its four public functions: {_loc_functions}")
+_loc_text = localization_source_fixture()["texts"]
+check(len(_loc_text["id"]) == 224 and set(_loc_text["id"]) == set(_loc_text["en"]),
+      "9cm both languages must cover the same 224 tr() keys")
+_loc_render = localization_translate_fixture()
+check(len(_loc_render["renders"]["id"]) == 224 and len(_loc_render["renders"]["en"]) == 224
+      and _loc_render["renders"]["id"]["queued"] == "+4 antrean"
+      and _loc_render["renders"]["en"]["dead"] == "DEAD"
+      and _loc_render["labels"]["unknown"] == "Bahasa Indonesia",
+      "9cm the executed tr() matrix must pin 224 renders per language")
+_loc_edges = _loc_render["edges"]
+check(_loc_edges["missing_value"]["en"] == "+{count} queued"
+      and _loc_edges["percent_template"]["renders"]["id"] == "%s — %d/%d slot item"
+      and _loc_edges["invalid_language"]["after"] == "id"
+      and _loc_edges["unknown_key"] == "missing_localization_key"
+      and _loc_edges["bool_value"] == "+True queued",
+      "9cm tr() edges must pin templates, percent copies, booleans and the id fallback")
+_loc_compat_fixture = ROOT / "tests/fixtures/localization_translate_source.json"
+check(_loc_compat_fixture.is_file()
+      and json.loads(_loc_compat_fixture.read_text(encoding="utf-8")) == _loc_render,
+      "9cm the committed tr() fixture must match the executed source")
+_loc_missing_keys = []
+for _loc_file in ("hero_items.py", "_core.py"):
+    _loc_python = (_loc_repo / _loc_file).read_text(encoding="utf-8")
+    for _loc_key in re.findall(r"\btr\(\s*['\"]([a-z0-9_]+)['\"]", _loc_python):
+        if _loc_key not in _loc_text["id"]:
+            _loc_missing_keys.append(f"{_loc_file}:{_loc_key}")
+check(not _loc_missing_keys,
+      f"9cm every Python tr() key must exist in the catalog: {_loc_missing_keys[:6]}")
+_loc_bridge_path = ROOT / "scripts/settings/localization_text.gd"
+_loc_bridge = _loc_bridge_path.read_text(encoding="utf-8") if _loc_bridge_path.is_file() else ""
+check("static func translate(host: Node" in _loc_bridge
+      and 'get_node_or_null("Localization")' in _loc_bridge,
+      "9cm panels must reach tr() through the shared localization bridge")
+_loc_panel = (ROOT / "scripts/ui/item_forge_panel.gd").read_text(encoding="utf-8")
+_loc_shop = (ROOT / "scripts/match/item_shop_ui.gd").read_text(encoding="utf-8")
+_loc_tokens = ["item_card_detail_hint", "shop_no_hero_banner", "shop_no_hero_yet",
+               "item_detail_owned", "item_detail_description", "item_detail_stats",
+               "item_detail_flavor", "item_detail_close_hint", "delivery_after_respawn",
+               "dead_delivery_hint", "item_inventory_hint"]
+_loc_absent = [token for token in _loc_tokens if token not in _loc_panel]
+check(not _loc_absent,
+      f"9cm ITEM FORGE copy must route through source tr() keys: {_loc_absent}")
+check("func hero_chips(world: Object, forge: Object, localizer: Object = null) -> Array:"
+      in _loc_shop
+      and "func notice_text(suffix: String =" in _loc_shop
+      and "LocalizationText = preload" in _loc_panel
+      and "shop_ui.hero_chips(world, forge(), localizer)" in _loc_panel,
+      "9cm hero chips, the BUY FOR notice and panel copy must localise like hero_items.py")
+_loc_runtime = (ROOT / "scripts/settings/localization_runtime.gd").read_text(encoding="utf-8")
+check("func get_language() -> String:" in _loc_runtime
+      and "func _value_text(value: Variant)" in _loc_runtime
+      and "TYPE_BOOL" in _loc_runtime,
+      "9cm the runtime must port get_language() and Python boolean spelling")
+_loc_native = (ROOT / "tests/localization_checks.gd").read_text(encoding="utf-8")
+check("translate() reproduces every source tr() render" in _loc_native
+      and "a missing value keeps the raw tr() template" in _loc_native
+      and "percent templates stay untouched like tr()" in _loc_native
+      and "BUY FOR notice localises its respawn suffix" in _loc_native
+      and "ITEM FORGE copy routes through tr() keys" in _loc_native,
+      "9cm the native suite must replay the tr() matrix and the ITEM FORGE copy")
+check((_loc_repo / "docs/LOCALIZATION_FOLDER_MIGRATION.md").is_file(),
+      "9cm the localization folder migration note must exist")
+
 check("LanguageNext" in (ROOT / "scripts/ui/audio_settings_panel.gd").read_text(encoding="utf-8")
       and "language_changed" in (ROOT / "scenes/menu/main_menu.gd").read_text(encoding="utf-8"),
       "Settings language selector must relabel the active MainMenu and panel")

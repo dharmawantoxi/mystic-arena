@@ -7,6 +7,7 @@ extends Control
 const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
 const PopupAnimation = preload("res://scripts/ui/popup_animation.gd")
 const ItemMechanics = preload("res://scripts/match/item_mechanics.gd")
+const LocalizationText = preload("res://scripts/settings/localization_text.gd")
 const AudioRuntime = preload("res://scripts/audio/audio_runtime.gd")
 const PRESENTATION := "res://data/ui/item_shop_presentation.json"
 const MECHANICS := "res://data/ui/item_mechanics.json"
@@ -22,22 +23,24 @@ const SHOP_TEXT := {
 	"buy": "BUY",
 	"buy_for": "BUY FOR:",
 	"dead": "mati",
-	"queued": "dipesan",
-	"delivery_after_respawn": "dikirim setelah respawn",
+	"queued": "+{count} antrean",
+	"delivery_after_respawn": "(dikirim setelah respawn)",
 	"no_hero": "Belum ada hero",
-	"no_hero_banner": "Belum ada hero hidup. Panggil hero untuk membeli item.",
+	"shop_no_hero_banner": "Belum ada hero hidup. Panggil hero untuk membeli item.",
+	"shop_no_hero_yet": "Belum ada hero",
 	"inventory_full": "Slot item penuh",
 	"magic_only_denied": "Hanya hero magic",
 	"item_dropped": "Item dijatuhkan",
 	"forge_purchase": "Terbeli",
 	"forge_queued": "Dipesan (menunggu respawn)",
-	"detail_hint": "Ketuk kartu item untuk info lengkap",
-	"description": "DESKRIPSI LENGKAP",
-	"stats": "STAT & EFEK",
-	"flavor": "RIWAYAT / FLAVOR",
-	"close_hint": "Ketuk di luar panel atau X untuk menutup",
+	"item_card_detail_hint": "Ketuk kartu item untuk info lengkap",
+	"item_detail_description": "DESKRIPSI LENGKAP",
+	"item_detail_stats": "STAT & EFEK",
+	"item_detail_flavor": "RIWAYAT / FLAVOR",
+	"item_detail_close_hint": "Ketuk di luar panel atau X untuk menutup",
+	"item_detail_owned": "Dimiliki: {count}",
 	"inventory": "INVENTORY",
-	"inventory_hint": "Ketuk item untuk info · klik kanan untuk menjatuhkan",
+	"item_inventory_hint": "Ketuk item untuk info · klik kanan untuk menjatuhkan",
 	"select_hero": "Pilih hero penerima item di atas",
 }
 # Source `_play_click` / `_play_buy` / `_play_error` volume multipliers.
@@ -46,6 +49,9 @@ const SOUND_VOLUME := {
 	"ui_buy": 0.6,
 	"ui_error": 0.4,
 }
+
+# hero_items.py stores card pills as source copy; these carry tr() keys.
+const DISABLED_KEYS := {"NOT AFFORDABLE": "shop_card_poor", "SELECT HERO": "shop_card_no_hero"}
 
 var world: Object = null
 var popup_animation := PopupAnimation.new()
@@ -131,8 +137,18 @@ func notify_redraw() -> void:
 	refresh()
 
 
-func status_text(status: String) -> String:
-	return String(SHOP_TEXT.get(status, status))
+func status_text(status: String, values: Dictionary = {}) -> String:
+	# Source renders every ITEM FORGE notice through tr(); the fallback map keeps
+	# the short Indonesian copy when no Localization runtime is mounted.
+	var fallback := String(SHOP_TEXT.get(status, status))
+	if not SHOP_TEXT.has(status):
+		return fallback
+	var key := "dead_delivery_hint" if status == "dead" else status
+	return LocalizationText.translate(self, key, fallback, values)
+
+
+func _text(key: String, values: Dictionary = {}) -> String:
+	return LocalizationText.translate(self, key, String(SHOP_TEXT.get(key, key)), values)
 
 
 func refresh() -> void:
@@ -168,7 +184,7 @@ func refresh() -> void:
 	_build_cards(shop_ui)
 	_build_slots(shop_ui)
 	_gold.text = "◉ GOLD  " + _format_gold(forge().player_gold(world))
-	_notice.text = shop_ui.notice_text()
+	_notice.text = shop_ui.notice_text(_text("delivery_after_respawn"))
 	_refresh_detail(shop_ui)
 
 
@@ -237,7 +253,7 @@ func _build_chrome() -> void:
 	title.position = Vector2(300, 5)
 	title.size = Vector2(500, 56)
 	_chrome.add_child(title)
-	var hint := _label("ItemForgeHint", String(SHOP_TEXT.detail_hint), 14, UI_THEME.FAINT)
+	var hint := _label("ItemForgeHint", _text("item_card_detail_hint"), 14, UI_THEME.FAINT)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	hint.position = Vector2(750, 24)
 	hint.size = Vector2(276, 24)
@@ -301,7 +317,7 @@ func _build_chrome() -> void:
 	no_hero.visible = false
 	_chrome.add_child(no_hero)
 	var no_hero_text := _label(
-		"ItemForgeNoHeroText", String(SHOP_TEXT.no_hero_banner), 24, Color8(255, 190, 190), true
+		"ItemForgeNoHeroText", _text("shop_no_hero_banner"), 24, Color8(255, 190, 190), true
 	)
 	no_hero_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	no_hero_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -423,10 +439,11 @@ func _clear(container: Node) -> void:
 
 func _build_hero_chips(shop_ui: Object) -> void:
 	var heroes: Array = forge()._player_heroes(world)
-	var chip_data_list: Array = shop_ui.hero_chips(world, forge())
+	var localizer: Object = LocalizationText.runtime(self)
+	var chip_data_list: Array = shop_ui.hero_chips(world, forge(), localizer)
 	if heroes.is_empty():
 		_chips.add_child(
-			_label("ItemForgeNoHeroes", String(SHOP_TEXT.no_hero), 18, Color8(255, 150, 150), true)
+			_label("ItemForgeNoHeroes", _text("shop_no_hero_yet"), 18, Color8(255, 150, 150), true)
 		)
 	else:
 		var gap := 8.0
@@ -485,11 +502,11 @@ func _build_hero_chips(shop_ui: Object) -> void:
 		summary.text = line_one + "\n" + line_two
 		if not bool(buyer.alive):
 			var pending: int = buyer.pending_items.size()
-			summary.text += "   · " + String(SHOP_TEXT.delivery_after_respawn)
+			summary.text += "   · " + _text("delivery_after_respawn")
 			if pending > 0:
-				summary.text += " (%d %s)" % [pending, String(SHOP_TEXT.queued)]
+				summary.text += " " + _text("queued", {"count": pending})
 	_inventory_label.text = (
-		String(SHOP_TEXT.inventory) + "   ·   " + String(SHOP_TEXT.inventory_hint)
+		String(SHOP_TEXT.inventory) + "   ·   " + _text("item_inventory_hint")
 	)
 	_inventory_label.visible = buyer != null
 	var hint := _chrome.get_node("ItemForgeSelectHeroHint") as Label
@@ -600,7 +617,10 @@ func _build_cards(shop_ui: Object) -> void:
 		cell.add_child(button)
 		var buy := Button.new()
 		buy.name = "ItemForgeBuy_%s" % item_id
-		buy.text = String(SHOP_TEXT.buy) if bool(card.can_buy) else String(card.disabled_reason)
+		var reason := String(card.disabled_reason)
+		if DISABLED_KEYS.has(reason):
+			reason = LocalizationText.translate(self, String(DISABLED_KEYS[reason]), reason)
+		buy.text = String(SHOP_TEXT.buy) if bool(card.can_buy) else reason
 		buy.custom_minimum_size = Vector2(230, 26)
 		buy.disabled = not bool(card.can_buy)
 		buy.add_theme_font_size_override("font_size", 15)
@@ -712,7 +732,8 @@ func _build_detail_content(item_id: String) -> void:
 	if hero != null:
 		var owned: int = hero.items.count(item_id)
 		if owned > 0:
-			var own_label := _label("", "Owned: %d" % owned, 17, Color8(150, 255, 170), true)
+			var owned_text := _text("item_detail_owned", {"count": owned})
+			var own_label := _label("", owned_text, 17, Color8(150, 255, 170), true)
 			own_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 			right.add_child(own_label)
 	var requirements := []
@@ -741,10 +762,10 @@ func _build_detail_content(item_id: String) -> void:
 	_detail_body.add_child(header)
 	var separator := HSeparator.new()
 	_detail_body.add_child(separator)
-	_detail_body.add_child(_label("", String(SHOP_TEXT.description), 15, UI_THEME.MUTED, true))
+	_detail_body.add_child(_label("", _text("item_detail_description"), 15, UI_THEME.MUTED, true))
 	desc.custom_minimum_size = Vector2(0, 48)
 	_detail_body.add_child(desc)
-	_detail_body.add_child(_section_label(String(SHOP_TEXT.stats), null, UI_THEME.MUTED))
+	_detail_body.add_child(_section_label(_text("item_detail_stats"), null, UI_THEME.MUTED))
 	var columns := HBoxContainer.new()
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	columns.add_theme_constant_override("separation", 26)
@@ -773,8 +794,8 @@ func _build_detail_content(item_id: String) -> void:
 	columns.add_child(right_column)
 	_detail_body.add_child(columns)
 	if data.has("flavor") and String(data.flavor) != "":
-		_detail_body.add_child(_section_label(String(SHOP_TEXT.flavor), data.flavor, UI_THEME.BODY))
-	var close_hint := _label("", String(SHOP_TEXT.close_hint), 14, UI_THEME.FAINT)
+		_detail_body.add_child(_section_label(_text("item_detail_flavor"), data.flavor, UI_THEME.BODY))
+	var close_hint := _label("", _text("item_detail_close_hint"), 14, UI_THEME.FAINT)
 	close_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_detail_body.add_child(close_hint)
 
@@ -813,7 +834,7 @@ func _render_state_key(shop_ui: Object) -> String:
 		int(shop_ui.page),
 		forge().player_gold(world),
 		String(shop_ui.inspect_item),
-		String(shop_ui.notice_text()),
+		String(shop_ui.notice_text(_text("delivery_after_respawn"))),
 	]
 	for hero in forge()._player_heroes(world):
 		(
