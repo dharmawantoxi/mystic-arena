@@ -570,6 +570,82 @@ check("_draw_lit_polygon(HeroMarker.silhouette(" in view
       "9aq the arena view must route hero silhouettes and boss bodies through the lighting pass")
 check("import " not in _sprite_lighting_text and "load(" not in _sprite_lighting_text,
       "9aq sprite lighting stays asset-free (procedural shading only)")
+# Layer 9cl: lighting.py closed out (bitmap pipeline + 21-symbol classification).
+_light_inventory = sprite_lighting_fixture()["inventory"]
+check(_light_inventory["file"] == {"file": "lighting.py", "lines": 239, "classes": 0,
+                                   "functions": 8, "assigns": 12, "imports": 1,
+                                   "symbols": 21},
+      f"9cl lighting.py must stay 239 lines / 8 functions / 21 symbols: "
+      f"{_light_inventory['file']}")
+check(_light_inventory["symbols"]["count"] == 21
+      and _light_inventory["symbols"]["kinds"] == {"data": 10, "deviation": 1,
+                                                   "folded": 1, "ported": 9},
+      f"9cl all 21 lighting symbols must carry a kind: {_light_inventory['symbols']}")
+_light_broken = []
+_light_untargeted = []
+for _light_name, _light_row in _light_inventory["classification"].items():
+    if not _light_row["target"] or not _light_row["token"]:
+        if _light_row["kind"] not in ("dead", "deviation"):
+            _light_untargeted.append(_light_name)
+        continue
+    _light_target = ROOT / _light_row["target"]
+    if not _light_target.is_file() or _light_row["token"] not in _light_target.read_text(
+            encoding="utf-8"):
+        _light_broken.append(_light_name)
+check(not _light_broken,
+      f"9cl every lighting token must live in its target: {_light_broken[:8]}")
+check(not _light_untargeted,
+      f"9cl only the dropped canonical cache may skip a Godot target: {_light_untargeted}")
+check(_light_inventory["deviations"] == ["_CANON_CACHE"],
+      "9cl the dropped canonical cache must stay named as a deviation")
+_light_apply = sprite_lighting_fixture()["apply"]
+check(len(_light_apply) == 6
+      and len(_light_apply["gradient28"]["output"]) == 400
+      and len(_light_apply["flat12"]["output"]) == 64
+      and len(_light_apply["box28"]["output"]) == 1296
+      and _light_apply["box28"]["box"] == [0, 0, 28, 28]
+      and _light_apply["gradient28"]["alpha_kept"] is True
+      and all(_light_apply[name]["input"] == _light_apply[name]["output"]
+              for name in ("guard_thin", "guard_empty", "guard_tiny")),
+      "9cl the apply fixture must pin 6 pixel cases and the three guards")
+check(sprite_lighting_fixture()["bbox"] == {"square": [2, 2, 8, 8], "ell": [1, 1, 9, 9],
+                                            "tiny": [1, 1, 4, 5], "empty": None},
+      "9cl the _bbox_of fixture must keep its four cases")
+check("static func sized_grid(" in _sprite_lighting_text
+      and "static func apply(" in _sprite_lighting_text
+      and "static func bbox_of(" in _sprite_lighting_text
+      and "static func apply_to_rig(" in _sprite_lighting_text
+      and "static func mask_cells(" in _sprite_lighting_text
+      and "static func contour_masks(" in _sprite_lighting_text
+      and "static func reset_gradient_cache(" in _sprite_lighting_text
+      and "const MIN_SIZE := 2" in _sprite_lighting_text
+      and "const SIZE_CACHE_LIMIT := 64" in _sprite_lighting_text,
+      "9cl sprite_lighting.gd must carry the whole bitmap pipeline")
+_light_checks_text = (ROOT / "tests/sprite_lighting_checks.gd").read_text(encoding="utf-8")
+check("lighting.py stays 239 lines with 8 functions, 12 constants and one import"
+      in _light_checks_text
+      and "every lighting token lives in its target" in _light_checks_text
+      and "the 28x28 pass reproduces the source gradient + rim + terminator pixels"
+      in _light_checks_text
+      and "apply only touches RGB (alpha survives)" in _light_checks_text
+      and "reset_gradient_cache drops the cache and the rebuilt grid is identical"
+      in _light_checks_text,
+      "9cl the native suite must replay inventory, tokens and the bitmap pass")
+_light_doc = ROOT.parent / "docs/LIGHTING_FOLDER_MIGRATION.md"
+check(_light_doc.is_file(), "9cl the lighting migration report must ship")
+if _light_doc.is_file():
+    _light_report = _light_doc.read_text(encoding="utf-8")
+    check(all(token in _light_report for token in (
+              "lighting.py", "sprite_lighting.gd", "sprite_lighting_source_oracle.py",
+              "sprite_lighting_checks.gd", "_canonical", "contour_masks", "_sized",
+              "apply", "_bbox_of", "apply_to_rig", "reset_gradient_cache",
+              "_CANON_CACHE", "_SIZE_CACHE", "BLEND_RGB_MULT", "BLEND_RGB_ADD",
+              "_draw_lit_polygon", "smoothscale")),
+          "9cl the report must cover every ported symbol and the deviations")
+    check(_light_report.count("D6") > 0 and _light_report.count("|") > 60,
+          "9cl the report must stay tabular with all six deviations")
+
+
 # Layer 9ar: mobile/combat_audio.py port (combat SFX gate + attack call sites).
 check('const CombatAudioChecks = preload("res://tests/combat_audio_checks.gd")' in ai_tests
       and "CombatAudioChecks.new().run(_check)" in ai_tests,

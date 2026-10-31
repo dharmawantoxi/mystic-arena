@@ -117,7 +117,7 @@ jobs:
           python godot_rebuild/tests/ai_shield_source_oracle.py
           python godot_rebuild/tests/floating_text_source_oracle.py
           python godot_rebuild/tests/hit_particle_source_oracle.py
-          python godot_rebuild/tests/sprite_lighting_source_oracle.py
+          python godot_rebuild/tests/sprite_lighting_source_oracle.py --check
           python godot_rebuild/tests/combat_audio_source_oracle.py
           python godot_rebuild/tests/side_panel_source_oracle.py
           python godot_rebuild/tests/splash_screen_source_oracle.py
