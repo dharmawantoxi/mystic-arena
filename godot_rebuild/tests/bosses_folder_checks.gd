@@ -151,7 +151,7 @@ func _check_catalog(check: Callable, source: Dictionary) -> void:
 		if not parked.has(key):
 			missing_resource.append(key)
 			continue
-		var definition := parked[key]
+		var definition: Variant = parked[key]
 		if not bool(definition.is_boss_hero):
 			not_boss_hero.append(key)
 		if int(definition.cost) != int(costs.get(key, -1)):

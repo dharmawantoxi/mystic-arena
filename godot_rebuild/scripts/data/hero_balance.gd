@@ -568,7 +568,7 @@ static func resolve_catalog(catalog: Dictionary, unlocks: int = 0) -> Dictionary
 				(eff[key] as Array).append(e)
 			var by_class := {}
 			for key2 in eff:
-				var dc := key2.split("|")[0]
+				var dc := String(key2).get_slice("|", 0)
 				if not by_class.has(dc):
 					by_class[dc] = []
 				(by_class[dc] as Array).append_array(eff[key2])
@@ -964,7 +964,7 @@ static func final_fixpoint(
 			(eff[key] as Array).append(float(m["dps"]) * float(fac[hero_type3]) * mit)
 		var by_class := {}
 		for key2 in eff:
-			var dc := key2.split("|")[0]
+			var dc := String(key2).get_slice("|", 0)
 			if not by_class.has(dc):
 				by_class[dc] = []
 			(by_class[dc] as Array).append_array(eff[key2])

@@ -190,11 +190,11 @@ func _native(label: String) -> Dictionary:
 				"label_style": "body_semibold", "value_size": 22, "value_style": "body_medium",
 			}, _measure)
 		"screen_title_full":
-			out = _ops_only(UiTheme.screen_title_ops({
+			out = _dict_only(UiTheme.screen_title_ops({
 				"cx": 640, "y": 120, "text": "MYSTIC ARENA",
 			}, _measure))
 		"screen_title_sub_solid":
-			out = _ops_only(UiTheme.screen_title_ops({
+			out = _dict_only(UiTheme.screen_title_ops({
 				"cx": 640, "y": 140, "text": "DEFEAT", "glow": false, "sub": "TRY AGAIN",
 				"sub_color": [255, 168, 96], "cheap_alpha": false,
 			}, _measure))
@@ -252,6 +252,17 @@ func _native(label: String) -> Dictionary:
 ## Op-only builders return an Array; wrap them in the component shape of the fixture.
 func _ops_only(ops: Array) -> Dictionary:
 	return {"ops": ops, "rect": [], "buttons": {}, "result": null}
+
+
+## Component builders already return `ops`/`rect`/`buttons`; add the `result` slot the
+## fixture replay reads, so both shapes reach `_check_cases` identically.
+func _dict_only(payload: Dictionary) -> Dictionary:
+	return {
+		"ops": payload.get("ops", []),
+		"rect": payload.get("rect", []),
+		"buttons": payload.get("buttons", {}),
+		"result": payload.get("result", null),
+	}
 
 
 func _check_palette(check: Callable, data: Dictionary) -> void:

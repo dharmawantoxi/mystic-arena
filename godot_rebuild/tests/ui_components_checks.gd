@@ -505,7 +505,7 @@ func _check_view_wiring(check: Callable, data: Dictionary) -> void:
 		"the view paints the supplied tower popup frame for frame"
 	)
 	var expected_buttons: Dictionary = frame["buttons"]
-	var registered := TowerPopup.build(view.tower_popup_state, _fake_measure)["buttons"]
+	var registered: Dictionary = TowerPopup.build(view.tower_popup_state, _fake_measure)["buttons"]
 	check.call(
 		_value_equal(registered, expected_buttons),
 		"the popup hands the dock the same button rects the source registers"

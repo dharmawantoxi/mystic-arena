@@ -208,8 +208,8 @@ func _check_namespaces(check: Callable, source: Dictionary) -> void:
 	check.call(_same(counts, METHOD_COUNTS), "namespace method counts: %s" % str(counts))
 	var classes: Dictionary = source.get("classes", {})
 	var listed: Array = []
-	for namespace in classes:
-		listed.append(String(namespace))
+	for space_name in classes:
+		listed.append(String(space_name))
 	listed.sort()
 	check.call(listed == ["_NS_archer_tower", "_NS_cannon_tower", "_NS_ice_tower", "_NS_mage_tower"],
 		"four wrapped namespaces, four renderers: %s" % str(listed))

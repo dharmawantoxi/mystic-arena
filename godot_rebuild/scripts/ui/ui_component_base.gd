@@ -79,7 +79,7 @@ static func _rect_close_ops(box: Rect2i, hover: bool, measure: Callable) -> Arra
 		_rect_op(box, HOVER_FILL if hover else RED, 0, 3),
 		_rect_op(box, WHITE, border, 3),
 	]
-	var metrics := measure.call(CLOSE_TEXT, CLOSE_TEXT_SIZE)
+	var metrics: Vector2 = measure.call(CLOSE_TEXT, CLOSE_TEXT_SIZE)
 	ops.append({
 		"kind": "text",
 		"text": CLOSE_TEXT,

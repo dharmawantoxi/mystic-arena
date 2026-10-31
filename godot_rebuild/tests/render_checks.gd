@@ -186,12 +186,12 @@ func _check_suites(check: Callable, data: Dictionary) -> void:
 	var suites: Dictionary = data["suites"]
 	check.call(suites.size() == 17, "seventeen classes carry a per-class suite row")
 	var missing: Array = []
-	for class_name in suites:
-		var row: Dictionary = suites[class_name]
+	for suite_name in suites:
+		var row: Dictionary = suites[suite_name]
 		for key in ["oracle", "checks"]:
 			var path: String = String(row[key])
 			if path.is_empty() or _target_text(path).is_empty():
-				missing.append("%s %s" % [class_name, key])
+				missing.append("%s %s" % [suite_name, key])
 	check.call(
 		missing.is_empty(),
 		"every class keeps its per-class oracle and native suite (%s)" % str(missing)
@@ -299,10 +299,10 @@ func _check_fonts(check: Callable, data: Dictionary) -> void:
 		"title_font clamps to 220 like the source"
 	)
 	var cache = RenderCacheScript.get_shared()
-	var clamp: Array = (data["caches"]["render"]["font_clamp"] as Array).duplicate()
+	var clamp_rows: Array = (data["caches"]["render"]["font_clamp"] as Array).duplicate()
 	check.call(
-		int(cache.get_font(400, "body", false)["size"]) == int(clamp[1])
-		and int(cache.get_font(1, "body", false)["size"]) == int(clamp[0]),
+		int(cache.get_font(400, "body", false)["size"]) == int(clamp_rows[1])
+		and int(cache.get_font(1, "body", false)["size"]) == int(clamp_rows[0]),
 		"RenderCache.get_font clamps into 8..220 like the source"
 	)
 	check.call(
