@@ -9025,6 +9025,195 @@ if _mobile_doc.is_file():
     check(_mobile_text.count("|") > 60,
           "the mobile inventory must stay a per-file table")
 
+# ── 9cj: the whole `hero_balance.py` calibration pass (935 lines) ──
+# The module is the only place hero balance is calibrated: it reads the hero catalog,
+# computes one multiplier triple per hero and writes the rounded stats back in place.
+# The rebuild ports the pipeline (plus the `hero_archetypes` tables it reads) and the
+# oracle re-executes the source against the REAL catalog, then proves that the baked
+# `data/heroes/*.tres` numbers (216 boss heroes + 6 starters) still equal the source
+# output. Three symbols are deliberate deviations, named in the report.
+from hero_balance_source_oracle import build_fixture as hero_balance_fixture
+_hb_fixture_path = ROOT / "tests/fixtures/hero_balance_source.json"
+_hb_checks_path = ROOT / "tests/hero_balance_checks.gd"
+_hb_oracle_path = ROOT / "tests/hero_balance_source_oracle.py"
+_hb_balance_gd = ROOT / "scripts/data/hero_balance.gd"
+_hb_arch_gd = ROOT / "scripts/data/hero_archetypes.gd"
+check(_hb_fixture_path.is_file(), "9cj the hero_balance inventory needs a source fixture")
+check(_hb_checks_path.is_file(), "9cj the hero_balance native suite must exist")
+check(_hb_oracle_path.is_file(), "9cj the hero_balance oracle must ship")
+check(_hb_balance_gd.is_file() and _hb_arch_gd.is_file(),
+      "9cj hero_balance.gd and its hero_archetypes.gd dependency must ship")
+check('const HeroBalanceChecks = preload("res://tests/hero_balance_checks.gd")' in ai_tests
+      and "HeroBalanceChecks.new().run(_check)" in ai_tests,
+      "9cj the hero_balance suite must be preloaded and run")
+check("python godot_rebuild/tests/hero_balance_source_oracle.py --check" in workflow,
+      "9cj CI must run the hero_balance oracle")
+_hb_doc = ROOT.parent / "docs/HERO_BALANCE_FOLDER_MIGRATION.md"
+check(_hb_doc.is_file(), "9cj the hero_balance migration report must ship")
+_hb = hero_balance_fixture()
+check(_hb == json.loads(_hb_fixture_path.read_text(encoding="utf-8")),
+      "9cj the hero_balance fixture must match live Python execution")
+check(_hb["file"]["lines"] == 935 and _hb["file"]["sections"] == 13
+      and _hb["file"]["classes"] == 0 and _hb["file"]["functions"] == 20
+      and _hb["file"]["assigns"] == 37 and _hb["file"]["imports"] == 2,
+      f"9cj hero_balance.py must stay 935 lines of 13 sections: {_hb['file']}")
+check([row["name"] for row in _hb["sections"]] == [
+          "header", "switches", "rebudget", "guards", "school_mod_constants",
+          "starter_constants", "metrics", "targets", "parity", "resolve", "calibrate",
+          "anchors", "apply"]
+      and _hb["sections"][0]["start"] == 1 and _hb["sections"][-1]["end"] == 935
+      and all(int(_hb["sections"][i]["end"]) + 1 == int(_hb["sections"][i + 1]["start"])
+              for i in range(12)),
+      "9cj the thirteen sections must stay contiguous and in source order")
+check(_hb["symbols"]["count"] == 59
+      and _hb["symbols"]["kinds"] == {"data": 35, "deviation": 3, "folded": 1,
+                                      "ported": 20},
+      f"9cj all 59 symbols must carry a kind: {_hb['symbols']}")
+_hb_broken = []
+_hb_no_target = []
+for _hb_name, _hb_row in _hb["classification"].items():
+    if not _hb_row["target"] or not _hb_row["token"]:
+        if _hb_row["kind"] not in ("dead", "deviation", "meta"):
+            _hb_no_target.append(_hb_name)
+        continue
+    _hb_target = ROOT.parent / _hb_row["target"]
+    if not _hb_target.is_file() or _hb_row["token"] not in _hb_target.read_text(
+            encoding="utf-8"):
+        _hb_broken.append(_hb_name)
+check(not _hb_broken,
+      f"9cj every named classification needs a live target and token: {_hb_broken[:8]}")
+check(not _hb_no_target,
+      f"9cj only dead/deviation/meta rows may skip a Godot target: {_hb_no_target[:8]}")
+check(sorted(name for name, row in _hb["classification"].items()
+             if row["kind"] == "deviation") == sorted([
+                 "assign:_DBG", "assign:LAST", "func:pristine_boss_stats"]),
+      "9cj the three deviations stay named instead of being dropped")
+check(_hb["duplicates"] == {}, "9cj hero_balance.py must stay free of duplicated symbols")
+_hb_arch_text = _hb_arch_gd.read_text(encoding="utf-8")
+check('const ARCHETYPES: Dictionary = {' in _hb_arch_text
+      and _hb_arch_text.count('"dmg_type": "PHYSICAL"') == 102
+      and _hb_arch_text.count('"dmg_type": "MAGIC"') == 120
+      and 'const BOSS_RESISTANCES: Dictionary = {' in _hb_arch_text
+      and _hb_arch_text.count('"boss_class":') == 216
+      and "static func get_boss_resistances(" in _hb_arch_text
+      and "static func resist_from_profile(" in _hb_arch_text
+      and "static func physical_mitigation(" in _hb_arch_text
+      and "static func get_archetype(" in _hb_arch_text
+      and "static func round_half_even(" in _hb_arch_text,
+      "9cj hero_archetypes.gd must carry both tables and every resistance helper")
+check(_hb["archetypes"]["count"] == 222
+      and _hb["archetypes"]["kinds"]["dmg_type"] == {"MAGIC": 120, "PHYSICAL": 102}
+      and _hb["archetypes"]["kinds"]["playstyle"] == {"CARRY": 21, "FIGHTER": 137,
+                                                      "TANK": 64}
+      and _hb["archetypes"]["kinds"]["tier"] == {"A": 34, "B": 76, "C": 45, "D": 41,
+                                                 "S": 26},
+      "9cj the 222 archetype rows must keep their school/style/tier split")
+check(_hb["boss_resist"]["count"] == 216
+      and _hb["boss_resist"]["data_mismatch"] == []
+      and _hb["boss_resist"]["scale_mismatch"] == [],
+      "9cj the 216 baked resistance rows must still match boss_stats.json and the scale")
+check(_hb["boss_resist"]["base"] == {"mini": [12, 0.1], "true": [18, 0.2]}
+      and _hb["boss_resist"]["profile_pairs"]["mini|armored"][0] == 22
+      and _hb["boss_resist"]["fallback"]["gornak"] == [8, 0.187]
+      and _hb["boss_resist"]["mitigation"]["0"] == 1.0
+      and abs(_hb["boss_resist"]["mitigation"]["40"] - 0.294118) < 1e-6,
+      "9cj the resistance arithmetic must keep its baseline, profile deltas and curve")
+_hb_over = _hb["boss_resist"]["overrides"]
+check(_hb_over["forced_magic"]["dmg_type"] == "MAGIC"
+      and _hb_over["forced_bogus"]["dmg_type"] == "PHYSICAL"
+      and _hb_over["derived"]["derived"] is True
+      and _hb_over["school_of"] == "magic"
+      and _hb_over["school_of_override"] == "physical",
+      "9cj the dmg_type override and the derived fallback must stay the source rule")
+check(_hb["switches"] == {"ENABLE_REBUDGET": True, "ENABLE_SCHOOL_MOD": False,
+                          "ENABLE_STARTER_CATCHUP": True, "SCHOOL_PARITY": True,
+                          "CELL_PARITY": True, "POOL_MEAN_ANCHOR": True,
+                          "FINAL_FIXPOINT": True},
+      "9cj the seven switches must keep their source values")
+_hb_pool = _hb["pool"]
+check(abs(_hb_pool["med_ratio"] - 5.14098) < 1e-6
+      and abs(_hb_pool["med_dps"] - 486.624332) < 1e-5
+      and abs(_hb_pool["med_ehp"] - 2350.0) < 1e-9
+      and abs(_hb_pool["meta_med"] - _hb_pool["med_budget"]) < 1e-9
+      and len(_hb_pool["eff_by_bucket"]) == 9,
+      f"9cj the pool medians must stay the measured baseline: {_hb_pool}")
+_hb_gornak = _hb["resolve"]["gornak"]
+check(_hb_gornak["hp"] == 1.2731 and _hb_gornak["dmg"] == 1.1409
+      and _hb_gornak["skill"] == 1.1409
+      and _hb_gornak["dbg"]["dmg_type"] == "MAGIC"
+      and _hb_gornak["dbg"]["playstyle"] == "FIGHTER",
+      "9cj gornak keeps its 1.2731 / 1.1409 multiplier triple")
+_hb_starter = _hb["resolve"]["kaizen"]
+check(_hb_starter["hp"] == 1.4 and _hb_starter["dmg"] == 1.272
+      and _hb_starter["skill"] == 1.0
+      and len(_hb["resolve"]) == 222,
+      "9cj a starter only gets its 1.4 / 1.272 catch-up triple")
+_hb_apply = _hb["apply"]
+check(_hb_apply["pool_means"] == {"dps": 486.1, "ehp": 2495.4, "n": 216}
+      and abs(_hb_apply["pool_anchor"]["dps"] - 1.093741151) < 1e-9
+      and abs(_hb_apply["pool_anchor"]["ehp"] - 1.089304841) < 1e-9
+      and _hb_apply["fix"]["passes_run"] == 1
+      and _hb_apply["fix"]["n"] == 216,
+      "9cj the pool anchor (1.0937 / 1.0893) and the fixpoint must stay measured")
+check(_hb_apply["parity"]["pool_target"] == 0.977
+      and _hb_apply["parity"]["cells"] == {"MAGIC|CARRY": 0.833, "MAGIC|FIGHTER": 1.1531,
+                                           "MAGIC|TANK": 0.803,
+                                           "PHYSICAL|CARRY": 0.8125,
+                                           "PHYSICAL|FIGHTER": 1.1685,
+                                           "PHYSICAL|TANK": 0.8159},
+      "9cj the six archetype-cell factors must keep their calibrated values")
+_hb_tres_errors = []
+for _hb_hero, _hb_stats in _hb_apply["stats"].items():
+    _hb_path = ROOT / "data/heroes" / (f"{_hb_hero}.tres")
+    if not _hb_path.is_file():
+        _hb_tres_errors.append(f"{_hb_hero}:missing")
+        continue
+    _hb_text = _hb_path.read_text(encoding="utf-8")
+    _hb_want = [_hb_stats["hp"], _hb_stats["damage"], _hb_stats["skill_damage"]]
+    _hb_got = []
+    for _hb_field in ("max_hp", "damage", "base_skill"):
+        _hb_match = re.search(rf"^{_hb_field} = (-?\d+)$", _hb_text, re.MULTILINE)
+        _hb_got.append(int(_hb_match.group(1)) if _hb_match else None)
+    if _hb_got != _hb_want:
+        _hb_tres_errors.append(f"{_hb_hero}:{_hb_got}!={_hb_want}")
+check(not _hb_tres_errors and len(_hb_apply["stats"]) == 216,
+      f"9cj all 216 boss heroes must keep the source post-balance .tres stats: "
+      f"{_hb_tres_errors[:3]}")
+check(_hb_apply["tres_mismatch"] == [] and _hb_apply["starter_gap"] == [],
+      "9cj the source pass and the baked .tres data must not drift")
+_hb_starter_tres = _hb_apply["starter_tres"]
+check(len(_hb_starter_tres) == 6
+      and all(row["tres"] == row["catchup"] for row in _hb_starter_tres.values()),
+      "9cj each starter .tres must equal starter_catchup_stats at unlocks 0 / level 1")
+_hb_cal = _hb["calibrate"]
+check(_hb_cal["n_step"] == 8 and len(_hb_cal["rows"]) == 216
+      and abs(_hb_cal["scales"]["mini"]["armor_scale"] - 1.342857142857143) < 1e-9
+      and _hb_cal["scales"]["mini"]["mr_scale"] == 1.8
+      and abs(_hb_cal["scales"]["true"]["armor_scale"] - 1.2285714285714286) < 1e-9,
+      "9cj the offline calibration must reproduce its armor/mr scales")
+_hb_checks_text = _hb_checks_path.read_text(encoding="utf-8")
+check("59 symbols are classified" in _hb_checks_text
+      and "every classification token is present in its target" in _hb_checks_text
+      and "every multiplier triple matches the source" in _hb_checks_text
+      and "all 216 final stat rows match the source" in _hb_checks_text
+      and "the source post-balance stats equal all 216 data/heroes" in _hb_checks_text
+      and "the calibration grid returns the source armor/mr scales" in _hb_checks_text
+      and "the starter catch-up grid matches the source" in _hb_checks_text,
+      "9cj the native suite must replay inventory, helpers, resolve, apply and calibration")
+if _hb_doc.is_file():
+    _hb_report = _hb_doc.read_text(encoding="utf-8")
+    check(all(token in _hb_report for token in (
+              "hero_balance.py", "hero_archetypes.gd", "hero_balance.gd",
+              "hero_balance_source_oracle.py", "hero_balance_checks.gd",
+              "resolve_catalog", "apply_to_catalog", "stat_multipliers",
+              "cell_parity_factors", "final_fixpoint", "pool_mean_rescale",
+              "starter_catchup", "calibrate_boss_resistances", "pristine_boss_stats",
+              "base_skill", "boss_stats.json")),
+          "9cj the report must cover every ported symbol and the deviations")
+    check(_hb_report.count("D5") > 0 and _hb_report.count("|") > 120,
+          "9cj the report must stay tabular with all five deviations")
+
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")
