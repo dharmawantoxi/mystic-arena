@@ -1,0 +1,3448 @@
+{
+ "aliases": {
+  "aliased": [
+   "goblin",
+   "orc",
+   "troll",
+   "undead",
+   "dark_rider",
+   "base_renderer"
+  ],
+  "functions": [
+   "_install_aliases",
+   "render_minion"
+  ],
+  "reexports": [
+   "draw_dark_rider",
+   "draw_goblin",
+   "draw_orc",
+   "draw_troll",
+   "draw_undead"
+  ],
+  "registry": [
+   "goblin",
+   "orc",
+   "troll",
+   "undead",
+   "dark_rider"
+  ]
+ },
+ "classes": {
+  "_NS_dark_rider": [
+   "_clamp_color",
+   "_aacircle",
+   "_aaline",
+   "_aapolygon",
+   "_blend_alpha",
+   "_get_palette",
+   "draw_dark_rider",
+   "_draw_dark_rider_full",
+   "_draw_ground_shadow",
+   "_draw_curse_ground_aura",
+   "_draw_hoof_flames",
+   "_draw_speed_trail",
+   "_draw_rider_lvl1",
+   "_draw_rider_lvl2",
+   "_draw_rider_lvl3",
+   "_draw_rider_lvl4",
+   "_draw_rider_lvl5",
+   "_draw_horse",
+   "_draw_horse_legs",
+   "_draw_horse_barding",
+   "_draw_cape",
+   "_draw_rider_body_light",
+   "_draw_rider_body_armored",
+   "_draw_chest_emblem",
+   "_draw_rider_head",
+   "_draw_crown",
+   "_draw_shoulder_spikes",
+   "_draw_rider_weapon",
+   "_draw_sword",
+   "_draw_sword_blur",
+   "_draw_curse_arc",
+   "_draw_curse_impact",
+   "_draw_death_charge_icon",
+   "_draw_dread_lord_aura"
+  ],
+  "_NS_goblin": [
+   "_clamp_color",
+   "_aacircle",
+   "_aaline",
+   "_aapolygon",
+   "_blend_alpha",
+   "_get_palette",
+   "draw_goblin",
+   "_draw_goblin_full",
+   "_draw_ground_shadow",
+   "_draw_goblin_lvl1",
+   "_draw_goblin_lvl2",
+   "_draw_goblin_lvl3",
+   "_draw_goblin_lvl4",
+   "_draw_goblin_lvl5",
+   "_draw_legs",
+   "_draw_boot",
+   "_draw_torso_simple",
+   "_draw_torso_vest",
+   "_draw_torso_armored",
+   "_draw_head",
+   "_draw_red_hood",
+   "_draw_crown",
+   "_draw_spiked_pauldron",
+   "_draw_arm_offhand",
+   "_draw_arm_offhand_dagger",
+   "_draw_arm_weapon",
+   "_draw_arm",
+   "_draw_bracer",
+   "_draw_fist",
+   "_draw_dagger",
+   "_draw_swing_blur",
+   "_draw_deadly_nick_arc",
+   "_draw_deadly_nick_impact",
+   "_draw_bleed_ground_aura",
+   "_draw_bleed_particles",
+   "_draw_bleed_stacks_icons",
+   "_draw_master_aura"
+  ],
+  "_NS_orc": [
+   "_clamp_color",
+   "_aacircle",
+   "_aaline",
+   "_aapolygon",
+   "_blend_alpha",
+   "_get_palette",
+   "draw_orc",
+   "_draw_orc_full",
+   "_draw_ground_shadow",
+   "_draw_orc_lvl1",
+   "_draw_orc_lvl2",
+   "_draw_orc_lvl3",
+   "_draw_orc_lvl4",
+   "_draw_orc_lvl5",
+   "_draw_legs",
+   "_draw_heavy_boot",
+   "_draw_torso_bare",
+   "_draw_torso_harness",
+   "_draw_torso_armored",
+   "_draw_head",
+   "_draw_topknot",
+   "_draw_horns",
+   "_draw_red_shoulder_pad",
+   "_draw_arm_offhand",
+   "_draw_arm_weapon",
+   "_draw_muscular_arm",
+   "_draw_bracer",
+   "_draw_fist",
+   "_draw_axe",
+   "_draw_swing_blur",
+   "_draw_brutal_blows_arc",
+   "_draw_brutal_impact",
+   "_draw_warchief_aura"
+  ],
+  "_NS_troll": [
+   "_clamp_color",
+   "_aacircle",
+   "_aaline",
+   "_aapolygon",
+   "_blend_alpha",
+   "_get_palette",
+   "draw_troll",
+   "_draw_troll_full",
+   "_draw_ground_shadow",
+   "_draw_troll_lvl1",
+   "_draw_troll_lvl2",
+   "_draw_troll_lvl3",
+   "_draw_troll_lvl4",
+   "_draw_troll_lvl5",
+   "_draw_legs",
+   "_draw_troll_foot",
+   "_draw_torso_bare",
+   "_draw_torso_harness",
+   "_draw_torso_harness_bones",
+   "_draw_torso_armored",
+   "_draw_head",
+   "_draw_mohawk",
+   "_draw_spiked_pauldron",
+   "_draw_arm_offhand",
+   "_draw_arm_weapon",
+   "_draw_muscular_arm",
+   "_draw_bracer",
+   "_draw_fist",
+   "_draw_mace",
+   "_draw_swing_blur",
+   "_draw_swing_arc",
+   "_draw_impact_sparkle",
+   "_draw_regen_ground_aura",
+   "_draw_regen_particles",
+   "_draw_regen_cross_icon",
+   "_draw_champion_aura"
+  ],
+  "_NS_undead": [
+   "_clamp_color",
+   "_aacircle",
+   "_aaline",
+   "_aapolygon",
+   "_blend_alpha",
+   "_get_palette",
+   "draw_undead",
+   "_draw_undead_full",
+   "_draw_ground_shadow",
+   "_draw_undead_lvl1",
+   "_draw_undead_lvl2",
+   "_draw_undead_lvl3",
+   "_draw_undead_lvl4",
+   "_draw_undead_lvl5",
+   "_draw_cape",
+   "_draw_legs",
+   "_draw_armor_boot",
+   "_draw_torso_ribs",
+   "_draw_torso_chestplate",
+   "_draw_chest_emblem",
+   "_draw_head_skull",
+   "_draw_helm",
+   "_draw_crown",
+   "_draw_shoulder_spikes",
+   "_draw_arm_offhand",
+   "_draw_arm_weapon",
+   "_draw_armored_arm",
+   "_draw_gauntlet",
+   "_draw_shield",
+   "_draw_sword",
+   "_draw_swing_blur",
+   "_draw_unholy_arc",
+   "_draw_unholy_impact",
+   "_draw_unholy_ground_aura",
+   "_draw_aura_sparkles",
+   "_draw_floating_souls",
+   "_draw_soul_skull",
+   "_draw_death_knight_aura"
+  ]
+ },
+ "classification": {
+  "base:MINION_CACHE_ENABLED": {
+   "kind": "native",
+   "line": 77,
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/minion_overlay.gd",
+   "token": "static func cache_enabled()"
+  },
+  "base:OUTLINE": {
+   "kind": "native",
+   "line": 31,
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/minion_overlay.gd",
+   "token": "const OUTLINE :="
+  },
+  "base:SHADOW": {
+   "kind": "native",
+   "line": 32,
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/minion_overlay.gd",
+   "token": "const SHADOW :="
+  },
+  "base:_CANVAS_H": {
+   "kind": "native",
+   "line": 34,
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/minion_overlay.gd",
+   "token": "const CANVAS :="
+  },
+  "base:_CANVAS_W": {
+   "kind": "native",
+   "line": 34,
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/minion_overlay.gd",
+   "token": "const CANVAS :="
+  },
+  "base:_RENDERING_TO_CACHE": {
+   "kind": "native",
+   "line": 62,
+   "note": "",
+   "target": "godot_rebuild/scripts/ui/minion_overlay.gd",
+   "token": "static var _rendering_to_cache"
+  },
+  "base:_SHADOW_CACHE": {
+   "kind": "dead",
+   "line": 271,
+   "note": "memo for draw_shadow, which nothing calls",
+   "target": "godot_rebuild/tests/minions_source_oracle.py",
+   "token": "def dead_helpers("
+  },
+  "base:_minion_cache_key": {
+   "kind": "native",
+   "line": 177,
+   "note": "ten-part key; pose part matches minion_anim.pose_key",
+   "target": "godot_rebuild/scripts/ui/minion_overlay.gd",
+   "token": "static func cache_key("
+  },
+  "base:apply_hurt_flash": {
+   "kind": "delegated",
+   "line": 165,
+   "note": "no runtime caller, but the atlas bake delegates the +90 flash to Godot",
+   "target": "godot_rebuild/scripts/ui/minion_overlay.gd",
+   "token": "static func hurt_color("
+  },
+  "base:cached_minion_draw": {
+   "kind": "bake",
+   "line": 3,
+   "note": "body render + red-team recolour + crop; overlays are split out natively",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "cached_minion_draw"
+  },
+  "base:calculate_animation_offsets": {
+   "kind": "dead",
+   "line": 271,
+   "note": "returned bob/sway but no renderer calls it; baked frames carry the bob",
+   "target": "godot_rebuild/tests/minions_source_oracle.py",
+   "token": "def dead_helpers("
+  },
+  "base:draw_hp_bar": {
+   "kind": "native",
+   "line": 90,
+   "note": "drawn live after the sprite blit; exact rects and colours",
+   "target": "godot_rebuild/scripts/ui/minion_overlay.gd",
+   "token": "static func hp_bar_ops("
+  },
+  "base:draw_shadow": {
+   "kind": "dead",
+   "line": 271,
+   "note": "each namespace has its own _draw_ground_shadow; this one is never called",
+   "target": "godot_rebuild/tests/minions_source_oracle.py",
+   "token": "def dead_helpers("
+  },
+  "base:draw_slash_effects": {
+   "kind": "native",
+   "line": 131,
+   "note": "arbitrary angles, not only the 32 baked steps",
+   "target": "godot_rebuild/scripts/ui/minion_overlay.gd",
+   "token": "static func slash_ops("
+  },
+  "base:draw_slow_effect": {
+   "kind": "native",
+   "line": 114,
+   "note": "circle + three orbiting sparks; source freezes one frame",
+   "target": "godot_rebuild/scripts/ui/minion_overlay.gd",
+   "token": "static func slow_aura_ops("
+  },
+  "dark_rider:_aacircle": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_aaline": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_aapolygon": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_blend_alpha": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_clamp_color": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_cape": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_chest_emblem": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_crown": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_curse_arc": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_curse_ground_aura": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_curse_impact": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_dark_rider_full": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_death_charge_icon": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_dread_lord_aura": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_ground_shadow": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_hoof_flames": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_horse": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_horse_barding": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_horse_legs": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_rider_body_armored": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_rider_body_light": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_rider_head": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_rider_lvl1": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_rider_lvl2": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_rider_lvl3": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_rider_lvl4": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_rider_lvl5": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_rider_weapon": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_shoulder_spikes": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_speed_trail": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_sword": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_draw_sword_blur": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:_get_palette": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "dark_rider:draw_dark_rider": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_aacircle": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_aaline": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_aapolygon": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_blend_alpha": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_clamp_color": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_arm": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_arm_offhand": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_arm_offhand_dagger": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_arm_weapon": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_bleed_ground_aura": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_bleed_particles": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_bleed_stacks_icons": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_boot": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_bracer": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_crown": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_dagger": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_deadly_nick_arc": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_deadly_nick_impact": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_fist": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_goblin_full": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_goblin_lvl1": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_goblin_lvl2": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_goblin_lvl3": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_goblin_lvl4": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_goblin_lvl5": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_ground_shadow": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_head": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_legs": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_master_aura": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_red_hood": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_spiked_pauldron": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_swing_blur": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_torso_armored": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_torso_simple": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_draw_torso_vest": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:_get_palette": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "goblin:draw_goblin": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "module:dark_rider": {
+   "kind": "bake",
+   "line": 26,
+   "note": "namespace body is driven by the real Minion.draw",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "TYPES = ("
+  },
+  "module:goblin": {
+   "kind": "bake",
+   "line": 26,
+   "note": "namespace body is driven by the real Minion.draw",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "TYPES = ("
+  },
+  "module:orc": {
+   "kind": "bake",
+   "line": 26,
+   "note": "namespace body is driven by the real Minion.draw",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "TYPES = ("
+  },
+  "module:troll": {
+   "kind": "bake",
+   "line": 26,
+   "note": "namespace body is driven by the real Minion.draw",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "TYPES = ("
+  },
+  "module:undead": {
+   "kind": "bake",
+   "line": 26,
+   "note": "namespace body is driven by the real Minion.draw",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "TYPES = ("
+  },
+  "orc:_aacircle": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_aaline": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_aapolygon": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_blend_alpha": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_clamp_color": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_arm_offhand": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_arm_weapon": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_axe": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_bracer": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_brutal_blows_arc": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_brutal_impact": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_fist": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_ground_shadow": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_head": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_heavy_boot": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_horns": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_legs": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_muscular_arm": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_orc_full": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_orc_lvl1": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_orc_lvl2": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_orc_lvl3": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_orc_lvl4": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_orc_lvl5": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_red_shoulder_pad": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_swing_blur": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_topknot": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_torso_armored": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_torso_bare": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_torso_harness": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_draw_warchief_aura": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:_get_palette": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "orc:draw_orc": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "shim:MINION_RENDERERS": {
+   "kind": "native",
+   "line": 59,
+   "note": "registry of the five draw functions",
+   "target": "godot_rebuild/scripts/ui/minion_overlay.gd",
+   "token": "const TYPES :="
+  },
+  "shim:_install_aliases": {
+   "kind": "meta",
+   "line": 24,
+   "note": "sys.modules plumbing",
+   "target": "minions/__init__.py",
+   "token": "_install_aliases"
+  },
+  "shim:render_minion": {
+   "kind": "native",
+   "line": 85,
+   "note": "dispatcher replaced by type lookup",
+   "target": "godot_rebuild/scripts/ui/minion_overlay.gd",
+   "token": "static func has_type("
+  },
+  "troll:_aacircle": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_aaline": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_aapolygon": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_blend_alpha": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_clamp_color": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_arm_offhand": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_arm_weapon": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_bracer": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_champion_aura": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_fist": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_ground_shadow": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_head": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_impact_sparkle": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_legs": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_mace": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_mohawk": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_muscular_arm": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_regen_cross_icon": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_regen_ground_aura": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_regen_particles": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_spiked_pauldron": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_swing_arc": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_swing_blur": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_torso_armored": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_torso_bare": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_torso_harness": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_torso_harness_bones": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_troll_foot": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_troll_full": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_troll_lvl1": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_troll_lvl2": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_troll_lvl3": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_troll_lvl4": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_draw_troll_lvl5": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:_get_palette": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "troll:draw_troll": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_aacircle": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_aaline": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_aapolygon": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_blend_alpha": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_clamp_color": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_arm_offhand": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_arm_weapon": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_armor_boot": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_armored_arm": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_aura_sparkles": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_cape": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_chest_emblem": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_crown": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_death_knight_aura": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_floating_souls": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_gauntlet": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_ground_shadow": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_head_skull": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_helm": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_legs": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_shield": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_shoulder_spikes": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_soul_skull": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_swing_blur": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_sword": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_torso_chestplate": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_torso_ribs": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_undead_full": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_undead_lvl1": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_undead_lvl2": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_undead_lvl3": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_undead_lvl4": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_undead_lvl5": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_unholy_arc": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_unholy_ground_aura": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_draw_unholy_impact": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:_get_palette": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  },
+  "undead:draw_undead": {
+   "kind": "bake",
+   "line": 60,
+   "note": "body pixels baked per (type, team, level, pose, facing)",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(pygame.Surface"
+  }
+ },
+ "classification_kinds": {
+  "bake": 184,
+  "dead": 3,
+  "delegated": 1,
+  "meta": 1,
+  "native": 12
+ },
+ "constants": {
+  "MINION_CACHE_ENABLED": true,
+  "OUTLINE": [
+   24,
+   20,
+   25
+  ],
+  "SHADOW": [
+   0,
+   0,
+   0
+  ],
+  "_CANVAS_H": 120,
+  "_CANVAS_W": 120,
+  "_RENDERING_TO_CACHE": false,
+  "_SHADOW_CACHE": {}
+ },
+ "dead": {
+  "_minion_cache_key": {
+   "dead": false,
+   "inside": [
+    "minions/_bundle.py:260"
+   ],
+   "outside": []
+  },
+  "apply_hurt_flash": {
+   "dead": true,
+   "inside": [],
+   "outside": []
+  },
+  "cached_minion_draw": {
+   "dead": false,
+   "inside": [
+    "minions/_bundle.py:590",
+    "minions/_bundle.py:2495",
+    "minions/_bundle.py:4292",
+    "minions/_bundle.py:6145",
+    "minions/_bundle.py:8001"
+   ],
+   "outside": []
+  },
+  "calculate_animation_offsets": {
+   "dead": true,
+   "inside": [],
+   "outside": []
+  },
+  "draw_hp_bar": {
+   "dead": false,
+   "inside": [
+    "minions/_bundle.py:325",
+    "minions/_bundle.py:711",
+    "minions/_bundle.py:2596",
+    "minions/_bundle.py:4410",
+    "minions/_bundle.py:6261",
+    "minions/_bundle.py:8125"
+   ],
+   "outside": []
+  },
+  "draw_shadow": {
+   "dead": true,
+   "inside": [],
+   "outside": []
+  },
+  "draw_slash_effects": {
+   "dead": false,
+   "inside": [
+    "minions/_bundle.py:319",
+    "minions/_bundle.py:705",
+    "minions/_bundle.py:2590",
+    "minions/_bundle.py:4404",
+    "minions/_bundle.py:6255",
+    "minions/_bundle.py:8119"
+   ],
+   "outside": []
+  },
+  "draw_slow_effect": {
+   "dead": false,
+   "inside": [
+    "minions/_bundle.py:653",
+    "minions/_bundle.py:2549",
+    "minions/_bundle.py:4355",
+    "minions/_bundle.py:6207",
+    "minions/_bundle.py:8068"
+   ],
+   "outside": []
+  }
+ },
+ "dead_helpers": [
+  "apply_hurt_flash",
+  "calculate_animation_offsets",
+  "draw_shadow"
+ ],
+ "dispatch": {
+  "cache_hook": true,
+  "direct_call": true,
+  "warns_on_unknown": true
+ },
+ "folder": {
+  "count": 2,
+  "files": {
+   "__init__.py": 95,
+   "_bundle.py": 9531
+  },
+  "lines": 9626
+ },
+ "functions": {
+  "_minion_cache_key": [
+   "minion"
+  ],
+  "apply_hurt_flash": [
+   "color",
+   "timer"
+  ],
+  "cached_minion_draw": [
+   "surface",
+   "minion",
+   "x",
+   "y",
+   "draw_func"
+  ],
+  "calculate_animation_offsets": [
+   "minion"
+  ],
+  "draw_hp_bar": [
+   "surface",
+   "x",
+   "y",
+   "w",
+   "hp_ratio",
+   "team"
+  ],
+  "draw_shadow": [
+   "surface",
+   "x",
+   "y",
+   "w",
+   "h",
+   "alpha"
+  ],
+  "draw_slash_effects": [
+   "surface",
+   "cx",
+   "cy",
+   "slash_effects"
+  ],
+  "draw_slow_effect": [
+   "surface",
+   "x",
+   "y",
+   "radius",
+   "timer"
+  ]
+ },
+ "hp_bar_paths": {
+  "base_renderer": [
+   6,
+   18
+  ],
+  "dark_rider": [
+   12,
+   22
+  ],
+  "goblin": [
+   6,
+   18
+  ],
+  "orc": [
+   8,
+   18
+  ],
+  "troll": [
+   8,
+   18
+  ],
+  "undead": [
+   8,
+   18
+  ]
+ },
+ "method_counts": {
+  "dark_rider": 34,
+  "goblin": 37,
+  "orc": 33,
+  "troll": 36,
+  "undead": 38
+ },
+ "modules": [
+  {
+   "end": 335,
+   "lines": 302,
+   "module": "base_renderer",
+   "start": 34
+  },
+  {
+   "end": 2232,
+   "lines": 1897,
+   "module": "goblin",
+   "start": 336
+  },
+  {
+   "end": 4030,
+   "lines": 1798,
+   "module": "orc",
+   "start": 2233
+  },
+  {
+   "end": 5935,
+   "lines": 1905,
+   "module": "troll",
+   "start": 4031
+  },
+  {
+   "end": 7785,
+   "lines": 1850,
+   "module": "undead",
+   "start": 5936
+  },
+  {
+   "end": 9531,
+   "lines": 1746,
+   "module": "dark_rider",
+   "start": 7786
+  }
+ ],
+ "overlay": {
+  "cache_guarded": [],
+  "cache_keys": [
+   {
+    "case": {
+     "anim_time": 0,
+     "attack_anim_timer": 0,
+     "bleed_stacks": 0,
+     "death_charge_active": false,
+     "direction": 1,
+     "hurt_flash_timer": 0,
+     "is_moving": false,
+     "minion_type": "goblin",
+     "nexus_level": 1,
+     "regen_active": false,
+     "slow_timer": 0,
+     "team": "blue",
+     "walk_cycle": 0.0
+    },
+    "key": [
+     "goblin",
+     "blue",
+     1,
+     [
+      "idle",
+      0
+     ],
+     1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "case": {
+     "anim_time": 12,
+     "attack_anim_timer": 7,
+     "bleed_stacks": 2,
+     "death_charge_active": true,
+     "direction": -1,
+     "hurt_flash_timer": 2,
+     "is_moving": true,
+     "minion_type": "orc",
+     "nexus_level": 3,
+     "regen_active": false,
+     "slow_timer": 9,
+     "team": "red",
+     "walk_cycle": 0.25
+    },
+    "key": [
+     "orc",
+     "red",
+     3,
+     [
+      "atk",
+      3
+     ],
+     -1,
+     1,
+     2,
+     1,
+     0,
+     1
+    ]
+   },
+   {
+    "case": {
+     "anim_time": 80,
+     "attack_anim_timer": 0,
+     "bleed_stacks": 0,
+     "death_charge_active": false,
+     "direction": 1,
+     "hurt_flash_timer": 0,
+     "is_moving": true,
+     "minion_type": "troll",
+     "nexus_level": 5,
+     "regen_active": true,
+     "slow_timer": 0,
+     "team": "blue",
+     "walk_cycle": 1.75
+    },
+    "key": [
+     "troll",
+     "blue",
+     5,
+     [
+      "walk",
+      3
+     ],
+     1,
+     0,
+     0,
+     0,
+     1,
+     0
+    ]
+   },
+   {
+    "case": {
+     "anim_time": 61,
+     "attack_anim_timer": 24,
+     "bleed_stacks": 5,
+     "death_charge_active": false,
+     "direction": 1,
+     "hurt_flash_timer": 0,
+     "is_moving": false,
+     "minion_type": "undead",
+     "nexus_level": 2,
+     "regen_active": false,
+     "slow_timer": 1,
+     "team": "red",
+     "walk_cycle": 0.5
+    },
+    "key": [
+     "undead",
+     "red",
+     2,
+     [
+      "atk",
+      12
+     ],
+     1,
+     0,
+     5,
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "case": {
+     "anim_time": 137,
+     "attack_anim_timer": 0,
+     "bleed_stacks": 1,
+     "death_charge_active": true,
+     "direction": -1,
+     "hurt_flash_timer": 1,
+     "is_moving": false,
+     "minion_type": "dark_rider",
+     "nexus_level": 4,
+     "regen_active": true,
+     "slow_timer": 0,
+     "team": "blue",
+     "walk_cycle": 3.5
+    },
+    "key": [
+     "dark_rider",
+     "blue",
+     4,
+     [
+      "idle",
+      2
+     ],
+     -1,
+     1,
+     1,
+     1,
+     1,
+     0
+    ]
+   }
+  ],
+  "canvas": [
+   120,
+   120
+  ],
+  "hp_bar": [
+   {
+    "case": {
+     "ratio": 1.0,
+     "team": "blue",
+     "w": 26,
+     "x": 100,
+     "y": 50
+    },
+    "ops": [
+     {
+      "color": [
+       12,
+       22,
+       44,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       87,
+       50,
+       26,
+       4
+      ],
+      "width": 0
+     },
+     {
+      "color": [
+       70,
+       200,
+       80,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       87,
+       50,
+       26,
+       4
+      ],
+      "width": 0
+     },
+     {
+      "color": [
+       90,
+       165,
+       255,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       87,
+       50,
+       26,
+       4
+      ],
+      "width": 1
+     }
+    ]
+   },
+   {
+    "case": {
+     "ratio": 0.8,
+     "team": "blue",
+     "w": 26,
+     "x": 100,
+     "y": 50
+    },
+    "ops": [
+     {
+      "color": [
+       12,
+       22,
+       44,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       87,
+       50,
+       26,
+       4
+      ],
+      "width": 0
+     },
+     {
+      "color": [
+       70,
+       200,
+       80,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       87,
+       50,
+       20,
+       4
+      ],
+      "width": 0
+     },
+     {
+      "color": [
+       90,
+       165,
+       255,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       87,
+       50,
+       26,
+       4
+      ],
+      "width": 1
+     }
+    ]
+   },
+   {
+    "case": {
+     "ratio": 0.6,
+     "team": "blue",
+     "w": 26,
+     "x": 100,
+     "y": 50
+    },
+    "ops": [
+     {
+      "color": [
+       12,
+       22,
+       44,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       87,
+       50,
+       26,
+       4
+      ],
+      "width": 0
+     },
+     {
+      "color": [
+       225,
+       190,
+       60,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       87,
+       50,
+       15,
+       4
+      ],
+      "width": 0
+     },
+     {
+      "color": [
+       90,
+       165,
+       255,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       87,
+       50,
+       26,
+       4
+      ],
+      "width": 1
+     }
+    ]
+   },
+   {
+    "case": {
+     "ratio": 0.3,
+     "team": "blue",
+     "w": 26,
+     "x": 100,
+     "y": 50
+    },
+    "ops": [
+     {
+      "color": [
+       12,
+       22,
+       44,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       87,
+       50,
+       26,
+       4
+      ],
+      "width": 0
+     },
+     {
+      "color": [
+       215,
+       60,
+       55,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       87,
+       50,
+       7,
+       4
+      ],
+      "width": 0
+     },
+     {
+      "color": [
+       90,
+       165,
+       255,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       87,
+       50,
+       26,
+       4
+      ],
+      "width": 1
+     }
+    ]
+   },
+   {
+    "case": {
+     "ratio": 0.0,
+     "team": "red",
+     "w": 26,
+     "x": 100,
+     "y": 50
+    },
+    "ops": [
+     {
+      "color": [
+       44,
+       12,
+       10,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       87,
+       50,
+       26,
+       4
+      ],
+      "width": 0
+     },
+     {
+      "color": [
+       255,
+       95,
+       85,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       87,
+       50,
+       26,
+       4
+      ],
+      "width": 1
+     }
+    ]
+   },
+   {
+    "case": {
+     "ratio": 0.65,
+     "team": "red",
+     "w": 26,
+     "x": 100,
+     "y": 50
+    },
+    "ops": [
+     {
+      "color": [
+       44,
+       12,
+       10,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       87,
+       50,
+       26,
+       4
+      ],
+      "width": 0
+     },
+     {
+      "color": [
+       70,
+       200,
+       80,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       87,
+       50,
+       16,
+       4
+      ],
+      "width": 0
+     },
+     {
+      "color": [
+       255,
+       95,
+       85,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       87,
+       50,
+       26,
+       4
+      ],
+      "width": 1
+     }
+    ]
+   },
+   {
+    "case": {
+     "ratio": 1.8,
+     "team": "blue",
+     "w": 26,
+     "x": 100,
+     "y": 50
+    },
+    "ops": [
+     {
+      "color": [
+       12,
+       22,
+       44,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       87,
+       50,
+       26,
+       4
+      ],
+      "width": 0
+     },
+     {
+      "color": [
+       70,
+       200,
+       80,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       87,
+       50,
+       26,
+       4
+      ],
+      "width": 0
+     },
+     {
+      "color": [
+       90,
+       165,
+       255,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       87,
+       50,
+       26,
+       4
+      ],
+      "width": 1
+     }
+    ]
+   },
+   {
+    "case": {
+     "ratio": -0.4,
+     "team": "red",
+     "w": 25,
+     "x": 101,
+     "y": 51
+    },
+    "ops": [
+     {
+      "color": [
+       44,
+       12,
+       10,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       89,
+       51,
+       25,
+       4
+      ],
+      "width": 0
+     },
+     {
+      "color": [
+       255,
+       95,
+       85,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       89,
+       51,
+       25,
+       4
+      ],
+      "width": 1
+     }
+    ]
+   }
+  ],
+  "hurt_flash": [
+   {
+    "case": {
+     "color": [
+      10,
+      20,
+      30
+     ],
+     "timer": 5
+    },
+    "color": [
+     100,
+     110,
+     120
+    ]
+   },
+   {
+    "case": {
+     "color": [
+      200,
+      200,
+      200
+     ],
+     "timer": 1
+    },
+    "color": [
+     255,
+     255,
+     255
+    ]
+   },
+   {
+    "case": {
+     "color": [
+      10,
+      20,
+      30
+     ],
+     "timer": 0
+    },
+    "color": [
+     10,
+     20,
+     30
+    ]
+   },
+   {
+    "case": {
+     "color": [
+      255,
+      0,
+      128
+     ],
+     "timer": 3
+    },
+    "color": [
+     255,
+     90,
+     218
+    ]
+   }
+  ],
+  "offsets": [
+   {
+    "bob": 1,
+    "case": {
+     "anim_time": 0,
+     "moving": true,
+     "walk_cycle": 1.3
+    },
+    "phase": 1.3,
+    "sway": 0
+   },
+   {
+    "bob": 0,
+    "case": {
+     "anim_time": 0,
+     "moving": true,
+     "walk_cycle": 0.0
+    },
+    "phase": 0.0,
+    "sway": 0
+   },
+   {
+    "bob": 0,
+    "case": {
+     "anim_time": 40,
+     "moving": false,
+     "walk_cycle": 0.0
+    },
+    "phase": 0.0,
+    "sway": 0
+   },
+   {
+    "bob": 0,
+    "case": {
+     "anim_time": 13,
+     "moving": false,
+     "walk_cycle": 0.0
+    },
+    "phase": 0.0,
+    "sway": 0
+   },
+   {
+    "bob": 1,
+    "case": {
+     "anim_time": 7,
+     "moving": true,
+     "walk_cycle": 2.0
+    },
+    "phase": 2.0,
+    "sway": 0
+   }
+  ],
+  "scale": 10000,
+  "shadow": [
+   {
+    "case": {
+     "alpha": 100,
+     "h": 4,
+     "w": 20
+    },
+    "ops": [
+     {
+      "color": [
+       0,
+       0,
+       0,
+       100
+      ],
+      "kind": "ellipse",
+      "rect": [
+       90,
+       198,
+       20,
+       4
+      ],
+      "width": 0
+     }
+    ]
+   },
+   {
+    "case": {
+     "alpha": 100,
+     "h": 0,
+     "w": -3
+    },
+    "ops": [
+     {
+      "color": [
+       0,
+       0,
+       0,
+       100
+      ],
+      "kind": "ellipse",
+      "rect": [
+       100,
+       200,
+       1,
+       1
+      ],
+      "width": 0
+     }
+    ]
+   },
+   {
+    "case": {
+     "alpha": 60,
+     "h": 12,
+     "w": 34
+    },
+    "ops": [
+     {
+      "color": [
+       0,
+       0,
+       0,
+       60
+      ],
+      "kind": "ellipse",
+      "rect": [
+       83,
+       194,
+       34,
+       12
+      ],
+      "width": 0
+     }
+    ]
+   }
+  ],
+  "slash": [
+   {
+    "effects": [],
+    "name": "empty",
+    "ops": []
+   },
+   {
+    "effects": [
+     {
+      "angle": 0.0,
+      "distance": 18,
+      "life": 12,
+      "max_life": 12
+     }
+    ],
+    "name": "fresh",
+    "ops": [
+     {
+      "color": [
+       255,
+       255,
+       255,
+       220
+      ],
+      "kind": "lines",
+      "points": [
+       [
+        1153454,
+        1905916
+       ],
+       [
+        1168034,
+        1935468
+       ],
+       [
+        1176983,
+        1967184
+       ],
+       [
+        1180000,
+        2000000
+       ],
+       [
+        1176983,
+        2032815
+       ],
+       [
+        1168034,
+        2064531
+       ],
+       [
+        1153454,
+        2094083
+       ]
+      ],
+      "width": 3
+     },
+     {
+      "color": [
+       255,
+       230,
+       180,
+       220
+      ],
+      "kind": "lines",
+      "points": [
+       [
+        1153454,
+        1905916
+       ],
+       [
+        1168034,
+        1935468
+       ],
+       [
+        1176983,
+        1967184
+       ],
+       [
+        1180000,
+        2000000
+       ],
+       [
+        1176983,
+        2032815
+       ],
+       [
+        1168034,
+        2064531
+       ],
+       [
+        1153454,
+        2094083
+       ]
+      ],
+      "width": 1
+     }
+    ]
+   },
+   {
+    "effects": [
+     {
+      "angle": 1.0,
+      "distance": 20,
+      "life": 6,
+      "max_life": 12
+     }
+    ],
+    "name": "half",
+    "ops": [
+     {
+      "color": [
+       255,
+       255,
+       255,
+       110
+      ],
+      "kind": "lines",
+      "points": [
+       [
+        1207102,
+        2100042
+       ],
+       [
+        1185393,
+        2136122
+       ],
+       [
+        1157470,
+        2167639
+       ],
+       [
+        1124269,
+        2193538
+       ],
+       [
+        1086903,
+        2212950
+       ],
+       [
+        1046624,
+        2225224
+       ],
+       [
+        1004782,
+        2229950
+       ]
+      ],
+      "width": 3
+     },
+     {
+      "color": [
+       255,
+       230,
+       180,
+       110
+      ],
+      "kind": "lines",
+      "points": [
+       [
+        1207102,
+        2100042
+       ],
+       [
+        1185393,
+        2136122
+       ],
+       [
+        1157470,
+        2167639
+       ],
+       [
+        1124269,
+        2193538
+       ],
+       [
+        1086903,
+        2212950
+       ],
+       [
+        1046624,
+        2225224
+       ],
+       [
+        1004782,
+        2229950
+       ]
+      ],
+      "width": 1
+     }
+    ]
+   },
+   {
+    "effects": [
+     {
+      "angle": -2.4,
+      "distance": 12,
+      "life": 18,
+      "max_life": 24
+     }
+    ],
+    "name": "late",
+    "ops": [
+     {
+      "color": [
+       255,
+       255,
+       255,
+       165
+      ],
+      "kind": "lines",
+      "points": [
+       [
+        867470,
+        1974292
+       ],
+       [
+        874377,
+        1950562
+       ],
+       [
+        885495,
+        1928489
+       ],
+       [
+        900451,
+        1908812
+       ],
+       [
+        918744,
+        1892192
+       ],
+       [
+        939760,
+        1879185
+       ],
+       [
+        962795,
+        1870227
+       ]
+      ],
+      "width": 3
+     },
+     {
+      "color": [
+       255,
+       230,
+       180,
+       165
+      ],
+      "kind": "lines",
+      "points": [
+       [
+        867470,
+        1974292
+       ],
+       [
+        874377,
+        1950562
+       ],
+       [
+        885495,
+        1928489
+       ],
+       [
+        900451,
+        1908812
+       ],
+       [
+        918744,
+        1892192
+       ],
+       [
+        939760,
+        1879185
+       ],
+       [
+        962795,
+        1870227
+       ]
+      ],
+      "width": 1
+     }
+    ]
+   },
+   {
+    "effects": [
+     {
+      "angle": 0.0,
+      "distance": 18,
+      "life": 0,
+      "max_life": 12
+     }
+    ],
+    "name": "expired",
+    "ops": []
+   },
+   {
+    "effects": [
+     {}
+    ],
+    "name": "defaults",
+    "ops": []
+   },
+   {
+    "effects": [
+     {
+      "angle": 0.0,
+      "distance": 18,
+      "life": 12,
+      "max_life": 12
+     },
+     {
+      "angle": 1.0,
+      "distance": 20,
+      "life": 6,
+      "max_life": 12
+     },
+     {
+      "angle": 2.0,
+      "distance": 18,
+      "life": 0,
+      "max_life": 12
+     }
+    ],
+    "name": "stack",
+    "ops": [
+     {
+      "color": [
+       255,
+       255,
+       255,
+       220
+      ],
+      "kind": "lines",
+      "points": [
+       [
+        1153454,
+        1905916
+       ],
+       [
+        1168034,
+        1935468
+       ],
+       [
+        1176983,
+        1967184
+       ],
+       [
+        1180000,
+        2000000
+       ],
+       [
+        1176983,
+        2032815
+       ],
+       [
+        1168034,
+        2064531
+       ],
+       [
+        1153454,
+        2094083
+       ]
+      ],
+      "width": 3
+     },
+     {
+      "color": [
+       255,
+       230,
+       180,
+       220
+      ],
+      "kind": "lines",
+      "points": [
+       [
+        1153454,
+        1905916
+       ],
+       [
+        1168034,
+        1935468
+       ],
+       [
+        1176983,
+        1967184
+       ],
+       [
+        1180000,
+        2000000
+       ],
+       [
+        1176983,
+        2032815
+       ],
+       [
+        1168034,
+        2064531
+       ],
+       [
+        1153454,
+        2094083
+       ]
+      ],
+      "width": 1
+     },
+     {
+      "color": [
+       255,
+       255,
+       255,
+       110
+      ],
+      "kind": "lines",
+      "points": [
+       [
+        1207102,
+        2100042
+       ],
+       [
+        1185393,
+        2136122
+       ],
+       [
+        1157470,
+        2167639
+       ],
+       [
+        1124269,
+        2193538
+       ],
+       [
+        1086903,
+        2212950
+       ],
+       [
+        1046624,
+        2225224
+       ],
+       [
+        1004782,
+        2229950
+       ]
+      ],
+      "width": 3
+     },
+     {
+      "color": [
+       255,
+       230,
+       180,
+       110
+      ],
+      "kind": "lines",
+      "points": [
+       [
+        1207102,
+        2100042
+       ],
+       [
+        1185393,
+        2136122
+       ],
+       [
+        1157470,
+        2167639
+       ],
+       [
+        1124269,
+        2193538
+       ],
+       [
+        1086903,
+        2212950
+       ],
+       [
+        1046624,
+        2225224
+       ],
+       [
+        1004782,
+        2229950
+       ]
+      ],
+      "width": 1
+     }
+    ]
+   }
+  ],
+  "slow_aura": [
+   {
+    "case": {
+     "radius": 14,
+     "timer": 0,
+     "x": 100,
+     "y": 200
+    },
+    "ops": [
+     {
+      "center": [
+       100,
+       200
+      ],
+      "color": [
+       150,
+       220,
+       255,
+       70
+      ],
+      "kind": "circle",
+      "radius": 16,
+      "width": 0
+     },
+     {
+      "color": [
+       200,
+       240,
+       255,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       117,
+       200,
+       2,
+       2
+      ],
+      "width": 0
+     },
+     {
+      "color": [
+       200,
+       240,
+       255,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       92,
+       214,
+       2,
+       2
+      ],
+      "width": 0
+     },
+     {
+      "color": [
+       200,
+       240,
+       255,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       92,
+       186,
+       2,
+       2
+      ],
+      "width": 0
+     }
+    ]
+   },
+   {
+    "case": {
+     "radius": 14,
+     "timer": 7,
+     "x": 100,
+     "y": 200
+    },
+    "ops": [
+     {
+      "center": [
+       100,
+       200
+      ],
+      "color": [
+       150,
+       220,
+       255,
+       70
+      ],
+      "kind": "circle",
+      "radius": 16,
+      "width": 0
+     },
+     {
+      "color": [
+       200,
+       240,
+       255,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       113,
+       210,
+       2,
+       2
+      ],
+      "width": 0
+     },
+     {
+      "color": [
+       200,
+       240,
+       255,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       84,
+       205,
+       2,
+       2
+      ],
+      "width": 0
+     },
+     {
+      "color": [
+       200,
+       240,
+       255,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       103,
+       184,
+       2,
+       2
+      ],
+      "width": 0
+     }
+    ]
+   },
+   {
+    "case": {
+     "radius": 14,
+     "timer": 23,
+     "x": 100,
+     "y": 200
+    },
+    "ops": [
+     {
+      "center": [
+       100,
+       200
+      ],
+      "color": [
+       150,
+       220,
+       255,
+       70
+      ],
+      "kind": "circle",
+      "radius": 16,
+      "width": 0
+     },
+     {
+      "color": [
+       200,
+       240,
+       255,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       89,
+       212,
+       2,
+       2
+      ],
+      "width": 0
+     },
+     {
+      "color": [
+       200,
+       240,
+       255,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       95,
+       184,
+       2,
+       2
+      ],
+      "width": 0
+     },
+     {
+      "color": [
+       200,
+       240,
+       255,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       116,
+       203,
+       2,
+       2
+      ],
+      "width": 0
+     }
+    ]
+   },
+   {
+    "case": {
+     "radius": 9,
+     "timer": 41,
+     "x": 64,
+     "y": 96
+    },
+    "ops": [
+     {
+      "center": [
+       64,
+       96
+      ],
+      "color": [
+       150,
+       220,
+       255,
+       70
+      ],
+      "kind": "circle",
+      "radius": 11,
+      "width": 0
+     },
+     {
+      "color": [
+       200,
+       240,
+       255,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       58,
+       87,
+       2,
+       2
+      ],
+      "width": 0
+     },
+     {
+      "color": [
+       200,
+       240,
+       255,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       75,
+       96,
+       2,
+       2
+      ],
+      "width": 0
+     },
+     {
+      "color": [
+       200,
+       240,
+       255,
+       255
+      ],
+      "kind": "rect",
+      "rect": [
+       59,
+       106,
+       2,
+       2
+      ],
+      "width": 0
+     }
+    ]
+   }
+  ]
+ },
+ "symbol_count": 201
+}
