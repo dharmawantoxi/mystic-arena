@@ -12,6 +12,7 @@ speed_px_per_tick = 0.0
 attack_range_px = 180.0
 attack_cooldown_ticks = 35
 gold_reward = 100
+sale_refund = 50
 radius_px = 24.0
 regen_per_tick = 0.3
 armor = 3.0

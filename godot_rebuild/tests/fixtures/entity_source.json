@@ -1,0 +1,2356 @@
+{
+ "file": {
+  "file": "_entity.py",
+  "lines": 6536,
+  "sections": 6,
+  "classes": 7,
+  "methods": 125,
+  "top_functions": 35,
+  "assigns": 10
+ },
+ "sections": [
+  {
+   "name": "prelude",
+   "start": 1,
+   "end": 18,
+   "lines": 18
+  },
+  {
+   "name": "tower",
+   "start": 19,
+   "end": 1385,
+   "lines": 1367
+  },
+  {
+   "name": "castle",
+   "start": 1386,
+   "end": 3207,
+   "lines": 1822
+  },
+  {
+   "name": "hero",
+   "start": 3208,
+   "end": 5388,
+   "lines": 2181
+  },
+  {
+   "name": "minion",
+   "start": 5389,
+   "end": 5991,
+   "lines": 603
+  },
+  {
+   "name": "ai_player",
+   "start": 5992,
+   "end": 6536,
+   "lines": 545
+  }
+ ],
+ "symbols": {
+  "count": 179,
+  "kinds": {
+   "ported": 115,
+   "bake": 52,
+   "folded": 4,
+   "dead": 8
+  }
+ },
+ "classification": {
+  "module:prelude": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _deliver_hit(",
+   "note": "kredit damage & sekolah ada di jalur _deliver_hit"
+  },
+  "module:tower": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/structure_state.gd",
+   "token": "func activate_regen_shield()",
+   "note": "model struktur dipakai tower dan nexus"
+  },
+  "module:castle": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/structure_state.gd",
+   "token": "func can_activate_castle_shield()",
+   "note": "nexus = struktur kind \"nexus\""
+  },
+  "module:hero": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/hero_state.gd",
+   "token": "func recalc_item_stats()",
+   "note": "state hero native + arm skill di scripts/combat"
+  },
+  "module:minion": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/minion_battle.gd",
+   "token": "func apply_slow(target_id",
+   "note": "minion battle + definition"
+  },
+  "module:ai_player": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/ai_policy.gd",
+   "token": "func brain()",
+   "note": "AI dipecah ke ai_policy/ai_controller/ai_hero_control"
+  },
+  "class:_DummyBulletTarget": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_bullet_atlas.py",
+   "token": "entity._DummyBulletTarget",
+   "note": "target palsu untuk bake atlas peluru"
+  },
+  "class:_DummyBulletTarget.__init__": {
+   "kind": "folded",
+   "target": "godot_rebuild/bake/bake_bullet_atlas.py",
+   "token": "entity._DummyBulletTarget",
+   "note": "dijalankan alur bake_bullet_atlas.py tanpa fungsi 1:1"
+  },
+  "class:Bullet": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/projectile_state.gd",
+   "token": "var hit_radius := 4.0",
+   "note": "satu tembakan logis; renderer hanya membaca posisi"
+  },
+  "class:Bullet.__init__": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/projectile_state.gd",
+   "token": "var speed := 8.0",
+   "note": "hook Bullet.__init__"
+  },
+  "class:Bullet.update": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/siege_battle.gd",
+   "token": "func _update_projectiles(",
+   "note": "hook Bullet.update"
+  },
+  "class:Bullet._on_hit": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/siege_battle.gd",
+   "token": "func _cannon_impact(",
+   "note": "hook Bullet._on_hit"
+  },
+  "class:Bullet.draw": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_bullet_atlas.py",
+   "token": "entity._get_bullet_sprite(",
+   "note": "hook Bullet.draw"
+  },
+  "class:Bullet._draw_hd_arrow": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_bullet_atlas.py",
+   "token": "entity._get_bullet_sprite(",
+   "note": "hook Bullet._draw_hd_arrow"
+  },
+  "class:Tower": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/structure_state.gd",
+   "token": "func activate_regen_shield()",
+   "note": "model struktur dipakai tower dan nexus"
+  },
+  "class:Tower.__init__": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/structure_state.gd",
+   "token": "var regen_shield_active := false",
+   "note": "hook Tower.__init__"
+  },
+  "class:Tower._apply_level_stats": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _build_tower_for(",
+   "note": "hook Tower._apply_level_stats"
+  },
+  "class:Tower.can_upgrade": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func upgrade_price(",
+   "note": "hook Tower.can_upgrade"
+  },
+  "class:Tower.upgrade_cost": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func upgrade_price(",
+   "note": "hook Tower.upgrade_cost"
+  },
+  "class:Tower.upgrade": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func upgrade_tower(",
+   "note": "hook Tower.upgrade"
+  },
+  "class:Tower.sell_value": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/structure_state.gd",
+   "token": "func sale_value()",
+   "note": "hook Tower.sell_value"
+  },
+  "class:Tower.can_activate_regen_shield": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/structure_state.gd",
+   "token": "func can_activate_regen_shield()",
+   "note": "hook Tower.can_activate_regen_shield"
+  },
+  "class:Tower.regen_shield_cost": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/structure_state.gd",
+   "token": "const REGEN_SHIELD_COST := 850",
+   "note": "hook Tower.regen_shield_cost"
+  },
+  "class:Tower.activate_regen_shield": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/structure_state.gd",
+   "token": "func activate_regen_shield()",
+   "note": "hook Tower.activate_regen_shield"
+  },
+  "class:Tower.update": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func step_tick(",
+   "note": "hook Tower.update"
+  },
+  "class:Tower._update_regen": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/structure_state.gd",
+   "token": "func tick_regen()",
+   "note": "hook Tower._update_regen"
+  },
+  "class:Tower._find_target": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/siege_battle.gd",
+   "token": "func _structure_target(",
+   "note": "hook Tower._find_target"
+  },
+  "class:Tower._shoot": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/siege_battle.gd",
+   "token": "func fire_projectile(",
+   "note": "hook Tower._shoot"
+  },
+  "class:Tower._shoot_archer": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/siege_battle.gd",
+   "token": "func _append_volley_targets(",
+   "note": "hook Tower._shoot_archer"
+  },
+  "class:Tower._shoot_cannon": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/siege_battle.gd",
+   "token": "func _cannon_splash(",
+   "note": "hook Tower._shoot_cannon"
+  },
+  "class:Tower._shoot_ice": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/siege_battle.gd",
+   "token": "func _ice_aoe(",
+   "note": "hook Tower._shoot_ice"
+  },
+  "class:Tower._shoot_mage": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/siege_battle.gd",
+   "token": "func _mage_impact(",
+   "note": "hook Tower._shoot_mage"
+  },
+  "class:Tower.take_damage": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/siege_battle.gd",
+   "token": "func apply_hit(",
+   "note": "hook Tower.take_damage"
+  },
+  "class:Tower.draw": {
+   "kind": "ported",
+   "target": "godot_rebuild/scenes/siege/siege_view.gd",
+   "token": "func _draw_structure(",
+   "note": "hook Tower.draw"
+  },
+  "class:Tower._draw_shield_crest": {
+   "kind": "ported",
+   "target": "godot_rebuild/scenes/siege/siege_view.gd",
+   "token": "StructureArt.crest_frame(14",
+   "note": "hook Tower._draw_shield_crest"
+  },
+  "class:Tower._draw_regen_indicator": {
+   "kind": "ported",
+   "target": "godot_rebuild/scenes/siege/siege_view.gd",
+   "token": "func _draw_regen_plus(",
+   "note": "hook Tower._draw_regen_indicator"
+  },
+  "class:Tower._draw_tower_body": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "tower_sheet(",
+   "note": "hook Tower._draw_tower_body"
+  },
+  "class:Castle": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/structure_state.gd",
+   "token": "func can_activate_castle_shield()",
+   "note": "nexus = struktur kind \"nexus\""
+  },
+  "class:Castle.__init__": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/structure_state.gd",
+   "token": "var castle_shield_purchased := false",
+   "note": "hook Castle.__init__"
+  },
+  "class:Castle._apply_level_stats": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _apply_nexus_stats(",
+   "note": "hook Castle._apply_level_stats"
+  },
+  "class:Castle.upgrade": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func upgrade_nexus(",
+   "note": "hook Castle.upgrade"
+  },
+  "class:Castle.upgrade_cost": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func nexus_upgrade_price(",
+   "note": "hook Castle.upgrade_cost"
+  },
+  "class:Castle.can_activate_castle_shield": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/structure_state.gd",
+   "token": "func can_activate_castle_shield()",
+   "note": "hook Castle.can_activate_castle_shield"
+  },
+  "class:Castle.castle_shield_cost": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/structure_state.gd",
+   "token": "const CASTLE_SHIELD_COST",
+   "note": "hook Castle.castle_shield_cost"
+  },
+  "class:Castle.activate_castle_shield": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/structure_state.gd",
+   "token": "func activate_castle_shield()",
+   "note": "hook Castle.activate_castle_shield"
+  },
+  "class:Castle.get_minion_composition": {
+   "kind": "dead",
+   "target": "",
+   "token": "",
+   "note": "tidak ada call-site di pohon pygame"
+  },
+  "class:Castle.update": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func step_tick(",
+   "note": "hook Castle.update"
+  },
+  "class:Castle._update_castle_shield": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/structure_state.gd",
+   "token": "func tick_regen()",
+   "note": "hook Castle._update_castle_shield"
+  },
+  "class:Castle.set_wave": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/structure_state.gd",
+   "token": "func set_wave(",
+   "note": "hook Castle.set_wave"
+  },
+  "class:Castle._find_target": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/siege_battle.gd",
+   "token": "func _structure_target(",
+   "note": "hook Castle._find_target"
+  },
+  "class:Castle._shoot": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/siege_battle.gd",
+   "token": "func fire_projectile(",
+   "note": "hook Castle._shoot"
+  },
+  "class:Castle.take_damage": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/siege_battle.gd",
+   "token": "func apply_hit(",
+   "note": "hook Castle.take_damage"
+  },
+  "class:Castle.apply_slow": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/unit_state.gd",
+   "token": "func apply_slow(",
+   "note": "hook Castle.apply_slow"
+  },
+  "class:Castle.draw": {
+   "kind": "ported",
+   "target": "godot_rebuild/scenes/siege/siege_view.gd",
+   "token": "func _draw_structure(",
+   "note": "hook Castle.draw"
+  },
+  "class:Castle._draw_castle_shield": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/ui/structure_art.gd",
+   "token": "func castle_frame(",
+   "note": "hook Castle._draw_castle_shield"
+  },
+  "class:Castle._draw_hp_bar": {
+   "kind": "ported",
+   "target": "godot_rebuild/scenes/siege/siege_view.gd",
+   "token": "func _draw_structure_selection(",
+   "note": "hook Castle._draw_hp_bar"
+  },
+  "class:Hero": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/hero_state.gd",
+   "token": "func recalc_item_stats()",
+   "note": "state hero native + arm skill di scripts/combat"
+  },
+  "class:Hero.skill_damage": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/hero_state.gd",
+   "token": "func skill_damage()",
+   "note": "hook Hero.skill_damage"
+  },
+  "class:Hero.__init__": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/hero_state.gd",
+   "token": "func apply_level_stats()",
+   "note": "hook Hero.__init__"
+  },
+  "class:Hero._recalc_item_stats": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/hero_state.gd",
+   "token": "func recalc_item_stats()",
+   "note": "hook Hero._recalc_item_stats"
+  },
+  "class:Hero._apply_level_stats": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/hero_state.gd",
+   "token": "func apply_level_stats()",
+   "note": "hook Hero._apply_level_stats"
+  },
+  "class:Hero.upgrade": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/hero_state.gd",
+   "token": "func upgrade()",
+   "note": "hook Hero.upgrade"
+  },
+  "class:Hero.upgrade_cost": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/hero_state.gd",
+   "token": "func upgrade_cost()",
+   "note": "hook Hero.upgrade_cost"
+  },
+  "class:Hero.move_to": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func set_hero_destination(",
+   "note": "hook Hero.move_to"
+  },
+  "class:Hero.cast_skill": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func try_auto_cast(",
+   "note": "hook Hero.cast_skill"
+  },
+  "class:Hero._get_all_enemies": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _hero_enemy_list(",
+   "note": "hook Hero._get_all_enemies"
+  },
+  "class:Hero._find_attack_target": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func hero_basic_attack(",
+   "note": "hook Hero._find_attack_target"
+  },
+  "class:Hero._eff_attack_cd": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/hero_state.gd",
+   "token": "func eff_attack_cd(",
+   "note": "hook Hero._eff_attack_cd"
+  },
+  "class:Hero._eff_attack_range": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/hero_state.gd",
+   "token": "func eff_attack_range()",
+   "note": "hook Hero._eff_attack_range"
+  },
+  "class:Hero._find_hunt_target": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _hero_pick_target(",
+   "note": "hook Hero._find_hunt_target"
+  },
+  "class:Hero._find_aggro_target": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func hero_aggro_target(",
+   "note": "hook Hero._find_aggro_target"
+  },
+  "class:Hero.count_enemies_in_range": {
+   "kind": "dead",
+   "target": "",
+   "token": "",
+   "note": "tidak ada call-site di pohon pygame"
+  },
+  "class:Hero._get_base_pos": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _hero_home(",
+   "note": "hook Hero._get_base_pos"
+  },
+  "class:Hero._is_near_base": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _hero_near_own_base(",
+   "note": "hook Hero._is_near_base"
+  },
+  "class:Hero._heal_at_base": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _hero_near_own_base(",
+   "note": "hook Hero._heal_at_base"
+  },
+  "class:Hero._passive_heal": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _hero_passive_heal(",
+   "note": "hook Hero._passive_heal"
+  },
+  "class:Hero._move_toward": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func move_to(",
+   "note": "hook Hero._move_toward"
+  },
+  "class:Hero.update": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _step_one_hero(",
+   "note": "hook Hero.update"
+  },
+  "class:Hero._try_auto_cast": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func try_auto_cast(",
+   "note": "hook Hero._try_auto_cast"
+  },
+  "class:Hero._collect_onhit_units": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/battle_item_effects.gd",
+   "token": "Hero._collect_onhit_units()",
+   "note": "hook Hero._collect_onhit_units"
+  },
+  "class:Hero._do_attack": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func hero_basic_attack(",
+   "note": "hook Hero._do_attack"
+  },
+  "class:Hero.end_damage_scope": {
+   "kind": "dead",
+   "target": "",
+   "token": "",
+   "note": "tidak ada call-site di pohon pygame"
+  },
+  "class:Hero._spawn_projectile": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/hero_projectiles.gd",
+   "token": "static func spawn(",
+   "note": "hook Hero._spawn_projectile"
+  },
+  "class:Hero._spawn_skill_projectile": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/hero_projectiles.gd",
+   "token": "static func spawn(",
+   "note": "hook Hero._spawn_skill_projectile"
+  },
+  "class:Hero.take_damage": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _deliver_hit(",
+   "note": "hook Hero.take_damage"
+  },
+  "class:Hero.respawn": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _step_hero_respawn(",
+   "note": "hook Hero.respawn"
+  },
+  "class:Hero.draw": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_hero_atlas.py",
+   "token": "hero.draw(surface)",
+   "note": "hook Hero.draw"
+  },
+  "class:Hero._build_name_badge": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_hero_atlas.py",
+   "token": "hero.draw(surface)",
+   "note": "hook Hero._build_name_badge"
+  },
+  "class:Hero._draw_projectile": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_hero_projectiles.py",
+   "token": "entity.",
+   "note": "hook Hero._draw_projectile"
+  },
+  "class:Hero._draw_arrow_projectile": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_hero_projectiles.py",
+   "token": "entity.",
+   "note": "hook Hero._draw_arrow_projectile"
+  },
+  "class:Hero._draw_magic_orb_projectile": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_hero_projectiles.py",
+   "token": "entity.",
+   "note": "hook Hero._draw_magic_orb_projectile"
+  },
+  "class:Hero._draw_magic_bolt_projectile": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_hero_projectiles.py",
+   "token": "entity.",
+   "note": "hook Hero._draw_magic_bolt_projectile"
+  },
+  "class:Hero._draw_lightning_projectile": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_hero_projectiles.py",
+   "token": "entity.",
+   "note": "hook Hero._draw_lightning_projectile"
+  },
+  "class:Hero._draw_ice_shard_projectile": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_hero_projectiles.py",
+   "token": "entity.",
+   "note": "hook Hero._draw_ice_shard_projectile"
+  },
+  "class:Hero.direction": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/hero_state.gd",
+   "token": "var attack_facing := 1.0",
+   "note": "hook Hero.direction"
+  },
+  "class:Hero.timer": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/hero_state.gd",
+   "token": "var attack_timer := 0",
+   "note": "hook Hero.timer"
+  },
+  "class:Hero.attack_cooldown": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/hero_state.gd",
+   "token": "var attack_cd_base := 0",
+   "note": "hook Hero.attack_cooldown"
+  },
+  "class:Hero.boss_type": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/data/hero_definition.gd",
+   "token": "var is_boss_hero",
+   "note": "hook Hero.boss_type"
+  },
+  "class:Hero._draw_hero_shape": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_hero_atlas.py",
+   "token": "hero.draw(surface)",
+   "note": "hook Hero._draw_hero_shape"
+  },
+  "class:Hero.get_skill_cooldowns": {
+   "kind": "dead",
+   "target": "",
+   "token": "",
+   "note": "tidak ada call-site di pohon pygame"
+  },
+  "class:Hero.is_skill_ready": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/ui/hero_panel_layout.gd",
+   "token": "var ready := cooldown <= 0",
+   "note": "hook Hero.is_skill_ready"
+  },
+  "class:Minion": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/minion_battle.gd",
+   "token": "func apply_slow(target_id",
+   "note": "minion battle + definition"
+  },
+  "class:Minion.__init__": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func scaled_minion_definition(",
+   "note": "hook Minion.__init__"
+  },
+  "class:Minion._get_lane_y": {
+   "kind": "dead",
+   "target": "",
+   "token": "",
+   "note": "tidak ada call-site di pohon pygame"
+  },
+  "class:Minion.update": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/minion_battle.gd",
+   "token": "func step_tick()",
+   "note": "hook Minion.update"
+  },
+  "class:Minion.apply_slow": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/minion_battle.gd",
+   "token": "func apply_slow(target_id",
+   "note": "hook Minion.apply_slow"
+  },
+  "class:Minion._spawn_slash_effect": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_minion_combat_fx.py",
+   "token": "slash",
+   "note": "hook Minion._spawn_slash_effect"
+  },
+  "class:Minion._get_enemies": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/minion_battle.gd",
+   "token": "func _find_target(unit",
+   "note": "hook Minion._get_enemies"
+  },
+  "class:Minion._find_target_smart": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/minion_battle.gd",
+   "token": "func _select_ai_target(",
+   "note": "hook Minion._find_target_smart"
+  },
+  "class:Minion._distance_to": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/minion_battle.gd",
+   "token": "func _move_toward(unit",
+   "note": "hook Minion._distance_to"
+  },
+  "class:Minion._move_forward": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/minion_battle.gd",
+   "token": "func _follow_lane(",
+   "note": "hook Minion._move_forward"
+  },
+  "class:Minion._move_toward": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/minion_battle.gd",
+   "token": "func _move_toward(unit",
+   "note": "hook Minion._move_toward"
+  },
+  "class:Minion.take_damage": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/minion_battle.gd",
+   "token": "func apply_hit(",
+   "note": "hook Minion.take_damage"
+  },
+  "class:Minion.draw": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(",
+   "note": "hook Minion.draw"
+  },
+  "class:Minion._draw_death_animation": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_minion_atlas.py",
+   "token": "minion.draw(",
+   "note": "hook Minion._draw_death_animation"
+  },
+  "class:AIPlayer": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/ai_policy.gd",
+   "token": "func brain()",
+   "note": "AI dipecah ke ai_policy/ai_controller/ai_hero_control"
+  },
+  "class:AIPlayer.__init__": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/ai_policy.gd",
+   "token": "func reset()",
+   "note": "hook AIPlayer.__init__"
+  },
+  "class:AIPlayer._ai_brain": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/ai_policy.gd",
+   "token": "func brain()",
+   "note": "hook AIPlayer._ai_brain"
+  },
+  "class:AIPlayer._ai_elite": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/ai_policy.gd",
+   "token": "func elite()",
+   "note": "hook AIPlayer._ai_elite"
+  },
+  "class:AIPlayer._ai_reserve": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/ai_controller.gd",
+   "token": "func reserve(",
+   "note": "hook AIPlayer._ai_reserve"
+  },
+  "class:AIPlayer.update": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/ai_policy.gd",
+   "token": "func advance(",
+   "note": "hook AIPlayer.update"
+  },
+  "class:AIPlayer._ai_step": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/ai_controller.gd",
+   "token": "func tick(",
+   "note": "hook AIPlayer._ai_step"
+  },
+  "class:AIPlayer._try_build_tower": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/ai_build.gd",
+   "token": "func try_build(",
+   "note": "hook AIPlayer._try_build_tower"
+  },
+  "class:AIPlayer._try_upgrade_tower_new": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/ai_upgrades.gd",
+   "token": "func try_tower(",
+   "note": "hook AIPlayer._try_upgrade_tower_new"
+  },
+  "class:AIPlayer._try_activate_regen_shield": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/ai_shields.gd",
+   "token": "func try_regen(",
+   "note": "hook AIPlayer._try_activate_regen_shield"
+  },
+  "class:AIPlayer._control_heroes": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/ai_hero_control.gd",
+   "token": "func control_heroes(",
+   "note": "hook AIPlayer._control_heroes"
+  },
+  "class:AIPlayer._assign_hero_lane": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/ai_hero_control.gd",
+   "token": "func assign_hero_lane(",
+   "note": "hook AIPlayer._assign_hero_lane"
+  },
+  "class:AIPlayer._get_hero_pool": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/ai_draft.gd",
+   "token": "func hero_pool()",
+   "note": "hook AIPlayer._get_hero_pool"
+  },
+  "class:AIPlayer._choose_hero_purchase_target": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/ai_draft.gd",
+   "token": "func choose_target(",
+   "note": "hook AIPlayer._choose_hero_purchase_target"
+  },
+  "class:AIPlayer._try_buy_hero": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/ai_recruitment.gd",
+   "token": "func try_buy(",
+   "note": "hook AIPlayer._try_buy_hero"
+  },
+  "class:AIPlayer._try_upgrade_hero": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/ai_upgrades.gd",
+   "token": "func try_hero(",
+   "note": "hook AIPlayer._try_upgrade_hero"
+  },
+  "class:AIPlayer._try_buy_item": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/ai_items.gd",
+   "token": "func try_buy(",
+   "note": "hook AIPlayer._try_buy_item"
+  },
+  "class:AIPlayer._try_activate_castle_shield": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/ai_shields.gd",
+   "token": "func try_castle(",
+   "note": "hook AIPlayer._try_activate_castle_shield"
+  },
+  "class:AIPlayer._try_upgrade_nexus": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/ai_upgrades.gd",
+   "token": "func try_nexus(",
+   "note": "hook AIPlayer._try_upgrade_nexus"
+  },
+  "top:credit_hero_damage@40": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "(attacker as HeroState).damage_dealt += dealt",
+   "note": "kredit damage hero di _deliver_hit"
+  },
+  "top:set_damage_school@77": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/combat/hero_state.gd",
+   "token": "var dmg_school := \"physical\"",
+   "note": "konteks _ACTIVE_HERO tidak perlu: arm skill mengirim hero.dmg_school"
+  },
+  "top:get_damage_school@87": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/combat/hero_projectiles.gd",
+   "token": "\"school\": hero.dmg_school",
+   "note": "sekolah selalu dibaca dari hero yang menyerang"
+  },
+  "top:_is_physical_hit@92": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/unit_state.gd",
+   "token": "physical hit misses",
+   "note": "gate evasi/blind hanya untuk hit fisik"
+  },
+  "top:resolve_damage_school@106": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _deliver_hit(",
+   "note": "sekolah dikirim eksplisit ke _deliver_hit"
+  },
+  "top:_get_bullet_sprite@142": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_bullet_atlas.py",
+   "token": "entity._get_bullet_sprite(",
+   "note": "16 arah peluru dibakar ke atlas"
+  },
+  "top:_build_armor_crest@534": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._build_armor_crest(",
+   "note": "crest dibakar per (size, warna, rasio)"
+  },
+  "top:_draw_armor_crest@583": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._build_armor_crest(",
+   "note": "versi gambar dari crest yang sama"
+  },
+  "top:_get_palette@1404": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "palette = entity._get_palette(",
+   "note": "palet kastil dipakai saat bake"
+  },
+  "top:_render_castle_full@1950": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_castle_full(",
+   "note": "kastil utuh dibakar jadi sprite"
+  },
+  "top:_draw_castle_ground@1970": {
+   "kind": "dead",
+   "target": "",
+   "token": "",
+   "note": "dimatikan di sumber (komentar \"disabled\")"
+  },
+  "top:_render_castle_lvl1@1978": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_castle_full(",
+   "note": "_render_castle_lvl1 digambar ulang jadi sprite atlas"
+  },
+  "top:_draw_wooden_palisade@1985": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_castle_full(",
+   "note": "_draw_wooden_palisade digambar ulang jadi sprite atlas"
+  },
+  "top:_draw_wooden_watchtower@2022": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_castle_full(",
+   "note": "_draw_wooden_watchtower digambar ulang jadi sprite atlas"
+  },
+  "top:_render_castle_lvl2@2157": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_castle_full(",
+   "note": "_render_castle_lvl2 digambar ulang jadi sprite atlas"
+  },
+  "top:_draw_stone_corner_tower@2167": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_castle_full(",
+   "note": "_draw_stone_corner_tower digambar ulang jadi sprite atlas"
+  },
+  "top:_draw_stone_brick@2254": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_castle_full(",
+   "note": "_draw_stone_brick digambar ulang jadi sprite atlas"
+  },
+  "top:_draw_battlement_stone@2268": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_castle_full(",
+   "note": "_draw_battlement_stone digambar ulang jadi sprite atlas"
+  },
+  "top:_draw_blue_conical_roof@2291": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_castle_full(",
+   "note": "_draw_blue_conical_roof digambar ulang jadi sprite atlas"
+  },
+  "top:_draw_central_stone_wall@2423": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_castle_full(",
+   "note": "_draw_central_stone_wall digambar ulang jadi sprite atlas"
+  },
+  "top:_draw_castle_gate@2477": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_castle_full(",
+   "note": "_draw_castle_gate digambar ulang jadi sprite atlas"
+  },
+  "top:_render_castle_lvl3@2580": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_castle_full(",
+   "note": "_render_castle_lvl3 digambar ulang jadi sprite atlas"
+  },
+  "top:_render_castle_lvl4@2596": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_castle_full(",
+   "note": "_render_castle_lvl4 digambar ulang jadi sprite atlas"
+  },
+  "top:_draw_central_gate_roof@2622": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_castle_full(",
+   "note": "_draw_central_gate_roof digambar ulang jadi sprite atlas"
+  },
+  "top:_draw_silver_shield_emblem@2708": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_castle_full(",
+   "note": "_draw_silver_shield_emblem digambar ulang jadi sprite atlas"
+  },
+  "top:_draw_hanging_banner@2808": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_castle_full(",
+   "note": "_draw_hanging_banner digambar ulang jadi sprite atlas"
+  },
+  "top:_render_castle_lvl5@2883": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_castle_full(",
+   "note": "_render_castle_lvl5 digambar ulang jadi sprite atlas"
+  },
+  "top:_overlay_portcullis@2911": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_castle_full(",
+   "note": "_overlay_portcullis digambar ulang jadi sprite atlas"
+  },
+  "top:_draw_wall_gold_band@2934": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_castle_full(",
+   "note": "_draw_wall_gold_band digambar ulang jadi sprite atlas"
+  },
+  "top:_render_castle_lvl6@2967": {
+   "kind": "dead",
+   "target": "godot_rebuild/data/art/structures.json",
+   "token": "\"castles\"",
+   "note": "MAX_NEXUS_LEVEL = 5, cabang level 6 tidak pernah tercapai"
+  },
+  "top:_draw_center_royal_tower@2996": {
+   "kind": "dead",
+   "target": "",
+   "token": "",
+   "note": "hanya dipanggil _render_castle_lvl6 yang tidak tercapai"
+  },
+  "top:_render_dynamic_effects_direct@3041": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_dynamic_effects(",
+   "note": "obor gerbang ikut dibakar sebagai frame flicker"
+  },
+  "top:_render_dynamic_effects@3062": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_dynamic_effects(",
+   "note": "frame flicker obor"
+  },
+  "top:_draw_gate_torch@3083": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_dynamic_effects(",
+   "note": "flame obor jadi 5 frame"
+  },
+  "top:_draw_castle_magic_aura@3172": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_dynamic_effects(",
+   "note": "aura ikut frame bake"
+  },
+  "assign:_BULLET_SPRITE_CACHE": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_bullet_atlas.py",
+   "token": "entity._BULLET_SPRITE_CACHE.clear()",
+   "note": "cache sumber dipakai saat bake"
+  },
+  "assign:_ACTIVE_HERO": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/combat/hero_state.gd",
+   "token": "var dmg_school := \"physical\"",
+   "note": "tidak perlu konteks global"
+  },
+  "assign:_TOWER_SPRITE_CACHE": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._TOWER_SPRITE_CACHE",
+   "note": "cache tower dipakai saat bake"
+  },
+  "assign:PAL_OUTLINE_C": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "palette = entity._get_palette(",
+   "note": "warna outline palet kastil"
+  },
+  "assign:_CASTLE_SCALED_CACHE": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_structure_atlas.py",
+   "token": "entity._render_castle_full(",
+   "note": "cache kastil diskalakan saat bake"
+  },
+  "assign:_HERO_UI_CACHE": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_hero_atlas.py",
+   "token": "hero.draw(surface)",
+   "note": "badge/nama hero ikut atlas"
+  },
+  "assign:_HERO_PROJ_MAX": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_hero_projectiles.py",
+   "token": "hero._draw_projectile(surface, projectile)",
+   "note": "proyektil hero dibakar terpisah"
+  },
+  "assign:_HERO_PROJ_MAX_AGE": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_hero_projectiles.py",
+   "token": "hero._draw_projectile(surface, projectile)",
+   "note": "proyektil hero dibakar terpisah"
+  },
+  "assign:_HERO_PROJ_DEAD_AGE": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_hero_projectiles.py",
+   "token": "hero._draw_projectile(surface, projectile)",
+   "note": "proyektil hero dibakar terpisah"
+  },
+  "assign:_HERO_PROJ_MAX_DIST": {
+   "kind": "bake",
+   "target": "godot_rebuild/bake/bake_hero_projectiles.py",
+   "token": "hero._draw_projectile(surface, projectile)",
+   "note": "proyektil hero dibakar terpisah"
+  }
+ },
+ "dead_helpers": [
+  "class:Castle.get_minion_composition",
+  "class:Hero.count_enemies_in_range",
+  "class:Hero.end_damage_scope",
+  "class:Hero.get_skill_cooldowns",
+  "class:Minion._get_lane_y",
+  "top:_draw_castle_ground@1970",
+  "top:_draw_center_royal_tower@2996",
+  "top:_render_castle_lvl6@2967"
+ ],
+ "duplicates": {
+  "class:Hero.skill_damage": {
+   "lines": [
+    3240,
+    3261
+   ],
+   "copies": 2
+  },
+  "class:Hero.direction": {
+   "lines": [
+    5303,
+    5308
+   ],
+   "copies": 2
+  },
+  "class:Hero.timer": {
+   "lines": [
+    5312,
+    5317
+   ],
+   "copies": 2
+  },
+  "class:Hero.attack_cooldown": {
+   "lines": [
+    5333,
+    5339
+   ],
+   "copies": 2
+  }
+ },
+ "towers": {
+  "levels": [
+   {
+    "path": "archer",
+    "level": 1,
+    "max_hp": 2000,
+    "damage": 20,
+    "range": 180,
+    "cd": 35,
+    "shield_max": 800,
+    "armor": 3,
+    "magic_resist": 0.0,
+    "splash": 0,
+    "slow": 0.0,
+    "atk_slow": 0.0,
+    "skill_down": 0.0,
+    "anti_heal": 0.0,
+    "burn_dps": 0.0,
+    "upgrade_cost": 175,
+    "sell_value": 0,
+    "transaction_refund": 50
+   },
+   {
+    "path": "archer",
+    "level": 2,
+    "max_hp": 2625,
+    "damage": 33,
+    "range": 190,
+    "cd": 32,
+    "shield_max": 1050,
+    "armor": 4,
+    "magic_resist": 0.0,
+    "splash": 0,
+    "slow": 0.0,
+    "atk_slow": 0.0,
+    "skill_down": 0.0,
+    "anti_heal": 0.0,
+    "burn_dps": 0.0,
+    "upgrade_cost": 325,
+    "sell_value": 87,
+    "transaction_refund": 87
+   },
+   {
+    "path": "archer",
+    "level": 3,
+    "max_hp": 3375,
+    "damage": 50,
+    "range": 200,
+    "cd": 30,
+    "shield_max": 1350,
+    "armor": 5,
+    "magic_resist": 0.0,
+    "splash": 0,
+    "slow": 0.0,
+    "atk_slow": 0.0,
+    "skill_down": 0.0,
+    "anti_heal": 0.0,
+    "burn_dps": 0.0,
+    "upgrade_cost": 550,
+    "sell_value": 250,
+    "transaction_refund": 250
+   },
+   {
+    "path": "archer",
+    "level": 4,
+    "max_hp": 4375,
+    "damage": 72,
+    "range": 210,
+    "cd": 27,
+    "shield_max": 1750,
+    "armor": 6,
+    "magic_resist": 0.0,
+    "splash": 0,
+    "slow": 0.0,
+    "atk_slow": 0.0,
+    "skill_down": 0.0,
+    "anti_heal": 0.0,
+    "burn_dps": 0.0,
+    "upgrade_cost": 850,
+    "sell_value": 525,
+    "transaction_refund": 525
+   },
+   {
+    "path": "archer",
+    "level": 5,
+    "max_hp": 5500,
+    "damage": 98,
+    "range": 220,
+    "cd": 24,
+    "shield_max": 2200,
+    "armor": 7,
+    "magic_resist": 0.0,
+    "splash": 0,
+    "slow": 0.0,
+    "atk_slow": 0.0,
+    "skill_down": 0.0,
+    "anti_heal": 0.0,
+    "burn_dps": 0.0,
+    "upgrade_cost": 1300,
+    "sell_value": 950,
+    "transaction_refund": 950
+   },
+   {
+    "path": "archer",
+    "level": 6,
+    "max_hp": 7000,
+    "damage": 130,
+    "range": 230,
+    "cd": 22,
+    "shield_max": 2800,
+    "armor": 8,
+    "magic_resist": 0.0,
+    "splash": 0,
+    "slow": 0.0,
+    "atk_slow": 0.0,
+    "skill_down": 0.0,
+    "anti_heal": 0.0,
+    "burn_dps": 0.0,
+    "upgrade_cost": 0,
+    "sell_value": 1600,
+    "transaction_refund": 1600
+   },
+   {
+    "path": "cannon",
+    "level": 2,
+    "max_hp": 3000,
+    "damage": 42,
+    "range": 165,
+    "cd": 44,
+    "shield_max": 1200,
+    "armor": 4,
+    "magic_resist": 0.0,
+    "splash": 45,
+    "slow": 0.0,
+    "atk_slow": 0.0,
+    "skill_down": 0.0,
+    "anti_heal": 0.0,
+    "burn_dps": 8.0,
+    "upgrade_cost": 325,
+    "sell_value": 87,
+    "transaction_refund": 87
+   },
+   {
+    "path": "cannon",
+    "level": 3,
+    "max_hp": 3750,
+    "damage": 60,
+    "range": 175,
+    "cd": 40,
+    "shield_max": 1500,
+    "armor": 5,
+    "magic_resist": 0.0,
+    "splash": 55,
+    "slow": 0.0,
+    "atk_slow": 0.0,
+    "skill_down": 0.0,
+    "anti_heal": 0.0,
+    "burn_dps": 12.0,
+    "upgrade_cost": 550,
+    "sell_value": 250,
+    "transaction_refund": 250
+   },
+   {
+    "path": "cannon",
+    "level": 4,
+    "max_hp": 4750,
+    "damage": 84,
+    "range": 185,
+    "cd": 36,
+    "shield_max": 1900,
+    "armor": 6,
+    "magic_resist": 0.0,
+    "splash": 65,
+    "slow": 0.0,
+    "atk_slow": 0.0,
+    "skill_down": 0.0,
+    "anti_heal": 0.0,
+    "burn_dps": 16.0,
+    "upgrade_cost": 850,
+    "sell_value": 525,
+    "transaction_refund": 525
+   },
+   {
+    "path": "cannon",
+    "level": 5,
+    "max_hp": 6000,
+    "damage": 116,
+    "range": 195,
+    "cd": 32,
+    "shield_max": 2400,
+    "armor": 7,
+    "magic_resist": 0.0,
+    "splash": 80,
+    "slow": 0.0,
+    "atk_slow": 0.0,
+    "skill_down": 0.0,
+    "anti_heal": 0.0,
+    "burn_dps": 22.0,
+    "upgrade_cost": 1300,
+    "sell_value": 950,
+    "transaction_refund": 950
+   },
+   {
+    "path": "cannon",
+    "level": 6,
+    "max_hp": 7500,
+    "damage": 155,
+    "range": 210,
+    "cd": 28,
+    "shield_max": 3000,
+    "armor": 8,
+    "magic_resist": 0.0,
+    "splash": 100,
+    "slow": 0.0,
+    "atk_slow": 0.0,
+    "skill_down": 0.0,
+    "anti_heal": 0.0,
+    "burn_dps": 30.0,
+    "upgrade_cost": 0,
+    "sell_value": 1600,
+    "transaction_refund": 1600
+   },
+   {
+    "path": "ice",
+    "level": 2,
+    "max_hp": 2375,
+    "damage": 20,
+    "range": 170,
+    "cd": 26,
+    "shield_max": 950,
+    "armor": 4,
+    "magic_resist": 0.0,
+    "splash": 0,
+    "slow": 0.25,
+    "atk_slow": 0.15,
+    "skill_down": 0.0,
+    "anti_heal": 0.0,
+    "burn_dps": 0.0,
+    "upgrade_cost": 325,
+    "sell_value": 87,
+    "transaction_refund": 87
+   },
+   {
+    "path": "ice",
+    "level": 3,
+    "max_hp": 3125,
+    "damage": 32,
+    "range": 180,
+    "cd": 22,
+    "shield_max": 1250,
+    "armor": 5,
+    "magic_resist": 0.0,
+    "splash": 0,
+    "slow": 0.35,
+    "atk_slow": 0.2,
+    "skill_down": 0.0,
+    "anti_heal": 0.0,
+    "burn_dps": 0.0,
+    "upgrade_cost": 550,
+    "sell_value": 250,
+    "transaction_refund": 250
+   },
+   {
+    "path": "ice",
+    "level": 4,
+    "max_hp": 4000,
+    "damage": 45,
+    "range": 190,
+    "cd": 18,
+    "shield_max": 1600,
+    "armor": 6,
+    "magic_resist": 0.0,
+    "splash": 0,
+    "slow": 0.45,
+    "atk_slow": 0.25,
+    "skill_down": 0.0,
+    "anti_heal": 0.0,
+    "burn_dps": 0.0,
+    "upgrade_cost": 850,
+    "sell_value": 525,
+    "transaction_refund": 525
+   },
+   {
+    "path": "ice",
+    "level": 5,
+    "max_hp": 5125,
+    "damage": 60,
+    "range": 200,
+    "cd": 16,
+    "shield_max": 2050,
+    "armor": 7,
+    "magic_resist": 0.0,
+    "splash": 0,
+    "slow": 0.55,
+    "atk_slow": 0.3,
+    "skill_down": 0.0,
+    "anti_heal": 0.0,
+    "burn_dps": 0.0,
+    "upgrade_cost": 1300,
+    "sell_value": 950,
+    "transaction_refund": 950
+   },
+   {
+    "path": "ice",
+    "level": 6,
+    "max_hp": 6500,
+    "damage": 78,
+    "range": 220,
+    "cd": 14,
+    "shield_max": 2600,
+    "armor": 8,
+    "magic_resist": 0.0,
+    "splash": 0,
+    "slow": 0.65,
+    "atk_slow": 0.4,
+    "skill_down": 0.0,
+    "anti_heal": 0.0,
+    "burn_dps": 0.0,
+    "upgrade_cost": 0,
+    "sell_value": 1600,
+    "transaction_refund": 1600
+   },
+   {
+    "path": "mage",
+    "level": 2,
+    "max_hp": 2125,
+    "damage": 17,
+    "range": 180,
+    "cd": 20,
+    "shield_max": 850,
+    "armor": 4,
+    "magic_resist": 0.0,
+    "splash": 0,
+    "slow": 0.0,
+    "atk_slow": 0.0,
+    "skill_down": 0.2,
+    "anti_heal": 0.4,
+    "burn_dps": 0.0,
+    "upgrade_cost": 325,
+    "sell_value": 87,
+    "transaction_refund": 87
+   },
+   {
+    "path": "mage",
+    "level": 3,
+    "max_hp": 2750,
+    "damage": 26,
+    "range": 190,
+    "cd": 18,
+    "shield_max": 1100,
+    "armor": 5,
+    "magic_resist": 0.0,
+    "splash": 0,
+    "slow": 0.0,
+    "atk_slow": 0.0,
+    "skill_down": 0.25,
+    "anti_heal": 0.5,
+    "burn_dps": 0.0,
+    "upgrade_cost": 550,
+    "sell_value": 250,
+    "transaction_refund": 250
+   },
+   {
+    "path": "mage",
+    "level": 4,
+    "max_hp": 3625,
+    "damage": 39,
+    "range": 200,
+    "cd": 16,
+    "shield_max": 1450,
+    "armor": 6,
+    "magic_resist": 0.0,
+    "splash": 0,
+    "slow": 0.0,
+    "atk_slow": 0.0,
+    "skill_down": 0.3,
+    "anti_heal": 0.6,
+    "burn_dps": 0.0,
+    "upgrade_cost": 850,
+    "sell_value": 525,
+    "transaction_refund": 525
+   },
+   {
+    "path": "mage",
+    "level": 5,
+    "max_hp": 4625,
+    "damage": 55,
+    "range": 210,
+    "cd": 14,
+    "shield_max": 1850,
+    "armor": 7,
+    "magic_resist": 0.0,
+    "splash": 0,
+    "slow": 0.0,
+    "atk_slow": 0.0,
+    "skill_down": 0.4,
+    "anti_heal": 0.75,
+    "burn_dps": 0.0,
+    "upgrade_cost": 1300,
+    "sell_value": 950,
+    "transaction_refund": 950
+   },
+   {
+    "path": "mage",
+    "level": 6,
+    "max_hp": 5875,
+    "damage": 70,
+    "range": 230,
+    "cd": 12,
+    "shield_max": 2350,
+    "armor": 8,
+    "magic_resist": 0.0,
+    "splash": 0,
+    "slow": 0.0,
+    "atk_slow": 0.0,
+    "skill_down": 0.5,
+    "anti_heal": 1.0,
+    "burn_dps": 0.0,
+    "upgrade_cost": 0,
+    "sell_value": 1600,
+    "transaction_refund": 1600
+   }
+  ],
+  "path_switch_cost": {
+   "archer": 175,
+   "cannon": 175,
+   "ice": 175,
+   "mage": 175
+  },
+  "red_sell_value": 0,
+  "sell_value_without_shield": 525,
+  "sell_value_with_shield": 950,
+  "transaction_refund_with_shield": 950
+ },
+ "nexus": {
+  "levels": [
+   {
+    "level": 1,
+    "max_hp": 4000,
+    "hp": 4000,
+    "damage": 35,
+    "range": 150,
+    "cd": 45,
+    "shield_max": 4000,
+    "upgrade_cost": 500,
+    "shield_cost": 850
+   },
+   {
+    "level": 2,
+    "max_hp": 6000,
+    "hp": 6000,
+    "damage": 55,
+    "range": 165,
+    "cd": 40,
+    "shield_max": 4000,
+    "upgrade_cost": 900,
+    "shield_cost": 850
+   },
+   {
+    "level": 3,
+    "max_hp": 8500,
+    "hp": 8500,
+    "damage": 80,
+    "range": 180,
+    "cd": 35,
+    "shield_max": 4000,
+    "upgrade_cost": 1500,
+    "shield_cost": 850
+   },
+   {
+    "level": 4,
+    "max_hp": 11500,
+    "hp": 11500,
+    "damage": 115,
+    "range": 195,
+    "cd": 30,
+    "shield_max": 4000,
+    "upgrade_cost": 2400,
+    "shield_cost": 850
+   },
+   {
+    "level": 5,
+    "max_hp": 15000,
+    "hp": 15000,
+    "damage": 160,
+    "range": 210,
+    "cd": 25,
+    "shield_max": 4000,
+    "upgrade_cost": 0,
+    "shield_cost": 850
+   }
+  ],
+  "damaged_upgrade": {
+   "before": 1600,
+   "after": 4900,
+   "max_hp": 6000
+  },
+  "shield_ratio_upgrade": {
+   "ratio_before": 0.5,
+   "shield_max": 6000,
+   "shield": 3000
+  },
+  "waves": {
+   "9": {
+    "free": true,
+    "active": true,
+    "shield": 4000
+   },
+   "10": {
+    "free": true,
+    "active": true,
+    "shield": 4000
+   },
+   "11": {
+    "free": false,
+    "active": false,
+    "shield": 0
+   }
+  }
+ },
+ "minions": [
+  {
+   "type": "dark_rider",
+   "nexus": 1,
+   "max_hp": 280,
+   "damage": 32,
+   "speed": 2.0,
+   "cd": 50,
+   "gold": 65,
+   "regen": 0.0,
+   "armor": 1.0,
+   "magic_resist": 0.05
+  },
+  {
+   "type": "dark_rider",
+   "nexus": 2,
+   "max_hp": 336,
+   "damage": 38,
+   "speed": 2.12,
+   "cd": 48,
+   "gold": 78,
+   "regen": 0.0,
+   "armor": 1.0,
+   "magic_resist": 0.05
+  },
+  {
+   "type": "dark_rider",
+   "nexus": 3,
+   "max_hp": 392,
+   "damage": 44,
+   "speed": 2.24,
+   "cd": 46,
+   "gold": 91,
+   "regen": 0.0,
+   "armor": 1.0,
+   "magic_resist": 0.05
+  },
+  {
+   "type": "dark_rider",
+   "nexus": 4,
+   "max_hp": 476,
+   "damage": 54,
+   "speed": 2.42,
+   "cd": 43,
+   "gold": 110,
+   "regen": 0.0,
+   "armor": 1.0,
+   "magic_resist": 0.05
+  },
+  {
+   "type": "dark_rider",
+   "nexus": 5,
+   "max_hp": 560,
+   "damage": 64,
+   "speed": 2.6,
+   "cd": 41,
+   "gold": 130,
+   "regen": 0.0,
+   "armor": 1.0,
+   "magic_resist": 0.05
+  },
+  {
+   "type": "goblin",
+   "nexus": 1,
+   "max_hp": 45,
+   "damage": 5,
+   "speed": 1.5,
+   "cd": 45,
+   "gold": 8,
+   "regen": 0.0,
+   "armor": 0.0,
+   "magic_resist": 0.0
+  },
+  {
+   "type": "goblin",
+   "nexus": 2,
+   "max_hp": 54,
+   "damage": 6,
+   "speed": 1.59,
+   "cd": 43,
+   "gold": 9,
+   "regen": 0.0,
+   "armor": 0.0,
+   "magic_resist": 0.0
+  },
+  {
+   "type": "goblin",
+   "nexus": 3,
+   "max_hp": 62,
+   "damage": 7,
+   "speed": 1.68,
+   "cd": 41,
+   "gold": 11,
+   "regen": 0.0,
+   "armor": 0.0,
+   "magic_resist": 0.0
+  },
+  {
+   "type": "goblin",
+   "nexus": 4,
+   "max_hp": 76,
+   "damage": 8,
+   "speed": 1.815,
+   "cd": 39,
+   "gold": 13,
+   "regen": 0.0,
+   "armor": 0.0,
+   "magic_resist": 0.0
+  },
+  {
+   "type": "goblin",
+   "nexus": 5,
+   "max_hp": 90,
+   "damage": 10,
+   "speed": 1.95,
+   "cd": 37,
+   "gold": 16,
+   "regen": 0.0,
+   "armor": 0.0,
+   "magic_resist": 0.0
+  },
+  {
+   "type": "orc",
+   "nexus": 1,
+   "max_hp": 110,
+   "damage": 13,
+   "speed": 0.95,
+   "cd": 60,
+   "gold": 18,
+   "regen": 0.0,
+   "armor": 0.0,
+   "magic_resist": 0.0
+  },
+  {
+   "type": "orc",
+   "nexus": 2,
+   "max_hp": 132,
+   "damage": 15,
+   "speed": 1.007,
+   "cd": 57,
+   "gold": 21,
+   "regen": 0.0,
+   "armor": 0.0,
+   "magic_resist": 0.0
+  },
+  {
+   "type": "orc",
+   "nexus": 3,
+   "max_hp": 154,
+   "damage": 18,
+   "speed": 1.064,
+   "cd": 55,
+   "gold": 25,
+   "regen": 0.0,
+   "armor": 0.0,
+   "magic_resist": 0.0
+  },
+  {
+   "type": "orc",
+   "nexus": 4,
+   "max_hp": 187,
+   "damage": 22,
+   "speed": 1.1495,
+   "cd": 52,
+   "gold": 30,
+   "regen": 0.0,
+   "armor": 0.0,
+   "magic_resist": 0.0
+  },
+  {
+   "type": "orc",
+   "nexus": 5,
+   "max_hp": 220,
+   "damage": 26,
+   "speed": 1.235,
+   "cd": 50,
+   "gold": 36,
+   "regen": 0.0,
+   "armor": 0.0,
+   "magic_resist": 0.0
+  },
+  {
+   "type": "troll",
+   "nexus": 1,
+   "max_hp": 320,
+   "damage": 18,
+   "speed": 0.65,
+   "cd": 75,
+   "gold": 45,
+   "regen": 0.6,
+   "armor": 2.0,
+   "magic_resist": 0.05
+  },
+  {
+   "type": "troll",
+   "nexus": 2,
+   "max_hp": 384,
+   "damage": 21,
+   "speed": 0.689,
+   "cd": 72,
+   "gold": 54,
+   "regen": 0.72,
+   "armor": 2.0,
+   "magic_resist": 0.05
+  },
+  {
+   "type": "troll",
+   "nexus": 3,
+   "max_hp": 448,
+   "damage": 25,
+   "speed": 0.728,
+   "cd": 69,
+   "gold": 62,
+   "regen": 0.84,
+   "armor": 2.0,
+   "magic_resist": 0.05
+  },
+  {
+   "type": "troll",
+   "nexus": 4,
+   "max_hp": 544,
+   "damage": 30,
+   "speed": 0.7865,
+   "cd": 65,
+   "gold": 76,
+   "regen": 1.02,
+   "armor": 2.0,
+   "magic_resist": 0.05
+  },
+  {
+   "type": "troll",
+   "nexus": 5,
+   "max_hp": 640,
+   "damage": 36,
+   "speed": 0.845,
+   "cd": 62,
+   "gold": 90,
+   "regen": 1.2,
+   "armor": 2.0,
+   "magic_resist": 0.05
+  },
+  {
+   "type": "undead",
+   "nexus": 1,
+   "max_hp": 65,
+   "damage": 11,
+   "speed": 0.85,
+   "cd": 60,
+   "gold": 16,
+   "regen": 0.0,
+   "armor": 0.0,
+   "magic_resist": 0.15
+  },
+  {
+   "type": "undead",
+   "nexus": 2,
+   "max_hp": 78,
+   "damage": 13,
+   "speed": 0.901,
+   "cd": 57,
+   "gold": 19,
+   "regen": 0.0,
+   "armor": 0.0,
+   "magic_resist": 0.15
+  },
+  {
+   "type": "undead",
+   "nexus": 3,
+   "max_hp": 91,
+   "damage": 15,
+   "speed": 0.952,
+   "cd": 55,
+   "gold": 22,
+   "regen": 0.0,
+   "armor": 0.0,
+   "magic_resist": 0.15
+  },
+  {
+   "type": "undead",
+   "nexus": 4,
+   "max_hp": 110,
+   "damage": 18,
+   "speed": 1.0285,
+   "cd": 52,
+   "gold": 27,
+   "regen": 0.0,
+   "armor": 0.0,
+   "magic_resist": 0.15
+  },
+  {
+   "type": "undead",
+   "nexus": 5,
+   "max_hp": 130,
+   "damage": 22,
+   "speed": 1.105,
+   "cd": 50,
+   "gold": 32,
+   "regen": 0.0,
+   "armor": 0.0,
+   "magic_resist": 0.15
+  }
+ ],
+ "bullets": [
+  {
+   "bullet": "normal",
+   "speed": 8.0,
+   "start": {
+    "x": 0.0,
+    "y": 100.0
+   },
+   "after_one_tick": {
+    "x": 0.0,
+    "y": 92.0
+   },
+   "ticks_to_hit": 12,
+   "units": {
+    "target": {
+     "hits": [
+      {
+       "amount": 50,
+       "team": "blue",
+       "type": "projectile"
+      }
+     ],
+     "debuffs": [],
+     "slows": []
+    },
+    "near": {
+     "hits": [],
+     "debuffs": [],
+     "slows": []
+    },
+    "far": {
+     "hits": [],
+     "debuffs": [],
+     "slows": []
+    },
+    "ally": {
+     "hits": [],
+     "debuffs": [],
+     "slows": []
+    }
+   }
+  },
+  {
+   "bullet": "cannon",
+   "speed": 8.0,
+   "start": {
+    "x": 0.0,
+    "y": 100.0
+   },
+   "after_one_tick": {
+    "x": 0.0,
+    "y": 92.0
+   },
+   "ticks_to_hit": 12,
+   "units": {
+    "target": {
+     "hits": [
+      {
+       "amount": 50,
+       "team": "blue",
+       "type": "projectile"
+      }
+     ],
+     "debuffs": [
+      {
+       "kind": "burn",
+       "amount": 7,
+       "duration": 90
+      }
+     ],
+     "slows": []
+    },
+    "near": {
+     "hits": [
+      {
+       "amount": 30,
+       "team": "blue",
+       "type": null
+      }
+     ],
+     "debuffs": [
+      {
+       "kind": "burn",
+       "amount": 7,
+       "duration": 90
+      }
+     ],
+     "slows": []
+    },
+    "far": {
+     "hits": [],
+     "debuffs": [],
+     "slows": []
+    },
+    "ally": {
+     "hits": [],
+     "debuffs": [],
+     "slows": []
+    }
+   }
+  },
+  {
+   "bullet": "ice",
+   "speed": 8.0,
+   "start": {
+    "x": 0.0,
+    "y": 100.0
+   },
+   "after_one_tick": {
+    "x": 0.0,
+    "y": 92.0
+   },
+   "ticks_to_hit": 12,
+   "units": {
+    "target": {
+     "hits": [
+      {
+       "amount": 50,
+       "team": "blue",
+       "type": "projectile"
+      }
+     ],
+     "debuffs": [
+      {
+       "kind": "atk_slow",
+       "amount": 0.25,
+       "duration": 90
+      }
+     ],
+     "slows": [
+      {
+       "amount": 0.35,
+       "duration": 90
+      }
+     ]
+    },
+    "near": {
+     "hits": [],
+     "debuffs": [
+      {
+       "kind": "atk_slow",
+       "amount": 0.25,
+       "duration": 90
+      }
+     ],
+     "slows": [
+      {
+       "amount": 0.35,
+       "duration": 90
+      }
+     ]
+    },
+    "far": {
+     "hits": [],
+     "debuffs": [],
+     "slows": []
+    },
+    "ally": {
+     "hits": [],
+     "debuffs": [],
+     "slows": []
+    }
+   }
+  },
+  {
+   "bullet": "mage",
+   "speed": 8.0,
+   "start": {
+    "x": 0.0,
+    "y": 100.0
+   },
+   "after_one_tick": {
+    "x": 0.0,
+    "y": 92.0
+   },
+   "ticks_to_hit": 12,
+   "units": {
+    "target": {
+     "hits": [
+      {
+       "amount": 50,
+       "team": "blue",
+       "type": "projectile"
+      }
+     ],
+     "debuffs": [
+      {
+       "kind": "skill_down",
+       "amount": 0.2,
+       "duration": 120
+      },
+      {
+       "kind": "anti_heal",
+       "amount": 0.3,
+       "duration": 120
+      }
+     ],
+     "slows": []
+    },
+    "near": {
+     "hits": [],
+     "debuffs": [],
+     "slows": []
+    },
+    "far": {
+     "hits": [],
+     "debuffs": [],
+     "slows": []
+    },
+    "ally": {
+     "hits": [],
+     "debuffs": [],
+     "slows": []
+    }
+   }
+  }
+ ],
+ "school": {
+  "resolution": [
+   {
+    "case": "explicit physical",
+    "school": "physical",
+    "physical_hit": true
+   },
+   {
+    "case": "fire ignores school",
+    "school": "physical",
+    "physical_hit": false
+   },
+   {
+    "case": "crit ignores school",
+    "school": null,
+    "physical_hit": false
+   },
+   {
+    "case": "attacker magic",
+    "school": "magic",
+    "physical_hit": false
+   },
+   {
+    "case": "context hero magic on hero",
+    "school": "magic",
+    "physical_hit": false
+   },
+   {
+    "case": "context hero magic on structure",
+    "school": null,
+    "physical_hit": true
+   },
+   {
+    "case": "no context",
+    "school": null,
+    "physical_hit": true
+   }
+  ],
+  "physical_gate": [
+   {
+    "damage_type": "normal",
+    "school": "physical",
+    "physical": true
+   },
+   {
+    "damage_type": "normal",
+    "school": "magic",
+    "physical": false
+   },
+   {
+    "damage_type": "normal",
+    "school": null,
+    "physical": true
+   },
+   {
+    "damage_type": "projectile",
+    "school": "physical",
+    "physical": true
+   },
+   {
+    "damage_type": "projectile",
+    "school": "magic",
+    "physical": false
+   },
+   {
+    "damage_type": "projectile",
+    "school": null,
+    "physical": true
+   },
+   {
+    "damage_type": "fire",
+    "school": "physical",
+    "physical": false
+   },
+   {
+    "damage_type": "fire",
+    "school": "magic",
+    "physical": false
+   },
+   {
+    "damage_type": "fire",
+    "school": null,
+    "physical": false
+   },
+   {
+    "damage_type": "ice",
+    "school": "physical",
+    "physical": false
+   },
+   {
+    "damage_type": "ice",
+    "school": "magic",
+    "physical": false
+   },
+   {
+    "damage_type": "ice",
+    "school": null,
+    "physical": false
+   },
+   {
+    "damage_type": "heal",
+    "school": "physical",
+    "physical": false
+   },
+   {
+    "damage_type": "heal",
+    "school": "magic",
+    "physical": false
+   },
+   {
+    "damage_type": "heal",
+    "school": null,
+    "physical": false
+   },
+   {
+    "damage_type": "crit",
+    "school": "physical",
+    "physical": false
+   },
+   {
+    "damage_type": "crit",
+    "school": "magic",
+    "physical": false
+   },
+   {
+    "damage_type": "crit",
+    "school": null,
+    "physical": false
+   }
+  ]
+ },
+ "constants": {
+  "BULLET_SPEED": 8,
+  "BULLET_RADIUS": 4,
+  "TOWER_MAX_LEVEL": 6,
+  "MAX_NEXUS_LEVEL": 5,
+  "TOWER_REGEN_SHIELD_COST": 850,
+  "CASTLE_SHIELD_COST": 850,
+  "CASTLE_SHIELD_FREE_WAVES": 10,
+  "CASTLE_SHIELD_DAMAGE_REDUCTION": 0.88,
+  "CASTLE_SHIELD_HP_RATIO": 1.0,
+  "TOWER_HP_MULTIPLIER": 2.5
+ }
+}

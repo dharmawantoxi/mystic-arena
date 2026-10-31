@@ -4041,6 +4041,160 @@ check("python godot_rebuild/tests/core_source_oracle.py --check" in workflow,
       "9cf CI must run the _core.py oracle")
 
 
+# ── 9cg: the whole `_entity.py` entity bundle (6.536 lines, 5 modules) ──
+# `_entity.py` merges tower.py, castle.py, hero.py, minion.py and ai_player.py
+# plus the damage-credit/damage-school prelude. The classes already live in the
+# rebuild, so this layer classifies all 179 symbols, executes the real module
+# (stub pygame + `_core` settings namespace) and compares the resulting tower,
+# nexus and minion tables against the shipped `.tres` catalogs.
+from entity_source_oracle import source_fixture as entity_source_fixture
+_ent_fixture_path = ROOT / "tests/fixtures/entity_source.json"
+_ent_checks_path = ROOT / "tests/entity_checks.gd"
+_ent_oracle_path = ROOT / "tests/entity_source_oracle.py"
+check(_ent_fixture_path.is_file(), "9cg _entity.py inventory needs a source oracle fixture")
+check(_ent_checks_path.is_file(), "9cg the _entity.py native suite must exist")
+check(_ent_oracle_path.is_file(), "9cg the _entity.py oracle must ship")
+check('const EntityChecks = preload("res://tests/entity_checks.gd")' in ai_tests
+      and "EntityChecks.new().run(_check)" in ai_tests,
+      "9cg the _entity.py suite must be preloaded and run")
+_ent_doc = ROOT.parent / "docs/ENTITY_FOLDER_MIGRATION.md"
+check(_ent_doc.is_file(), "9cg the _entity.py migration report must ship")
+check("python godot_rebuild/tests/entity_source_oracle.py --check" in workflow,
+      "9cg CI must run the _entity.py oracle")
+_ent = entity_source_fixture()
+check(_ent == json.loads(_ent_fixture_path.read_text(encoding="utf-8")),
+      "9cg the _entity.py fixture must match live Python execution")
+check(_ent["file"]["lines"] == 6536 and _ent["file"]["sections"] == 6
+      and _ent["file"]["classes"] == 7 and _ent["file"]["methods"] == 125
+      and _ent["file"]["top_functions"] == 35 and _ent["file"]["assigns"] == 10,
+      f"9cg _entity.py must stay 6.536 lines of five modules: {_ent['file']}")
+check([row["name"] for row in _ent["sections"]] == [
+          "prelude", "tower", "castle", "hero", "minion", "ai_player"]
+      and _ent["sections"][1]["start"] == 19
+      and _ent["sections"][-1]["end"] == 6536,
+      "9cg the five merged modules must keep their order and ranges")
+check(_ent["symbols"]["count"] == 179
+      and _ent["symbols"]["kinds"] == {"bake": 52, "dead": 8, "folded": 4, "ported": 115},
+      f"9cg all 179 symbols of _entity.py carry a kind: {_ent['symbols']}")
+_ent_source_only = ["dead", "deviation", "meta"]
+_ent_broken = []
+_ent_no_target = []
+for _ent_name, _ent_row in _ent["classification"].items():
+    if not _ent_row["target"] or not _ent_row["token"]:
+        if _ent_row["kind"] not in _ent_source_only:
+            _ent_no_target.append(_ent_name)
+        continue
+    _ent_target = ROOT.parent / _ent_row["target"]
+    if not _ent_target.is_file() or _ent_row["token"] not in _ent_target.read_text(
+            encoding="utf-8"):
+        _ent_broken.append(_ent_name)
+check(not _ent_broken,
+      f"9cg every named classification needs a live target and token: {_ent_broken[:8]}")
+check(not _ent_no_target,
+      f"9cg only dead/deviation/meta rows may skip a Godot target: {_ent_no_target[:8]}")
+check(sorted(_ent["dead_helpers"]) == sorted([
+          "class:Castle.get_minion_composition", "class:Hero.count_enemies_in_range",
+          "class:Hero.end_damage_scope", "class:Hero.get_skill_cooldowns",
+          "class:Minion._get_lane_y", "top:_draw_castle_ground@1970",
+          "top:_draw_center_royal_tower@2996", "top:_render_castle_lvl6@2967"]),
+      "9cg the eight unreachable symbols must stay named")
+check(sorted(_ent["duplicates"]) == sorted([
+          "class:Hero.attack_cooldown", "class:Hero.direction", "class:Hero.skill_damage",
+          "class:Hero.timer"]),
+      "9cg the four Hero property pairs must stay recorded")
+check(len(_ent["towers"]["levels"]) == 21 and len(_ent["nexus"]["levels"]) == 5
+      and len(_ent["minions"]) == 25 and len(_ent["bullets"]) == 4,
+      "9cg the executed entity tables must stay complete")
+_ent_t3 = [row for row in _ent["towers"]["levels"]
+           if row["path"] == "archer" and row["level"] == 1][0]
+check(_ent_t3["max_hp"] == 2000 and _ent_t3["damage"] == 20 and _ent_t3["range"] == 180
+      and _ent_t3["cd"] == 35 and _ent_t3["shield_max"] == 800 and _ent_t3["armor"] == 3
+      and _ent_t3["transaction_refund"] == 50,
+      "9cg archer level 1 must stay 2000 HP / 20 DMG / 800 shield / 50 refund")
+check(_ent["nexus"]["levels"][-1]["max_hp"] == 15000
+      and _ent["nexus"]["levels"][0]["shield_cost"] == 850
+      and _ent["nexus"]["damaged_upgrade"]["after"] == 4900
+      and _ent["nexus"]["waves"]["11"]["active"] is False,
+      "9cg the nexus table, the 850 shield and the free-shield cutoff must stay")
+check(_ent["towers"]["red_sell_value"] == 0
+      and _ent["towers"]["transaction_refund_with_shield"] == 950,
+      "9cg an AI tower is worth nothing and a shielded level-4 quote is 950")
+_ent_tres = {}
+
+
+def _ent_resource(path):
+    if path not in _ent_tres:
+        _ent_tres[path] = (ROOT / path).read_text(encoding="utf-8")
+    fields = {}
+    for line in _ent_tres[path].splitlines():
+        match = re.match(r"^(\w+) = (.+)$", line)
+        if match:
+            fields[match.group(1)] = match.group(2)
+    return fields
+
+
+_ent_drift = []
+for _ent_row in _ent["towers"]["levels"]:
+    _ent_fields = _ent_resource(
+        "data/structures/%s_level_%d.tres" % (_ent_row["path"], _ent_row["level"]))
+    for _ent_key, _ent_tres_key in (("max_hp", "max_hp"), ("damage", "damage"),
+                                    ("range", "attack_range_px"),
+                                    ("cd", "attack_cooldown_ticks"),
+                                    ("armor", "armor"), ("magic_resist", "magic_resist"),
+                                    ("shield_max", "shield_capacity"),
+                                    ("transaction_refund", "sale_refund")):
+        if abs(float(_ent_fields.get(_ent_tres_key, -1)) - float(_ent_row[_ent_key])) > 1e-6:
+            _ent_drift.append("%s lv%d %s" % (_ent_row["path"], _ent_row["level"], _ent_key))
+for _ent_row in _ent["nexus"]["levels"]:
+    _ent_fields = _ent_resource("data/structures/nexus_level_%d.tres" % _ent_row["level"])
+    for _ent_key, _ent_tres_key in (("max_hp", "max_hp"), ("damage", "damage"),
+                                    ("range", "attack_range_px"),
+                                    ("cd", "attack_cooldown_ticks")):
+        if abs(float(_ent_fields[_ent_tres_key]) - float(_ent_row[_ent_key])) > 1e-6:
+            _ent_drift.append("nexus lv%d %s" % (_ent_row["level"], _ent_key))
+    if float(_ent_fields["sale_refund"]) != 0:
+        _ent_drift.append("nexus lv%d sale" % _ent_row["level"])
+_ent_scales = [1.0, 1.2, 1.4, 1.7, 2.0]
+for _ent_row in _ent["minions"]:
+    _ent_fields = _ent_resource("data/minions/%s.tres" % _ent_row["type"])
+    _ent_scale = _ent_scales[_ent_row["nexus"] - 1]
+    _ent_expected = {
+        "max_hp": int(float(_ent_fields["max_hp"]) * _ent_scale),
+        "damage": int(float(_ent_fields["damage"]) * _ent_scale),
+        "speed": float(_ent_fields["speed_px_per_tick"]) * (1 + (_ent_scale - 1) * 0.3),
+        "cd": max(10, int(float(_ent_fields["attack_cooldown_ticks"]) / (1 + (_ent_scale - 1) * 0.2))),
+        "gold": int(float(_ent_fields["gold_reward"]) * _ent_scale),
+        "regen": float(_ent_fields.get("regen_per_tick", 0)) * _ent_scale,
+        "armor": float(_ent_fields.get("armor", 0)),
+        "magic_resist": float(_ent_fields.get("magic_resist", 0)),
+    }
+    for _ent_key, _ent_value in _ent_expected.items():
+        if abs(float(_ent_value) - float(_ent_row[_ent_key])) > 1e-6:
+            _ent_drift.append("%s nexus %d %s" % (_ent_row["type"], _ent_row["nexus"],
+                                                 _ent_key))
+check(not _ent_drift,
+      f"9cg every shipped .tres must equal the executed _entity.py table: {_ent_drift[:8]}")
+_ent_checks_text = _ent_checks_path.read_text(encoding="utf-8")
+check("179 symbols are classified" in _ent_checks_text
+      and "every classification token is present in its target" in _ent_checks_text
+      and "the nexus upgrade keeps the HP ratio and adds the flat 500 margin" in _ent_checks_text
+      and "level-1 sale refunds the source's substituted 50" in _ent_checks_text
+      and "the live splash arm keeps the source 0.6 factor" in _ent_checks_text,
+      "9cg the native suite must replay the inventory, the quirks and the splash factor")
+if _ent_doc.is_file():
+    _ent_report = _ent_doc.read_text(encoding="utf-8")
+    check(all(f"`{name}.py`" in _ent_report for name in (
+              "tower", "castle", "hero", "minion", "ai_player")),
+          "9cg the report must name all five merged modules")
+    check(all(token in _ent_report for token in (
+              "entity_source_oracle.py", "entity_checks.gd", "structure_state.gd",
+              "_apply_nexus_stats", "scaled_minion_definition", "_get_bullet_sprite",
+              "_render_castle_full", "MAX_NEXUS_LEVEL", "BULLET_SPEED",
+              "transaction_refund", "resolve_damage_school")),
+          "9cg the report must cover every ported symbol and the deviations")
+    check(_ent_report.count("|") > 400, "9cg the report must stay tabular")
+
+
 # ── 9e: the cleave splash arm on the active boss uses the source call shape ──
 from boss_item_cleave_damage_source_oracle import source_fixture as cleave_damage_fixture
 _cleave_dmg = cleave_damage_fixture()
