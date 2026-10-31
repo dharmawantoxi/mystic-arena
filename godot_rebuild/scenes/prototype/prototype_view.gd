@@ -41,6 +41,7 @@ const ShopHintLayout = preload("res://scripts/ui/shop_hint_layout.gd")
 const InputHintLayout = preload("res://scripts/ui/input_hint_layout.gd")
 const EndOverlayLayout = preload("res://scripts/ui/end_overlay_layout.gd")
 const BuildPopupLayout = preload("res://scripts/ui/build_popup_layout.gd")
+const TowerPopupLayout = preload("res://scripts/ui/tower_popup_layout.gd")
 const HeroPanelLayout = preload("res://scripts/ui/hero_panel_layout.gd")
 const TowerHoverLayout = preload("res://scripts/ui/tower_hover_layout.gd")
 const SlotHoverLayout = preload("res://scripts/ui/slot_hover_layout.gd")
@@ -71,6 +72,7 @@ const OVERLAY_ORDER := [
 	"achievement",
 	"tactical_feedback",
 	"build_popup",
+	"tower_popup",
 	"hero_panel",
 	"end_overlay",
 	"input_hints",
@@ -141,6 +143,9 @@ var build_popup_state: Dictionary = {}
 var hero_panel_state: Dictionary = {}
 ## Selected blue castle popup, screen-space so the mobile dock owns upgrade input.
 var castle_panel_state: Dictionary = {}
+## Layer 9ce: `PopupRenderer.draw` for a tapped tower (`popup_type == "tower"`). The screen
+## supplies the tower snapshot; an empty state paints nothing (desktop still uses the dock bar).
+var tower_popup_state: Dictionary = {}
 ## Layer 9bv11: view-only hovered tower snapshot from `HoverIndicators.draw`.
 var tower_hover_state: Dictionary = {}
 ## Layer 9bv12: view-only hovered empty build-slot snapshot from `HoverIndicators.draw`.
@@ -380,6 +385,8 @@ func _draw_overlay_layer(layer: String, world: Prototype) -> void:
 			_draw_tactical_feedback(world)
 		"build_popup":
 			_draw_build_popup(world)
+		"tower_popup":
+			_draw_tower_popup(world)
 		"hero_panel":
 			_draw_hero_panel(world)
 		"end_overlay":
@@ -1180,6 +1187,187 @@ func build_popup_draw_ops(
 	var state := build_popup_state.duplicate()
 	state["mouse"] = mouse
 	return BuildPopupLayout.ops(state, metrics, true)
+
+
+## Layer 9ce: `PopupRenderer.draw` for a tapped tower, painted between the build popup and the
+## hero panel. The tower snapshot comes from the screen (`tower_popup_state`).
+func _draw_tower_popup(world: Prototype) -> void:
+	var mouse := Vector2i(get_local_mouse_position())
+	for op in tower_popup_draw_ops(world, Callable(), mouse):
+		match String(op.get("kind", "")):
+			"section":
+				continue
+			"radial":
+				_draw_radial_op(op)
+			"shadow":
+				_draw_shadow_op(op)
+			"pill":
+				_draw_pill_op(op)
+			"corner_ticks":
+				_draw_corner_ticks_op(op)
+			"icon":
+				_draw_icon_op(op)
+			"hp_bar":
+				_draw_hp_bar_op(op)
+			_:
+				_draw_hud_op(op)
+
+
+## `PopupRenderer.draw`'s ops for `popup_type == "tower"`: the panel frame, the shared close
+## button and the tower body (`_draw_tower_content` + its path / upgrade / MAX LEVEL branches).
+func tower_popup_draw_ops(
+	world: Prototype, measure: Callable = Callable(), mouse: Vector2i = Vector2i()
+) -> Array:
+	if tower_popup_state.is_empty() or not world.is_running():
+		return []
+	var metrics: Callable = _measure_intro_text
+	if measure.is_valid():
+		metrics = measure
+	var state := tower_popup_state.duplicate()
+	state["mouse"] = mouse
+	return TowerPopupLayout.ops(state, metrics)
+
+
+## `ui_theme.pill`: gradient face, 2 px edge, centred label, optional leading icon.
+func _draw_pill_op(op: Dictionary) -> void:
+	var box: Array = op.get("rect", [0, 0, 0, 0])
+	var palette := pill_palette(String(op.get("style", "neutral")))
+	var top: Array = palette[0]
+	var bottom: Array = palette[1]
+	if bool(op.get("hover", false)):
+		top = _pill_tint(top, 18)
+		bottom = _pill_tint(bottom, 14)
+	_draw_vgrad_op({"rect": box, "top": top, "bottom": bottom, "radius": 7})
+	_draw_round_rect_op({"rect": box, "color": palette[2], "width": 2, "radius": 7})
+	var size := int(op.get("size", 17))
+	var label := String(op.get("text", ""))
+	var metrics: Vector2i = _measure_intro_text(label, size)
+	var icon: Variant = op.get("icon", null)
+	if icon != null:
+		_draw_icon_op(
+			{
+				"name": String(icon),
+				"center": [int(box[0]) + 14, int(box[1]) + int(box[3]) / 2],
+				"color": palette[3],
+				"s": 0.6,
+			}
+		)
+	_draw_intro_op(
+		{
+			"kind": "text",
+			"text": label,
+			"size": size,
+			"style": String(op.get("font", "body_bold")),
+			"color": palette[3],
+			"pos": [
+				int(box[0]) + int(box[2]) / 2 - metrics.x / 2,
+				int(box[1]) + int(box[3]) / 2 - metrics.y / 2,
+			],
+		}
+	)
+
+
+## `ui_theme.pill`'s style table (`gold`/`success`/`danger`/`locked`/`neutral`).
+static func pill_palette(style: String) -> Array:
+	match style:
+		"gold":
+			return [[86, 66, 22], [52, 40, 14], [255, 200, 50, 255], [255, 220, 110, 255]]
+		"success":
+			return [[38, 122, 60], [22, 74, 36], [50, 200, 50, 255], [214, 255, 222, 255]]
+		"danger":
+			return [[122, 42, 42], [74, 26, 26], [220, 50, 50, 255], [255, 214, 214, 255]]
+		"locked":
+			return [[48, 50, 66], [30, 32, 44], [148, 158, 188, 255], [132, 142, 170, 255]]
+		"owned":
+			return [[34, 96, 48], [20, 56, 30], [50, 200, 50, 255], [190, 250, 200, 255]]
+		_:
+			return [[52, 58, 84], [30, 35, 56], [148, 158, 188, 255], [198, 207, 230, 255]]
+
+
+static func _pill_tint(color: Array, add: int) -> Array:
+	return [
+		mini(255, int(color[0]) + add),
+		mini(255, int(color[1]) + add),
+		mini(255, int(color[2]) + add),
+	]
+
+
+## `ui_theme.corner_ticks`: four L-shaped marks inset from the rect corners.
+func _draw_corner_ticks_op(op: Dictionary) -> void:
+	var box: Array = op.get("rect", [0, 0, 0, 0])
+	var rgba: Array = op.get("color", [255, 233, 158])
+	var ink := Color8(int(rgba[0]), int(rgba[1]), int(rgba[2]))
+	if rgba.size() > 3:
+		ink.a = float(rgba[3]) / 255.0
+	var length := float(op.get("length", 11))
+	var width := float(op.get("width", 2))
+	var inset := float(op.get("inset", 2))
+	var left := float(box[0]) + inset
+	var right := float(box[0]) + float(box[2]) - inset
+	var top := float(box[1]) + inset
+	var bottom := float(box[1]) + float(box[3]) - inset
+	for x_sign in [-1.0, 1.0]:
+		for y_sign in [-1.0, 1.0]:
+			var x := left if x_sign < 0.0 else right
+			var y := top if y_sign < 0.0 else bottom
+			draw_line(Vector2(x, y), Vector2(x - x_sign * length, y), ink, width, true)
+			draw_line(Vector2(x, y), Vector2(x, y - y_sign * length), ink, width, true)
+
+
+## `ui_theme.draw_icon` for the two icons the popups ask for (`coin`, `shield`, `plus`, `minus`).
+func _draw_icon_op(op: Dictionary) -> void:
+	var center: Array = op.get("center", [0, 0])
+	var at := Vector2(float(center[0]), float(center[1]))
+	var rgba: Array = op.get("color", [255, 205, 85])
+	var ink := Color8(int(rgba[0]), int(rgba[1]), int(rgba[2]))
+	if rgba.size() > 3:
+		ink.a = float(rgba[3]) / 255.0
+	var s := float(op.get("s", 1.0))
+	match String(op.get("name", "coin")):
+		"coin":
+			draw_circle(at, 8.0 * s, Color8(232, 182, 62))
+			draw_arc(at, 8.0 * s, 0.0, TAU, 24, Color8(120, 84, 20), maxf(1.0, 2.0 * s), true)
+			draw_arc(at, 5.0 * s, 0.0, TAU, 20, ink, maxf(1.0, 1.5 * s), true)
+		"plus":
+			draw_line(at + Vector2(-6.0 * s, 0.0), at + Vector2(6.0 * s, 0.0), ink, 2.0, true)
+			draw_line(at + Vector2(0.0, -6.0 * s), at + Vector2(0.0, 6.0 * s), ink, 2.0, true)
+		"minus":
+			draw_line(at + Vector2(-6.0 * s, 0.0), at + Vector2(6.0 * s, 0.0), ink, 2.0, true)
+		_:
+			draw_arc(at, 7.0 * s, PI, TAU, 18, ink, maxf(1.0, 2.0 * s), true)
+			draw_line(at + Vector2(-7.0 * s, 0.0), at + Vector2(7.0 * s, 0.0), ink, 2.0, true)
+
+
+## `ui_theme.hp_bar`: dark rounded track, gradient fill (lightened on the left), hairline edge.
+func _draw_hp_bar_op(op: Dictionary) -> void:
+	var box: Array = op.get("rect", [0, 0, 0, 0])
+	var height := int(box[3])
+	var radius := height / 2
+	var rgba: Array = op.get("color", [50, 200, 50])
+	_draw_round_rect_op({"rect": box, "color": [16, 18, 30, 255], "width": 0, "radius": radius})
+	var fill_w := int(int(box[2]) * float(op.get("ratio", 0.0)))
+	if fill_w > 3:
+		var light: Array = [
+			mini(255, int(rgba[0]) + 50),
+			mini(255, int(rgba[1]) + 50),
+			mini(255, int(rgba[2]) + 50),
+		]
+		_draw_vgrad_op(
+			{
+				"rect": [box[0], box[1], fill_w, height],
+				"top": light,
+				"bottom": rgba,
+				"radius": radius,
+			}
+		)
+	_draw_round_rect_op(
+		{
+			"rect": box,
+			"color": [int(rgba[0]), int(rgba[1]), int(rgba[2]), 150],
+			"width": 1,
+			"radius": radius,
+		}
+	)
 
 
 ## Layer 9bv8: `HeroPanel.draw`, after the build popup and before the result overlay.
