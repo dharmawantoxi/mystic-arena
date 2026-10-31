@@ -1,3 +1,4 @@
+class_name SpatialGrid
 extends RefCounted
 ## Layer 9ci: port of `_system.py::SpatialGrid` and the two module helpers that
 ## drive it (`update_spatial_grid`, `query_enemies_in_range`).

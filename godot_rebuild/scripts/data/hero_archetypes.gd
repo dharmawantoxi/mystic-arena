@@ -531,8 +531,8 @@ static func physical_mitigation(armor: float) -> float:
 
 ## Python's `round()` on a float: half to even, not half away from zero.
 static func round_half_even(value: float) -> float:
-	var lower := floor(value)
-	var fraction := value - lower
+	var lower: float = floor(value)
+	var fraction: float = value - lower
 	if fraction > 0.5:
 		return lower + 1.0
 	if fraction < 0.5:

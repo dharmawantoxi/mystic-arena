@@ -9875,6 +9875,69 @@ check((ROOT / "tests/gdscript_call_guard.py").is_file(),
       "9cq the call-graph scanner must ship with the project")
 
 
+# Layer 9cr: typed-GDScript closure for the Godot 4.7 upgrade.
+# 4.7 turns `INFERENCE_ON_VARIANT` and "cannot infer the type" into errors, so the project
+# stopped loading while gdparse/gdlint stayed silent. `tests/gdscript_type_guard.py` now
+# replays those rules over every script; the token checks below pin the twelve fixes.
+from gdscript_type_guard import scan as type_guard_scan
+from gdscript_type_guard import self_test as type_guard_self_test
+
+check(type_guard_self_test() == 0,
+      "9cr the typed-GDScript guard must still catch its own broken sample")
+_type_problems = type_guard_scan()
+check(len(list((ROOT / "tests").rglob("*.gd"))) > 250,
+      "9cr the typed-GDScript guard must keep covering the test tree")
+check(_type_problems == [],
+      f"9cr no script may infer a Variant type or shadow a local: {_type_problems[:6]}")
+
+_gd_tokens = {
+    "scripts/ui/ui_component_base.gd": [
+        "var metrics: Vector2 = measure.call(CLOSE_TEXT, CLOSE_TEXT_SIZE)",
+    ],
+    "scripts/combat/spatial_grid.gd": [
+        "class_name SpatialGrid",
+        "static var _shared: SpatialGrid",
+        "static func shared() -> SpatialGrid",
+    ],
+    "scripts/data/hero_archetypes.gd": [
+        "var lower: float = floor(value)",
+        "var fraction: float = value - lower",
+    ],
+    "scripts/data/hero_balance.gd": [
+        'var dc := String(key2).get_slice("|", 0)',
+    ],
+    "tests/bosses_folder_checks.gd": ["var definition: Variant = parked[key]"],
+    "tests/hero_skills_folder_checks.gd": [
+        'var path := SKILL_DIRECTORY + String(hero_id) + "_skills.gd"',
+        "var definition: Variant = HeroRoster.DEFINITIONS[boss_id]",
+    ],
+    "tests/render_checks.gd": ["for suite_name in suites:", "var clamp_rows: Array ="],
+    "tests/towers_checks.gd": ["for space_name in classes:"],
+    "tests/sprite_lighting_checks.gd": ["var measured := SpriteLighting.bbox_of(image)"],
+    "tests/system_checks.gd": ["SpatialGrid.reset_shared()"],
+    "tests/ui_components_checks.gd": [
+        'var registered: Dictionary = TowerPopup.build(view.tower_popup_state, _fake_measure)'
+        '["buttons"]',
+    ],
+    "tests/ui_theme_checks.gd": [
+        "func _dict_only(payload: Dictionary) -> Dictionary:",
+        "out = _dict_only(UiTheme.screen_title_ops({",
+    ],
+}
+for _gd_path, _gd_needles in _gd_tokens.items():
+    _gd_text = (ROOT / _gd_path).read_text(encoding="utf-8")
+    _gd_missing = [needle for needle in _gd_needles if needle not in _gd_text]
+    check(not _gd_missing,
+          f"9cr {_gd_path} must keep its typed fix: {_gd_missing}")
+check('const SpatialGrid = preload("res://scripts/combat/spatial_grid.gd")'
+      not in (ROOT / "tests/system_checks.gd").read_text(encoding="utf-8"),
+      "9cr the global SpatialGrid class must not be shadowed by a preload const")
+check("inference_on_variant" not in project and "untyped_declaration" not in project,
+      "9cr the project must not silence the warnings Godot 4.7 treats as errors")
+check((ROOT / "tests/gdscript_type_guard.py").is_file(),
+      "9cr the typed-GDScript guard must ship with the project")
+
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

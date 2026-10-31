@@ -391,12 +391,12 @@ func _pipeline_checks(data: Dictionary, check: Callable) -> void:
 		for raw in shape["cells"]:
 			var cell: Array = raw
 			image.set_pixel(int(cell[0]), int(cell[1]), fill)
-		var box := SpriteLighting.bbox_of(image)
+		var measured := SpriteLighting.bbox_of(image)
 		var want: Array = bbox[name]
 		check.call(
 			(
-				box.position == Vector2i(int(want[0]), int(want[1]))
-				and box.size == Vector2i(int(want[2]), int(want[3]))
+				measured.position == Vector2i(int(want[0]), int(want[1]))
+				and measured.size == Vector2i(int(want[2]), int(want[3]))
 			),
 			"%s solid bbox matches the source _bbox_of" % name
 		)

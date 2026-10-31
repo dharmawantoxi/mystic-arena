@@ -178,7 +178,7 @@ func _check_starter_visuals(check: Callable, source: Dictionary) -> void:
 				int(visual.get("r", 0)),
 			]
 		)
-		var path := SKILL_DIRECTORY + hero_id + "_skills.gd"
+		var path := SKILL_DIRECTORY + String(hero_id) + "_skills.gd"
 		if hero_id == "kaizen":
 			if int(KAIZEN.q_visual_ticks) != int(visual.get("q", -1)):
 				mismatched.append("kaizen q_visual_ticks")
@@ -365,7 +365,7 @@ func _check_registry(check: Callable, source: Dictionary) -> void:
 	var bosses: Dictionary = {}
 	var overlapped: Array = []
 	for boss_id in HeroRoster.DEFINITIONS:
-		var definition := HeroRoster.DEFINITIONS[boss_id]
+		var definition: Variant = HeroRoster.DEFINITIONS[boss_id]
 		if not bool(definition.is_boss_hero):
 			continue
 		bosses[boss_id] = true

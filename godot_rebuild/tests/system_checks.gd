@@ -23,7 +23,6 @@ extends RefCounted
 ##
 ## Sync: python3 godot_rebuild/tests/system_source_oracle.py --write
 
-const SpatialGrid = preload("res://scripts/combat/spatial_grid.gd")
 const FrustumCull = preload("res://scripts/ui/frustum_cull.gd")
 const AudioFacade = preload("res://scripts/audio/audio_manager.gd")
 const SaveSlots = preload("res://scripts/match/save_slot_store.gd")
