@@ -9655,6 +9655,120 @@ if _tc_report.is_file():
           "9co the tactical command report must stay tabular")
 
 
+# Layer 9cp: ui_theme.py closed out (68 symbols + 31 recorded op cases).
+from ui_theme_source_oracle import folder_fixture as theme_folder_fixture
+from ui_theme_source_oracle import verify_folder as theme_folder_verify
+_ut = theme_folder_fixture()
+check(_ut["file"] == {"file": "ui_theme.py", "lines": 1011, "classes": 0,
+                      "functions": 31, "assigns": 36, "imports": 1},
+      f"9cp ui_theme.py must stay 1011 lines of 31 functions: {_ut['file']}")
+check(_ut["symbols"]["count"] == 68
+      and _ut["kinds"] == {"baked": 4, "data": 32, "folded": 7, "ported": 25},
+      f"9cp all 68 design-system symbols need a kind: {_ut['kinds']}")
+check(_ut["baked"] == ["_radial", "_shadow", "_vgrad", "draw_icon"],
+      f"9cp only the four pixel primitives may stay baked: {_ut['baked']}")
+check(len(_ut["ported"]) == 25 and len(_ut["folded"]) == 7,
+      f"9cp 25 ported helpers and 7 folded symbols: {_ut['ported']}")
+_ut_broken = []
+_ut_untargeted = []
+for _ut_name, _ut_row in _ut["classification"].items():
+    if not _ut_row["target"] or not _ut_row["token"]:
+        if _ut_row["kind"] not in ("dead", "deviation"):
+            _ut_untargeted.append(_ut_name)
+        continue
+    _ut_target = ROOT / _ut_row["target"]
+    if not _ut_target.is_file() or _ut_row["token"] not in _ut_target.read_text(encoding="utf-8"):
+        _ut_broken.append(_ut_name)
+check(not _ut_broken, f"9cp every ui_theme token must live in its target: {_ut_broken[:8]}")
+check(not _ut_untargeted,
+      f"9cp only dead/deviation symbols may skip a target: {_ut_untargeted}")
+try:
+    _ut_live = theme_folder_verify()
+except AssertionError as _ut_error:
+    _ut_live = 0
+    check(False, f"9cp the ui_theme oracle must stay live: {_ut_error}")
+else:
+    check(_ut_live == 92, f"9cp the oracle must report 92 inventory facts: {_ut_live}")
+check(_ut["policy"] == {
+    "back_button": [200, 42], "chip_height": 30, "chip_icon_pad": 22, "chip_pad": 26,
+    "chip_value_pad": 10, "grad_text_cache_limit": 400, "option_box_pad": 26,
+    "option_min_box": 110, "ornament_span": 220, "palette_colors": 32,
+    "panel_radius": 12, "pill_radius": 7, "scroll_min_thumb": 18, "slider_knob": 11,
+    "slider_knob_core": 8, "slider_track": 8, "tab_min_width": 150, "tab_pad": 36,
+    "tab_radius": 8, "tick_inset": 2, "tick_length": 11, "tick_width": 2,
+    "title_glow": [620, 150, 46], "toggle_knob": 18,
+}, f"9cp the design-system policy constants must match the source: {_ut['policy']}")
+_ut_fixture = json.loads((ROOT / "tests/fixtures/ui_theme_source.json")
+                         .read_text(encoding="utf-8"))
+_ut_cases = _ut_fixture["cases"]
+check(len(_ut_cases) == 31 and len(_ut_fixture["strings"]) == 10
+      and len(_ut_fixture["palette"]) == 32,
+      f"9cp the fixture must keep 31 cases, 10 strings and 32 colours: "
+      f"{len(_ut_cases)}/{len(_ut_fixture['strings'])}/{len(_ut_fixture['palette'])}")
+_ut_ops = [op for case in _ut_cases for op in case["ops"]]
+check(len(_ut_ops) == 212
+      and sorted({op["kind"] for op in _ut_ops}) == [
+          "circle", "gradtext", "icon", "line", "polygon", "radial", "rect", "shadow",
+          "text", "vgrad"],
+      f"9cp the recorded op vocabulary must stay complete: {len(_ut_ops)}")
+_ut_labels = sorted(case["label"] for case in _ut_cases)
+check(_ut_labels[0] == "back_button_hover" and _ut_labels[-1] == "toggle_on_hover"
+      and "screen_title_full" in _ut_labels and "outline_text_custom" in _ut_labels,
+      f"9cp the case list must stay the recorded one: {_ut_labels[:4]}")
+check(_ut_fixture["palette"]["GOLD"] == [255, 205, 85]
+      and _ut_fixture["palette"]["PANEL_TOP"] == [30, 37, 66]
+      and _ut_fixture["glyph_factor"] == 0.55,
+      "9cp the fixture must record the source palette and glyph factor")
+_ut_module = (ROOT / "scripts/ui/ui_theme.gd").read_text(encoding="utf-8")
+check(all(token in _ut_module for token in (
+          "static func letter(", "static func fit_ellipsis(", "static func tab_width(",
+          "static func dim(", "static func math_hyp(", "static func corner_ticks_ops(",
+          "static func panel_ops(", "static func panel_solid_ops(",
+          "static func button_ops(", "static func pill_ops(", "static func toggle_ops(",
+          "static func tab_ops(", "static func slider_ops(", "static func chip_ops(",
+          "static func section_header_ops(", "static func option_cycler_ops(",
+          "static func screen_title_ops(", "static func back_button_ops(",
+          "static func scroll_indicator_ops(", "static func hp_bar_ops(",
+          "static func progress_bar_ops(", "static func draw_text_ops(",
+          "static func outline_text_ops(", "static func clear_caches(")),
+      "9cp ui_theme.gd must own every ported helper")
+check(_ut_module.count("static func ") >= 30
+      and "const GRAD_TEXT_CACHE_LIMIT := 400" in _ut_module
+      and "const PILL_KINDS := {" in _ut_module
+      and '"kind": "gradtext"' in _ut_module
+      and "UiSkin.clear_cache()" in _ut_module,
+      "9cp the module must keep the cache limit, the pill table and the baked op hand-off")
+check(_ut_module.count('"kind": "radial"') == 1
+      and _ut_module.count('"kind": "shadow"') == 1
+      and _ut_module.count('"kind": "vgrad"') == 1
+      and _ut_module.count('"kind": "icon"') == 1,
+      "9cp the baked primitives must stay single funnel helpers")
+_ut_skin = (ROOT / "scripts/ui/ui_skin.gd").read_text(encoding="utf-8")
+check("static func clear_cache() -> void:" in _ut_skin
+      and "_slider_glow = null" in _ut_skin,
+      "9cp UiSkin must expose the cache reset clear_caches() drives")
+_ut_native = (ROOT / "tests/ui_theme_checks.gd").read_text(encoding="utf-8")
+check("every recorded op sequence matches" in _ut_native
+      and "31 ui_theme cases stay recorded" in _ut_native
+      and "68 module symbols are classified" in _ut_native
+      and "all 32 palette constants reach ui_theme.gd unchanged" in _ut_native
+      and "every classified token lives in its target" in _ut_native
+      and "ui_theme.py stays 1011 lines of 31 functions and 36 assigns" in _ut_native,
+      "9cp the native suite must replay the ops, palette and inventory")
+_ut_runner = (ROOT / "tests/run_all.gd").read_text(encoding="utf-8")
+check('const UiThemeChecks = preload("res://tests/ui_theme_checks.gd")' in _ut_runner
+      and "UiThemeChecks.new().run(_check)" in _ut_runner,
+      "9cp run_all.gd must register the ui_theme checks")
+check("python godot_rebuild/tests/ui_theme_source_oracle.py" in workflow,
+      "9cp CI must run the ui_theme oracle")
+_ut_report = ROOT.parent / "docs/UI_THEME_FOLDER_MIGRATION.md"
+check(_ut_report.is_file(), "9cp the ui_theme migration report must exist")
+if _ut_report.is_file():
+    _ut_text = _ut_report.read_text(encoding="utf-8")
+    check(_ut_text.count("|") > 40 and "| D1 |" in _ut_text and "68" in _ut_text,
+          "9cp the ui_theme report must stay tabular and complete")
+
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

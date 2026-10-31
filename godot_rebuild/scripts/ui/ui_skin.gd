@@ -22,6 +22,18 @@ static var _icons: Texture2D = null
 static var _slider_glow: Texture2D = null
 
 
+## `ui_theme.clear_caches()`: forget the parsed manifest and every loaded sheet.
+static func clear_cache() -> void:
+	_manifest = {}
+	_panels = null
+	_pills = null
+	_buttons = null
+	_tabs = null
+	_toggles = null
+	_icons = null
+	_slider_glow = null
+
+
 static func manifest() -> Dictionary:
 	if _manifest.is_empty():
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(MANIFEST))

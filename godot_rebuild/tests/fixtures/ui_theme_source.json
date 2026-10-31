@@ -1,0 +1,4507 @@
+{
+ "cases": [
+  {
+   "buttons": {},
+   "cheap_alpha": true,
+   "label": "panel_rich",
+   "ops": [
+    {
+     "alpha": 110,
+     "kind": "shadow",
+     "mult": 255,
+     "radius": 12,
+     "rect": [
+      36,
+      26,
+      268,
+      148
+     ],
+     "spread": 4
+    },
+    {
+     "bottom": [
+      17,
+      21,
+      40
+     ],
+     "kind": "vgrad",
+     "mult": 255,
+     "radius": 12,
+     "rect": [
+      40,
+      30,
+      260,
+      140
+     ],
+     "top": [
+      30,
+      37,
+      66
+     ]
+    },
+    {
+     "color": [
+      176,
+      144,
+      82,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 12,
+     "rect": [
+      40,
+      30,
+      260,
+      140
+     ],
+     "width": 1
+    },
+    {
+     "a": [
+      42,
+      32
+     ],
+     "b": [
+      53,
+      32
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      42,
+      32
+     ],
+     "b": [
+      42,
+      43
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      298,
+      32
+     ],
+     "b": [
+      287,
+      32
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      298,
+      32
+     ],
+     "b": [
+      298,
+      43
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      42,
+      168
+     ],
+     "b": [
+      53,
+      168
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      42,
+      168
+     ],
+     "b": [
+      42,
+      157
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      298,
+      168
+     ],
+     "b": [
+      287,
+      168
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      298,
+      168
+     ],
+     "b": [
+      298,
+      157
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    }
+   ],
+   "result": null
+  },
+  {
+   "buttons": {},
+   "cheap_alpha": false,
+   "label": "panel_cheap",
+   "ops": [
+    {
+     "color": [
+      6,
+      7,
+      14,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 12,
+     "rect": [
+      43,
+      34,
+      260,
+      140
+     ],
+     "width": 0
+    },
+    {
+     "color": [
+      21,
+      26,
+      48,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 12,
+     "rect": [
+      40,
+      30,
+      260,
+      140
+     ],
+     "width": 0
+    },
+    {
+     "color": [
+      176,
+      144,
+      82,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 12,
+     "rect": [
+      40,
+      30,
+      260,
+      140
+     ],
+     "width": 1
+    },
+    {
+     "a": [
+      42,
+      32
+     ],
+     "b": [
+      53,
+      32
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      42,
+      32
+     ],
+     "b": [
+      42,
+      43
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      298,
+      32
+     ],
+     "b": [
+      287,
+      32
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      298,
+      32
+     ],
+     "b": [
+      298,
+      43
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      42,
+      168
+     ],
+     "b": [
+      53,
+      168
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      42,
+      168
+     ],
+     "b": [
+      42,
+      157
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      298,
+      168
+     ],
+     "b": [
+      287,
+      168
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      298,
+      168
+     ],
+     "b": [
+      298,
+      157
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    }
+   ],
+   "result": null
+  },
+  {
+   "buttons": {},
+   "cheap_alpha": true,
+   "label": "panel_solid",
+   "ops": [
+    {
+     "color": [
+      21,
+      26,
+      48,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 12,
+     "rect": [
+      60,
+      40,
+      200,
+      90
+     ],
+     "width": 0
+    },
+    {
+     "color": [
+      176,
+      144,
+      82,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 12,
+     "rect": [
+      60,
+      40,
+      200,
+      90
+     ],
+     "width": 1
+    },
+    {
+     "a": [
+      62,
+      42
+     ],
+     "b": [
+      73,
+      42
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      62,
+      42
+     ],
+     "b": [
+      62,
+      53
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      258,
+      42
+     ],
+     "b": [
+      247,
+      42
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      258,
+      42
+     ],
+     "b": [
+      258,
+      53
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      62,
+      128
+     ],
+     "b": [
+      73,
+      128
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      62,
+      128
+     ],
+     "b": [
+      62,
+      117
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      258,
+      128
+     ],
+     "b": [
+      247,
+      128
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      258,
+      128
+     ],
+     "b": [
+      258,
+      117
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    }
+   ],
+   "result": null
+  },
+  {
+   "buttons": {
+    "play": [
+     20,
+     20,
+     160,
+     44
+    ]
+   },
+   "cheap_alpha": true,
+   "label": "pill_gold_hover",
+   "ops": [
+    {
+     "bottom": [
+      66,
+      54,
+      28
+     ],
+     "kind": "vgrad",
+     "mult": 255,
+     "radius": 7,
+     "rect": [
+      20,
+      20,
+      160,
+      44
+     ],
+     "top": [
+      104,
+      84,
+      40
+     ]
+    },
+    {
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 7,
+     "rect": [
+      20,
+      20,
+      160,
+      44
+     ],
+     "width": 2
+    },
+    {
+     "alpha": 64,
+     "color": [
+      255,
+      205,
+      85
+     ],
+     "kind": "radial",
+     "mult": 255,
+     "rect": [
+      5,
+      8,
+      190,
+      68
+     ]
+    },
+    {
+     "center": [
+      42,
+      42
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "icon",
+     "mult": 255,
+     "name": "play",
+     "scale": 0.8
+    },
+    {
+     "color": [
+      5,
+      6,
+      12,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      64,
+      31
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "P L A Y"
+    },
+    {
+     "color": [
+      255,
+      220,
+      110,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      62,
+      29
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "P L A Y"
+    }
+   ],
+   "result": [
+    20,
+    20,
+    160,
+    44
+   ]
+  },
+  {
+   "buttons": {},
+   "cheap_alpha": true,
+   "label": "pill_locked_disabled",
+   "ops": [
+    {
+     "bottom": [
+      30,
+      32,
+      44
+     ],
+     "kind": "vgrad",
+     "mult": 255,
+     "radius": 7,
+     "rect": [
+      20,
+      90,
+      160,
+      44
+     ],
+     "top": [
+      48,
+      50,
+      66
+     ]
+    },
+    {
+     "color": [
+      148,
+      158,
+      188,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 7,
+     "rect": [
+      20,
+      90,
+      160,
+      44
+     ],
+     "width": 1
+    },
+    {
+     "color": [
+      5,
+      6,
+      12,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      25,
+      101
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "L O C K E D"
+    },
+    {
+     "color": [
+      96,
+      106,
+      136,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      23,
+      99
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "L O C K E D"
+    }
+   ],
+   "result": [
+    20,
+    90,
+    160,
+    44
+   ]
+  },
+  {
+   "buttons": {
+    "continue": [
+     451,
+     269,
+     378,
+     62
+    ]
+   },
+   "cheap_alpha": true,
+   "label": "button_hover_icon",
+   "ops": [
+    {
+     "alpha": 72,
+     "color": [
+      140,
+      225,
+      255
+     ],
+     "kind": "radial",
+     "mult": 255,
+     "rect": [
+      429,
+      251,
+      422,
+      98
+     ]
+    },
+    {
+     "alpha": 110,
+     "kind": "shadow",
+     "mult": 255,
+     "radius": 12,
+     "rect": [
+      449,
+      267,
+      386,
+      70
+     ],
+     "spread": 4
+    },
+    {
+     "bottom": [
+      24,
+      29,
+      52
+     ],
+     "kind": "vgrad",
+     "mult": 255,
+     "radius": 12,
+     "rect": [
+      451,
+      269,
+      378,
+      62
+     ],
+     "top": [
+      44,
+      52,
+      86
+     ]
+    },
+    {
+     "a": [
+      463,
+      270
+     ],
+     "b": [
+      817,
+      270
+     ],
+     "color": [
+      255,
+      255,
+      255,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 1
+    },
+    {
+     "color": [
+      140,
+      225,
+      255,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 2,
+     "rect": [
+      457,
+      279,
+      4,
+      42
+     ],
+     "width": 0
+    },
+    {
+     "color": [
+      140,
+      225,
+      255,
+      70
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 3,
+     "rect": [
+      455,
+      277,
+      8,
+      46
+     ],
+     "width": 0
+    },
+    {
+     "color": [
+      140,
+      225,
+      255,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 12,
+     "rect": [
+      451,
+      269,
+      378,
+      62
+     ],
+     "width": 2
+    },
+    {
+     "a": [
+      453,
+      271
+     ],
+     "b": [
+      464,
+      271
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      453,
+      271
+     ],
+     "b": [
+      453,
+      282
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      827,
+      271
+     ],
+     "b": [
+      816,
+      271
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      827,
+      271
+     ],
+     "b": [
+      827,
+      282
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      453,
+      329
+     ],
+     "b": [
+      464,
+      329
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      453,
+      329
+     ],
+     "b": [
+      453,
+      318
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      827,
+      329
+     ],
+     "b": [
+      816,
+      329
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      827,
+      329
+     ],
+     "b": [
+      827,
+      318
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "center": [
+      485,
+      300
+     ],
+     "color": [
+      12,
+      14,
+      26,
+      255
+     ],
+     "kind": "circle",
+     "mult": 255,
+     "radius": 17,
+     "width": 0
+    },
+    {
+     "center": [
+      485,
+      300
+     ],
+     "color": [
+      140,
+      225,
+      255,
+      255
+     ],
+     "kind": "circle",
+     "mult": 255,
+     "radius": 17,
+     "width": 2
+    },
+    {
+     "center": [
+      485,
+      300
+     ],
+     "color": [
+      140,
+      225,
+      255,
+      255
+     ],
+     "kind": "icon",
+     "mult": 255,
+     "name": "continue",
+     "scale": 0.9
+    },
+    {
+     "color": [
+      5,
+      6,
+      12,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      551,
+      289
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "C O N T I N U E"
+    },
+    {
+     "color": [
+      240,
+      244,
+      255,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      549,
+      287
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "C O N T I N U E"
+    }
+   ],
+   "result": [
+    451,
+    269,
+    378,
+    62
+   ]
+  },
+  {
+   "buttons": {
+    "credits": [
+     490,
+     395,
+     300,
+     50
+    ]
+   },
+   "cheap_alpha": false,
+   "label": "button_plain",
+   "ops": [
+    {
+     "color": [
+      34,
+      41,
+      70,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 12,
+     "rect": [
+      490,
+      395,
+      300,
+      50
+     ],
+     "width": 0
+    },
+    {
+     "a": [
+      502,
+      396
+     ],
+     "b": [
+      778,
+      396
+     ],
+     "color": [
+      255,
+      255,
+      255,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 1
+    },
+    {
+     "color": [
+      200,
+      130,
+      210,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 2,
+     "rect": [
+      496,
+      405,
+      4,
+      30
+     ],
+     "width": 0
+    },
+    {
+     "color": [
+      176,
+      144,
+      82,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 12,
+     "rect": [
+      490,
+      395,
+      300,
+      50
+     ],
+     "width": 1
+    },
+    {
+     "a": [
+      492,
+      397
+     ],
+     "b": [
+      503,
+      397
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      492,
+      397
+     ],
+     "b": [
+      492,
+      408
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      788,
+      397
+     ],
+     "b": [
+      777,
+      397
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      788,
+      397
+     ],
+     "b": [
+      788,
+      408
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      492,
+      443
+     ],
+     "b": [
+      503,
+      443
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      492,
+      443
+     ],
+     "b": [
+      492,
+      432
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      788,
+      443
+     ],
+     "b": [
+      777,
+      443
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      788,
+      443
+     ],
+     "b": [
+      788,
+      432
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "color": [
+      5,
+      6,
+      12,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      551,
+      409
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "C R E D I T S"
+    },
+    {
+     "color": [
+      240,
+      244,
+      255,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      549,
+      407
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "C R E D I T S"
+    }
+   ],
+   "result": [
+    490,
+    395,
+    300,
+    50
+   ]
+  },
+  {
+   "buttons": {
+    "audio": [
+     100,
+     200,
+     60,
+     26
+    ]
+   },
+   "cheap_alpha": true,
+   "label": "toggle_on_hover",
+   "ops": [
+    {
+     "bottom": [
+      46,
+      138,
+      70
+     ],
+     "kind": "vgrad",
+     "mult": 255,
+     "radius": 13,
+     "rect": [
+      100,
+      200,
+      60,
+      26
+     ],
+     "top": [
+      92,
+      214,
+      118
+     ]
+    },
+    {
+     "color": [
+      160,
+      255,
+      180,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 13,
+     "rect": [
+      100,
+      200,
+      60,
+      26
+     ],
+     "width": 2
+    },
+    {
+     "center": [
+      137,
+      215
+     ],
+     "color": [
+      12,
+      14,
+      24,
+      255
+     ],
+     "kind": "circle",
+     "mult": 255,
+     "radius": 9,
+     "width": 0
+    },
+    {
+     "center": [
+      136,
+      213
+     ],
+     "color": [
+      245,
+      248,
+      255,
+      255
+     ],
+     "kind": "circle",
+     "mult": 255,
+     "radius": 9,
+     "width": 0
+    },
+    {
+     "center": [
+      136,
+      213
+     ],
+     "color": [
+      160,
+      255,
+      180,
+      255
+     ],
+     "kind": "circle",
+     "mult": 255,
+     "radius": 9,
+     "width": 1
+    },
+    {
+     "color": [
+      210,
+      255,
+      220,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      108,
+      200
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "ON"
+    }
+   ],
+   "result": [
+    100,
+    200,
+    60,
+    26
+   ]
+  },
+  {
+   "buttons": {
+    "audio": [
+     100,
+     240,
+     60,
+     26
+    ]
+   },
+   "cheap_alpha": true,
+   "label": "toggle_off",
+   "ops": [
+    {
+     "bottom": [
+      44,
+      48,
+      68
+     ],
+     "kind": "vgrad",
+     "mult": 255,
+     "radius": 13,
+     "rect": [
+      100,
+      240,
+      60,
+      26
+     ],
+     "top": [
+      74,
+      78,
+      100
+     ]
+    },
+    {
+     "color": [
+      120,
+      126,
+      150,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 13,
+     "rect": [
+      100,
+      240,
+      60,
+      26
+     ],
+     "width": 2
+    },
+    {
+     "center": [
+      107,
+      255
+     ],
+     "color": [
+      12,
+      14,
+      24,
+      255
+     ],
+     "kind": "circle",
+     "mult": 255,
+     "radius": 9,
+     "width": 0
+    },
+    {
+     "center": [
+      106,
+      253
+     ],
+     "color": [
+      245,
+      248,
+      255,
+      255
+     ],
+     "kind": "circle",
+     "mult": 255,
+     "radius": 9,
+     "width": 0
+    },
+    {
+     "center": [
+      106,
+      253
+     ],
+     "color": [
+      120,
+      126,
+      150,
+      255
+     ],
+     "kind": "circle",
+     "mult": 255,
+     "radius": 9,
+     "width": 1
+    },
+    {
+     "color": [
+      198,
+      207,
+      230,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      117,
+      240
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "OFF"
+    }
+   ],
+   "result": [
+    100,
+    240,
+    60,
+    26
+   ]
+  },
+  {
+   "buttons": {
+    "tab_starter": [
+     0,
+     0,
+     200,
+     40
+    ]
+   },
+   "cheap_alpha": true,
+   "label": "tab_active",
+   "ops": [
+    {
+     "bottom": [
+      26,
+      32,
+      58
+     ],
+     "kind": "vgrad",
+     "mult": 255,
+     "radius": 8,
+     "rect": [
+      0,
+      0,
+      200,
+      40
+     ],
+     "top": [
+      46,
+      56,
+      92
+     ]
+    },
+    {
+     "color": [
+      100,
+      200,
+      255,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 8,
+     "rect": [
+      0,
+      0,
+      200,
+      40
+     ],
+     "width": 2
+    },
+    {
+     "color": [
+      100,
+      200,
+      255,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 1,
+     "rect": [
+      8,
+      36,
+      184,
+      3
+     ],
+     "width": 0
+    },
+    {
+     "color": [
+      100,
+      200,
+      255,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      9,
+      7
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "S T A R T E R"
+    }
+   ],
+   "result": [
+    0,
+    0,
+    200,
+    40
+   ]
+  },
+  {
+   "buttons": {
+    "tab_mini": [
+     0,
+     60,
+     200,
+     40
+    ]
+   },
+   "cheap_alpha": true,
+   "label": "tab_hover",
+   "ops": [
+    {
+     "bottom": [
+      20,
+      24,
+      42
+     ],
+     "kind": "vgrad",
+     "mult": 255,
+     "radius": 8,
+     "rect": [
+      0,
+      60,
+      200,
+      40
+     ],
+     "top": [
+      34,
+      39,
+      62
+     ]
+    },
+    {
+     "color": [
+      120,
+      130,
+      160,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 8,
+     "rect": [
+      0,
+      60,
+      200,
+      40
+     ],
+     "width": 1
+    },
+    {
+     "color": [
+      198,
+      207,
+      230,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      51,
+      67
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "M I N I"
+    }
+   ],
+   "result": [
+    0,
+    60,
+    200,
+    40
+   ]
+  },
+  {
+   "buttons": {},
+   "cheap_alpha": true,
+   "label": "slider_half_hover",
+   "ops": [
+    {
+     "color": [
+      34,
+      38,
+      58,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 4,
+     "rect": [
+      100,
+      300,
+      240,
+      8
+     ],
+     "width": 0
+    },
+    {
+     "bottom": [
+      196,
+      138,
+      40
+     ],
+     "kind": "vgrad",
+     "mult": 255,
+     "radius": 4,
+     "rect": [
+      100,
+      300,
+      120,
+      8
+     ],
+     "top": [
+      255,
+      233,
+      158
+     ]
+    },
+    {
+     "color": [
+      120,
+      110,
+      86,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 4,
+     "rect": [
+      100,
+      300,
+      240,
+      8
+     ],
+     "width": 1
+    },
+    {
+     "alpha": 80,
+     "color": [
+      255,
+      205,
+      85
+     ],
+     "kind": "radial",
+     "mult": 255,
+     "rect": [
+      202,
+      286,
+      36,
+      36
+     ]
+    },
+    {
+     "center": [
+      220,
+      304
+     ],
+     "color": [
+      12,
+      14,
+      24,
+      255
+     ],
+     "kind": "circle",
+     "mult": 255,
+     "radius": 11,
+     "width": 0
+    },
+    {
+     "center": [
+      220,
+      304
+     ],
+     "color": [
+      245,
+      248,
+      255,
+      255
+     ],
+     "kind": "circle",
+     "mult": 255,
+     "radius": 8,
+     "width": 0
+    },
+    {
+     "center": [
+      220,
+      304
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "circle",
+     "mult": 255,
+     "radius": 8,
+     "width": 2
+    }
+   ],
+   "result": 220
+  },
+  {
+   "buttons": {},
+   "cheap_alpha": true,
+   "label": "chip_icon_value",
+   "ops": [
+    {
+     "bottom": [
+      18,
+      22,
+      40
+     ],
+     "kind": "vgrad",
+     "mult": 255,
+     "radius": 15,
+     "rect": [
+      30,
+      20,
+      212,
+      30
+     ],
+     "top": [
+      32,
+      38,
+      64
+     ]
+    },
+    {
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 15,
+     "rect": [
+      30,
+      20,
+      212,
+      30
+     ],
+     "width": 1
+    },
+    {
+     "center": [
+      44,
+      35
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "icon",
+     "mult": 255,
+     "name": "coin",
+     "scale": 0.75
+    },
+    {
+     "color": [
+      198,
+      207,
+      230,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      66,
+      27
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "G O L D"
+    },
+    {
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      174,
+      27
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "+3/s"
+    }
+   ],
+   "result": [
+    30,
+    20,
+    212,
+    30
+   ]
+  },
+  {
+   "buttons": {},
+   "cheap_alpha": true,
+   "label": "chip_right_no_value",
+   "ops": [
+    {
+     "bottom": [
+      18,
+      22,
+      40
+     ],
+     "kind": "vgrad",
+     "mult": 255,
+     "radius": 15,
+     "rect": [
+      1126,
+      40,
+      124,
+      30
+     ],
+     "top": [
+      32,
+      38,
+      64
+     ]
+    },
+    {
+     "color": [
+      110,
+      195,
+      255,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 15,
+     "rect": [
+      1126,
+      40,
+      124,
+      30
+     ],
+     "width": 1
+    },
+    {
+     "color": [
+      198,
+      207,
+      230,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      1140,
+      47
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "W A V E"
+    }
+   ],
+   "result": [
+    1126,
+    40,
+    124,
+    30
+   ]
+  },
+  {
+   "buttons": {},
+   "cheap_alpha": true,
+   "label": "section_header",
+   "ops": [
+    {
+     "center": [
+      70,
+      111
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "icon",
+     "mult": 255,
+     "name": "swords",
+     "scale": 0.9
+    },
+    {
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      88,
+      100
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "H E R O   S H O P"
+    },
+    {
+     "a": [
+      228,
+      114
+     ],
+     "b": [
+      468,
+      114
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 1
+    },
+    {
+     "a": [
+      88,
+      126
+     ],
+     "b": [
+      228,
+      126
+     ],
+     "color": [
+      140,
+      112,
+      46,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 1
+    }
+   ],
+   "result": 134
+  },
+  {
+   "buttons": {
+    "lang_next": [
+     410,
+     207,
+     24,
+     30
+    ],
+    "lang_prev": [
+     264,
+     207,
+     24,
+     30
+    ]
+   },
+   "cheap_alpha": true,
+   "label": "option_cycler",
+   "ops": [
+    {
+     "color": [
+      198,
+      207,
+      230,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      60,
+      210
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "Language"
+    },
+    {
+     "bottom": [
+      20,
+      24,
+      44
+     ],
+     "kind": "vgrad",
+     "mult": 255,
+     "radius": 6,
+     "rect": [
+      294,
+      207,
+      110,
+      30
+     ],
+     "top": [
+      40,
+      48,
+      80
+     ]
+    },
+    {
+     "color": [
+      96,
+      106,
+      138,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 6,
+     "rect": [
+      294,
+      207,
+      110,
+      30
+     ],
+     "width": 1
+    },
+    {
+     "color": [
+      255,
+      220,
+      110,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      307,
+      211
+     ],
+     "size": 22,
+     "style": "body_medium",
+     "text": "English"
+    },
+    {
+     "bottom": [
+      26,
+      30,
+      52
+     ],
+     "kind": "vgrad",
+     "mult": 255,
+     "radius": 6,
+     "rect": [
+      264,
+      207,
+      24,
+      30
+     ],
+     "top": [
+      42,
+      48,
+      74
+     ]
+    },
+    {
+     "color": [
+      96,
+      106,
+      138,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 6,
+     "rect": [
+      264,
+      207,
+      24,
+      30
+     ],
+     "width": 1
+    },
+    {
+     "center": [
+      276,
+      222
+     ],
+     "color": [
+      200,
+      210,
+      240,
+      255
+     ],
+     "kind": "icon",
+     "mult": 255,
+     "name": "chevron_l",
+     "scale": 0.6
+    },
+    {
+     "bottom": [
+      26,
+      30,
+      52
+     ],
+     "kind": "vgrad",
+     "mult": 255,
+     "radius": 6,
+     "rect": [
+      410,
+      207,
+      24,
+      30
+     ],
+     "top": [
+      42,
+      48,
+      74
+     ]
+    },
+    {
+     "color": [
+      96,
+      106,
+      138,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 6,
+     "rect": [
+      410,
+      207,
+      24,
+      30
+     ],
+     "width": 1
+    },
+    {
+     "center": [
+      422,
+      222
+     ],
+     "color": [
+      200,
+      210,
+      240,
+      255
+     ],
+     "kind": "icon",
+     "mult": 255,
+     "name": "chevron_r",
+     "scale": 0.6
+    }
+   ],
+   "result": 237
+  },
+  {
+   "buttons": {
+    "lang_next": [
+     410,
+     257,
+     24,
+     30
+    ],
+    "lang_prev": [
+     156,
+     257,
+     24,
+     30
+    ]
+   },
+   "cheap_alpha": true,
+   "label": "option_cycler_hover_long",
+   "ops": [
+    {
+     "color": [
+      198,
+      207,
+      230,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      60,
+      260
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "Language"
+    },
+    {
+     "bottom": [
+      20,
+      24,
+      44
+     ],
+     "kind": "vgrad",
+     "mult": 255,
+     "radius": 6,
+     "rect": [
+      186,
+      257,
+      218,
+      30
+     ],
+     "top": [
+      40,
+      48,
+      80
+     ]
+    },
+    {
+     "color": [
+      176,
+      144,
+      82,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 6,
+     "rect": [
+      186,
+      257,
+      218,
+      30
+     ],
+     "width": 1
+    },
+    {
+     "color": [
+      255,
+      220,
+      110,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      199,
+      261
+     ],
+     "size": 22,
+     "style": "body_medium",
+     "text": "Bahasa Indonesia"
+    },
+    {
+     "bottom": [
+      26,
+      30,
+      52
+     ],
+     "kind": "vgrad",
+     "mult": 255,
+     "radius": 6,
+     "rect": [
+      156,
+      257,
+      24,
+      30
+     ],
+     "top": [
+      64,
+      74,
+      110
+     ]
+    },
+    {
+     "color": [
+      150,
+      160,
+      196,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 6,
+     "rect": [
+      156,
+      257,
+      24,
+      30
+     ],
+     "width": 1
+    },
+    {
+     "center": [
+      168,
+      272
+     ],
+     "color": [
+      200,
+      210,
+      240,
+      255
+     ],
+     "kind": "icon",
+     "mult": 255,
+     "name": "chevron_l",
+     "scale": 0.6
+    },
+    {
+     "bottom": [
+      26,
+      30,
+      52
+     ],
+     "kind": "vgrad",
+     "mult": 255,
+     "radius": 6,
+     "rect": [
+      410,
+      257,
+      24,
+      30
+     ],
+     "top": [
+      42,
+      48,
+      74
+     ]
+    },
+    {
+     "color": [
+      96,
+      106,
+      138,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 6,
+     "rect": [
+      410,
+      257,
+      24,
+      30
+     ],
+     "width": 1
+    },
+    {
+     "center": [
+      422,
+      272
+     ],
+     "color": [
+      200,
+      210,
+      240,
+      255
+     ],
+     "kind": "icon",
+     "mult": 255,
+     "name": "chevron_r",
+     "scale": 0.6
+    }
+   ],
+   "result": 287
+  },
+  {
+   "buttons": {},
+   "cheap_alpha": true,
+   "label": "screen_title_full",
+   "ops": [
+    {
+     "alpha": 40,
+     "color": [
+      255,
+      205,
+      90
+     ],
+     "kind": "radial",
+     "mult": 255,
+     "rect": [
+      330,
+      58,
+      620,
+      150
+     ]
+    },
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      428,
+      88
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "MYSTIC ARENA"
+    },
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      432,
+      88
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "MYSTIC ARENA"
+    },
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      430,
+      86
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "MYSTIC ARENA"
+    },
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      430,
+      90
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "MYSTIC ARENA"
+    },
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      428,
+      86
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "MYSTIC ARENA"
+    },
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      432,
+      90
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "MYSTIC ARENA"
+    },
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      428,
+      90
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "MYSTIC ARENA"
+    },
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      432,
+      86
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "MYSTIC ARENA"
+    },
+    {
+     "bottom": [
+      196,
+      138,
+      40
+     ],
+     "height": 64,
+     "kind": "gradtext",
+     "mult": 255,
+     "size": 64,
+     "style": "title",
+     "text": "MYSTIC ARENA",
+     "top": [
+      255,
+      233,
+      158
+     ],
+     "width": 420
+    },
+    {
+     "a": [
+      420,
+      172
+     ],
+     "b": [
+      622,
+      172
+     ],
+     "color": [
+      176,
+      144,
+      82,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      658,
+      172
+     ],
+     "b": [
+      860,
+      172
+     ],
+     "color": [
+      176,
+      144,
+      82,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "polygon",
+     "mult": 255,
+     "points": [
+      [
+       632,
+       172
+      ],
+      [
+       640,
+       165
+      ],
+      [
+       648,
+       172
+      ],
+      [
+       640,
+       179
+      ]
+     ],
+     "width": 0
+    },
+    {
+     "center": [
+      410,
+      172
+     ],
+     "color": [
+      255,
+      233,
+      158,
+      255
+     ],
+     "kind": "circle",
+     "mult": 255,
+     "radius": 3,
+     "width": 0
+    },
+    {
+     "center": [
+      870,
+      172
+     ],
+     "color": [
+      255,
+      233,
+      158,
+      255
+     ],
+     "kind": "circle",
+     "mult": 255,
+     "radius": 3,
+     "width": 0
+    }
+   ],
+   "result": null
+  },
+  {
+   "buttons": {},
+   "cheap_alpha": false,
+   "label": "screen_title_sub_solid",
+   "ops": [
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      533,
+      108
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "DEFEAT"
+    },
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      537,
+      108
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "DEFEAT"
+    },
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      535,
+      106
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "DEFEAT"
+    },
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      535,
+      110
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "DEFEAT"
+    },
+    {
+     "bottom": [
+      196,
+      138,
+      40
+     ],
+     "height": 64,
+     "kind": "gradtext",
+     "mult": 255,
+     "size": 64,
+     "style": "title",
+     "text": "DEFEAT",
+     "top": [
+      255,
+      233,
+      158
+     ],
+     "width": 210
+    },
+    {
+     "a": [
+      420,
+      192
+     ],
+     "b": [
+      622,
+      192
+     ],
+     "color": [
+      176,
+      144,
+      82,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "a": [
+      658,
+      192
+     ],
+     "b": [
+      860,
+      192
+     ],
+     "color": [
+      176,
+      144,
+      82,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 2
+    },
+    {
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "polygon",
+     "mult": 255,
+     "points": [
+      [
+       632,
+       192
+      ],
+      [
+       640,
+       185
+      ],
+      [
+       648,
+       192
+      ],
+      [
+       640,
+       199
+      ]
+     ],
+     "width": 0
+    },
+    {
+     "center": [
+      410,
+      192
+     ],
+     "color": [
+      255,
+      233,
+      158,
+      255
+     ],
+     "kind": "circle",
+     "mult": 255,
+     "radius": 3,
+     "width": 0
+    },
+    {
+     "center": [
+      870,
+      192
+     ],
+     "color": [
+      255,
+      233,
+      158,
+      255
+     ],
+     "kind": "circle",
+     "mult": 255,
+     "radius": 3,
+     "width": 0
+    },
+    {
+     "color": [
+      16,
+      20,
+      38,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 10,
+     "rect": [
+      476,
+      204,
+      328,
+      44
+     ],
+     "width": 0
+    },
+    {
+     "color": [
+      176,
+      144,
+      82,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 10,
+     "rect": [
+      476,
+      204,
+      328,
+      44
+     ],
+     "width": 1
+    },
+    {
+     "a": [
+      479,
+      207
+     ],
+     "b": [
+      487,
+      207
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 1
+    },
+    {
+     "a": [
+      479,
+      207
+     ],
+     "b": [
+      479,
+      215
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 1
+    },
+    {
+     "a": [
+      801,
+      207
+     ],
+     "b": [
+      793,
+      207
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 1
+    },
+    {
+     "a": [
+      801,
+      207
+     ],
+     "b": [
+      801,
+      215
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 1
+    },
+    {
+     "a": [
+      479,
+      245
+     ],
+     "b": [
+      487,
+      245
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 1
+    },
+    {
+     "a": [
+      479,
+      245
+     ],
+     "b": [
+      479,
+      237
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 1
+    },
+    {
+     "a": [
+      801,
+      245
+     ],
+     "b": [
+      793,
+      245
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 1
+    },
+    {
+     "a": [
+      801,
+      245
+     ],
+     "b": [
+      801,
+      237
+     ],
+     "color": [
+      255,
+      205,
+      85,
+      255
+     ],
+     "kind": "line",
+     "mult": 255,
+     "width": 1
+    },
+    {
+     "color": [
+      255,
+      168,
+      96,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      504,
+      211
+     ],
+     "size": 30,
+     "style": "body_semibold",
+     "text": "T R Y   A G A I N"
+    }
+   ],
+   "result": null
+  },
+  {
+   "buttons": {
+    "back": [
+     540,
+     639,
+     200,
+     42
+    ]
+   },
+   "cheap_alpha": true,
+   "label": "back_button_hover",
+   "ops": [
+    {
+     "bottom": [
+      44,
+      49,
+      70
+     ],
+     "kind": "vgrad",
+     "mult": 255,
+     "radius": 7,
+     "rect": [
+      540,
+      639,
+      200,
+      42
+     ],
+     "top": [
+      70,
+      76,
+      102
+     ]
+    },
+    {
+     "color": [
+      148,
+      158,
+      188,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 7,
+     "rect": [
+      540,
+      639,
+      200,
+      42
+     ],
+     "width": 2
+    },
+    {
+     "alpha": 64,
+     "color": [
+      148,
+      158,
+      188
+     ],
+     "kind": "radial",
+     "mult": 255,
+     "rect": [
+      525,
+      627,
+      230,
+      66
+     ]
+    },
+    {
+     "center": [
+      562,
+      660
+     ],
+     "color": [
+      148,
+      158,
+      188,
+      255
+     ],
+     "kind": "icon",
+     "mult": 255,
+     "name": "back",
+     "scale": 0.8
+    },
+    {
+     "color": [
+      5,
+      6,
+      12,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      604,
+      649
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "B A C K"
+    },
+    {
+     "color": [
+      198,
+      207,
+      230,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      602,
+      647
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "B A C K"
+    }
+   ],
+   "result": [
+    540,
+    639,
+    200,
+    42
+   ]
+  },
+  {
+   "buttons": {
+    "back": [
+     540,
+     639,
+     200,
+     42
+    ]
+   },
+   "cheap_alpha": true,
+   "label": "back_button_plain",
+   "ops": [
+    {
+     "bottom": [
+      30,
+      35,
+      56
+     ],
+     "kind": "vgrad",
+     "mult": 255,
+     "radius": 7,
+     "rect": [
+      540,
+      639,
+      200,
+      42
+     ],
+     "top": [
+      52,
+      58,
+      84
+     ]
+    },
+    {
+     "color": [
+      148,
+      158,
+      188,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 7,
+     "rect": [
+      540,
+      639,
+      200,
+      42
+     ],
+     "width": 2
+    },
+    {
+     "center": [
+      562,
+      660
+     ],
+     "color": [
+      148,
+      158,
+      188,
+      255
+     ],
+     "kind": "icon",
+     "mult": 255,
+     "name": "back",
+     "scale": 0.8
+    },
+    {
+     "color": [
+      5,
+      6,
+      12,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      604,
+      649
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "B A C K"
+    },
+    {
+     "color": [
+      198,
+      207,
+      230,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      602,
+      647
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "B A C K"
+    }
+   ],
+   "result": [
+    540,
+    639,
+    200,
+    42
+   ]
+  },
+  {
+   "buttons": {},
+   "cheap_alpha": true,
+   "label": "scroll_indicator_mid",
+   "ops": [
+    {
+     "color": [
+      28,
+      32,
+      52,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 3,
+     "rect": [
+      1240,
+      100,
+      6,
+      300
+     ],
+     "width": 0
+    },
+    {
+     "bottom": [
+      196,
+      138,
+      40
+     ],
+     "kind": "vgrad",
+     "mult": 255,
+     "radius": 3,
+     "rect": [
+      1240,
+      167,
+      6,
+      166
+     ],
+     "top": [
+      255,
+      233,
+      158
+     ]
+    }
+   ],
+   "result": [
+    1240,
+    100,
+    6,
+    300
+   ]
+  },
+  {
+   "buttons": {},
+   "cheap_alpha": false,
+   "label": "scroll_indicator_none",
+   "ops": [
+    {
+     "color": [
+      28,
+      32,
+      52,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 3,
+     "rect": [
+      1240,
+      440,
+      6,
+      200
+     ],
+     "width": 0
+    }
+   ],
+   "result": [
+    1240,
+    440,
+    6,
+    200
+   ]
+  },
+  {
+   "buttons": {},
+   "cheap_alpha": true,
+   "label": "hp_bar_70",
+   "ops": [
+    {
+     "color": [
+      16,
+      18,
+      30,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 8,
+     "rect": [
+      60,
+      600,
+      220,
+      16
+     ],
+     "width": 0
+    },
+    {
+     "bottom": [
+      112,
+      226,
+      132
+     ],
+     "kind": "vgrad",
+     "mult": 255,
+     "radius": 8,
+     "rect": [
+      60,
+      600,
+      154,
+      16
+     ],
+     "top": [
+      162,
+      255,
+      182
+     ]
+    },
+    {
+     "color": [
+      86,
+      92,
+      120,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 8,
+     "rect": [
+      60,
+      600,
+      220,
+      16
+     ],
+     "width": 1
+    }
+   ],
+   "result": null
+  },
+  {
+   "buttons": {},
+   "cheap_alpha": false,
+   "label": "hp_bar_cheap_20",
+   "ops": [
+    {
+     "color": [
+      16,
+      18,
+      30,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 8,
+     "rect": [
+      60,
+      630,
+      220,
+      16
+     ],
+     "width": 0
+    },
+    {
+     "color": [
+      255,
+      108,
+      108,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 8,
+     "rect": [
+      60,
+      630,
+      44,
+      16
+     ],
+     "width": 0
+    },
+    {
+     "color": [
+      86,
+      92,
+      120,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 8,
+     "rect": [
+      60,
+      630,
+      220,
+      16
+     ],
+     "width": 1
+    }
+   ],
+   "result": null
+  },
+  {
+   "buttons": {},
+   "cheap_alpha": true,
+   "label": "progress_bar_half",
+   "ops": [
+    {
+     "color": [
+      30,
+      34,
+      54,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 4,
+     "rect": [
+      60,
+      660,
+      220,
+      8
+     ],
+     "width": 0
+    },
+    {
+     "bottom": [
+      255,
+      205,
+      85
+     ],
+     "kind": "vgrad",
+     "mult": 255,
+     "radius": 4,
+     "rect": [
+      60,
+      660,
+      99,
+      8
+     ],
+     "top": [
+      255,
+      245,
+      125
+     ]
+    },
+    {
+     "color": [
+      96,
+      96,
+      126,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 4,
+     "rect": [
+      60,
+      660,
+      220,
+      8
+     ],
+     "width": 1
+    }
+   ],
+   "result": null
+  },
+  {
+   "buttons": {},
+   "cheap_alpha": false,
+   "label": "progress_bar_zero",
+   "ops": [
+    {
+     "color": [
+      30,
+      34,
+      54,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 4,
+     "rect": [
+      60,
+      680,
+      220,
+      8
+     ],
+     "width": 0
+    },
+    {
+     "color": [
+      96,
+      96,
+      126,
+      255
+     ],
+     "kind": "rect",
+     "mult": 255,
+     "radius": 4,
+     "rect": [
+      60,
+      680,
+      220,
+      8
+     ],
+     "width": 1
+    }
+   ],
+   "result": null
+  },
+  {
+   "buttons": {},
+   "cheap_alpha": true,
+   "label": "draw_text_center",
+   "ops": [
+    {
+     "color": [
+      5,
+      6,
+      12,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      593,
+      189
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "VICTORY"
+    },
+    {
+     "color": [
+      240,
+      244,
+      255,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      591,
+      187
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "VICTORY"
+    }
+   ],
+   "result": [
+    "VICTORY",
+    26,
+    98,
+    26
+   ]
+  },
+  {
+   "buttons": {},
+   "cheap_alpha": true,
+   "label": "draw_text_topleft",
+   "ops": [
+    {
+     "color": [
+      255,
+      220,
+      110,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      40,
+      60
+     ],
+     "size": 26,
+     "style": "body_semibold",
+     "text": "GOLD +125"
+    }
+   ],
+   "result": [
+    "GOLD +125",
+    26,
+    126,
+    26
+   ]
+  },
+  {
+   "buttons": {},
+   "cheap_alpha": true,
+   "label": "outline_text_default",
+   "ops": [
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      516,
+      188
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "VICTORY"
+    },
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      520,
+      188
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "VICTORY"
+    },
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      518,
+      186
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "VICTORY"
+    },
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      518,
+      190
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "VICTORY"
+    },
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      516,
+      186
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "VICTORY"
+    },
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      520,
+      190
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "VICTORY"
+    },
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      516,
+      190
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "VICTORY"
+    },
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      520,
+      186
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "VICTORY"
+    },
+    {
+     "bottom": [
+      196,
+      138,
+      40
+     ],
+     "height": 64,
+     "kind": "gradtext",
+     "mult": 255,
+     "size": 64,
+     "style": "title",
+     "text": "VICTORY",
+     "top": [
+      255,
+      233,
+      158
+     ],
+     "width": 245
+    }
+   ],
+   "result": [
+    518,
+    188,
+    245,
+    64
+   ]
+  },
+  {
+   "buttons": {},
+   "cheap_alpha": false,
+   "label": "outline_text_custom",
+   "ops": [
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      532,
+      228
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "DEFEAT"
+    },
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      538,
+      228
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "DEFEAT"
+    },
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      535,
+      225
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "DEFEAT"
+    },
+    {
+     "color": [
+      8,
+      9,
+      18,
+      255
+     ],
+     "kind": "text",
+     "mult": 255,
+     "pos": [
+      535,
+      231
+     ],
+     "size": 64,
+     "style": "title",
+     "text": "DEFEAT"
+    },
+    {
+     "bottom": [
+      132,
+      44,
+      44
+     ],
+     "height": 64,
+     "kind": "gradtext",
+     "mult": 255,
+     "size": 64,
+     "style": "title",
+     "text": "DEFEAT",
+     "top": [
+      255,
+      108,
+      108
+     ],
+     "width": 210
+    }
+   ],
+   "result": [
+    535,
+    228,
+    210,
+    64
+   ]
+  }
+ ],
+ "glyph_factor": 0.55,
+ "palette": {
+  "BG_DEEP": [
+   9,
+   12,
+   26
+  ],
+  "CYAN": [
+   110,
+   195,
+   255
+  ],
+  "CYAN_SOFT": [
+   165,
+   220,
+   255
+  ],
+  "DONE_BG_BOTTOM": [
+   17,
+   30,
+   24
+  ],
+  "DONE_BG_TOP": [
+   26,
+   44,
+   36
+  ],
+  "DONE_EDGE": [
+   86,
+   178,
+   112
+  ],
+  "EDGE_GOLD": [
+   176,
+   144,
+   82
+  ],
+  "EDGE_GOLD_DIM": [
+   104,
+   92,
+   66
+  ],
+  "GOLD": [
+   255,
+   205,
+   85
+  ],
+  "GOLD_BRIGHT": [
+   255,
+   233,
+   158
+  ],
+  "GOLD_DEEP": [
+   158,
+   116,
+   40
+  ],
+  "GOLD_TEXT": [
+   255,
+   220,
+   110
+  ],
+  "GREEN": [
+   112,
+   226,
+   132
+  ],
+  "GREEN_DEEP": [
+   34,
+   116,
+   58
+  ],
+  "LOCKED_BG_BOTTOM": [
+   20,
+   19,
+   29
+  ],
+  "LOCKED_BG_TOP": [
+   30,
+   28,
+   40
+  ],
+  "LOCKED_EDGE": [
+   84,
+   86,
+   110
+  ],
+  "OPEN_BG_BOTTOM": [
+   18,
+   24,
+   44
+  ],
+  "OPEN_BG_TOP": [
+   28,
+   38,
+   64
+  ],
+  "OPEN_EDGE": [
+   96,
+   152,
+   214
+  ],
+  "ORANGE": [
+   255,
+   168,
+   96
+  ],
+  "PANEL_BOTTOM": [
+   17,
+   21,
+   40
+  ],
+  "PANEL_FILL": [
+   21,
+   26,
+   48
+  ],
+  "PANEL_TOP": [
+   30,
+   37,
+   66
+  ],
+  "RED": [
+   255,
+   108,
+   108
+  ],
+  "RED_DEEP": [
+   132,
+   44,
+   44
+  ],
+  "SLATE": [
+   148,
+   158,
+   188
+  ],
+  "TEXT_BODY": [
+   198,
+   207,
+   230
+  ],
+  "TEXT_DIM": [
+   132,
+   142,
+   170
+  ],
+  "TEXT_FAINT": [
+   96,
+   106,
+   136
+  ],
+  "TEXT_WHITE": [
+   240,
+   244,
+   255
+  ],
+  "VIOLET": [
+   176,
+   138,
+   255
+  ]
+ },
+ "source": "ui_theme.py (whole module) under draw_recorder.py",
+ "strings": [
+  {
+   "gap": " ",
+   "label": "letter_default",
+   "result": "P L A Y",
+   "text": "PLAY"
+  },
+  {
+   "gap": "\u00b7",
+   "label": "letter_dot",
+   "result": "H\u00b7E\u00b7R\u00b7O\u00b7E\u00b7S",
+   "text": "HEROES"
+  },
+  {
+   "gap": " ",
+   "label": "letter_empty",
+   "result": "",
+   "text": ""
+  },
+  {
+   "label": "tab_width_min",
+   "label_text": "HEROES",
+   "result": 190,
+   "size": 26
+  },
+  {
+   "label": "tab_width_long",
+   "label_text": "VERY LONG LABEL",
+   "result": 442,
+   "size": 26
+  },
+  {
+   "label": "fit_ellipsis_fits",
+   "max_w": 400,
+   "result": "SHORT",
+   "text": "SHORT"
+  },
+  {
+   "label": "fit_ellipsis_cut",
+   "max_w": 150,
+   "result": "A VERY LO\u2026",
+   "text": "A VERY LONG SETTING LABEL"
+  },
+  {
+   "label": "fit_ellipsis_tiny",
+   "max_w": 6,
+   "result": "\u2026",
+   "text": "ABCDEFG"
+  },
+  {
+   "label": "math_hyp",
+   "result": 5.0,
+   "x": 3,
+   "y": 4
+  },
+  {
+   "color": [
+    255,
+    205,
+    85
+   ],
+   "factor": 0.55,
+   "label": "dim",
+   "result": [
+    140,
+    112,
+    46
+   ]
+  }
+ ]
+}
