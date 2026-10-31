@@ -54,6 +54,9 @@ VARIANT_METHODS = {"pop_back", "pop_front", "pick_random", "back", "front", "key
 LOOP_TYPES = {"range": "int", "search_all": "RegExMatch", "split": "String",
               "rsplit": "String", "keys": "Variant", "values": "Variant"}
 
+NATIVE_FIXTURE = ROOT / "tests/fixtures/godot_native_classes.json"
+MEMBER_DECL = re.compile(r"^(?:const|var|static var|signal|enum|class_name)\s+([A-Za-z_0-9]+)")
+
 VAR_DECL = re.compile(r"^(\s*)var\s+([A-Za-z_0-9]+)\s*(?::\s*([A-Za-z0-9_\[\], ]+?))?\s*(:?=)\s*(.*)$")
 FOR_DECL = re.compile(r"^\s*for\s+([^\n]+?)\s+in\s+(.+)$")
 
@@ -224,7 +227,16 @@ def declared_kind(container):
     return None
 
 
-def scan_file(path):
+def native_classes():
+    """The native class names Godot 4.7.2 ships, from the pinned fixture."""
+    try:
+        payload = json.loads(NATIVE_FIXTURE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return set()
+    return set(payload.get("classes", []))
+
+
+def scan_file(path, native=None):
     raw = path.read_text(encoding="utf-8")
     code = strip_code(raw)
     func_returns = returns_of(code)
@@ -232,6 +244,13 @@ def scan_file(path):
     class_members = members(code)
     lines = code.splitlines()
     problems = []
+    native = native_classes() if native is None else native
+    for number, line in enumerate(lines, 1):
+        declared = MEMBER_DECL.match(line)
+        if declared and declared.group(1) in native:
+            # Godot 4.7: "The member X shadows a native class" is a parse error, so a
+            # `const Popup = preload(...)` hides every other error in the file.
+            problems.append((number, "native-class-member", declared.group(1)))
 
     for start, end in blocks(code):
         params, _ = signature(code, start)
@@ -359,9 +378,10 @@ def infer_problem(expr, types, func_returns):
 
 def scan():
     problems = []
+    native = native_classes()
     for scope in SCOPES:
         for path in sorted((ROOT / scope).rglob("*.gd")):
-            for number, reason, detail in scan_file(path):
+            for number, reason, detail in scan_file(path, native):
                 problems.append({
                     "file": "godot_rebuild/" + str(path.relative_to(ROOT)),
                     "line": number,
@@ -373,6 +393,7 @@ def scan():
 
 BROKEN = """extends RefCounted
 const TYPES := ["archer", "cannon"]
+const Popup = preload("res://scripts/ui/popup_animation.gd")
 
 func _bad(loadout: Dictionary, measure: Callable, value: float, key_var: Variant) -> void:
 	var metrics := measure.call("X", 12)
@@ -394,6 +415,7 @@ func _untyped(value: int):
 
 FIXED = """extends RefCounted
 const TYPES := ["archer", "cannon"]
+const PopupAnim = preload("res://scripts/ui/popup_animation.gd")
 
 func _good(loadout: Dictionary, measure: Callable, value: float, key_var: Variant) -> void:
 	var metrics: Vector2 = measure.call("X", 12)
@@ -424,7 +446,7 @@ def self_test():
             path.write_text(source, encoding="utf-8")
             rules = scan_file(path)
             counts[label] = rules
-        expected = 8
+        expected = 9
         if len(counts["broken"]) != expected:
             print("FAIL: broken sample should raise %d findings, got %d: %s"
                   % (expected, len(counts["broken"]), counts["broken"]))
@@ -432,7 +454,7 @@ def self_test():
         if counts["fixed"]:
             print("FAIL: fixed sample should stay silent, got %s" % counts["fixed"])
             return 1
-    print("PASS: %d rules fire on the broken sample, 0 on the fixed one" % expected)
+    print("PASS: %d findings fire on the broken sample, 0 on the fixed one" % expected)
     return 0
 
 
