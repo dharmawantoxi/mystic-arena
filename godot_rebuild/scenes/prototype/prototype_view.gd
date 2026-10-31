@@ -176,6 +176,18 @@ var _radial_textures: Dictionary = {}
 var _hero_fallback_pulse := 0.0
 
 
+## Layer 9cs: the window size belongs to the view. The source screens
+## (`LevelIntroScreen(level, screen_w, screen_h)`, the boss cinematics) lay themselves out
+## from the real window while the map keeps the fixed 1280x720 canvas, so the arena pushes
+## the live viewport into the world before painting. A 1624x720 desktop window therefore
+## gets a full-bleed intro instead of a 1280-wide one pinned to the left edge.
+func _sync_screen_size(world: Prototype) -> void:
+	var size := get_viewport_rect().size
+	if size.x < 1.0 or size.y < 1.0:
+		return
+	world.set_screen_size(Vector2i(int(size.x), int(size.y)))
+
+
 func _draw() -> void:
 	draw_count += 1
 	if session == null:
@@ -184,6 +196,7 @@ func _draw() -> void:
 	# Layer 9bv16: mirror `surface.get_size()` before super._draw() reaches the boss.
 	realm_screen_size = NyxarethRealmLayout.size_for_viewport(get_viewport_rect().size)
 	var world := session.world as Prototype
+	_sync_screen_size(world)
 	terrain_palette = TerrainPalette.for_level(world.level_config)
 	terrain_river = TerrainPalette.river_path()
 	var map_theme: String = String(world.level_config.get("map_theme", "forest"))
@@ -972,10 +985,35 @@ func _draw_level_intro(world: Prototype) -> void:
 		_draw_intro_op(op)
 
 
+## `_render.py::LevelIntroScreen` owns four font objects: `title_font(200/66/46)` for the
+## number, the level name and the boss name, `get_font(32, "body_semibold")` for LEVEL /
+## FINAL BOSS, `get_font(24, "body_medium")` for the description and `get_font(20, "body")`
+## for the reward / difficulty / prompt lines. The layout ops carry only the size, so the
+## face is recovered from it here (layer 9cs). Without this every intro string fell back to
+## Barlow-SemiBold: the level and boss names lost the source Cinzel titling face.
+static func _intro_style(font_size: int) -> String:
+	if font_size >= 46:
+		return "title"
+	if font_size >= 32:
+		return "body_semibold"
+	if font_size >= 24:
+		return "body_medium"
+	return "body"
+
+
+static func _intro_font(font_size: int) -> Font:
+	var style := _intro_style(font_size)
+	if SourceFonts.has_style(style):
+		return SourceFonts.for_style(style)
+	return BossFont
+
+
 ## Layer 9av: real font metrics for the level intro layout (the oracle uses a
-## 0.55*size fake; the layout code is shared).
+## 0.55*size fake; the layout code is shared). Measuring with the drawn face keeps every
+## centred op where pygame puts it.
 func _measure_intro_text(text: String, font_size: int) -> Vector2i:
-	var measured := BossFont.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+	var font := _intro_font(font_size)
+	var measured := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
 	return Vector2i(int(measured.x), font_size)
 
 
@@ -1066,11 +1104,11 @@ func _draw_intro_op(op: Dictionary) -> void:
 			# Layer 9bv17: `_render.py` resolves each op's `style` to its own TTF.
 			# Keep the shared SemiBold ascent/measure so every recorded `pos` stays
 			# put; only the drawn face follows the source weight.
-			var style := String(op.get("style", ""))
+			var style := String(op.get("style", _intro_style(font_size)))
 			var font: Font = BossFont
 			if SourceFonts.has_style(style):
 				font = SourceFonts.for_style(style)
-			var ascent := BossFont.get_ascent(font_size)
+			var ascent := font.get_ascent(font_size)
 			draw_string(
 				font,
 				Vector2(float(pos[0]), float(pos[1]) + ascent),

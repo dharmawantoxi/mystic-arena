@@ -114,6 +114,13 @@ const HERO_DEATH_REWARD := 150
 
 var economy := Economy.new()
 var effects := EffectManager.new()
+## Layer 9cs: `_render.py::LevelIntroScreen(level, screen_w, screen_h)` and the boss
+## cinematics lay themselves out from the *window* size, while the map keeps the fixed
+## design canvas of the map (the source does the same: its `MapRenderer.map_width =
+## SCREEN_WIDTH` never follows the window). The view pushes the
+## real viewport in, so a 1624x720 desktop window gets a full-bleed intro like the source
+## instead of a 1280-wide one pinned to the left edge.
+var screen_size := Vector2i(MapRenderer.MAP_WIDTH, MapRenderer.MAP_HEIGHT)
 ## Last source cast feedback payload (`shake`, `volume`, `sound`), layer 9by.
 var skill_feedback := {"shake": 0, "volume": 0.0, "sound": false}
 var level_intro := LevelIntroScreen.new()
@@ -267,14 +274,25 @@ func configure_level(number: int) -> bool:
 	return true
 
 
+## Layer 9cs: the window can be wider/taller than the 1280x720 map canvas, and the source
+## intro / boss cinematics lay themselves out from the real window (`screen_w`, `screen_h`
+## are read back by `level_intro_state()` on every frame, so a live resize reflows too).
+func set_screen_size(size: Vector2i) -> void:
+	var target := Vector2i(maxi(size.x, 1), maxi(size.y, 1))
+	if target == screen_size:
+		return
+	screen_size = target
+	if level_intro != null:
+		level_intro.screen_w = target.x
+		level_intro.screen_h = target.y
+
+
 func _configure_level_intro() -> void:
 	level_intro = LevelIntroScreen.new()
 	var bosses: Dictionary = boss_table.get("bosses", {}) as Dictionary
 	var true_boss_id := String(level_config.get("true_boss", "abaddon"))
 	var boss_entry: Dictionary = bosses.get(true_boss_id, {}) as Dictionary
-	level_intro.setup(
-		level_config, boss_entry, MapRenderer.MAP_WIDTH, MapRenderer.MAP_HEIGHT, difficulty
-	)
+	level_intro.setup(level_config, boss_entry, screen_size.x, screen_size.y, difficulty)
 
 
 func step_level_intro() -> bool:
@@ -352,8 +370,8 @@ func _configure_boss_intro(boss: BossState) -> void:
 					int(boss.entrance_color.b8),
 				],
 			},
-			MapRenderer.MAP_WIDTH,
-			MapRenderer.MAP_HEIGHT
+			screen_size.x,
+			screen_size.y
 		)
 	)
 
@@ -423,8 +441,8 @@ func _configure_boss_death(boss: BossState) -> void:
 				"gold_reward": boss.gold_reward,
 				"radius": boss.radius,
 			},
-			MapRenderer.MAP_WIDTH,
-			MapRenderer.MAP_HEIGHT
+			screen_size.x,
+			screen_size.y
 		)
 	)
 
