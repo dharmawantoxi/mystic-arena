@@ -1,12 +1,23 @@
 """Read-only AST oracle for Python language persistence and translation data."""
 import ast
 import json
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PROJECT = ROOT / "godot_rebuild"
 CATALOG = PROJECT / "data/localization_catalog.json"
 CONTRACT = PROJECT / "tests/fixtures/localization_source_contract.json"
+TRANSLATE_FIXTURE = PROJECT / "tests/fixtures/localization_translate_source.json"
+ORACLE_VALUES = {
+    "count": 4,
+    "hero": "Aldric",
+    "item": "Moon Shard",
+    "items": "Moon Shard, Dead Edge",
+    "page": 3,
+}
+EDGE_UNKNOWN_KEY = "missing_localization_key"
+EDGE_PERCENT_KEY = "shop_item_slots"
 
 
 def _literal(node):
@@ -118,6 +129,74 @@ def source_fixture():
     return _source_data()
 
 
+def _python_namespace():
+    """Run localization.py (no imports) so tr() output comes from the real code."""
+    source = (ROOT / "localization.py").read_text(encoding="utf-8")
+    namespace = {"__name__": "localization_oracle"}
+    exec(compile(source, "localization.py", "exec"), namespace)
+    return namespace
+
+
+def translate_fixture():
+    namespace = _python_namespace()
+    tr = namespace["tr"]
+    set_language = namespace["set_language"]
+    get_language = namespace["get_language"]
+    label = namespace["get_language_label"]
+    languages = list(namespace["LANGUAGES"])
+    keys = sorted(namespace["_TEXT"]["id"])
+    renders = {}
+    for language in languages:
+        set_language(language)
+        renders[language] = {key: tr(key, **ORACLE_VALUES) for key in keys}
+    missing_value = {}
+    percent_template = {}
+    for language in languages:
+        set_language(language)
+        missing_value[language] = tr("queued")
+        percent_template[language] = tr(EDGE_PERCENT_KEY, **ORACLE_VALUES)
+    set_language("en")
+    edges = {
+        "bool_value": tr("queued", count=True),
+        "float_value": tr("queued", count=4.0),
+        "extra_value": tr("menu_play", page=9),
+        "missing_value": missing_value,
+        "percent_template": {"key": EDGE_PERCENT_KEY, "renders": percent_template},
+        "unknown_key": tr(EDGE_UNKNOWN_KEY),
+        "set_language_returns": set_language("en"),
+        "invalid_language": {
+            "returns": set_language("fr"),
+            "after": get_language(),
+        },
+    }
+    labels = {
+        "en": label("en"),
+        "id": label("id"),
+        "unknown": label("xx"),
+        "empty": label(""),
+    }
+    return {
+        "source": "localization.py",
+        "values": dict(sorted(ORACLE_VALUES.items())),
+        "languages": languages,
+        "renders": renders,
+        "labels": labels,
+        "edges": edges,
+    }
+
+
+def verify_translate():
+    expected = json.loads(TRANSLATE_FIXTURE.read_text(encoding="utf-8"))
+    actual = translate_fixture()
+    if actual != expected:
+        raise AssertionError(
+            "Localization tr() render drift; rerun with --write after auditing localization.py"
+        )
+    if set(actual["renders"]) != set(actual["languages"]):
+        raise AssertionError("Translation render fixture no longer covers every language")
+    return len(actual["renders"]["id"]) + len(actual["renders"]["en"]) + len(actual["edges"])
+
+
 def verify():
     actual = source_fixture()
     expected_catalog = json.loads(CATALOG.read_text(encoding="utf-8"))
@@ -137,4 +216,13 @@ def verify():
 
 
 if __name__ == "__main__":
-    print(f"PASS: {verify()} read-only localization source checks")
+    arguments = sys.argv[1:]
+    if arguments == ["--write"]:
+        TRANSLATE_FIXTURE.write_text(
+            json.dumps(translate_fixture(), indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        print(f"WROTE: {TRANSLATE_FIXTURE.relative_to(ROOT)}")
+    elif arguments in ([], ["--check"]):
+        print(f"PASS: {verify() + verify_translate()} read-only localization source checks")
+    else:
+        raise SystemExit("usage: localization_source_oracle.py [--check|--write]")

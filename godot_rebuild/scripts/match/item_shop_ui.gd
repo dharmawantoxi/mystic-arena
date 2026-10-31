@@ -178,18 +178,21 @@ func page_tabs() -> Array:
 	return tabs
 
 
-func hero_chips(world: Object, forge: Object) -> Array:
-	# Source chip line 2: "dead"/"Lv.N", "Item used/max" and a queued suffix.
+func hero_chips(world: Object, forge: Object, localizer: Object = null) -> Array:
+	# Source chip line 2: "dead"/"Lv.N", "Item used/max" and a queued suffix;
+	# hero_items.py localises only the "dead" token and the queued tail via tr().
 	var chips: Array = []
 	var heroes: Array = forge._player_heroes(world)
 	for index in range(heroes.size()):
 		var hero: Object = heroes[index]
 		var used: int = hero.items.used_slots()
 		var queued: int = hero.pending_items.size()
-		var status := "dead" if not bool(hero.alive) else "Lv.%d" % int(hero.level)
+		var status := "Lv.%d" % int(hero.level)
+		if not bool(hero.alive):
+			status = _text(localizer, "dead", "dead")
 		var label := "%s  Item %d/%d" % [status, used, hero.items.max_slots()]
 		if queued > 0:
-			label += "  +%d queued" % queued
+			label += " " + _text(localizer, "queued", "+{count} queued", {"count": queued})
 		(
 			chips
 			. append(
@@ -358,15 +361,25 @@ func click_outside_panel() -> bool:
 	return true
 
 
-func notice_text() -> String:
-	# Source notification: "BUY FOR: <name>" plus a respawn suffix for a dead
-	# target. The rebuild has no hero display name, so the id stands in.
+func notice_text(suffix: String = "(delivery after respawn)") -> String:
+	# Source notification: "BUY FOR: <name>" plus tr("delivery_after_respawn")
+	# for a dead target. The rebuild has no hero display name, so the id stands in.
 	if notice.is_empty():
 		return ""
 	var text := "BUY FOR: hero %d" % int(notice.get("hero_id", -1))
 	if bool(notice.get("dead", false)):
-		text += " (delivery after respawn)"
+		text += " " + suffix
 	return text
+
+
+func _text(localizer: Object, key: String, fallback: String, values: Dictionary = {}) -> String:
+	# Source calls tr(key) here; without a Localization runtime the English-shaped
+	# fallback keeps model tests independent from the autoload.
+	if localizer != null:
+		var translated: Variant = localizer.call("translate", key, values)
+		if translated != null:
+			return String(translated)
+	return fallback.format(values)
 
 
 func _play_click() -> void:

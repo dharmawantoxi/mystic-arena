@@ -23,6 +23,11 @@ func load_settings(path: String = Store.PATH) -> String:
 	return language
 
 
+func get_language() -> String:
+	# Port of localization.get_language(): the active two-letter code.
+	return language
+
+
 func set_language(value: String) -> bool:
 	if not Store.is_valid_language(value):
 		return false
@@ -66,8 +71,18 @@ func translate(key: String, values: Dictionary = {}) -> String:
 		if not values.has(match_result.get_string(1)):
 			return result
 	for match_result in placeholders:
-		result = result.replace(match_result.get_string(0), str(values[match_result.get_string(1)]))
+		result = result.replace(
+			match_result.get_string(0), _value_text(values[match_result.get_string(1)])
+		)
 	return result
+
+
+func _value_text(value: Variant) -> String:
+	# Python str()/format() spell booleans capitalised; keep interpolated text
+	# byte-identical to localization.tr().
+	if typeof(value) == TYPE_BOOL:
+		return "True" if bool(value) else "False"
+	return str(value)
 
 
 func _load_catalog() -> void:
