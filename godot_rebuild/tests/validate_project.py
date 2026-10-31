@@ -1204,12 +1204,13 @@ check('const PrototypeLayoutChecks = preload("res://tests/prototype_layout_check
 mobile_hud_checks = (ROOT / "tests/prototype_layout_checks.gd").read_text(encoding="utf-8")
 check('func _configure_mobile_hud(mobile: bool, docked: bool) -> void:' in shield_screen
       and '_configure_mobile_hud(mobile, docked)' in shield_screen
-      and 'side_panel.configure(viewport_width if mobile else 1280)' in shield_screen
+      and 'side_panel.configure(viewport_width)' in shield_screen
       and 'OS.has_feature("android")' in shield_screen
       and '%BottomBar.hide()' in shield_screen
       and 'screen._configure_mobile_hud(true, true)' in mobile_hud_checks
       and 'screen._configure_mobile_hud(true, false)' in mobile_hud_checks
       and 'Android wide-screen layout replaces desktop bars with the source side dock' in mobile_hud_checks
+      and 'screen.side_panel.configure(1280)' in mobile_hud_checks
       and 'Android 16:9 matches pygame: source-positioned pause circle and 80 px target only' in mobile_hud_checks
       and 'const MobileTouchHudLayout' in shield_screen
       and 'MobileTouchHudLayout.pause_rect()' in shield_screen
@@ -10022,6 +10023,55 @@ check((ROOT.parent / "docs/UI_VISUAL_PARITY_AUDIT.md").is_file(),
       "9cs the in-game visual audit must be documented")
 check((ROOT.parent / "docs/screenshots/parity/level-intro-pygame-vs-godot.png").is_file(),
       "9cs the intro comparison screenshot must ship with the audit")
+
+
+# Layer 9ct: the source mounts its right dock from the *surface width*
+# (`platform_utils.create_display`: `sisa = width - LOGICAL_WIDTH`, panel while
+# `sisa >= 120`), so a 1624x720 desktop run window has to get the same dock as the
+# Android surface. Gating it on the device class left every tactical command, hero
+# skill and the castle/build popups stacked on the map on a PC run.
+_screen_text = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+_layout_text = (ROOT / "scripts/ui/side_panel_layout.gd").read_text(encoding="utf-8")
+_platform_text = (ROOT.parent / "mobile/platform_utils.py").read_text(encoding="utf-8")
+check("if sisa >= 120:" in _platform_text
+      and "const MIN_PANEL_WIDTH := 120" in _layout_text
+      and "const LOGICAL_WIDTH := 1280" in _layout_text,
+      "9ct the source panel rule changed; re-derive the dock activation")
+check("	side_panel.configure(viewport_width)\n" in _screen_text
+      and "viewport_width if mobile else 1280" not in _screen_text,
+      "9ct the dock must be mounted from the canvas width, not the device class")
+check("func _dock_active() -> bool:" in _screen_text
+      and "return side_panel != null and side_panel.is_active()" in _screen_text,
+      "9ct the screen must answer dock state through one helper")
+check("	if docked:\n" in _screen_text
+      and "		_set_desktop_chrome_visible(false)\n" in _screen_text
+      and "	if not mobile:\n\t\t_set_desktop_chrome_visible(true)\n" in _screen_text,
+      "9ct a mounted dock must suppress the desktop composition on any device")
+check("func _set_desktop_chrome_visible(show_chrome: bool) -> void:" in _screen_text
+      and "	migration_status.visible = show_chrome" in _screen_text
+      and "	top_bar.visible = show_chrome" in _screen_text,
+      "9ct the dock must own the chrome that the source never draws")
+check("	if _mobile_hud_active or _dock_active():\n\t\treturn" in _screen_text,
+      "9ct the desktop command bar toggle may not fight the dock")
+check("func _apply_dock_command_bar(tower: Structure, world: Prototype) -> void:" in _screen_text
+      and "	%HeroCommands.hide()\n" in _screen_text
+      and "	%BottomBar.visible = (\n		tower != null" in _screen_text,
+      "9ct the dock must own the hero commands and keep only the tower stand-in bar")
+check("side_panel.visible = not _cinematic_active(world)" in _screen_text
+      and "func _cinematic_active(world: Prototype) -> bool:" in _screen_text,
+      "9ct the dock must step aside for the intro / boss cinematics like the source")
+check("	if _dock_active():\n		state.merge(BuildPopupLayout.mobile_geometry(" in _screen_text,
+      "9ct the build popup must route into the dock through the shared helper")
+check("	if not world.is_running() or not _dock_active():\n		return {}" in _screen_text,
+      "9ct the castle popup must route into the dock through the shared helper")
+check((ROOT.parent / "docs/screenshots/parity/mobile-dock-pygame.png").is_file()
+      and (ROOT.parent / "docs/screenshots/parity/mobile-dock-pygame-vs-godot.png").is_file(),
+      "9ct the source dock composition and its comparison must ship with the audit")
+check("## Right dock (side panel)" in
+      (ROOT.parent / "docs/UI_VISUAL_PARITY_AUDIT.md").read_text(encoding="utf-8")
+      and "layer 9ct" in (ROOT.parent / "docs/UI_VISUAL_PARITY_AUDIT.md").read_text(
+          encoding="utf-8"),
+      "9ct the dock activation rule must be documented")
 
 
 for error in errors:

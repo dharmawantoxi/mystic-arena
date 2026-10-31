@@ -8,6 +8,12 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	await _settle(tree)
 	var screen = app.current_screen
 	screen.simulation.set_physics_process(false)
+	# Layer 9ct: `_layout_side_panel` mounts the source dock from the canvas width, so a test
+	# window wider than 1400 px would mount it and hide the desktop composition this proof
+	# measures. Pin the 1280 px desktop case; the dock cases drive `_configure_mobile_hud`
+	# directly.
+	screen.side_panel.configure(1280)
+	screen._configure_mobile_hud(false, false)
 	var arena: Node2D = screen.get_node("Arena")
 	var quality_runtime: Node = tree.root.get_node("AdaptiveQuality")
 	var previous_quality := String(quality_runtime.get("quality_level"))

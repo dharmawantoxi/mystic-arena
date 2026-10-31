@@ -338,6 +338,7 @@ func _process(_delta: float) -> void:
 		or not tower.can_activate_regen_shield()
 		or world.economy.gold[0] < Structure.REGEN_SHIELD_COST
 	)
+	_apply_dock_command_bar(tower, world)
 	%RegenShieldButton.text = (
 		"Regen Shield · ON"
 		if regen_context and tower.regen_shield_active
@@ -661,7 +662,7 @@ func _build_popup_state(world: Prototype, match_session: PrototypeSession) -> Di
 		"y": int(slot.position.y),
 		"gold": int(world.economy.gold[0]),
 	}
-	if side_panel != null and side_panel.is_active():
+	if _dock_active():
 		state.merge(BuildPopupLayout.mobile_geometry(side_panel.panel), true)
 	return state
 
@@ -669,7 +670,7 @@ func _build_popup_state(world: Prototype, match_session: PrototypeSession) -> Di
 ## Selected blue castle upgrade popup moved into the Android right dock, matching
 ## the source `PopupRenderer` rather than relying on the desktop-only BottomBar.
 func _castle_panel_state(world: Prototype, current: PrototypeSession) -> Dictionary:
-	if not world.is_running() or side_panel == null or not side_panel.is_active():
+	if not world.is_running() or not _dock_active():
 		return {}
 	var selected := world.get_unit(current.selected_id) as Structure
 	if (
@@ -1023,12 +1024,52 @@ func _layout_side_panel() -> void:
 		return
 	var mobile := _is_mobile_device()
 	var viewport_width := int(get_viewport().get_visible_rect().size.x)
-	# The source only expands the 1280 px arena and mounts its right dock in touch mode.
-	side_panel.configure(viewport_width if mobile else 1280)
+	# `platform_utils.create_display` mounts the source dock from the *surface width*:
+	# `sisa = width - LOGICAL_WIDTH`, and the panel exists while `sisa >= 120`. That is a
+	# geometry rule, not a device rule, so the 1624x720 desktop run window must get the
+	# same dock as the Android surface; otherwise tactical commands, hero skills and the
+	# castle/build popups stay stacked on the map.
+	side_panel.configure(viewport_width)
 	var docked := side_panel.is_active()
 	%TacticalToggleButton.visible = not docked
 	%TacticalPanel.visible = _tactical_panel_open and not docked
 	_configure_mobile_hud(mobile, docked)
+
+
+## `mobile/sidepanel.py::is_active` equivalent: the dock is mounted from the width.
+func _dock_active() -> bool:
+	return side_panel != null and side_panel.is_active()
+
+
+## With the dock mounted the source mobile HUD owns every in-arena control: skills and the
+## auto-cast toggle live in the dock's hero panel, tower paths in the build popup, castle
+## upgrades and shields in the castle box. The exception is the tapped-tower box
+## (`PopupRenderer` for `popup_type == "tower"`), which still has no state builder (D2), so
+## the Godot command bar survives as its stand-in and only while a blue tower is selected.
+func _apply_dock_command_bar(tower: Structure, world: Prototype) -> void:
+	if not _dock_active():
+		%HeroCommands.show()
+		return
+	%HeroCommands.hide()
+	%BottomBar.visible = (
+		tower != null
+		and tower.alive
+		and tower.team == world.BLUE
+		and tower.settings().structure_kind == "tower"
+	)
+
+
+## The intro / boss cinematics are full-surface takeovers; the source does not call
+## `sidepanel.draw` during them.
+func _cinematic_active(world: Prototype) -> bool:
+	var intro := world.level_intro_state(true)
+	if bool(intro.get("active", false)):
+		return true
+	var boss_intro := world.boss_intro_state()
+	if bool(boss_intro.get("active", false)):
+		return true
+	var boss_death := world.boss_death_state()
+	return bool(boss_death.get("celebration_active", false))
 
 
 func _is_mobile_device() -> bool:
@@ -1044,22 +1085,23 @@ func _is_mobile_device() -> bool:
 ## A wide-screen source side dock owns pause/status/heroes/tactical controls instead.
 func _configure_mobile_hud(mobile: bool, docked: bool) -> void:
 	_mobile_hud_active = mobile
-	var top_bar: Control = $HUD/TopBar
-	var names: Control = $HUD/TopBar/Row/Names
+	# The dock is the source's in-game control surface: pause, gold/wave, the hero list
+	# with its skill buttons, the tactical commands and the build/castle popups all live
+	# there, and the source paints no HUD chrome over the 1280 px arena. Whenever it is
+	# mounted the desktop composition is therefore suppressed - on a 1624x720 PC window
+	# exactly as on an Android phone.
+	if docked:
+		if mobile:
+			# Keep the touch pause target instantiated so switching back to a 16:9 window
+			# (the dock disappears) does not need a rebuild.
+			_ensure_mobile_pause_button()
+		_set_desktop_chrome_visible(false)
+		%BottomBar.hide()
+		if mobile_pause_button != null:
+			mobile_pause_button.hide()
+		return
 	if not mobile:
-		top_bar.show()
-		names.show()
-		%GoldLabel.show()
-		%TickLabel.show()
-		%GameSpeedSelector.show()
-		%PauseButton.show()
-		%BackButton.show()
-		%TacticalToggleButton.show()
-		%CommandDockToggle.show()
-		if ai_toggle != null:
-			ai_toggle.show()
-		if migration_status != null:
-			migration_status.show()
+		_set_desktop_chrome_visible(true)
 		if mobile_pause_button != null:
 			mobile_pause_button.hide()
 		return
@@ -1067,21 +1109,27 @@ func _configure_mobile_hud(mobile: bool, docked: bool) -> void:
 	_ensure_mobile_pause_button()
 	# The pygame mobile.hud doesn't show desktop QA controls: its gold stays on
 	# the map, and the pause target floats at the source-safe coordinates.
-	top_bar.hide()
-	names.hide()
-	%GoldLabel.hide()
-	%TickLabel.hide()
-	%GameSpeedSelector.hide()
-	%PauseButton.hide()
-	%BackButton.hide()
-	%TacticalToggleButton.hide()
-	%CommandDockToggle.hide()
+	_set_desktop_chrome_visible(false)
 	%BottomBar.hide()
+	mobile_pause_button.visible = true
+
+
+## TopBar (title, gold, wave, speed, pause, back, tactical and command-dock toggles),
+## the AI/QA toggle, the forge button and the migration readout are desktop-only
+## companions of the arena; the source owns none of them while the dock is mounted.
+func _set_desktop_chrome_visible(show_chrome: bool) -> void:
+	var top_bar: Control = $HUD/TopBar
+	top_bar.visible = show_chrome
+	$HUD/TopBar/Row/Names.visible = show_chrome
+	%GoldLabel.visible = show_chrome
+	%TickLabel.visible = show_chrome
+	%GameSpeedSelector.visible = show_chrome
+	%PauseButton.visible = show_chrome
+	%BackButton.visible = show_chrome
 	if ai_toggle != null:
-		ai_toggle.hide()
+		ai_toggle.visible = show_chrome
 	if migration_status != null:
-		migration_status.hide()
-	mobile_pause_button.visible = not docked
+		migration_status.visible = show_chrome
 
 
 func _ensure_mobile_pause_button() -> void:
@@ -1130,15 +1178,8 @@ func _mobile_pause_style(fill: Color) -> StyleBoxFlat:
 func _sync_mobile_pause_button(world: Prototype) -> void:
 	if mobile_pause_button == null or not is_instance_valid(mobile_pause_button):
 		return
-	var intro := world.level_intro_state(true)
-	var boss_intro := world.boss_intro_state()
-	var boss_death := world.boss_death_state()
-	var cinematic := (
-		bool(intro.get("active", false))
-		or bool(boss_intro.get("active", false))
-		or bool(boss_death.get("celebration_active", false))
-	)
-	var panel_active := side_panel != null and side_panel.is_active()
+	var cinematic := _cinematic_active(world)
+	var panel_active := _dock_active()
 	mobile_pause_button.visible = (
 		_mobile_hud_active
 		and not panel_active
@@ -1155,8 +1196,10 @@ func _set_tactical_panel_open(open: bool) -> void:
 
 
 func _set_command_dock_open(open: bool) -> void:
-	if _mobile_hud_active:
-		%BottomBar.hide()
+	# The dock already carries the tactical commands and the castle/build popups, so the
+	# desktop command bar has nothing to toggle while it is mounted (any device); the
+	# per-frame `_apply_dock_command_bar` rule owns its visibility then.
+	if _mobile_hud_active or _dock_active():
 		return
 	%BottomBar.visible = open
 	%CommandDockToggle.text = "Tutup" if open else "Kontrol"
@@ -1168,8 +1211,11 @@ func _update_side_panel(
 	build_popup_state: Dictionary,
 	castle_panel_state: Dictionary
 ) -> void:
-	if side_panel == null or not side_panel.is_active():
+	if not _dock_active():
 		return
+	# The level intro and the boss cinematics take over the whole surface in the source
+	# (`sidepanel.draw` is not called for them), so the dock steps aside while they run.
+	side_panel.visible = not _cinematic_active(world)
 	var snapshot := _side_panel_snapshot(world)
 	snapshot["hero_panel_state"] = hero_panel_state
 	snapshot["build_popup_state"] = build_popup_state
