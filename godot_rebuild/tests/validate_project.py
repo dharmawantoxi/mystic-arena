@@ -5192,7 +5192,8 @@ check("Economy.starting_gold(" in _intro
       and "Economy.passive_rate(" in _intro
       and "Economy.format_gold_rate(" in _intro,
       "9al the level intro card must use the shared full _core economy path")
-check("MapRenderer.MAP_HEIGHT, difficulty" in _battle,
+check("level_intro.setup(level_config, boss_entry, screen_size.x, screen_size.y, difficulty)"
+      in _battle or "MapRenderer.MAP_HEIGHT, difficulty" in _battle,
       "9al the match must configure the intro card with the live difficulty")
 _intro_fixture_path = ROOT / "tests/fixtures/level_intro_screen_source.json"
 check(_intro_fixture_path.is_file(), "9al level intro fixture must exist")
@@ -8997,8 +8998,11 @@ check("const SourceFonts = preload(\"res://scripts/ui/source_fonts.gd\")"
       in _prototype_view_text
       and "if SourceFonts.has_style(style):" in _prototype_view_text
       and "font = SourceFonts.for_style(style)" in _prototype_view_text
-      and "var ascent := BossFont.get_ascent(font_size)" in _prototype_view_text,
-      "9bv17 the text painter must pick the source face per style but keep the shared ascent")
+      # Layer 9cs: the ascent now follows the resolved face. The source blits every string
+      # with that face's own metrics (`font.render(...).get_rect(center=...)`), so a shared
+      # Barlow ascent would misplace the Cinzel titling lines.
+      and "var ascent := font.get_ascent(font_size)" in _prototype_view_text,
+      "9bv17 the text painter must pick the source face per style and use its ascent")
 check("const STYLE_FILES := {" in _sf_lookup
       and "static func has_style(style: String) -> bool:" in _sf_lookup
       and "static func for_style(style: String) -> Font:" in _sf_lookup
@@ -9957,6 +9961,67 @@ check("SpatialGrid" not in _native_classes["classes"],
       "9cr the repo may not declare a class_name the engine already owns")
 check('const Popup = preload(' not in (ROOT / "tests/render_checks.gd").read_text(encoding="utf-8"),
       "9cr no script may shadow the native Popup class with a preload const")
+
+
+# Layer 9cs: the in-game intro is a full-window screen in the source
+# (`_render.py::LevelIntroScreen(level, screen_w, screen_h)`), so the Godot arena must feed
+# it the live canvas size instead of the fixed 1280x720 map canvas, and it must draw every
+# text op with the face the source builds for that size.
+_view_text = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+_battle_text = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+_source_fonts_text = (ROOT / "scripts/ui/source_fonts.gd").read_text(encoding="utf-8")
+_render_text = (ROOT.parent / "_render.py").read_text(encoding="utf-8")
+_source_sizes = {
+    "title": 46,
+    "body_semibold": 32,
+    "body_medium": 24,
+    "body": 20,
+}
+check('self.font_big = title_font(46)' in _render_text
+      and 'self.font_medium = get_font(32, "body_semibold")' in _render_text
+      and 'self.font_small = get_font(24, "body_medium")' in _render_text
+      and 'self.font_tiny = get_font(20, "body")' in _render_text,
+      "9cs the source intro font set changed; re-derive the intro style map")
+_style_pairs = re.findall(
+    r"if font_size >= (\d+):\s*\n\s*return \"(\w+)\"", _view_text)
+check(dict(_style_pairs) == {str(46): "title", str(32): "body_semibold",
+                             str(24): "body_medium"},
+      f"9cs the intro size->face map must follow the source font objects: {_style_pairs}")
+check('\n\treturn "body"' in _view_text,
+      "9cs the intro size->face map must fall back to the 20 px body face")
+check(all(_source_fonts_text.count(f'"{style}"') >= 1 for style in _source_sizes),
+      "9cs every intro face must exist in SourceFonts")
+check('func _intro_font(font_size: int) -> Font:' in _view_text
+      and "return SourceFonts.for_style(style)" in _view_text,
+      "9cs the intro must resolve its face through SourceFonts")
+check('var font := _intro_font(font_size)' in _view_text
+      and 'var measured := font.get_string_size(' in _view_text,
+      "9cs the intro layout must be measured with the drawn face")
+check('String(op.get("style", _intro_style(font_size)))' in _view_text
+      and 'var ascent := font.get_ascent(font_size)' in _view_text,
+      "9cs the intro text op must paint the source face and its own ascent")
+check('var screen_size := Vector2i(MapRenderer.MAP_WIDTH, MapRenderer.MAP_HEIGHT)'
+      in _battle_text,
+      "9cs the arena must default its screen size to the 1280x720 map canvas")
+check('level_intro.setup(level_config, boss_entry, screen_size.x, screen_size.y, difficulty)'
+      in _battle_text,
+      "9cs the level intro must lay out for the live canvas, not the map canvas")
+check('func set_screen_size(size: Vector2i) -> void:' in _battle_text
+      and "level_intro.screen_w = target.x" in _battle_text
+      and "level_intro.screen_h = target.y" in _battle_text,
+      "9cs the arena must re-lay out an active intro when the canvas changes")
+# Only the `screen_size` default may still name the map canvas; the three setups must not.
+check(_battle_text.count("MapRenderer.MAP_WIDTH") == 1
+      and _battle_text.count("MapRenderer.MAP_HEIGHT") == 1,
+      "9cs the boss cinematics may not keep the fixed map canvas as their screen size")
+check('func _sync_screen_size(world: Prototype) -> void:' in _view_text
+      and "_sync_screen_size(world)" in _view_text
+      and "world.set_screen_size(Vector2i(int(size.x), int(size.y)))" in _view_text,
+      "9cs the arena view must push the live viewport into the world")
+check((ROOT.parent / "docs/UI_VISUAL_PARITY_AUDIT.md").is_file(),
+      "9cs the in-game visual audit must be documented")
+check((ROOT.parent / "docs/screenshots/parity/level-intro-pygame-vs-godot.png").is_file(),
+      "9cs the intro comparison screenshot must ship with the audit")
 
 
 for error in errors:
