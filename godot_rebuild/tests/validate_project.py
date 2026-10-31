@@ -9584,6 +9584,77 @@ if _main_report.is_file():
           "9cn the entry-point migration report must stay tabular")
 
 
+# Layer 9co: tactical_commands.py closed out (47 symbols + recorded effect calls).
+from tactical_command_source_oracle import folder_fixture as tactical_folder_fixture
+from tactical_command_source_oracle import verify_folder as tactical_folder_verify
+_tc = tactical_folder_fixture()
+check(_tc["file"] == {"file": "tactical_commands.py", "lines": 1051, "classes": 2,
+                      "functions": 0, "assigns": 9, "imports": 3},
+      f"9co tactical_commands.py must stay 1051 lines / 2 classes: {_tc['file']}")
+check(_tc["symbols"]["count"] == 47
+      and _tc["kinds"] == {"data": 12, "dead": 2, "folded": 4, "ported": 29},
+      f"9co all 47 tactical symbols need a kind: {_tc['kinds']}")
+check(_tc["dead"] == ["BLUE_BASE_X", "BLUE_BASE_Y"],
+      f"9co only unread base constants may stay dead: {_tc['dead']}")
+_tc_broken = []
+_tc_untargeted = []
+for _tc_name, _tc_row in _tc["classification"].items():
+    if not _tc_row["target"] or not _tc_row["token"]:
+        if _tc_row["kind"] not in ("dead", "deviation"):
+            _tc_untargeted.append(_tc_name)
+        continue
+    _tc_target = ROOT / _tc_row["target"]
+    if not _tc_target.is_file() or _tc_row["token"] not in _tc_target.read_text(encoding="utf-8"):
+        _tc_broken.append(_tc_name)
+check(not _tc_broken, f"9co every tactical token must live in its target: {_tc_broken[:8]}")
+check(not _tc_untargeted,
+      f"9co only dead/deviation symbols may skip a target: {_tc_untargeted}")
+try:
+    _tc_live = tactical_folder_verify()
+except AssertionError as _tc_error:
+    _tc_live = 0
+    check(False, f"9co the tactical oracle must stay live: {_tc_error}")
+else:
+    check(_tc_live == 65, f"9co the oracle must report 65 inventory facts: {_tc_live}")
+check(_tc["native_only"] == ["_attack_target", "_blue_towers", "_cursor_in_bounds",
+                             "_display_name", "_explosion", "_is_blue_tower", "_refuse",
+                             "_stable_distance_sort", "set_cursor"],
+      f"9co native adapter helpers must stay named: {_tc['native_only']}")
+check(_tc["policy"] == {"cooldown": 30, "duration": 600, "feedback_ticks": 180,
+                        "gather_push_delay": 240, "hold_release_tail": 30,
+                        "hold_tap_max": 20, "point_ticks": 150,
+                        "sound_click_volume": 0.8, "sound_skill_volume": 0.9},
+      f"9co the tactical policy constants must match the source: {_tc['policy']}")
+_tc_sim = (ROOT / "scripts/match/tactical_commands.gd").read_text(encoding="utf-8")
+check("func _explosion(world: Object, point: Vector2)" in _tc_sim
+      and 'effects.add_death_explosion(point.x, point.y, "blue", "small")' in _tc_sim
+      and _tc_sim.count("_explosion(world,") == 2
+      and _tc_sim.count("play_scaled(\"ui_click\", SOUND_CLICK_VOLUME)") == 3
+      and _tc_sim.count("play_scaled(\"hero_skill\", SOUND_SKILL_VOLUME)") == 2
+      and "func _cursor_in_bounds() -> bool:" in _tc_sim,
+      "9co the port must fire the source marker bursts, scaled sounds and cursor gate")
+_tc_fixture = json.loads((ROOT / "tests/fixtures/tactical_command_source.json")
+                         .read_text(encoding="utf-8"))
+check(all("effects" in case["state"] for case in _tc_fixture["cases"])
+      and sum(len(case["state"]["effects"]) for case in _tc_fixture["cases"]) == 11
+      and any(entry["kind"] == "death_explosion"
+              for case in _tc_fixture["cases"] for entry in case["state"]["effects"]),
+      "9co the fixture must record every feedback number and marker burst")
+_tc_native = (ROOT / "tests/tactical_command_checks.gd").read_text(encoding="utf-8")
+check("feedback number and marker bursts match source" in _tc_native
+      and "tactical_commands.py stays 1051 lines with 47 classified symbols" in _tc_native
+      and "follow-mouse gate rejects a cursor outside the 1280x720 surface" in _tc_native
+      and 'const RecordingEffects = preload("res://tests/recording_effects.gd")' in _tc_native,
+      "9co the native suite must replay effects, inventory and the cursor gate")
+check("python godot_rebuild/tests/tactical_command_source_oracle.py" in workflow,
+      "9co CI must run the tactical command oracle with the inventory section")
+_tc_report = ROOT.parent / "docs/TACTICAL_COMMANDS_FOLDER_MIGRATION.md"
+check(_tc_report.is_file(), "9co the tactical command migration report must exist")
+if _tc_report.is_file():
+    check(_tc_report.read_text(encoding="utf-8").count("|") > 60,
+          "9co the tactical command report must stay tabular")
+
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

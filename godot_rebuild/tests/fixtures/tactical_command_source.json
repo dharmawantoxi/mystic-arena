@@ -32,6 +32,7 @@
         "hold_fired": false,
         "gather_push": false,
         "feedback": "",
+        "effects": [],
         "heroes": [
           {
             "id": "blue_0",
@@ -94,6 +95,7 @@
         "hold_fired": false,
         "gather_push": false,
         "feedback": "",
+        "effects": [],
         "heroes": [
           {
             "id": "blue_0",
@@ -160,6 +162,7 @@
         "hold_fired": false,
         "gather_push": false,
         "feedback": "",
+        "effects": [],
         "heroes": [
           {
             "id": "blue_0",
@@ -222,6 +225,7 @@
         "hold_fired": false,
         "gather_push": false,
         "feedback": "",
+        "effects": [],
         "heroes": [
           {
             "id": "blue_0",
@@ -274,6 +278,7 @@
         "hold_fired": false,
         "gather_push": false,
         "feedback": "",
+        "effects": [],
         "heroes": [
           {
             "id": "blue_0",
@@ -326,6 +331,22 @@
         "hold_fired": false,
         "gather_push": false,
         "feedback": "GATHER! 2 heroes regrouping!",
+        "effects": [
+          {
+            "kind": "damage_number",
+            "x": 640.0,
+            "y": 100.0,
+            "text": "GATHER! 2 heroes regrouping!",
+            "critical": true
+          },
+          {
+            "kind": "death_explosion",
+            "x": 600.0,
+            "y": 350.0,
+            "team": "blue",
+            "size": "small"
+          }
+        ],
         "heroes": [
           {
             "id": "blue_0",
@@ -368,6 +389,22 @@
         "hold_fired": false,
         "gather_push": false,
         "feedback": "PROTECT CASTLE! 2 heroes defending base!",
+        "effects": [
+          {
+            "kind": "damage_number",
+            "x": 640.0,
+            "y": 100.0,
+            "text": "PROTECT CASTLE! 2 heroes defending base!",
+            "critical": true
+          },
+          {
+            "kind": "death_explosion",
+            "x": 100.0,
+            "y": 620.0,
+            "team": "blue",
+            "size": "small"
+          }
+        ],
         "heroes": [
           {
             "id": "blue_0",
@@ -410,6 +447,22 @@
         "hold_fired": true,
         "gather_push": false,
         "feedback": "ATTACK BOSS! All heroes attack late_boss!",
+        "effects": [
+          {
+            "kind": "damage_number",
+            "x": 640.0,
+            "y": 100.0,
+            "text": "No boss active!",
+            "critical": true
+          },
+          {
+            "kind": "damage_number",
+            "x": 640.0,
+            "y": 100.0,
+            "text": "ATTACK BOSS! All heroes attack late_boss!",
+            "critical": true
+          }
+        ],
         "heroes": [
           {
             "id": "blue_0",
@@ -452,6 +505,29 @@
         "hold_fired": true,
         "gather_push": true,
         "feedback": "GATHER ATTACK! 3 heroes push together!",
+        "effects": [
+          {
+            "kind": "damage_number",
+            "x": 640.0,
+            "y": 100.0,
+            "text": "GATHER! 3 heroes regrouping!",
+            "critical": true
+          },
+          {
+            "kind": "death_explosion",
+            "x": 640.0,
+            "y": 360.0,
+            "team": "blue",
+            "size": "small"
+          },
+          {
+            "kind": "damage_number",
+            "x": 640.0,
+            "y": 100.0,
+            "text": "GATHER ATTACK! 3 heroes push together!",
+            "critical": true
+          }
+        ],
         "heroes": [
           {
             "id": "blue_0",
@@ -495,6 +571,22 @@
         "hold_fired": false,
         "gather_push": false,
         "feedback": "PROTECT CASTLE! 3 heroes defending base!",
+        "effects": [
+          {
+            "kind": "damage_number",
+            "x": 640.0,
+            "y": 100.0,
+            "text": "PROTECT CASTLE! 3 heroes defending base!",
+            "critical": true
+          },
+          {
+            "kind": "death_explosion",
+            "x": 100.0,
+            "y": 620.0,
+            "team": "blue",
+            "size": "small"
+          }
+        ],
         "heroes": [
           {
             "id": "blue_0",

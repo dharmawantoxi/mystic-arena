@@ -7,7 +7,10 @@ const HeroState = preload("res://scripts/combat/hero_state.gd")
 const KAIZEN = preload("res://data/heroes/kaizen.tres")
 const ARCHER = preload("res://data/structures/archer_level_1.tres")
 const GOBLIN = preload("res://data/minions/goblin.tres")
+const RecordingEffects = preload("res://tests/recording_effects.gd")
 const FIXTURE := "res://tests/fixtures/tactical_command_source.json"
+const INVENTORY := "res://tests/fixtures/tactical_commands_inventory.json"
+const PROJECT_ROOT := "res://"
 
 
 func run(check: Callable) -> void:
@@ -27,6 +30,7 @@ func run(check: Callable) -> void:
 	_held_gather_push(check, fixture)
 	_auto_protect_castle(check, fixture)
 	_damage_attribution(check)
+	_folder_inventory(check)
 
 
 func _check_policy(check: Callable, expected: Dictionary) -> void:
@@ -286,6 +290,12 @@ func _assert_case(
 		"%s gather push latch matches source" % label
 	)
 	check.call(world.tactical.feedback_text == state.feedback, "%s feedback matches source" % label)
+	var effects: Variant = world.get("effects")
+	var recorded: Array = effects.calls if effects != null else []
+	check.call(
+		JSON.stringify(recorded) == JSON.stringify(state.get("effects", [])),
+		"%s feedback number and marker bursts match source: %s" % [label, str(recorded)]
+	)
 	for index in range(heroes.size()):
 		var hero: HeroState = heroes[index]
 		var expected_hero: Dictionary = state.heroes[index]
@@ -307,9 +317,76 @@ func _assert_case(
 		)
 
 
+## Layer 9co: every symbol of tactical_commands.py carries a kind and a live target.
+func _folder_inventory(check: Callable) -> void:
+	var fixture: Variant = JSON.parse_string(FileAccess.get_file_as_string(INVENTORY))
+	check.call(fixture is Dictionary, "tactical_commands.py inventory fixture parses")
+	if not fixture is Dictionary:
+		return
+	check.call(
+		(
+			fixture.file.lines == 1051
+			and fixture.file.classes == 2
+			and fixture.symbols.count == 47
+			and int(fixture.file.assigns) == 9
+			and int(fixture.file.imports) == 3
+		),
+		"tactical_commands.py stays 1051 lines with 47 classified symbols"
+	)
+	check.call(
+		(
+			fixture.kinds.size() == 4
+			and int(fixture.kinds.get("ported", -1)) == 29
+			and int(fixture.kinds.get("data", -1)) == 12
+			and int(fixture.kinds.get("folded", -1)) == 4
+			and int(fixture.kinds.get("dead", -1)) == 2
+		),
+		"every symbol kind is counted: %s" % str(fixture.kinds)
+	)
+	check.call(
+		fixture.dead == ["BLUE_BASE_X", "BLUE_BASE_Y"],
+		"only the two unread base constants stay dead"
+	)
+	var broken: Array = []
+	var row: Dictionary = fixture.classification
+	for name in row:
+		var entry: Dictionary = row[name]
+		var kind := String(entry.kind)
+		if kind == "dead":
+			continue
+		var text := FileAccess.get_file_as_string(PROJECT_ROOT + String(entry.target))
+		if text.is_empty() or text.find(String(entry.token)) < 0:
+			broken.append(name)
+	check.call(broken.is_empty(), "every classified token lives in its target: %s" % str(broken))
+	var tactical = Prototype.new().tactical
+	var policy: Dictionary = fixture.policy
+	check.call(
+		(
+			tactical.SCREEN_WIDTH == 1280
+			and tactical.SCREEN_HEIGHT == 720
+			and tactical.RED_BASE == Vector2(1180, 100)
+			and is_equal_approx(tactical.SOUND_CLICK_VOLUME, float(policy.sound_click_volume))
+			and is_equal_approx(tactical.SOUND_SKILL_VOLUME, float(policy.sound_skill_volume))
+			and tactical.POINT_TICKS == int(policy.point_ticks)
+			and tactical.FEEDBACK_TICKS == int(policy.feedback_ticks)
+		),
+		"screen, base, sound and tick constants mirror the source"
+	)
+	tactical.set_cursor(Vector2(640, 360), true)
+	var inside := tactical._cursor_in_bounds()
+	tactical.set_cursor(Vector2(1400, 300), true)
+	var outside := tactical._cursor_in_bounds()
+	check.call(
+		inside and not outside,
+		"follow-mouse gate rejects a cursor outside the 1280x720 surface"
+	)
+
+
 func _world_with_heroes(count: int) -> Prototype:
 	var world := Prototype.new()
 	world.setup_arena()
+	# Record presentation calls the same way the source oracle stubs them.
+	world.effects = RecordingEffects.new()
 	while world.player_roster().size() < count:
 		var hero: HeroState = world.spawn_hero(KAIZEN, world.BLUE, Vector2.ZERO)
 		world.player_hero_ids.append(hero.id)

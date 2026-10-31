@@ -28,6 +28,14 @@ const REFUSAL_ORANGE := Color8(255, 150, 100)
 const BLUE := 0
 const RED := 1
 const RED_BASE := Vector2(1180, 100)
+## Source `SCREEN_WIDTH` / `SCREEN_HEIGHT`: the follow-mouse gate rejects a cursor
+## outside the play surface. `BLUE_BASE_X` / `BLUE_BASE_Y` are defined in the
+## source but never read, so they stay a documented dead symbol.
+const SCREEN_WIDTH := 1280
+const SCREEN_HEIGHT := 720
+## Source `SoundManager().play(..., volume_mult=0.8)` / `0.9`.
+const SOUND_CLICK_VOLUME := 0.8
+const SOUND_SKILL_VOLUME := 0.9
 
 var active_command := ""
 var command_timer := 0
@@ -218,7 +226,7 @@ func _issue_held(world: Object, loud: bool) -> bool:
 		return pushed
 	var point := hold_point
 	var has_point := hold_has_point
-	if held_command == GATHER and hold_follow_cursor and cursor_valid:
+	if held_command == GATHER and hold_follow_cursor and _cursor_in_bounds():
 		point = cursor_point
 		has_point = true
 	var accepted := issue(
@@ -227,6 +235,18 @@ func _issue_held(world: Object, loud: bool) -> bool:
 	if not accepted:
 		cooldown = maxi(cooldown, int(COOLDOWN_TICKS / 2.0))
 	return accepted
+
+
+## Source gate: `0 <= mx < SCREEN_WIDTH and 0 <= my < SCREEN_HEIGHT` — a cursor
+## outside the play surface leaves the hold armed without a point.
+func _cursor_in_bounds() -> bool:
+	return (
+		cursor_valid
+		and cursor_point.x >= 0.0
+		and cursor_point.x < SCREEN_WIDTH
+		and cursor_point.y >= 0.0
+		and cursor_point.y < SCREEN_HEIGHT
+	)
 
 
 func _command_gather(
@@ -269,8 +289,9 @@ func _command_gather(
 		hero.follow_id = -1
 		hero.target_id = -1
 	if not silent:
-		AudioRuntime.play("ui_click")
+		AudioRuntime.play_scaled("ui_click", SOUND_CLICK_VOLUME)
 		_feedback(world, "GATHER! %d heroes regrouping!" % heroes.size(), Color("64dcff"))
+		_explosion(world, point)
 	return true
 
 
@@ -308,7 +329,7 @@ func _command_protect_tower(world: Object, target_id: int, silent: bool) -> bool
 		hero.follow_id = -1
 		hero.target_id = -1
 	if not silent:
-		AudioRuntime.play("ui_click")
+		AudioRuntime.play_scaled("ui_click", SOUND_CLICK_VOLUME)
 		_feedback(
 			world,
 			"PROTECT TOWER! %d heroes defending %s!" % [protectors.size(), _display_name(target)],
@@ -347,10 +368,11 @@ func _command_protect_castle(world: Object, silent: bool) -> bool:
 		hero.follow_id = -1
 		hero.target_id = -1
 	if not silent:
-		AudioRuntime.play("ui_click")
+		AudioRuntime.play_scaled("ui_click", SOUND_CLICK_VOLUME)
 		_feedback(
 			world, "PROTECT CASTLE! %d heroes defending base!" % heroes.size(), Color("ffdc32")
 		)
+		_explosion(world, castle.position)
 	return true
 
 
@@ -367,7 +389,7 @@ func _command_attack_boss(world: Object, silent: bool) -> bool:
 		return false
 	_attack_target(world, heroes, boss, ATTACK_BOSS)
 	if not silent:
-		AudioRuntime.play("hero_skill")
+		AudioRuntime.play_scaled("hero_skill", SOUND_SKILL_VOLUME)
 		_feedback(
 			world, "ATTACK BOSS! All heroes attack %s!" % _display_name(boss), Color("ff6464")
 		)
@@ -387,7 +409,7 @@ func _command_attack_damage_dealer(world: Object, silent: bool) -> bool:
 		return false
 	_attack_target(world, heroes, dealer, ATTACK_DAMAGE_DEALER)
 	if not silent:
-		AudioRuntime.play("hero_skill")
+		AudioRuntime.play_scaled("hero_skill", SOUND_SKILL_VOLUME)
 		_feedback(
 			world,
 			(
@@ -643,6 +665,14 @@ func _feedback(world: Object, text: String, color: Color) -> void:
 	var effects: Variant = world.get("effects") if world != null else null
 	if effects != null:
 		effects.add_damage_number(640.0, 100.0, text, true)
+
+
+## `self.game.effects.add_death_explosion(x, y, team="blue", size='small')` — the
+## marker burst GATHER and PROTECT CASTLE drop on the world layer.
+func _explosion(world: Object, point: Vector2) -> void:
+	var effects: Variant = world.get("effects") if world != null else null
+	if effects != null:
+		effects.add_death_explosion(point.x, point.y, "blue", "small")
 
 
 func _refuse(world: Object, text: String, silent: bool, color: Color = REFUSAL_RED) -> void:
