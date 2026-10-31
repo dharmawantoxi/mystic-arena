@@ -377,6 +377,76 @@ func _check_tower_popup(check: Callable, data: Dictionary) -> void:
 			"_get_tower_specials %s -> %s" % [String(case["label"]), str(row["specials"])]
 		)
 	_check_tower_data(check, data)
+	_check_tower_popup_helpers(check)
+
+
+## The ten recorded frames only reach the green bar, the short title and the `mid` lane.
+## These are the branches `_draw_tower_content` can take in play but the oracle never
+## exercised, so the helpers are pinned directly (layer 9cq).
+func _check_tower_popup_helpers(check: Callable) -> void:
+	var tower := _tower_base()
+	tower["max_hp"] = 0
+	check.call(
+		is_equal_approx(TowerPopup._ratio(tower), 0.0),
+		"_ratio must not divide by a zero max_hp"
+	)
+	tower["max_hp"] = 1100
+	tower["hp"] = -50.0
+	check.call(
+		is_equal_approx(TowerPopup._ratio(tower), 0.0),
+		"_ratio must clamp negative hp to zero"
+	)
+	tower["hp"] = 1100.0
+	check.call(
+		is_equal_approx(TowerPopup._ratio(tower), 1.0),
+		"_ratio of a full tower is 1.0"
+	)
+	var bands := [
+		[0.75, TowerPopup.HP_GOOD], [0.51, TowerPopup.HP_GOOD],
+		[0.5, TowerPopup.HP_MID], [0.26, TowerPopup.HP_MID],
+		[0.25, TowerPopup.HP_LOW], [0.0, TowerPopup.HP_LOW],
+	]
+	for band in bands:
+		check.call(
+			TowerPopup._bar_color(band[0]) == band[1],
+			"_bar_color(%.2f) must be %s" % [band[0], str(band[1])]
+		)
+	var lines := TowerPopup._stat_lines(tower)
+	check.call(
+		lines == ["DMG: 26  Range: 190", "Kills: 7  Lane: MID"],
+		"_stat_lines renders the recorded DMG/Kills pair: %s" % str(lines)
+	)
+	tower["lane"] = ""
+	lines = TowerPopup._stat_lines(tower)
+	check.call(
+		String(lines[1]) == "Kills: 7  Lane: -",
+		"_stat_lines falls back to '-' without a lane: %s" % str(lines)
+	)
+	tower["lane"] = "top"
+	check.call(
+		String(TowerPopup._stat_lines(tower)[1]) == "Kills: 7  Lane: TOP",
+		"_stat_lines upper-cases the lane"
+	)
+	var title := TowerPopup._title_text(tower, 380, _fake_measure)
+	check.call(
+		title == "Archer Tower Lv.3",
+		"_title_text keeps 'name Lv.N' when it fits: %s" % title
+	)
+	tower["name"] = "Reinforced Archer Tower"
+	title = TowerPopup._title_text(tower, 380, _fake_measure)
+	check.call(
+		title == "Lv.3 Archer",
+		"_title_text falls back to 'Lv.N Kind' before ellipsising: %s" % title
+	)
+	title = TowerPopup._title_text(tower, 164, _fake_measure)
+	check.call(
+		title.ends_with("...") and title.length() < 11,
+		"_title_text ellipsises the fallback in a narrow dock: %s" % title
+	)
+	check.call(
+		TowerPopup.letter("MAX") == "M A X",
+		"letter must space the popup labels like ui_theme.letter"
+	)
 
 
 ## The shipped tower tables are the ones `_core.py` gives the popup.
