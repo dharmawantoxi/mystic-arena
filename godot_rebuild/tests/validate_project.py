@@ -9769,6 +9769,112 @@ if _ut_report.is_file():
           "9cp the ui_theme report must stay tabular and complete")
 
 
+# Layer 9cq: the six bare helper calls that used to block scenes/prototype/prototype_view.gd.
+# `gdparse` never sees them (a call parses regardless of whether the helper exists), so the
+# file only failed once Godot compiled the scene that preloads it. Two guards now: the
+# call-graph scanner below, plus a fixture cross-check that keeps the helpers semantic.
+from gdscript_call_guard import scan as call_guard_scan
+
+_tp_path = ROOT / "scripts/ui/tower_popup_layout.gd"
+_tp = _tp_path.read_text(encoding="utf-8")
+_TP_HELPERS = ("_title_text", "_ratio", "_bar_color", "_stat_lines", "ellipsis", "letter")
+_tp_missing = [name for name in _TP_HELPERS
+               if re.search(r"^static func %s\(" % re.escape(name), _tp, re.M) is None]
+check(not _tp_missing,
+      f"9cq tower_popup_layout.gd must define every helper it calls: {_tp_missing}")
+check('const UiTheme = preload("res://scripts/ui/ui_theme.gd")' in _tp,
+      "9cq the tower popup must preload ui_theme.gd for the shared text helpers")
+check("return UiTheme.fit_ellipsis(measure, text, max_w, size, ELLIPSIS)" in _tp,
+      "9cq popup ellipsis must delegate to ui_theme.fit_ellipsis with the source marker")
+check("return UiTheme.letter(text)" in _tp,
+      "9cq popup letter must delegate to ui_theme.letter")
+check('const ELLIPSIS := "..."' in _tp,
+      "9cq the popup ellipsis marker must stay the source '...'")
+
+_tp_problems = call_guard_scan()
+check(len(list((ROOT / "scripts").rglob("*.gd"))) > 250,
+      "9cq the call-graph scanner must keep covering the whole script tree")
+check(_tp_problems == [],
+      f"9cq no script may call a helper it never defines: {_tp_problems[:6]}")
+
+_tp_const = {}
+for _tp_name in ("TITLE_SIZE", "TITLE_MAX_INSET", "STAT_SIZE", "HP_GOOD", "HP_MID", "HP_LOW"):
+    _tp_row = re.search(r"^const %s := (.+)$" % _tp_name, _tp, re.M)
+    _tp_const[_tp_name] = json.loads(_tp_row.group(1)) if _tp_row else None
+check(all(_tp_const.values()), f"9cq the popup layout constants must parse: {_tp_const}")
+
+ELLIPSIS_TEXT = "..."
+
+
+def _tp_measure(text, size):
+    """Same fake metric as tests/ui_components_checks.gd::_fake_measure (0.55 em per char)."""
+    return int(size * 0.55) * len(text)
+
+
+def _tp_ellipsis(text, size, max_w):
+    if _tp_measure(text, size) <= max_w:
+        return text
+    current = text
+    while len(current) > 1:
+        candidate = current[:-1]
+        if _tp_measure(candidate + ELLIPSIS_TEXT, size) <= max_w:
+            return candidate + ELLIPSIS_TEXT
+        current = candidate
+    return ELLIPSIS_TEXT
+
+
+_tp_fixture = json.loads((ROOT / "tests/fixtures/ui_components_source.json").read_text(encoding="utf-8"))
+_tp_base = {"name": "Archer Tower", "level": 3, "tower_type": "archer", "hp": 620.0,
+            "max_hp": 1100, "damage": 26, "range": 190, "kills": 7, "lane": "mid"}
+_tp_title_bad, _tp_stats_bad, _tp_bar_bad = [], [], []
+for _tp_frame in _tp_fixture["tower_popup"]:
+    _tp_tower = dict(_tp_base, **_tp_frame["tower"])
+    _tp_panel = _tp_frame["panel"]
+    _tp_popup_w = min(380, max(1, _tp_panel[2] - 16)) if _tp_panel else 380
+    _tp_level = int(_tp_tower["level"])
+    _tp_title = "%s Lv.%d" % (_tp_tower["name"], _tp_level)
+    if _tp_measure(_tp_title, _tp_const["TITLE_SIZE"]) > _tp_popup_w - _tp_const["TITLE_MAX_INSET"]:
+        _tp_title = "Lv.%d %s" % (_tp_level, _tp_tower["tower_type"].capitalize())
+    _tp_title = _tp_ellipsis(_tp_title, _tp_const["TITLE_SIZE"],
+                             _tp_popup_w - _tp_const["TITLE_MAX_INSET"])
+    _tp_want_title = next((op["text"] for op in _tp_frame["ops"]
+                           if op["kind"] == "text" and op["style"] == "title"), None)
+    if _tp_title != _tp_want_title:
+        _tp_title_bad.append((_tp_frame["label"], _tp_title, _tp_want_title))
+    _tp_lane = str(_tp_tower.get("lane", ""))
+    _tp_lines = [
+        "DMG: %d  Range: %d" % (int(_tp_tower["damage"]), int(_tp_tower["range"])),
+        "Kills: %d  Lane: %s" % (int(_tp_tower["kills"]), _tp_lane.upper() if _tp_lane else "-"),
+    ]
+    _tp_want_stats = [op["text"] for op in _tp_frame["ops"]
+                      if op["kind"] == "text" and op["style"] == "body_medium"
+                      and op["size"] == _tp_const["STAT_SIZE"]]
+    _tp_stats = [_tp_ellipsis(line, _tp_const["STAT_SIZE"], _tp_popup_w - 30) for line in _tp_lines]
+    if _tp_stats != _tp_want_stats[:2]:
+        _tp_stats_bad.append((_tp_frame["label"], _tp_stats, _tp_want_stats[:2]))
+    _tp_bar = next((op for op in _tp_frame["ops"] if op["kind"] == "hp_bar"), None)
+    if _tp_bar is not None:
+        _tp_max = float(_tp_tower["max_hp"])
+        _tp_ratio = max(0.0, float(_tp_tower["hp"]) / _tp_max) if _tp_max > 0 else 0.0
+        _tp_color = (_tp_const["HP_GOOD"] if _tp_ratio > 0.5
+                     else _tp_const["HP_MID"] if _tp_ratio > 0.25 else _tp_const["HP_LOW"])
+        if abs(_tp_bar["ratio"] - _tp_ratio) > 1e-9 or _tp_bar["color"] != _tp_color:
+            _tp_bar_bad.append((_tp_frame["label"], _tp_bar, _tp_ratio, _tp_color))
+check(len(_tp_fixture["tower_popup"]) == 10 and not _tp_title_bad,
+      f"9cq _title_text must reproduce all ten recorded popup titles: {_tp_title_bad}")
+check(not _tp_stats_bad,
+      f"9cq _stat_lines must reproduce the recorded DMG/Kills lines: {_tp_stats_bad}")
+check(not _tp_bar_bad,
+      f"9cq _ratio/_bar_color must reproduce the recorded hp bar: {_tp_bar_bad}")
+check(_tp_const["HP_GOOD"] == [120, 220, 120] and _tp_const["HP_MID"] == [255, 200, 80]
+      and _tp_const["HP_LOW"] == [255, 100, 100],
+      f"9cq the hp bar palette must stay the source palette: {_tp_const}")
+check("ui_components_source_oracle.py" in _tp,
+      "9cq the popup header must keep pointing at the recorded oracle")
+check((ROOT / "tests/gdscript_call_guard.py").is_file(),
+      "9cq the call-graph scanner must ship with the project")
+
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

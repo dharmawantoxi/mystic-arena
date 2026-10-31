@@ -268,7 +268,8 @@ ditulis oleh oracle (`--write`) supaya angka balance tidak disalin manual ke GDS
 | `godot_rebuild/tests/ui_components_checks.gd` | Suite native: klasifikasi, toolbox, 10 frame popup, wiring view. |
 | `godot_rebuild/scenes/prototype/prototype_view.gd` | `tower_popup_state`, `_draw_tower_popup`, `tower_popup_draw_ops`, painter `pill`/`corner_ticks`/`icon`/`hp_bar`. |
 | `godot_rebuild/tests/run_all.gd` | Mendaftarkan `UiComponentsChecks`. |
-| `godot_rebuild/tests/validate_project.py` | Blok `9ce`. |
+| `godot_rebuild/tests/validate_project.py` | Blok `9ce`, diperluas blok `9cq`. |
+| `godot_rebuild/tests/gdscript_call_guard.py` | Pemindai panggilan helper tak terdefinisi (`private`/`sibling`), dipanggil validator. |
 
 ## 9. Tes dan validasi
 
@@ -277,8 +278,77 @@ ditulis oleh oracle (`--write`) supaya angka balance tidak disalin manual ke GDS
 | Oracle Python | `python3 godot_rebuild/tests/ui_components_source_oracle.py --write` (fixture 122 simbol, 10 frame) |
 | Suite native | `UiComponentsChecks` - klasifikasi + target/token, toolbox 15 kasus, `panel_position` 5 kasus, 10 frame popup (op + tombol), specials, data tower, wiring view |
 | Validator | blok `9ce` (inventaris, klasifikasi, drift fixture/data, geometri popup, laporan) |
+| Validator (9cq) | token enam helper, delegasi `UiTheme`, pemindai graf panggilan, dan reproduksi judul/statistik/hp bar 10 frame dari konstanta berkas |
 
 Catatan metode: validator statis lulus **bukan** bukti parity. Parity untuk layer ini
 berarti: setiap op/string/rect yang pygame minta sudah direproduksi modul Godot dan
 diuji di suite native, sementara perilaku yang belum bisa diuji di sandbox (binding
 tap tower di layar) dicatat sebagai deviation D2.
+
+## 10. Layer 9cq - enam helper popup tower yang hilang (blokir compile `prototype_view.gd`)
+
+Laporan user: Godot PC menolak `scenes/prototype/prototype_view.gd` (yang mem-`preload`
+`scripts/ui/tower_popup_layout.gd` di baris 45/1247). Penyebabnya bukan sintaks: `gdparse`
+dan `gdlint` lulus karena **panggilan ke fungsi yang tidak ada tetap sah secara tata
+bahasa**; baru saat Godot mengompilasi berkas itu muncul "Function not found". Enam
+panggilan seperti itu ada di berkas, semuanya jejak sumber `_bundle.py` yang dicampur ke
+GDScript tanpa definisinya ikut diport:
+
+| Helper | Sumber `ui_components/_bundle.py` | Semantik yang diport |
+| --- | --- | --- |
+| `_title_text` | 3798-3805 (`_draw_tower_content`) | `"{name} Lv.{level}"`; jika lebar > `popup_w - 90` ganti `"Lv.{level} {tower_type.title()}"`, lalu ellipsis ke `popup_w - 90`. |
+| `_ratio` | 3816 | `max(0, hp / max_hp)`. |
+| `_bar_color` | 3817-3819 | `> 0.5` `(120,220,120)`, `> 0.25` `(255,200,80)`, selain itu `(255,100,100)`. |
+| `_stat_lines` | 3825-3831 | `"DMG: {damage}  Range: {range}"` + `"Kills: {kills}  Lane: {lane.upper() or '-'}"`, tiap baris di-ellipsis ke `popup_w - 30`. |
+| `ellipsis` | `ui_theme.py` 176-187 | `fit_ellipsis` dengan `_has_glyph = False` -> penanda `"..."` (delegasi ke `UiTheme.fit_ellipsis`). |
+| `letter` | 3921, 3941 (`MAX LEVEL`, `CHOOSE PATH`) | delegasi ke `UiTheme.letter` (satu spasi antar huruf). |
+
+Bukti oracle untuk keempat helper pertama: **10/10 frame** `tower_popup` di
+`tests/fixtures/ui_components_source.json` (judul, dua baris statistik, `hp_bar` ratio +
+warna) direproduksi ulang dari konstanta berkas Godot (`TITLE_SIZE`, `TITLE_MAX_INSET`,
+`STAT_SIZE`, `HP_GOOD/MID/LOW`) - dikunci sebagai check `9cq` di validator, jadi mengubah
+ambang tanpa memperbarui oracle langsung gagal.
+
+### Guard baru: `tests/gdscript_call_guard.py`
+
+Validator kini menjalankan pemindai graf panggilan untuk **semua** `scripts/**/*.gd`
+(±440 berkas). Dua aturan, keduanya sempit agar tidak ada laporan palsu:
+
+| Aturan | Isi |
+| --- | --- |
+| `private` | panggilan telanjang ke nama berawalan `_` (selain virtual Godot seperti `_init`/`_ready`) wajib terdefinisi di berkas itu atau di rantai `extends`-nya (preload alias ikut diikuti). |
+| `sibling` | panggilan telanjang ke `static func` yang didefinisikan berkas `.gd` lain di direktori yang sama (mis. tiga salinan `letter`) wajib terdefinisi lokal. |
+
+Uji-balik: dengan enam helper dihapus lagi, pemindai melaporkan 5 dari 6 (keempat `_helper`
+lewat aturan `private`, `letter` lewat `sibling`); `ellipsis` tidak punya kembaran di
+direktori itu sehingga dijaga oleh check token `9cq` di validator. Dengan perbaikan
+terpasang: `PASS: 0 unresolved helper calls`.
+
+### Cakupan native tambahan
+
+Sepuluh frame oracle hanya menyentuh bar hijau, judul pendek, dan lane `mid`. Suite
+`UiComponentsChecks` dapat fungsi `_check_tower_popup_helpers` yang mengunci cabang sisanya:
+`_ratio` dengan `max_hp = 0` dan `hp` negatif, enam titik ambang `_bar_color` (termasuk
+`0.5` -> amber dan `0.25` -> merah), `_stat_lines` untuk lane `""` (`-`) dan `top` (`TOP`),
+`_title_text` pada jalur normal, jalur fallback `Lv.3 Archer`, dan jalur ellipsis dock
+sempit, serta `letter("MAX") == "M A X"`.
+
+### Deviations
+
+| Kode | Deviasi | Alasan / bukti |
+| --- | --- | --- |
+| D4 | `_ratio` mengembalikan `0.0` saat `max_hp <= 0` | Sumber (baris 3816) membagi langsung dan akan `ZeroDivisionError`; di Godot pembagian nol menghasilkan `inf`. Dijaga agar popup tetap bisa menggambar daripada melempar error saat data tower rusak. Tidak ada state permainan dengan `max_hp = 0`, jadi tidak ada frame oracle yang terpengaruh. |
+
+### Catatan fixture 9cf
+
+Oracle `_core.py` (`tests/core_source_oracle.py`) memaku **baris literal** konstanta
+Godot untuk baris parity `TOP_BAR_HEIGHT` di berkas ini. Menambah `const UiTheme` di kepala
+berkas menggeser baris itu dari 26 ke 27, jadi fixture di-regenerasi:
+`python3 godot_rebuild/tests/core_source_oracle.py --write` -> hanya satu medan berubah
+(`parity[10].line`), 391 simbol dan 139 konstanta tetap. Tanpa langkah ini check
+`9cf the _core.py fixture must match live Python execution` gagal - bukti bahwa fixture
+memang mengikat isi berkas popup, bukan sekadar ada.
+
+Status parity layer ini tidak berubah: D2 (binding tap tower ke screen) tetap terbuka dan
+tidak bisa ditutup dari validator statis. Yang ditutup layer 9cq adalah **blokir compile**
+pada `prototype_view.gd`.

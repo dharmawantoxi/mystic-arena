@@ -16,6 +16,7 @@ extends RefCounted
 ## `data/towers/upgrade_paths.json` (generated from `_core.py` by the same oracle).
 
 const UiComponentBase = preload("res://scripts/ui/ui_component_base.gd")
+const UiTheme = preload("res://scripts/ui/ui_theme.gd")
 
 const DATA_PATH := "res://data/towers/upgrade_paths.json"
 const POPUP_W := 380
@@ -327,6 +328,44 @@ static func tower_specials(tower: Dictionary) -> Array:
 	return specials
 
 
+## `_draw_tower_content` title: `"{name} Lv.{level}"`, or `"Lv.{level} {Type}"` when the name
+## does not fit `popup_w - TITLE_MAX_INSET`; the fallback string is ellipsised as well.
+static func _title_text(tower: Dictionary, popup_w: int, measure: Callable) -> String:
+	var level := int(tower.get("level", 1))
+	var title := "%s Lv.%d" % [String(tower.get("name", "")), level]
+	if int(measure.call(title, TITLE_SIZE).x) > popup_w - TITLE_MAX_INSET:
+		var kind := String(tower.get("tower_type", "")).capitalize()
+		title = "Lv.%d %s" % [level, kind]
+	return ellipsis(title, TITLE_SIZE, popup_w - TITLE_MAX_INSET, measure)
+
+
+## `hp_ratio = max(0, tower.hp / tower.max_hp)`; a zero maximum never divides.
+static func _ratio(tower: Dictionary) -> float:
+	var maximum := float(tower.get("max_hp", 0))
+	if maximum <= 0.0:
+		return 0.0
+	return maxf(0.0, float(tower.get("hp", 0)) / maximum)
+
+
+## Bar colour of `_draw_tower_content`: `> 0.5` green, `> 0.25` amber, else red.
+static func _bar_color(ratio: float) -> Array:
+	if ratio > 0.5:
+		return HP_GOOD
+	if ratio > 0.25:
+		return HP_MID
+	return HP_LOW
+
+
+## The two stat lines of `_draw_tower_content`; the lane is uppercased, `-` when absent.
+static func _stat_lines(tower: Dictionary) -> Array:
+	var lane := String(tower.get("lane", ""))
+	var lane_text := lane.to_upper() if lane != "" else "-"
+	return [
+		"DMG: %d  Range: %d" % [int(tower.get("damage", 0)), int(tower.get("range", 0))],
+		"Kills: %d  Lane: %s" % [int(tower.get("kills", 0)), lane_text],
+	]
+
+
 ## `_draw_regen_shield_section`: status pill when active, buy button when unlocked,
 ## nothing otherwise (the section marker still lands in the op stream).
 static func regen_section(
@@ -597,6 +636,17 @@ static func _pill(
 		"size": size,
 		"font": PILL_FONT,
 	}
+
+
+## `ui_theme.fit_ellipsis` with the popup's three-dot fallback: the recorder's fonts carry no
+## glyph table, so the source's `…` probe resolves to `...` (the `ELLIPSIS` constant).
+static func ellipsis(text: String, size: int, max_w: int, measure: Callable) -> String:
+	return UiTheme.fit_ellipsis(measure, text, max_w, size, ELLIPSIS)
+
+
+## `ui_theme.letter`: one space between characters (MAX LEVEL, CHOOSE PATH).
+static func letter(text: String) -> String:
+	return UiTheme.letter(text)
 
 
 ## Per-channel `int(c * factor) + add`, clamped at 255 when `clamp_top` is set.
