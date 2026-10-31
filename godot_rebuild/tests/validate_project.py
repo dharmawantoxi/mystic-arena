@@ -3909,6 +3909,138 @@ if _ui_doc.is_file() and _ui_fixture_path.is_file():
           "9ce the report must cover every ported symbol and the deviations")
     check(_ui_report.count("|") > 120, "9ce the report must stay tabular")
 
+# ── 9cf: the whole `_core.py` app shell (8 merged modules, 10.281 lines) ──
+# `_core.py` is the pygame app shell merged from settings, game, menu,
+# game_input, game_ui, game_dev, game_settings and controller_manager plus a
+# `sys.modules` alias shim. The simulation, menu, input routing, dock, pad
+# adapter and settings stores already exist in the rebuild, so this layer
+# inventories and classifies all 393 symbols, ships the executed settings.py
+# block as data, and pins the 16 constants a live Godot module also declares.
+from core_source_oracle import source_fixture as core_source_fixture
+from core_source_oracle import settings_document as core_settings_document
+from core_source_oracle import parity_rows as core_parity_rows
+_core_fixture_path = ROOT / "tests/fixtures/core_source.json"
+_core_data_path = ROOT / "data/core/settings.json"
+_core_module_path = ROOT / "scripts/data/core_settings.gd"
+_core_checks_path = ROOT / "tests/core_checks.gd"
+check(_core_fixture_path.is_file(), "9cf _core.py inventory needs a source oracle fixture")
+check(_core_data_path.is_file(), "9cf the settings.py block must ship as data")
+check(_core_module_path.is_file(), "9cf the core settings accessor must exist")
+check(_core_checks_path.is_file(), "9cf the _core.py native suite must exist")
+check('const CoreChecks = preload("res://tests/core_checks.gd")' in ai_tests
+      and "CoreChecks.new().run(_check)" in ai_tests,
+      "9cf the _core.py suite must be preloaded and run")
+_core_doc = ROOT.parent / "docs/CORE_FOLDER_MIGRATION.md"
+check(_core_doc.is_file(), "9cf the _core.py migration report must ship")
+_core_module_text = _core_module_path.read_text(encoding="utf-8") \
+    if _core_module_path.is_file() else ""
+check(all(token in _core_module_text for token in (
+          "res://data/core/settings.json", "static func reload(", "static func all(",
+          "static func number(", "static func integer(", "static func flag(",
+          "static func color(", "static func list(", "static func block(",
+          "static func names(")),
+      "9cf the settings accessor must reload the JSON and type every value")
+_core_checks_text = _core_checks_path.read_text(encoding="utf-8") \
+    if _core_checks_path.is_file() else ""
+check("139 settings constants are exported" in _core_checks_text
+      and "16 settings constants are also pinned in Godot" in _core_checks_text
+      and "every classification token is present in its target" in _core_checks_text
+      and "six helpers have no call site" in _core_checks_text,
+      "9cf the native suite must replay the counts, parity and dead helpers")
+_core = core_source_fixture()
+check(_core == json.loads(_core_fixture_path.read_text(encoding="utf-8")),
+      "9cf the _core.py fixture must match live Python execution")
+check(core_settings_document() == json.loads(_core_data_path.read_text(encoding="utf-8")),
+      "9cf data/core/settings.json must match the executed settings.py block")
+check(_core["file"]["lines"] == 10281 and _core["file"]["sections"] == 8
+      and _core["file"]["classes"] == 10 and _core["file"]["methods"] == 218
+      and _core["file"]["top_functions"] == 11
+      and _core["file"]["settings_constants"] == 144,
+      f"9cf _core.py must stay 10.281 lines of 8 modules with 10 classes: {_core['file']}")
+check([row["name"] for row in _core["sections"]] == [
+          "settings", "game", "menu", "game_input", "game_ui", "game_dev",
+          "game_settings", "controller_manager"]
+      and _core["sections"][0]["start"] == 28
+      and _core["sections"][-1]["end"] == 10281,
+      "9cf the eight merged modules must keep their order and ranges")
+check(_core["symbols"]["count"] == 391
+      and _core["symbols"]["kinds"] == {"data": 140, "dead": 6, "deviation": 8,
+                                        "folded": 181, "meta": 9, "ported": 47},
+      f"9cf all 391 symbols of _core.py carry a kind: {_core['symbols']}")
+_core_source_only = ["dead", "deviation", "meta"]
+_core_broken = []
+_core_no_target = []
+for _name, _row in _core["classification"].items():
+    if not _row["target"] or not _row["token"]:
+        if _row["kind"] not in _core_source_only:
+            _core_no_target.append(_name)
+        continue
+    _core_target = ROOT.parent / _row["target"]
+    if not _core_target.is_file() or _row["token"] not in _core_target.read_text(
+            encoding="utf-8"):
+        _core_broken.append(_name)
+check(not _core_broken,
+      f"9cf every named classification needs a live target and token: {_core_broken[:8]}")
+check(not _core_no_target,
+      f"9cf only dead/deviation/meta rows may skip a Godot target: {_core_no_target[:8]}")
+check(sorted(_core["dead_helpers"]) == sorted([
+          "class:GameSettings.get_difficulty_label", "class:GameSettings.is_hard_mode",
+          "class:GameSettings.toggle_difficulty", "class:Menu._blit_shadow",
+          "class:Menu._render_gradient_text", "class:UIRenderer.draw_notifications"]),
+      "9cf the six helpers without a call site must stay named")
+check(_core["duplicates"].get("get_all_hero_types", {}).get("copies") == 2
+      and _core["duplicates"].get("class:TowerDebuffMixin.hp", {}).get("copies") == 2,
+      "9cf the hero-shop override and the HP property pair must stay recorded")
+check(_core["reassignments"] == {"FPS": [92, 349]},
+      "9cf FPS is assigned twice in the settings block")
+_core_settings = json.loads(_core_data_path.read_text(encoding="utf-8"))["constants"]
+check(len(_core["settings"]["keys"]) == 139
+      and _core["settings"]["keys"] == sorted(_core_settings),
+      "9cf the exported settings keys must match the shipped document")
+check(len(_core_settings) == 139 and _core_settings["SCREEN_WIDTH"] == 1280
+      and _core_settings["SCREEN_HEIGHT"] == 720 and _core_settings["TOP_BAR_HEIGHT"] == 40
+      and _core_settings["TOWER_HP_MULTIPLIER"] == 2.5
+      and _core_settings["TOWER_REGEN_SHIELD_COST"] == 850
+      and _core_settings["TOWER_REGEN_SHIELD_MIN_LEVEL"] == 4
+      and _core_settings["META_REPLAY_REPEAT_REWARD"] == 200
+      and _core_settings["STARTER_HERO_UNLOCK_COST"] == 0
+      and _core_settings["MINI_BOSS_HERO_UNLOCK_COST"] == 4500
+      and _core_settings["TRUE_BOSS_HERO_UNLOCK_COST"] == 4500
+      and _core_settings["DEV_UNLIMITED_HERO_GOLD"] is False
+      and _core_settings["GOLD"] == [255, 200, 50]
+      and _core_settings["TITLE"] == "Mystic Arena",
+      "9cf the shipped settings must keep the source values (no unlock-cost drift)")
+_core_parity = core_parity_rows()
+check(len(_core_parity) == 16 == len(_core["parity"]),
+      f"9cf sixteen settings constants must be pinned by live Godot modules: "
+      f"{len(_core_parity)}")
+_core_drift = []
+for _row in _core_parity:
+    _target = ROOT.parent / _row["target"]
+    _body = _target.read_text(encoding="utf-8") if _target.is_file() else ""
+    _pattern = re.compile(r"^const %s\s*:?=\s*(%s)\b" % (
+        re.escape(_row["godot_const"]), re.escape(_row["literal"])), re.M)
+    if not _pattern.search(_body):
+        _core_drift.append(f"{_row['constant']} -> {_row['godot_const']}")
+check(not _core_drift,
+      f"9cf every pinned constant must still carry the source value: {_core_drift[:8]}")
+if _core_doc.is_file():
+    _core_report = _core_doc.read_text(encoding="utf-8")
+    check(all(f"`{name}`" in _core_report for name in (
+              "settings.py", "game.py", "menu.py", "game_input.py", "game_ui.py",
+              "game_dev.py", "game_settings.py", "controller_manager.py")),
+          "9cf the report must name all eight merged modules")
+    check(all(token in _core_report for token in (
+              "core_settings.gd", "settings.json", "_PANEL_AKTIF", "compute_starting_gold",
+              "get_hero_shop_order", "fmt_idr", "apply_armor_shred", "rumble",
+              "MenuState", "InputMode", "DevMode", "install_aliases",
+              "TOWER_HP_MULTIPLIER", "META_REPLAY_REPEAT_REWARD", "GOLD")),
+          "9cf the report must cover every ported symbol and the deviations")
+    check(_core_report.count("|") > 350, "9cf the report must stay tabular")
+check("python godot_rebuild/tests/core_source_oracle.py --check" in workflow,
+      "9cf CI must run the _core.py oracle")
+
+
 # ── 9e: the cleave splash arm on the active boss uses the source call shape ──
 from boss_item_cleave_damage_source_oracle import source_fixture as cleave_damage_fixture
 _cleave_dmg = cleave_damage_fixture()

@@ -1,0 +1,2724 @@
+{
+ "file": {
+  "file": "_core.py",
+  "lines": 10281,
+  "sections": 8,
+  "classes": 10,
+  "methods": 218,
+  "top_functions": 11,
+  "settings_constants": 144
+ },
+ "sections": [
+  {
+   "name": "settings",
+   "start": 28,
+   "end": 1296,
+   "lines": 1269
+  },
+  {
+   "name": "game",
+   "start": 1297,
+   "end": 3042,
+   "lines": 1746
+  },
+  {
+   "name": "menu",
+   "start": 3043,
+   "end": 7694,
+   "lines": 4652
+  },
+  {
+   "name": "game_input",
+   "start": 7695,
+   "end": 8505,
+   "lines": 811
+  },
+  {
+   "name": "game_ui",
+   "start": 8506,
+   "end": 8690,
+   "lines": 185
+  },
+  {
+   "name": "game_dev",
+   "start": 8691,
+   "end": 9083,
+   "lines": 393
+  },
+  {
+   "name": "game_settings",
+   "start": 9084,
+   "end": 9298,
+   "lines": 215
+  },
+  {
+   "name": "controller_manager",
+   "start": 9299,
+   "end": 10281,
+   "lines": 983
+  }
+ ],
+ "symbols": {
+  "count": 391,
+  "kinds": {
+   "data": 140,
+   "ported": 47,
+   "deviation": 8,
+   "meta": 9,
+   "folded": 181,
+   "dead": 6
+  }
+ },
+ "classification": {
+  "module:settings": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"SCREEN_WIDTH\":",
+   "note": "seluruh blok settings.py dikirim sebagai data"
+  },
+  "module:game": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "simulasi match menggantikan loop Game pygame"
+  },
+  "module:menu": {
+   "kind": "ported",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "scene menu + layout `scripts/ui/menu_*` yang menggambar"
+  },
+  "module:game_input": {
+   "kind": "ported",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "routing tap/drag ada di lapisan input prototype screen"
+  },
+  "module:game_ui": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/ui/side_panel.gd",
+   "token": "func update_snapshot(",
+   "note": "dock panel memegang permukaan koordinator"
+  },
+  "module:game_dev": {
+   "kind": "deviation",
+   "target": "",
+   "token": "",
+   "note": "cheat F1-F12 adalah perkakas developer, bukan perilaku pemain"
+  },
+  "module:game_settings": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/settings/presentation_settings_store.gd",
+   "token": "static func defaults()",
+   "note": "setelan dipersist lewat settings store"
+  },
+  "module:controller_manager": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/input/controller_runtime.gd",
+   "token": "func rumble(",
+   "note": "Godot menormalisasi pad, jadi adapter memindahkan perilakunya"
+  },
+  "settings:TOWER_VISUAL_SCALE": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOWER_VISUAL_SCALE\":",
+   "note": "baris settings.py 33"
+  },
+  "settings:TOWER_HP_MULTIPLIER": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOWER_HP_MULTIPLIER\":",
+   "note": "baris settings.py 40"
+  },
+  "settings:TOWER_SHIELD_ENABLED": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOWER_SHIELD_ENABLED\":",
+   "note": "baris settings.py 43"
+  },
+  "settings:TOWER_SHIELD_HP_RATIO": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOWER_SHIELD_HP_RATIO\":",
+   "note": "baris settings.py 44"
+  },
+  "settings:TOWER_SHIELD_REGEN_DELAY": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOWER_SHIELD_REGEN_DELAY\":",
+   "note": "baris settings.py 45"
+  },
+  "settings:TOWER_SHIELD_REGEN_RATE": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOWER_SHIELD_REGEN_RATE\":",
+   "note": "baris settings.py 46"
+  },
+  "settings:TOWER_HP_REGEN_ENABLED": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOWER_HP_REGEN_ENABLED\":",
+   "note": "baris settings.py 49"
+  },
+  "settings:TOWER_HP_REGEN_DELAY": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOWER_HP_REGEN_DELAY\":",
+   "note": "baris settings.py 50"
+  },
+  "settings:TOWER_HP_REGEN_RATE": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOWER_HP_REGEN_RATE\":",
+   "note": "baris settings.py 51"
+  },
+  "settings:TOWER_HP_REGEN_MAX_RATIO": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOWER_HP_REGEN_MAX_RATIO\":",
+   "note": "baris settings.py 52"
+  },
+  "settings:SHIELD_COLOR_BLUE": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"SHIELD_COLOR_BLUE\":",
+   "note": "baris settings.py 55"
+  },
+  "settings:SHIELD_COLOR_RED": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"SHIELD_COLOR_RED\":",
+   "note": "baris settings.py 56"
+  },
+  "settings:TOWER_REGEN_SHIELD_ENABLED": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOWER_REGEN_SHIELD_ENABLED\":",
+   "note": "baris settings.py 65"
+  },
+  "settings:TOWER_REGEN_SHIELD_MIN_LEVEL": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOWER_REGEN_SHIELD_MIN_LEVEL\":",
+   "note": "baris settings.py 66"
+  },
+  "settings:TOWER_REGEN_SHIELD_COST": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOWER_REGEN_SHIELD_COST\":",
+   "note": "baris settings.py 67"
+  },
+  "settings:TOWER_REGEN_SHIELD_DELAY": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOWER_REGEN_SHIELD_DELAY\":",
+   "note": "baris settings.py 68"
+  },
+  "settings:TOWER_REGEN_SHIELD_RATE": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOWER_REGEN_SHIELD_RATE\":",
+   "note": "baris settings.py 69"
+  },
+  "settings:META_REPLAY_REPEAT_REWARD": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"META_REPLAY_REPEAT_REWARD\":",
+   "note": "baris settings.py 76"
+  },
+  "settings:SCREEN_WIDTH": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"SCREEN_WIDTH\":",
+   "note": "baris settings.py 88"
+  },
+  "settings:SCREEN_HEIGHT": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"SCREEN_HEIGHT\":",
+   "note": "baris settings.py 89"
+  },
+  "settings:TOP_BAR_HEIGHT": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOP_BAR_HEIGHT\":",
+   "note": "baris settings.py 90"
+  },
+  "settings:TITLE": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TITLE\":",
+   "note": "baris settings.py 91"
+  },
+  "settings:FPS": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"FPS\":",
+   "note": "baris settings.py 92, baris settings.py 349"
+  },
+  "settings:WHITE": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"WHITE\":",
+   "note": "baris settings.py 95"
+  },
+  "settings:BLACK": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"BLACK\":",
+   "note": "baris settings.py 96"
+  },
+  "settings:RED": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"RED\":",
+   "note": "baris settings.py 97"
+  },
+  "settings:GREEN": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"GREEN\":",
+   "note": "baris settings.py 98"
+  },
+  "settings:BLUE": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"BLUE\":",
+   "note": "baris settings.py 99"
+  },
+  "settings:YELLOW": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"YELLOW\":",
+   "note": "baris settings.py 100"
+  },
+  "settings:ORANGE": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"ORANGE\":",
+   "note": "baris settings.py 101"
+  },
+  "settings:GRAY": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"GRAY\":",
+   "note": "baris settings.py 102"
+  },
+  "settings:DARK_GRAY": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"DARK_GRAY\":",
+   "note": "baris settings.py 103"
+  },
+  "settings:LIGHT_GRAY": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"LIGHT_GRAY\":",
+   "note": "baris settings.py 104"
+  },
+  "settings:BROWN": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"BROWN\":",
+   "note": "baris settings.py 105"
+  },
+  "settings:PURPLE": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"PURPLE\":",
+   "note": "baris settings.py 106"
+  },
+  "settings:CYAN": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"CYAN\":",
+   "note": "baris settings.py 107"
+  },
+  "settings:GOLD": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"GOLD\":",
+   "note": "baris settings.py 108"
+  },
+  "settings:BLUE_TEAM": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"BLUE_TEAM\":",
+   "note": "baris settings.py 110"
+  },
+  "settings:BLUE_DARK": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"BLUE_DARK\":",
+   "note": "baris settings.py 111"
+  },
+  "settings:BLUE_LIGHT": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"BLUE_LIGHT\":",
+   "note": "baris settings.py 112"
+  },
+  "settings:RED_TEAM": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"RED_TEAM\":",
+   "note": "baris settings.py 113"
+  },
+  "settings:RED_DARK": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"RED_DARK\":",
+   "note": "baris settings.py 114"
+  },
+  "settings:RED_LIGHT": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"RED_LIGHT\":",
+   "note": "baris settings.py 115"
+  },
+  "settings:GRASS_COLOR": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"GRASS_COLOR\":",
+   "note": "baris settings.py 118"
+  },
+  "settings:GRASS_DARK": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"GRASS_DARK\":",
+   "note": "baris settings.py 119"
+  },
+  "settings:GRASS_LIGHT": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"GRASS_LIGHT\":",
+   "note": "baris settings.py 120"
+  },
+  "settings:PATH_COLOR": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"PATH_COLOR\":",
+   "note": "baris settings.py 121"
+  },
+  "settings:PATH_LIGHT": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"PATH_LIGHT\":",
+   "note": "baris settings.py 122"
+  },
+  "settings:PATH_BORDER": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"PATH_BORDER\":",
+   "note": "baris settings.py 123"
+  },
+  "settings:STONE_COLOR": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"STONE_COLOR\":",
+   "note": "baris settings.py 124"
+  },
+  "settings:STONE_LIGHT": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"STONE_LIGHT\":",
+   "note": "baris settings.py 125"
+  },
+  "settings:STONE_DARK": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"STONE_DARK\":",
+   "note": "baris settings.py 126"
+  },
+  "settings:WATER_COLOR": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"WATER_COLOR\":",
+   "note": "baris settings.py 127"
+  },
+  "settings:WATER_LIGHT": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"WATER_LIGHT\":",
+   "note": "baris settings.py 128"
+  },
+  "settings:TREE_DARK": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TREE_DARK\":",
+   "note": "baris settings.py 129"
+  },
+  "settings:TREE_MID": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TREE_MID\":",
+   "note": "baris settings.py 130"
+  },
+  "settings:TREE_LIGHT": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TREE_LIGHT\":",
+   "note": "baris settings.py 131"
+  },
+  "settings:BUSH_COLOR": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"BUSH_COLOR\":",
+   "note": "baris settings.py 132"
+  },
+  "settings:GOBLIN_COLOR": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"GOBLIN_COLOR\":",
+   "note": "baris settings.py 135"
+  },
+  "settings:ORC_COLOR": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"ORC_COLOR\":",
+   "note": "baris settings.py 136"
+  },
+  "settings:TROLL_COLOR": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TROLL_COLOR\":",
+   "note": "baris settings.py 137"
+  },
+  "settings:UNDEAD_COLOR": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"UNDEAD_COLOR\":",
+   "note": "baris settings.py 138"
+  },
+  "settings:DARK_RIDER_COLOR": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"DARK_RIDER_COLOR\":",
+   "note": "baris settings.py 139"
+  },
+  "settings:LANE_Y_TOP": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"LANE_Y_TOP\":",
+   "note": "baris settings.py 144"
+  },
+  "settings:LANE_Y_MID": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"LANE_Y_MID\":",
+   "note": "baris settings.py 145"
+  },
+  "settings:LANE_Y_BOT": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"LANE_Y_BOT\":",
+   "note": "baris settings.py 146"
+  },
+  "settings:LANE_HEIGHT": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"LANE_HEIGHT\":",
+   "note": "baris settings.py 147"
+  },
+  "settings:BLUE_BASE_X": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"BLUE_BASE_X\":",
+   "note": "baris settings.py 151"
+  },
+  "settings:BLUE_BASE_Y": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"BLUE_BASE_Y\":",
+   "note": "baris settings.py 152"
+  },
+  "settings:RED_BASE_X": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"RED_BASE_X\":",
+   "note": "baris settings.py 154"
+  },
+  "settings:RED_BASE_Y": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"RED_BASE_Y\":",
+   "note": "baris settings.py 155"
+  },
+  "settings:BASE_Y": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"BASE_Y\":",
+   "note": "baris settings.py 157"
+  },
+  "settings:LANE_START_X": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"LANE_START_X\":",
+   "note": "baris settings.py 159"
+  },
+  "settings:LANE_END_X": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"LANE_END_X\":",
+   "note": "baris settings.py 160"
+  },
+  "settings:BLUE_TOWERS": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"BLUE_TOWERS\":",
+   "note": "baris settings.py 167"
+  },
+  "settings:RED_TOWERS": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"RED_TOWERS\":",
+   "note": "baris settings.py 185"
+  },
+  "settings:BUILD_SLOTS_BLUE": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"BUILD_SLOTS_BLUE\":",
+   "note": "baris settings.py 204"
+  },
+  "settings:BUILD_SLOTS_RED": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"BUILD_SLOTS_RED\":",
+   "note": "baris settings.py 207"
+  },
+  "settings:SLOT_SIZE": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"SLOT_SIZE\":",
+   "note": "baris settings.py 209"
+  },
+  "settings:BULLET_SPEED": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"BULLET_SPEED\":",
+   "note": "baris settings.py 210"
+  },
+  "settings:BULLET_RADIUS": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"BULLET_RADIUS\":",
+   "note": "baris settings.py 211"
+  },
+  "settings:STARTING_GOLD": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"STARTING_GOLD\":",
+   "note": "baris settings.py 214"
+  },
+  "settings:GOLD_PER_SECOND": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"GOLD_PER_SECOND\":",
+   "note": "baris settings.py 215"
+  },
+  "settings:DIFFICULTY_GOLD_MULT": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"DIFFICULTY_GOLD_MULT\":",
+   "note": "baris settings.py 224"
+  },
+  "settings:GOLD_PER_LEVEL_BONUS": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"GOLD_PER_LEVEL_BONUS\":",
+   "note": "baris settings.py 229"
+  },
+  "settings:GOLD_PER_SECOND_LEVEL_BONUS": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"GOLD_PER_SECOND_LEVEL_BONUS\":",
+   "note": "baris settings.py 253"
+  },
+  "settings:MINION_TYPES": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"MINION_TYPES\":",
+   "note": "baris settings.py 279"
+  },
+  "settings:MINION_WAVE_INTERVAL": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"MINION_WAVE_INTERVAL\":",
+   "note": "baris settings.py 347"
+  },
+  "settings:MINION_SPAWN_DELAY": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"MINION_SPAWN_DELAY\":",
+   "note": "baris settings.py 348"
+  },
+  "settings:NEXUS_WAVE_COMPOSITION": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"NEXUS_WAVE_COMPOSITION\":",
+   "note": "baris settings.py 351"
+  },
+  "settings:NEXUS_LEVELS": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"NEXUS_LEVELS\":",
+   "note": "baris settings.py 366"
+  },
+  "settings:MAX_NEXUS_LEVEL": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"MAX_NEXUS_LEVEL\":",
+   "note": "baris settings.py 424"
+  },
+  "settings:BASE_RADIUS": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"BASE_RADIUS\":",
+   "note": "baris settings.py 425"
+  },
+  "settings:TOWER_STATS": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOWER_STATS\":",
+   "note": "baris settings.py 428"
+  },
+  "settings:PLAYER_TOWER_TYPES": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"PLAYER_TOWER_TYPES\":",
+   "note": "baris settings.py 435"
+  },
+  "settings:HERO_TYPES": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"HERO_TYPES\":",
+   "note": "baris settings.py 437"
+  },
+  "settings:HERO_LEVELS": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"HERO_LEVELS\":",
+   "note": "baris settings.py 557"
+  },
+  "settings:MAX_HERO_LEVEL": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"MAX_HERO_LEVEL\":",
+   "note": "baris settings.py 597"
+  },
+  "settings:MAX_HEROES_OWNED": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"MAX_HEROES_OWNED\":",
+   "note": "baris settings.py 603"
+  },
+  "settings:BOSS_HERO_UPGRADE_COST_MULT": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"BOSS_HERO_UPGRADE_COST_MULT\":",
+   "note": "baris settings.py 611"
+  },
+  "settings:TOWER_MAX_LEVEL": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOWER_MAX_LEVEL\":",
+   "note": "baris settings.py 617"
+  },
+  "settings:TOWER_TYPE_COLORS": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOWER_TYPE_COLORS\":",
+   "note": "baris settings.py 620"
+  },
+  "settings:TOWER_BASE_STATS": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOWER_BASE_STATS\":",
+   "note": "baris settings.py 628"
+  },
+  "settings:ARCHER_LEVELS": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"ARCHER_LEVELS\":",
+   "note": "baris settings.py 638"
+  },
+  "settings:CANNON_LEVELS": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"CANNON_LEVELS\":",
+   "note": "baris settings.py 659"
+  },
+  "settings:ICE_LEVELS": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"ICE_LEVELS\":",
+   "note": "baris settings.py 679"
+  },
+  "settings:MAGE_LEVELS": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"MAGE_LEVELS\":",
+   "note": "baris settings.py 699"
+  },
+  "settings:TOWER_UPGRADE_PATHS": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOWER_UPGRADE_PATHS\":",
+   "note": "baris settings.py 718"
+  },
+  "settings:TOWER_TYPE_INFO": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOWER_TYPE_INFO\":",
+   "note": "baris settings.py 726"
+  },
+  "settings:TOWER_DEBUFF_BURN_TICK": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOWER_DEBUFF_BURN_TICK\":",
+   "note": "baris settings.py 771"
+  },
+  "settings:TOWER_DEBUFF_FPS": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TOWER_DEBUFF_FPS\":",
+   "note": "baris settings.py 772"
+  },
+  "settings:AI_THINK_INTERVAL": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"AI_THINK_INTERVAL\":",
+   "note": "baris settings.py 1091"
+  },
+  "settings:AI_MIN_GOLD_RESERVE": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"AI_MIN_GOLD_RESERVE\":",
+   "note": "baris settings.py 1092"
+  },
+  "settings:AI_UPGRADE_TOWER_CHANCE": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"AI_UPGRADE_TOWER_CHANCE\":",
+   "note": "baris settings.py 1093"
+  },
+  "settings:AI_SELL_HP_THRESHOLD": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"AI_SELL_HP_THRESHOLD\":",
+   "note": "baris settings.py 1094"
+  },
+  "settings:AI_NEXUS_UPGRADE_PRIORITY": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"AI_NEXUS_UPGRADE_PRIORITY\":",
+   "note": "baris settings.py 1095"
+  },
+  "settings:AI_HERO_BUY_PRIORITY": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"AI_HERO_BUY_PRIORITY\":",
+   "note": "baris settings.py 1096"
+  },
+  "settings:AI_HERO_UPGRADE_PRIORITY": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"AI_HERO_UPGRADE_PRIORITY\":",
+   "note": "baris settings.py 1097"
+  },
+  "settings:AI_SKILL_USE_MIN_ENEMIES": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"AI_SKILL_USE_MIN_ENEMIES\":",
+   "note": "baris settings.py 1098"
+  },
+  "settings:AI_HERO_PREFERENCES": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"AI_HERO_PREFERENCES\":",
+   "note": "baris settings.py 1099"
+  },
+  "settings:AI_MAX_HEROES": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"AI_MAX_HEROES\":",
+   "note": "baris settings.py 1100"
+  },
+  "settings:CASTLE_SHIELD_ENABLED": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"CASTLE_SHIELD_ENABLED\":",
+   "note": "baris settings.py 1107"
+  },
+  "settings:CASTLE_SHIELD_FREE_WAVES": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"CASTLE_SHIELD_FREE_WAVES\":",
+   "note": "baris settings.py 1110"
+  },
+  "settings:CASTLE_SHIELD_COST": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"CASTLE_SHIELD_COST\":",
+   "note": "baris settings.py 1111"
+  },
+  "settings:CASTLE_SHIELD_DAMAGE_REDUCTION": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"CASTLE_SHIELD_DAMAGE_REDUCTION\":",
+   "note": "baris settings.py 1112"
+  },
+  "settings:CASTLE_SHIELD_HP_RATIO": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"CASTLE_SHIELD_HP_RATIO\":",
+   "note": "baris settings.py 1113"
+  },
+  "settings:CASTLE_SHIELD_REGEN_DELAY": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"CASTLE_SHIELD_REGEN_DELAY\":",
+   "note": "baris settings.py 1114"
+  },
+  "settings:CASTLE_SHIELD_REGEN_RATE": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"CASTLE_SHIELD_REGEN_RATE\":",
+   "note": "baris settings.py 1115"
+  },
+  "settings:CASTLE_SHIELD_COLOR_BLUE": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"CASTLE_SHIELD_COLOR_BLUE\":",
+   "note": "baris settings.py 1116"
+  },
+  "settings:CASTLE_SHIELD_COLOR_RED": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"CASTLE_SHIELD_COLOR_RED\":",
+   "note": "baris settings.py 1117"
+  },
+  "settings:CASTLE_LEVELS": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"CASTLE_LEVELS\":",
+   "note": "baris settings.py 1122"
+  },
+  "settings:MAX_CASTLE_LEVEL": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"MAX_CASTLE_LEVEL\":",
+   "note": "baris settings.py 1123"
+  },
+  "settings:CASTLE_WAVE_COMPOSITION": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"CASTLE_WAVE_COMPOSITION\":",
+   "note": "baris settings.py 1124"
+  },
+  "settings:CASTLE_RADIUS": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"CASTLE_RADIUS\":",
+   "note": "baris settings.py 1125"
+  },
+  "settings:CASTLE_NAMES": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"CASTLE_NAMES\":",
+   "note": "baris settings.py 1128"
+  },
+  "settings:DEV_UNLIMITED_HERO_GOLD": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"DEV_UNLIMITED_HERO_GOLD\":",
+   "note": "baris settings.py 1247"
+  },
+  "settings:STARTER_HERO_UNLOCK_COST": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"STARTER_HERO_UNLOCK_COST\":",
+   "note": "baris settings.py 1248"
+  },
+  "settings:MINI_BOSS_HERO_UNLOCK_COST": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"MINI_BOSS_HERO_UNLOCK_COST\":",
+   "note": "baris settings.py 1249"
+  },
+  "settings:TRUE_BOSS_HERO_UNLOCK_COST": {
+   "kind": "data",
+   "target": "godot_rebuild/data/core/settings.json",
+   "token": "\"TRUE_BOSS_HERO_UNLOCK_COST\":",
+   "note": "baris settings.py 1250"
+  },
+  "settings:_original_get_all_hero_types_shop_prices": {
+   "kind": "meta",
+   "target": "",
+   "token": "",
+   "note": "bookkeeping modul, bukan nilai permainan"
+  },
+  "settings:_settings_public": {
+   "kind": "meta",
+   "target": "",
+   "token": "",
+   "note": "bookkeeping modul, bukan nilai permainan"
+  },
+  "settings:_settings_alias": {
+   "kind": "meta",
+   "target": "",
+   "token": "",
+   "note": "bookkeeping modul, bukan nilai permainan"
+  },
+  "class:TowerDebuffMixin": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/unit_state.gd",
+   "token": "func apply_armor_shred(",
+   "note": "matematika debuff/status ada di unit state bersama"
+  },
+  "class:TowerDebuffMixin._init_tower_debuffs": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/combat/unit_state.gd",
+   "token": "func apply_armor_shred(",
+   "note": "berjalan di alur unit_state.gd, tanpa fungsi 1:1"
+  },
+  "class:TowerDebuffMixin.hp": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/combat/unit_state.gd",
+   "token": "func apply_armor_shred(",
+   "note": "berjalan di alur unit_state.gd, tanpa fungsi 1:1"
+  },
+  "class:TowerDebuffMixin.apply_slow": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/unit_state.gd",
+   "token": "func apply_slow(",
+   "note": ""
+  },
+  "class:TowerDebuffMixin.apply_stun": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/combat/unit_state.gd",
+   "token": "func apply_armor_shred(",
+   "note": "berjalan di alur unit_state.gd, tanpa fungsi 1:1"
+  },
+  "class:TowerDebuffMixin.apply_armor_shred": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/unit_state.gd",
+   "token": "func apply_armor_shred(",
+   "note": ""
+  },
+  "class:TowerDebuffMixin.apply_damage_amp": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/unit_state.gd",
+   "token": "func apply_damage_amp(",
+   "note": ""
+  },
+  "class:TowerDebuffMixin.apply_heal_amp": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/combat/unit_state.gd",
+   "token": "func apply_armor_shred(",
+   "note": "berjalan di alur unit_state.gd, tanpa fungsi 1:1"
+  },
+  "class:TowerDebuffMixin.apply_miss_chance": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/combat/unit_state.gd",
+   "token": "func apply_miss_chance(",
+   "note": ""
+  },
+  "class:TowerDebuffMixin.apply_debuff": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/combat/unit_state.gd",
+   "token": "func apply_armor_shred(",
+   "note": "berjalan di alur unit_state.gd, tanpa fungsi 1:1"
+  },
+  "class:TowerDebuffMixin.clear_tower_debuffs": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/combat/unit_state.gd",
+   "token": "func apply_armor_shred(",
+   "note": "berjalan di alur unit_state.gd, tanpa fungsi 1:1"
+  },
+  "class:TowerDebuffMixin._eff_speed": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/combat/unit_state.gd",
+   "token": "func apply_armor_shred(",
+   "note": "berjalan di alur unit_state.gd, tanpa fungsi 1:1"
+  },
+  "class:TowerDebuffMixin._eff_attack_cd": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/combat/unit_state.gd",
+   "token": "func apply_armor_shred(",
+   "note": "berjalan di alur unit_state.gd, tanpa fungsi 1:1"
+  },
+  "class:TowerDebuffMixin._tick_tower_debuffs": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/combat/unit_state.gd",
+   "token": "func apply_armor_shred(",
+   "note": "berjalan di alur unit_state.gd, tanpa fungsi 1:1"
+  },
+  "class:TowerDebuffMixin._draw_tower_debuff_fx": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/combat/unit_state.gd",
+   "token": "func apply_armor_shred(",
+   "note": "berjalan di alur unit_state.gd, tanpa fungsi 1:1"
+  },
+  "class:Game": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "simulasi match menggantikan loop Game pygame"
+  },
+  "class:Game.__init__": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "berjalan di alur prototype_battle.gd, tanpa fungsi 1:1"
+  },
+  "class:Game.reset": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _init(",
+   "note": "hook reset pygame menjadi _init di prototype_battle.gd"
+  },
+  "class:Game.open_build_popup": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "berjalan di alur prototype_battle.gd, tanpa fungsi 1:1"
+  },
+  "class:Game.close_build_popup": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "berjalan di alur prototype_battle.gd, tanpa fungsi 1:1"
+  },
+  "class:Game.try_build_tower": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "berjalan di alur prototype_battle.gd, tanpa fungsi 1:1"
+  },
+  "class:Game._generate_build_slots_from_lanes": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "berjalan di alur prototype_battle.gd, tanpa fungsi 1:1"
+  },
+  "class:Game.get_all_heroes": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "berjalan di alur prototype_battle.gd, tanpa fungsi 1:1"
+  },
+  "class:Game.update_waves": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "berjalan di alur prototype_battle.gd, tanpa fungsi 1:1"
+  },
+  "class:Game._try_spawn_pending_mini_boss": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _try_spawn_pending_mini_boss(",
+   "note": ""
+  },
+  "class:Game._roll_mini_boss_schedule": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": ""
+  },
+  "class:Game._auto_scale_ai_castle": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _auto_scale_ai_castle(",
+   "note": ""
+  },
+  "class:Game._get_wave_composition": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "berjalan di alur prototype_battle.gd, tanpa fungsi 1:1"
+  },
+  "class:Game.update": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func step_tick(",
+   "note": "hook update pygame menjadi step_tick di prototype_battle.gd"
+  },
+  "class:Game._update_gameplay": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "berjalan di alur prototype_battle.gd, tanpa fungsi 1:1"
+  },
+  "class:Game._auto_unlock_defeated_boss_heroes": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _auto_unlock_defeated_boss_heroes(",
+   "note": ""
+  },
+  "class:Game._grant_meta_reward": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "berjalan di alur prototype_battle.gd, tanpa fungsi 1:1"
+  },
+  "class:Game._unlock_achievement": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _unlock_achievement(",
+   "note": ""
+  },
+  "class:Game._killer_is_hero": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "berjalan di alur prototype_battle.gd, tanpa fungsi 1:1"
+  },
+  "class:Game._process_hero_kill": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "berjalan di alur prototype_battle.gd, tanpa fungsi 1:1"
+  },
+  "class:Game._process_boss_kill": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _process_boss_kill(",
+   "note": ""
+  },
+  "class:Game.handle_click": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func clicked_shop_at(",
+   "note": "hook handle_click pygame menjadi clicked_shop_at di prototype_battle.gd"
+  },
+  "class:Game.open_popup": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "berjalan di alur prototype_battle.gd, tanpa fungsi 1:1"
+  },
+  "class:Game.close_popup": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "berjalan di alur prototype_battle.gd, tanpa fungsi 1:1"
+  },
+  "class:Game.try_buy_hero": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "berjalan di alur prototype_battle.gd, tanpa fungsi 1:1"
+  },
+  "class:Game.try_activate_castle_shield": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "berjalan di alur prototype_battle.gd, tanpa fungsi 1:1"
+  },
+  "class:Game.try_upgrade_nexus": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "berjalan di alur prototype_battle.gd, tanpa fungsi 1:1"
+  },
+  "class:Game.handle_key": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "berjalan di alur prototype_battle.gd, tanpa fungsi 1:1"
+  },
+  "class:Game.handle_key_up": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "berjalan di alur prototype_battle.gd, tanpa fungsi 1:1"
+  },
+  "class:Game._draw_input_hints": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "berjalan di alur prototype_battle.gd, tanpa fungsi 1:1"
+  },
+  "class:Game._input_label": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "berjalan di alur prototype_battle.gd, tanpa fungsi 1:1"
+  },
+  "class:Game._draw_gold_hud": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "berjalan di alur prototype_battle.gd, tanpa fungsi 1:1"
+  },
+  "class:Game.draw": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "func _roll_mini_boss_schedule(",
+   "note": "berjalan di alur prototype_battle.gd, tanpa fungsi 1:1"
+  },
+  "class:MenuState": {
+   "kind": "ported",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _open_how_to_play(",
+   "note": "layar menu berupa scene, bukan string state"
+  },
+  "class:Menu": {
+   "kind": "ported",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "scene menu + layout `scripts/ui/menu_*` yang menggambar"
+  },
+  "class:Menu.__init__": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_slot_select": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_slot_card": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_empty_slot_content": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_slot_content": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_slot_action_buttons": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_delete_confirm_dialog": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu.reload_progress": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._is_difficulty_locked": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._get_locked_difficulty": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._confirm_difficulty_change": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_difficulty_confirm_dialog": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._init_particles": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._update_particles": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._kena": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu.update": {
+   "kind": "ported",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _process(",
+   "note": "hook update pygame menjadi _process di main_menu.gd"
+  },
+  "class:Menu.draw": {
+   "kind": "ported",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _layout_source_menu(",
+   "note": "hook draw pygame menjadi _layout_source_menu di main_menu.gd"
+  },
+  "class:Menu.handle_click": {
+   "kind": "ported",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _click_and_emit(",
+   "note": "hook handle_click pygame menjadi _click_and_emit di main_menu.gd"
+  },
+  "class:Menu._draw_level_select": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_level_scroll_indicator": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_level_card": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu.handle_key": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_main_background": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._build_main_background": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._build_menu_fog": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_portal": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_rune_crystal": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_pause_background": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._render_gradient_text": {
+   "kind": "dead",
+   "target": "",
+   "token": "",
+   "note": "tidak ada call-site di pohon pygame"
+  },
+  "class:Menu._draw_main_menu": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_hero_shop": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_meta_scroll_indicator": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_meta_hero_card": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._unlock_hero_in_meta_shop": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._dev_topup_gold": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._topup_price_str": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._topup_http": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._topup_send_create": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._topup_send_poll": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._topup_server_tick": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._topup_pay_fail": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_topup_paying": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_paying_button_row": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_topup_dialog": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_topup_select": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_topup_processing": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_topup_success": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_topup_redeem": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._redeem_handle_key": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._redeem_append": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._redeem_backspace": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._redeem_submit": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._redeem_grant": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu.topup_complete": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._blit_shadow": {
+   "kind": "dead",
+   "target": "",
+   "token": "",
+   "note": "tidak ada call-site di pohon pygame"
+  },
+  "class:Menu._draw_how_to_play": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_settings": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_cloud_buttons": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_cloud_confirm_dialog": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_cloud_restore_prompt_dialog": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_exit_confirm_dialog": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_confirm_buttons": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_toggle_setting": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_option_setting": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_reset_confirm_dialog": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_volume_slider": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_credits": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._draw_pause_menu": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._get_continue_level": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._on_button_click": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._set_cloud_status": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._apply_cloud_payload": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._all_slots_empty": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._do_cloud_signin": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._do_cloud_upload": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._do_cloud_download": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._on_cloud_auth": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._on_cloud_upload": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._on_cloud_download": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._on_cloud_peek": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._poll_cloud_restore": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu._toggle_input_mode": {
+   "kind": "ported",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": ""
+  },
+  "class:Menu._adjust_volume": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu.reset": {
+   "kind": "ported",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _refresh_localized_labels(",
+   "note": "hook reset pygame menjadi _refresh_localized_labels di main_menu.gd"
+  },
+  "class:Menu.show_pause": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:Menu.show_main": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/menu/main_menu.gd",
+   "token": "func _toggle_input_mode(",
+   "note": "berjalan di alur main_menu.gd, tanpa fungsi 1:1"
+  },
+  "class:InputHandler": {
+   "kind": "ported",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "routing tap/drag ada di lapisan input prototype screen"
+  },
+  "class:InputHandler.__init__": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "berjalan di alur prototype_screen.gd, tanpa fungsi 1:1"
+  },
+  "class:InputHandler.handle_click": {
+   "kind": "ported",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "hook handle_click pygame menjadi _primary_action di prototype_screen.gd"
+  },
+  "class:InputHandler._handle_left_click": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "berjalan di alur prototype_screen.gd, tanpa fungsi 1:1"
+  },
+  "class:InputHandler._select_hero": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "berjalan di alur prototype_screen.gd, tanpa fungsi 1:1"
+  },
+  "class:InputHandler._handle_hero_command": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "berjalan di alur prototype_screen.gd, tanpa fungsi 1:1"
+  },
+  "class:InputHandler._handle_right_click": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "berjalan di alur prototype_screen.gd, tanpa fungsi 1:1"
+  },
+  "class:InputHandler._touch_rect": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "berjalan di alur prototype_screen.gd, tanpa fungsi 1:1"
+  },
+  "class:InputHandler._kena": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "berjalan di alur prototype_screen.gd, tanpa fungsi 1:1"
+  },
+  "class:InputHandler.handle_hero_panel_click": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "berjalan di alur prototype_screen.gd, tanpa fungsi 1:1"
+  },
+  "class:InputHandler._try_upgrade_hero": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "berjalan di alur prototype_screen.gd, tanpa fungsi 1:1"
+  },
+  "class:InputHandler.handle_build_popup_click": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "berjalan di alur prototype_screen.gd, tanpa fungsi 1:1"
+  },
+  "class:InputHandler.handle_popup_click": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "berjalan di alur prototype_screen.gd, tanpa fungsi 1:1"
+  },
+  "class:InputHandler._try_upgrade_tower": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "berjalan di alur prototype_screen.gd, tanpa fungsi 1:1"
+  },
+  "class:InputHandler._try_upgrade_tower_path": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "berjalan di alur prototype_screen.gd, tanpa fungsi 1:1"
+  },
+  "class:InputHandler._try_sell_tower": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "berjalan di alur prototype_screen.gd, tanpa fungsi 1:1"
+  },
+  "class:InputHandler._try_activate_regen_shield": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "berjalan di alur prototype_screen.gd, tanpa fungsi 1:1"
+  },
+  "class:InputHandler.handle_shop_click": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "berjalan di alur prototype_screen.gd, tanpa fungsi 1:1"
+  },
+  "class:InputHandler._try_buy_hero": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "berjalan di alur prototype_screen.gd, tanpa fungsi 1:1"
+  },
+  "class:InputHandler.handle_key": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "berjalan di alur prototype_screen.gd, tanpa fungsi 1:1"
+  },
+  "class:InputHandler._cast_hero_skill": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "berjalan di alur prototype_screen.gd, tanpa fungsi 1:1"
+  },
+  "class:InputHandler.handle_key_up": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "berjalan di alur prototype_screen.gd, tanpa fungsi 1:1"
+  },
+  "class:InputHandler._get_clicked_tower": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "berjalan di alur prototype_screen.gd, tanpa fungsi 1:1"
+  },
+  "class:InputHandler._get_clicked_build_slot": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "berjalan di alur prototype_screen.gd, tanpa fungsi 1:1"
+  },
+  "class:InputHandler._get_clicked_hero": {
+   "kind": "folded",
+   "target": "godot_rebuild/scenes/prototype/prototype_screen.gd",
+   "token": "func _primary_action(",
+   "note": "berjalan di alur prototype_screen.gd, tanpa fungsi 1:1"
+  },
+  "class:UIRenderer": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/ui/side_panel.gd",
+   "token": "func update_snapshot(",
+   "note": "dock panel memegang permukaan koordinator"
+  },
+  "class:UIRenderer.__init__": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/ui/side_panel.gd",
+   "token": "func update_snapshot(",
+   "note": "berjalan di alur side_panel.gd, tanpa fungsi 1:1"
+  },
+  "class:UIRenderer._init_fonts": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/ui/side_panel.gd",
+   "token": "func update_snapshot(",
+   "note": "berjalan di alur side_panel.gd, tanpa fungsi 1:1"
+  },
+  "class:UIRenderer._init_components": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/ui/side_panel.gd",
+   "token": "func update_snapshot(",
+   "note": "berjalan di alur side_panel.gd, tanpa fungsi 1:1"
+  },
+  "class:UIRenderer.update_hover_states": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/ui/side_panel.gd",
+   "token": "func update_snapshot(",
+   "note": "berjalan di alur side_panel.gd, tanpa fungsi 1:1"
+  },
+  "class:UIRenderer.draw_hover_indicators": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/ui/side_panel.gd",
+   "token": "func update_snapshot(",
+   "note": "berjalan di alur side_panel.gd, tanpa fungsi 1:1"
+  },
+  "class:UIRenderer.draw_build_slots": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/ui/side_panel.gd",
+   "token": "func update_snapshot(",
+   "note": "berjalan di alur side_panel.gd, tanpa fungsi 1:1"
+  },
+  "class:UIRenderer.draw_shop_hints": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/ui/side_panel.gd",
+   "token": "func update_snapshot(",
+   "note": "berjalan di alur side_panel.gd, tanpa fungsi 1:1"
+  },
+  "class:UIRenderer.draw_build_popup": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/ui/side_panel.gd",
+   "token": "func update_snapshot(",
+   "note": "berjalan di alur side_panel.gd, tanpa fungsi 1:1"
+  },
+  "class:UIRenderer.draw_popup": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/ui/side_panel.gd",
+   "token": "func update_snapshot(",
+   "note": "berjalan di alur side_panel.gd, tanpa fungsi 1:1"
+  },
+  "class:UIRenderer.draw_hero_info": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/ui/side_panel.gd",
+   "token": "func update_snapshot(",
+   "note": "berjalan di alur side_panel.gd, tanpa fungsi 1:1"
+  },
+  "class:UIRenderer.draw_hero_shop": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/ui/side_panel.gd",
+   "token": "func update_snapshot(",
+   "note": "berjalan di alur side_panel.gd, tanpa fungsi 1:1"
+  },
+  "class:UIRenderer.draw_item_shop": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/ui/side_panel.gd",
+   "token": "func update_snapshot(",
+   "note": "berjalan di alur side_panel.gd, tanpa fungsi 1:1"
+  },
+  "class:UIRenderer.draw_tactical_commands": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/ui/side_panel.gd",
+   "token": "func update_snapshot(",
+   "note": "berjalan di alur side_panel.gd, tanpa fungsi 1:1"
+  },
+  "class:UIRenderer.draw_overlay": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/ui/side_panel.gd",
+   "token": "func update_snapshot(",
+   "note": "berjalan di alur side_panel.gd, tanpa fungsi 1:1"
+  },
+  "class:UIRenderer.draw_notifications": {
+   "kind": "dead",
+   "target": "",
+   "token": "",
+   "note": "tidak ada call-site di pohon pygame"
+  },
+  "class:UIRenderer.add_notification": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/ui/side_panel.gd",
+   "token": "func update_snapshot(",
+   "note": "berjalan di alur side_panel.gd, tanpa fungsi 1:1"
+  },
+  "class:DevMode": {
+   "kind": "deviation",
+   "target": "",
+   "token": "",
+   "note": "cheat F1-F12 adalah perkakas developer, bukan perilaku pemain"
+  },
+  "class:DevMode.__init__": {
+   "kind": "deviation",
+   "target": "",
+   "token": "",
+   "note": "cheat F1-F12 adalah perkakas developer"
+  },
+  "class:DevMode.handle_hotkey": {
+   "kind": "deviation",
+   "target": "",
+   "token": "",
+   "note": "cheat F1-F12 adalah perkakas developer"
+  },
+  "class:DevMode.draw": {
+   "kind": "deviation",
+   "target": "",
+   "token": "",
+   "note": "cheat F1-F12 adalah perkakas developer"
+  },
+  "class:DevMode._draw_indicator": {
+   "kind": "deviation",
+   "target": "",
+   "token": "",
+   "note": "cheat F1-F12 adalah perkakas developer"
+  },
+  "class:DevMode._draw_panel": {
+   "kind": "deviation",
+   "target": "",
+   "token": "",
+   "note": "cheat F1-F12 adalah perkakas developer"
+  },
+  "class:DevMode._draw_debug_info": {
+   "kind": "deviation",
+   "target": "",
+   "token": "",
+   "note": "cheat F1-F12 adalah perkakas developer"
+  },
+  "class:GameSettings": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/settings/presentation_settings_store.gd",
+   "token": "static func defaults()",
+   "note": "setelan dipersist lewat settings store"
+  },
+  "class:GameSettings.__new__": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/settings/presentation_settings_store.gd",
+   "token": "static func defaults()",
+   "note": "berjalan di alur presentation_settings_store.gd, tanpa fungsi 1:1"
+  },
+  "class:GameSettings._init_defaults": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/settings/presentation_settings_store.gd",
+   "token": "static func defaults()",
+   "note": "berjalan di alur presentation_settings_store.gd, tanpa fungsi 1:1"
+  },
+  "class:GameSettings._load": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/settings/presentation_settings_store.gd",
+   "token": "static func defaults()",
+   "note": "berjalan di alur presentation_settings_store.gd, tanpa fungsi 1:1"
+  },
+  "class:GameSettings.save": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/settings/presentation_settings_store.gd",
+   "token": "static func defaults()",
+   "note": "berjalan di alur presentation_settings_store.gd, tanpa fungsi 1:1"
+  },
+  "class:GameSettings.set_difficulty": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/settings/presentation_settings_store.gd",
+   "token": "static func defaults()",
+   "note": "berjalan di alur presentation_settings_store.gd, tanpa fungsi 1:1"
+  },
+  "class:GameSettings.cycle_difficulty": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/settings/presentation_settings_store.gd",
+   "token": "static func defaults()",
+   "note": "berjalan di alur presentation_settings_store.gd, tanpa fungsi 1:1"
+  },
+  "class:GameSettings.toggle_difficulty": {
+   "kind": "dead",
+   "target": "",
+   "token": "",
+   "note": "tidak ada call-site di pohon pygame"
+  },
+  "class:GameSettings.get_difficulty_label": {
+   "kind": "dead",
+   "target": "",
+   "token": "",
+   "note": "tidak ada call-site di pohon pygame"
+  },
+  "class:GameSettings.get_difficulty_short_label": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/settings/presentation_settings_store.gd",
+   "token": "static func defaults()",
+   "note": "berjalan di alur presentation_settings_store.gd, tanpa fungsi 1:1"
+  },
+  "class:GameSettings.is_easy_mode": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/settings/presentation_settings_store.gd",
+   "token": "static func defaults()",
+   "note": "berjalan di alur presentation_settings_store.gd, tanpa fungsi 1:1"
+  },
+  "class:GameSettings.is_hard_mode": {
+   "kind": "dead",
+   "target": "",
+   "token": "",
+   "note": "tidak ada call-site di pohon pygame"
+  },
+  "class:GameSettings.is_scaling_on": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/settings/presentation_settings_store.gd",
+   "token": "static func defaults()",
+   "note": "berjalan di alur presentation_settings_store.gd, tanpa fungsi 1:1"
+  },
+  "class:GameSettings.set_screen_shake": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/settings/presentation_settings_store.gd",
+   "token": "static func defaults()",
+   "note": "berjalan di alur presentation_settings_store.gd, tanpa fungsi 1:1"
+  },
+  "class:GameSettings.set_damage_numbers": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/settings/presentation_settings_store.gd",
+   "token": "static func defaults()",
+   "note": "berjalan di alur presentation_settings_store.gd, tanpa fungsi 1:1"
+  },
+  "class:GameSettings.set_game_speed": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/settings/presentation_settings_store.gd",
+   "token": "static func defaults()",
+   "note": "berjalan di alur presentation_settings_store.gd, tanpa fungsi 1:1"
+  },
+  "class:GameSettings.set_language": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/settings/presentation_settings_store.gd",
+   "token": "static func defaults()",
+   "note": "berjalan di alur presentation_settings_store.gd, tanpa fungsi 1:1"
+  },
+  "class:GameSettings.set_fps_limit": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/settings/presentation_settings_store.gd",
+   "token": "static func defaults()",
+   "note": "berjalan di alur presentation_settings_store.gd, tanpa fungsi 1:1"
+  },
+  "class:GameSettings.get_fps_label": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/settings/presentation_settings_store.gd",
+   "token": "static func defaults()",
+   "note": "berjalan di alur presentation_settings_store.gd, tanpa fungsi 1:1"
+  },
+  "class:GameSettings.get_speed_label": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/settings/presentation_settings_store.gd",
+   "token": "static func defaults()",
+   "note": "berjalan di alur presentation_settings_store.gd, tanpa fungsi 1:1"
+  },
+  "class:InputMode": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/input/controller_runtime.gd",
+   "token": "signal action_requested(",
+   "note": "adapter controller memodelkan mode, bukan enum string"
+  },
+  "class:ControllerManager": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/input/controller_runtime.gd",
+   "token": "func rumble(",
+   "note": "Godot menormalisasi pad, jadi adapter memindahkan perilakunya"
+  },
+  "class:ControllerManager.__init__": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/input/controller_runtime.gd",
+   "token": "func rumble(",
+   "note": "berjalan di alur controller_runtime.gd, tanpa fungsi 1:1"
+  },
+  "class:ControllerManager.init_joystick": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/input/controller_runtime.gd",
+   "token": "func rumble(",
+   "note": "berjalan di alur controller_runtime.gd, tanpa fungsi 1:1"
+  },
+  "class:ControllerManager._scan_controllers": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/input/controller_runtime.gd",
+   "token": "func rumble(",
+   "note": "berjalan di alur controller_runtime.gd, tanpa fungsi 1:1"
+  },
+  "class:ControllerManager.debug_print": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/input/controller_runtime.gd",
+   "token": "func rumble(",
+   "note": "berjalan di alur controller_runtime.gd, tanpa fungsi 1:1"
+  },
+  "class:ControllerManager.rescan": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/input/controller_runtime.gd",
+   "token": "func rumble(",
+   "note": "berjalan di alur controller_runtime.gd, tanpa fungsi 1:1"
+  },
+  "class:ControllerManager.set_mode": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/input/controller_runtime.gd",
+   "token": "func rumble(",
+   "note": "berjalan di alur controller_runtime.gd, tanpa fungsi 1:1"
+  },
+  "class:ControllerManager.is_controller_mode": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/input/controller_runtime.gd",
+   "token": "func rumble(",
+   "note": "berjalan di alur controller_runtime.gd, tanpa fungsi 1:1"
+  },
+  "class:ControllerManager.update": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/input/controller_runtime.gd",
+   "token": "func advance_frame(",
+   "note": "hook update pygame menjadi advance_frame di controller_runtime.gd"
+  },
+  "class:ControllerManager.get_pressed_actions": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/input/controller_runtime.gd",
+   "token": "func rumble(",
+   "note": "berjalan di alur controller_runtime.gd, tanpa fungsi 1:1"
+  },
+  "class:ControllerManager._resolve_scroll_axis": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/input/controller_runtime.gd",
+   "token": "func rumble(",
+   "note": "berjalan di alur controller_runtime.gd, tanpa fungsi 1:1"
+  },
+  "class:ControllerManager.get_cursor_pos": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/input/controller_runtime.gd",
+   "token": "func rumble(",
+   "note": "berjalan di alur controller_runtime.gd, tanpa fungsi 1:1"
+  },
+  "class:ControllerManager.rumble": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/input/controller_runtime.gd",
+   "token": "func rumble(",
+   "note": ""
+  },
+  "class:ControllerManager.draw_cursor": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/input/controller_runtime.gd",
+   "token": "func rumble(",
+   "note": "berjalan di alur controller_runtime.gd, tanpa fungsi 1:1"
+  },
+  "class:ControllerManager.find_ui_button_at_cursor": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/input/controller_runtime.gd",
+   "token": "func rumble(",
+   "note": "berjalan di alur controller_runtime.gd, tanpa fungsi 1:1"
+  },
+  "class:ControllerManager.snap_to_nearest_button": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/input/controller_runtime.gd",
+   "token": "func rumble(",
+   "note": "berjalan di alur controller_runtime.gd, tanpa fungsi 1:1"
+  },
+  "class:ControllerManager.get_controller_info": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/input/controller_runtime.gd",
+   "token": "func rumble(",
+   "note": "berjalan di alur controller_runtime.gd, tanpa fungsi 1:1"
+  },
+  "class:ControllerManager.get_button_label": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/input/controller_runtime.gd",
+   "token": "func get_button_label(",
+   "note": ""
+  },
+  "class:ControllerManager.get_action_label": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/input/controller_runtime.gd",
+   "token": "func get_action_label(",
+   "note": ""
+  },
+  "class:ControllerManager.get_hints": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/input/controller_runtime.gd",
+   "token": "func get_hints(",
+   "note": ""
+  },
+  "class:ControllerManager.draw_hint_bar": {
+   "kind": "folded",
+   "target": "godot_rebuild/scripts/input/controller_runtime.gd",
+   "token": "func rumble(",
+   "note": "berjalan di alur controller_runtime.gd, tanpa fungsi 1:1"
+  },
+  "top:_PANEL_AKTIF@79": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/ui/side_panel.gd",
+   "token": "func is_active()",
+   "note": "dock panel menjawab apakah panel kanan ada"
+  },
+  "top:compute_starting_gold@232": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "compute_starting_gold",
+   "note": ""
+  },
+  "top:compute_gold_per_second@256": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "token": "compute_gold_per_second",
+   "note": ""
+  },
+  "top:format_gold_rate@271": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/match_economy.gd",
+   "token": "format_gold_rate",
+   "note": ""
+  },
+  "top:_default_hero_unlock_cost@1139": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/hero_unlock_store.gd",
+   "token": "static func entry(",
+   "note": "biaya unlock per hero berasal dari data"
+  },
+  "top:get_all_hero_types@1153": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/hero_unlock_store.gd",
+   "token": "static func entry(",
+   "note": "katalog hero dikirim sebagai data"
+  },
+  "top:get_hero_shop_order@1228": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/hero_unlock_store.gd",
+   "token": "static func ids_for_tab(",
+   "note": ""
+  },
+  "top:get_all_hero_types@1255": {
+   "kind": "meta",
+   "target": "",
+   "token": "",
+   "note": "definisi kedua menimpa yang pertama; override kebijakan shop yang menang"
+  },
+  "top:fmt_idr@3083": {
+   "kind": "ported",
+   "target": "godot_rebuild/scripts/match/topup_currency.gd",
+   "token": "fmt_idr",
+   "note": ""
+  },
+  "top:_install_root_aliases@10234": {
+   "kind": "meta",
+   "target": "",
+   "token": "",
+   "note": "Godot punya modul nyata, tanpa shim alias"
+  },
+  "top:install_aliases@10279": {
+   "kind": "meta",
+   "target": "",
+   "token": "",
+   "note": "pemasang alias idempoten, tidak perlu di Godot"
+  },
+  "shim:_install_root_aliases": {
+   "kind": "meta",
+   "target": "",
+   "token": "",
+   "note": "peta alias sys.modules untuk 25 nama modul lama"
+  },
+  "shim:install_aliases": {
+   "kind": "meta",
+   "target": "",
+   "token": "",
+   "note": "pembungkus idempoten _install_root_aliases"
+  },
+  "shim:_CORE_MOD": {
+   "kind": "meta",
+   "target": "",
+   "token": "",
+   "note": "referensi diri modul untuk peta alias"
+  }
+ },
+ "dead_helpers": [
+  "class:GameSettings.get_difficulty_label",
+  "class:GameSettings.is_hard_mode",
+  "class:GameSettings.toggle_difficulty",
+  "class:Menu._blit_shadow",
+  "class:Menu._render_gradient_text",
+  "class:UIRenderer.draw_notifications"
+ ],
+ "duplicates": {
+  "class:TowerDebuffMixin.hp": {
+   "lines": [
+    834,
+    840
+   ],
+   "copies": 2
+  },
+  "get_all_hero_types": {
+   "lines": [
+    1153,
+    1255
+   ],
+   "copies": 2
+  }
+ },
+ "reassignments": {
+  "FPS": [
+   92,
+   349
+  ]
+ },
+ "settings": {
+  "count": 139,
+  "keys": [
+   "AI_HERO_BUY_PRIORITY",
+   "AI_HERO_PREFERENCES",
+   "AI_HERO_UPGRADE_PRIORITY",
+   "AI_MAX_HEROES",
+   "AI_MIN_GOLD_RESERVE",
+   "AI_NEXUS_UPGRADE_PRIORITY",
+   "AI_SELL_HP_THRESHOLD",
+   "AI_SKILL_USE_MIN_ENEMIES",
+   "AI_THINK_INTERVAL",
+   "AI_UPGRADE_TOWER_CHANCE",
+   "ARCHER_LEVELS",
+   "BASE_RADIUS",
+   "BASE_Y",
+   "BLACK",
+   "BLUE",
+   "BLUE_BASE_X",
+   "BLUE_BASE_Y",
+   "BLUE_DARK",
+   "BLUE_LIGHT",
+   "BLUE_TEAM",
+   "BLUE_TOWERS",
+   "BOSS_HERO_UPGRADE_COST_MULT",
+   "BROWN",
+   "BUILD_SLOTS_BLUE",
+   "BUILD_SLOTS_RED",
+   "BULLET_RADIUS",
+   "BULLET_SPEED",
+   "BUSH_COLOR",
+   "CANNON_LEVELS",
+   "CASTLE_LEVELS",
+   "CASTLE_NAMES",
+   "CASTLE_RADIUS",
+   "CASTLE_SHIELD_COLOR_BLUE",
+   "CASTLE_SHIELD_COLOR_RED",
+   "CASTLE_SHIELD_COST",
+   "CASTLE_SHIELD_DAMAGE_REDUCTION",
+   "CASTLE_SHIELD_ENABLED",
+   "CASTLE_SHIELD_FREE_WAVES",
+   "CASTLE_SHIELD_HP_RATIO",
+   "CASTLE_SHIELD_REGEN_DELAY",
+   "CASTLE_SHIELD_REGEN_RATE",
+   "CASTLE_WAVE_COMPOSITION",
+   "CYAN",
+   "DARK_GRAY",
+   "DARK_RIDER_COLOR",
+   "DEV_UNLIMITED_HERO_GOLD",
+   "DIFFICULTY_GOLD_MULT",
+   "FPS",
+   "GOBLIN_COLOR",
+   "GOLD",
+   "GOLD_PER_LEVEL_BONUS",
+   "GOLD_PER_SECOND",
+   "GOLD_PER_SECOND_LEVEL_BONUS",
+   "GRASS_COLOR",
+   "GRASS_DARK",
+   "GRASS_LIGHT",
+   "GRAY",
+   "GREEN",
+   "HERO_LEVELS",
+   "HERO_TYPES",
+   "ICE_LEVELS",
+   "LANE_END_X",
+   "LANE_HEIGHT",
+   "LANE_START_X",
+   "LANE_Y_BOT",
+   "LANE_Y_MID",
+   "LANE_Y_TOP",
+   "LIGHT_GRAY",
+   "MAGE_LEVELS",
+   "MAX_CASTLE_LEVEL",
+   "MAX_HEROES_OWNED",
+   "MAX_HERO_LEVEL",
+   "MAX_NEXUS_LEVEL",
+   "META_REPLAY_REPEAT_REWARD",
+   "MINION_SPAWN_DELAY",
+   "MINION_TYPES",
+   "MINION_WAVE_INTERVAL",
+   "MINI_BOSS_HERO_UNLOCK_COST",
+   "NEXUS_LEVELS",
+   "NEXUS_WAVE_COMPOSITION",
+   "ORANGE",
+   "ORC_COLOR",
+   "PATH_BORDER",
+   "PATH_COLOR",
+   "PATH_LIGHT",
+   "PLAYER_TOWER_TYPES",
+   "PURPLE",
+   "RED",
+   "RED_BASE_X",
+   "RED_BASE_Y",
+   "RED_DARK",
+   "RED_LIGHT",
+   "RED_TEAM",
+   "RED_TOWERS",
+   "SCREEN_HEIGHT",
+   "SCREEN_WIDTH",
+   "SHIELD_COLOR_BLUE",
+   "SHIELD_COLOR_RED",
+   "SLOT_SIZE",
+   "STARTER_HERO_UNLOCK_COST",
+   "STARTING_GOLD",
+   "STONE_COLOR",
+   "STONE_DARK",
+   "STONE_LIGHT",
+   "TITLE",
+   "TOP_BAR_HEIGHT",
+   "TOWER_BASE_STATS",
+   "TOWER_DEBUFF_BURN_TICK",
+   "TOWER_DEBUFF_FPS",
+   "TOWER_HP_MULTIPLIER",
+   "TOWER_HP_REGEN_DELAY",
+   "TOWER_HP_REGEN_ENABLED",
+   "TOWER_HP_REGEN_MAX_RATIO",
+   "TOWER_HP_REGEN_RATE",
+   "TOWER_MAX_LEVEL",
+   "TOWER_REGEN_SHIELD_COST",
+   "TOWER_REGEN_SHIELD_DELAY",
+   "TOWER_REGEN_SHIELD_ENABLED",
+   "TOWER_REGEN_SHIELD_MIN_LEVEL",
+   "TOWER_REGEN_SHIELD_RATE",
+   "TOWER_SHIELD_ENABLED",
+   "TOWER_SHIELD_HP_RATIO",
+   "TOWER_SHIELD_REGEN_DELAY",
+   "TOWER_SHIELD_REGEN_RATE",
+   "TOWER_STATS",
+   "TOWER_TYPE_COLORS",
+   "TOWER_TYPE_INFO",
+   "TOWER_UPGRADE_PATHS",
+   "TOWER_VISUAL_SCALE",
+   "TREE_DARK",
+   "TREE_LIGHT",
+   "TREE_MID",
+   "TROLL_COLOR",
+   "TRUE_BOSS_HERO_UNLOCK_COST",
+   "UNDEAD_COLOR",
+   "WATER_COLOR",
+   "WATER_LIGHT",
+   "WHITE",
+   "YELLOW"
+  ]
+ },
+ "parity": [
+  {
+   "constant": "AI_MAX_HEROES",
+   "value": 5,
+   "godot_const": "MAX_HEROES",
+   "target": "godot_rebuild/scripts/match/ai_policy.gd",
+   "literal": "5",
+   "line": 6
+  },
+  {
+   "constant": "AI_THINK_INTERVAL",
+   "value": 90,
+   "godot_const": "THINK_INTERVAL",
+   "target": "godot_rebuild/scripts/match/ai_policy.gd",
+   "literal": "90",
+   "line": 5
+  },
+  {
+   "constant": "GOLD_PER_SECOND",
+   "value": 3,
+   "godot_const": "GOLD_PER_SECOND",
+   "target": "godot_rebuild/scripts/ui/level_intro_screen.gd",
+   "literal": "3",
+   "line": 27
+  },
+  {
+   "constant": "MAX_HEROES_OWNED",
+   "value": 5,
+   "godot_const": "MAX_HEROES_OWNED",
+   "target": "godot_rebuild/scripts/match/prototype_battle.gd",
+   "literal": "5",
+   "line": 95
+  },
+  {
+   "constant": "MAX_HERO_LEVEL",
+   "value": 15,
+   "godot_const": "MAX_HERO_LEVEL",
+   "target": "godot_rebuild/scripts/data/hero_definition.gd",
+   "literal": "15",
+   "line": 9
+  },
+  {
+   "constant": "META_REPLAY_REPEAT_REWARD",
+   "value": 200,
+   "godot_const": "REPEAT_REWARD",
+   "target": "godot_rebuild/scripts/match/level_progress.gd",
+   "literal": "200",
+   "line": 6
+  },
+  {
+   "constant": "MINION_SPAWN_DELAY",
+   "value": 20,
+   "godot_const": "SPAWN_DELAY",
+   "target": "godot_rebuild/scripts/match/wave_scheduler.gd",
+   "literal": "20",
+   "line": 6
+  },
+  {
+   "constant": "MINION_WAVE_INTERVAL",
+   "value": 1500,
+   "godot_const": "WAVE_INTERVAL",
+   "target": "godot_rebuild/scripts/match/wave_scheduler.gd",
+   "literal": "1500",
+   "line": 5
+  },
+  {
+   "constant": "SCREEN_HEIGHT",
+   "value": 720,
+   "godot_const": "HEIGHT",
+   "target": "godot_rebuild/scenes/splash/splash_screen.gd",
+   "literal": "720",
+   "line": 15
+  },
+  {
+   "constant": "SCREEN_WIDTH",
+   "value": 1280,
+   "godot_const": "SCREEN_WIDTH",
+   "target": "godot_rebuild/scripts/ui/boss_entrance_layout.gd",
+   "literal": "1280",
+   "line": 25
+  },
+  {
+   "constant": "TOP_BAR_HEIGHT",
+   "value": 40,
+   "godot_const": "TOP_BAR_HEIGHT",
+   "target": "godot_rebuild/scripts/ui/tower_popup_layout.gd",
+   "literal": "40",
+   "line": 26
+  },
+  {
+   "constant": "TOWER_DEBUFF_FPS",
+   "value": 60.0,
+   "godot_const": "DEBUFF_FPS",
+   "target": "godot_rebuild/scripts/match/boss_state.gd",
+   "literal": "60.0",
+   "line": 18
+  },
+  {
+   "constant": "TOWER_MAX_LEVEL",
+   "value": 6,
+   "godot_const": "TOWER_MAX_LEVEL",
+   "target": "godot_rebuild/scripts/match/ai_upgrades.gd",
+   "literal": "6",
+   "line": 9
+  },
+  {
+   "constant": "TOWER_REGEN_SHIELD_COST",
+   "value": 850,
+   "godot_const": "REGEN_SHIELD_COST",
+   "target": "godot_rebuild/scripts/combat/structure_state.gd",
+   "literal": "850",
+   "line": 6
+  },
+  {
+   "constant": "TOWER_REGEN_SHIELD_MIN_LEVEL",
+   "value": 4,
+   "godot_const": "REGEN_SHIELD_MIN_LEVEL",
+   "target": "godot_rebuild/scripts/combat/structure_state.gd",
+   "literal": "4",
+   "line": 5
+  },
+  {
+   "constant": "TOWER_VISUAL_SCALE",
+   "value": 0.7,
+   "godot_const": "SCALE",
+   "target": "godot_rebuild/scripts/ui/tower_render_catalog.gd",
+   "literal": "0.7",
+   "line": 28
+  }
+ ]
+}
