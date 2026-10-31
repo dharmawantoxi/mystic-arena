@@ -9911,7 +9911,11 @@ _gd_tokens = {
         'var path := SKILL_DIRECTORY + String(hero_id) + "_skills.gd"',
         "var definition: Variant = HeroRoster.DEFINITIONS[boss_id]",
     ],
-    "tests/render_checks.gd": ["for suite_name in suites:", "var clamp_rows: Array ="],
+    "tests/render_checks.gd": [
+        "for suite_name in suites:",
+        "var clamp_rows: Array =",
+        'const PopupAnim = preload("res://scripts/ui/popup_animation.gd")',
+    ],
     "tests/towers_checks.gd": ["for space_name in classes:"],
     "tests/sprite_lighting_checks.gd": ["var measured := SpriteLighting.bbox_of(image)"],
     "tests/system_checks.gd": ["SpatialGrid.reset_shared()"],
@@ -9936,6 +9940,23 @@ check("inference_on_variant" not in project and "untyped_declaration" not in pro
       "9cr the project must not silence the warnings Godot 4.7 treats as errors")
 check((ROOT / "tests/gdscript_type_guard.py").is_file(),
       "9cr the typed-GDScript guard must ship with the project")
+
+# Godot 4.7 rejects a member that shadows a native class ("The member Popup shadows a
+# native class"), which hid every other error in render_checks.gd. The class list is
+# pinned from godotengine/godot 4.7.2 `doc/classes` so the guard works offline.
+_native_classes = json.loads(
+    (ROOT / "tests/fixtures/godot_native_classes.json").read_text(encoding="utf-8"))
+check(_native_classes.get("godot") == "4.7.2-stable"
+      and _native_classes.get("count") == 810
+      and len(_native_classes.get("classes", [])) == 810,
+      f"9cr the native class list must stay the pinned 4.7.2 set: "
+      f"{_native_classes.get('count')}")
+check("Popup" in _native_classes["classes"] and "Node2D" in _native_classes["classes"],
+      "9cr the native class list must know the renderer classes")
+check("SpatialGrid" not in _native_classes["classes"],
+      "9cr the repo may not declare a class_name the engine already owns")
+check('const Popup = preload(' not in (ROOT / "tests/render_checks.gd").read_text(encoding="utf-8"),
+      "9cr no script may shadow the native Popup class with a preload const")
 
 
 for error in errors:

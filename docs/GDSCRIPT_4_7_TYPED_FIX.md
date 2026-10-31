@@ -57,20 +57,47 @@ sehingga guard yang "lulus karena tidak menemukan apa-apa" tidak mungkin lolos d
 Hasil saat ini: `PASS: 8 rules fire on the broken sample, 0 on the fixed one` dan
 `PASS: 0 typed-inference problems`.
 
-## 3. Catatan soal "Unexpected NUL character"
+## 3. Putaran kedua: member yang membayangi kelas native
 
-Lima error `Unicode parsing error ... Unexpected NUL character` **bukan** dari berkas repo:
+Setelah perbaikan di atas, Godot 4.7.2 hanya menyisakan satu error:
+
+```
+res://tests/render_checks.gd:32 - Parse Error: The member "Popup" shadows a native class.
+```
+
+`const Popup = preload("res://scripts/ui/popup_animation.gd")` memakai nama kelas bawaan
+engine (`Popup`) sebagai nama member. Di 4.7 ini **parse error**, dan karena parser berhenti
+di baris itu, seluruh error lain di berkas yang sama ikut tersembunyi (persis seperti kasus
+`towers_checks.gd`/`render_checks.gd` sebelumnya). Perbaikannya: `Popup` -> `PopupAnim`
+(3 pemakaian di berkas itu ikut diganti).
+
+Untuk mencegah kelas error ini muncul lagi, daftar kelas native dipin menjadi fixture:
+
+| Berkas | Isi |
+| --- | --- |
+| `tests/fixtures/godot_native_classes.json` | 810 nama kelas `doc/classes` dari godotengine/godot **4.7.2-stable** (diambil lewat GitHub contents API, jadi guard tetap jalan offline) |
+
+Aturan baru `native-class-member` di `tests/gdscript_type_guard.py` melaporkan setiap
+`const`/`var`/`static var`/`signal`/`enum`/`class_name` yang namanya sama dengan kelas native.
+Pemindaian repo saat ini: **0** temuan (hanya `Popup` yang tersisa, sudah diperbaiki).
+`--self-test` sekarang menembakkan 9 temuan pada sampel rusak.
+
+## 4. Catatan soal "Unexpected NUL character"
+
+Lima error `Unicode parsing error ... Unexpected NUL character` tetap muncul dan **bukan**
+dari berkas repo (dicek ulang setelah putaran pertama):
 
 - pemindaian byte seluruh `godot_rebuild/` menemukan NUL hanya di berkas biner
   (`assets/**.png`, `assets/art/**.webp`) — itu wajar untuk format tersebut;
-- tidak ada satu pun `.gd`, `.tscn`, `.tres`, `.json`, `.cfg` yang mengandung `\x00`.
+- tidak ada satu pun `.gd`, `.tscn`, `.tres`, `.json`, `.cfg`, `.import` yang mengandung
+  `\x00`, dan seluruh berkas teks valid UTF-8 (0 berkas gagal decode).
 
 Artinya Godot membaca berkas di luar repo (cache impor `.godot/`, atau buffer editor yang
 belum disimpan). Langkahnya di PC: tutup editor, hapus `godot_rebuild/.godot/`, buka ulang
 project. Kalau masih muncul, jalankan
 `grep -rlIP '\x00' godot_rebuild --include=*.gd` untuk memastikan.
 
-## 4. Batas bukti
+## 5. Batas bukti
 
 Validator statis + dua guard + `gdparse`/`gdlint` **bukan** bukti parity dan bukan bukti
 project bisa dijalankan: keduanya hanya membuktikan tidak ada lagi pelanggaran aturan yang

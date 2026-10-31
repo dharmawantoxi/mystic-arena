@@ -29,7 +29,7 @@ const CelebrationLayout = preload("res://scripts/ui/boss_celebration_layout.gd")
 const BossDeath = preload("res://scripts/ui/boss_death_animation.gd")
 const SourceFonts = preload("res://scripts/ui/source_fonts.gd")
 const LevelIntro = preload("res://scripts/ui/level_intro_screen.gd")
-const Popup = preload("res://scripts/ui/popup_animation.gd")
+const PopupAnim = preload("res://scripts/ui/popup_animation.gd")
 const WaveAnnouncer = preload("res://scripts/ui/wave_announcer.gd")
 const SpriteCacheScript = preload("res://scripts/ui/sprite_cache.gd")
 const RenderCacheScript = preload("res://scripts/ui/render_cache.gd")
@@ -208,14 +208,14 @@ func _check_easing(check: Callable, data: Dictionary) -> void:
 	var drift: Array = []
 	for index in range(inputs.size()):
 		var t: float = float(inputs[index])
-		if absf(float(Popup._ease_out_back(t)) - float(out_back[index])) > 1e-9:
+		if absf(float(PopupAnim._ease_out_back(t)) - float(out_back[index])) > 1e-9:
 			drift.append("out_back %.4f" % t)
 		if absf(float(WaveAnnouncer._ease_in_back(t)) - float(in_back[index])) > 1e-9:
 			drift.append("in_back %.4f" % t)
 	check.call(drift.is_empty(), "the easing curves keep the source values (%s)" % str(drift))
 	check.call(
-		absf(float(Popup._ease_out_back(0.25)) - 0.817409688) < 1e-9
-		and absf(float(Popup._ease_out_back(0.5)) - 1.0876975) < 1e-8,
+		absf(float(PopupAnim._ease_out_back(0.25)) - 0.817409688) < 1e-9
+		and absf(float(PopupAnim._ease_out_back(0.5)) - 1.0876975) < 1e-8,
 		"ease-out-back overshoots exactly like pygame"
 	)
 	check.call(
