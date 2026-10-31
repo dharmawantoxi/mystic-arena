@@ -1,0 +1,320 @@
+{
+ "source": "main.py",
+ "file": {
+  "file": "main.py",
+  "lines": 737,
+  "classes": 0,
+  "functions": 4,
+  "assigns": 7,
+  "entrypoints": 1,
+  "imports": 23
+ },
+ "symbols": {
+  "count": 35,
+  "names": [
+   "os",
+   "sys",
+   "pygame",
+   "mobile.platform_utils",
+   "mobile.perf",
+   "mobile.touch",
+   "mobile.hud",
+   "mobile.debug",
+   "mobile.diagnostics",
+   "mobile.bootcheck",
+   "mobile.combat_audio",
+   "mobile.sidepanel",
+   "mobile.kaizen_review",
+   "mobile.vex_review",
+   "mobile.grimjaw_review",
+   "mobile.sylara_review",
+   "_core",
+   "storage_paths.SAVE_DIR",
+   "settings.TITLE",
+   "game.Game",
+   "menu.Menu",
+   "splash_screen.SplashScreen",
+   "_render.get_font",
+   "_log_frame_error",
+   "_cinematic_active",
+   "_handle_background",
+   "main",
+   "adaptive",
+   "screen",
+   "STATE_SPLASH..STATE_PAUSE",
+   "APP_BG",
+   "APP_FG",
+   "_FRAME_ERR_LAST",
+   "_FRAME_ERR_COOLDOWN",
+   "__main__"
+  ]
+ },
+ "classification": {
+  "os": {
+   "kind": "folded",
+   "target": "scripts/app/frame_error_log.gd",
+   "token": "FileAccess.open(",
+   "note": ""
+  },
+  "sys": {
+   "kind": "folded",
+   "target": "app/app.gd",
+   "token": "get_tree().quit()",
+   "note": ""
+  },
+  "pygame": {
+   "kind": "baked",
+   "target": "",
+   "token": "",
+   "note": "engine + scene tree replace pygame primitives"
+  },
+  "mobile.platform_utils": {
+   "kind": "ported",
+   "target": "scripts/platform/mobile_platform.gd",
+   "token": "static func is_touch_mode()",
+   "note": ""
+  },
+  "mobile.perf": {
+   "kind": "baked",
+   "target": "",
+   "token": "",
+   "note": "font/blit hot patches have no GDScript analogue; quality presets live in adaptive_quality"
+  },
+  "mobile.touch": {
+   "kind": "ported",
+   "target": "scripts/input/touch_gesture_runtime.gd",
+   "token": "func touch_down(",
+   "note": ""
+  },
+  "mobile.hud": {
+   "kind": "ported",
+   "target": "scripts/ui/touch_hud_layout.gd",
+   "token": "static func action_intent(",
+   "note": ""
+  },
+  "mobile.debug": {
+   "kind": "deviation",
+   "target": "",
+   "token": "",
+   "note": "dev overlay is opt-in via MYSTIC_DEBUG and not ported (D5)"
+  },
+  "mobile.diagnostics": {
+   "kind": "deviation",
+   "target": "",
+   "token": "",
+   "note": "PYGAME_SDL self-test screen replaced by the native suite (D6)"
+  },
+  "mobile.bootcheck": {
+   "kind": "deviation",
+   "target": "",
+   "token": "",
+   "note": "MYSTIC_BOOTCHECK diagnostic screen is Android-dev only (D6)"
+  },
+  "mobile.combat_audio": {
+   "kind": "ported",
+   "target": "scripts/audio/combat_audio.gd",
+   "token": "func new_frame()",
+   "note": ""
+  },
+  "mobile.sidepanel": {
+   "kind": "ported",
+   "target": "scripts/ui/side_panel.gd",
+   "token": "func is_active()",
+   "note": ""
+  },
+  "mobile.kaizen_review": {
+   "kind": "deviation",
+   "target": "",
+   "token": "",
+   "note": "opt-in F9 review sheet (D5)"
+  },
+  "mobile.vex_review": {
+   "kind": "deviation",
+   "target": "",
+   "token": "",
+   "note": "opt-in F10 review sheet (D5)"
+  },
+  "mobile.grimjaw_review": {
+   "kind": "deviation",
+   "target": "",
+   "token": "",
+   "note": "opt-in F11 review sheet (D5)"
+  },
+  "mobile.sylara_review": {
+   "kind": "deviation",
+   "target": "",
+   "token": "",
+   "note": "opt-in F7 review sheet (D5)"
+  },
+  "_core": {
+   "kind": "ported",
+   "target": "scripts/data/core_settings.gd",
+   "token": "DATA_PATH",
+   "note": ""
+  },
+  "storage_paths.SAVE_DIR": {
+   "kind": "folded",
+   "target": "scripts/match/save_slot_store.gd",
+   "token": "const PATH_TEMPLATE",
+   "note": ""
+  },
+  "settings.TITLE": {
+   "kind": "folded",
+   "target": "scripts/data/core_settings.gd",
+   "token": "DATA_PATH",
+   "note": "module absent in this snapshot; TITLE lives in core settings"
+  },
+  "game.Game": {
+   "kind": "folded",
+   "target": "scenes/prototype/PrototypeMatch.tscn",
+   "token": "[node name=\"PrototypeMatch\"",
+   "note": "module absent in this snapshot; the session scene is the port"
+  },
+  "menu.Menu": {
+   "kind": "folded",
+   "target": "scenes/menu/MainMenu.tscn",
+   "token": "[node name=\"MainMenu\"",
+   "note": "module absent in this snapshot; the menu scene is the port"
+  },
+  "splash_screen.SplashScreen": {
+   "kind": "ported",
+   "target": "scenes/splash/SplashScreen.tscn",
+   "token": "[node name=\"SplashScreen\"",
+   "note": ""
+  },
+  "_render.get_font": {
+   "kind": "ported",
+   "target": "scripts/ui/rebuild_theme.gd",
+   "token": "static func create_theme(",
+   "note": ""
+  },
+  "_log_frame_error": {
+   "kind": "ported",
+   "target": "scripts/app/frame_error_log.gd",
+   "token": "func record(",
+   "note": ""
+  },
+  "_cinematic_active": {
+   "kind": "ported",
+   "target": "scenes/prototype/prototype_screen.gd",
+   "token": "celebration_active",
+   "note": ""
+  },
+  "_handle_background": {
+   "kind": "folded",
+   "target": "app/app.gd",
+   "token": "NOTIFICATION_APPLICATION_PAUSED",
+   "note": "the engine owns background suspension"
+  },
+  "main": {
+   "kind": "folded",
+   "target": "app/app.gd",
+   "token": "func _install_screen(",
+   "note": "loop lives in the scene tree"
+  },
+  "adaptive": {
+   "kind": "ported",
+   "target": "scripts/settings/adaptive_quality_runtime.gd",
+   "token": "func update_fps(",
+   "note": ""
+  },
+  "screen": {
+   "kind": "baked",
+   "target": "",
+   "token": "",
+   "note": "the viewport replaces the pygame render surface"
+  },
+  "STATE_SPLASH..STATE_PAUSE": {
+   "kind": "ported",
+   "target": "app/app.gd",
+   "token": "_install_screen(SPLASH)",
+   "note": ""
+  },
+  "APP_BG": {
+   "kind": "folded",
+   "target": "app/app.gd",
+   "token": "NOTIFICATION_APPLICATION_FOCUS_OUT",
+   "note": ""
+  },
+  "APP_FG": {
+   "kind": "folded",
+   "target": "app/app.gd",
+   "token": "NOTIFICATION_APPLICATION_PAUSED",
+   "note": ""
+  },
+  "_FRAME_ERR_LAST": {
+   "kind": "ported",
+   "target": "scripts/app/frame_error_log.gd",
+   "token": "var last_written",
+   "note": ""
+  },
+  "_FRAME_ERR_COOLDOWN": {
+   "kind": "data",
+   "target": "scripts/app/frame_error_log.gd",
+   "token": "const COOLDOWN_SECONDS := 2.0",
+   "note": ""
+  },
+  "__main__": {
+   "kind": "folded",
+   "target": "project.godot",
+   "token": "run/main_scene=",
+   "note": ""
+  }
+ },
+ "kinds": {
+  "baked": 3,
+  "data": 1,
+  "deviation": 7,
+  "folded": 11,
+  "ported": 13
+ },
+ "deviations": [
+  "mobile.bootcheck",
+  "mobile.debug",
+  "mobile.diagnostics",
+  "mobile.grimjaw_review",
+  "mobile.kaizen_review",
+  "mobile.sylara_review",
+  "mobile.vex_review"
+ ],
+ "constants": {
+  "states": [
+   "splash",
+   "menu",
+   "game",
+   "pause"
+  ],
+  "frame_error_kinds": [
+   "draw",
+   "update"
+  ],
+  "frame_error_cooldown": 2.0,
+  "max_catchup": 4,
+  "fixed_dt_ms": 16.666666666666668,
+  "debug_env": "MYSTIC_DEBUG",
+  "mixer_pre_init": {
+   "frequency": 44100,
+   "size": -16,
+   "channels": 2,
+   "buffer": 1024
+  },
+  "keys": {
+   "K_F7": "sylara_review_mod.toggle",
+   "K_F8": "debug.toggle",
+   "K_F9": "kaizen_review_mod.toggle",
+   "K_F10": "vex_review_mod.toggle",
+   "K_F11": "grimjaw_review_mod.toggle",
+   "K_ESCAPE": "state-transition"
+  },
+  "banner": [
+   "============================================================",
+   "  MYSTIC ARENA - MOBILE BUILD",
+   "  device : %s",
+   "  android: %s (API %s)",
+   "  save   : %s",
+   "  input  : %s",
+   "  quality: %s",
+   "============================================================"
+  ]
+ }
+}
