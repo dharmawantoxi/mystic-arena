@@ -2659,18 +2659,18 @@
   {
    "constant": "SCREEN_HEIGHT",
    "value": 720,
-   "godot_const": "HEIGHT",
-   "target": "godot_rebuild/scenes/splash/splash_screen.gd",
+   "godot_const": "SCREEN_HEIGHT",
+   "target": "godot_rebuild/scripts/match/tactical_commands.gd",
    "literal": "720",
-   "line": 15
+   "line": 35
   },
   {
    "constant": "SCREEN_WIDTH",
    "value": 1280,
    "godot_const": "SCREEN_WIDTH",
-   "target": "godot_rebuild/scripts/ui/boss_entrance_layout.gd",
+   "target": "godot_rebuild/scripts/match/tactical_commands.gd",
    "literal": "1280",
-   "line": 25
+   "line": 34
   },
   {
    "constant": "TOP_BAR_HEIGHT",

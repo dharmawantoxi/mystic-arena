@@ -8,13 +8,18 @@ from __future__ import annotations
 
 from contextlib import redirect_stdout
 from io import StringIO
+import ast
 import json
 from pathlib import Path
+import re
 import sys
 from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = Path(__file__).with_name("fixtures") / "tactical_command_source.json"
+INVENTORY = Path(__file__).with_name("fixtures") / "tactical_commands_inventory.json"
+SOURCE = ROOT / "tactical_commands.py"
+PROJECT = ROOT / "godot_rebuild"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
@@ -58,11 +63,34 @@ class Hero(Actor):
 
 
 class Effects:
-    def add_damage_number(self, *_args, **_kwargs):
-        pass
+    """Records the presentation calls instead of swallowing them.
 
-    def add_death_explosion(self, *_args, **_kwargs):
-        pass
+    The source wraps every effect call in `try/except`, so a spike that never
+    fires is indistinguishable from one that fires — which is exactly how the
+    GATHER / PROTECT CASTLE marker bursts went missing in the first port. The
+    calls are part of the observable contract now.
+    """
+
+    def __init__(self):
+        self.calls = []
+
+    def add_damage_number(self, x, y, text, is_critical=False):
+        self.calls.append({
+            "kind": "damage_number",
+            "x": round(float(x), 3),
+            "y": round(float(y), 3),
+            "text": text,
+            "critical": bool(is_critical),
+        })
+
+    def add_death_explosion(self, x, y, team="red", size="medium"):
+        self.calls.append({
+            "kind": "death_explosion",
+            "x": round(float(x), 3),
+            "y": round(float(y), 3),
+            "team": team,
+            "size": size,
+        })
 
 
 class Game:
@@ -87,9 +115,14 @@ class QuietManager(TacticalCommandManager):
     """Presentation callback remains source-equivalent but avoids optional imports."""
 
     def _set_feedback(self, text, color=(255, 220, 100)):
+        # Banner state plus the third source side effect: a critical damage number
+        # at (640, 100). `game.ui.add_notification` and `sidepanel.beri_tahu_global`
+        # are no-ops in the source (`_core.add_notification` returns, the panel
+        # helper returns False), so they are not modelled.
         self.feedback_text = text
         self.feedback_timer = 180
         self.feedback_color = color
+        self.game.effects.add_damage_number(640, 100, text, is_critical=True)
 
 
 def _point(value):
@@ -115,6 +148,7 @@ def _snapshot(manager, game):
         "hold_fired": manager._hold_has_fired,
         "gather_push": manager._gather_push_fired,
         "feedback": manager.feedback_text,
+        "effects": list(game.effects.calls),
         "heroes": [
             {
                 "id": hero.label,
@@ -252,16 +286,277 @@ def source_fixture():
     }
 
 
+
+
+# ════════════════════════════════════════════════════════════════════
+# Layer 9co: the whole file, symbol by symbol
+# ════════════════════════════════════════════════════════════════════
+
+# name -> (kind, target relative to godot_rebuild/, live token, note)
+CLASSIFICATION = {
+    "settings": ("folded", "scripts/data/core_settings.gd", "DATA_PATH",
+                 "module absent in this snapshot; the six base/screen constants live in "
+                 "core settings + data/core/settings.json"),
+    "math": ("folded", "scripts/match/tactical_commands.gd", "Vector2.from_angle(",
+             "hypot/sin/cos/pi become Vector2 helpers and TAU"),
+    "random": ("ported", "scripts/match/tactical_commands.gd", "boss_auto_roll_override",
+               "seeded RandomNumberGenerator with a test override hook"),
+    "HOLD_TAP_MAX_FRAMES": ("data", "scripts/match/tactical_commands.gd",
+                            "const HOLD_TAP_MAX_TICKS := 20", ""),
+    "HOLD_RELEASE_TAIL": ("data", "scripts/match/tactical_commands.gd",
+                          "const HOLD_RELEASE_TAIL := 30", ""),
+    "GATHER_PUSH_DELAY_FRAMES": ("data", "scripts/match/tactical_commands.gd",
+                                 "const GATHER_PUSH_DELAY_TICKS := 240", ""),
+    "TacticalCommand": ("ported", "scripts/match/tactical_commands.gd",
+                        "const COMMANDS: Array[String] = [", ""),
+    "TacticalCommand.GATHER": ("data", "scripts/match/tactical_commands.gd",
+                               'const GATHER := "gather"', ""),
+    "TacticalCommand.PROTECT_TOWER": ("data", "scripts/match/tactical_commands.gd",
+                                      'const PROTECT_TOWER := "protect_tower"', ""),
+    "TacticalCommand.PROTECT_CASTLE": ("data", "scripts/match/tactical_commands.gd",
+                                       'const PROTECT_CASTLE := "protect_castle"', ""),
+    "TacticalCommand.ATTACK_BOSS": ("data", "scripts/match/tactical_commands.gd",
+                                    'const ATTACK_BOSS := "attack_boss"', ""),
+    "TacticalCommand.ATTACK_DAMAGE_DEALER": ("data", "scripts/match/tactical_commands.gd",
+                                             'const ATTACK_DAMAGE_DEALER := "attack_damage_dealer"',
+                                             ""),
+    "TacticalCommandManager": ("ported", "scripts/match/tactical_commands.gd",
+                               'var active_command := ""', ""),
+    "BLUE_BASE_X": ("dead", "", "", "fallback constant the source never reads"),
+    "BLUE_BASE_Y": ("dead", "", "", "fallback constant the source never reads"),
+    "RED_BASE_X": ("data", "scripts/match/tactical_commands.gd",
+                   "const RED_BASE := Vector2(1180, 100)", ""),
+    "RED_BASE_Y": ("data", "scripts/match/tactical_commands.gd",
+                   "const RED_BASE := Vector2(1180, 100)", ""),
+    "SCREEN_WIDTH": ("data", "scripts/match/tactical_commands.gd",
+                     "const SCREEN_WIDTH := 1280", ""),
+    "SCREEN_HEIGHT": ("data", "scripts/match/tactical_commands.gd",
+                      "const SCREEN_HEIGHT := 720", ""),
+    "TacticalCommandManager.__init__": ("ported", "scripts/match/tactical_commands.gd",
+                                        "func _init() -> void:", ""),
+    "TacticalCommandManager.can_issue": ("ported", "scripts/match/tactical_commands.gd",
+                                         "func can_issue(world: Object) -> bool:", ""),
+    "TacticalCommandManager._set_feedback": (
+        "ported", "scripts/match/tactical_commands.gd",
+        "func _feedback(world: Object, text: String, color: Color) -> void:",
+        "notification and side panel toast are source no-ops"),
+    "TacticalCommandManager._get_alive_blue_heroes": (
+        "ported", "scripts/match/tactical_commands.gd",
+        "func _alive_blue_heroes(world: Object) -> Array:", ""),
+    "TacticalCommandManager._clear_hero_retreat": (
+        "ported", "scripts/match/tactical_commands.gd",
+        "func _clear_retreat(heroes: Array) -> void:", ""),
+    "TacticalCommandManager._issuers": ("folded", "scripts/match/tactical_commands.gd",
+                                        "func issue(", "dict dispatch became a match"),
+    "TacticalCommandManager.hold_start": ("ported", "scripts/match/tactical_commands.gd",
+                                          "func hold_start(", ""),
+    "TacticalCommandManager.hold_end": ("ported", "scripts/match/tactical_commands.gd",
+                                        'func hold_end(name: String = "") -> void:', ""),
+    "TacticalCommandManager.hold_active": ("ported", "scripts/match/tactical_commands.gd",
+                                           "func hold_active() -> bool:", ""),
+    "TacticalCommandManager._issue_held": ("ported", "scripts/match/tactical_commands.gd",
+                                           "func _issue_held(world: Object, loud: bool) -> bool:",
+                                           ""),
+    "TacticalCommandManager._gather_hold_push": (
+        "ported", "scripts/match/tactical_commands.gd",
+        "func _gather_hold_push(world: Object) -> bool:", ""),
+    "TacticalCommandManager._try_gather_push": (
+        "ported", "scripts/match/tactical_commands.gd",
+        "func _try_gather_push(world: Object) -> bool:", ""),
+    "TacticalCommandManager.command_gather": ("ported", "scripts/match/tactical_commands.gd",
+                                              "func _command_gather(", ""),
+    "TacticalCommandManager.command_protect_tower": (
+        "ported", "scripts/match/tactical_commands.gd",
+        "func _command_protect_tower(world: Object, target_id: int, silent: bool) -> bool:", ""),
+    "TacticalCommandManager.command_protect_castle": (
+        "ported", "scripts/match/tactical_commands.gd",
+        "func _command_protect_castle(world: Object, silent: bool) -> bool:", ""),
+    "TacticalCommandManager.command_attack_boss": (
+        "ported", "scripts/match/tactical_commands.gd",
+        "func _command_attack_boss(world: Object, silent: bool) -> bool:", ""),
+    "TacticalCommandManager._find_enemy_damage_dealer": (
+        "ported", "scripts/match/tactical_commands.gd",
+        "func _find_enemy_damage_dealer(world: Object) -> HeroState:", ""),
+    "TacticalCommandManager.command_attack_damage_dealer": (
+        "ported", "scripts/match/tactical_commands.gd",
+        "func _command_attack_damage_dealer(world: Object, silent: bool) -> bool:", ""),
+    "TacticalCommandManager._find_most_threatened_tower": (
+        "ported", "scripts/match/tactical_commands.gd",
+        "func _find_most_threatened_tower(world: Object) -> StructureState:", ""),
+    "TacticalCommandManager._count_enemies_near": (
+        "ported", "scripts/match/tactical_commands.gd",
+        "func _count_enemies_near(world: Object, point: Vector2, radius: float) -> int:", ""),
+    "TacticalCommandManager._find_nearest_enemy_target": (
+        "ported", "scripts/match/tactical_commands.gd",
+        "func _find_nearest_enemy_target(world: Object, point: Vector2) -> Object:", ""),
+    "TacticalCommandManager.update": ("ported", "scripts/match/tactical_commands.gd",
+                                      "func step_tick(world: Object) -> void:", ""),
+    "TacticalCommandManager._auto_evaluate_protect": (
+        "ported", "scripts/match/tactical_commands.gd",
+        "func _auto_evaluate_protect(world: Object) -> void:", ""),
+    "TacticalCommandManager._get_command_color": (
+        "ported", "scripts/match/tactical_commands.gd", "func command_color() -> Color:", ""),
+    "TacticalCommandManager.draw_world": (
+        "ported", "scripts/ui/tactical_layout.gd", "static func world_ops(",
+        "layer 9bi2 op list"),
+    "TacticalCommandManager.draw_ui": (
+        "ported", "scripts/ui/tactical_layout.gd", "static func feedback_ops(",
+        "layer 9bi2 op list"),
+    "TacticalCommandManager.draw": (
+        "folded", "scenes/prototype/prototype_view.gd", "TacticalLayout.feedback_ops(",
+        "legacy wrapper: the view paints world and UI ops separately"),
+    "TacticalCommandManager.get_status_text": (
+        "ported", "scripts/match/tactical_commands.gd",
+        "func status_text(world: Object) -> String:", ""),
+}
+
+
+def _class_members(node):
+    names = []
+    for child in node.body:
+        if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            names.append(f"{node.name}.{child.name}")
+        elif isinstance(child, ast.Assign):
+            for target in child.targets:
+                if isinstance(target, ast.Name):
+                    names.append(f"{node.name}.{target.id}")
+    return names
+
+
+def symbol_inventory():
+    text = SOURCE.read_text(encoding="utf-8")
+    tree = ast.parse(text)
+    imports = []
+    functions = []
+    assigns = []
+    classes = []
+    for node in tree.body:
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            imports.extend(alias.name for alias in node.names)
+        elif isinstance(node, ast.Try):
+            # `from settings import (...)` with an `except ImportError` fallback
+            for inner in node.body:
+                if isinstance(inner, ast.ImportFrom):
+                    imports.append(inner.module or "")
+            for handler in node.handlers:
+                for inner in handler.body:
+                    if isinstance(inner, ast.Assign):
+                        for target in inner.targets:
+                            if isinstance(target, ast.Name):
+                                assigns.append(target.id)
+        elif isinstance(node, ast.ClassDef):
+            classes.append(node.name)
+            classes.extend(_class_members(node))
+        elif isinstance(node, ast.FunctionDef):
+            functions.append(node.name)
+        elif isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    assigns.append(target.id)
+    names = imports + classes + functions + assigns
+    return {
+        "file": {
+            "file": "tactical_commands.py",
+            "lines": len(text.splitlines()),
+            "classes": 2,
+            "functions": 0,
+            "assigns": len(assigns),
+            "imports": len(imports),
+        },
+        "symbols": {"count": len(names), "names": names},
+        "imports": imports,
+        "classes": [name for name in classes if "." not in name],
+        "methods": [name for name in classes if "." in name],
+        "assigns": assigns,
+    }
+
+
+def _native_functions(target):
+    text = (PROJECT / target).read_text(encoding="utf-8")
+    return set(re.findall(r"^func ([A-Za-z_0-9]+)\(", text, re.M))
+
+
+def folder_fixture():
+    inventory = symbol_inventory()
+    classification = {}
+    for name in inventory["symbols"]["names"]:
+        if name not in CLASSIFICATION:
+            raise AssertionError(f"tactical_commands.py symbol without a classification: {name}")
+        kind, target, token, note = CLASSIFICATION[name]
+        classification[name] = {"kind": kind, "target": target, "token": token, "note": note}
+    kinds = {}
+    for row in classification.values():
+        kinds[row["kind"]] = kinds.get(row["kind"], 0) + 1
+    mapped = set()
+    targets = set()
+    for row in classification.values():
+        if row["target"] and row["token"].startswith("func "):
+            mapped.add(row["token"][5:].split("(")[0])
+        if row["target"]:
+            targets.add(row["target"])
+    native_only = _native_functions("scripts/match/tactical_commands.gd") - mapped
+    return {
+        "source": "tactical_commands.py",
+        "file": inventory["file"],
+        "symbols": inventory["symbols"],
+        "classification": classification,
+        "kinds": dict(sorted(kinds.items())),
+        "deviations": sorted(
+            name for name, row in classification.items() if row["kind"] == "deviation"
+        ),
+        "dead": sorted(name for name, row in classification.items() if row["kind"] == "dead"),
+        "native_only": sorted(native_only),
+        "policy": {
+            "duration": 600,
+            "cooldown": 30,
+            "point_ticks": 150,
+            "feedback_ticks": 180,
+            "hold_tap_max": HOLD_TAP_MAX_FRAMES,
+            "hold_release_tail": HOLD_RELEASE_TAIL,
+            "gather_push_delay": GATHER_PUSH_DELAY_FRAMES,
+            "sound_click_volume": 0.8,
+            "sound_skill_volume": 0.9,
+        },
+    }
+
+
+def verify_folder():
+    expected = json.loads(INVENTORY.read_text(encoding="utf-8"))
+    actual = folder_fixture()
+    if actual != expected:
+        raise AssertionError("tactical_commands.py inventory drift; rerun with --write")
+    for name, row in actual["classification"].items():
+        if row["kind"] in ("dead", "deviation"):
+            continue
+        target = PROJECT / row["target"]
+        if not target.is_file() or row["token"] not in target.read_text(encoding="utf-8"):
+            raise AssertionError(f"tactical_commands.py symbol {name} lost its live target")
+    return actual["symbols"]["count"] + len(actual["policy"]) + len(actual["native_only"])
+
+
 def main():
+    arguments = sys.argv[1:]
     with redirect_stdout(StringIO()):
         actual = source_fixture()
     expected = json.loads(FIXTURE.read_text(encoding="utf-8")) if FIXTURE.exists() else None
-    if expected != actual:
+    folder = folder_fixture()
+    folder_expected = (
+        json.loads(INVENTORY.read_text(encoding="utf-8")) if INVENTORY.exists() else None
+    )
+    if "--write" in arguments or expected != actual or folder_expected != folder:
         FIXTURE.parent.mkdir(parents=True, exist_ok=True)
         FIXTURE.write_text(json.dumps(actual, indent=2) + "\n", encoding="utf-8")
-        if expected is not None:
-            raise SystemExit("FAIL: tactical command source fixture drift (fixture refreshed)")
-    print(f"PASS: {len(actual['cases'])} tactical command source cases")
+        INVENTORY.write_text(
+            json.dumps(folder, indent=1, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
+        if "--write" not in arguments and expected is not None:
+            raise SystemExit("FAIL: tactical command fixture drift (fixtures refreshed)")
+        print(f"WROTE: {FIXTURE.name} + {INVENTORY.name}")
+        return
+    print(
+        f"PASS: {len(actual['cases'])} tactical command cases + "
+        f"{verify_folder()} inventory facts"
+    )
 
 
 if __name__ == "__main__":
