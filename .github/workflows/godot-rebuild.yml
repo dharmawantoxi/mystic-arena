@@ -129,6 +129,7 @@ jobs:
           python godot_rebuild/tests/render_cache_source_oracle.py
           python godot_rebuild/tests/core_source_oracle.py --check
           python godot_rebuild/tests/entity_source_oracle.py --check
+          python godot_rebuild/tests/render_source_oracle.py --check
           python godot_rebuild/tests/map_renderer_source_oracle.py
           python godot_rebuild/tests/dynamic_renderer_source_oracle.py
           PYTHONPATH=/tmp/nopygame python godot_rebuild/tests/effect_manager_source_oracle.py

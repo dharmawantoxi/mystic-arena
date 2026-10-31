@@ -17,7 +17,11 @@ extends RefCounted
 ## `boss_celebration_draw_source_oracle.py` pins every op.
 
 const LevelIntro = preload("res://scripts/ui/level_intro_layout.gd")
+const SkipHint = preload("res://scripts/ui/skip_hint.gd")
 
+## Layer 9ch: pygame asks `_skip_button_label()` per frame ("TAP" on touch, the
+## controller button in controller mode, "SPACE" otherwise); `SKIP_LABEL` is only the
+## keyboard fallback the caller may override through `ops(..., skip_label)`.
 const SKIP_LABEL := "SPACE"
 const TINT_RGBA := [80, 60, 20, 40]
 const GOLD := [255, 220, 100]
@@ -46,13 +50,21 @@ const SPARKLE_START := 0.4
 
 var _ops: Array = []
 var _measure: Callable
+var _skip_label: String = SKIP_LABEL
 
 
 ## One frame of `draw()` for a `BossDeathAnimation` port (`ticks` is
 ## `pygame.time.get_ticks()`); empty unless the celebration is running.
-static func ops(anim, ticks: int, measure: Callable, cheap_alpha: bool = true) -> Array:
+static func ops(
+	anim,
+	ticks: int,
+	measure: Callable,
+	cheap_alpha: bool = true,
+	skip_label: String = SKIP_LABEL,
+) -> Array:
 	var layout := new()
 	layout._measure = measure
+	layout._skip_label = skip_label
 	layout._draw(anim, ticks, cheap_alpha)
 	return layout._ops
 
@@ -88,7 +100,7 @@ func _draw(anim, ticks: int, cheap_alpha: bool) -> void:
 	if float(visual["progress"]) > SPARKLE_START:
 		_sparkles(cx, cy, ticks)
 	if bool(visual["hint_visible"]):
-		var hint: String = "[%s] to continue" % SKIP_LABEL
+		var hint: String = SkipHint.hint(_skip_label, "continue")
 		var spot := _box(hint, SMALL_SIZE, cx, int(anim.screen_h) - 40)
 		_text(hint, SMALL_SIZE, SMALL_STYLE, HINT_RGB, int(visual["hint_alpha"]), spot.position)
 

@@ -4195,6 +4195,167 @@ if _ent_doc.is_file():
     check(_ent_report.count("|") > 400, "9cg the report must stay tabular")
 
 
+# ── 9ch: the whole `_render.py` render bundle (3.671 lines, 7 modules) ──
+# `_render.py` merges map_renderer.py, effects.py, effects_death.py, effects_intro.py,
+# effects_level_intro.py, sprite_cache.py and render_cache.py behind a bundled font
+# system. Every class already lives in the rebuild, so this layer classifies all 156
+# symbols (reachability from each class's public API decides `dead`), executes the font
+# resolver, the four easing helpers, the two input-mode labels and the two module
+# singletons, and proves that the celebration hint follows the input mode instead of a
+# hardcoded "SPACE".
+from render_source_oracle import source_fixture as render_source_fixture
+_rnd_fixture_path = ROOT / "tests/fixtures/render_source.json"
+_rnd_checks_path = ROOT / "tests/render_checks.gd"
+_rnd_oracle_path = ROOT / "tests/render_source_oracle.py"
+check(_rnd_fixture_path.is_file(), "9ch _render.py inventory needs a source oracle fixture")
+check(_rnd_checks_path.is_file(), "9ch the _render.py native suite must exist")
+check(_rnd_oracle_path.is_file(), "9ch the _render.py oracle must ship")
+check('const RenderChecks = preload("res://tests/render_checks.gd")' in ai_tests
+      and "RenderChecks.new().run(_check)" in ai_tests,
+      "9ch the _render.py suite must be preloaded and run")
+_rnd_doc = ROOT.parent / "docs/RENDER_FOLDER_MIGRATION.md"
+check(_rnd_doc.is_file(), "9ch the _render.py migration report must ship")
+check("python godot_rebuild/tests/render_source_oracle.py --check" in workflow,
+      "9ch CI must run the _render.py oracle")
+_rnd = render_source_fixture()
+check(_rnd == json.loads(_rnd_fixture_path.read_text(encoding="utf-8")),
+      "9ch the _render.py fixture must match live Python execution")
+check(_rnd["file"]["lines"] == 3671 and _rnd["file"]["sections"] == 8
+      and _rnd["file"]["classes"] == 17 and _rnd["file"]["methods"] == 108
+      and _rnd["file"]["top_functions"] == 16 and _rnd["file"]["assigns"] == 7,
+      f"9ch _render.py must stay 3.671 lines of eight sections: {_rnd['file']}")
+check([row["name"] for row in _rnd["sections"]] == [
+          "font_system", "map_renderer", "effects", "effects_death", "effects_intro",
+          "effects_level_intro", "sprite_cache", "render_cache"]
+      and _rnd["sections"][0]["start"] == 1 and _rnd["sections"][-1]["end"] == 3671
+      and _rnd["sections"][1]["start"] == 78 and _rnd["sections"][2]["start"] == 271,
+      "9ch the seven merged modules must keep their order and ranges")
+check(_rnd["symbols"]["count"] == 156
+      and _rnd["symbols"]["kinds"] == {"data": 7, "dead": 8, "deviation": 1,
+                                       "folded": 0, "ported": 140},
+      f"9ch all 156 symbols of _render.py carry a kind: {_rnd['symbols']}")
+_rnd_source_only = ["dead", "deviation", "meta"]
+_rnd_broken = []
+_rnd_no_target = []
+for _rnd_name, _rnd_row in _rnd["classification"].items():
+    if not _rnd_row["target"] or not _rnd_row["token"]:
+        if _rnd_row["kind"] not in _rnd_source_only:
+            _rnd_no_target.append(_rnd_name)
+        continue
+    _rnd_target = ROOT.parent / _rnd_row["target"]
+    if not _rnd_target.is_file() or _rnd_row["token"] not in _rnd_target.read_text(
+            encoding="utf-8"):
+        _rnd_broken.append(_rnd_name)
+check(not _rnd_broken,
+      f"9ch every named classification needs a live target and token: {_rnd_broken[:8]}")
+check(not _rnd_no_target,
+      f"9ch only dead/deviation/meta rows may skip a Godot target: {_rnd_no_target[:8]}")
+check(sorted(_rnd["dead_helpers"]) == sorted([
+          "class:BossIntroCinematic._draw_boss_silhouette",
+          "class:BossIntroCinematic._draw_boss_text",
+          "class:BossIntroCinematic._draw_hp_preview",
+          "class:BossIntroCinematic._draw_mini_boss_silhouette",
+          "class:BossIntroCinematic._draw_skip_hint",
+          "class:BossIntroCinematic._draw_true_boss_silhouette",
+          "top:_ease_out_cubic@1255", "top:_ease_out_elastic@1260"]),
+      "9ch the six unreachable boss-intro draw helpers and two easings stay dead")
+check(_rnd["duplicates"] == {},
+      "9ch _render.py must stay free of duplicated symbols")
+check(len(_rnd["suites"]) == 17
+      and all(row["oracle"] and row["checks"] for row in _rnd["suites"].values()),
+      "9ch every render class must keep its per-class oracle and native suite")
+_rnd_prompts = _rnd["prompts"]
+check(_rnd_prompts["begin_prompt_keyboard"] == "PRESS SPACE TO BEGIN"
+      and _rnd_prompts["begin_prompt_touch"] == "TAP TO BEGIN"
+      and _rnd_prompts["skip_label_keyboard"] == "SPACE"
+      and _rnd_prompts["skip_label_touch"] == "TAP"
+      and _rnd_prompts["skip_label_controller_A"] == "A"
+      and _rnd_prompts["skip_label_controller_mode_off"] == "SPACE"
+      and _rnd_prompts["skip_label_no_manager"] == "SPACE"
+      and _rnd_prompts["hint_continue_touch"] == "[TAP] to continue",
+      f"9ch the input-mode labels must stay the pygame strings: {_rnd_prompts}")
+_rnd_easing = _rnd["easing"]
+check(len(_rnd_easing["inputs"]) == 11
+      and abs(_rnd_easing["_ease_out_back"][2] - 0.817409688) < 1e-9
+      and abs(_rnd_easing["_ease_out_back"][4] - 1.0876975) < 1e-8
+      and abs(_rnd_easing["_ease_in_back"][1] - (-0.01431422)) < 1e-8
+      and _rnd_easing["_ease_out_back"][0] == 0.0
+      and _rnd_easing["_ease_out_back"][-1] == 1.0,
+      "9ch the easing curves must keep the source overshoot and endpoints")
+_rnd_fonts = _rnd["fonts"]
+check(_rnd_fonts["styles"] == {
+          "title": "Cinzel.ttf", "body": "Barlow-Regular.ttf",
+          "body_medium": "Barlow-Medium.ttf", "body_semibold": "Barlow-SemiBold.ttf",
+          "body_bold": "Barlow-Bold.ttf", "unknown": "Barlow-Regular.ttf"}
+      and _rnd_fonts["title_font"]["resolved_file"] == "Cinzel.ttf"
+      and _rnd_fonts["title_font"]["resolved_size"] == 66
+      and _rnd_fonts["title_font"]["bold"] is True
+      and _rnd_fonts["title_clamp"]["resolved_size"] == 220
+      and _rnd_fonts["system_fallbacks"] == ["Verdana", "DejaVu Sans", "Arial", "Helvetica"],
+      "9ch the bundled font table must keep the source styles and the 220 clamp")
+_rnd_caches = _rnd["caches"]
+check(_rnd_caches["sprite"]["max_cache"] == 2000
+      and _rnd_caches["sprite"]["renders"] == 4
+      and _rnd_caches["sprite"]["same_full_surface"] is True
+      and _rnd_caches["sprite"]["cropped_anchor"] == [20, 36]
+      and _rnd_caches["sprite"]["stats"] == {"cached": 2, "hits": 1, "misses": 2,
+                                             "hit_rate": "33.3%"}
+      and _rnd_caches["sprite"]["cleared"]["cached"] == 0
+      and _rnd_caches["sprite"]["cleared"]["hits"] == 1,
+      "9ch the sprite cache must keep its 2000 ceiling and hit/miss counters")
+check(_rnd_caches["render"]["font_clamp"] == [8, 220]
+      and _rnd_caches["render"]["glow_size"] == [28, 28]
+      and _rnd_caches["render"]["same_font"] is True
+      and _rnd_caches["render"]["same_circle"] is True
+      and _rnd_caches["render"]["same_glow"] is True
+      and _rnd_caches["render"]["cleared"]["circles"] == 0
+      and _rnd_caches["render"]["cleared"]["fonts"] == 5,
+      "9ch the render cache must keep the clamp, the glow size and the font retention")
+_rnd_skip = (ROOT / "scripts/ui/skip_hint.gd").read_text(encoding="utf-8")
+check("static func label(" in _rnd_skip and 'const TOUCH_LABEL := "TAP"' in _rnd_skip
+      and 'const KEYBOARD_LABEL := "SPACE"' in _rnd_skip
+      and "static func hint(" in _rnd_skip,
+      "9ch skip_hint.gd must port _skip_button_label() and the hint line")
+_rnd_layout = (ROOT / "scripts/ui/boss_celebration_layout.gd").read_text(encoding="utf-8")
+check("const SkipHint = preload(\"res://scripts/ui/skip_hint.gd\")" in _rnd_layout
+      and "skip_label: String = SKIP_LABEL" in _rnd_layout
+      and "SkipHint.hint(_skip_label, \"continue\")" in _rnd_layout
+      and 'const SKIP_LABEL := "SPACE"' in _rnd_layout,
+      "9ch the celebration layout must take the input-mode label, defaulting to SPACE")
+_rnd_view = (ROOT / "scenes/prototype/prototype_view.gd").read_text(encoding="utf-8")
+check("var skip_hint_touch_mode := false" in _rnd_view
+      and "var skip_hint_controller_label := \"\"" in _rnd_view
+      and "func skip_hint_label() -> String:" in _rnd_view
+      and "BossCelebrationLayout.ops(anim, clock, metrics, true, skip_hint_label())" in _rnd_view,
+      "9ch the arena must pass its input mode into the celebration layout")
+_rnd_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+check('arena.set("skip_hint_touch_mode", MobilePlatform.is_touch_mode())' in _rnd_screen
+      and 'get_action_label("skip")' in _rnd_screen,
+      "9ch the screen must push the touch switch and the controller skip label")
+_rnd_checks_text = _rnd_checks_path.read_text(encoding="utf-8")
+check("156 symbols are classified" in _rnd_checks_text
+      and "every classification token is present in its target" in _rnd_checks_text
+      and "the six unreachable boss-intro helpers and two unused easings stay dead"
+      in _rnd_checks_text
+      and "the celebration draws the touch hint on Android" in _rnd_checks_text
+      and "a touch build never says SPACE" in _rnd_checks_text,
+      "9ch the native suite must replay the inventory, the tokens and the skip hint")
+if _rnd_doc.is_file():
+    _rnd_report = _rnd_doc.read_text(encoding="utf-8")
+    check(all(f"`{name}.py`" in _rnd_report for name in (
+              "map_renderer", "effects", "effects_death", "effects_intro",
+              "effects_level_intro", "sprite_cache", "render_cache")),
+          "9ch the report must name all seven merged modules")
+    check(all(token in _rnd_report for token in (
+              "render_source_oracle.py", "render_checks.gd", "skip_hint.gd",
+              "_skip_button_label", "_begin_prompt_text", "_ease_out_back",
+              "_ease_in_back", "FONT_MAX", "SpriteCache", "RenderCache",
+              "source_fonts.gd", "boss_celebration_layout.gd", "dynamic_map_renderer.gd",
+              "_SYS_FALLBACKS")),
+          "9ch the report must cover every ported symbol and the deviations")
+    check(_rnd_report.count("|") > 400, "9ch the report must stay tabular")
+
+
 # ── 9e: the cleave splash arm on the active boss uses the source call shape ──
 from boss_item_cleave_damage_source_oracle import source_fixture as cleave_damage_fixture
 _cleave_dmg = cleave_damage_fixture()
