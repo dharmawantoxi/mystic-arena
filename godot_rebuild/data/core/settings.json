@@ -1,0 +1,1541 @@
+{
+ "source": "_core.py settings.py (lines 28-1291), executed by tests/core_source_oracle.py",
+ "constants": {
+  "AI_HERO_BUY_PRIORITY": 0.45,
+  "AI_HERO_PREFERENCES": [
+   "thorne",
+   "grimjaw",
+   "vex",
+   "sylara",
+   "kaizen",
+   "zephyr"
+  ],
+  "AI_HERO_UPGRADE_PRIORITY": 0.4,
+  "AI_MAX_HEROES": 5,
+  "AI_MIN_GOLD_RESERVE": 50,
+  "AI_NEXUS_UPGRADE_PRIORITY": 0.35,
+  "AI_SELL_HP_THRESHOLD": 0.15,
+  "AI_SKILL_USE_MIN_ENEMIES": 2,
+  "AI_THINK_INTERVAL": 90,
+  "AI_UPGRADE_TOWER_CHANCE": 0.3,
+  "ARCHER_LEVELS": {
+   "1": {
+    "hp": 800,
+    "damage": 20,
+    "range": 180,
+    "cd": 35,
+    "cost": 0,
+    "desc": "Basic archer"
+   },
+   "2": {
+    "hp": 1050,
+    "damage": 33,
+    "range": 190,
+    "cd": 32,
+    "cost": 175,
+    "desc": "Faster arrows"
+   },
+   "3": {
+    "hp": 1350,
+    "damage": 50,
+    "range": 200,
+    "cd": 30,
+    "cost": 325,
+    "desc": "Better bow"
+   },
+   "4": {
+    "hp": 1750,
+    "damage": 72,
+    "range": 210,
+    "cd": 27,
+    "cost": 550,
+    "desc": "Elite marksman"
+   },
+   "5": {
+    "hp": 2200,
+    "damage": 98,
+    "range": 220,
+    "cd": 24,
+    "cost": 850,
+    "desc": "Master archer"
+   },
+   "6": {
+    "hp": 2800,
+    "damage": 130,
+    "range": 230,
+    "cd": 22,
+    "cost": 1300,
+    "desc": "DOUBLE SHOT!",
+    "double_shot": true
+   }
+  },
+  "BASE_RADIUS": 45,
+  "BASE_Y": 380,
+  "BLACK": [
+   0,
+   0,
+   0
+  ],
+  "BLUE": [
+   70,
+   120,
+   255
+  ],
+  "BLUE_BASE_X": 100,
+  "BLUE_BASE_Y": 620,
+  "BLUE_DARK": [
+   30,
+   70,
+   180
+  ],
+  "BLUE_LIGHT": [
+   150,
+   200,
+   255
+  ],
+  "BLUE_TEAM": [
+   60,
+   120,
+   255
+  ],
+  "BLUE_TOWERS": [
+   [
+    120,
+    500,
+    "top"
+   ],
+   [
+    140,
+    350,
+    "top"
+   ],
+   [
+    200,
+    180,
+    "top"
+   ],
+   [
+    240,
+    540,
+    "mid"
+   ],
+   [
+    360,
+    440,
+    "mid"
+   ],
+   [
+    500,
+    340,
+    "mid"
+   ],
+   [
+    240,
+    650,
+    "bot"
+   ],
+   [
+    440,
+    640,
+    "bot"
+   ],
+   [
+    640,
+    640,
+    "bot"
+   ]
+  ],
+  "BOSS_HERO_UPGRADE_COST_MULT": 1.6,
+  "BROWN": [
+   139,
+   90,
+   43
+  ],
+  "BUILD_SLOTS_BLUE": [],
+  "BUILD_SLOTS_RED": [],
+  "BULLET_RADIUS": 4,
+  "BULLET_SPEED": 8,
+  "BUSH_COLOR": [
+   40,
+   80,
+   45
+  ],
+  "CANNON_LEVELS": {
+   "2": {
+    "hp": 1200,
+    "damage": 42,
+    "range": 165,
+    "cd": 44,
+    "cost": 175,
+    "desc": "Splash + Burn 8/s",
+    "splash": 45,
+    "burn_dps": 8,
+    "burn_duration": 120
+   },
+   "3": {
+    "hp": 1500,
+    "damage": 60,
+    "range": 175,
+    "cd": 40,
+    "cost": 325,
+    "desc": "Big Boom + Burn 12/s",
+    "splash": 55,
+    "burn_dps": 12,
+    "burn_duration": 150
+   },
+   "4": {
+    "hp": 1900,
+    "damage": 84,
+    "range": 185,
+    "cd": 36,
+    "cost": 550,
+    "desc": "Heavy Cannon + Burn 16/s",
+    "splash": 65,
+    "burn_dps": 16,
+    "burn_duration": 150
+   },
+   "5": {
+    "hp": 2400,
+    "damage": 116,
+    "range": 195,
+    "cd": 32,
+    "cost": 850,
+    "desc": "Siege + Burn 22/s",
+    "splash": 80,
+    "burn_dps": 22,
+    "burn_duration": 180
+   },
+   "6": {
+    "hp": 3000,
+    "damage": 155,
+    "range": 210,
+    "cd": 28,
+    "cost": 1300,
+    "desc": "DEVASTATOR! Burn 30/s",
+    "splash": 100,
+    "burn_dps": 30,
+    "burn_duration": 180
+   }
+  },
+  "CASTLE_LEVELS": {
+   "1": {
+    "hp": 4000,
+    "damage": 35,
+    "range": 150,
+    "attack_cooldown": 45,
+    "minion_scale": 1.0,
+    "minion_ai_level": 1,
+    "upgrade_cost": 500,
+    "color_accent": [
+     255,
+     255,
+     255
+    ],
+    "description": "Basic Outpost"
+   },
+   "2": {
+    "hp": 6000,
+    "damage": 55,
+    "range": 165,
+    "attack_cooldown": 40,
+    "minion_scale": 1.2,
+    "minion_ai_level": 2,
+    "upgrade_cost": 900,
+    "color_accent": [
+     150,
+     255,
+     150
+    ],
+    "description": "+20% Power"
+   },
+   "3": {
+    "hp": 8500,
+    "damage": 80,
+    "range": 180,
+    "attack_cooldown": 35,
+    "minion_scale": 1.4,
+    "minion_ai_level": 3,
+    "upgrade_cost": 1500,
+    "color_accent": [
+     100,
+     200,
+     255
+    ],
+    "description": "+40% Power"
+   },
+   "4": {
+    "hp": 11500,
+    "damage": 115,
+    "range": 195,
+    "attack_cooldown": 30,
+    "minion_scale": 1.7,
+    "minion_ai_level": 4,
+    "upgrade_cost": 2400,
+    "color_accent": [
+     255,
+     100,
+     255
+    ],
+    "description": "Elite Stronghold"
+   },
+   "5": {
+    "hp": 15000,
+    "damage": 160,
+    "range": 210,
+    "attack_cooldown": 25,
+    "minion_scale": 2.0,
+    "minion_ai_level": 5,
+    "upgrade_cost": 0,
+    "color_accent": [
+     255,
+     200,
+     50
+    ],
+    "description": "MAX - Royal Castle"
+   }
+  },
+  "CASTLE_NAMES": {
+   "1": "OUTPOST",
+   "2": "WATCHTOWER",
+   "3": "FORTRESS",
+   "4": "STRONGHOLD",
+   "5": "ROYAL CASTLE"
+  },
+  "CASTLE_RADIUS": 45,
+  "CASTLE_SHIELD_COLOR_BLUE": [
+   100,
+   200,
+   255
+  ],
+  "CASTLE_SHIELD_COLOR_RED": [
+   255,
+   120,
+   120
+  ],
+  "CASTLE_SHIELD_COST": 850,
+  "CASTLE_SHIELD_DAMAGE_REDUCTION": 0.88,
+  "CASTLE_SHIELD_ENABLED": true,
+  "CASTLE_SHIELD_FREE_WAVES": 10,
+  "CASTLE_SHIELD_HP_RATIO": 1.0,
+  "CASTLE_SHIELD_REGEN_DELAY": 120,
+  "CASTLE_SHIELD_REGEN_RATE": 3.5,
+  "CASTLE_WAVE_COMPOSITION": {
+   "1": [
+    "goblin",
+    "goblin",
+    "goblin"
+   ],
+   "2": [
+    "goblin",
+    "goblin",
+    "goblin",
+    "orc"
+   ],
+   "3": [
+    "goblin",
+    "orc",
+    "goblin",
+    "orc",
+    "undead"
+   ],
+   "4": [
+    "orc",
+    "goblin",
+    "orc",
+    "undead",
+    "goblin",
+    "goblin"
+   ],
+   "5": [
+    "orc",
+    "orc",
+    "undead",
+    "troll",
+    "goblin",
+    "goblin"
+   ]
+  },
+  "CYAN": [
+   0,
+   200,
+   200
+  ],
+  "DARK_GRAY": [
+   60,
+   60,
+   70
+  ],
+  "DARK_RIDER_COLOR": [
+   100,
+   60,
+   140
+  ],
+  "DEV_UNLIMITED_HERO_GOLD": false,
+  "DIFFICULTY_GOLD_MULT": {
+   "easy": 1.25,
+   "normal": 1.0,
+   "hard": 0.75
+  },
+  "FPS": 60,
+  "GOBLIN_COLOR": [
+   100,
+   180,
+   80
+  ],
+  "GOLD": [
+   255,
+   200,
+   50
+  ],
+  "GOLD_PER_LEVEL_BONUS": 100,
+  "GOLD_PER_SECOND": 3,
+  "GOLD_PER_SECOND_LEVEL_BONUS": 0.3,
+  "GRASS_COLOR": [
+   55,
+   95,
+   55
+  ],
+  "GRASS_DARK": [
+   35,
+   65,
+   40
+  ],
+  "GRASS_LIGHT": [
+   75,
+   120,
+   65
+  ],
+  "GRAY": [
+   150,
+   150,
+   150
+  ],
+  "GREEN": [
+   50,
+   200,
+   50
+  ],
+  "HERO_LEVELS": {
+   "1": {
+    "hp_mult": 1.0,
+    "dmg_mult": 1.0,
+    "skill_mult": 1.0,
+    "upgrade_cost": 300
+   },
+   "2": {
+    "hp_mult": 1.3,
+    "dmg_mult": 1.25,
+    "skill_mult": 1.2,
+    "upgrade_cost": 500
+   },
+   "3": {
+    "hp_mult": 1.65,
+    "dmg_mult": 1.55,
+    "skill_mult": 1.45,
+    "upgrade_cost": 800
+   },
+   "4": {
+    "hp_mult": 2.1,
+    "dmg_mult": 1.9,
+    "skill_mult": 1.75,
+    "upgrade_cost": 1200
+   },
+   "5": {
+    "hp_mult": 2.7,
+    "dmg_mult": 2.4,
+    "skill_mult": 2.1,
+    "upgrade_cost": 1800
+   },
+   "6": {
+    "hp_mult": 3.35,
+    "dmg_mult": 2.9,
+    "skill_mult": 2.5,
+    "upgrade_cost": 2600
+   },
+   "7": {
+    "hp_mult": 4.05,
+    "dmg_mult": 3.45,
+    "skill_mult": 2.95,
+    "upgrade_cost": 3600
+   },
+   "8": {
+    "hp_mult": 4.8,
+    "dmg_mult": 4.05,
+    "skill_mult": 3.45,
+    "upgrade_cost": 4800
+   },
+   "9": {
+    "hp_mult": 5.6,
+    "dmg_mult": 4.7,
+    "skill_mult": 4.0,
+    "upgrade_cost": 6200
+   },
+   "10": {
+    "hp_mult": 6.5,
+    "dmg_mult": 5.4,
+    "skill_mult": 4.6,
+    "upgrade_cost": 8000
+   },
+   "11": {
+    "hp_mult": 7.5,
+    "dmg_mult": 6.2,
+    "skill_mult": 5.2,
+    "upgrade_cost": 10200
+   },
+   "12": {
+    "hp_mult": 8.6,
+    "dmg_mult": 7.0,
+    "skill_mult": 5.9,
+    "upgrade_cost": 12800
+   },
+   "13": {
+    "hp_mult": 9.8,
+    "dmg_mult": 7.9,
+    "skill_mult": 6.6,
+    "upgrade_cost": 15800
+   },
+   "14": {
+    "hp_mult": 11.1,
+    "dmg_mult": 8.9,
+    "skill_mult": 7.4,
+    "upgrade_cost": 19200
+   },
+   "15": {
+    "hp_mult": 12.5,
+    "dmg_mult": 10.0,
+    "skill_mult": 8.2,
+    "upgrade_cost": 0
+   }
+  },
+  "HERO_TYPES": {
+   "kaizen": {
+    "name": "Kaizen",
+    "title": "The Wind Blade",
+    "role": "Assassin",
+    "cost": 400,
+    "hp": 550,
+    "damage": 35,
+    "speed": 2.2,
+    "range": 50,
+    "attack_cooldown": 32,
+    "color": [
+     100,
+     200,
+     255
+    ],
+    "color_dark": [
+     50,
+     100,
+     200
+    ],
+    "skill_name": "Wind Slash",
+    "skill_desc": "Dash & slash AOE",
+    "skill_cooldown": 300,
+    "skill_damage": 70,
+    "skill_range": 100,
+    "description": "Agile samurai assassin"
+   },
+   "grimjaw": {
+    "name": "Grimjaw",
+    "title": "The Berserker",
+    "role": "Fighter",
+    "cost": 450,
+    "hp": 800,
+    "damage": 33,
+    "speed": 1.6,
+    "range": 45,
+    "attack_cooldown": 36,
+    "color": [
+     200,
+     80,
+     40
+    ],
+    "color_dark": [
+     140,
+     40,
+     20
+    ],
+    "skill_name": "Blade Fury",
+    "skill_desc": "Spin AOE damage",
+    "skill_cooldown": 420,
+    "skill_damage": 26,
+    "skill_range": 70,
+    "skill_duration": 120,
+    "description": "Berserker spin blade"
+   },
+   "sylara": {
+    "name": "Sylara",
+    "title": "The Wind Ranger",
+    "role": "Marksman",
+    "cost": 380,
+    "hp": 470,
+    "damage": 45,
+    "speed": 1.5,
+    "range": 130,
+    "attack_cooldown": 52,
+    "color": [
+     100,
+     220,
+     120
+    ],
+    "color_dark": [
+     50,
+     140,
+     70
+    ],
+    "skill_name": "Focus Fire",
+    "skill_desc": "Attack speed buff + piercing shot",
+    "skill_cooldown": 360,
+    "skill_damage": 95,
+    "skill_range": 180,
+    "description": "Mid-range marksman"
+   },
+   "vex": {
+    "name": "Vex",
+    "title": "The Void Harbinger",
+    "role": "Mage",
+    "cost": 420,
+    "hp": 520,
+    "damage": 34,
+    "speed": 1.3,
+    "range": 130,
+    "attack_cooldown": 46,
+    "color": [
+     100,
+     200,
+     150
+    ],
+    "color_dark": [
+     30,
+     100,
+     70
+    ],
+    "skill_name": "Arcane Orb",
+    "skill_desc": "Long-range missile + line",
+    "skill_cooldown": 330,
+    "skill_damage": 95,
+    "skill_range": 250,
+    "skill_aoe": 80,
+    "description": "Void mage, high burst"
+   },
+   "thorne": {
+    "name": "Thorne",
+    "title": "The Quill Sprayer",
+    "role": "Bruiser",
+    "cost": 500,
+    "hp": 1400,
+    "damage": 32,
+    "speed": 1.3,
+    "range": 55,
+    "attack_cooldown": 40,
+    "color": [
+     215,
+     155,
+     30
+    ],
+    "color_dark": [
+     150,
+     95,
+     20
+    ],
+    "skill_name": "Viscous Nose",
+    "skill_desc": "Goop cone + slow",
+    "skill_cooldown": 300,
+    "skill_damage": 70,
+    "skill_range": 100,
+    "skill_stun_duration": 60,
+    "description": "Tanky porcupine warrior"
+   },
+   "zephyr": {
+    "name": "Zephyr",
+    "title": "Meander of Mischief",
+    "role": "Mage/Trickster",
+    "cost": 420,
+    "hp": 520,
+    "damage": 27,
+    "speed": 1.6,
+    "range": 130,
+    "attack_cooldown": 30,
+    "color": [
+     215,
+     60,
+     90
+    ],
+    "color_dark": [
+     100,
+     20,
+     40
+    ],
+    "skill_name": "Bramble Maze",
+    "skill_desc": "Thorn trap + slow",
+    "skill_cooldown": 300,
+    "skill_damage": 70,
+    "skill_range": 150,
+    "skill_chain_count": 4,
+    "description": "Dark fairy trickster"
+   }
+  },
+  "ICE_LEVELS": {
+   "2": {
+    "hp": 950,
+    "damage": 20,
+    "range": 170,
+    "cd": 26,
+    "cost": 175,
+    "desc": "Slow 25% & Atk -15%",
+    "slow": 0.25,
+    "slow_duration": 90,
+    "atk_slow": 0.15
+   },
+   "3": {
+    "hp": 1250,
+    "damage": 32,
+    "range": 180,
+    "cd": 22,
+    "cost": 325,
+    "desc": "Slow 35% & Atk -20%",
+    "slow": 0.35,
+    "slow_duration": 100,
+    "atk_slow": 0.2
+   },
+   "4": {
+    "hp": 1600,
+    "damage": 45,
+    "range": 190,
+    "cd": 18,
+    "cost": 550,
+    "desc": "Slow 45% & Atk -25%",
+    "slow": 0.45,
+    "slow_duration": 110,
+    "atk_slow": 0.25
+   },
+   "5": {
+    "hp": 2050,
+    "damage": 60,
+    "range": 200,
+    "cd": 16,
+    "cost": 850,
+    "desc": "Slow 55% & Atk -30%",
+    "slow": 0.55,
+    "slow_duration": 120,
+    "atk_slow": 0.3
+   },
+   "6": {
+    "hp": 2600,
+    "damage": 78,
+    "range": 220,
+    "cd": 14,
+    "cost": 1300,
+    "desc": "FREEZE! AOE + Atk -40%",
+    "slow": 0.65,
+    "slow_duration": 150,
+    "slow_aoe": 80,
+    "atk_slow": 0.4
+   }
+  },
+  "LANE_END_X": 1180,
+  "LANE_HEIGHT": 55,
+  "LANE_START_X": 100,
+  "LANE_Y_BOT": 610,
+  "LANE_Y_MID": 380,
+  "LANE_Y_TOP": 150,
+  "LIGHT_GRAY": [
+   200,
+   200,
+   200
+  ],
+  "MAGE_LEVELS": {
+   "2": {
+    "hp": 850,
+    "damage": 17,
+    "range": 180,
+    "cd": 20,
+    "cost": 175,
+    "desc": "Hit 2, Skill -20%, Heal -40%",
+    "chain": 2,
+    "skill_down": 0.2,
+    "anti_heal": 0.4,
+    "debuff_duration": 120
+   },
+   "3": {
+    "hp": 1100,
+    "damage": 26,
+    "range": 190,
+    "cd": 18,
+    "cost": 325,
+    "desc": "Skill -25%, Heal -50%",
+    "chain": 2,
+    "skill_down": 0.25,
+    "anti_heal": 0.5,
+    "debuff_duration": 130
+   },
+   "4": {
+    "hp": 1450,
+    "damage": 39,
+    "range": 200,
+    "cd": 16,
+    "cost": 550,
+    "desc": "Hit 3, Skill -30%, Heal -60%",
+    "chain": 3,
+    "skill_down": 0.3,
+    "anti_heal": 0.6,
+    "debuff_duration": 140
+   },
+   "5": {
+    "hp": 1850,
+    "damage": 55,
+    "range": 210,
+    "cd": 14,
+    "cost": 850,
+    "desc": "Skill -40%, Heal -75%",
+    "chain": 3,
+    "skill_down": 0.4,
+    "anti_heal": 0.75,
+    "debuff_duration": 150
+   },
+   "6": {
+    "hp": 2350,
+    "damage": 70,
+    "range": 230,
+    "cd": 12,
+    "cost": 1300,
+    "desc": "CHAIN! Skill -50%, Heal -100%",
+    "chain": 4,
+    "skill_down": 0.5,
+    "anti_heal": 1.0,
+    "debuff_duration": 180
+   }
+  },
+  "MAX_CASTLE_LEVEL": 5,
+  "MAX_HEROES_OWNED": 5,
+  "MAX_HERO_LEVEL": 15,
+  "MAX_NEXUS_LEVEL": 5,
+  "META_REPLAY_REPEAT_REWARD": 200,
+  "MINION_SPAWN_DELAY": 20,
+  "MINION_TYPES": {
+   "goblin": {
+    "name": "Goblin",
+    "hp": 45,
+    "damage": 5,
+    "speed": 1.5,
+    "range": 25,
+    "attack_cooldown": 45,
+    "gold_reward": 8,
+    "radius": 9,
+    "color": [
+     100,
+     180,
+     80
+    ]
+   },
+   "orc": {
+    "name": "Orc",
+    "hp": 110,
+    "damage": 13,
+    "speed": 0.95,
+    "range": 30,
+    "attack_cooldown": 60,
+    "gold_reward": 18,
+    "radius": 12,
+    "color": [
+     200,
+     100,
+     60
+    ]
+   },
+   "troll": {
+    "name": "Troll",
+    "hp": 320,
+    "damage": 18,
+    "speed": 0.65,
+    "range": 28,
+    "attack_cooldown": 75,
+    "gold_reward": 45,
+    "radius": 14,
+    "color": [
+     100,
+     140,
+     170
+    ],
+    "regen": 0.6,
+    "armor": 2,
+    "magic_resist": 0.05
+   },
+   "undead": {
+    "name": "Undead",
+    "hp": 65,
+    "damage": 11,
+    "speed": 0.85,
+    "range": 100,
+    "attack_cooldown": 60,
+    "gold_reward": 16,
+    "radius": 10,
+    "color": [
+     200,
+     200,
+     220
+    ],
+    "armor": 0,
+    "magic_resist": 0.15
+   },
+   "dark_rider": {
+    "name": "Dark Rider",
+    "hp": 280,
+    "damage": 32,
+    "speed": 2.0,
+    "range": 35,
+    "attack_cooldown": 50,
+    "gold_reward": 65,
+    "radius": 13,
+    "color": [
+     100,
+     60,
+     140
+    ],
+    "armor": 1,
+    "magic_resist": 0.05
+   }
+  },
+  "MINION_WAVE_INTERVAL": 1500,
+  "MINI_BOSS_HERO_UNLOCK_COST": 4500,
+  "NEXUS_LEVELS": {
+   "1": {
+    "hp": 4000,
+    "damage": 35,
+    "range": 150,
+    "attack_cooldown": 45,
+    "minion_scale": 1.0,
+    "minion_ai_level": 1,
+    "upgrade_cost": 500,
+    "color_accent": [
+     255,
+     255,
+     255
+    ],
+    "description": "Basic Outpost"
+   },
+   "2": {
+    "hp": 6000,
+    "damage": 55,
+    "range": 165,
+    "attack_cooldown": 40,
+    "minion_scale": 1.2,
+    "minion_ai_level": 2,
+    "upgrade_cost": 900,
+    "color_accent": [
+     150,
+     255,
+     150
+    ],
+    "description": "+20% Power"
+   },
+   "3": {
+    "hp": 8500,
+    "damage": 80,
+    "range": 180,
+    "attack_cooldown": 35,
+    "minion_scale": 1.4,
+    "minion_ai_level": 3,
+    "upgrade_cost": 1500,
+    "color_accent": [
+     100,
+     200,
+     255
+    ],
+    "description": "+40% Power"
+   },
+   "4": {
+    "hp": 11500,
+    "damage": 115,
+    "range": 195,
+    "attack_cooldown": 30,
+    "minion_scale": 1.7,
+    "minion_ai_level": 4,
+    "upgrade_cost": 2400,
+    "color_accent": [
+     255,
+     100,
+     255
+    ],
+    "description": "Elite Stronghold"
+   },
+   "5": {
+    "hp": 15000,
+    "damage": 160,
+    "range": 210,
+    "attack_cooldown": 25,
+    "minion_scale": 2.0,
+    "minion_ai_level": 5,
+    "upgrade_cost": 0,
+    "color_accent": [
+     255,
+     200,
+     50
+    ],
+    "description": "MAX - Royal Castle"
+   }
+  },
+  "NEXUS_WAVE_COMPOSITION": {
+   "1": [
+    "goblin",
+    "goblin",
+    "goblin"
+   ],
+   "2": [
+    "goblin",
+    "goblin",
+    "goblin",
+    "orc"
+   ],
+   "3": [
+    "goblin",
+    "orc",
+    "goblin",
+    "orc",
+    "undead"
+   ],
+   "4": [
+    "orc",
+    "goblin",
+    "orc",
+    "undead",
+    "goblin",
+    "goblin"
+   ],
+   "5": [
+    "orc",
+    "orc",
+    "undead",
+    "troll",
+    "goblin",
+    "goblin"
+   ]
+  },
+  "ORANGE": [
+   255,
+   140,
+   0
+  ],
+  "ORC_COLOR": [
+   200,
+   100,
+   60
+  ],
+  "PATH_BORDER": [
+   75,
+   60,
+   40
+  ],
+  "PATH_COLOR": [
+   145,
+   120,
+   85
+  ],
+  "PATH_LIGHT": [
+   170,
+   145,
+   105
+  ],
+  "PLAYER_TOWER_TYPES": {},
+  "PURPLE": [
+   150,
+   0,
+   200
+  ],
+  "RED": [
+   220,
+   50,
+   50
+  ],
+  "RED_BASE_X": 1180,
+  "RED_BASE_Y": 100,
+  "RED_DARK": [
+   150,
+   30,
+   30
+  ],
+  "RED_LIGHT": [
+   255,
+   150,
+   150
+  ],
+  "RED_TEAM": [
+   220,
+   60,
+   60
+  ],
+  "RED_TOWERS": [
+   [
+    1050,
+    100,
+    "top"
+   ],
+   [
+    850,
+    90,
+    "top"
+   ],
+   [
+    650,
+    90,
+    "top"
+   ],
+   [
+    1050,
+    200,
+    "mid"
+   ],
+   [
+    920,
+    300,
+    "mid"
+   ],
+   [
+    780,
+    400,
+    "mid"
+   ],
+   [
+    1160,
+    250,
+    "bot"
+   ],
+   [
+    1140,
+    400,
+    "bot"
+   ],
+   [
+    1090,
+    550,
+    "bot"
+   ]
+  ],
+  "SCREEN_HEIGHT": 720,
+  "SCREEN_WIDTH": 1280,
+  "SHIELD_COLOR_BLUE": [
+   100,
+   180,
+   255
+  ],
+  "SHIELD_COLOR_RED": [
+   255,
+   100,
+   100
+  ],
+  "SLOT_SIZE": 40,
+  "STARTER_HERO_UNLOCK_COST": 0,
+  "STARTING_GOLD": 350,
+  "STONE_COLOR": [
+   85,
+   80,
+   70
+  ],
+  "STONE_DARK": [
+   55,
+   50,
+   42
+  ],
+  "STONE_LIGHT": [
+   115,
+   110,
+   95
+  ],
+  "TITLE": "Mystic Arena",
+  "TOP_BAR_HEIGHT": 40,
+  "TOWER_BASE_STATS": {
+   "hp": 800,
+   "damage": 20,
+   "range": 180,
+   "attack_cooldown": 35,
+   "name": "Archer",
+   "type": "archer"
+  },
+  "TOWER_DEBUFF_BURN_TICK": 30,
+  "TOWER_DEBUFF_FPS": 60.0,
+  "TOWER_HP_MULTIPLIER": 2.5,
+  "TOWER_HP_REGEN_DELAY": 300,
+  "TOWER_HP_REGEN_ENABLED": true,
+  "TOWER_HP_REGEN_MAX_RATIO": 1.0,
+  "TOWER_HP_REGEN_RATE": 0.3,
+  "TOWER_MAX_LEVEL": 6,
+  "TOWER_REGEN_SHIELD_COST": 850,
+  "TOWER_REGEN_SHIELD_DELAY": 180,
+  "TOWER_REGEN_SHIELD_ENABLED": true,
+  "TOWER_REGEN_SHIELD_MIN_LEVEL": 4,
+  "TOWER_REGEN_SHIELD_RATE": 1.8,
+  "TOWER_SHIELD_ENABLED": true,
+  "TOWER_SHIELD_HP_RATIO": 0.4,
+  "TOWER_SHIELD_REGEN_DELAY": 180,
+  "TOWER_SHIELD_REGEN_RATE": 1.5,
+  "TOWER_STATS": {
+   "outer": {
+    "hp": 1500,
+    "damage": 45,
+    "range": 160,
+    "attack_cooldown": 35,
+    "gold_reward": 200
+   },
+   "inner": {
+    "hp": 2200,
+    "damage": 65,
+    "range": 180,
+    "attack_cooldown": 30,
+    "gold_reward": 300
+   }
+  },
+  "TOWER_TYPE_COLORS": {
+   "archer": {
+    "main": [
+     100,
+     220,
+     120
+    ],
+    "dark": [
+     50,
+     140,
+     70
+    ]
+   },
+   "cannon": {
+    "main": [
+     200,
+     100,
+     60
+    ],
+    "dark": [
+     140,
+     60,
+     30
+    ]
+   },
+   "ice": {
+    "main": [
+     120,
+     200,
+     255
+    ],
+    "dark": [
+     60,
+     130,
+     200
+    ]
+   },
+   "mage": {
+    "main": [
+     180,
+     80,
+     220
+    ],
+    "dark": [
+     110,
+     40,
+     150
+    ]
+   }
+  },
+  "TOWER_TYPE_INFO": {
+   "archer": {
+    "name": "Archer Tower",
+    "icon": "\ud83c\udff9",
+    "desc": "Fast single-target. Balanced DPS.",
+    "special": "Lv6: Double Shot"
+   },
+   "cannon": {
+    "name": "Cannon Tower",
+    "icon": "\ud83d\udca3",
+    "desc": "Mid-range AOE + Burning DOT.",
+    "special": "Burn DOT + Splash AOE"
+   },
+   "ice": {
+    "name": "Ice Tower",
+    "icon": "\u2744\ufe0f",
+    "desc": "Slows move & attack speed. CC.",
+    "special": "Move + Atk Slow, AOE at max"
+   },
+   "mage": {
+    "name": "Mage Tower",
+    "icon": "\ud83d\udd2e",
+    "desc": "Chain + Skill Down + Anti-Heal.",
+    "special": "Skill -50%, Heal block 100%"
+   }
+  },
+  "TOWER_UPGRADE_PATHS": {
+   "archer": {
+    "1": {
+     "hp": 800,
+     "damage": 20,
+     "range": 180,
+     "cd": 35,
+     "cost": 0,
+     "desc": "Basic archer"
+    },
+    "2": {
+     "hp": 1050,
+     "damage": 33,
+     "range": 190,
+     "cd": 32,
+     "cost": 175,
+     "desc": "Faster arrows"
+    },
+    "3": {
+     "hp": 1350,
+     "damage": 50,
+     "range": 200,
+     "cd": 30,
+     "cost": 325,
+     "desc": "Better bow"
+    },
+    "4": {
+     "hp": 1750,
+     "damage": 72,
+     "range": 210,
+     "cd": 27,
+     "cost": 550,
+     "desc": "Elite marksman"
+    },
+    "5": {
+     "hp": 2200,
+     "damage": 98,
+     "range": 220,
+     "cd": 24,
+     "cost": 850,
+     "desc": "Master archer"
+    },
+    "6": {
+     "hp": 2800,
+     "damage": 130,
+     "range": 230,
+     "cd": 22,
+     "cost": 1300,
+     "desc": "DOUBLE SHOT!",
+     "double_shot": true
+    }
+   },
+   "cannon": {
+    "2": {
+     "hp": 1200,
+     "damage": 42,
+     "range": 165,
+     "cd": 44,
+     "cost": 175,
+     "desc": "Splash + Burn 8/s",
+     "splash": 45,
+     "burn_dps": 8,
+     "burn_duration": 120
+    },
+    "3": {
+     "hp": 1500,
+     "damage": 60,
+     "range": 175,
+     "cd": 40,
+     "cost": 325,
+     "desc": "Big Boom + Burn 12/s",
+     "splash": 55,
+     "burn_dps": 12,
+     "burn_duration": 150
+    },
+    "4": {
+     "hp": 1900,
+     "damage": 84,
+     "range": 185,
+     "cd": 36,
+     "cost": 550,
+     "desc": "Heavy Cannon + Burn 16/s",
+     "splash": 65,
+     "burn_dps": 16,
+     "burn_duration": 150
+    },
+    "5": {
+     "hp": 2400,
+     "damage": 116,
+     "range": 195,
+     "cd": 32,
+     "cost": 850,
+     "desc": "Siege + Burn 22/s",
+     "splash": 80,
+     "burn_dps": 22,
+     "burn_duration": 180
+    },
+    "6": {
+     "hp": 3000,
+     "damage": 155,
+     "range": 210,
+     "cd": 28,
+     "cost": 1300,
+     "desc": "DEVASTATOR! Burn 30/s",
+     "splash": 100,
+     "burn_dps": 30,
+     "burn_duration": 180
+    }
+   },
+   "ice": {
+    "2": {
+     "hp": 950,
+     "damage": 20,
+     "range": 170,
+     "cd": 26,
+     "cost": 175,
+     "desc": "Slow 25% & Atk -15%",
+     "slow": 0.25,
+     "slow_duration": 90,
+     "atk_slow": 0.15
+    },
+    "3": {
+     "hp": 1250,
+     "damage": 32,
+     "range": 180,
+     "cd": 22,
+     "cost": 325,
+     "desc": "Slow 35% & Atk -20%",
+     "slow": 0.35,
+     "slow_duration": 100,
+     "atk_slow": 0.2
+    },
+    "4": {
+     "hp": 1600,
+     "damage": 45,
+     "range": 190,
+     "cd": 18,
+     "cost": 550,
+     "desc": "Slow 45% & Atk -25%",
+     "slow": 0.45,
+     "slow_duration": 110,
+     "atk_slow": 0.25
+    },
+    "5": {
+     "hp": 2050,
+     "damage": 60,
+     "range": 200,
+     "cd": 16,
+     "cost": 850,
+     "desc": "Slow 55% & Atk -30%",
+     "slow": 0.55,
+     "slow_duration": 120,
+     "atk_slow": 0.3
+    },
+    "6": {
+     "hp": 2600,
+     "damage": 78,
+     "range": 220,
+     "cd": 14,
+     "cost": 1300,
+     "desc": "FREEZE! AOE + Atk -40%",
+     "slow": 0.65,
+     "slow_duration": 150,
+     "slow_aoe": 80,
+     "atk_slow": 0.4
+    }
+   },
+   "mage": {
+    "2": {
+     "hp": 850,
+     "damage": 17,
+     "range": 180,
+     "cd": 20,
+     "cost": 175,
+     "desc": "Hit 2, Skill -20%, Heal -40%",
+     "chain": 2,
+     "skill_down": 0.2,
+     "anti_heal": 0.4,
+     "debuff_duration": 120
+    },
+    "3": {
+     "hp": 1100,
+     "damage": 26,
+     "range": 190,
+     "cd": 18,
+     "cost": 325,
+     "desc": "Skill -25%, Heal -50%",
+     "chain": 2,
+     "skill_down": 0.25,
+     "anti_heal": 0.5,
+     "debuff_duration": 130
+    },
+    "4": {
+     "hp": 1450,
+     "damage": 39,
+     "range": 200,
+     "cd": 16,
+     "cost": 550,
+     "desc": "Hit 3, Skill -30%, Heal -60%",
+     "chain": 3,
+     "skill_down": 0.3,
+     "anti_heal": 0.6,
+     "debuff_duration": 140
+    },
+    "5": {
+     "hp": 1850,
+     "damage": 55,
+     "range": 210,
+     "cd": 14,
+     "cost": 850,
+     "desc": "Skill -40%, Heal -75%",
+     "chain": 3,
+     "skill_down": 0.4,
+     "anti_heal": 0.75,
+     "debuff_duration": 150
+    },
+    "6": {
+     "hp": 2350,
+     "damage": 70,
+     "range": 230,
+     "cd": 12,
+     "cost": 1300,
+     "desc": "CHAIN! Skill -50%, Heal -100%",
+     "chain": 4,
+     "skill_down": 0.5,
+     "anti_heal": 1.0,
+     "debuff_duration": 180
+    }
+   }
+  },
+  "TOWER_VISUAL_SCALE": 0.7,
+  "TREE_DARK": [
+   25,
+   55,
+   30
+  ],
+  "TREE_LIGHT": [
+   75,
+   130,
+   70
+  ],
+  "TREE_MID": [
+   45,
+   90,
+   50
+  ],
+  "TROLL_COLOR": [
+   100,
+   140,
+   170
+  ],
+  "TRUE_BOSS_HERO_UNLOCK_COST": 4500,
+  "UNDEAD_COLOR": [
+   200,
+   200,
+   220
+  ],
+  "WATER_COLOR": [
+   45,
+   90,
+   130
+  ],
+  "WATER_LIGHT": [
+   85,
+   140,
+   180
+  ],
+  "WHITE": [
+   255,
+   255,
+   255
+  ],
+  "YELLOW": [
+   255,
+   220,
+   0
+  ]
+ }
+}
