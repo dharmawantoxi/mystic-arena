@@ -15,6 +15,7 @@ const KillFeedLayout = preload("res://scripts/ui/kill_feed_layout.gd")
 const ComboCounterLayout = preload("res://scripts/ui/combo_counter_layout.gd")
 const BossIntroLayout = preload("res://scripts/ui/boss_intro_layout.gd")
 const BossCelebrationLayout = preload("res://scripts/ui/boss_celebration_layout.gd")
+const SkipHint = preload("res://scripts/ui/skip_hint.gd")
 const BossDeathSequenceLayout = preload("res://scripts/ui/boss_death_sequence_layout.gd")
 const HitParticleLayout = preload("res://scripts/ui/hit_particle_layout.gd")
 const DeathExplosionLayout = preload("res://scripts/ui/death_explosion_layout.gd")
@@ -79,6 +80,12 @@ const OVERLAY_ORDER := [
 	"level_intro",
 	"boss_death",
 ]
+## Layer 9ch: `_render.py::_skip_button_label()` — "TAP" in touch mode, the controller
+## button in controller mode, "SPACE" otherwise. The screen owns the input runtimes, so
+## it pushes `skip_hint_touch_mode` / `skip_hint_controller_label` into the view.
+var skip_hint_touch_mode := false
+var skip_hint_controller_label := ""
+
 var cached_river_theme := ""
 ## Counts real `_draw` calls so the headless scene suite can prove the painters run.
 var draw_count := 0
@@ -925,6 +932,9 @@ func _draw_polygon_edge(op: Dictionary) -> void:
 
 ## Layer 9be: the `_draw_celebration()` op list. `ticks` defaults to the engine
 ## clock and `measure` to the real HUD font; the checks pass the oracle's.
+## Layer 9ch: pygame splices `_skip_button_label()` into the pulsing hint, so the op
+## list carries the input-mode label the screen pushes in (`skip_hint_*`), not the
+## hardcoded `[SPACE]`.
 func boss_celebration_draw_ops(
 	world: Prototype, ticks: int = -1, measure: Callable = Callable()
 ) -> Array:
@@ -935,7 +945,16 @@ func boss_celebration_draw_ops(
 	var metrics: Callable = _measure_intro_text
 	if measure.is_valid():
 		metrics = measure
-	return BossCelebrationLayout.ops(anim, clock, metrics)
+	return BossCelebrationLayout.ops(anim, clock, metrics, true, skip_hint_label())
+
+
+
+func skip_hint_label() -> String:
+	return SkipHint.label(
+		skip_hint_touch_mode,
+		not skip_hint_controller_label.is_empty(),
+		skip_hint_controller_label
+	)
 
 
 func _draw_level_intro(world: Prototype) -> void:

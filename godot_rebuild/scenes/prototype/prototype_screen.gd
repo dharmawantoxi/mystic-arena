@@ -22,6 +22,7 @@ const SaveSlotStore = preload("res://scripts/match/save_slot_store.gd")
 const LevelCatalog = preload("res://scripts/match/level_catalog.gd")
 const EndOverlayLayout = preload("res://scripts/ui/end_overlay_layout.gd")
 const MobileTouchHudLayout = preload("res://scripts/ui/mobile_touch_hud_layout.gd")
+const MobilePlatform = preload("res://scripts/platform/mobile_platform.gd")
 ## The pause card's dim (PrototypeMatch.tscn); the result layout clears it.
 const PAUSE_DIM := Color(0.0392, 0.0392, 0.0784, 0.7843)
 const GameSpeedStore = preload("res://scripts/simulation/game_speed_store.gd")
@@ -174,6 +175,14 @@ func _process(_delta: float) -> void:
 		cursor_local, Rect2(Vector2.ZERO, Vector2(1280, 720)).has_point(cursor_local)
 	)
 	_update_controller_hover()
+	# Layer 9ch: pygame builds the celebration hint from the input mode
+	# (`_skip_button_label()`: TAP on touch, the controller button, else SPACE).
+	# The arena paints it, so the screen — which owns both runtimes — pushes the mode.
+	arena.set("skip_hint_touch_mode", MobilePlatform.is_touch_mode())
+	arena.set(
+		"skip_hint_controller_label",
+		String(controller_cursor.get_action_label("skip")) if controller_cursor.active else ""
+	)
 	_update_tactical_hud(world)
 	var hero_panel_state := _hero_panel_state(world, match_session)
 	var build_popup_state := _build_popup_state(world, match_session)
