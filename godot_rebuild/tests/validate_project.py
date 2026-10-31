@@ -2552,8 +2552,10 @@ check(_hs_battle.count("_trigger_source_cast_feedback(hero_id,") == 4
       "9by all four cast entry points must apply the source feedback")
 _hs_audio = (ROOT / "scripts/audio/audio_manager.gd").read_text(encoding="utf-8")
 check("const SFX_THROTTLE_MS := 50" in _hs_audio
-      and "func play_scaled(key: String, volume_mult: float) -> bool:" in _hs_audio
-      and "clampf(combat_global_volume() * volume_mult, 0.0, 1.0)" in _hs_audio,
+      and 'func play_scaled(key: String, volume_mult: float, category: String = "sfx")'
+      in _hs_audio
+      and "var base_volume := sfx_volume" in _hs_audio
+      and "clampf(master_volume * base_volume * volume_mult, 0.0, 1.0)" in _hs_audio,
       "9by the sound manager must reproduce the 50 ms throttle and scaled volume")
 check("_apply_player_volume(effects, combat_global_volume())" in _hs_audio,
       "9by a plain play must restore the mix volume after a scaled cast")
@@ -4354,6 +4356,201 @@ if _rnd_doc.is_file():
               "_SYS_FALLBACKS")),
           "9ch the report must cover every ported symbol and the deviations")
     check(_rnd_report.count("|") > 400, "9ch the report must stay tabular")
+
+
+# ── 9ci: the whole `_system.py` bundle (1.125 lines, 5 modules behind a prelude) ──
+# `_system.py` merges performance.py (culler + spatial grid), fps_counter.py,
+# fps_limiter.py, sound_manager.py and save_manager.py. The culler and the grid had no
+# Godot home at all, so both were ported; the F8 overlay is dead in the shipped Android
+# build, and the `tick()`-driven AdaptiveQuality is superseded by the active governor.
+# The oracle imports the real modules behind pygame/storage stubs and replays the cull
+# boundary, the bucket order, the audio throttle, and a full save-slot lifecycle.
+from system_source_oracle import source_fixture as system_source_fixture
+_sys_fixture_path = ROOT / "tests/fixtures/system_source.json"
+_sys_checks_path = ROOT / "tests/system_checks.gd"
+_sys_oracle_path = ROOT / "tests/system_source_oracle.py"
+check(_sys_fixture_path.is_file(), "9ci the _system.py inventory needs a source fixture")
+check(_sys_checks_path.is_file(), "9ci the _system.py native suite must exist")
+check(_sys_oracle_path.is_file(), "9ci the _system.py oracle must ship")
+check('const SystemChecks = preload("res://tests/system_checks.gd")' in ai_tests
+      and "SystemChecks.new().run(_check)" in ai_tests,
+      "9ci the _system.py suite must be preloaded and run")
+_sys_doc = ROOT.parent / "docs/SYSTEM_FOLDER_MIGRATION.md"
+check(_sys_doc.is_file(), "9ci the _system.py migration report must ship")
+check("python godot_rebuild/tests/system_source_oracle.py --check" in workflow,
+      "9ci CI must run the _system.py oracle")
+_sys = system_source_fixture()
+check(_sys == json.loads(_sys_fixture_path.read_text(encoding="utf-8")),
+      "9ci the _system.py fixture must match live Python execution")
+check(_sys["file"]["lines"] == 1125 and _sys["file"]["sections"] == 6
+      and _sys["file"]["classes"] == 6 and _sys["file"]["methods"] == 47
+      and _sys["file"]["top_functions"] == 3 and _sys["file"]["assigns"] == 4,
+      f"9ci _system.py must stay 1.125 lines of six sections: {_sys['file']}")
+check([row["name"] for row in _sys["sections"]] == [
+          "prelude", "performance", "fps_counter", "fps_limiter",
+          "sound_manager", "save_manager"]
+      and _sys["sections"][0]["start"] == 1
+      and _sys["sections"][-1]["end"] == 1125
+      and all(int(_sys["sections"][i]["end"]) + 1 == int(_sys["sections"][i + 1]["start"])
+              for i in range(5)),
+      "9ci the five merged modules plus the prelude must stay contiguous")
+check(_sys["symbols"]["count"] == 66
+      and _sys["symbols"]["kinds"] == {"data": 5, "dead": 8, "deviation": 2,
+                                       "folded": 0, "ported": 51},
+      f"9ci all 66 symbols of _system.py carry a kind: {_sys['symbols']}")
+_sys_no_target = []
+_sys_broken = []
+for _sys_name, _sys_row in _sys["classification"].items():
+    if not _sys_row["target"] or not _sys_row["token"]:
+        if _sys_row["kind"] not in ("dead", "deviation", "meta"):
+            _sys_no_target.append(_sys_name)
+        continue
+    _sys_target = ROOT.parent / _sys_row["target"]
+    if not _sys_target.is_file() or _sys_row["token"] not in _sys_target.read_text(
+            encoding="utf-8"):
+        _sys_broken.append(_sys_name)
+check(not _sys_broken,
+      f"9ci every named classification needs a live target and token: {_sys_broken[:8]}")
+check(not _sys_no_target,
+      f"9ci only dead/deviation/meta rows may skip a Godot target: {_sys_no_target[:8]}")
+check(sorted(_sys["dead_helpers"]) == sorted([
+          "class:FPSCounter", "class:FPSCounter.__init__", "class:FPSCounter.__new__",
+          "class:FPSCounter._get_font", "class:FPSCounter.draw",
+          "class:FPSCounter.toggle", "class:FPSCounter.update", "module:fps_counter"]),
+      "9ci the F8 overlay and its module stay the only dead code")
+check(_sys["duplicates"] == {}, "9ci _system.py must stay free of duplicated symbols")
+_sys_cull_gd = (ROOT / "scripts/ui/frustum_cull.gd").read_text(encoding="utf-8")
+check("const MARGIN := 80" in _sys_cull_gd
+      and "const SCREEN_SIZE := Vector2(1280.0, 720.0)" in _sys_cull_gd
+      and "static func is_visible(" in _sys_cull_gd
+      and "func cull_margin(" in _sys_cull_gd,
+      "9ci frustum_cull.gd must port the 80 px margin and the predicate")
+_sys_grid_gd = (ROOT / "scripts/combat/spatial_grid.gd").read_text(encoding="utf-8")
+check("const DEFAULT_CELL_SIZE := 60" in _sys_grid_gd
+      and "static var _shared: SpatialGrid" in _sys_grid_gd
+      and "func insert(" in _sys_grid_gd
+      and "func query_range(" in _sys_grid_gd
+      and "static func update_spatial_grid(" in _sys_grid_gd
+      and "static func query_enemies_in_range(" in _sys_grid_gd
+      and "func bucket_of(" in _sys_grid_gd,
+      "9ci spatial_grid.gd must port the class, the globals and the 60 px cell")
+_sys_audio_gd = (ROOT / "scripts/audio/audio_manager.gd").read_text(encoding="utf-8")
+check("const THROTTLE_MS := {" in _sys_audio_gd
+      and "const VOICE_VOLUME := 0.5" in _sys_audio_gd
+      and "func play_positional(" in _sys_audio_gd
+      and "static func positional_falloff(" in _sys_audio_gd
+      and "static func positional_volume(" in _sys_audio_gd
+      and "static func throttle_ms_for(" in _sys_audio_gd
+      and "func pause_music(" in _sys_audio_gd
+      and "func resume_music(" in _sys_audio_gd
+      and "func stop_all(" in _sys_audio_gd,
+      "9ci audio_manager.gd must port the throttle table, positional play and BGM control")
+_sys_cull = _sys["cull"]
+check(_sys_cull["margin"] == 80 and _sys_cull["screen"] == [1280, 720]
+      and len(_sys_cull["cases"]) == 13,
+      "9ci the culler must keep its 80 px margin on a 1280x720 screen")
+_sys_cull_rows = {(row["x"], row["y"], row["radius"]): row["visible"]
+                  for row in _sys_cull["cases"]}
+check(_sys_cull_rows[(-110, 0, 30)] is True
+      and _sys_cull_rows[(-110.1, 0, 30)] is False
+      and _sys_cull_rows[(1390, 720, 30)] is True
+      and _sys_cull_rows[(1390.1, 0, 30)] is False
+      and _sys_cull_rows[(640, 360, 30)] is True,
+      "9ci the cull boundary must stay inclusive at exactly margin + radius")
+_sys_grid = _sys["grid"]
+check(_sys_grid["cell_size"] == 60 and len(_sys_grid["entities"]) == 10
+      and _sys_grid["global_bucket_count"] == 6
+      and len(_sys_grid["queries"]) == 8 and len(_sys_grid["global_queries"]) == 2,
+      "9ci the grid must keep its 60 px cell over the ten fixture entities")
+_sys_query_rows = {(q["x"], q["y"], q["radius"], q["team"]): q["ids"]
+                   for q in _sys_grid["queries"]}
+check(_sys_query_rows[(100, 100, 50, None)] == ["m1", "m4", "m2"]
+      and _sys_query_rows[(100, 100, 50, "red")] == ["m1"]
+      and _sys_query_rows[(100, 100, 50, "blue")] == ["m2"]
+      and _sys_query_rows[(700, 700, 60, None)] == [],
+      "9ci the query order must stay cx-outer, cy-inner and insertion ordered")
+_sys_sound = _sys["sound"]
+check(_sys_sound["volumes"] == {"master": 0.9, "sfx": 0.6, "voice": 0.5,
+                                "bgm": 0.35, "ambient": 0.25},
+      "9ci the master/sfx/voice/bgm/ambient volumes must stay the source ones")
+check(_sys_sound["throttle_ms"] == {"goblin_spawn": 200, "minion_death": 120,
+                                    "tower_destroyed": 300, "bullet_hit": 40,
+                                    "nexus_hit": 300, "ui_click": 50},
+      "9ci the per-sound throttle table must stay byte for byte")
+check(len(_sys_sound["loaded"]) == 16 and _sys_sound["missing"] == ["bullet_hit.wav"],
+      "9ci sixteen sounds must load and bullet_hit.wav must stay the only gap")
+check([row["fade_ms"] for row in _sys_sound["positional"]] == [0, 0, 0, 0, 0]
+      and [row["sound"] for row in _sys_sound["positional"]][:2]
+      == ["goblin_spawn.wav", "ui_buy.wav"]
+      and _sys_sound["ambient_stopped"]["fade"] == 1200
+      and _sys_sound["mixer"]["num_channels"] == 32,
+      "9ci positional playback, the ambient fade and the 32-channel mixer must hold")
+check([row["falloff"] for row in _sys["positional"]]
+      == [1.0, 0.5, 0.15, 0.15, 0.0, 0.75, 1.0],
+      "9ci the positional falloff curve must stay linear inside 800 px")
+_sys_save = _sys["save"]
+check(_sys_save["num_slots"] == 3
+      and _sys_save["slot_files"] == ["slot_1.json", "slot_2.json", "slot_3.json"]
+      and _sys_save["default_slot"] == 1
+      and _sys_save["set_slot_valid"] == 2 and _sys_save["set_slot_invalid"] == 2,
+      "9ci the save manager must keep its three slots and the default of slot 1")
+check(_sys_save["migrated"] is True and _sys_save["migrated_again"] is False
+      and _sys_save["legacy_files"] == ["progress_backup.json.old"]
+      and _sys_save["migrated_meta_gold"] == 777,
+      "9ci the legacy progress.json must migrate once and be renamed to .old")
+check(_sys_save["saved_keys"] == ["completed_levels", "meta_gold",
+                                  "slot_created", "slot_last_played"]
+      and _sys_save["slot_info"]["meta_gold"] == 123
+      and _sys_save["slot_info"]["completed_levels"] == [1, 2]
+      and _sys_save["slot_info_missing"] is None
+      and _sys_save["all_slot_info"] == [True, True, False],
+      "9ci the slot metadata must survive save, load, info and the empty slots")
+check(_sys_save["deleted"] is True and _sys_save["deleted_missing"] is False
+      and _sys_save["playtime"] == ["0m", "0m", "1m", "59m", "1h 0m", "1h 1m", "2h 2m"]
+      and _sys_save["last_played"] == ["Never", "Just now", "2m ago", "2h ago",
+                                       "1d ago", "06 Nov 2023", "22 Jul 2023"]
+      and _sys_save["time"] == ["--:--", "0:05", "1:05", "10:00", "59:59"],
+      "9ci delete semantics and the three formatters must stay the source strings")
+check(_sys_save["stats_default"] == {"best_score": 0, "best_time_seconds": 0,
+                                     "total_attempts": 0, "wins": 0, "total_kills": 0,
+                                     "max_combo": 0, "total_playtime_seconds": 0}
+      and _sys_save["stats_loss"]["flags"] == [False, False]
+      and _sys_save["stats_win"]["flags"] == [True, True]
+      and _sys_save["stats_win_worse"]["flags"] == [False, False]
+      and _sys_save["stats_saved"]["total_attempts"] == 3
+      and _sys_save["stats_saved"]["wins"] == 2
+      and _sys_save["stats_saved"]["best_score"] == 1200,
+      "9ci the level-stat transactions must keep their flags and attempt counter")
+check(_sys_save["stats_aliases"] is True,
+      "9ci the source hands out the stored stats dict itself (Godot copies it)")
+_sys_checks_text = _sys_checks_path.read_text(encoding="utf-8")
+check("the system bundle keeps its six sections" in _sys_checks_text
+      and "every classification token is present in its target" in _sys_checks_text
+      and "an entity exactly on the margin is still visible" in _sys_checks_text
+      and "the query returns the source order and the team filter" in _sys_checks_text
+      and "the five source volumes survive as defaults" in _sys_checks_text
+      and "play_positional keeps the linear falloff, the floor and the 800 px cutoff"
+      in _sys_checks_text
+      and "the rebuild keeps three save slots" in _sys_checks_text
+      and "the stored level stats match the source transaction" in _sys_checks_text
+      and "the legacy F8 overlay stays the only dead module" in _sys_checks_text,
+      "9ci the native suite must replay inventory, cull, grid, audio, save and stats")
+if _sys_doc.is_file():
+    _sys_report = _sys_doc.read_text(encoding="utf-8")
+    check(all(f"`{name}.py`" in _sys_report for name in (
+              "performance", "fps_counter", "fps_limiter", "sound_manager", "save_manager")),
+          "9ci the report must name all five merged modules")
+    check(all(token in _sys_report for token in (
+              "system_source_oracle.py", "system_checks.gd", "spatial_grid.gd",
+              "frustum_cull.gd", "audio_manager.gd", "save_slot_store.gd",
+              "level_stats.gd", "adaptive_quality_controller.gd", "frame_rate_limit_runtime.gd",
+              "FrustumCuller", "SpatialGrid", "FPSCounter", "AdaptiveQuality",
+              "SoundManager", "SaveManager", "THROTTLE_MS", "play_positional",
+              "update_level_stats", "migrate_legacy_save", "format_last_played",
+              "progress_backup.json.old", ".migrated")),
+          "9ci the report must cover every ported symbol and the eight deviations")
+    check(_sys_report.count("D%d" % 8) > 0 and _sys_report.count("|") > 400,
+          "9ci the report must stay tabular with all eight deviations")
 
 
 # ── 9e: the cleave splash arm on the active boss uses the source call shape ──
