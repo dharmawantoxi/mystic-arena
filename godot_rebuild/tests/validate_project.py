@@ -9504,6 +9504,86 @@ if _hi_doc.is_file():
           "9ck the report must stay tabular with all six deviations")
 
 
+# Layer 9cn: main.py closed out (entry point, loop constants, banner, dev aids).
+from main_source_oracle import source_fixture as main_source_fixture
+from main_source_oracle import verify as main_source_verify
+_main = main_source_fixture()
+check(_main["file"] == {"file": "main.py", "lines": 737, "classes": 0, "functions": 4,
+                        "assigns": 7, "entrypoints": 1, "imports": 23},
+      f"9cn main.py must stay 737 lines / 4 functions / 35 symbols: {_main['file']}")
+check(_main["symbols"]["count"] == 35
+      and _main["kinds"] == {"baked": 3, "data": 1, "deviation": 7, "folded": 11,
+                             "ported": 13},
+      f"9cn every main.py symbol needs a kind: {_main['kinds']}")
+_main_broken = []
+_main_untargeted = []
+for _main_name, _main_row in _main["classification"].items():
+    if not _main_row["target"] or not _main_row["token"]:
+        if _main_row["kind"] not in ("baked", "deviation"):
+            _main_untargeted.append(_main_name)
+        continue
+    _main_target = ROOT / _main_row["target"]
+    if not _main_target.is_file() or _main_row["token"] not in _main_target.read_text(
+            encoding="utf-8"):
+        _main_broken.append(_main_name)
+check(not _main_broken,
+      f"9cn every main.py token must live in its target: {_main_broken[:8]}")
+check(not _main_untargeted,
+      f"9cn only baked/deviation symbols may skip a target: {_main_untargeted}")
+check(_main["deviations"] == ["mobile.bootcheck", "mobile.debug", "mobile.diagnostics",
+                              "mobile.grimjaw_review", "mobile.kaizen_review",
+                              "mobile.sylara_review", "mobile.vex_review"],
+      "9cn the dev-only screens must stay named deviations")
+try:
+    _main_live = main_source_verify()
+except AssertionError as _main_error:
+    _main_live = 0
+    check(False, f"9cn main.py oracle must stay live: {_main_error}")
+else:
+    check(_main_live == 53, f"9cn the oracle must report 53 source facts: {_main_live}")
+_main_review_keys = {"K_F7": "mobile.sylara_review", "K_F8": "mobile.debug",
+                     "K_F9": "mobile.kaizen_review", "K_F10": "mobile.vex_review",
+                     "K_F11": "mobile.grimjaw_review"}
+check(all(_main["classification"][module]["kind"] == "deviation"
+          for module in _main_review_keys.values())
+      and all(key in _main["constants"]["keys"] for key in _main_review_keys),
+      "9cn the F7-F11 review overlays must stay dev-only deviations")
+check(_main["constants"]["states"] == ["splash", "menu", "game", "pause"]
+      and _main["constants"]["max_catchup"] == 4
+      and _main["constants"]["fixed_dt_ms"] == 1000.0 / 60.0
+      and _main["constants"]["frame_error_cooldown"] == 2.0
+      and _main["constants"]["debug_env"] == "MYSTIC_DEBUG",
+      "9cn state order, MAX_CATCHUP, fixed dt, cooldown and debug switch must not drift")
+check("common/max_physics_steps_per_frame=%d" % _main["constants"]["max_catchup"] in project
+      and "driver/mix_rate=%d" % _main["constants"]["mixer_pre_init"]["frequency"] in project,
+      "9cn project.godot must mirror MAX_CATCHUP and the mixer rate")
+_startup_text = (ROOT / "scripts/app/startup_report.gd").read_text(encoding="utf-8")
+check('const RULE := "%s"' % _main["constants"]["banner"][0] in _startup_text
+      and 'const TITLE_LINE := "%s"' % _main["constants"]["banner"][1] in _startup_text
+      and "static func lines(" in _startup_text
+      and "MOUSE/KEYBOARD" in _startup_text,
+      "9cn the startup banner must come from the source template")
+_frame_log_text = (ROOT / "scripts/app/frame_error_log.gd").read_text(encoding="utf-8")
+check("const COOLDOWN_SECONDS := %s" % _main["constants"]["frame_error_cooldown"]
+      in _frame_log_text
+      and 'const LOG_NAME := "crash_log.txt"' in _frame_log_text
+      and "func record(" in _frame_log_text
+      and "func throttled(" in _frame_log_text,
+      "9cn the frame error log must keep the 2 s cooldown and crash_log.txt")
+_main_native = (ROOT / "tests/main_shell_checks.gd").read_text(encoding="utf-8")
+check("MainShellChecks.new().run(_check)" in ai_tests
+      and "frame error log throttles one write per kind per cooldown window" in _main_native
+      and "startup report reproduces every source banner line" in _main_native
+      and "fixed timestep and MAX_CATCHUP mirror main.py in project.godot" in _main_native
+      and "dev-only screens and review sheets stay documented deviations" in _main_native,
+      "9cn the native suite must replay the log, banner, loop constants and deviations")
+_main_report = ROOT.parent / "docs/MAIN_ENTRYPOINT_MIGRATION.md"
+check(_main_report.is_file(), "9cn the entry-point migration report must exist")
+if _main_report.is_file():
+    check(_main_report.read_text(encoding="utf-8").count("|") > 60,
+          "9cn the entry-point migration report must stay tabular")
+
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

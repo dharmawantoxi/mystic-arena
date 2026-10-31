@@ -12,6 +12,8 @@ const ProgressStore = preload("res://scripts/match/level_progress_store.gd")
 const SaveSlotStore = preload("res://scripts/match/save_slot_store.gd")
 const HeroUnlockStore = preload("res://scripts/match/hero_unlock_store.gd")
 const Catalog = preload("res://scripts/match/level_catalog.gd")
+const StartupReport = preload("res://scripts/app/startup_report.gd")
+const FrameErrorLog = preload("res://scripts/app/frame_error_log.gd")
 
 var current_screen: Node
 var transition_pending := false
@@ -21,6 +23,7 @@ var prototype_is_replay := false
 var active_slot := SaveSlotStore.get_current_slot()
 var slot_path_template := SaveSlotStore.PATH_TEMPLATE
 var progress_path := SaveSlotStore.current_path(slot_path_template)
+var _frame_errors := FrameErrorLog.new()
 
 @onready var screen_root: Control = $ScreenRoot
 
@@ -31,6 +34,9 @@ func _ready() -> void:
 	SaveSlotStore.set_current_slot(active_slot)
 	SaveSlotStore.migrate_legacy(ProgressStore.PATH, slot_path_template)
 	progress_path = SaveSlotStore.slot_path(active_slot, slot_path_template)
+	# Layer 9cn: the source prints this banner once, before the game loop.
+	for line in StartupReport.collect(get_tree()):
+		print(line)
 	# Layer 9at: `main.py` boots into STATE_SPLASH; the splash hands over to
 	# the menu when its timeline ends or a tap skips it.
 	_install_screen(SPLASH)
@@ -112,6 +118,13 @@ func _install_screen(scene: PackedScene) -> void:
 			not session.configure_level(prototype_level, prototype_difficulty)
 			or not session.configure_player_profile(profile)
 		):
+			# Layer 9cn: a session that cannot be configured used to fall back
+			# silently; the source wrote a rate-limited traceback here.
+			_frame_errors.record(
+				"boot",
+				"level %d (%s) gagal dikonfigurasi" % [prototype_level, prototype_difficulty],
+				_now_seconds(),
+			)
 			current_screen.free()
 			current_screen = MENU.instantiate()
 			scene = MENU
@@ -139,6 +152,11 @@ func _install_screen(scene: PackedScene) -> void:
 		else:
 			current_screen.connect("restart_requested", _request_screen.bind(scene))
 	transition_pending = false
+
+
+func _now_seconds() -> float:
+	# `pygame.time.get_ticks() / 1000.0`: monotonic seconds since boot.
+	return float(Time.get_ticks_msec()) / 1000.0
 
 
 func _select_progress_slot(slot: int, path: String) -> void:

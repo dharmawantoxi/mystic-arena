@@ -54,8 +54,18 @@ command_move={
 "events": [Object(InputEventMouseButton,"button_index":2)]
 }
 
+[audio]
+; main.py calls pygame.mixer.pre_init(44100, -16, 2, 1024) before init, so the
+; whole source mix runs at 44.1 kHz. Godot's driver default is the same value;
+; pinning it keeps the contract visible (layer 9cn, D4 documents the buffer).
+driver/mix_rate=44100
+
 [physics]
 common/physics_ticks_per_second=60
+; main.py caps catch-up at MAX_CATCHUP = 4 simulation steps per frame so a slow
+; frame can never start a "spiral of death". Godot's default is 8; 4 is the
+; source value (layer 9cn).
+common/max_physics_steps_per_frame=4
 
 [rendering]
 renderer/rendering_method="gl_compatibility"
