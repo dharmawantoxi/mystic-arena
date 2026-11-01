@@ -34,6 +34,12 @@ Yang sudah native dan dapat dimainkan secara data-driven:
 - Layanan eksternal sebagai kontrak eksplisit: `CloudSavePort.gd`,
   `TopupPort.gd`, `VoucherService.gd`, `CloudSaveCodec.gd`, `CurrencyFormat.gd`.
 
+## Lanjutan entity
+
+Migrasi `_entity.py` (projectile, AI, skill kit, visual sprite bake) dilanjutkan di
+[GODOT_ENTITY_MIGRATION.md](GODOT_ENTITY_MIGRATION.md). Batas di bawah adalah batas
+port core awal; beberapa poin visual/projectile sudah ditutup oleh port entity.
+
 ## Batas parity yang belum diklaim
 
 Port ini **bukan** salinan visual/rig 1:1 dari seluruh dependensi Python. Bagian

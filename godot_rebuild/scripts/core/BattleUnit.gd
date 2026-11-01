@@ -1,9 +1,12 @@
 class_name BattleUnit
 extends RefCounted
 
-## Data-driven native combat unit for the migrated _core.Game loop.
-## Bespoke hero/boss skill scripts and Pygame rig rendering are tracked gaps.
+## Native combat unit for _core.Game and _entity.py.
+## Bespoke skills are transpiled into entities/generated; visuals use baked strips.
 enum Kind { MINION, TOWER, CASTLE, HERO, BOSS }
+
+const HeroSkillKit = preload("res://scripts/entities/generated/HeroSkillKit.gd")
+const BossKit = preload("res://scripts/entities/generated/BossKit.gd")
 
 var id := 0
 var kind := Kind.MINION
@@ -64,12 +67,142 @@ var killed_by: BattleUnit
 var boss_class := ""
 var defeated := false
 var stats: Dictionary = {}
+var world: RefCounted
+var kit: Dictionary = {}
+var item_state: Dictionary = {}
+var target: BattleUnit
+var facing := 1
+var pulse := 0.0
+var anim_time := 0
+var is_moving := false
+var attack_anim_timer := 0
+var hurt_flash_timer := 0
+var spawn_anim := 20
+var upgrade_flash := 0
+var shoot_flash_timer := 0
+var active_skill := ""
+var active_skill_timer := 0
+var auto_cast_enabled := true
+var auto_cast_check_timer := 0
+var destination_auto := false
+var hunt_range := 900.0
+var aggro_range := 250.0
+var retreat_hp_ratio := 0.20
+var heal_target_ratio := 0.80
+var base_heal_rate := 3.0
+var passive_heal_rate := 0.15
+var dmg_school := "physical"
+var is_melee_hero := false
+var ai_level := 1
+var tower_kind := "outer"
+var nexus_level := 1
+var base_speed := 1.0
+var ability_timer := 0
+var ability_cooldown_max := 240
+var ability_damage := 100.0
+var ability_range := 150.0
+var ability2_timer := 0
+var ability2_cooldown_max := 0
+var ability2_heal_pct := 0.0
+var entrance_timer := 0
+var is_enraged := false
+var enrage_triggered := false
+var damage_reduction := 0.20
+var max_damage_per_hit := 0
+var tenacity := 0.50
+var defense_boost := false
+var defense_timer := 0
+var cleave_radius := 80.0
+var cleave_ratio := 0.40
+var basic_attack_seq := 0
+var attack_facing := 1
+var attack_lock_timer := 0
+var kite_mode := "hold"
+var projectiles: Array[Dictionary] = []
+var bullets: Array[Dictionary] = []
 
 var hp: float:
 	get:
 		return _hp
 	set(value):
 		_hp = status.modified_heal(_hp, value)
+
+var hero_type: String:
+	get:
+		return unit_type
+	set(value):
+		unit_type = value
+
+var range: float:
+	get:
+		return attack_range
+	set(value):
+		attack_range = value
+
+var skill_data: Dictionary:
+	get:
+		return stats
+
+var move_speed: float:
+	get:
+		return speed * 60.0
+	set(value):
+		speed = value / 60.0
+		base_speed = speed
+
+var attack_cooldown_seconds: float:
+	get:
+		return float(attack_cooldown) / 60.0
+	set(value):
+		attack_cooldown = maxi(1, int(round(value * 60.0)))
+
+var skill_timer: int:
+	get:
+		return int(skill_cooldowns.get("q", 0))
+	set(value):
+		skill_cooldowns["q"] = value
+
+var w_cooldown: int:
+	get:
+		return int(skill_cooldowns.get("w", 0))
+	set(value):
+		skill_cooldowns["w"] = value
+
+var e_cooldown: int:
+	get:
+		return int(skill_cooldowns.get("e", 0))
+	set(value):
+		skill_cooldowns["e"] = value
+
+var r_cooldown: int:
+	get:
+		return int(skill_cooldowns.get("r", 0))
+	set(value):
+		skill_cooldowns["r"] = value
+
+var skill_cooldown_max: int:
+	get:
+		return int(skill_max.get("q", 300))
+	set(value):
+		skill_max["q"] = value
+
+var w_cooldown_max: int:
+	get:
+		return int(skill_max.get("w", 240))
+	set(value):
+		skill_max["w"] = value
+
+var e_cooldown_max: int:
+	get:
+		return int(skill_max.get("e", 420))
+	set(value):
+		skill_max["e"] = value
+
+var r_cooldown_max: int:
+	get:
+		return int(skill_max.get("r", 900))
+	set(value):
+		skill_max["r"] = value
 
 var _hp := 100.0
 
@@ -269,13 +402,17 @@ func set_wave(data: CoreData, wave: int) -> void:
 		shield = 0.0
 
 
+func can_activate_castle_shield(data: CoreData) -> bool:
+	return (
+		kind == Kind.CASTLE
+		and not free_shield_active
+		and not shield_purchased
+		and bool(data.rule("CASTLE_SHIELD_ENABLED", true))
+	)
+
+
 func activate_castle_shield(data: CoreData) -> bool:
-	if (
-		kind != Kind.CASTLE
-		or free_shield_active
-		or shield_purchased
-		or not bool(data.rule("CASTLE_SHIELD_ENABLED", true))
-	):
+	if not can_activate_castle_shield(data):
 		return false
 	shield_purchased = true
 	shield_active = true
@@ -305,7 +442,19 @@ func setup_hero(data: CoreData, hero_type: String, team_name: String, position: 
 	skill_max.q = int(stats.get("skill_cooldown", 300))
 	color = data.color(stats.get("color"), Color.CYAN)
 	items = UnitInventory.new(data.data.get("items", {}))
+	is_melee_hero = attack_range <= 80.0
+	if is_melee_hero:
+		attack_range = clampf(attack_range, 50.0, 80.0)
+		base_hp *= 1.15
+		base_damage *= 1.20
+		speed *= 1.18
+		attack_cooldown = int(attack_cooldown * 0.88)
+	else:
+		attack_range = clampf(attack_range, 120.0, 220.0)
+	base_speed = speed
+	dmg_school = "magic" if is_magic_hero() else "physical"
 	_apply_hero_level(data)
+	HeroSkillKit.init_state(self)
 
 
 func _apply_hero_level(data: CoreData) -> void:
@@ -361,54 +510,82 @@ func setup_boss(data: CoreData, boss_type: String, lane_path: PackedVector2Array
 		waypoint = path.size() - 1
 	for key: String in ["q", "w", "e", "r"]:
 		skill_max[key] = int(stats.get("skill_%s_cooldown" % key, 300))
+	base_damage = damage
+	base_speed = speed
+	ability_cooldown_max = int(stats.get("ability_cooldown", 240))
+	ability_timer = ability_cooldown_max
+	ability_damage = float(stats.get("ability_damage", 100))
+	ability_range = float(stats.get("ability_range", 150))
+	entrance_timer = 180 if boss_class == "true" else 120
+	damage_reduction = 0.30 if boss_class == "true" else 0.20
+	max_damage_per_hit = int(max_hp * (0.08 if boss_class == "true" else 0.12))
+	kit = BossKit.DEFAULT_KIT.duplicate(true)
+	kit["kit_ready"] = false
 
 
 func apply_scaling(hp_mult: float, damage_mult: float, speed_mult: float) -> void:
 	max_hp = int(max_hp * hp_mult)
 	_hp = max_hp
 	damage = int(damage * damage_mult)
+	base_damage = damage
+	ability_damage *= damage_mult
 	speed *= speed_mult
+	base_speed = speed
+	max_damage_per_hit = int(max_hp * (0.08 if boss_class == "true" else 0.12))
 
 
 func apply_debuff(kind_name: String, amount: float, duration: int, source_team := "") -> void:
+	if kind == Kind.BOSS and kind_name in ["slow", "atk_slow"]:
+		amount = minf(0.35, amount * (1.0 - tenacity))
+		duration = int(duration * (1.0 - tenacity))
 	status.apply(kind_name, amount, duration, source_team)
 
 
+func item_timer(key: String) -> int:
+	return int(item_state.get(key, 0))
+
+
 func take_damage(
-	amount: float, from_team: String, damage_type := "normal", source: BattleUnit = null
+	amount: float,
+	from_team: String,
+	damage_type := "normal",
+	source: BattleUnit = null,
+	school := ""
 ) -> float:
 	if not alive or amount <= 0.0 or from_team == team:
 		return 0.0
+	var resolved := EntityCombat.resolve_school(self, damage_type, source, school)
 	var effective := amount
+	if kind == Kind.HERO:
+		var rng := RandomNumberGenerator.new()
+		if world != null:
+			rng = world.rng
+		else:
+			rng.randomize()
+		var defense := EntityCombat.hero_pre_damage(self, amount, resolved, source, rng)
+		if bool(defense.miss):
+			if float(defense.reflect) > 0.0 and source != null:
+				source.take_damage(float(defense.reflect), team, "true", self)
+			return 0.0
+		effective = float(defense.amount)
+		if float(defense.reflect) > 0.0 and source != null:
+			source.take_damage(float(defense.reflect), team, "true", self)
+	elif kind == Kind.BOSS:
+		effective = EntityCombat.boss_pre_damage(self, amount, resolved, source)
+		hurt_flash_timer = 8
 	if damage_type == "true":
-		_hp = maxf(0.0, _hp - effective)
-		no_damage_timer = 0
-		if source != null:
-			source.damage_dealt += effective
-			killed_by = source
-		if _hp <= 0.0:
-			alive = false
-			death_anim = 20
-			if kind == Kind.BOSS:
-				defeated = true
-			if kind == Kind.HERO:
-				deaths += 1
-				items.clear_on_death()
-			status.clear()
+		_apply_hp_loss(effective, source)
 		return effective
-	if damage_type == "physical" or damage_type == "projectile":
+	if resolved == "physical":
 		var armor_value := (
 			armor
 			+ (items.armor() if kind == Kind.HERO and items != null else 0.0)
 			- status.armor_shred_amount
 		)
-		if armor_value > 0:
-			effective = maxf(
-				1.0, round(effective * (1.0 - armor_value * 0.06 / (1.0 + armor_value * 0.06)))
-			)
-	elif damage_type == "magic" and magic_resist > 0:
-		effective = maxf(1.0, round(effective * (1.0 - magic_resist)))
-	if status.dmg_amp_timer > 0:
+		effective = maxf(1.0, round(effective * (1.0 - EntityCombat.armor_reduction(armor_value))))
+	elif resolved == "magic" and magic_resist > 0:
+		effective = maxf(1.0, round(effective * (1.0 - minf(0.60, magic_resist))))
+	if status.dmg_amp_timer > 0 and kind != Kind.BOSS:
 		effective *= 1.0 + status.dmg_amp_amount
 	if kind == Kind.CASTLE and shield_active:
 		if shield > 0.0:
@@ -421,6 +598,11 @@ func take_damage(
 		var absorbed := minf(shield, effective)
 		shield -= absorbed
 		effective -= absorbed
+	_apply_hp_loss(effective, source)
+	return effective
+
+
+func _apply_hp_loss(effective: float, source: BattleUnit) -> void:
 	_hp = maxf(0.0, _hp - effective)
 	no_damage_timer = 0
 	if source != null:
@@ -433,9 +615,9 @@ func take_damage(
 			defeated = true
 		if kind == Kind.HERO:
 			deaths += 1
-			items.clear_on_death()
+			if items != null:
+				items.clear_on_death()
 		status.clear()
-	return effective
 
 
 func heal(amount: float) -> void:
@@ -519,39 +701,161 @@ func is_magic_hero() -> bool:
 	return false
 
 
-func cast_skill(key: String, enemies: Array[BattleUnit]) -> bool:
+func cast_skill(key: String, _enemies: Array[BattleUnit]) -> bool:
 	if kind != Kind.HERO or not alive or status.stun_timer > 0 or not key in skill_cooldowns:
 		return false
 	if int(skill_cooldowns[key]) > 0:
 		return false
-	var target: BattleUnit = null
-	var best := skill_range
-	for enemy: BattleUnit in enemies:
-		if enemy.alive and enemy.team != team:
-			var dist := pos.distance_to(enemy.pos)
-			if dist <= best:
-				best = dist
-				target = enemy
-	if target == null:
+	if world == null:
 		return false
-	var mult: float = {"q": 1.0, "w": 0.65, "e": 0.85, "r": 1.8}[key]
-	var amount: float = skill_damage * mult * (1.0 - status.skill_down_amount)
-	target.take_damage(amount, team, "magic", self)
-	if key == "e":
-		heal(max_hp * 0.08)
-	if key == "r":
-		for enemy: BattleUnit in enemies:
-			if (
-				enemy != target
-				and enemy.alive
-				and enemy.team != team
-				and enemy.pos.distance_to(target.pos) <= 80.0
-			):
-				enemy.take_damage(amount * 0.5, team, "magic", self)
-	var cd := int(skill_max[key])
-	if items != null:
-		cd = int(round(cd * (1.0 - items.cooldown_reduction())))
-	skill_cooldowns[key] = cd
-	if items != null and items.spell_vamp() > 0.0:
-		heal(skill_damage * items.spell_vamp())
+	var towers: Array = world.towers
+	var bases: Array = [world.blue_base, world.red_base]
+	var ok := false
+	match key:
+		"q":
+			ok = HeroSkillKit.cast_q(self, world.all_units(), towers, bases)
+		"w":
+			ok = HeroSkillKit.cast_w(self, world.all_units(), towers, bases)
+		"e":
+			ok = HeroSkillKit.cast_e(self, world.all_units(), towers, bases)
+		"r":
+			ok = HeroSkillKit.cast_r(self, world.all_units(), towers, bases)
+	if ok:
+		if items != null and items.cooldown_reduction() > 0.0:
+			skill_cooldowns[key] = int(
+				round(int(skill_cooldowns[key]) * (1.0 - items.cooldown_reduction()))
+			)
+		if items != null and items.spell_vamp() > 0.0:
+			heal(skill_damage * items.spell_vamp())
+	return ok
+
+
+func kit_enemies(units: Array, towers: Array, bases: Array) -> Array:
+	var result: Array = []
+	for group: Array in [units, towers, bases]:
+		for unit: Variant in group:
+			if unit is BattleUnit and unit.alive and unit.team != team:
+				result.append(unit)
+	return result
+
+
+func kit_skill_damage() -> int:
+	var amp := 1.0 + (status.dmg_amp_amount if status.dmg_amp_timer > 0 else 0.0)
+	return int(round(skill_damage * amp * (1.0 - status.skill_down_amount)))
+
+
+func kit_catalog_all() -> Dictionary:
+	return world.data.data.get("heroes", {}) if world != null else {}
+
+
+func kit_hero_levels() -> Dictionary:
+	return world.data.rule("HERO_LEVELS", {}) if world != null else {}
+
+
+func kit_hit(
+	enemy: BattleUnit, dmg: float, from_team: String, source: BattleUnit, school: String
+) -> void:
+	if enemy != null:
+		enemy.take_damage(dmg, from_team, "magic", source, school)
+
+
+func kit_slow(enemy: BattleUnit, amount: float, frames: int) -> void:
+	if enemy != null:
+		enemy.apply_debuff("slow", amount, frames)
+
+
+func kit_lock(enemy: BattleUnit, frames: float) -> void:
+	if enemy != null:
+		enemy.attack_timer = maxi(enemy.attack_timer, int(frames))
+
+
+func kit_atk_timer(enemy: BattleUnit) -> int:
+	return enemy.attack_timer if enemy != null else 0
+
+
+func kit_has_atk_timer(_enemy: BattleUnit) -> bool:
+	return true
+
+
+func kit_has_hp(_enemy: BattleUnit) -> bool:
+	return true
+
+
+func kit_unit_alive(enemy: BattleUnit) -> bool:
+	return enemy != null and enemy.alive
+
+
+func kit_has_slow(_enemy: BattleUnit) -> bool:
+	return true
+
+
+func _shake(amount: float) -> void:
+	kit_shake(amount)
+
+
+func _callout(text: String, callout_color: Variant = Color.WHITE) -> void:
+	kit_popup(text, callout_color if callout_color is Color else Color.WHITE)
+
+
+func kit_shake(amount: float) -> void:
+	if world != null:
+		world.add_shake(amount)
+
+
+func kit_sound(_volume: float) -> void:
+	if world != null:
+		world.add_effect(pos, "sound", color, 8)
+
+
+func kit_popup(text: String, popup_color: Color) -> void:
+	if world != null:
+		world.add_popup(pos, text, popup_color)
+
+
+func kit_skill_proj(enemy: BattleUnit) -> void:
+	if world != null:
+		EntityProjectiles.spawn_hero(world, self, enemy, 0.0, false, 13.0, true)
+
+
+func kit_fx_cast(skill: String) -> void:
+	active_skill = skill
+	active_skill_timer = 60
+	if world != null:
+		world.add_effect(pos, "cast_" + skill, color, 40)
+
+
+func kit_fx_impact(x: float, y: float, radius: float, skill: String) -> void:
+	if world != null:
+		world.add_effect(Vector2(x, y), "impact_" + skill, color, int(radius))
+
+
+func kit_get_stats() -> Dictionary:
+	var result := stats.duplicate(true)
+	var mult := 1.0 - status.skill_down_amount
+	if is_enraged:
+		mult *= 1.25
+	for key: String in result:
+		if "damage" in key and result[key] is float:
+			result[key] = float(result[key]) * mult
+	return result
+
+
+func kit_stats_full() -> Dictionary:
+	return stats
+
+
+func kit_skill_hit(enemy: BattleUnit, dmg: float) -> void:
+	if enemy != null:
+		enemy.take_damage(dmg, team, "magic", self)
+
+
+func kit_apply_slow(enemy: BattleUnit, amount: float, frames: int) -> void:
+	kit_slow(enemy, amount, frames)
+
+
+func kit_lock_attack(enemy: BattleUnit, frames: float) -> void:
+	kit_lock(enemy, frames)
+
+
+func kit_can_move(_enemy: BattleUnit) -> bool:
 	return true

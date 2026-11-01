@@ -112,6 +112,19 @@ def main() -> int:
     cloud = (PROJECT / "scripts/ports/CloudSavePort.gd").read_text(encoding="utf-8")
     check("Play Games plugin not configured" in cloud, "Cloud default is explicitly unavailable")
     check((PROJECT / "scripts/Main.gd").is_file(), "Canonical Main.gd entry point exists")
+    entities = PROJECT / "scripts/entities"
+    for name in ["EntityCombat.gd", "EntityMovement.gd", "EntityProjectiles.gd", "EntityAI.gd", "EntityItems.gd", "EntityVisuals.gd"]:
+        check((entities / name).is_file(), f"Native entity module: {name}")
+    check((entities / "generated/HeroSkillKit.gd").is_file(), "Generated hero skill kit exists")
+    check((entities / "generated/BossKit.gd").is_file(), "Generated boss AI kit exists")
+    baked_units = json.loads((PROJECT / "data/baked_units.json").read_text(encoding="utf-8"))
+    baked_props = json.loads((PROJECT / "data/baked_props.json").read_text(encoding="utf-8"))
+    check(len(baked_units["units"]) >= 222, "Baked hero/boss sprite manifest")
+    check(len(baked_props["minions"]) == 10, "Baked minion sprite manifest")
+    check(len(baked_props["towers"]) == 8, "Baked tiered tower sprite manifest")
+    check(len(baked_props["nexus"]) == 2, "Baked nexus sprite manifest")
+    check("EntityProjectiles.update(self)" in (PROJECT / "scripts/core/MatchModel.gd").read_text(encoding="utf-8"), "Match model updates traveling projectiles")
+    check("EntityVisuals.draw_unit" in (PROJECT / "scripts/game/ArenaView.gd").read_text(encoding="utf-8"), "Arena renderer uses baked entity sprites")
     print(f"PASS: {checks} native project/source checks")
     return 0
 

@@ -27,6 +27,7 @@ var _context_attached := false
 
 func _exit_tree() -> void:
 	model.clear_unit_refs()
+	EntityVisuals.clear_cache()
 
 
 func attach_context(

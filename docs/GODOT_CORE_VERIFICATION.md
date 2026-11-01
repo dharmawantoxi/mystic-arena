@@ -13,7 +13,7 @@ Tanggal: 2026-11-01.
 | `gdparse` | 37 berkas GDScript lulus |
 | `gdlint` | Tidak ada masalah (kebijakan `gdlintrc`) |
 | `gdformat --check` | Seluruh berkas sesuai |
-| Runtime native headless | **176 pemeriksaan lulus, 0 kegagalan** |
+| Runtime native headless | **176 pemeriksaan lulus, 0 kegagalan** (suite core awal; entity terbaru: 195, lihat [verifikasi entity](GODOT_ENTITY_VERIFICATION.md)) |
 | Boot scene utama headless | Splash → menu berjalan; exit 0 |
 | Diff hygiene | `git diff --check` lulus |
 
