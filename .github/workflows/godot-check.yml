@@ -8,6 +8,8 @@ on:
       - 'godot_rebuild/**'
       - 'tools/prepare_godot_main.py'
       - 'tools/prepare_godot_core.py'
+      - 'tools/prepare_godot_archetypes.py'
+      - 'tools/test_godot_archetypes_prepare.py'
       - 'tools/test_godot_core_prepare.py'
       - '_core.py'
       - 'hero_balance.py'
@@ -48,6 +50,8 @@ on:
       - 'godot_rebuild/**'
       - 'tools/prepare_godot_main.py'
       - 'tools/prepare_godot_core.py'
+      - 'tools/prepare_godot_archetypes.py'
+      - 'tools/test_godot_archetypes_prepare.py'
       - 'tools/test_godot_core_prepare.py'
       - '_core.py'
       - 'hero_balance.py'
@@ -108,6 +112,8 @@ jobs:
           python3 tools/prepare_godot_core.py
           python3 tools/prepare_godot_core.py --check
           python3 tools/test_godot_core_prepare.py
+          python3 tools/prepare_godot_archetypes.py --check
+          python3 tools/test_godot_archetypes_prepare.py
           python3 tools/prepare_godot_entities.py --check
           python3 tools/test_godot_entity_prepare.py
           python3 tools/prepare_godot_render.py --check

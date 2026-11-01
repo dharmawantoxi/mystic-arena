@@ -11,9 +11,11 @@
 # Sumber data: tools/analyze_hero_archetypes.py
 # Regenerate:  python3 tools/analyze_hero_archetypes.py --emit-module \
 #                hero_archetypes.py --emit-json hero_archetypes.json
-# Port Godot:  godot/scripts/core/HeroArchetypes.gd (mirror 1:1; ikut
-#              di-refresh dengan menambah --emit-gdscript pada command
-#              regenerate di atas). Dikunci HeroArchetypesParityTest.
+# Port Godot aktif: godot_rebuild/scripts/core/HeroArchetypes.gd +
+#              data/hero_archetypes.json. Setelah regenerate sumber ini,
+#              jalankan tools/prepare_godot_archetypes.py lalu --check.
+#              Paritas dikunci tools/test_godot_archetypes_prepare.py dan
+#              _test_archetypes() di godot_rebuild/tests/run_all.gd.
 # ================================
 
 # hero_type -> {dmg_type, playstyle, tier, power}

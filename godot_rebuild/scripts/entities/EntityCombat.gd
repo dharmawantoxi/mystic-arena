@@ -79,13 +79,14 @@ static func boss_pre_damage(
 		return 0.0
 	if unit.status.dmg_amp_timer > 0:
 		effective *= 1.0 + unit.status.dmg_amp_amount
-	var armor_value := unit.armor
-	if unit.status.armor_shred_timer > 0:
-		armor_value *= 1.0 - minf(0.60, unit.status.armor_shred_amount * 0.06)
-	if school == "physical":
-		effective *= 1.0 - armor_reduction(armor_value)
+	if school == "physical" and unit.armor > 0.0:
+		# base_boss.py: compute raw armor reduction, subtract Corroder shred,
+		# then clamp. Do not multiplicatively shrink armor like the hero path.
+		var reduction := 1.0 - HeroArchetypes.physical_mitigation(unit.armor)
+		reduction -= unit.status.armor_shred_amount * HeroArchetypes.ARMOR_FACTOR
+		effective *= 1.0 - clampf(reduction, 0.0, 0.60)
 	elif school == "magic" and unit.magic_resist > 0.0:
-		effective *= 1.0 - minf(0.60, unit.magic_resist)
+		effective *= 1.0 - minf(HeroArchetypes.MR_MAX, unit.magic_resist)
 	var resilience := unit.damage_reduction
 	if unit.defense_boost:
 		resilience = maxf(resilience, 0.45)

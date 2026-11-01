@@ -252,8 +252,26 @@ func show_heroes() -> void:
 		var stats: Dictionary = heroes[hero_type]
 		var owned := hero_type in purchased
 		var cost := int(stats.get("unlock_cost", stats.get("cost", 0)))
-		var label := "%s — %s" % [stats.get("name", hero_type), "OWNED" if owned else "%d G" % cost]
+		var arch := core_data.archetypes
+		var label := (
+			"%s — %s\n%s · %s"
+			% [
+				stats.get("name", hero_type),
+				"OWNED" if owned else "%d G" % cost,
+				arch.short_label(hero_type, stats),
+				arch.detail_label(hero_type, stats),
+			]
+		)
 		var button := Ui.button(label, owned)
+		button.custom_minimum_size = Vector2(0, 72)
+		button.add_theme_font_size_override("font_size", 17)
+		button.tooltip_text = (
+			(
+				"%s\nTier/Power adalah snapshot analisis sumber, bukan DPS runtime.\n"
+				% arch.detail_label(hero_type, stats)
+			)
+			+ "PHY ditahan armor boss; MAG ditahan magic resistance."
+		)
 		button.disabled = owned
 		var ht := hero_type
 		var c := cost
