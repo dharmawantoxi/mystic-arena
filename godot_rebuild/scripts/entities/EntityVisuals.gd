@@ -2,9 +2,13 @@ class_name EntityVisuals
 extends RefCounted
 
 ## Baked sprite-strip renderer for _entity.py heroes/bosses/minions/towers/nexus.
+const MAX_LIT_FRAMES := 128
 static var units: Dictionary = {}
 static var props: Dictionary = {}
 static var textures: Dictionary = {}
+static var lit_textures: Dictionary = {}
+static var quality: Dictionary = RenderQuality.preset("high")
+static var lighting: Lighting = null
 static var loaded := false
 
 
@@ -24,8 +28,61 @@ static func ensure_loaded() -> void:
 			props = parsed
 
 
+static func configure(preset: Dictionary) -> void:
+	var next := preset.duplicate()
+	if bool(next.get("hero_lighting", true)) != bool(quality.get("hero_lighting", true)):
+		lit_textures.clear()
+	quality = next
+
+
 static func clear_cache() -> void:
 	textures.clear()
+	lit_textures.clear()
+	if lighting != null:
+		lighting.clear_cache()
+		lighting = null
+
+
+static func lit_frame_texture(
+	tex: Texture2D, source: Rect2, options: Dictionary = {}, enabled := true
+) -> Texture2D:
+	if tex == null or not enabled:
+		return null
+	if lighting == null:
+		lighting = Lighting.new()
+	if not lighting.valid():
+		return null
+	var resolved := options.duplicate()
+	if resolved.get("box") is Array and resolved.box.size() == 4:
+		var box: Array = resolved.box
+		resolved.box = Rect2i(int(box[0]), int(box[1]), int(box[2]), int(box[3]))
+	var key := "%d:%s:%s" % [tex.get_instance_id(), str(source), str(resolved)]
+	if lit_textures.has(key):
+		return lit_textures[key]
+	var image := tex.get_image()
+	if image == null:
+		return null
+	var frame := image.get_region(Rect2i(source))
+	if frame == null:
+		return null
+	lighting.apply_to_rig(frame, true, resolved)
+	var result := ImageTexture.create_from_image(frame)
+	if lit_textures.size() >= MAX_LIT_FRAMES:
+		lit_textures.clear()
+	lit_textures[key] = result
+	return result
+
+
+static func _lighting_options(entry: Dictionary, _team: String) -> Dictionary:
+	# Existing strips were baked by the Python renderer after its lighting pass.
+	# Only explicitly raw imports are lit at runtime, so nobody gets a double rim.
+	if bool(entry.get("lighting_baked", true)):
+		return {}
+	return {
+		"enabled":
+		bool(quality.get("hero_lighting", true)) and bool(entry.get("lighting_enabled", true)),
+		"options": entry.get("lighting", {}),
+	}
 
 
 static func texture(path: String) -> Texture2D:
@@ -85,7 +142,8 @@ static func draw_unit(canvas: CanvasItem, unit: BattleUnit, frame: int) -> bool:
 						index,
 						int(entry.get("skill_frames_per_row", 8)),
 						ssize,
-						unit.facing
+						unit.facing,
+						_lighting_options(entry, unit.team)
 					)
 					return true
 		if unit.attack_anim_timer > 0:
@@ -175,7 +233,12 @@ static func draw_unit(canvas: CanvasItem, unit: BattleUnit, frame: int) -> bool:
 		index,
 		per_row,
 		frame_size,
-		unit.facing
+		unit.facing,
+		(
+			_lighting_options(entry, unit.team)
+			if unit.kind in [BattleUnit.Kind.HERO, BattleUnit.Kind.BOSS]
+			else {}
+		)
 	)
 	return true
 
@@ -189,7 +252,8 @@ static func _draw_frame(
 	index: int,
 	per_row: int,
 	source_size: Vector2,
-	facing: int
+	facing: int,
+	lighting_options: Dictionary = {}
 ) -> void:
 	var source := Rect2(
 		Vector2((index % per_row) * source_size.x, int(index / per_row) * source_size.y),
@@ -197,7 +261,16 @@ static func _draw_frame(
 	)
 	var flip := -1.0 if facing < 0 else 1.0
 	canvas.draw_set_transform(pos, 0.0, Vector2(flip, 1.0))
-	canvas.draw_texture_rect_region(tex, Rect2(-anchor, size), source)
+	var lit := lit_frame_texture(
+		tex,
+		source,
+		lighting_options.get("options", {}),
+		bool(lighting_options.get("enabled", false))
+	)
+	if lit != null:
+		canvas.draw_texture_rect(lit, Rect2(-anchor, size), false)
+	else:
+		canvas.draw_texture_rect_region(tex, Rect2(-anchor, size), source)
 	canvas.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 

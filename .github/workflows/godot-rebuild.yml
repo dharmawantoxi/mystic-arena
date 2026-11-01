@@ -16,11 +16,14 @@ on:
       - 'tools/test_godot_balance_prepare.py'
       - 'tools/prepare_godot_items.py'
       - 'tools/test_godot_items_prepare.py'
+      - 'tools/prepare_godot_lighting.py'
+      - 'tools/test_godot_lighting_prepare.py'
       - 'tools/test_godot_archetypes_prepare.py'
       - 'tools/test_godot_core_prepare.py'
       - '_core.py'
       - 'hero_balance.py'
       - 'hero_items.py'
+      - 'lighting.py'
       - 'bosses/boss_data.py'
       - 'localization.py'
       - 'topup_currency.py'
@@ -63,11 +66,14 @@ on:
       - 'tools/test_godot_balance_prepare.py'
       - 'tools/prepare_godot_items.py'
       - 'tools/test_godot_items_prepare.py'
+      - 'tools/prepare_godot_lighting.py'
+      - 'tools/test_godot_lighting_prepare.py'
       - 'tools/test_godot_archetypes_prepare.py'
       - 'tools/test_godot_core_prepare.py'
       - '_core.py'
       - 'hero_balance.py'
       - 'hero_items.py'
+      - 'lighting.py'
       - 'bosses/boss_data.py'
       - 'localization.py'
       - 'topup_currency.py'
@@ -131,6 +137,9 @@ jobs:
             python tools/test_godot_balance_prepare.py
             python tools/prepare_godot_items.py --check
             python tools/test_godot_items_prepare.py
+            python -m pip install --quiet pygame==2.6.1
+            python tools/prepare_godot_lighting.py --check
+            python tools/test_godot_lighting_prepare.py
             python tools/prepare_godot_entities.py --check
             python tools/test_godot_entity_prepare.py
             python tools/prepare_godot_render.py --check

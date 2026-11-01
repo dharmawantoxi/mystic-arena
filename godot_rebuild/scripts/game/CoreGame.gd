@@ -69,6 +69,7 @@ func configure(level: int, replay := false) -> void:
 	if not model.render_event.is_connected(_on_render_event):
 		model.render_event.connect(_on_render_event)
 	effects.configure(settings.values)
+	EntityVisuals.configure(RenderQuality.from_settings(settings.values))
 	effects.clear()
 	cinematics.clear()
 	map_view.configure(
@@ -124,6 +125,7 @@ func apply_render_quality(level: String) -> void:
 		return
 	var preset := RenderQuality.preset(level)
 	effects.quality = preset
+	EntityVisuals.configure(preset)
 	map_view.configure(map_view.theme_name, model.data, preset)
 
 

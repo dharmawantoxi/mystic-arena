@@ -12,6 +12,7 @@ const PRESETS := {
 		"fog": false,
 		"cheap_alpha": true,
 		"floating_decor": false,
+		"hero_lighting": false,
 	},
 	"medium":
 	{
@@ -21,6 +22,7 @@ const PRESETS := {
 		"fog": true,
 		"cheap_alpha": true,
 		"floating_decor": false,
+		"hero_lighting": true,
 	},
 	"high":
 	{
@@ -30,6 +32,7 @@ const PRESETS := {
 		"fog": true,
 		"cheap_alpha": false,
 		"floating_decor": true,
+		"hero_lighting": true,
 	},
 }
 
