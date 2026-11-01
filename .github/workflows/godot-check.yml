@@ -1,30 +1,24 @@
 name: Godot Check (Lite - 30s)
 
-# ═══════════════════════════════════════════════════════
-# LITE MODE (OPSI 3) — cuma linter 30 detik
-# Dibuat 2026-09-23: user minta hapus yang bikin PR lama.
-# Sekarang cuma: gdparse + tscn_lint + check_refs (tanpa Godot headless).
-# Kalau ada error runtime, user copy manual log Godot lokal ke sini.
-# Mau full check lagi? Tab Actions -> "Godot Check (Lite - 30s)" -> Run workflow
-# atau kembalikan file dari git history.
-# File asli: godot-check.yml sebelum 2026-09-23 (48 test parity + audit 7 menit)
-# ═══════════════════════════════════════════════════════
-
+# Fast checks for the active main.py migration. The removed legacy godot/
+# project and its missing fixtures are not prerequisites for this project.
 on:
   pull_request:
     paths:
-      - 'godot/**'
-      - 'tools/**'
+      - 'godot_rebuild/**'
+      - 'tools/prepare_godot_main.py'
+      - 'tools/test_godot_main_prepare.py'
       - 'mobile/cloud_save.py'
-      - 'localization.py'
+      - 'tools/test_cloud_save.py'
       - '.github/workflows/godot-check.yml'
   push:
     branches: [main]
     paths:
-      - 'godot/**'
-      - 'tools/**'
+      - 'godot_rebuild/**'
+      - 'tools/prepare_godot_main.py'
+      - 'tools/test_godot_main_prepare.py'
       - 'mobile/cloud_save.py'
-      - 'localization.py'
+      - 'tools/test_cloud_save.py'
       - '.github/workflows/godot-check.yml'
   workflow_dispatch:
 
@@ -40,38 +34,22 @@ jobs:
     name: Linter cepat (30s)
     runs-on: ubuntu-latest
     timeout-minutes: 5
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Salin aset biner (gitignored)
-        run: python3 tools/convert_to_godot.py --assets
-
-      - name: Cloud save oracle + localization fixtures
+      - name: Prepare and validate the active native project
         run: |
-          python3 tools/test_cloud_save.py
-          python3 tools/test_godot_cloud_save_parity.py
-          python3 tools/test_godot_localization_parity.py
-
-      - name: Linter statis (30 detik)
+          python3 tools/prepare_godot_main.py
+          python3 tools/prepare_godot_main.py --check
+          python3 tools/test_godot_main_prepare.py
+          python3 godot_rebuild/tests/validate_project.py
+      - name: Python cloud-save oracle
+        run: python3 tools/test_cloud_save.py
+      - name: GDScript parse, lint and format
         run: |
-          python -m pip install --quiet "gdtoolkit==4.*"
-          echo "=== gdparse (parser GDScript 4 asli) ==="
-          gdparse $(find godot -name '*.gd')
-          echo "=== tscn_lint ==="
-          python3 godot/tools/tscn_lint.py $(find godot -name '*.tscn' -o -name '*.tres')
-          echo "=== check_refs ==="
-          python3 godot/tools/check_refs.py godot
-          echo "=== particles_lint ==="
-          python3 godot/tools/particles_lint.py godot
-          echo "=== map_clutter_lint ==="
-          python3 godot/tools/map_clutter_lint.py godot
-          echo "=== log_gate ==="
-          python3 godot/tools/test_godot_log_gate.py
-          echo ""
-          echo "✅ LITE PASS — cuma linter, tanpa Godot headless 7 menit."
-          echo "Kalau error di Godot lokal, copy log kesini."
+          python -m pip install --quiet gdtoolkit==4.5.0
+          gdparse $(find godot_rebuild -name '*.gd')
+          gdlint $(find godot_rebuild -name '*.gd')
+          gdformat --check $(find godot_rebuild -name '*.gd')

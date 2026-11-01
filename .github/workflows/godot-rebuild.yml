@@ -10,6 +10,7 @@ on:
       - 'levels/level_data.py'
       - 'assets/**'
       - 'tools/prepare_godot_main.py'
+      - 'tools/test_godot_main_prepare.py'
       - '.github/workflows/godot-rebuild.yml'
   push:
     paths:
@@ -19,6 +20,7 @@ on:
       - 'levels/level_data.py'
       - 'assets/**'
       - 'tools/prepare_godot_main.py'
+      - 'tools/test_godot_main_prepare.py'
       - '.github/workflows/godot-rebuild.yml'
 
 permissions:
@@ -64,13 +66,16 @@ jobs:
           chmod +x "$GODOT"
           echo "GODOT=$GODOT" >> "$GITHUB_ENV"
           "$GODOT" --version
-      - name: Native import and regression tests
+      - name: Import the native project
         run: |
           set -euo pipefail
           timeout 180 "$GODOT" --headless --path godot_rebuild --editor --import > /tmp/godot-import.log 2>&1 || { cat /tmp/godot-import.log; exit 1; }
           cat /tmp/godot-import.log
           if grep -qE 'SCRIPT ERROR:|ERROR:' /tmp/godot-import.log; then exit 1; fi
-          timeout 120 "$GODOT" --headless --path godot_rebuild --script res://tests/run_all.gd > /tmp/godot-tests.log 2>&1 || { cat /tmp/godot-tests.log; exit 1; fi
+      - name: Native regression tests
+        run: |
+          set -euo pipefail
+          timeout 120 "$GODOT" --headless --path godot_rebuild --script res://tests/run_all.gd > /tmp/godot-tests.log 2>&1 || { cat /tmp/godot-tests.log; exit 1; }
           cat /tmp/godot-tests.log
           if grep -qE 'SCRIPT ERROR:|ERROR:|FAIL:' /tmp/godot-tests.log; then exit 1; fi
           grep '^PASS:' /tmp/godot-tests.log
@@ -81,6 +86,29 @@ jobs:
           cat /tmp/godot-boot.log
           if grep -qE 'SCRIPT ERROR:|ERROR:' /tmp/godot-boot.log; then exit 1; fi
           grep '\[GODOT\] Mystic Arena' /tmp/godot-boot.log
+      - name: Publish readable runtime diagnostics
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          summary = ['### Godot runtime diagnostics']
+          for stage in ('import', 'tests', 'boot'):
+              path = Path(f'/tmp/godot-{stage}.log')
+              text = path.read_text(errors='replace') if path.exists() else 'Log not created.'
+              summary.extend([f'#### {stage}', '```text', text[-16000:], '```'])
+              lines = text.splitlines()
+              selected = [(i, line) for i, line in enumerate(lines)
+                          if any(marker in line for marker in
+                                 ('SCRIPT ERROR:', 'ERROR:', 'FAIL:', 'Parse Error', 'PASS:'))]
+              for index, line in selected[-12:]:
+                  context = ' | '.join(lines[max(0, index - 1):index + 3])[:1200]
+                  context = context.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+                  level = 'notice' if 'PASS:' in line else 'error'
+                  print(f'::{level} title=Godot {stage}::{context}', flush=True)
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as output:
+              output.write('\n'.join(summary) + '\n')
+          PY
       - name: Save logs
         if: always()
         uses: actions/upload-artifact@v4
