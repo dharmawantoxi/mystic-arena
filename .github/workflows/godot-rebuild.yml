@@ -114,23 +114,46 @@ jobs:
           python-version: '3.12'
       - name: Prepare native assets and metadata
         run: |
-          python tools/prepare_godot_main.py
-          python tools/prepare_godot_main.py --check
-          python tools/prepare_godot_core.py
-          python tools/prepare_godot_core.py --check
-          python tools/test_godot_core_prepare.py
-          python tools/prepare_godot_archetypes.py --check
-          python tools/test_godot_archetypes_prepare.py
-          python tools/prepare_godot_balance.py --check
-          python tools/test_godot_balance_prepare.py
-          python tools/prepare_godot_entities.py --check
-          python tools/test_godot_entity_prepare.py
-          python tools/prepare_godot_render.py --check
-          python tools/test_godot_render_prepare.py
-          python tools/prepare_godot_system.py --check
-          python tools/test_godot_system_prepare.py
-          python godot_rebuild/tests/validate_project.py
-          python tools/test_godot_main_prepare.py
+          set -euo pipefail
+          {
+            python tools/prepare_godot_main.py
+            python tools/prepare_godot_main.py --check
+            python tools/prepare_godot_core.py
+            python tools/prepare_godot_core.py --check
+            python tools/test_godot_core_prepare.py
+            python tools/prepare_godot_archetypes.py --check
+            python tools/test_godot_archetypes_prepare.py
+            python tools/prepare_godot_balance.py --check
+            python tools/test_godot_balance_prepare.py
+            python tools/prepare_godot_entities.py --check
+            python tools/test_godot_entity_prepare.py
+            python tools/prepare_godot_render.py --check
+            python tools/test_godot_render_prepare.py
+            python tools/prepare_godot_system.py --check
+            python tools/test_godot_system_prepare.py
+            python godot_rebuild/tests/validate_project.py
+            python tools/test_godot_main_prepare.py
+          } 2>&1 | tee /tmp/godot-prepare.log
+      - name: Publish prepare diagnostics
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          path = Path('/tmp/godot-prepare.log')
+          text = path.read_text(errors='replace') if path.exists() else 'Log not created.'
+          summary = ['### Godot prepare diagnostics', '```text', text[-16000:], '```']
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as output:
+              output.write('\n'.join(summary) + '\n')
+          lines = text.splitlines()
+          selected = [(i, line) for i, line in enumerate(lines)
+                      if any(marker in line for marker in
+                             ('Traceback', 'Error', 'ERROR', 'FAIL', 'Stale', 'failed', 'AssertionError'))]
+          for index, line in selected[-12:]:
+              context = ' | '.join(lines[max(0, index - 1):index + 6])[:1200]
+              context = context.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+              print(f'::error title=Godot prepare::{context}', flush=True)
+          PY
       - name: GDScript parse, lint and format
         run: |
           python -m pip install gdtoolkit==4.5.0
