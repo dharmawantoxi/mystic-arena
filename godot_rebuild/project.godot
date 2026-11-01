@@ -3,7 +3,7 @@ config_version=5
 
 [application]
 config/name="Mystic Arena"
-config/description="Native Godot application shell for Mystic Arena"
+config/description="Native Godot core and application shell for Mystic Arena"
 run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://assets/icon.png"

@@ -1,0 +1,55 @@
+{
+  "magic": "MYSTIC_ARENA_BACKUP",
+  "version": 1,
+  "exported_at": 1761955200.25,
+  "slots": {
+    "1": {
+      "unlocked_bosses": [
+        "gornak"
+      ],
+      "purchased_heroes": [
+        "kaizen",
+        "gornak"
+      ],
+      "meta_gold": 4700,
+      "completed_levels": [
+        1,
+        2
+      ],
+      "last_played_level": 2,
+      "slot_created": 1761955000.0,
+      "slot_last_played": 1761955200.0,
+      "slot_playtime_seconds": 123,
+      "level_stats": {
+        "1": {
+          "total_attempts": 2,
+          "wins": 1,
+          "best_score": 900,
+          "best_time_seconds": 75,
+          "total_playtime_seconds": 123,
+          "total_kills": 40,
+          "max_combo": 6
+        }
+      },
+      "run_difficulty": "normal",
+      "replay_reward_counts": {
+        "1": 1
+      },
+      "redeemed_codes": [],
+      "topup_history": []
+    }
+  },
+  "settings": {
+    "master_volume": 0.7,
+    "sfx_volume": 0.6,
+    "bgm_volume": 0.35,
+    "voice_volume": 0.5,
+    "difficulty": "normal",
+    "screen_shake_enabled": false,
+    "damage_numbers_enabled": true,
+    "game_speed": 1.0,
+    "fps_limit": 60,
+    "language": "id"
+  },
+  "checksum": "aeb0fc8cbad6b609d69515b3084b7c7109261a79bacae0e6c9fb766e19f932f9"
+}

@@ -2,3 +2,5 @@
 exports/
 assets/sounds/
 *.tmp
+godot-test
+override.cfg
