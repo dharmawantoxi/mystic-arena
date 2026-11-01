@@ -1,0 +1,434 @@
+[
+  {
+    "level_number": 1,
+    "name": "The Fallen Realm",
+    "description": "Face Abaddon, the Lord of Avernus",
+    "map_theme": "forest",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": null
+  },
+  {
+    "level_number": 2,
+    "name": "Wraith Wastes",
+    "description": "Confront the Phantom King",
+    "map_theme": "desert",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 1
+  },
+  {
+    "level_number": 3,
+    "name": "Infernal Depths",
+    "description": "Face the Flame Emperor",
+    "map_theme": "ice",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 2
+  },
+  {
+    "level_number": 4,
+    "name": "Molten Sanctum",
+    "description": "Face Ignis Drachorn, the Molten Sovereign",
+    "map_theme": "volcanic",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 3
+  },
+  {
+    "level_number": 5,
+    "name": "The Haunted Veil",
+    "description": "Face Krobellus, the Death Prophet",
+    "map_theme": "haunted",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 4
+  },
+  {
+    "level_number": 6,
+    "name": "Admiral's Cove",
+    "description": "Face Kunkka, the Admiral of the Fleet",
+    "map_theme": "ocean",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 5
+  },
+  {
+    "level_number": 7,
+    "name": "Shadow Abyss",
+    "description": "Face Nyxarath, the Soul Eater",
+    "map_theme": "abyss",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 6
+  },
+  {
+    "level_number": 8,
+    "name": "Nethervenom Expanse",
+    "description": "Face Vhoreth'zir, the Nethervenom Wyrm",
+    "map_theme": "nethervenom",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 7
+  },
+  {
+    "level_number": 9,
+    "name": "Soulforged Expanse",
+    "description": "Face Naraka, the Lost Soul",
+    "map_theme": "soulforged",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 8
+  },
+  {
+    "level_number": 10,
+    "name": "Radiant Expanse",
+    "description": "Face Aureth'zar, the Radiant Dawn",
+    "map_theme": "radiant",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 9
+  },
+  {
+    "level_number": 11,
+    "name": "Abyssal Depths",
+    "description": "Face Thalakryon, the Abyssal Sovereign",
+    "map_theme": "abyssal",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 10
+  },
+  {
+    "level_number": 12,
+    "name": "Eldritch Depths",
+    "description": "Face Nazulmor, the Deepborn Herald",
+    "map_theme": "eldritch",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 11
+  },
+  {
+    "level_number": 13,
+    "name": "Silver Sanctum",
+    "description": "Face Solvarin, the Holy Paladin Warden",
+    "map_theme": "sanctum",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 12
+  },
+  {
+    "level_number": 14,
+    "name": "Eternal Flame",
+    "description": "Face Pyraethis, the Eternal Firebird",
+    "map_theme": "eternalflame",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 13
+  },
+  {
+    "level_number": 15,
+    "name": "Primordial Grove",
+    "description": "Face Yamako, the Primordial Woodshaper",
+    "map_theme": "primordial",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 14
+  },
+  {
+    "level_number": 16,
+    "name": "Celestial Peaks",
+    "description": "Face Seiryukong, the Celestial Simian",
+    "map_theme": "celestialpeaks",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 15
+  },
+  {
+    "level_number": 17,
+    "name": "Cosmic Expanse",
+    "description": "Face Nyxareth, the Cosmic Sovereign",
+    "map_theme": "cosmic",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 16
+  },
+  {
+    "level_number": 18,
+    "name": "Royal Citadel",
+    "description": "Face Aurelion, the Golden Sovereign",
+    "map_theme": "royal",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 17
+  },
+  {
+    "level_number": 19,
+    "name": "Violet Court",
+    "description": "Face Vaelindra, the Violet Sovereign",
+    "map_theme": "violet",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 18
+  },
+  {
+    "level_number": 20,
+    "name": "Crimson Dominion",
+    "description": "Face Morthraxis, the Crimson Sovereign",
+    "map_theme": "crimson",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 19
+  },
+  {
+    "level_number": 21,
+    "name": "The Hollow Veil",
+    "description": "Face Nexthyrius, the Chained Hollow",
+    "map_theme": "spectral",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 20
+  },
+  {
+    "level_number": 22,
+    "name": "The Sundered Peak",
+    "description": "Face Molgravar, the Colossus of the Sundered Peak",
+    "map_theme": "sundered",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 21
+  },
+  {
+    "level_number": 23,
+    "name": "The Empyrean Executioner",
+    "description": "Face Seraphienne, the Empyrean Executioner",
+    "map_theme": "empyrean",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 22
+  },
+  {
+    "level_number": 24,
+    "name": "The Sunborn Herald",
+    "description": "Face Solareth, the Sunborn Herald",
+    "map_theme": "solaris",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 23
+  },
+  {
+    "level_number": 25,
+    "name": "The Deepborn Oracle",
+    "description": "Face Okeanora, the Deepborn Oracle",
+    "map_theme": "abysstide",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 24
+  },
+  {
+    "level_number": 26,
+    "name": "The Crimson Matriarch",
+    "description": "Face Vaelmyrra, the Crimson Matriarch",
+    "map_theme": "crimsonmatriarch",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 25
+  },
+  {
+    "level_number": 27,
+    "name": "The Astral Sovereign",
+    "description": "Face Zarethyr, the Astral Sovereign",
+    "map_theme": "astral",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 26
+  },
+  {
+    "level_number": 28,
+    "name": "The Forsaken Empress",
+    "description": "Face Nyreth'zalvarin, the Forsaken Empress of Shadow-Chains",
+    "map_theme": "shadowchain",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 27
+  },
+  {
+    "level_number": 29,
+    "name": "The Frost-Veiled Huntress",
+    "description": "Face Nyrellieth, the Frost-Veiled Huntress",
+    "map_theme": "frostveil",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 28
+  },
+  {
+    "level_number": 30,
+    "name": "The Shadow of War",
+    "description": "Face Nyxharr, the Shadow of War",
+    "map_theme": "warshade",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 29
+  },
+  {
+    "level_number": 31,
+    "name": "The Outlaw King",
+    "description": "Face Ravokkar, the Outlaw King",
+    "map_theme": "outlaw",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 30
+  },
+  {
+    "level_number": 32,
+    "name": "The Hexbound Sovereign",
+    "description": "Face Malzeroth, the Hexbound Sovereign",
+    "map_theme": "hexbound",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 31
+  },
+  {
+    "level_number": 33,
+    "name": "The Voidbound Sovereign",
+    "description": "Face Zharakzuul, the Voidbound Sovereign",
+    "map_theme": "voidbound",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 32
+  },
+  {
+    "level_number": 34,
+    "name": "The Earthborn",
+    "description": "Face Grondmauris, the Earthborn",
+    "map_theme": "earthborn",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 33
+  },
+  {
+    "level_number": 35,
+    "name": "The Heartbane",
+    "description": "Face Lyssarethys, the Heartbane",
+    "map_theme": "heartbane",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 34
+  },
+  {
+    "level_number": 36,
+    "name": "The Sunfist",
+    "description": "Face Kaerinya, the Sunfist",
+    "map_theme": "sunfist",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 35
+  },
+  {
+    "level_number": 37,
+    "name": "The Void Sovereign",
+    "description": "Face Xel'Narath, the Void Sovereign",
+    "map_theme": "voidwing",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 36
+  },
+  {
+    "level_number": 38,
+    "name": "The Crimson Devourer",
+    "description": "Face Kyrenzai, the Crimson Devourer",
+    "map_theme": "crimsondevourer",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 37
+  },
+  {
+    "level_number": 39,
+    "name": "The Elemental Weaver",
+    "description": "Face Xael'moran, the Elemental Weaver",
+    "map_theme": "elementweave",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 38
+  },
+  {
+    "level_number": 40,
+    "name": "The Tempest Weaver",
+    "description": "Face Thal'ryndel, the Tempest Weaver",
+    "map_theme": "tempest",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 39
+  },
+  {
+    "level_number": 41,
+    "name": "The Sawmill Warlord",
+    "description": "Face Grimkor, the Sawmill Warlord",
+    "map_theme": "sawmill",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 40
+  },
+  {
+    "level_number": 42,
+    "name": "The Crow-Eyed",
+    "description": "Face Kaineroth, the Crow-Eyed",
+    "map_theme": "croweye",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 41
+  },
+  {
+    "level_number": 43,
+    "name": "The Stormherald",
+    "description": "Face Zyvareth, the Stormherald",
+    "map_theme": "crystalstorm",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 42
+  },
+  {
+    "level_number": 44,
+    "name": "The Eternal Warlord",
+    "description": "Face Kagetsuka, the Eternal Warlord",
+    "map_theme": "eternalwarlord",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 43
+  },
+  {
+    "level_number": 45,
+    "name": "The Explosive Artist",
+    "description": "Face Deidara, the Explosive Artist",
+    "map_theme": "explosiveart",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 44
+  },
+  {
+    "level_number": 46,
+    "name": "The Sand Shadow",
+    "description": "Face Sunakage, the Sand Shadow",
+    "map_theme": "sandshadow",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 45
+  },
+  {
+    "level_number": 47,
+    "name": "The Emberweaver",
+    "description": "Face Pyraena, the Emberweaver",
+    "map_theme": "emberweaver",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 46
+  },
+  {
+    "level_number": 48,
+    "name": "The Skyfury",
+    "description": "Face Cogsworth, the Skyfury",
+    "map_theme": "skyfury",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 47
+  },
+  {
+    "level_number": 49,
+    "name": "The Moonreaper",
+    "description": "Face Yomigetsu, the Moonreaper",
+    "map_theme": "moonreaper",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 48
+  },
+  {
+    "level_number": 50,
+    "name": "The Moonfang Prince",
+    "description": "Face Akirakumo, the Moonfang Prince",
+    "map_theme": "moonfang",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 49
+  },
+  {
+    "level_number": 51,
+    "name": "The Emberlion Ronin",
+    "description": "Face Kaithros, the Emberlion Ronin",
+    "map_theme": "emberlion",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 50
+  },
+  {
+    "level_number": 52,
+    "name": "The Lunar Herald",
+    "description": "Face Nyxaris, the Lunar Herald",
+    "map_theme": "lunarherald",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 51
+  },
+  {
+    "level_number": 53,
+    "name": "The Moon-Born Sovereign",
+    "description": "Face Tsukiyora, the Moon-Born Sovereign",
+    "map_theme": "moonborn",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 52
+  },
+  {
+    "level_number": 54,
+    "name": "The Substitute Shinigami",
+    "description": "Face Kurosaki Hollowbane, the Substitute Shinigami",
+    "map_theme": "hollowbane",
+    "bgm_track": "bgm_battle.wav",
+    "unlock_after_level": 53
+  }
+]

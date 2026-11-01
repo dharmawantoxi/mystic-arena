@@ -1,83 +1,37 @@
-name: Godot Rebuild (native, fresh project)
+name: Godot main.py migration
 
 on:
   workflow_dispatch:
   pull_request:
     paths:
       - 'godot_rebuild/**'
-      - '_core.py'
-      - '_system.py'
-      - '_render.py'
-      - 'heroes/combat_feel.py'
-      - 'heroes/kaizen_fx.py'
-      - 'heroes/grimjaw_fx.py'
-      - 'heroes/sylara_fx.py'
-      - 'heroes/vex_fx.py'
-      - 'heroes/zephyr_fx.py'
-      - 'heroes/ancient_apparition_fx.py'
-      - 'hero_skills/_bundle.py'
       - 'main.py'
-      - 'main_desktop_legacy.py'
       - 'mobile/touch.py'
-      - 'mobile/hud.py'
       - 'levels/level_data.py'
-      - '_entity.py'
-      - 'bosses/boss_data.py'
-      - 'bosses/**'
-      - 'hero_balance.py'
-      - 'hero_archetypes.py'
-      - 'towers/_bundle.py'
-      - 'minions/_bundle.py'
-      - 'ui_components/_bundle.py'
-      - 'heroes/__init__.py'
-      - 'heroes/_bundle.py'
-      - 'ui_theme.py'
-      - 'map_components/_bundle.py'
+      - 'assets/**'
+      - 'tools/prepare_godot_main.py'
       - '.github/workflows/godot-rebuild.yml'
   push:
     paths:
       - 'godot_rebuild/**'
-      - '_core.py'
-      - '_system.py'
-      - '_render.py'
-      - 'heroes/combat_feel.py'
-      - 'heroes/kaizen_fx.py'
-      - 'heroes/grimjaw_fx.py'
-      - 'heroes/sylara_fx.py'
-      - 'heroes/vex_fx.py'
-      - 'heroes/zephyr_fx.py'
-      - 'heroes/ancient_apparition_fx.py'
-      - 'hero_skills/_bundle.py'
       - 'main.py'
-      - 'main_desktop_legacy.py'
       - 'mobile/touch.py'
-      - 'mobile/hud.py'
       - 'levels/level_data.py'
-      - '_entity.py'
-      - 'bosses/boss_data.py'
-      - 'bosses/**'
-      - 'hero_balance.py'
-      - 'hero_archetypes.py'
-      - 'towers/_bundle.py'
-      - 'minions/_bundle.py'
-      - 'ui_components/_bundle.py'
-      - 'heroes/__init__.py'
-      - 'heroes/_bundle.py'
-      - 'ui_theme.py'
-      - 'map_components/_bundle.py'
+      - 'assets/**'
+      - 'tools/prepare_godot_main.py'
       - '.github/workflows/godot-rebuild.yml'
 
 permissions:
   contents: read
 
 concurrency:
-  group: godot-rebuild-${{ github.ref }}
+  group: godot-main-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
     env:
       GODOT_VERSION: '4.7.2'
       GODOT_SILENCE_ROOT_WARNING: '1'
@@ -86,194 +40,51 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Static guardrails and GDScript lint
+      - name: Prepare native assets and metadata
+        run: |
+          python tools/prepare_godot_main.py
+          python tools/prepare_godot_main.py --check
+          python godot_rebuild/tests/validate_project.py
+          python tools/test_godot_main_prepare.py
+      - name: GDScript parse, lint and format
         run: |
           python -m pip install gdtoolkit==4.5.0
-          python godot_rebuild/tests/validate_project.py
-          python godot_rebuild/tests/check_source_contract.py
-          python godot_rebuild/tests/structure_source_oracle.py
-          python godot_rebuild/tests/match_source_oracle.py
-          python godot_rebuild/tests/game_speed_source_oracle.py
-          python godot_rebuild/tests/hit_stop_source_oracle.py
-          python godot_rebuild/tests/upgrade_source_oracle.py
-          python godot_rebuild/tests/nexus_source_oracle.py
-          python godot_rebuild/tests/cannon_source_oracle.py
-          python godot_rebuild/tests/ice_source_oracle.py
-          python godot_rebuild/tests/mage_source_oracle.py
-          python godot_rebuild/tests/kaizen_source_oracle.py
-          python godot_rebuild/tests/ai_source_oracle.py
-          python godot_rebuild/tests/ai_draft_source_oracle.py
-          python godot_rebuild/tests/player_recruit_source_oracle.py
-          python godot_rebuild/tests/meta_hero_unlock_source_oracle.py
-          python godot_rebuild/tests/tactical_command_source_oracle.py
-          python godot_rebuild/tests/ui_theme_source_oracle.py
-          python godot_rebuild/tests/player_structure_command_source_oracle.py
-          python godot_rebuild/tests/controller_source_oracle.py
-          python godot_rebuild/tests/touch_gesture_source_oracle.py
-          python godot_rebuild/tests/save_slot_source_oracle.py
-          python godot_rebuild/tests/pygame_save_import_source_oracle.py
-          python godot_rebuild/tests/cloud_save_source_oracle.py
-          python godot_rebuild/tests/level_stats_source_oracle.py
-          python godot_rebuild/tests/ai_upgrade_source_oracle.py
-          python godot_rebuild/tests/ai_shield_source_oracle.py
-          python godot_rebuild/tests/floating_text_source_oracle.py
-          python godot_rebuild/tests/hit_particle_source_oracle.py
-          python godot_rebuild/tests/sprite_lighting_source_oracle.py --check
-          python godot_rebuild/tests/combat_audio_source_oracle.py
-          python godot_rebuild/tests/side_panel_source_oracle.py
-          python godot_rebuild/tests/splash_screen_source_oracle.py
-          python godot_rebuild/tests/topup_source_oracle.py
-          python godot_rebuild/tests/level_intro_draw_source_oracle.py
-          python godot_rebuild/tests/death_explosion_source_oracle.py
-          python godot_rebuild/tests/boss_death_animation_source_oracle.py
-          python godot_rebuild/tests/sprite_cache_source_oracle.py
-          python godot_rebuild/tests/render_cache_source_oracle.py
-          python godot_rebuild/tests/core_source_oracle.py --check
-          python godot_rebuild/tests/entity_source_oracle.py --check
-          python godot_rebuild/tests/render_source_oracle.py --check
-          python godot_rebuild/tests/system_source_oracle.py --check
-          python godot_rebuild/tests/hero_balance_source_oracle.py --check
-          python godot_rebuild/tests/hero_items_source_oracle.py --check
-          python godot_rebuild/tests/map_renderer_source_oracle.py
-          python godot_rebuild/tests/dynamic_renderer_source_oracle.py
-          PYTHONPATH=/tmp/nopygame python godot_rebuild/tests/effect_manager_source_oracle.py
-          python godot_rebuild/tests/popup_animation_source_oracle.py
-          python godot_rebuild/tests/screen_shake_source_oracle.py
-          python godot_rebuild/tests/kill_feed_source_oracle.py
-          python godot_rebuild/tests/kill_feed_draw_source_oracle.py
-          python godot_rebuild/tests/combo_counter_source_oracle.py
-          python godot_rebuild/tests/combo_counter_draw_source_oracle.py
-          python godot_rebuild/tests/wave_announcer_source_oracle.py
-          python godot_rebuild/tests/path_preview_source_oracle.py
-          python godot_rebuild/tests/achievement_popup_source_oracle.py
-          python godot_rebuild/tests/level_intro_screen_source_oracle.py
-          python godot_rebuild/tests/boss_intro_cinematic_source_oracle.py
-          python godot_rebuild/tests/boss_intro_draw_source_oracle.py
-          python godot_rebuild/tests/boss_celebration_draw_source_oracle.py
-          python godot_rebuild/tests/boss_death_sequence_draw_source_oracle.py
-          python godot_rebuild/tests/nyxareth_realm_draw_source_oracle.py
-          python godot_rebuild/tests/urgharun_enrage_fx_source_oracle.py
-          python godot_rebuild/tests/urgharun_enrage_ground_source_oracle.py
-          python godot_rebuild/tests/urgharun_skill_fx_source_oracle.py
-          python godot_rebuild/tests/boss_aura_fx_source_oracle.py
-          python godot_rebuild/tests/urgharun_basic_attack_source_oracle.py
-          python godot_rebuild/tests/boss_debuff_fx_source_oracle.py
-          python godot_rebuild/tests/entity_debuff_fx_source_oracle.py
-          python godot_rebuild/tests/boss_entrance_draw_source_oracle.py
-          python godot_rebuild/tests/urgharun_ai_reach_source_oracle.py
-          python godot_rebuild/tests/urgharun_ai_skill_source_oracle.py
-          python godot_rebuild/tests/tactical_draw_source_oracle.py
-          python godot_rebuild/tests/gold_hud_draw_source_oracle.py
-          python godot_rebuild/tests/shop_hint_draw_source_oracle.py
-          python godot_rebuild/tests/input_hint_draw_source_oracle.py
-          python godot_rebuild/tests/end_overlay_draw_source_oracle.py
-          python godot_rebuild/tests/build_popup_draw_source_oracle.py
-          python godot_rebuild/tests/hero_panel_draw_source_oracle.py
-          python godot_rebuild/tests/tower_hover_source_oracle.py
-          python godot_rebuild/tests/slot_hover_source_oracle.py
-          python godot_rebuild/tests/tower_fx_source_oracle.py
-          python godot_rebuild/tests/death_explosion_draw_source_oracle.py
-          python godot_rebuild/tests/map_tint_draw_source_oracle.py
-          python godot_rebuild/tests/draw_order_source_oracle.py
-          python godot_rebuild/tests/burn_boss_delivery_source_oracle.py
-          python godot_rebuild/tests/boss_sourceless_delivery_source_oracle.py
-          python godot_rebuild/tests/boss_debuff_tenacity_source_oracle.py
-          python godot_rebuild/tests/item_slow_resist_source_oracle.py
-          python godot_rebuild/tests/item_silence_store_source_oracle.py
-          python godot_rebuild/tests/boss_ai_slow_source_oracle.py
-          python godot_rebuild/tests/boss_attack_lock_source_oracle.py
-          python godot_rebuild/tests/boss_buff_expiry_source_oracle.py
-          python godot_rebuild/tests/boss_buff_scaling_source_oracle.py
-          python godot_rebuild/tests/boss_shake_sites_source_oracle.py
-          python godot_rebuild/tests/balance_baseline_source_oracle.py
-          python godot_rebuild/tests/debuff_payload_reach_source_oracle.py
-          python godot_rebuild/tests/hero_marker_source_oracle.py
-          python godot_rebuild/tests/hero_portrait_raz_source_oracle.py
-          python godot_rebuild/tests/castle_aura_reach_source_oracle.py
-          python godot_rebuild/tests/source_fonts_source_oracle.py
-          python godot_rebuild/tests/mobile_platform_source_oracle.py
-          python godot_rebuild/tests/touch_hud_source_oracle.py
           gdparse $(find godot_rebuild -name '*.gd')
           gdlint $(find godot_rebuild -name '*.gd')
           gdformat --check $(find godot_rebuild -name '*.gd')
-      - name: Java 17 for Android plugin compilation
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - name: Android SDK 36
-        uses: android-actions/setup-android@v3
-        with:
-          packages: ''
-      - name: Gradle 8.14.3
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.14.3'
-      - name: Build the Godot Android plugin-v2 AAR
-        shell: bash
-        run: |
-          set -euo pipefail
-          {
-            sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
-            godot_rebuild/android_plugin/cloud_save/build_plugin.sh
-          } 2>&1 | tee /tmp/cloud-save-plugin-build.log
-      - name: Report Android plugin build output
-        if: failure()
-        shell: bash
-        run: |
-          if [[ -s /tmp/cloud-save-plugin-build.log ]]; then
-            python - <<'PY'
-          from pathlib import Path
-          text = "\n".join(Path("/tmp/cloud-save-plugin-build.log").read_text(errors="replace").splitlines()[-80:])
-          escaped = text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
-          print(f"::error title=Android plugin build output::{escaped}")
-          PY
-            {
-              echo "### Android plugin build output"
-              echo '```text'
-              tail -n 80 /tmp/cloud-save-plugin-build.log
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
-      - name: Install the pinned official engine
-        shell: bash
+      - name: Install pinned official Godot
         run: |
           set -euo pipefail
           archive="Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
-          binary="Godot_v${GODOT_VERSION}-stable_linux.x86_64"
-          mkdir -p "$RUNNER_TEMP/godot-rebuild-engine"
           curl --fail --location --retry 3 \
-            "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/${archive}" \
-            --output "$RUNNER_TEMP/godot-rebuild-engine/$archive"
-          unzip -q "$RUNNER_TEMP/godot-rebuild-engine/$archive" -d "$RUNNER_TEMP/godot-rebuild-engine"
-          chmod +x "$RUNNER_TEMP/godot-rebuild-engine/$binary"
-          echo "GODOT=$RUNNER_TEMP/godot-rebuild-engine/$binary" >> "$GITHUB_ENV"
-          "$RUNNER_TEMP/godot-rebuild-engine/$binary" --version
-      - name: Native import (not the old converter)
-        shell: bash
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/${archive}" \
+            --output "$RUNNER_TEMP/$archive"
+          unzip -q "$RUNNER_TEMP/$archive" -d "$RUNNER_TEMP/godot-engine"
+          GODOT="$RUNNER_TEMP/godot-engine/Godot_v${GODOT_VERSION}-stable_linux.x86_64"
+          chmod +x "$GODOT"
+          echo "GODOT=$GODOT" >> "$GITHUB_ENV"
+          "$GODOT" --version
+      - name: Native import and regression tests
         run: |
           set -euo pipefail
-          code=0
-          timeout 120 "$GODOT" --headless --path godot_rebuild --editor --import 2>&1 | tee /tmp/rebuild-import.log || code=$?
-          if [[ "$code" != 0 ]] || grep -qE 'SCRIPT ERROR:|ERROR:' /tmp/rebuild-import.log; then
-            python godot_rebuild/tests/annotate_failure.py /tmp/rebuild-import.log
-            exit 1
-          fi
-      - name: Native simulation, input and screen lifecycle tests
-        shell: bash
+          timeout 180 "$GODOT" --headless --path godot_rebuild --editor --import > /tmp/godot-import.log 2>&1 || { cat /tmp/godot-import.log; exit 1; }
+          cat /tmp/godot-import.log
+          if grep -qE 'SCRIPT ERROR:|ERROR:' /tmp/godot-import.log; then exit 1; fi
+          timeout 120 "$GODOT" --headless --path godot_rebuild --script res://tests/run_all.gd > /tmp/godot-tests.log 2>&1 || { cat /tmp/godot-tests.log; exit 1; fi
+          cat /tmp/godot-tests.log
+          if grep -qE 'SCRIPT ERROR:|ERROR:|FAIL:' /tmp/godot-tests.log; then exit 1; fi
+          grep '^PASS:' /tmp/godot-tests.log
+      - name: Boot the actual main scene
         run: |
           set -euo pipefail
-          code=0
-          timeout 600 "$GODOT" --headless --path godot_rebuild --script res://tests/run_all.gd 2>&1 | tee /tmp/rebuild-tests.log || code=$?
-          if [[ "$code" != 0 ]] || grep -qE 'SCRIPT ERROR:|ERROR:|FAIL:' /tmp/rebuild-tests.log; then
-            python godot_rebuild/tests/annotate_failure.py /tmp/rebuild-tests.log
-            exit 1
-          fi
-          grep -E 'PASS: .* checks; fixed ticks' /tmp/rebuild-tests.log | sed 's/^/::notice title=Native Godot tests::/'
-      - name: Save test logs
+          timeout 30 "$GODOT" --headless --path godot_rebuild --quit-after 180 > /tmp/godot-boot.log 2>&1 || { cat /tmp/godot-boot.log; exit 1; }
+          cat /tmp/godot-boot.log
+          if grep -qE 'SCRIPT ERROR:|ERROR:' /tmp/godot-boot.log; then exit 1; fi
+          grep '\[GODOT\] Mystic Arena' /tmp/godot-boot.log
+      - name: Save logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: godot-rebuild-test-logs
-          path: /tmp/rebuild-*.log
+          name: godot-main-test-logs
+          path: /tmp/godot-*.log
           if-no-files-found: ignore

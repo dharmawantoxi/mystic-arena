@@ -1,0 +1,37 @@
+; Native Godot entry point. Python gameplay is a separate migration.
+config_version=5
+
+[application]
+config/name="Mystic Arena"
+config/description="Native Godot application shell for Mystic Arena"
+run/main_scene="res://scenes/Main.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+config/icon="res://assets/icon.png"
+boot_splash/bg_color=Color(0.025, 0.025, 0.055, 1)
+boot_splash/show_image=false
+run/max_fps=60
+config/auto_accept_quit=false
+config/quit_on_go_back=false
+
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+window/handheld/orientation=0
+window/vsync/vsync_mode=1
+
+[input_devices]
+pointing/emulate_touch_from_mouse=false
+pointing/emulate_mouse_from_touch=false
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false
+environment/defaults/default_clear_color=Color(0.025, 0.025, 0.055, 1)
+
+[debug]
+settings/fps/force_print=false
