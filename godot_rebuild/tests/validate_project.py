@@ -141,6 +141,19 @@ def main() -> int:
     core_game_text = (PROJECT / "scripts/game/CoreGame.gd").read_text(encoding="utf-8")
     check("func cinematic_active() -> bool:" in core_game_text, "CoreGame implements cinematic pause contract")
     check("signal render_event" in (PROJECT / "scripts/core/MatchModel.gd").read_text(encoding="utf-8"), "MatchModel emits render events")
+    system_dir = PROJECT / "scripts/system"
+    for name in ("SpatialGrid.gd", "FrustumCuller.gd", "FpsCounter.gd", "AdaptiveQuality.gd"):
+        check((system_dir / name).is_file(), f"Native system module: {name}")
+    system_data = json.loads((PROJECT / "data/system_data.json").read_text(encoding="utf-8"))
+    check(system_data["performance"]["spatial_cell_size"] == 60, "SpatialGrid cell size parity")
+    check(system_data["performance"]["frustum_margin"] == 80, "FrustumCuller margin parity")
+    check(len(system_data["audio"]["manifest"]) == 17, "SoundManager 17-sound manifest")
+    check(system_data["save"]["num_slots"] == 3, "SaveManager 3 slots")
+    check("var spatial := SpatialGrid.new()" in (PROJECT / "scripts/core/MatchModel.gd").read_text(encoding="utf-8"), "MatchModel uses spatial grid")
+    check("FrustumCuller.is_visible" in (PROJECT / "scripts/game/ArenaView.gd").read_text(encoding="utf-8"), "Arena renderer frustum culling")
+    check("func play_positional(" in (PROJECT / "scripts/audio/AudioDirector.gd").read_text(encoding="utf-8"), "AudioDirector positional audio")
+    check("func migrate_legacy_save(" in (PROJECT / "scripts/core/SaveRepository.gd").read_text(encoding="utf-8"), "SaveRepository legacy migration")
+    check("var adaptive_quality := AdaptiveQuality.new()" in (PROJECT / "scripts/Main.gd").read_text(encoding="utf-8"), "Main adaptive quality wired")
     print(f"PASS: {checks} native project/source checks")
     return 0
 

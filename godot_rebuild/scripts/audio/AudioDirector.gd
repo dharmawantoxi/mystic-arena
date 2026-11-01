@@ -18,6 +18,7 @@ const SFX := {
 	"defeat": "sfx",
 	"hero_skill": "sfx",
 	"hero_spawn": "sfx",
+	"ambient_forest": "ambient",
 }
 const THROTTLE_MS := {
 	"goblin_spawn": 200,
@@ -33,12 +34,16 @@ var voices: Array[AudioStreamPlayer] = []
 var streams: Dictionary = {}
 var settings: Dictionary = GameSettings.DEFAULTS.duplicate()
 var background_paused := false
+var current_bgm := ""
+var bgm_paused := false
 var missing: Array[String] = []
 var _paused_players: Array[AudioStreamPlayer] = []
 var _last_played: Dictionary = {}
 var _next_voice := 0
 var _ambient_multiplier := 0.8
 var _fade: Tween
+var _ambient_fade: Tween
+var _bgm_stop_fade: Tween
 
 
 func _ready() -> void:
@@ -122,20 +127,32 @@ func play_bgm(sound_name := "bgm_battle", fade_seconds := 3.0) -> void:
 		return
 	if _fade != null and _fade.is_valid():
 		_fade.kill()
+	if _bgm_stop_fade != null and _bgm_stop_fade.is_valid():
+		_bgm_stop_fade.kill()
 	bgm.stream = stream
 	bgm.volume_db = -80.0 if fade_seconds > 0.0 else _db(_bgm_volume())
 	bgm.play()
+	current_bgm = sound_name
+	bgm_paused = false
 	if fade_seconds > 0.0:
 		_fade = create_tween()
 		_fade.tween_property(bgm, "volume_db", _db(_bgm_volume()), fade_seconds)
 
 
-func play_ambient(sound_name := "ambient_forest", volume_multiplier := 0.8) -> void:
+func play_ambient(
+	sound_name := "ambient_forest", volume_multiplier := 0.8, fade_seconds := 2.0
+) -> void:
 	_ambient_multiplier = volume_multiplier
 	ambient.stream = _loop(load_stream(sound_name))
-	ambient.volume_db = _db(_ambient_volume())
-	if ambient.stream != null:
-		ambient.play()
+	if ambient.stream == null:
+		return
+	if _ambient_fade != null and _ambient_fade.is_valid():
+		_ambient_fade.kill()
+	ambient.volume_db = -80.0 if fade_seconds > 0.0 else _db(_ambient_volume())
+	ambient.play()
+	if fade_seconds > 0.0:
+		_ambient_fade = create_tween()
+		_ambient_fade.tween_property(ambient, "volume_db", _db(_ambient_volume()), fade_seconds)
 
 
 func play_sfx(sound_name: String, volume_multiplier := 1.0, now_ms := -1) -> bool:
@@ -150,13 +167,80 @@ func play_sfx(sound_name: String, volume_multiplier := 1.0, now_ms := -1) -> boo
 	var player := voices[_next_voice]
 	_next_voice = (_next_voice + 1) % voices.size()
 	var category: String = SFX[sound_name]
-	var base: float = (
-		settings.sfx_volume if category == "sfx" else float(settings.get("voice_volume", 0.5))
-	)
+	var base: float = settings.sfx_volume
+	if category == "voice":
+		base = float(settings.get("voice_volume", 0.5))
+	elif category == "ambient":
+		base = float(settings.get("ambient_volume", 0.25))
 	player.stream = streams[sound_name]
 	player.volume_db = _db(settings.master_volume * base * volume_multiplier)
 	player.play()
 	return true
+
+
+func play(sound_name: String, volume_multiplier := 1.0, now_ms := -1) -> bool:
+	return play_sfx(sound_name, volume_multiplier, now_ms)
+
+
+func play_positional(
+	sound_name: String,
+	pos: Vector2,
+	listener: Vector2,
+	max_distance := 800.0,
+	volume_multiplier := 1.0,
+	now_ms := -1
+) -> bool:
+	var dist := pos.distance_to(listener)
+	if dist > max_distance:
+		return false
+	var distance_volume := maxf(0.15, 1.0 - dist / max_distance)
+	return play_sfx(sound_name, volume_multiplier * distance_volume, now_ms)
+
+
+func stop_bgm(fade_seconds := 1.0) -> void:
+	current_bgm = ""
+	bgm_paused = false
+	if _bgm_stop_fade != null and _bgm_stop_fade.is_valid():
+		_bgm_stop_fade.kill()
+	if fade_seconds <= 0.0:
+		bgm.stop()
+		return
+	_bgm_stop_fade = create_tween()
+	_bgm_stop_fade.tween_property(bgm, "volume_db", -80.0, fade_seconds)
+	_bgm_stop_fade.tween_callback(bgm.stop)
+
+
+func pause_bgm() -> void:
+	if not current_bgm.is_empty() and bgm.playing:
+		bgm.stream_paused = true
+		bgm_paused = true
+
+
+func resume_bgm() -> void:
+	if bgm_paused:
+		bgm.stream_paused = false
+		bgm_paused = false
+
+
+func update_bgm_volume() -> void:
+	bgm.volume_db = _db(_bgm_volume())
+
+
+func set_master_volume(volume: float) -> void:
+	settings["master_volume"] = clampf(volume, 0.0, 1.0)
+	update_bgm_volume()
+	ambient.volume_db = _db(_ambient_volume())
+
+
+func stop_ambient(fade_seconds := 1.5) -> void:
+	if _ambient_fade != null and _ambient_fade.is_valid():
+		_ambient_fade.kill()
+	if fade_seconds <= 0.0:
+		ambient.stop()
+		return
+	_ambient_fade = create_tween()
+	_ambient_fade.tween_property(ambient, "volume_db", -80.0, fade_seconds)
+	_ambient_fade.tween_callback(ambient.stop)
 
 
 func set_background_paused(paused: bool) -> void:
@@ -176,8 +260,14 @@ func set_background_paused(paused: bool) -> void:
 
 
 func stop_all() -> void:
+	current_bgm = ""
+	bgm_paused = false
 	if _fade != null and _fade.is_valid():
 		_fade.kill()
+	if _ambient_fade != null and _ambient_fade.is_valid():
+		_ambient_fade.kill()
+	if _bgm_stop_fade != null and _bgm_stop_fade.is_valid():
+		_bgm_stop_fade.kill()
 	for player: AudioStreamPlayer in [bgm, ambient] + voices:
 		player.stop()
 		player.stream_paused = false

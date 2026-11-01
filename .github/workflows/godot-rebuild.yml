@@ -1,4 +1,4 @@
-name: Godot native core + entity + render migration
+name: Godot native core + entity + render + system migration
 
 on:
   workflow_dispatch:
@@ -35,6 +35,11 @@ on:
       - 'map_components/**'
       - 'tools/prepare_godot_render.py'
       - 'tools/test_godot_render_prepare.py'
+      - '_system.py'
+      - 'storage_paths.py'
+      - 'mobile/combat_audio.py'
+      - 'tools/prepare_godot_system.py'
+      - 'tools/test_godot_system_prepare.py'
       - 'tools/convert_to_godot.py'
       - 'tools/test_godot_main_prepare.py'
       - '.github/workflows/godot-rebuild.yml'
@@ -71,6 +76,11 @@ on:
       - 'map_components/**'
       - 'tools/prepare_godot_render.py'
       - 'tools/test_godot_render_prepare.py'
+      - '_system.py'
+      - 'storage_paths.py'
+      - 'mobile/combat_audio.py'
+      - 'tools/prepare_godot_system.py'
+      - 'tools/test_godot_system_prepare.py'
       - 'tools/convert_to_godot.py'
       - 'tools/test_godot_main_prepare.py'
       - '.github/workflows/godot-rebuild.yml'
@@ -79,7 +89,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: godot-render-${{ github.ref }}
+  group: godot-system-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -105,6 +115,8 @@ jobs:
           python tools/test_godot_entity_prepare.py
           python tools/prepare_godot_render.py --check
           python tools/test_godot_render_prepare.py
+          python tools/prepare_godot_system.py --check
+          python tools/test_godot_system_prepare.py
           python godot_rebuild/tests/validate_project.py
           python tools/test_godot_main_prepare.py
       - name: GDScript parse, lint and format
@@ -172,6 +184,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: godot-native-render-test-logs
+          name: godot-native-system-test-logs
           path: /tmp/godot-*.log
           if-no-files-found: ignore

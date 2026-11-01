@@ -46,6 +46,9 @@ var cloud_polls := 0
 var held_sources: Dictionary = {}
 var claimed_touches: Dictionary = {}
 var pending_action := ""
+var fps_counter := FpsCounter.new()
+var adaptive_quality := AdaptiveQuality.new()
+var _quality_timer := 0
 var _pause_requested := false
 
 
@@ -125,6 +128,7 @@ func _ready() -> void:
 	add_child(splash)
 	splash.finished.connect(_splash_finished)
 	debug_overlay = DebugView.new()
+	debug_overlay.fps_counter = fps_counter
 	add_child(debug_overlay)
 	debug_overlay.mode = 1 if debug_enabled else 0
 	debug_overlay.visible = debug_enabled
@@ -289,7 +293,19 @@ func _process(delta: float) -> void:
 			game.simulation_step()
 	_flush_pending_action()
 	_sync_visibility()
-	debug_overlay.refresh(Engine.get_frames_per_second(), state.label(), clock, game)
+	var frame_fps := Engine.get_frames_per_second()
+	fps_counter.update(frame_fps)
+	adaptive_quality.tick(frame_fps)
+	_quality_timer += 1
+	if (
+		settings.values.auto_quality
+		and _quality_timer >= 30
+		and game != null
+		and game.has_method("apply_render_quality")
+	):
+		_quality_timer = 0
+		game.call("apply_render_quality", adaptive_quality.quality)
+	debug_overlay.refresh(frame_fps, state.label(), clock, game)
 
 
 func poll_cloud() -> void:

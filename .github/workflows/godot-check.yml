@@ -32,6 +32,11 @@ on:
       - 'map_components/**'
       - 'tools/prepare_godot_render.py'
       - 'tools/test_godot_render_prepare.py'
+      - '_system.py'
+      - 'storage_paths.py'
+      - 'mobile/combat_audio.py'
+      - 'tools/prepare_godot_system.py'
+      - 'tools/test_godot_system_prepare.py'
       - 'tools/convert_to_godot.py'
       - 'tools/test_godot_main_prepare.py'
       - 'mobile/cloud_save.py'
@@ -67,6 +72,11 @@ on:
       - 'map_components/**'
       - 'tools/prepare_godot_render.py'
       - 'tools/test_godot_render_prepare.py'
+      - '_system.py'
+      - 'storage_paths.py'
+      - 'mobile/combat_audio.py'
+      - 'tools/prepare_godot_system.py'
+      - 'tools/test_godot_system_prepare.py'
       - 'tools/convert_to_godot.py'
       - 'tools/test_godot_main_prepare.py'
       - 'mobile/cloud_save.py'
@@ -102,6 +112,8 @@ jobs:
           python3 tools/test_godot_entity_prepare.py
           python3 tools/prepare_godot_render.py --check
           python3 tools/test_godot_render_prepare.py
+          python3 tools/prepare_godot_system.py --check
+          python3 tools/test_godot_system_prepare.py
           python3 tools/test_godot_main_prepare.py
           python3 godot_rebuild/tests/validate_project.py
       - name: Python cloud-save oracle

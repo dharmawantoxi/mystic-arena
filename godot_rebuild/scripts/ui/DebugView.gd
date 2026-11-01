@@ -4,6 +4,7 @@ extends PanelContainer
 var mode := 0
 var label: Label
 var history := PackedFloat32Array()
+var fps_counter: FpsCounter
 
 
 func _ready() -> void:
@@ -37,7 +38,20 @@ func refresh(fps: float, state: String, clock: FixedClock, game: GameplayPort) -
 		]
 	)
 	if mode == 2:
-		var sum := 0.0
-		for sample: float in history:
-			sum += sample
-		label.text += "\nRata-rata %.1f FPS • %d sampel" % [sum / history.size(), history.size()]
+		if fps_counter != null:
+			label.text += (
+				"\nAVG %.0f • MIN %.0f • MAX %.0f • %s"
+				% [
+					fps_counter.display_avg,
+					fps_counter.display_min,
+					fps_counter.display_max,
+					fps_counter.status()
+				]
+			)
+		else:
+			var sum := 0.0
+			for sample: float in history:
+				sum += sample
+			label.text += (
+				"\nRata-rata %.1f FPS • %d sampel" % [sum / history.size(), history.size()]
+			)
