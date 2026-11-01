@@ -1,8 +1,8 @@
 class_name MatchModel
 extends RefCounted
 
-## Native fixed-step match simulation migrated from _core.Game orchestration.
-## Data-driven combat; bespoke hero skill handlers/rigs remain explicit gaps.
+## Native fixed-step match simulation migrated from _core.Game and _entity.py.
+## Combat, projectiles, AI, items and baked entity visuals run in GDScript.
 signal notification(text: String)
 signal match_finished(victory: bool)
 
@@ -52,15 +52,35 @@ var purchased_heroes: Array = []
 var unlocked_bosses: Array = []
 var next_id := 1
 var ai_timer := 0
+var ai: EntityAI
+var projectiles: Array[Dictionary] = []
+var effects: Array[Dictionary] = []
+var popups: Array[Dictionary] = []
+var shake := 0.0
 var notifications: Array[String] = []
 
 
 func clear_unit_refs() -> void:
 	# BattleUnit is RefCounted; break target/source cycles before replacing a match.
-	for unit: BattleUnit in all_units():
+	var units := all_units()
+	units.append_array(towers)
+	units.append_array([blue_base, red_base])
+	for unit: BattleUnit in units:
 		unit.tactical_target = null
 		unit.follow_target = null
 		unit.killed_by = null
+		unit.target = null
+		unit.world = null
+		for key: String in unit.kit:
+			if unit.kit[key] is BattleUnit:
+				unit.kit[key] = null
+	selected_tower = null
+	selected_hero = null
+	active_boss = null
+	projectiles.clear()
+	effects.clear()
+	popups.clear()
+	ai = null
 
 
 func setup(
@@ -103,6 +123,9 @@ func setup(
 	wave_interval = int(data.rule("MINION_WAVE_INTERVAL", 1500))
 	spawn_delay = int(data.rule("MINION_SPAWN_DELAY", 20))
 	waves.roll_schedule(config, difficulty, rng)
+	blue_base.world = self
+	red_base.world = self
+	ai = EntityAI.new(self, level_number)
 	blue_base.setup_castle(data, "blue", int(config.get("starting_castle_level", 1)))
 	red_base.setup_castle(data, "red", int(config.get("castle_start_level", 1)) if hard else 1)
 	blue_base.set_wave(data, 0)
@@ -110,11 +133,13 @@ func setup(
 	for row: Array in data.rule("BLUE_TOWERS", []):
 		var tower := BattleUnit.new()
 		tower.id = _id()
+		tower.world = self
 		tower.setup_tower(data, Vector2(float(row[0]), float(row[1])), "blue", str(row[2]))
 		towers.append(tower)
 	for row: Array in data.rule("RED_TOWERS", []):
 		var tower := BattleUnit.new()
 		tower.id = _id()
+		tower.world = self
 		tower.setup_tower(data, Vector2(float(row[0]), float(row[1])), "red", str(row[2]))
 		towers.append(tower)
 	_generate_build_slots()
@@ -194,8 +219,9 @@ func step() -> void:
 		if base.alive:
 			base.tick_timers(data)
 			_update_tower(base)
-	_update_boss()
+	EntityProjectiles.update(self)
 	_update_ai()
+	_update_effects()
 	_process_rewards()
 	_respawn_heroes()
 	tactical.update(1.0 / 60.0, self)
@@ -232,6 +258,8 @@ func _update_waves() -> void:
 			continue
 		var minion := BattleUnit.new()
 		minion.id = _id()
+		minion.world = self
+		minion.ai_level = clampi(1 + int(wave_number / 5.0), 1, 5)
 		var castle_level := blue_base.level if team == "blue" else red_base.level
 		minion.setup_minion(
 			data, str(spawn.type), team, str(spawn.lane), castle_level, data.lane(str(spawn.lane))
@@ -257,49 +285,14 @@ func _try_spawn_mini() -> void:
 func _spawn_boss(boss_type: String) -> void:
 	active_boss = BattleUnit.new()
 	active_boss.id = _id()
+	active_boss.world = self
 	active_boss.setup_boss(data, boss_type, data.lane("mid"))
 	active_boss.apply_scaling(enemy_hp_mult, enemy_damage_mult, enemy_speed_mult)
 	_notify(str(active_boss.stats.get("entrance_text", active_boss.display_name)))
 
 
 func _update_unit(unit: BattleUnit) -> void:
-	if not unit.alive or unit.status.stun_timer > 0:
-		return
-	var enemies := enemies_of(unit.team)
-	var target := _nearest(unit.pos, enemies, unit.attack_range + 40.0)
-	if unit.kind == BattleUnit.Kind.HERO:
-		if is_instance_valid(unit.tactical_target) and unit.tactical_target.alive:
-			target = unit.tactical_target
-		elif unit.has_tactical_move:
-			unit.pos = unit.pos.move_toward(unit.tactical_move, unit.effective_speed())
-			if unit.pos.distance_to(unit.tactical_move) < 4.0:
-				unit.has_tactical_move = false
-			return
-		elif is_instance_valid(unit.follow_target) and unit.follow_target.alive:
-			unit.pos = unit.pos.move_toward(unit.follow_target.pos, unit.effective_speed())
-			return
-		elif unit.has_destination:
-			unit.pos = unit.pos.move_toward(unit.destination, unit.effective_speed())
-			if unit.pos.distance_to(unit.destination) < 4.0:
-				unit.has_destination = false
-			return
-	if target != null and unit.pos.distance_to(target.pos) <= unit.attack_range + target.radius:
-		_attack(unit, target)
-		return
-	if unit.kind == BattleUnit.Kind.MINION or unit.kind == BattleUnit.Kind.BOSS:
-		_follow_path(unit)
-	elif unit.kind == BattleUnit.Kind.HERO and target != null:
-		unit.pos = unit.pos.move_toward(target.pos, unit.effective_speed())
-
-
-func _follow_path(unit: BattleUnit) -> void:
-	if unit.path.is_empty():
-		return
-	var direction := 1 if unit.team == "blue" else -1
-	var next := clampi(unit.waypoint + direction, 0, unit.path.size() - 1)
-	unit.pos = unit.pos.move_toward(unit.path[next], unit.effective_speed())
-	if unit.pos.distance_to(unit.path[next]) < 2.0:
-		unit.waypoint = next
+	EntityMovement.update(self, unit)
 
 
 func _nearest(origin: Vector2, candidates: Array[BattleUnit], max_distance: float) -> BattleUnit:
@@ -314,123 +307,68 @@ func _nearest(origin: Vector2, candidates: Array[BattleUnit], max_distance: floa
 
 
 func _attack(attacker: BattleUnit, target: BattleUnit) -> void:
-	if attacker.attack_timer > 0:
+	if attacker.attack_timer > 0 or attacker.attack_lock_timer > 0:
 		return
 	attacker.attack_timer = attacker.effective_attack_cd()
+	attacker.attack_anim_timer = 18
+	attacker.attack_facing = attacker.facing
 	var amount := attacker.damage
-	var damage_type := "physical"
-	if attacker.kind == BattleUnit.Kind.TOWER or attacker.kind == BattleUnit.Kind.CASTLE:
-		damage_type = "projectile"
+	var is_crit := false
 	if attacker.kind == BattleUnit.Kind.HERO and attacker.items != null:
 		var crit := attacker.items.sum_stat("crit_chance")
 		if crit > 0.0 and rng.randf() < crit:
 			amount *= maxf(1.0, attacker.items.sum_stat("crit_mult"))
-	var dealt := target.take_damage(amount, attacker.team, damage_type, attacker)
-	if attacker.kind == BattleUnit.Kind.HERO and attacker.items != null:
-		attacker.heal(dealt * attacker.items.lifesteal())
-	if attacker.kind == BattleUnit.Kind.TOWER:
-		_apply_tower_effects(attacker, target)
-
-
-func _apply_tower_effects(tower: BattleUnit, target: BattleUnit) -> void:
-	var s := tower.stats
-	if float(s.get("burn_dps", 0)) > 0:
-		target.apply_debuff("burn", float(s.burn_dps), int(s.get("burn_duration", 120)), tower.team)
-		var radius := float(s.get("splash", 0))
-		if radius > 0:
-			for unit: BattleUnit in enemies_of(tower.team):
-				if unit != target and unit.pos.distance_to(target.pos) <= radius:
-					unit.take_damage(tower.damage * 0.6, tower.team, "normal", tower)
-					unit.apply_debuff(
-						"burn", float(s.burn_dps), int(s.get("burn_duration", 120)), tower.team
+			is_crit = true
+	if (
+		attacker.kind == BattleUnit.Kind.HERO
+		and attacker.attack_range > 80.0
+		and attacker.unit_type != "morgath"
+	):
+		EntityProjectiles.spawn_hero(self, attacker, target, amount, is_crit)
+		return
+	var dealt := target.take_damage(
+		amount, attacker.team, "physical", attacker, attacker.dmg_school
+	)
+	if attacker.kind == BattleUnit.Kind.HERO:
+		if attacker.items != null:
+			var lifesteal := attacker.items.lifesteal()
+			if attacker.item_timer("blood_frenzy") > 0:
+				lifesteal += float(
+					attacker.items.catalog.get("demon_maw", {}).get("active", {}).get(
+						"lifesteal_bonus", 0.0
 					)
-	if float(s.get("slow", 0)) > 0:
-		target.apply_debuff("slow", float(s.slow), int(s.get("slow_duration", 90)))
-		target.apply_debuff(
-			"atk_slow", float(s.get("atk_slow", 0)), int(s.get("slow_duration", 90))
-		)
-		var aoe := float(s.get("slow_aoe", 0))
-		if aoe > 0:
-			for unit: BattleUnit in enemies_of(tower.team):
-				if unit != target and unit.pos.distance_to(target.pos) <= aoe:
-					unit.apply_debuff("slow", float(s.slow), int(s.get("slow_duration", 90)))
-	if float(s.get("skill_down", 0)) > 0:
-		target.apply_debuff("skill_down", float(s.skill_down), int(s.get("debuff_duration", 120)))
-		target.apply_debuff(
-			"anti_heal", float(s.get("anti_heal", 0)), int(s.get("debuff_duration", 120))
-		)
-		var chain := int(s.get("chain", 1))
-		var hit := 1
-		for unit: BattleUnit in enemies_of(tower.team):
-			if hit >= chain:
-				break
-			if unit != target and unit.pos.distance_to(target.pos) <= 120.0:
-				unit.take_damage(tower.damage * 0.7, tower.team, "magic", tower)
-				unit.apply_debuff(
-					"skill_down", float(s.skill_down), int(s.get("debuff_duration", 120))
 				)
-				hit += 1
-	if bool(s.get("double_shot", false)):
-		var second := _nearest(tower.pos, enemies_of(tower.team), tower.attack_range)
-		if second != null and second != target:
-			second.take_damage(tower.damage, tower.team, "projectile", tower)
+			attacker.heal(dealt * lifesteal)
+			EntityItems.on_attack(attacker, target, amount, enemies_of(attacker.team), self)
+		add_effect(target.pos, "hit", attacker.color, 10)
 
 
 func _update_tower(tower: BattleUnit) -> void:
 	if tower.attack_timer > 0:
 		return
 	var target := _nearest(tower.pos, enemies_of(tower.team), tower.attack_range)
-	if target != null:
-		_attack(tower, target)
-
-
-func _update_boss() -> void:
-	if active_boss == null or not active_boss.alive:
+	if target == null:
 		return
-	var boss := active_boss
-	boss.attack_timer = maxi(0, boss.attack_timer - 1)
-	var ability_cd := int(boss.stats.get("ability_cooldown", 240))
-	if frame % maxi(1, ability_cd) == 0:
-		var radius := float(boss.stats.get("ability_range", 150))
-		var amount := float(boss.stats.get("ability_damage", 100))
-		for unit: BattleUnit in enemies_of("red"):
-			if unit.pos.distance_to(boss.pos) <= radius:
-				unit.take_damage(amount, "red", "magic", boss)
+	tower.attack_timer = tower.effective_attack_cd()
+	tower.shoot_flash_timer = 10
+	tower.facing = 1 if target.pos.x >= tower.pos.x else -1
+	var bullet_type := tower.tower_type if tower.kind == BattleUnit.Kind.TOWER else "normal"
+	if bullet_type == "archer":
+		bullet_type = "normal"
+	EntityProjectiles.spawn_tower(
+		self, tower, target, bullet_type, tower.pos + Vector2(0, -20), tower.stats
+	)
+	if bool(tower.stats.get("double_shot", false)):
+		var second := _nearest(tower.pos, enemies_of(tower.team), tower.attack_range)
+		if second != null and second != target:
+			EntityProjectiles.spawn_tower(
+				self, tower, second, bullet_type, tower.pos + Vector2(0, -20), tower.stats
+			)
 
 
 func _update_ai() -> void:
-	ai_timer += 1
-	if ai_timer < int(data.rule("AI_THINK_INTERVAL", 30)):
-		return
-	ai_timer = 0
-	var max_heroes := int(data.rule("AI_MAX_HEROES", 5))
-	if enemy_heroes.size() < max_heroes:
-		for hero_type: String in data.rule("AI_HERO_PREFERENCES", []):
-			var stats := data.hero(hero_type)
-			var cost := int(stats.get("cost", 500))
-			if ai_gold >= cost + int(data.rule("AI_MIN_GOLD_RESERVE", 200)):
-				ai_gold -= cost
-				var hero := BattleUnit.new()
-				hero.id = _id()
-				hero.setup_hero(data, hero_type, "red", Vector2(1100, 150))
-				enemy_heroes.append(hero)
-				break
-	for slot: Dictionary in build_slots_red:
-		if not bool(slot.taken) and ai_gold >= 300:
-			ai_gold -= 100
-			slot.taken = true
-			var tower := BattleUnit.new()
-			tower.id = _id()
-			tower.setup_tower(data, slot.pos, "red", str(slot.lane))
-			towers.append(tower)
-			break
-	for tower: BattleUnit in towers:
-		if tower.team == "red" and tower.alive and tower.level < 3:
-			var cost := tower.tower_upgrade_cost(data, "cannon" if tower.level == 1 else "")
-			if cost > 0 and ai_gold >= cost + 200:
-				ai_gold -= cost
-				tower.upgrade_tower(data, "cannon" if tower.level == 1 else "")
-				break
+	if ai != null:
+		ai.update()
 
 
 func _process_rewards() -> void:
@@ -521,6 +459,7 @@ func buy_hero(hero_type: String, free := false) -> bool:
 		gold -= cost
 	var hero := BattleUnit.new()
 	hero.id = _id()
+	hero.world = self
 	hero.setup_hero(data, hero_type, "blue", Vector2(180, 560))
 	heroes.append(hero)
 	selected_hero = hero
@@ -537,6 +476,7 @@ func build_tower(slot_index: int, tower_type: String) -> bool:
 	slot.taken = true
 	var tower := BattleUnit.new()
 	tower.id = _id()
+	tower.world = self
 	tower.setup_tower(data, slot.pos, "blue", str(slot.lane), true)
 	if tower_type != "archer":
 		tower.tower_type = tower_type
@@ -623,7 +563,52 @@ func buy_item(item_id: String) -> bool:
 func cast_skill(key: String) -> bool:
 	if selected_hero == null:
 		return false
-	return selected_hero.cast_skill(key, enemies_of("blue"))
+	return cast_hero_skill(selected_hero, key)
+
+
+func cast_hero_skill(hero: BattleUnit, key: String) -> bool:
+	return hero.cast_skill(key, enemies_of(hero.team))
+
+
+func add_effect(position: Vector2, effect_type: String, effect_color: Color, radius: int) -> void:
+	effects.append(
+		{
+			"pos": position,
+			"type": effect_type,
+			"color": effect_color,
+			"radius": radius,
+			"age": 0,
+			"ttl": 24
+		}
+	)
+	if effects.size() > 120:
+		effects.pop_front()
+
+
+func add_popup(position: Vector2, text: String, popup_color: Color) -> void:
+	popups.append({"pos": position, "text": text, "color": popup_color, "age": 0, "ttl": 60})
+	if popups.size() > 40:
+		popups.pop_front()
+
+
+func add_shake(amount: float) -> void:
+	shake = maxf(shake, amount)
+
+
+func _update_effects() -> void:
+	shake = maxf(0.0, shake - 1.0)
+	var keep: Array[Dictionary] = []
+	for effect: Dictionary in effects:
+		effect["age"] = int(effect.age) + 1
+		if int(effect.age) < int(effect.ttl):
+			keep.append(effect)
+	effects = keep
+	var keep_popups: Array[Dictionary] = []
+	for popup: Dictionary in popups:
+		popup["age"] = int(popup.age) + 1
+		if int(popup.age) < int(popup.ttl):
+			keep_popups.append(popup)
+	popups = keep_popups
 
 
 func apply_tactical(command: String, _delta: float) -> void:

@@ -5,6 +5,7 @@ extends SceneTree
 const State := preload("res://scripts/core/AppState.gd")
 const Clock := preload("res://scripts/core/FixedClock.gd")
 const Gesture := preload("res://scripts/core/GestureTracker.gd")
+const BossKit := preload("res://scripts/entities/generated/BossKit.gd")
 var checks := 0
 var failures := 0
 
@@ -34,6 +35,7 @@ func _run() -> void:
 	_test_core_save()
 	_test_core_services()
 	_test_core_match()
+	_test_entities()
 	_test_hud()
 	await _test_app()
 	await _test_audio()
@@ -122,6 +124,76 @@ func _test_gestures() -> void:
 	check(touch.points.is_empty() and touch.collect().is_empty(), "cancel clears touch state")
 	touch.up(4, Vector2.ZERO, 3.1)
 	check(touch.collect().is_empty(), "cancelled release is harmless")
+
+
+func _test_entities() -> void:
+	var data := CoreData.new()
+	var model := MatchModel.new()
+	model.setup(data.level(1), {"purchased_heroes": ["kaizen"]}, "normal", false, 7)
+	var hero := model.heroes[0]
+	check(hero.is_melee_hero and hero.dmg_school == "physical", "melee hero normalization")
+	check(not hero.kit.is_empty(), "hero skill kit state initialized")
+	var ranged := BattleUnit.new()
+	ranged.world = model
+	ranged.setup_hero(data, "sylara", "blue", Vector2(300, 300))
+	check(not ranged.is_melee_hero and ranged.attack_range >= 120.0, "ranged hero normalization")
+	var target := BattleUnit.new()
+	target.world = model
+	target.setup_minion(data, "goblin", "red", "mid", 1, data.lane("mid"))
+	target.pos = Vector2(500, 300)
+	model.minions.append(target)
+	EntityProjectiles.spawn_hero(model, ranged, target, 25.0)
+	check(model.projectiles.size() == 1, "ranged hero spawns projectile")
+	for _tick in range(60):
+		EntityProjectiles.update(model)
+	check(target.hp < target.max_hp, "hero projectile travels and hits")
+	var tower := model.towers[0]
+	var before := target.hp
+	EntityProjectiles.spawn_tower(
+		model, tower, target, "ice", tower.pos, {"slow": 0.3, "slow_duration": 90, "atk_slow": 0.2}
+	)
+	for _tick in range(90):
+		EntityProjectiles.update(model)
+	check(target.hp < before and target.status.slow_timer > 0, "tower bullet applies slow")
+	var boss := BattleUnit.new()
+	boss.world = model
+	boss.setup_boss(data, "gornak", data.lane("mid"))
+	boss.entrance_timer = 0
+	check(boss.max_damage_per_hit > 0 and boss.damage_reduction > 0.0, "boss defensive stats")
+	var hit := boss.take_damage(boss.max_hp, "blue", "physical")
+	check(hit <= boss.max_damage_per_hit + 1, "boss per-hit cap")
+	boss.apply_debuff("slow", 0.8, 120)
+	check(
+		boss.status.slow_amount <= 0.35 and boss.status.slow_timer <= 60, "boss tenacity caps slow"
+	)
+	boss.hp = boss.max_hp * 0.3
+	EntityMovement.update(model, boss)
+	check(boss.is_enraged and boss.enrage_triggered, "boss enrage triggers")
+	check(BossKit.DEFAULT_KIT.has("q_timer"), "boss kit defaults available")
+	BossKit.dispatch(boss, "gornak", model.enemies_of("red"), 50.0)
+	check(true, "boss smart AI dispatch runs")
+	var ai := model.ai
+	model.ai_gold = 10000
+	for _tick in range(600):
+		ai.update()
+	check(ai.total_heroes_bought > 0 or ai.total_built > 0, "entity AI spends gold")
+	check(ai.hero_pool().size() > 0, "AI draft pool includes starters")
+	var item_hero := BattleUnit.new()
+	item_hero.world = model
+	item_hero.setup_hero(data, "thorne", "blue", Vector2(400, 300))
+	item_hero.items.add("demon_maw", item_hero.attack_range, item_hero.is_magic_hero())
+	item_hero.hp = item_hero.max_hp * 0.2
+	EntityItems.update(item_hero, model.enemies_of("blue"), model)
+	check(item_hero.item_timer("blood_frenzy") > 0, "item auto-trigger at low HP")
+	check(
+		UnitInventory.new(data.data.get("items", {})).suggest_for(item_hero) != "",
+		"item suggestion returns catalog item"
+	)
+	EntityVisuals.ensure_loaded()
+	check(EntityVisuals.units.size() >= 222, "baked unit manifest loaded")
+	check(EntityVisuals.props.get("towers", {}).size() == 8, "baked tower manifest loaded")
+	check(EntityVisuals.props.get("nexus", {}).size() == 2, "baked nexus manifest loaded")
+	model.clear_unit_refs()
 
 
 func _test_hud() -> void:
@@ -569,6 +641,7 @@ func _test_core_match() -> void:
 	)
 	model.selected_hero = model.heroes[0]
 	model.selected_hero.pos = model.red_base.pos
+	model.selected_hero.skill_cooldowns.q = 0
 	check(model.cast_skill("q"), "hero skill casts")
 	model.tactical.hold_begin("protect_castle", 0.0)
 	model.tactical.update(0.5, model)
@@ -585,6 +658,8 @@ func _test_core_match() -> void:
 	check(dev.handle_hotkey(KEY_F5, model2) and model2.gold == gold + 500, "dev gold cheat")
 	dev.enabled = false
 	check(not dev.handle_hotkey(KEY_F5, model2), "cheats require dev mode")
+	model.clear_unit_refs()
+	model2.clear_unit_refs()
 
 
 func _test_core_game() -> void:

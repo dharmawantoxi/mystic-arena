@@ -120,3 +120,120 @@ func deliver_pending(hero_range: float, magic_hero: bool) -> Array[String]:
 			pending.erase(item_id)
 			delivered.append(item_id)
 	return delivered
+
+
+func suggest_for(hero: BattleUnit) -> String:
+	var role := str(hero.stats.get("role", "")).to_lower()
+	var pool: Array[String] = []
+	if "tank" in role or "bruiser" in role or "fighter" in role:
+		pool.assign(
+			[
+				"leviathan_heart",
+				"scarlet_bulwark",
+				"searbrand",
+				"razor_carapace",
+				"everfrost_guard",
+				"steel_aegis",
+				"abyss_breaker",
+				"solar_brand",
+				"demon_maw",
+				"corroder",
+				"fenrir_chain",
+				"octarine_core",
+				"moon_shard"
+			]
+		)
+	elif "marksman" in role or "assassin" in role:
+		pool.assign(
+			[
+				"dead_edge",
+				"basilisk_breath",
+				"gale_pike",
+				"frostbound_eye",
+				"sundering_cudgel",
+				"searbrand",
+				"monarch_wings",
+				"thunder_coil",
+				"sanguine_thorn",
+				"moon_shard",
+				"runic_gavel",
+				"corroder",
+				"demon_maw",
+				"octarine_core",
+				"steel_aegis"
+			]
+		)
+	elif hero.is_magic_hero():
+		pool.assign(
+			[
+				"astral_codex",
+				"fulgur_scepter",
+				"sage_scepter",
+				"hex_idol",
+				"rift_veil",
+				"vital_stone",
+				"spectral_charm",
+				"vine_rod",
+				"octarine_core",
+				"runic_gavel",
+				"searbrand",
+				"solar_brand",
+				"frostbound_eye",
+				"everfrost_guard",
+				"tempest_vane",
+				"corroder",
+				"moon_shard",
+				"thunder_coil",
+				"steel_aegis",
+				"demon_maw",
+				"dead_edge"
+			]
+		)
+	else:
+		pool.assign(
+			[
+				"steel_aegis",
+				"searbrand",
+				"sundering_cudgel",
+				"frostbound_eye",
+				"razor_carapace",
+				"moon_shard",
+				"demon_maw",
+				"leviathan_heart",
+				"scarlet_bulwark",
+				"solar_brand",
+				"thunder_coil",
+				"monarch_wings",
+				"octarine_core",
+				"gale_pike",
+				"dead_edge",
+				"corroder",
+				"everfrost_guard"
+			]
+		)
+	if hero.is_melee_hero:
+		pool.push_front("cleave_axe")
+	pool.append("holy_rapier")
+	for item_id: String in pool:
+		if item_id in slots:
+			continue
+		if can_add(item_id, hero.attack_range, hero.is_magic_hero()):
+			return item_id
+	return ""
+
+
+func has(item_id: String) -> bool:
+	return item_id in slots
+
+
+func block_amount(source: BattleUnit) -> float:
+	var total := 0.0
+	for slot: Variant in slots:
+		if slot == null:
+			continue
+		var block: Dictionary = catalog.get(slot, {}).get("block", {})
+		if block.is_empty():
+			continue
+		var ranged := source != null and source.attack_range > 80.0
+		total += float(block.get("ranged_block" if ranged else "melee_block", 0.0))
+	return total

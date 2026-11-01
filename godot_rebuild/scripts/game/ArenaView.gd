@@ -1,8 +1,7 @@
 class_name ArenaView
 extends Control
 
-## Native immediate-mode arena renderer. Replaces Pygame MapRenderer/entities
-## with Godot canvas drawing; bespoke sprite rigs are not claimed as parity.
+## Native immediate-mode arena renderer using baked _entity.py sprite strips.
 var game: CoreGame
 var font: Font
 
@@ -29,6 +28,8 @@ func _draw() -> void:
 		_draw_unit(hero, true)
 	if model.active_boss != null and model.active_boss.alive:
 		_draw_unit(model.active_boss, true)
+	EntityVisuals.draw_projectiles(self, model)
+	EntityVisuals.draw_effects(self, model, font)
 	_draw_top_bar(model)
 	_draw_selection(model)
 	_draw_notifications(model)
@@ -74,8 +75,9 @@ func _draw_unit(unit: BattleUnit, show_bar: bool) -> void:
 	if unit.selected or unit == game.model.selected_tower or unit == game.model.selected_hero:
 		draw_arc(unit.pos, unit.radius + 8, 0, TAU, 32, Ui.GOLD, 2.0)
 		draw_circle(unit.pos, unit.attack_range, Color(color.r, color.g, color.b, 0.06))
-	draw_circle(unit.pos, unit.radius, color)
-	draw_arc(unit.pos, unit.radius, 0, TAU, 24, Color(0, 0, 0, 0.5), 2.0)
+	if not EntityVisuals.draw_unit(self, unit, game.model.frame):
+		draw_circle(unit.pos, unit.radius, color)
+		draw_arc(unit.pos, unit.radius, 0, TAU, 24, Color(0, 0, 0, 0.5), 2.0)
 	if unit.shield_active and unit.shield > 0:
 		draw_arc(unit.pos, unit.radius + 4, 0, TAU, 24, Color(0.4, 0.8, 1.0, 0.8), 2.0)
 	if show_bar:

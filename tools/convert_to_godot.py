@@ -51,7 +51,9 @@ Jalankan tanpa display/audio:
 """
 import json, os, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-GODOT_DATA = os.path.join(ROOT, "godot", "data")
+# Native rebuilds can retarget outputs without changing the legacy default.
+GODOT_ROOT = os.environ.get("MYSTIC_GODOT_ROOT", os.path.join(ROOT, "godot"))
+GODOT_DATA = os.path.join(GODOT_ROOT, "data")
 os.makedirs(GODOT_DATA, exist_ok=True)
 
 # Tambah root ke path supaya bisa import _core tanpa pygame display
@@ -927,7 +929,7 @@ def export_sounds():
     """
     import shutil
     src_dir = os.path.join(ROOT, "assets", "sounds")
-    dst_dir = os.path.join(ROOT, "godot", "assets", "sounds")
+    dst_dir = os.path.join(GODOT_ROOT, "assets", "sounds")
     if not os.path.isdir(src_dir):
         print("[convert] sounds: assets/sounds/ tidak ada — dilewati", file=sys.stderr)
         return 0
@@ -997,7 +999,7 @@ def export_items_png():
     """
     import shutil
     src_dir = os.path.join(ROOT, "assets", "items")
-    dst_dir = os.path.join(ROOT, "godot", "assets", "items")
+    dst_dir = os.path.join(GODOT_ROOT, "assets", "items")
     if not os.path.isdir(src_dir):
         print("[convert] items: assets/items/ tidak ada — dilewati", file=sys.stderr)
         return 0
@@ -1031,7 +1033,7 @@ def export_presplash():
     """
     import shutil
     src = os.path.join(ROOT, "assets", "presplash.png")
-    dst_dir = os.path.join(ROOT, "godot", "assets")
+    dst_dir = os.path.join(GODOT_ROOT, "assets")
     dst = os.path.join(dst_dir, "presplash.png")
     if not os.path.isfile(src):
         print("[convert] presplash: assets/presplash.png tidak ada — dilewati",
@@ -1146,7 +1148,7 @@ def export_map_bakes(only=None):
 
         _random.seed = _frozen_seed
 
-        out_dir = os.path.join(ROOT, "godot", "assets", "maps")
+        out_dir = os.path.join(GODOT_ROOT, "assets", "maps")
         os.makedirs(out_dir, exist_ok=True)
         surf = pygame.display.get_surface()
 
@@ -1937,7 +1939,7 @@ def export_unit_sprites(only=None):
     if only:
         types = [t for t in types if t in set(only)]
 
-    out_dir = os.path.join(ROOT, "godot", "assets", "units")
+    out_dir = os.path.join(GODOT_ROOT, "assets", "units")
     os.makedirs(out_dir, exist_ok=True)
 
     # Tabel durasi cast sisi-AI (Fase 5c): dibaca SEKALI per run —
@@ -2446,7 +2448,7 @@ def export_prop_sprites(only=None):
     _orig_hp_bar = _mb.draw_hp_bar
     _mb.draw_hp_bar = lambda *a, **k: None
 
-    out_dir = os.path.join(ROOT, "godot", "assets", "props")
+    out_dir = os.path.join(GODOT_ROOT, "assets", "props")
     os.makedirs(out_dir, exist_ok=True)
 
     out = {

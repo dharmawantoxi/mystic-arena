@@ -1,4 +1,4 @@
-name: Godot native core migration
+name: Godot native core + entity migration
 
 on:
   workflow_dispatch:
@@ -20,6 +20,17 @@ on:
       - 'topup_currency.py'
       - 'map_components/_bundle.py'
       - 'gdlintrc'
+      - '_entity.py'
+      - 'hero_skills/**'
+      - 'heroes/**'
+      - 'towers/**'
+      - 'bosses/**'
+      - 'hero_archetypes.py'
+      - 'tools/gen_hero_skill_kit.py'
+      - 'tools/gen_boss_smart_ai.py'
+      - 'tools/prepare_godot_entities.py'
+      - 'tools/test_godot_entity_prepare.py'
+      - 'tools/convert_to_godot.py'
       - 'tools/test_godot_main_prepare.py'
       - '.github/workflows/godot-rebuild.yml'
   push:
@@ -40,6 +51,17 @@ on:
       - 'topup_currency.py'
       - 'map_components/_bundle.py'
       - 'gdlintrc'
+      - '_entity.py'
+      - 'hero_skills/**'
+      - 'heroes/**'
+      - 'towers/**'
+      - 'bosses/**'
+      - 'hero_archetypes.py'
+      - 'tools/gen_hero_skill_kit.py'
+      - 'tools/gen_boss_smart_ai.py'
+      - 'tools/prepare_godot_entities.py'
+      - 'tools/test_godot_entity_prepare.py'
+      - 'tools/convert_to_godot.py'
       - 'tools/test_godot_main_prepare.py'
       - '.github/workflows/godot-rebuild.yml'
 
@@ -69,14 +91,16 @@ jobs:
           python tools/prepare_godot_core.py
           python tools/prepare_godot_core.py --check
           python tools/test_godot_core_prepare.py
+          python tools/prepare_godot_entities.py --check
+          python tools/test_godot_entity_prepare.py
           python godot_rebuild/tests/validate_project.py
           python tools/test_godot_main_prepare.py
       - name: GDScript parse, lint and format
         run: |
           python -m pip install gdtoolkit==4.5.0
           gdparse $(find godot_rebuild -name '*.gd')
-          gdlint $(find godot_rebuild -name '*.gd')
-          gdformat --check $(find godot_rebuild -name '*.gd')
+          gdlint $(find godot_rebuild -name '*.gd' -not -path '*/entities/generated/*')
+          gdformat --check $(find godot_rebuild -name '*.gd' -not -path '*/entities/generated/*')
       - name: Install pinned official Godot
         run: |
           set -euo pipefail
@@ -136,6 +160,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: godot-core-test-logs
+          name: godot-native-test-logs
           path: /tmp/godot-*.log
           if-no-files-found: ignore

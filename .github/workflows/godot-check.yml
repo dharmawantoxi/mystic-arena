@@ -17,6 +17,17 @@ on:
       - 'topup_currency.py'
       - 'map_components/_bundle.py'
       - 'gdlintrc'
+      - '_entity.py'
+      - 'hero_skills/**'
+      - 'heroes/**'
+      - 'towers/**'
+      - 'bosses/**'
+      - 'hero_archetypes.py'
+      - 'tools/gen_hero_skill_kit.py'
+      - 'tools/gen_boss_smart_ai.py'
+      - 'tools/prepare_godot_entities.py'
+      - 'tools/test_godot_entity_prepare.py'
+      - 'tools/convert_to_godot.py'
       - 'tools/test_godot_main_prepare.py'
       - 'mobile/cloud_save.py'
       - 'tools/test_cloud_save.py'
@@ -36,6 +47,17 @@ on:
       - 'topup_currency.py'
       - 'map_components/_bundle.py'
       - 'gdlintrc'
+      - '_entity.py'
+      - 'hero_skills/**'
+      - 'heroes/**'
+      - 'towers/**'
+      - 'bosses/**'
+      - 'hero_archetypes.py'
+      - 'tools/gen_hero_skill_kit.py'
+      - 'tools/gen_boss_smart_ai.py'
+      - 'tools/prepare_godot_entities.py'
+      - 'tools/test_godot_entity_prepare.py'
+      - 'tools/convert_to_godot.py'
       - 'tools/test_godot_main_prepare.py'
       - 'mobile/cloud_save.py'
       - 'tools/test_cloud_save.py'
@@ -66,6 +88,8 @@ jobs:
           python3 tools/prepare_godot_core.py
           python3 tools/prepare_godot_core.py --check
           python3 tools/test_godot_core_prepare.py
+          python3 tools/prepare_godot_entities.py --check
+          python3 tools/test_godot_entity_prepare.py
           python3 tools/test_godot_main_prepare.py
           python3 godot_rebuild/tests/validate_project.py
       - name: Python cloud-save oracle
@@ -74,5 +98,5 @@ jobs:
         run: |
           python -m pip install --quiet gdtoolkit==4.5.0
           gdparse $(find godot_rebuild -name '*.gd')
-          gdlint $(find godot_rebuild -name '*.gd')
-          gdformat --check $(find godot_rebuild -name '*.gd')
+          gdlint $(find godot_rebuild -name '*.gd' -not -path '*/entities/generated/*')
+          gdformat --check $(find godot_rebuild -name '*.gd' -not -path '*/entities/generated/*')
