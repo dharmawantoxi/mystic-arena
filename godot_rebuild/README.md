@@ -1,14 +1,15 @@
-# Mystic Arena — port `main.py` ke Godot 4
+# Mystic Arena — port `main.py` dan `_core.py` ke Godot 4
 
-Proyek native untuk **application shell** Mystic Arena. Buka `project.godot`
-dengan **Godot 4.7.2 Standard** (bukan .NET), lalu tekan **F6** pada
-`scenes/Main.tscn` atau **F5** untuk menjalankan proyek.
+Proyek native untuk **application shell + core gameplay** Mystic Arena. Buka
+`project.godot` dengan **Godot 4.7.2 Standard** (bukan .NET), lalu tekan **F5**.
+Gameplay default sekarang `scenes/CoreGame.tscn`.
 
-> **Batas migrasi:** `main.py` adalah loop/orkestrator, bukan seluruh game.
-> Port ini menggantikannya dengan scene, state machine, input, audio dan
-> lifecycle native Godot. Combat, hero, boss, tower, map renderer, save slot,
-> top-up dan Play Games belum diport. Tombol Play tanpa adapter menampilkan
-> **Mode integrasi**, bukan pertandingan pura-pura. Kode Python tetap utuh.
+> **Batas migrasi:** loop aplikasi, ekonomi, wave, combat data-driven, save slot,
+> menu/progres, input/controller, pengaturan, developer mode, dan kontrak
+> top-up/cloud sudah native. Skill/rig bespoke per hero/boss, cinematic Pygame,
+> plugin Play Games nyata, dan server top-up nyata **belum** diklaim parity.
+> Layanan eksternal mengembalikan status unavailable/unverified, bukan sukses
+> palsu. Kode Python tetap utuh sebagai referensi.
 
 ## Menjalankan
 
@@ -17,6 +18,7 @@ Dari root repositori:
 ```bash
 # satu kali: salin font/gambar/audio dan ekspor metadata 54 level
 python3 tools/prepare_godot_main.py
+python3 tools/prepare_godot_core.py
 
 # impor aset native, lalu jalankan
 godot --path godot_rebuild --editor --import
@@ -38,7 +40,14 @@ menghentikan aplikasi. Jalankan alat persiapan setelah mengubah aset sumber.
 | `scripts/core/AppState.gd` | Transisi splash → menu → game ↔ pause |
 | `scripts/core/FixedClock.gd` | Simulasi 60 Hz, clamp 250 ms, maksimal 4 catch-up |
 | `scripts/core/GestureTracker.gd` | Tap, double tap, long press, drag, scroll, fling |
-| `scripts/core/GameSettings.gd` | Preferensi audio/FPS di `user://godot_settings.cfg` |
+| `scripts/core/GameSettings.gd` | Preferensi audio/FPS/gameplay di `user://godot_settings.cfg` |
+| `scripts/core/MatchModel.gd` | Simulasi pertandingan, wave, combat, AI, reward |
+| `scripts/core/SaveRepository.gd` | 3 save slot, progres, statistik, voucher/top-up dedupe |
+| `scripts/core/ControllerCore.gd` | State machine controller native |
+| `scripts/core/DevMode.gd` | Developer hotkey/cheat gated debug |
+| `scripts/game/CoreGame.gd` | GameplayPort default: input, shop, dev, hasil |
+| `scripts/ports/CloudSavePort.gd` | Kontrak Play Games; default unavailable |
+| `scripts/ports/TopupPort.gd` | HTTP top-up; memerlukan MYSTIC_TOPUP_URL |
 | `scripts/core/LevelCatalog.gd` | Metadata level dan urutan next-level |
 | `scripts/audio/AudioDirector.gd` | BGM, ambient, 32 voice SFX, fade dan pause background |
 | `scripts/ui/` | Splash, menu, pause, HUD, pengaturan dan diagnostik |
@@ -79,6 +88,8 @@ Tanpa service tersebut aplikasi berjalan lokal tanpa menjanjikan sinkronisasi.
 
 ```bash
 python3 tools/prepare_godot_main.py --check
+python3 tools/prepare_godot_core.py --check
+python3 tools/test_godot_core_prepare.py
 python3 godot_rebuild/tests/validate_project.py
 python3 tools/test_godot_main_prepare.py
 godot --headless --path godot_rebuild --editor --import
@@ -98,8 +109,9 @@ CI `.github/workflows/godot-rebuild.yml` menjalankan persiapan aset, guardrail
 sumber, lint, impor, regresi, serta boot scene utama dengan Godot 4.7.2.
 Tes memakai adapter palsu hanya untuk verifikasi kontrak; bukan gameplay.
 
-Lihat [catatan migrasi dan batas parity](../docs/GODOT_MAIN_MIGRATION.md)
-dan [hasil verifikasi serta batas pengujian](../docs/GODOT_MAIN_VERIFICATION.md).
+Lihat [catatan migrasi core](../docs/GODOT_CORE_MIGRATION.md),
+[hasil verifikasi core](../docs/GODOT_CORE_VERIFICATION.md), serta catatan
+[entry point](../docs/GODOT_MAIN_MIGRATION.md) sebelumnya.
 
 ## Ekspor Android (belum diverifikasi perangkat)
 

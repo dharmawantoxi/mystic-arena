@@ -14,6 +14,7 @@ var status: Label
 var tactical_buttons: Dictionary = {}
 var skill_buttons: Dictionary = {}
 var shop_button: Button
+var item_button: Button
 
 
 func _ready() -> void:
@@ -38,6 +39,7 @@ func _ready() -> void:
 	Ui.place(skip_button, Rect2(1090, 638, 166, 58))
 	skip_button.pressed.connect(func() -> void: action_pressed.emit("skip"))
 	shop_button = _action_button("SHOP", "shop", Rect2(24, 632, 120, 64))
+	item_button = _action_button("FORGE", "item_shop", Rect2(156, 632, 120, 64))
 	var index := 0
 	for skill: String in ["q", "w", "e", "r"]:
 		skill_buttons[skill] = _action_button(
@@ -55,6 +57,7 @@ func sync_view(cinematic: bool, show_debug: bool, message: String, combat := fal
 	skip_button.visible = cinematic
 	status.text = message
 	shop_button.visible = combat and not cinematic
+	item_button.visible = combat and not cinematic
 	for button: Button in skill_buttons.values():
 		button.visible = combat and not cinematic
 
@@ -90,9 +93,13 @@ func hit_action(position: Vector2) -> String:
 			if button == pause_button:
 				return "pause"
 			return "skip" if button == skip_button else "debug"
-	for button: Button in [shop_button] + skill_buttons.values():
+	for button: Button in [shop_button, item_button] + skill_buttons.values():
 		if button.visible and button.get_rect().has_point(position):
-			return "shop" if button == shop_button else button.text.to_lower()
+			if button == shop_button:
+				return "shop"
+			if button == item_button:
+				return "item_shop"
+			return button.text.to_lower()
 	for command: String in tactical_buttons:
 		var button: Button = tactical_buttons[command]
 		if button.visible and button.get_rect().has_point(position):
@@ -123,6 +130,7 @@ func apply_safe_area(safe: Rect2) -> void:
 	debug_button.position = Vector2(left + 78, top)
 	skip_button.position = Vector2(safe.end.x - 180, safe.end.y - 82)
 	shop_button.position = Vector2(left, safe.end.y - 88)
+	item_button.position = Vector2(left + 132, safe.end.y - 88)
 	var index := 0
 	for button: Button in skill_buttons.values():
 		button.position = Vector2(safe.end.x - 422 + index * 94, safe.end.y - 98)

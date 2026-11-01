@@ -26,6 +26,12 @@ var gestures := Gesture.new()
 var settings := GameSettings.new()
 var diagnostics := Diagnostics.new()
 var audio := AudioDirector.new()
+var save_repo := SaveRepository.new()
+var cloud_port := CloudSavePort.new()
+var topup_port := TopupPort.new()
+var voucher := VoucherService.new()
+var controller := ControllerManager.new()
+var controller_cursor: ColorRect
 var splash: SplashView
 var menu: MenuView
 var hud: HudView
@@ -60,6 +66,24 @@ func _ready() -> void:
 	)
 	Engine.max_fps = settings.effective_fps(touch_mode)
 	add_child(audio)
+	add_child(cloud_port)
+	add_child(topup_port)
+	add_child(controller)
+	controller.enabled = str(settings.values.input_mode) == "controller"
+	controller.action_pressed.connect(_controller_action)
+	controller.cursor_moved.connect(_controller_cursor_moved)
+	controller.device_changed.connect(_controller_device_changed)
+	topup_port.settled.connect(_topup_settled)
+	voucher.demo_mode = OS.get_environment("MYSTIC_VOUCHER_DEMO") == "1"
+	voucher.load_allowlist(["res://voucher_codes.txt", "user://voucher_codes.txt"])
+	controller_cursor = ColorRect.new()
+	controller_cursor.color = Ui.GOLD
+	controller_cursor.custom_minimum_size = Vector2(12, 12)
+	controller_cursor.size = Vector2(12, 12)
+	controller_cursor.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	controller_cursor.visible = false
+	controller_cursor.z_index = 100
+	add_child(controller_cursor)
 	audio.apply_settings(settings.values)
 	audio.play_bgm("bgm_battle", 3.0)
 	audio.play_ambient("ambient_forest", 0.8)
@@ -77,6 +101,11 @@ func _ready() -> void:
 	game_host.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	menu = MenuView.new()
 	menu.settings = settings
+	menu.save_repo = save_repo
+	menu.core_data = CoreData.new()
+	menu.cloud_port = cloud_port
+	menu.topup_port = topup_port
+	menu.voucher = voucher
 	add_child(menu)
 	menu.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	menu.play_requested.connect(start_game)
@@ -166,6 +195,8 @@ func start_game(level: int, replay := false) -> void:
 				Time.get_ticks_msec()
 			)
 			game = IntegrationView.new()
+	if game is CoreGame:
+		game.attach_context(save_repo, settings, cloud_port, topup_port, voucher, controller)
 	game.configure(level, replay)
 	game_host.add_child(game)
 	game.next_level_requested.connect(func() -> void: pending_action = "next")
@@ -222,6 +253,9 @@ func confirm_quit() -> void:
 func _settings_changed() -> void:
 	Engine.max_fps = settings.effective_fps(touch_mode)
 	audio.apply_settings(settings.values)
+	controller.enabled = str(settings.values.input_mode) == "controller"
+	if not controller.enabled:
+		controller_cursor.visible = false
 
 
 func _release_input() -> void:
@@ -240,6 +274,7 @@ func _process(delta: float) -> void:
 	if background:
 		return
 	poll_cloud()
+	controller.poll(delta)
 	var now := Time.get_ticks_msec() / 1000.0
 	gestures.update(now)
 	if state.current == State.Kind.GAME:
@@ -261,6 +296,73 @@ func poll_cloud() -> void:
 	if is_instance_valid(cloud_service) and cloud_service.has_method("poll"):
 		cloud_service.call("poll")
 		cloud_polls += 1
+	cloud_port.poll()
+
+
+func _topup_settled(transaction: Dictionary) -> void:
+	var id := str(transaction.get("id", transaction.get("transaction_id", "")))
+	var gold := int(transaction.get("gold", 0))
+	var data := save_repo.load_slot()
+	var result := SaveRepository.grant_topup(data, id, gold, Time.get_ticks_msec())
+	if bool(result.get("ok", false)):
+		save_repo.save_slot(data)
+
+
+func _controller_device_changed(connected: bool, _device_name: String) -> void:
+	controller_cursor.visible = connected and controller.enabled
+
+
+func _controller_cursor_moved(position: Vector2) -> void:
+	if controller_cursor != null:
+		controller_cursor.position = position - Vector2(6, 6)
+
+
+func _controller_action(action: String) -> void:
+	if state.current in [State.Kind.MENU, State.Kind.PAUSE]:
+		menu.controller_action(action)
+		return
+	if state.current != State.Kind.GAME or game == null:
+		return
+	match action:
+		"confirm":
+			game.pointer_action({"kind": "tap", "pos": controller.core.cursor, "id": 0})
+		"cancel", "back":
+			_back()
+		"start":
+			_pause_requested = true
+		"shop":
+			_hud_action("shop")
+		"skill_q":
+			game.key_pressed(KEY_Q)
+		"skill_w":
+			game.key_pressed(KEY_W)
+		"skill_e":
+			game.key_pressed(KEY_E)
+		"skill_r":
+			game.key_pressed(KEY_R)
+		"stick_left":
+			debug_overlay.toggle()
+		"trigger_left", "trigger_right":
+			game.pointer_action(
+				{
+					"kind": "scroll",
+					"pos": controller.core.cursor,
+					"id": 0,
+					"value": -1.0 if action == "trigger_left" else 1.0
+				}
+			)
+		_:
+			if (
+				action.begins_with("dpad_")
+				and game is CoreGame
+				and game.model.selected_hero != null
+			):
+				var direction := Vector2(
+					float(action.get_slice("_", 1)), float(action.get_slice("_", 2))
+				)
+				game.model.selected_hero.move_toward_point(
+					game.model.selected_hero.pos + direction * 80.0
+				)
 
 
 func _flush_pending_action() -> void:
@@ -298,6 +400,14 @@ func _handle_key(event: InputEventKey) -> void:
 		return
 	if state.current == State.Kind.SPLASH:
 		splash.skip()
+	elif (
+		state.current == State.Kind.GAME
+		and game != null
+		and game.has_method("handle_dev_key")
+		and game.call("handle_dev_key", key)
+	):
+		get_viewport().set_input_as_handled()
+		return
 	elif key == KEY_F8:
 		debug_overlay.toggle()
 	elif key == KEY_ESCAPE:

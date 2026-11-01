@@ -7,6 +7,16 @@ on:
     paths:
       - 'godot_rebuild/**'
       - 'tools/prepare_godot_main.py'
+      - 'tools/prepare_godot_core.py'
+      - 'tools/test_godot_core_prepare.py'
+      - '_core.py'
+      - 'hero_balance.py'
+      - 'hero_items.py'
+      - 'bosses/boss_data.py'
+      - 'localization.py'
+      - 'topup_currency.py'
+      - 'map_components/_bundle.py'
+      - 'gdlintrc'
       - 'tools/test_godot_main_prepare.py'
       - 'mobile/cloud_save.py'
       - 'tools/test_cloud_save.py'
@@ -16,6 +26,16 @@ on:
     paths:
       - 'godot_rebuild/**'
       - 'tools/prepare_godot_main.py'
+      - 'tools/prepare_godot_core.py'
+      - 'tools/test_godot_core_prepare.py'
+      - '_core.py'
+      - 'hero_balance.py'
+      - 'hero_items.py'
+      - 'bosses/boss_data.py'
+      - 'localization.py'
+      - 'topup_currency.py'
+      - 'map_components/_bundle.py'
+      - 'gdlintrc'
       - 'tools/test_godot_main_prepare.py'
       - 'mobile/cloud_save.py'
       - 'tools/test_cloud_save.py'
@@ -43,6 +63,9 @@ jobs:
         run: |
           python3 tools/prepare_godot_main.py
           python3 tools/prepare_godot_main.py --check
+          python3 tools/prepare_godot_core.py
+          python3 tools/prepare_godot_core.py --check
+          python3 tools/test_godot_core_prepare.py
           python3 tools/test_godot_main_prepare.py
           python3 godot_rebuild/tests/validate_project.py
       - name: Python cloud-save oracle

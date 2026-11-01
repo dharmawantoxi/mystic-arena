@@ -94,8 +94,23 @@ def main() -> int:
         source = path.read_text(encoding="utf-8")
         check("Engine.has_singleton(\"Python\"" not in source, "No embedded Python assumption")
         for resource in re.findall(r'"(res://[^"]+)"', source):
-            if "%" not in resource:
+            if "%" not in resource and not resource.endswith("voucher_codes.txt"):
                 check((PROJECT / resource[6:]).exists(), f"Missing literal resource in {path.name}: {resource}")
+    core = json.loads((PROJECT / "data/core_data.json").read_text(encoding="utf-8"))
+    check(core["schema"] == 1 and core["source"] == "_core.py", "Core data schema/source")
+    check(len(core["levels"]) == 54, "Core data 54 levels")
+    check(len(core["heroes"]) >= 222, "Core data hero catalog")
+    check(len(core["bosses"]["mini"]) == 162 and len(core["bosses"]["true"]) == 54, "Core data boss catalog")
+    check(len(core["items"]) == 33, "Core data item catalog")
+    check(set(core["lanes"]) == {"top", "mid", "bot", "river"}, "Core data lanes")
+    check(core["rules"]["MINION_WAVE_INTERVAL"] == constant(ROOT / "_core.py", "MINION_WAVE_INTERVAL"), "Wave interval parity")
+    check(core["rules"]["CASTLE_SHIELD_FREE_WAVES"] == constant(ROOT / "_core.py", "CASTLE_SHIELD_FREE_WAVES"), "Castle shield parity")
+    check((PROJECT / "scenes/CoreGame.tscn").is_file(), "Native CoreGame scene exists")
+    check((PROJECT / "tests/fixtures/cloud_payload.json").is_file(), "Cloud checksum fixture exists")
+    topup = (PROJECT / "scripts/ports/TopupPort.gd").read_text(encoding="utf-8")
+    check("MYSTIC_TOPUP_URL" in topup and "unavailable" in topup, "Top-up requires configured server")
+    cloud = (PROJECT / "scripts/ports/CloudSavePort.gd").read_text(encoding="utf-8")
+    check("Play Games plugin not configured" in cloud, "Cloud default is explicitly unavailable")
     check((PROJECT / "scripts/Main.gd").is_file(), "Canonical Main.gd entry point exists")
     print(f"PASS: {checks} native project/source checks")
     return 0

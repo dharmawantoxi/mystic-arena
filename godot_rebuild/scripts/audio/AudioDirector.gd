@@ -150,7 +150,9 @@ func play_sfx(sound_name: String, volume_multiplier := 1.0, now_ms := -1) -> boo
 	var player := voices[_next_voice]
 	_next_voice = (_next_voice + 1) % voices.size()
 	var category: String = SFX[sound_name]
-	var base: float = settings.sfx_volume if category == "sfx" else 0.5
+	var base: float = (
+		settings.sfx_volume if category == "sfx" else float(settings.get("voice_volume", 0.5))
+	)
 	player.stream = streams[sound_name]
 	player.volume_db = _db(settings.master_volume * base * volume_multiplier)
 	player.play()
