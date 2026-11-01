@@ -11,6 +11,8 @@ on:
       - 'tools/prepare_godot_archetypes.py'
       - 'tools/prepare_godot_balance.py'
       - 'tools/test_godot_balance_prepare.py'
+      - 'tools/prepare_godot_items.py'
+      - 'tools/test_godot_items_prepare.py'
       - 'tools/test_godot_archetypes_prepare.py'
       - 'tools/test_godot_core_prepare.py'
       - '_core.py'
@@ -55,6 +57,8 @@ on:
       - 'tools/prepare_godot_archetypes.py'
       - 'tools/prepare_godot_balance.py'
       - 'tools/test_godot_balance_prepare.py'
+      - 'tools/prepare_godot_items.py'
+      - 'tools/test_godot_items_prepare.py'
       - 'tools/test_godot_archetypes_prepare.py'
       - 'tools/test_godot_core_prepare.py'
       - '_core.py'
@@ -120,6 +124,8 @@ jobs:
           python3 tools/test_godot_archetypes_prepare.py
           python3 tools/prepare_godot_balance.py --check
           python3 tools/test_godot_balance_prepare.py
+          python3 tools/prepare_godot_items.py --check
+          python3 tools/test_godot_items_prepare.py
           python3 tools/prepare_godot_entities.py --check
           python3 tools/test_godot_entity_prepare.py
           python3 tools/prepare_godot_render.py --check

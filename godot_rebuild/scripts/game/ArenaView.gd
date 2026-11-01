@@ -263,14 +263,28 @@ func _draw_shop() -> void:
 
 func _draw_item_shop() -> void:
 	draw_rect(Rect2(200, 120, 880, 460), Color(0.04, 0.06, 0.1, 0.96))
+	var meta: Dictionary = game.model.data.items.page_meta(game.item_page)
+	var title := (
+		"ITEM FORGE — %s %d/%d"
+		% [
+			str(meta.get("class", "")).to_upper(),
+			int(meta.get("page", 1)),
+			int(meta.get("pages", 1))
+		]
+	)
+	draw_string(font, Vector2(230, 165), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 26, Ui.GOLD)
+	var target := game.model.selected_hero
+	var target_name: String = (
+		str(target.stats.get("name", target.unit_type)) if target != null else "first hero"
+	)
 	draw_string(
 		font,
-		Vector2(230, 165),
-		"ITEM FORGE — TIER %d" % (game.item_page + 1),
+		Vector2(230, 190),
+		"BUY FOR: %s" % target_name,
 		HORIZONTAL_ALIGNMENT_LEFT,
 		-1,
-		26,
-		Ui.GOLD
+		16,
+		Ui.MUTED
 	)
 	for name: String in game.button_rects:
 		_draw_button(name, game.button_rects[name])

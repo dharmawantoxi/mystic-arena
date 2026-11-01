@@ -18,6 +18,7 @@ var burn_accum := 0.0
 var burn_tick_cd := BURN_TICK
 var burn_team := ""
 var stun_timer := 0
+var silence_timer := 0
 var armor_shred_amount := 0.0
 var armor_shred_timer := 0
 var dmg_amp_amount := 0.0
@@ -58,6 +59,8 @@ func apply(kind: String, amount: float, duration: int, source_team := "") -> voi
 				burn_team = source_team
 		"stun":
 			stun_timer = maxi(stun_timer, duration)
+		"silence":
+			silence_timer = maxi(silence_timer, duration)
 		"armor_shred":
 			if amount > armor_shred_amount or armor_shred_timer < duration:
 				armor_shred_amount = amount
@@ -119,6 +122,7 @@ func tick() -> int:
 	if anti_heal_timer == 0:
 		anti_heal_amount = 0.0
 	stun_timer = maxi(0, stun_timer - 1)
+	silence_timer = maxi(0, silence_timer - 1)
 	armor_shred_timer = maxi(0, armor_shred_timer - 1)
 	if armor_shred_timer == 0:
 		armor_shred_amount = 0.0

@@ -1,0 +1,6859 @@
+{
+  "aura_case": {
+    "boss_debuffs": [
+      [
+        "atk_slow",
+        0.3,
+        30,
+        null
+      ],
+      [
+        "anti_heal",
+        0.4,
+        30,
+        null
+      ],
+      [
+        "burn",
+        28,
+        30,
+        "blue"
+      ],
+      [
+        "anti_heal",
+        0.5,
+        30,
+        null
+      ],
+      [
+        "burn",
+        6,
+        30,
+        "blue"
+      ]
+    ],
+    "heroes": [
+      {
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 75
+      },
+      {
+        "aura_armor": 2,
+        "aura_armor_reduction": 0,
+        "aura_as": 10,
+        "aura_guard_block": 75
+      },
+      {
+        "aura_armor": 2,
+        "aura_armor_reduction": 0,
+        "aura_as": 10,
+        "aura_guard_block": 75
+      },
+      {
+        "aura_armor": 0,
+        "aura_armor_reduction": 2,
+        "aura_as": 0,
+        "aura_guard_block": 0
+      }
+    ],
+    "minion_debuffs": [
+      [
+        "atk_slow",
+        0.3,
+        30,
+        null
+      ],
+      [
+        "anti_heal",
+        0.4,
+        30,
+        null
+      ],
+      [
+        "burn",
+        28,
+        30,
+        "blue"
+      ],
+      [
+        "anti_heal",
+        0.5,
+        30,
+        null
+      ],
+      [
+        "burn",
+        6,
+        30,
+        "blue"
+      ]
+    ],
+    "minion_misses": [
+      [
+        0.18,
+        30
+      ]
+    ]
+  },
+  "class_cases": {
+    "abyss_breaker": "tank",
+    "astral_codex": "magic",
+    "basilisk_breath": "physical",
+    "cleave_axe": "physical",
+    "corroder": "physical",
+    "dead_edge": "physical",
+    "demon_maw": "physical",
+    "everfrost_guard": "tank",
+    "fenrir_chain": "physical",
+    "frostbound_eye": "physical",
+    "fulgur_scepter": "magic",
+    "gale_pike": "physical",
+    "hex_idol": "magic",
+    "holy_rapier": "physical",
+    "leviathan_heart": "tank",
+    "missing_item": "physical",
+    "monarch_wings": "physical",
+    "moon_shard": "physical",
+    "octarine_core": "magic",
+    "razor_carapace": "tank",
+    "rift_veil": "magic",
+    "runic_gavel": "magic",
+    "sage_scepter": "magic",
+    "sanguine_thorn": "physical",
+    "scarlet_bulwark": "tank",
+    "searbrand": "tank",
+    "solar_brand": "tank",
+    "spectral_charm": "magic",
+    "steel_aegis": "tank",
+    "sundering_cudgel": "physical",
+    "tempest_vane": "tank",
+    "thunder_coil": "physical",
+    "vine_rod": "magic",
+    "vital_stone": "magic"
+  },
+  "getter_cases": [
+    {
+      "getters": {
+        "armor": 2,
+        "armor_shred": null,
+        "attack_speed_mult": 1.1,
+        "bash": null,
+        "block": null,
+        "bonus_damage": 0,
+        "bonus_hp": 0,
+        "cleave": null,
+        "cooldown_reduction": 0,
+        "crit": [
+          0.0,
+          2.0
+        ],
+        "evasion": 0,
+        "gale_as_bonus": 0,
+        "guarding": false,
+        "heal_amp": 0,
+        "hp_pct": 0,
+        "hp_regen": 0,
+        "lifesteal": 0,
+        "max_hp": 1000,
+        "move_speed_pct": 0,
+        "on_attack_chain": null,
+        "range_bonus": 0,
+        "reflect_pct": 0.0,
+        "rend_crit": null,
+        "skill_amp": 0,
+        "slow_resist": 0,
+        "spell_vamp": 0,
+        "true_strike": false,
+        "veiled": false
+      },
+      "items": [],
+      "name": "empty",
+      "range": 70,
+      "role": "Fighter",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 3,
+        "aura_armor_reduction": 1,
+        "aura_as": 10,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      }
+    },
+    {
+      "getters": {
+        "armor": 2,
+        "armor_shred": null,
+        "attack_speed_mult": 1.1,
+        "bash": null,
+        "block": null,
+        "bonus_damage": 52,
+        "bonus_hp": 0,
+        "cleave": null,
+        "cooldown_reduction": 0,
+        "crit": [
+          0.25,
+          2.0
+        ],
+        "evasion": 0,
+        "gale_as_bonus": 0,
+        "guarding": false,
+        "heal_amp": 0,
+        "hp_pct": 0,
+        "hp_regen": 0,
+        "lifesteal": 0,
+        "max_hp": 1000,
+        "move_speed_pct": 0,
+        "on_attack_chain": null,
+        "range_bonus": 0,
+        "reflect_pct": 0.0,
+        "rend_crit": null,
+        "skill_amp": 0,
+        "slow_resist": 0,
+        "spell_vamp": 0,
+        "true_strike": false,
+        "veiled": false
+      },
+      "items": [
+        "dead_edge"
+      ],
+      "name": "dead_edge",
+      "range": 150,
+      "role": "Marksman",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 3,
+        "aura_armor_reduction": 1,
+        "aura_as": 10,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      }
+    },
+    {
+      "getters": {
+        "armor": 6,
+        "armor_shred": null,
+        "attack_speed_mult": 1.1,
+        "bash": null,
+        "block": null,
+        "bonus_damage": 20,
+        "bonus_hp": 0,
+        "cleave": null,
+        "cooldown_reduction": 0,
+        "crit": [
+          0.0,
+          2.0
+        ],
+        "evasion": 0,
+        "gale_as_bonus": 0,
+        "guarding": false,
+        "heal_amp": 0,
+        "hp_pct": 0,
+        "hp_regen": 0,
+        "lifesteal": 1.7,
+        "max_hp": 1000,
+        "move_speed_pct": 0,
+        "on_attack_chain": null,
+        "range_bonus": 0,
+        "reflect_pct": 0.0,
+        "rend_crit": null,
+        "skill_amp": 0,
+        "slow_resist": 0,
+        "spell_vamp": 0,
+        "true_strike": false,
+        "veiled": false
+      },
+      "items": [
+        "demon_maw"
+      ],
+      "name": "demon_maw",
+      "range": 70,
+      "role": "Fighter",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 3,
+        "aura_armor_reduction": 1,
+        "aura_as": 10,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 120,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      }
+    },
+    {
+      "getters": {
+        "armor": 2,
+        "armor_shred": null,
+        "attack_speed_mult": 1.1,
+        "bash": null,
+        "block": null,
+        "bonus_damage": 0,
+        "bonus_hp": 0,
+        "cleave": null,
+        "cooldown_reduction": 0,
+        "crit": [
+          0.0,
+          2.0
+        ],
+        "evasion": 0,
+        "gale_as_bonus": 0,
+        "guarding": false,
+        "heal_amp": 0,
+        "hp_pct": 0.35,
+        "hp_regen": 6.0,
+        "lifesteal": 0,
+        "max_hp": 1350,
+        "move_speed_pct": 0,
+        "on_attack_chain": null,
+        "range_bonus": 0,
+        "reflect_pct": 0.0,
+        "rend_crit": null,
+        "skill_amp": 0,
+        "slow_resist": 0,
+        "spell_vamp": 0,
+        "true_strike": false,
+        "veiled": false
+      },
+      "items": [
+        "leviathan_heart"
+      ],
+      "name": "leviathan",
+      "range": 70,
+      "role": "Tank",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 3,
+        "aura_armor_reduction": 1,
+        "aura_as": 10,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      }
+    },
+    {
+      "getters": {
+        "armor": 2,
+        "armor_shred": null,
+        "attack_speed_mult": 2.5,
+        "bash": null,
+        "block": null,
+        "bonus_damage": 0,
+        "bonus_hp": 0,
+        "cleave": null,
+        "cooldown_reduction": 0,
+        "crit": [
+          0.0,
+          2.0
+        ],
+        "evasion": 0,
+        "gale_as_bonus": 0,
+        "guarding": false,
+        "heal_amp": 0,
+        "hp_pct": 0,
+        "hp_regen": 0,
+        "lifesteal": 0,
+        "max_hp": 1000,
+        "move_speed_pct": 0,
+        "on_attack_chain": null,
+        "range_bonus": 0,
+        "reflect_pct": 0.0,
+        "rend_crit": null,
+        "skill_amp": 0,
+        "slow_resist": 0,
+        "spell_vamp": 0,
+        "true_strike": false,
+        "veiled": false
+      },
+      "items": [
+        "moon_shard",
+        "moon_shard"
+      ],
+      "name": "moon_shard",
+      "range": 150,
+      "role": "Marksman",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 3,
+        "aura_armor_reduction": 1,
+        "aura_as": 10,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      }
+    },
+    {
+      "getters": {
+        "armor": 2,
+        "armor_shred": null,
+        "attack_speed_mult": 1.1,
+        "bash": null,
+        "block": null,
+        "bonus_damage": 0,
+        "bonus_hp": 480,
+        "cleave": null,
+        "cooldown_reduction": 0.26,
+        "crit": [
+          0.0,
+          2.0
+        ],
+        "evasion": 0,
+        "gale_as_bonus": 0,
+        "guarding": false,
+        "heal_amp": 0,
+        "hp_pct": 0,
+        "hp_regen": 7,
+        "lifesteal": 0,
+        "max_hp": 1480,
+        "move_speed_pct": 0,
+        "on_attack_chain": null,
+        "range_bonus": 0,
+        "reflect_pct": 0.0,
+        "rend_crit": null,
+        "skill_amp": 0.4,
+        "slow_resist": 0,
+        "spell_vamp": 0.2,
+        "true_strike": false,
+        "veiled": false
+      },
+      "items": [
+        "astral_codex",
+        "sage_scepter"
+      ],
+      "name": "astral",
+      "range": 150,
+      "role": "Mage",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 3,
+        "aura_armor_reduction": 1,
+        "aura_as": 10,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      }
+    },
+    {
+      "getters": {
+        "armor": 2,
+        "armor_shred": null,
+        "attack_speed_mult": 1.1,
+        "bash": null,
+        "block": null,
+        "bonus_damage": 0,
+        "bonus_hp": 230,
+        "cleave": null,
+        "cooldown_reduction": 0,
+        "crit": [
+          0.0,
+          2.0
+        ],
+        "evasion": 1.0,
+        "gale_as_bonus": 0,
+        "guarding": false,
+        "heal_amp": 0,
+        "hp_pct": 0,
+        "hp_regen": 3,
+        "lifesteal": 0,
+        "max_hp": 1230,
+        "move_speed_pct": 0.1,
+        "on_attack_chain": null,
+        "range_bonus": 0,
+        "reflect_pct": 0.0,
+        "rend_crit": null,
+        "skill_amp": 0,
+        "slow_resist": 0,
+        "spell_vamp": 0.06,
+        "true_strike": false,
+        "veiled": false
+      },
+      "items": [
+        "spectral_charm"
+      ],
+      "name": "spectral",
+      "range": 150,
+      "role": "Mage",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 3,
+        "aura_armor_reduction": 1,
+        "aura_as": 10,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 90,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      }
+    },
+    {
+      "getters": {
+        "armor": 2,
+        "armor_shred": null,
+        "attack_speed_mult": 1.9,
+        "bash": null,
+        "block": null,
+        "bonus_damage": 18,
+        "bonus_hp": 200,
+        "cleave": null,
+        "cooldown_reduction": 0,
+        "crit": [
+          0.0,
+          2.0
+        ],
+        "evasion": 0,
+        "gale_as_bonus": 55,
+        "guarding": false,
+        "heal_amp": 0,
+        "hp_pct": 0,
+        "hp_regen": 3,
+        "lifesteal": 0,
+        "max_hp": 1200,
+        "move_speed_pct": 0,
+        "on_attack_chain": null,
+        "range_bonus": 90,
+        "reflect_pct": 0.0,
+        "rend_crit": null,
+        "skill_amp": 0,
+        "slow_resist": 0,
+        "spell_vamp": 0,
+        "true_strike": false,
+        "veiled": false
+      },
+      "items": [
+        "gale_pike"
+      ],
+      "name": "gale",
+      "range": 150,
+      "role": "Marksman",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 3,
+        "aura_armor_reduction": 1,
+        "aura_as": 10,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 90,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      }
+    },
+    {
+      "getters": {
+        "armor": 10,
+        "armor_shred": null,
+        "attack_speed_mult": 1.1,
+        "bash": null,
+        "block": null,
+        "bonus_damage": 18,
+        "bonus_hp": 0,
+        "cleave": null,
+        "cooldown_reduction": 0.1,
+        "crit": [
+          0.0,
+          2.0
+        ],
+        "evasion": 0,
+        "gale_as_bonus": 0,
+        "guarding": false,
+        "heal_amp": 0,
+        "hp_pct": 0,
+        "hp_regen": 0,
+        "lifesteal": 0,
+        "max_hp": 1000,
+        "move_speed_pct": 0,
+        "on_attack_chain": null,
+        "range_bonus": 0,
+        "reflect_pct": 0.85,
+        "rend_crit": null,
+        "skill_amp": 0,
+        "slow_resist": 0,
+        "spell_vamp": 0,
+        "true_strike": false,
+        "veiled": false
+      },
+      "items": [
+        "razor_carapace"
+      ],
+      "name": "razor",
+      "range": 70,
+      "role": "Tank",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 3,
+        "aura_armor_reduction": 1,
+        "aura_as": 10,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 90,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      }
+    },
+    {
+      "getters": {
+        "armor": 2,
+        "armor_shred": null,
+        "attack_speed_mult": 1.1,
+        "bash": null,
+        "block": null,
+        "bonus_damage": 28,
+        "bonus_hp": 250,
+        "cleave": null,
+        "cooldown_reduction": 0.15,
+        "crit": [
+          0.0,
+          2.0
+        ],
+        "evasion": 0,
+        "gale_as_bonus": 0,
+        "guarding": false,
+        "heal_amp": 0,
+        "hp_pct": 0,
+        "hp_regen": 4,
+        "lifesteal": 0,
+        "max_hp": 1250,
+        "move_speed_pct": 0,
+        "on_attack_chain": null,
+        "range_bonus": 0,
+        "reflect_pct": 0.0,
+        "rend_crit": null,
+        "skill_amp": 0,
+        "slow_resist": 0,
+        "spell_vamp": 0,
+        "true_strike": false,
+        "veiled": false
+      },
+      "items": [
+        "runic_gavel"
+      ],
+      "name": "runic",
+      "range": 150,
+      "role": "Mage",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 3,
+        "aura_armor_reduction": 1,
+        "aura_as": 10,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 0,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      }
+    },
+    {
+      "getters": {
+        "armor": 14,
+        "armor_shred": null,
+        "attack_speed_mult": 1.4,
+        "bash": null,
+        "block": [
+          0.55,
+          25
+        ],
+        "bonus_damage": 0,
+        "bonus_hp": 250,
+        "cleave": null,
+        "cooldown_reduction": 0,
+        "crit": [
+          0.0,
+          2.0
+        ],
+        "evasion": 0,
+        "gale_as_bonus": 0,
+        "guarding": false,
+        "heal_amp": 0,
+        "hp_pct": 0,
+        "hp_regen": 8,
+        "lifesteal": 0,
+        "max_hp": 1250,
+        "move_speed_pct": 0,
+        "on_attack_chain": null,
+        "range_bonus": 0,
+        "reflect_pct": 0.0,
+        "rend_crit": null,
+        "skill_amp": 0,
+        "slow_resist": 0,
+        "spell_vamp": 0,
+        "true_strike": false,
+        "veiled": false
+      },
+      "items": [
+        "steel_aegis",
+        "scarlet_bulwark"
+      ],
+      "name": "block_melee",
+      "range": 70,
+      "role": "Tank",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 3,
+        "aura_armor_reduction": 1,
+        "aura_as": 10,
+        "aura_guard_block": 40,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      }
+    },
+    {
+      "getters": {
+        "armor": 14,
+        "armor_shred": null,
+        "attack_speed_mult": 1.4,
+        "bash": null,
+        "block": [
+          0.55,
+          14
+        ],
+        "bonus_damage": 0,
+        "bonus_hp": 250,
+        "cleave": null,
+        "cooldown_reduction": 0,
+        "crit": [
+          0.0,
+          2.0
+        ],
+        "evasion": 0,
+        "gale_as_bonus": 0,
+        "guarding": false,
+        "heal_amp": 0,
+        "hp_pct": 0,
+        "hp_regen": 8,
+        "lifesteal": 0,
+        "max_hp": 1250,
+        "move_speed_pct": 0,
+        "on_attack_chain": null,
+        "range_bonus": 0,
+        "reflect_pct": 0.0,
+        "rend_crit": null,
+        "skill_amp": 0,
+        "slow_resist": 0,
+        "spell_vamp": 0,
+        "true_strike": false,
+        "veiled": false
+      },
+      "items": [
+        "steel_aegis",
+        "scarlet_bulwark"
+      ],
+      "name": "block_ranged",
+      "range": 150,
+      "role": "Marksman",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 3,
+        "aura_armor_reduction": 1,
+        "aura_as": 10,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      }
+    },
+    {
+      "getters": {
+        "armor": 2,
+        "armor_shred": [
+          6,
+          360
+        ],
+        "attack_speed_mult": 1.1,
+        "bash": null,
+        "block": null,
+        "bonus_damage": 65,
+        "bonus_hp": 0,
+        "cleave": null,
+        "cooldown_reduction": 0,
+        "crit": [
+          0.0,
+          2.0
+        ],
+        "evasion": 0,
+        "gale_as_bonus": 0,
+        "guarding": false,
+        "heal_amp": 0,
+        "hp_pct": 0,
+        "hp_regen": 0,
+        "lifesteal": 0,
+        "max_hp": 1000,
+        "move_speed_pct": 0,
+        "on_attack_chain": null,
+        "range_bonus": 0,
+        "reflect_pct": 0.0,
+        "rend_crit": null,
+        "skill_amp": 0,
+        "slow_resist": 0,
+        "spell_vamp": 0,
+        "true_strike": false,
+        "veiled": false
+      },
+      "items": [
+        "corroder"
+      ],
+      "name": "corroder",
+      "range": 70,
+      "role": "Fighter",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 3,
+        "aura_armor_reduction": 1,
+        "aura_as": 10,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      }
+    },
+    {
+      "getters": {
+        "armor": 2,
+        "armor_shred": null,
+        "attack_speed_mult": 1.4,
+        "bash": null,
+        "block": null,
+        "bonus_damage": 30,
+        "bonus_hp": 250,
+        "cleave": null,
+        "cooldown_reduction": 0,
+        "crit": [
+          0.0,
+          2.0
+        ],
+        "evasion": 0,
+        "gale_as_bonus": 0,
+        "guarding": false,
+        "heal_amp": 0,
+        "hp_pct": 0,
+        "hp_regen": 0,
+        "lifesteal": 0,
+        "max_hp": 1250,
+        "move_speed_pct": 0,
+        "on_attack_chain": {
+          "chance": 1.0,
+          "damage": 45,
+          "name": "Arc Chain",
+          "radius": 240,
+          "targets": 3
+        },
+        "range_bonus": 0,
+        "reflect_pct": 0.0,
+        "rend_crit": null,
+        "skill_amp": 0,
+        "slow_resist": 0,
+        "spell_vamp": 0,
+        "true_strike": false,
+        "veiled": false
+      },
+      "items": [
+        "fenrir_chain"
+      ],
+      "name": "fenrir",
+      "range": 70,
+      "role": "Fighter",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 3,
+        "aura_armor_reduction": 1,
+        "aura_as": 10,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      }
+    },
+    {
+      "getters": {
+        "armor": 2,
+        "armor_shred": null,
+        "attack_speed_mult": 1.35,
+        "bash": {
+          "chance": 1.0,
+          "cooldown": 140,
+          "damage": 55,
+          "stun": 54
+        },
+        "block": null,
+        "bonus_damage": 83,
+        "bonus_hp": 300,
+        "cleave": null,
+        "cooldown_reduction": 0,
+        "crit": [
+          0.0,
+          2.0
+        ],
+        "evasion": 0,
+        "gale_as_bonus": 0,
+        "guarding": false,
+        "heal_amp": 0.16,
+        "hp_pct": 0,
+        "hp_regen": 3,
+        "lifesteal": 0,
+        "max_hp": 1300,
+        "move_speed_pct": 0,
+        "on_attack_chain": null,
+        "range_bonus": 0,
+        "reflect_pct": 0.0,
+        "rend_crit": null,
+        "skill_amp": 0,
+        "slow_resist": 0.3,
+        "spell_vamp": 0,
+        "true_strike": true,
+        "veiled": false
+      },
+      "items": [
+        "abyss_breaker",
+        "sundering_cudgel"
+      ],
+      "name": "abyss",
+      "range": 70,
+      "role": "Tank",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 3,
+        "aura_armor_reduction": 1,
+        "aura_as": 10,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      }
+    },
+    {
+      "getters": {
+        "armor": 2,
+        "armor_shred": null,
+        "attack_speed_mult": 1.4,
+        "bash": null,
+        "block": null,
+        "bonus_damage": 46,
+        "bonus_hp": 510,
+        "cleave": null,
+        "cooldown_reduction": 0,
+        "crit": [
+          0.0,
+          2.0
+        ],
+        "evasion": 0,
+        "gale_as_bonus": 0,
+        "guarding": false,
+        "heal_amp": 0,
+        "hp_pct": 0,
+        "hp_regen": 7,
+        "lifesteal": 0,
+        "max_hp": 1510,
+        "move_speed_pct": 0,
+        "on_attack_chain": null,
+        "range_bonus": 0,
+        "reflect_pct": 0.0,
+        "rend_crit": null,
+        "skill_amp": 0,
+        "slow_resist": 0,
+        "spell_vamp": 0,
+        "true_strike": false,
+        "veiled": false
+      },
+      "items": [
+        "frostbound_eye",
+        "basilisk_breath"
+      ],
+      "name": "frost_miasma",
+      "range": 150,
+      "role": "Marksman",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 3,
+        "aura_armor_reduction": 1,
+        "aura_as": 10,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      }
+    },
+    {
+      "getters": {
+        "armor": 2,
+        "armor_shred": null,
+        "attack_speed_mult": 1.1,
+        "bash": null,
+        "block": null,
+        "bonus_damage": 15,
+        "bonus_hp": 240,
+        "cleave": null,
+        "cooldown_reduction": 0,
+        "crit": [
+          0.0,
+          2.0
+        ],
+        "evasion": 0,
+        "gale_as_bonus": 0,
+        "guarding": false,
+        "heal_amp": 0,
+        "hp_pct": 0,
+        "hp_regen": 3,
+        "lifesteal": 0,
+        "max_hp": 1240,
+        "move_speed_pct": 0,
+        "on_attack_chain": null,
+        "range_bonus": 0,
+        "reflect_pct": 0.0,
+        "rend_crit": null,
+        "skill_amp": 0,
+        "slow_resist": 0,
+        "spell_vamp": 0.05,
+        "true_strike": false,
+        "veiled": false
+      },
+      "items": [
+        "vine_rod"
+      ],
+      "name": "vine",
+      "range": 150,
+      "role": "Mage",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 3,
+        "aura_armor_reduction": 1,
+        "aura_as": 10,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      }
+    },
+    {
+      "getters": {
+        "armor": 2,
+        "armor_shred": null,
+        "attack_speed_mult": 1.7,
+        "bash": null,
+        "block": null,
+        "bonus_damage": 76,
+        "bonus_hp": 580,
+        "cleave": null,
+        "cooldown_reduction": 0.33,
+        "crit": [
+          0.0,
+          2.0
+        ],
+        "evasion": 0.5,
+        "gale_as_bonus": 0,
+        "guarding": false,
+        "heal_amp": 0,
+        "hp_pct": 0,
+        "hp_regen": 6.0,
+        "lifesteal": 0,
+        "max_hp": 1580,
+        "move_speed_pct": 0,
+        "on_attack_chain": null,
+        "range_bonus": 0,
+        "reflect_pct": 0.0,
+        "rend_crit": null,
+        "skill_amp": 0.25,
+        "slow_resist": 0,
+        "spell_vamp": 0.22,
+        "true_strike": false,
+        "veiled": false
+      },
+      "items": [
+        "octarine_core",
+        "astral_codex",
+        "monarch_wings",
+        "monarch_wings"
+      ],
+      "name": "caps",
+      "range": 150,
+      "role": "Mage",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 3,
+        "aura_armor_reduction": 1,
+        "aura_as": 10,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      }
+    }
+  ],
+  "mechanics": {
+    "en": {
+      "abyss_breaker": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Damage: 35"
+        ],
+        [
+          "bullet",
+          "• Max HP: 300"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 3"
+        ],
+        [
+          "bullet",
+          "• Incoming Heal: 16%"
+        ],
+        [
+          "bullet",
+          "• Slow Resist: 30%"
+        ],
+        [
+          "header",
+          "[ACTIVE] Overwhelm"
+        ],
+        [
+          "bullet",
+          "• Stun: 1.2s"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 25s"
+        ],
+        [
+          "header",
+          "[BASH]"
+        ],
+        [
+          "bullet",
+          "• Chance: 22%"
+        ],
+        [
+          "bullet",
+          "• Damage: 55"
+        ],
+        [
+          "bullet",
+          "• Stun: 0.9s"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 2.33333s"
+        ]
+      ],
+      "astral_codex": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Max HP: 280"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 4"
+        ],
+        [
+          "bullet",
+          "• Cooldown Reduction: 18%"
+        ],
+        [
+          "bullet",
+          "• Spell Lifesteal: 12%"
+        ],
+        [
+          "bullet",
+          "• Skill Amp: 25%"
+        ],
+        [
+          "header",
+          "[ACTIVE] Arcane Nova"
+        ],
+        [
+          "bullet",
+          "• Trigger Enemies: 2"
+        ],
+        [
+          "bullet",
+          "• Radius: 260"
+        ],
+        [
+          "bullet",
+          "• Damage: 150"
+        ],
+        [
+          "bullet",
+          "• Silence Duration: 1.5s"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 24s"
+        ]
+      ],
+      "basilisk_breath": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Damage: 26"
+        ],
+        [
+          "bullet",
+          "• Attack Speed: 30"
+        ],
+        [
+          "bullet",
+          "• Max HP: 260"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 3"
+        ],
+        [
+          "header",
+          "[ON-ATTACK] Miasma"
+        ],
+        [
+          "bullet",
+          "• Poison (% Max HP/tick): 2.2%"
+        ],
+        [
+          "bullet",
+          "• Tick Interval: 0.5s"
+        ],
+        [
+          "bullet",
+          "• Duration: 3s"
+        ],
+        [
+          "bullet",
+          "• Damage Cap: 60"
+        ],
+        [
+          "header",
+          "[MULTISHOT] Polycephaly"
+        ],
+        [
+          "bullet",
+          "• Chance: 30%"
+        ],
+        [
+          "bullet",
+          "• Targets: 2"
+        ],
+        [
+          "bullet",
+          "• Radius: 200"
+        ],
+        [
+          "bullet",
+          "• Extra Shot Damage: 70%"
+        ]
+      ],
+      "cleave_axe": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Damage: 34"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 3.0"
+        ],
+        [
+          "header",
+          "[PASSIVE] Cleave"
+        ],
+        [
+          "bullet",
+          "• Cleave Damage: 50%"
+        ],
+        [
+          "bullet",
+          "• Cleave Radius: 110"
+        ]
+      ],
+      "corroder": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Damage: 65"
+        ],
+        [
+          "header",
+          "[PASSIVE] Corrosion"
+        ],
+        [
+          "bullet",
+          "• Armor Shred: 6"
+        ],
+        [
+          "bullet",
+          "• Duration: 6s"
+        ]
+      ],
+      "dead_edge": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Damage: 52"
+        ],
+        [
+          "bullet",
+          "• Crit Chance: 25%"
+        ],
+        [
+          "bullet",
+          "• Crit Multiplier: x2"
+        ]
+      ],
+      "demon_maw": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Damage: 20"
+        ],
+        [
+          "bullet",
+          "• Armor: 4"
+        ],
+        [
+          "bullet",
+          "• Lifesteal: 20%"
+        ],
+        [
+          "header",
+          "[ACTIVE] Blood Frenzy"
+        ],
+        [
+          "bullet",
+          "• HP Threshold: 35%"
+        ],
+        [
+          "bullet",
+          "• Lifesteal Bonus: 120%"
+        ],
+        [
+          "bullet",
+          "• Duration: 5s"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 25s"
+        ]
+      ],
+      "everfrost_guard": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Armor: 10"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 5"
+        ],
+        [
+          "bullet",
+          "• Cooldown Reduction: 10%"
+        ],
+        [
+          "header",
+          "[ACTIVE] Arctic Blast"
+        ],
+        [
+          "bullet",
+          "• Trigger Enemies: 2"
+        ],
+        [
+          "bullet",
+          "• Radius: 280"
+        ],
+        [
+          "bullet",
+          "• Damage: 130"
+        ],
+        [
+          "bullet",
+          "• Move Slow: 45%"
+        ],
+        [
+          "bullet",
+          "• Slow Duration: 3.5s"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 24s"
+        ],
+        [
+          "header",
+          "[AURA] Freezing Aura"
+        ],
+        [
+          "bullet",
+          "• Enemy Radius: 300"
+        ],
+        [
+          "bullet",
+          "• Enemy AS Reduction: 30%"
+        ],
+        [
+          "bullet",
+          "• Enemy Anti-Heal: 40%"
+        ]
+      ],
+      "fenrir_chain": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Damage: 30"
+        ],
+        [
+          "bullet",
+          "• Attack Speed: 30"
+        ],
+        [
+          "bullet",
+          "• Max HP: 250"
+        ],
+        [
+          "header",
+          "[ACTIVE] Binding Chains"
+        ],
+        [
+          "bullet",
+          "• Trigger Enemies: 2"
+        ],
+        [
+          "bullet",
+          "• Trigger Radius: 220"
+        ],
+        [
+          "bullet",
+          "• Root Radius: 220"
+        ],
+        [
+          "bullet",
+          "• Root Duration: 1.2s"
+        ],
+        [
+          "bullet",
+          "• Damage: 80"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 18s"
+        ],
+        [
+          "header",
+          "[ON-ATTACK] Arc Chain"
+        ],
+        [
+          "bullet",
+          "• Chance: 20%"
+        ],
+        [
+          "bullet",
+          "• Damage: 45"
+        ],
+        [
+          "bullet",
+          "• Targets: 3"
+        ],
+        [
+          "bullet",
+          "• Radius: 240"
+        ]
+      ],
+      "frostbound_eye": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Damage: 20"
+        ],
+        [
+          "bullet",
+          "• Max HP: 250"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 4"
+        ],
+        [
+          "header",
+          "[ON-ATTACK] Frostbite"
+        ],
+        [
+          "bullet",
+          "• Move Slow: 28%"
+        ],
+        [
+          "bullet",
+          "• Attack Slow: 28%"
+        ],
+        [
+          "bullet",
+          "• Anti-Heal: 45%"
+        ],
+        [
+          "bullet",
+          "• Duration: 3s"
+        ]
+      ],
+      "fulgur_scepter": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Damage: 15"
+        ],
+        [
+          "bullet",
+          "• Max HP: 200"
+        ],
+        [
+          "bullet",
+          "• Skill Amp: 10%"
+        ],
+        [
+          "bullet",
+          "• Spell Lifesteal: 8%"
+        ],
+        [
+          "header",
+          "[ACTIVE] Energy Blast"
+        ],
+        [
+          "bullet",
+          "• Damage: 300"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 18s"
+        ]
+      ],
+      "gale_pike": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Damage: 18"
+        ],
+        [
+          "bullet",
+          "• Attack Speed: 25"
+        ],
+        [
+          "bullet",
+          "• Max HP: 200"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 3"
+        ],
+        [
+          "bullet",
+          "• Attack Range Bonus: 90"
+        ],
+        [
+          "header",
+          "[ACTIVE] Gale Leap"
+        ],
+        [
+          "bullet",
+          "• HP Threshold: 40%"
+        ],
+        [
+          "bullet",
+          "• Dash Distance: 130"
+        ],
+        [
+          "bullet",
+          "• Attack Speed Bonus: 55"
+        ],
+        [
+          "bullet",
+          "• Duration: 3s"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 25s"
+        ]
+      ],
+      "hex_idol": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Max HP: 250"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 4"
+        ],
+        [
+          "bullet",
+          "• Spell Lifesteal: 6%"
+        ],
+        [
+          "bullet",
+          "• Cooldown Reduction: 10%"
+        ],
+        [
+          "header",
+          "[ACTIVE] Hexcraft"
+        ],
+        [
+          "bullet",
+          "• Stun: 2.5s"
+        ],
+        [
+          "bullet",
+          "• Silence: 2.5s"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 30s"
+        ]
+      ],
+      "holy_rapier": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Damage: 120"
+        ]
+      ],
+      "leviathan_heart": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Max HP: 35%"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 6.0"
+        ],
+        [
+          "header",
+          "[PASSIVE] Leviathan Vitality"
+        ],
+        [
+          "bullet",
+          "• Out-of-Combat Regen: 1.5%"
+        ],
+        [
+          "bullet",
+          "• Combat Timeout: 5s"
+        ]
+      ],
+      "monarch_wings": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Damage: 38"
+        ],
+        [
+          "bullet",
+          "• Attack Speed: 30"
+        ],
+        [
+          "bullet",
+          "• Evasion: 28%"
+        ]
+      ],
+      "moon_shard": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Attack Speed: 75"
+        ]
+      ],
+      "octarine_core": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Max HP: 300"
+        ],
+        [
+          "bullet",
+          "• Cooldown Reduction: 15%"
+        ],
+        [
+          "bullet",
+          "• Spell Lifesteal: 10%"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 2.0"
+        ]
+      ],
+      "razor_carapace": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Damage: 18"
+        ],
+        [
+          "bullet",
+          "• Armor: 8"
+        ],
+        [
+          "bullet",
+          "• Cooldown Reduction: 10%"
+        ],
+        [
+          "header",
+          "[ACTIVE] Thornmail"
+        ],
+        [
+          "bullet",
+          "• HP Threshold: 55%"
+        ],
+        [
+          "bullet",
+          "• Damage Reflect: 85%"
+        ],
+        [
+          "bullet",
+          "• Duration: 4.5s"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 25s"
+        ]
+      ],
+      "rift_veil": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Max HP: 260"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 4"
+        ],
+        [
+          "bullet",
+          "• Spell Lifesteal: 6%"
+        ],
+        [
+          "header",
+          "[ACTIVE] Discord Field"
+        ],
+        [
+          "bullet",
+          "• Trigger Enemies: 2"
+        ],
+        [
+          "bullet",
+          "• Radius: 320"
+        ],
+        [
+          "bullet",
+          "• Damage Amp: 15%"
+        ],
+        [
+          "bullet",
+          "• Duration: 6s"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 20s"
+        ]
+      ],
+      "runic_gavel": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Damage: 28"
+        ],
+        [
+          "bullet",
+          "• Max HP: 250"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 4"
+        ],
+        [
+          "bullet",
+          "• Cooldown Reduction: 15%"
+        ],
+        [
+          "header",
+          "[PASSIVE] Empower Strike"
+        ],
+        [
+          "bullet",
+          "• Charge Time: 9s"
+        ],
+        [
+          "bullet",
+          "• Damage: 130"
+        ]
+      ],
+      "sage_scepter": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Max HP: 200"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 3"
+        ],
+        [
+          "bullet",
+          "• Skill Amp: 15%"
+        ],
+        [
+          "bullet",
+          "• Spell Lifesteal: 8%"
+        ],
+        [
+          "bullet",
+          "• Cooldown Reduction: 8%"
+        ]
+      ],
+      "sanguine_thorn": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Damage: 25"
+        ],
+        [
+          "bullet",
+          "• Attack Speed: 60"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 5"
+        ],
+        [
+          "header",
+          "[ACTIVE] Soul Rend"
+        ],
+        [
+          "bullet",
+          "• Duration: 5s"
+        ],
+        [
+          "bullet",
+          "• Crit Multiplier: x1.5"
+        ],
+        [
+          "bullet",
+          "• Damage Amp: 30%"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 18s"
+        ]
+      ],
+      "scarlet_bulwark": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Max HP: 250"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 8"
+        ],
+        [
+          "bullet",
+          "• Armor: 6"
+        ],
+        [
+          "header",
+          "[ACTIVE] Bulwark Guard"
+        ],
+        [
+          "bullet",
+          "• HP Threshold: 45%"
+        ],
+        [
+          "bullet",
+          "• Ally Radius: 320"
+        ],
+        [
+          "bullet",
+          "• Base Block: 35"
+        ],
+        [
+          "bullet",
+          "• Block (% Max HP): 2%"
+        ],
+        [
+          "bullet",
+          "• Duration: 7s"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 40s"
+        ],
+        [
+          "header",
+          "[BLOCK]"
+        ],
+        [
+          "bullet",
+          "• Chance: 55%"
+        ],
+        [
+          "bullet",
+          "• Block (Melee): 25"
+        ],
+        [
+          "bullet",
+          "• Block (Ranged): 14"
+        ]
+      ],
+      "searbrand": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Damage: 20"
+        ],
+        [
+          "bullet",
+          "• Max HP: 320"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 6"
+        ],
+        [
+          "bullet",
+          "• Cooldown Reduction: 15%"
+        ],
+        [
+          "header",
+          "[ACTIVE] Brand Burst"
+        ],
+        [
+          "bullet",
+          "• Trigger Enemies: 2"
+        ],
+        [
+          "bullet",
+          "• Radius: 320"
+        ],
+        [
+          "bullet",
+          "• Damage: 110"
+        ],
+        [
+          "bullet",
+          "• Burn (dmg/s): 22"
+        ],
+        [
+          "bullet",
+          "• Burn Duration: 3s"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 18s"
+        ],
+        [
+          "header",
+          "[AURA] Cauterize"
+        ],
+        [
+          "bullet",
+          "• Enemy Radius: 300"
+        ],
+        [
+          "bullet",
+          "• Enemy Anti-Heal: 50%"
+        ],
+        [
+          "bullet",
+          "• Burn (dmg/s): 6"
+        ]
+      ],
+      "solar_brand": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Damage: 30"
+        ],
+        [
+          "bullet",
+          "• Max HP: 280"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 5"
+        ],
+        [
+          "header",
+          "[AURA] Scorched Earth"
+        ],
+        [
+          "bullet",
+          "• Enemy Radius: 280"
+        ],
+        [
+          "bullet",
+          "• Burn (dmg/s): 28"
+        ],
+        [
+          "bullet",
+          "• Enemy Miss Chance: 18%"
+        ]
+      ],
+      "spectral_charm": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Max HP: 230"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 3"
+        ],
+        [
+          "bullet",
+          "• Move Speed: 10%"
+        ],
+        [
+          "bullet",
+          "• Spell Lifesteal: 6%"
+        ],
+        [
+          "header",
+          "[ACTIVE] Spectral Form"
+        ],
+        [
+          "bullet",
+          "• HP Threshold: 30%"
+        ],
+        [
+          "bullet",
+          "• Duration: 2.5s"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 25s"
+        ]
+      ],
+      "steel_aegis": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Armor: 6"
+        ],
+        [
+          "bullet",
+          "• Attack Speed: 30"
+        ],
+        [
+          "header",
+          "[AURA] Steel Aura"
+        ],
+        [
+          "bullet",
+          "• Ally Radius: 320"
+        ],
+        [
+          "bullet",
+          "• Ally Armor: 2"
+        ],
+        [
+          "bullet",
+          "• Ally Attack Speed: 10"
+        ],
+        [
+          "bullet",
+          "• Enemy Radius: 320"
+        ],
+        [
+          "bullet",
+          "• Enemy Armor Reduction: 2"
+        ]
+      ],
+      "sundering_cudgel": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Damage: 48"
+        ],
+        [
+          "bullet",
+          "• Attack Speed: 25"
+        ],
+        [
+          "header",
+          "[BASH] Piercing Bash"
+        ],
+        [
+          "bullet",
+          "• Chance: 28%"
+        ],
+        [
+          "bullet",
+          "• Damage: 55"
+        ],
+        [
+          "bullet",
+          "• Stun: 0.25s"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 2s"
+        ]
+      ],
+      "tempest_vane": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Max HP: 250"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 4"
+        ],
+        [
+          "bullet",
+          "• Move Speed: 12%"
+        ],
+        [
+          "header",
+          "[ACTIVE] Tempest Veil"
+        ],
+        [
+          "bullet",
+          "• HP Threshold: 40%"
+        ],
+        [
+          "bullet",
+          "• Duration: 2.5s"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 30s"
+        ]
+      ],
+      "thunder_coil": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Damage: 25"
+        ],
+        [
+          "bullet",
+          "• Attack Speed: 65"
+        ],
+        [
+          "header",
+          "[ACTIVE] Static Charge"
+        ],
+        [
+          "bullet",
+          "• Proc Chance: 20%"
+        ],
+        [
+          "bullet",
+          "• Duration: 8s"
+        ],
+        [
+          "bullet",
+          "• Tick Interval: 0.5s"
+        ],
+        [
+          "bullet",
+          "• Damage: 65"
+        ],
+        [
+          "bullet",
+          "• Targets: 4"
+        ],
+        [
+          "bullet",
+          "• Radius: 260"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 20s"
+        ],
+        [
+          "header",
+          "[ON-ATTACK] Arc Lightning"
+        ],
+        [
+          "bullet",
+          "• Chance: 22%"
+        ],
+        [
+          "bullet",
+          "• Damage: 40"
+        ],
+        [
+          "bullet",
+          "• Targets: 3"
+        ],
+        [
+          "bullet",
+          "• Radius: 240"
+        ]
+      ],
+      "vine_rod": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Damage: 15"
+        ],
+        [
+          "bullet",
+          "• Max HP: 240"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 3"
+        ],
+        [
+          "bullet",
+          "• Spell Lifesteal: 5%"
+        ],
+        [
+          "header",
+          "[ON-ATTACK] Entangle"
+        ],
+        [
+          "bullet",
+          "• Root Duration: 1s"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 9s"
+        ]
+      ],
+      "vital_stone": [
+        [
+          "header",
+          "[STATS]"
+        ],
+        [
+          "bullet",
+          "• Max HP: 320"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 6"
+        ],
+        [
+          "bullet",
+          "• Spell Lifesteal: 20%"
+        ],
+        [
+          "header",
+          "[ACTIVE] Vitality Pact"
+        ],
+        [
+          "bullet",
+          "• HP Threshold: 35%"
+        ],
+        [
+          "bullet",
+          "• Heal (% Max HP): 25%"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 45s"
+        ]
+      ]
+    },
+    "id": {
+      "abyss_breaker": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Damage: 35"
+        ],
+        [
+          "bullet",
+          "• Max HP: 300"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 3"
+        ],
+        [
+          "bullet",
+          "• Heal Diterima: 16%"
+        ],
+        [
+          "bullet",
+          "• Tahan Slow: 30%"
+        ],
+        [
+          "header",
+          "[AKTIF] Overwhelm"
+        ],
+        [
+          "bullet",
+          "• Stun: 1.2 dtk"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 25 dtk"
+        ],
+        [
+          "header",
+          "[BASH]"
+        ],
+        [
+          "bullet",
+          "• Peluang: 22%"
+        ],
+        [
+          "bullet",
+          "• Damage: 55"
+        ],
+        [
+          "bullet",
+          "• Stun: 0.9 dtk"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 2.33333 dtk"
+        ]
+      ],
+      "astral_codex": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Max HP: 280"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 4"
+        ],
+        [
+          "bullet",
+          "• Cooldown Reduction: 18%"
+        ],
+        [
+          "bullet",
+          "• Spell Lifesteal: 12%"
+        ],
+        [
+          "bullet",
+          "• Skill Amp: 25%"
+        ],
+        [
+          "header",
+          "[AKTIF] Arcane Nova"
+        ],
+        [
+          "bullet",
+          "• Pemicu Musuh Dekat: 2"
+        ],
+        [
+          "bullet",
+          "• Radius: 260"
+        ],
+        [
+          "bullet",
+          "• Damage: 150"
+        ],
+        [
+          "bullet",
+          "• Durasi Silence: 1.5 dtk"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 24 dtk"
+        ]
+      ],
+      "basilisk_breath": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Damage: 26"
+        ],
+        [
+          "bullet",
+          "• Attack Speed: 30"
+        ],
+        [
+          "bullet",
+          "• Max HP: 260"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 3"
+        ],
+        [
+          "header",
+          "[EFEK SERANGAN] Miasma"
+        ],
+        [
+          "bullet",
+          "• Racun (% Max HP/tick): 2.2%"
+        ],
+        [
+          "bullet",
+          "• Interval Tick: 0.5 dtk"
+        ],
+        [
+          "bullet",
+          "• Durasi: 3 dtk"
+        ],
+        [
+          "bullet",
+          "• Batas Damage: 60"
+        ],
+        [
+          "header",
+          "[MULTISHOT] Polycephaly"
+        ],
+        [
+          "bullet",
+          "• Peluang: 30%"
+        ],
+        [
+          "bullet",
+          "• Jumlah Target: 2"
+        ],
+        [
+          "bullet",
+          "• Radius: 200"
+        ],
+        [
+          "bullet",
+          "• Damage Tembakan Ekstra: 70%"
+        ]
+      ],
+      "cleave_axe": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Damage: 34"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 3.0"
+        ],
+        [
+          "header",
+          "[PASIF] Cleave"
+        ],
+        [
+          "bullet",
+          "• Splash Damage: 50%"
+        ],
+        [
+          "bullet",
+          "• Radius Splash: 110"
+        ]
+      ],
+      "corroder": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Damage: 65"
+        ],
+        [
+          "header",
+          "[PASIF] Corrosion"
+        ],
+        [
+          "bullet",
+          "• Kikis Armor: 6"
+        ],
+        [
+          "bullet",
+          "• Durasi: 6 dtk"
+        ]
+      ],
+      "dead_edge": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Damage: 52"
+        ],
+        [
+          "bullet",
+          "• Peluang Crit: 25%"
+        ],
+        [
+          "bullet",
+          "• Pengali Crit: x2"
+        ]
+      ],
+      "demon_maw": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Damage: 20"
+        ],
+        [
+          "bullet",
+          "• Armor: 4"
+        ],
+        [
+          "bullet",
+          "• Lifesteal: 20%"
+        ],
+        [
+          "header",
+          "[AKTIF] Blood Frenzy"
+        ],
+        [
+          "bullet",
+          "• Ambang HP: 35%"
+        ],
+        [
+          "bullet",
+          "• Bonus Lifesteal: 120%"
+        ],
+        [
+          "bullet",
+          "• Durasi: 5 dtk"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 25 dtk"
+        ]
+      ],
+      "everfrost_guard": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Armor: 10"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 5"
+        ],
+        [
+          "bullet",
+          "• Cooldown Reduction: 10%"
+        ],
+        [
+          "header",
+          "[AKTIF] Arctic Blast"
+        ],
+        [
+          "bullet",
+          "• Pemicu Musuh Dekat: 2"
+        ],
+        [
+          "bullet",
+          "• Radius: 280"
+        ],
+        [
+          "bullet",
+          "• Damage: 130"
+        ],
+        [
+          "bullet",
+          "• Slow Gerak: 45%"
+        ],
+        [
+          "bullet",
+          "• Durasi Slow: 3.5 dtk"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 24 dtk"
+        ],
+        [
+          "header",
+          "[AURA] Freezing Aura"
+        ],
+        [
+          "bullet",
+          "• Radius Musuh: 300"
+        ],
+        [
+          "bullet",
+          "• AS Musuh Berkurang: 30%"
+        ],
+        [
+          "bullet",
+          "• Anti-Heal Musuh: 40%"
+        ]
+      ],
+      "fenrir_chain": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Damage: 30"
+        ],
+        [
+          "bullet",
+          "• Attack Speed: 30"
+        ],
+        [
+          "bullet",
+          "• Max HP: 250"
+        ],
+        [
+          "header",
+          "[AKTIF] Binding Chains"
+        ],
+        [
+          "bullet",
+          "• Pemicu Musuh Dekat: 2"
+        ],
+        [
+          "bullet",
+          "• Radius Pemicu: 220"
+        ],
+        [
+          "bullet",
+          "• Radius Root: 220"
+        ],
+        [
+          "bullet",
+          "• Durasi Root: 1.2 dtk"
+        ],
+        [
+          "bullet",
+          "• Damage: 80"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 18 dtk"
+        ],
+        [
+          "header",
+          "[EFEK SERANGAN] Arc Chain"
+        ],
+        [
+          "bullet",
+          "• Peluang: 20%"
+        ],
+        [
+          "bullet",
+          "• Damage: 45"
+        ],
+        [
+          "bullet",
+          "• Jumlah Target: 3"
+        ],
+        [
+          "bullet",
+          "• Radius: 240"
+        ]
+      ],
+      "frostbound_eye": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Damage: 20"
+        ],
+        [
+          "bullet",
+          "• Max HP: 250"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 4"
+        ],
+        [
+          "header",
+          "[EFEK SERANGAN] Frostbite"
+        ],
+        [
+          "bullet",
+          "• Slow Gerak: 28%"
+        ],
+        [
+          "bullet",
+          "• Slow Serang: 28%"
+        ],
+        [
+          "bullet",
+          "• Anti-Heal: 45%"
+        ],
+        [
+          "bullet",
+          "• Durasi: 3 dtk"
+        ]
+      ],
+      "fulgur_scepter": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Damage: 15"
+        ],
+        [
+          "bullet",
+          "• Max HP: 200"
+        ],
+        [
+          "bullet",
+          "• Skill Amp: 10%"
+        ],
+        [
+          "bullet",
+          "• Spell Lifesteal: 8%"
+        ],
+        [
+          "header",
+          "[AKTIF] Energy Blast"
+        ],
+        [
+          "bullet",
+          "• Damage: 300"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 18 dtk"
+        ]
+      ],
+      "gale_pike": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Damage: 18"
+        ],
+        [
+          "bullet",
+          "• Attack Speed: 25"
+        ],
+        [
+          "bullet",
+          "• Max HP: 200"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 3"
+        ],
+        [
+          "bullet",
+          "• Bonus Jangkauan: 90"
+        ],
+        [
+          "header",
+          "[AKTIF] Gale Leap"
+        ],
+        [
+          "bullet",
+          "• Ambang HP: 40%"
+        ],
+        [
+          "bullet",
+          "• Jarak Dorong: 130"
+        ],
+        [
+          "bullet",
+          "• Bonus Attack Speed: 55"
+        ],
+        [
+          "bullet",
+          "• Durasi: 3 dtk"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 25 dtk"
+        ]
+      ],
+      "hex_idol": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Max HP: 250"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 4"
+        ],
+        [
+          "bullet",
+          "• Spell Lifesteal: 6%"
+        ],
+        [
+          "bullet",
+          "• Cooldown Reduction: 10%"
+        ],
+        [
+          "header",
+          "[AKTIF] Hexcraft"
+        ],
+        [
+          "bullet",
+          "• Stun: 2.5 dtk"
+        ],
+        [
+          "bullet",
+          "• Silence: 2.5 dtk"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 30 dtk"
+        ]
+      ],
+      "holy_rapier": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Damage: 120"
+        ]
+      ],
+      "leviathan_heart": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Max HP: 35%"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 6.0"
+        ],
+        [
+          "header",
+          "[PASIF] Leviathan Vitality"
+        ],
+        [
+          "bullet",
+          "• Regen Luar Tempur: 1.5%"
+        ],
+        [
+          "bullet",
+          "• Timeout Tempur: 5 dtk"
+        ]
+      ],
+      "monarch_wings": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Damage: 38"
+        ],
+        [
+          "bullet",
+          "• Attack Speed: 30"
+        ],
+        [
+          "bullet",
+          "• Evasion: 28%"
+        ]
+      ],
+      "moon_shard": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Attack Speed: 75"
+        ]
+      ],
+      "octarine_core": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Max HP: 300"
+        ],
+        [
+          "bullet",
+          "• Cooldown Reduction: 15%"
+        ],
+        [
+          "bullet",
+          "• Spell Lifesteal: 10%"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 2.0"
+        ]
+      ],
+      "razor_carapace": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Damage: 18"
+        ],
+        [
+          "bullet",
+          "• Armor: 8"
+        ],
+        [
+          "bullet",
+          "• Cooldown Reduction: 10%"
+        ],
+        [
+          "header",
+          "[AKTIF] Thornmail"
+        ],
+        [
+          "bullet",
+          "• Ambang HP: 55%"
+        ],
+        [
+          "bullet",
+          "• Pantulan Damage: 85%"
+        ],
+        [
+          "bullet",
+          "• Durasi: 4.5 dtk"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 25 dtk"
+        ]
+      ],
+      "rift_veil": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Max HP: 260"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 4"
+        ],
+        [
+          "bullet",
+          "• Spell Lifesteal: 6%"
+        ],
+        [
+          "header",
+          "[AKTIF] Discord Field"
+        ],
+        [
+          "bullet",
+          "• Pemicu Musuh Dekat: 2"
+        ],
+        [
+          "bullet",
+          "• Radius: 320"
+        ],
+        [
+          "bullet",
+          "• Amplifikasi Damage: 15%"
+        ],
+        [
+          "bullet",
+          "• Durasi: 6 dtk"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 20 dtk"
+        ]
+      ],
+      "runic_gavel": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Damage: 28"
+        ],
+        [
+          "bullet",
+          "• Max HP: 250"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 4"
+        ],
+        [
+          "bullet",
+          "• Cooldown Reduction: 15%"
+        ],
+        [
+          "header",
+          "[PASIF] Empower Strike"
+        ],
+        [
+          "bullet",
+          "• Waktu Isi Muatan: 9 dtk"
+        ],
+        [
+          "bullet",
+          "• Damage: 130"
+        ]
+      ],
+      "sage_scepter": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Max HP: 200"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 3"
+        ],
+        [
+          "bullet",
+          "• Skill Amp: 15%"
+        ],
+        [
+          "bullet",
+          "• Spell Lifesteal: 8%"
+        ],
+        [
+          "bullet",
+          "• Cooldown Reduction: 8%"
+        ]
+      ],
+      "sanguine_thorn": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Damage: 25"
+        ],
+        [
+          "bullet",
+          "• Attack Speed: 60"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 5"
+        ],
+        [
+          "header",
+          "[AKTIF] Soul Rend"
+        ],
+        [
+          "bullet",
+          "• Durasi: 5 dtk"
+        ],
+        [
+          "bullet",
+          "• Pengali Crit: x1.5"
+        ],
+        [
+          "bullet",
+          "• Amplifikasi Damage: 30%"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 18 dtk"
+        ]
+      ],
+      "scarlet_bulwark": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Max HP: 250"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 8"
+        ],
+        [
+          "bullet",
+          "• Armor: 6"
+        ],
+        [
+          "header",
+          "[AKTIF] Bulwark Guard"
+        ],
+        [
+          "bullet",
+          "• Ambang HP: 45%"
+        ],
+        [
+          "bullet",
+          "• Radius Sekutu: 320"
+        ],
+        [
+          "bullet",
+          "• Block Dasar: 35"
+        ],
+        [
+          "bullet",
+          "• Block (% Max HP): 2%"
+        ],
+        [
+          "bullet",
+          "• Durasi: 7 dtk"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 40 dtk"
+        ],
+        [
+          "header",
+          "[BLOCK]"
+        ],
+        [
+          "bullet",
+          "• Peluang: 55%"
+        ],
+        [
+          "bullet",
+          "• Block (Melee): 25"
+        ],
+        [
+          "bullet",
+          "• Block (Ranged): 14"
+        ]
+      ],
+      "searbrand": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Damage: 20"
+        ],
+        [
+          "bullet",
+          "• Max HP: 320"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 6"
+        ],
+        [
+          "bullet",
+          "• Cooldown Reduction: 15%"
+        ],
+        [
+          "header",
+          "[AKTIF] Brand Burst"
+        ],
+        [
+          "bullet",
+          "• Pemicu Musuh Dekat: 2"
+        ],
+        [
+          "bullet",
+          "• Radius: 320"
+        ],
+        [
+          "bullet",
+          "• Damage: 110"
+        ],
+        [
+          "bullet",
+          "• Bakar (dmg/dtk): 22"
+        ],
+        [
+          "bullet",
+          "• Durasi Bakar: 3 dtk"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 18 dtk"
+        ],
+        [
+          "header",
+          "[AURA] Cauterize"
+        ],
+        [
+          "bullet",
+          "• Radius Musuh: 300"
+        ],
+        [
+          "bullet",
+          "• Anti-Heal Musuh: 50%"
+        ],
+        [
+          "bullet",
+          "• Bakar (dmg/dtk): 6"
+        ]
+      ],
+      "solar_brand": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Damage: 30"
+        ],
+        [
+          "bullet",
+          "• Max HP: 280"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 5"
+        ],
+        [
+          "header",
+          "[AURA] Scorched Earth"
+        ],
+        [
+          "bullet",
+          "• Radius Musuh: 280"
+        ],
+        [
+          "bullet",
+          "• Bakar (dmg/dtk): 28"
+        ],
+        [
+          "bullet",
+          "• Musuh Melenceng: 18%"
+        ]
+      ],
+      "spectral_charm": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Max HP: 230"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 3"
+        ],
+        [
+          "bullet",
+          "• Move Speed: 10%"
+        ],
+        [
+          "bullet",
+          "• Spell Lifesteal: 6%"
+        ],
+        [
+          "header",
+          "[AKTIF] Spectral Form"
+        ],
+        [
+          "bullet",
+          "• Ambang HP: 30%"
+        ],
+        [
+          "bullet",
+          "• Durasi: 2.5 dtk"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 25 dtk"
+        ]
+      ],
+      "steel_aegis": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Armor: 6"
+        ],
+        [
+          "bullet",
+          "• Attack Speed: 30"
+        ],
+        [
+          "header",
+          "[AURA] Steel Aura"
+        ],
+        [
+          "bullet",
+          "• Radius Sekutu: 320"
+        ],
+        [
+          "bullet",
+          "• Armor Sekutu: 2"
+        ],
+        [
+          "bullet",
+          "• AS Sekutu: 10"
+        ],
+        [
+          "bullet",
+          "• Radius Musuh: 320"
+        ],
+        [
+          "bullet",
+          "• Kurangi Armor Musuh: 2"
+        ]
+      ],
+      "sundering_cudgel": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Damage: 48"
+        ],
+        [
+          "bullet",
+          "• Attack Speed: 25"
+        ],
+        [
+          "header",
+          "[BASH] Piercing Bash"
+        ],
+        [
+          "bullet",
+          "• Peluang: 28%"
+        ],
+        [
+          "bullet",
+          "• Damage: 55"
+        ],
+        [
+          "bullet",
+          "• Stun: 0.25 dtk"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 2 dtk"
+        ]
+      ],
+      "tempest_vane": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Max HP: 250"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 4"
+        ],
+        [
+          "bullet",
+          "• Move Speed: 12%"
+        ],
+        [
+          "header",
+          "[AKTIF] Tempest Veil"
+        ],
+        [
+          "bullet",
+          "• Ambang HP: 40%"
+        ],
+        [
+          "bullet",
+          "• Durasi: 2.5 dtk"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 30 dtk"
+        ]
+      ],
+      "thunder_coil": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Damage: 25"
+        ],
+        [
+          "bullet",
+          "• Attack Speed: 65"
+        ],
+        [
+          "header",
+          "[AKTIF] Static Charge"
+        ],
+        [
+          "bullet",
+          "• Peluang Aktif: 20%"
+        ],
+        [
+          "bullet",
+          "• Durasi: 8 dtk"
+        ],
+        [
+          "bullet",
+          "• Interval Tick: 0.5 dtk"
+        ],
+        [
+          "bullet",
+          "• Damage: 65"
+        ],
+        [
+          "bullet",
+          "• Jumlah Target: 4"
+        ],
+        [
+          "bullet",
+          "• Radius: 260"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 20 dtk"
+        ],
+        [
+          "header",
+          "[EFEK SERANGAN] Arc Lightning"
+        ],
+        [
+          "bullet",
+          "• Peluang: 22%"
+        ],
+        [
+          "bullet",
+          "• Damage: 40"
+        ],
+        [
+          "bullet",
+          "• Jumlah Target: 3"
+        ],
+        [
+          "bullet",
+          "• Radius: 240"
+        ]
+      ],
+      "vine_rod": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Damage: 15"
+        ],
+        [
+          "bullet",
+          "• Max HP: 240"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 3"
+        ],
+        [
+          "bullet",
+          "• Spell Lifesteal: 5%"
+        ],
+        [
+          "header",
+          "[EFEK SERANGAN] Entangle"
+        ],
+        [
+          "bullet",
+          "• Durasi Root: 1 dtk"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 9 dtk"
+        ]
+      ],
+      "vital_stone": [
+        [
+          "header",
+          "[STAT]"
+        ],
+        [
+          "bullet",
+          "• Max HP: 320"
+        ],
+        [
+          "bullet",
+          "• HP Regen: 6"
+        ],
+        [
+          "bullet",
+          "• Spell Lifesteal: 20%"
+        ],
+        [
+          "header",
+          "[AKTIF] Vitality Pact"
+        ],
+        [
+          "bullet",
+          "• Ambang HP: 35%"
+        ],
+        [
+          "bullet",
+          "• Heal (% Max HP): 25%"
+        ],
+        [
+          "bullet",
+          "• Cooldown: 45 dtk"
+        ]
+      ]
+    }
+  },
+  "on_hit_cases": [
+    {
+      "extra_damage": [],
+      "extra_debuffs": [],
+      "hero_hp": 1000,
+      "item": "corroder",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "target_damage": [],
+      "target_debuffs": [],
+      "target_slows": [],
+      "target_stuns": []
+    },
+    {
+      "extra_damage": [],
+      "extra_debuffs": [],
+      "hero_hp": 1300,
+      "item": "abyss_breaker",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 140,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "target_damage": [
+        [
+          55,
+          "blue",
+          null
+        ]
+      ],
+      "target_debuffs": [],
+      "target_slows": [],
+      "target_stuns": [
+        54
+      ]
+    },
+    {
+      "extra_damage": [
+        [
+          45,
+          "blue",
+          "magic"
+        ]
+      ],
+      "extra_debuffs": [],
+      "hero_hp": 1250,
+      "item": "fenrir_chain",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "target_damage": [
+        [
+          45,
+          "blue",
+          "magic"
+        ]
+      ],
+      "target_debuffs": [],
+      "target_slows": [],
+      "target_stuns": []
+    },
+    {
+      "extra_damage": [],
+      "extra_debuffs": [],
+      "hero_hp": 1000,
+      "item": "sundering_cudgel",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 120,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "target_damage": [
+        [
+          55,
+          "blue",
+          "magic"
+        ]
+      ],
+      "target_debuffs": [],
+      "target_slows": [],
+      "target_stuns": [
+        15
+      ]
+    },
+    {
+      "extra_damage": [],
+      "extra_debuffs": [],
+      "hero_hp": 1250,
+      "item": "frostbound_eye",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "target_damage": [],
+      "target_debuffs": [
+        [
+          "atk_slow",
+          0.28,
+          180,
+          null
+        ],
+        [
+          "anti_heal",
+          0.45,
+          180,
+          null
+        ]
+      ],
+      "target_slows": [
+        [
+          0.28,
+          180
+        ]
+      ],
+      "target_stuns": []
+    },
+    {
+      "extra_damage": [
+        [
+          70,
+          "blue",
+          "magic"
+        ]
+      ],
+      "extra_debuffs": [],
+      "hero_hp": 1260,
+      "item": "basilisk_breath",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "target_damage": [],
+      "target_debuffs": [],
+      "target_slows": [],
+      "target_stuns": []
+    },
+    {
+      "extra_damage": [],
+      "extra_debuffs": [],
+      "hero_hp": 1250,
+      "item": "runic_gavel",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "target_damage": [
+        [
+          130,
+          "blue",
+          "magic"
+        ]
+      ],
+      "target_debuffs": [],
+      "target_slows": [],
+      "target_stuns": []
+    },
+    {
+      "extra_damage": [],
+      "extra_debuffs": [],
+      "hero_hp": 1240,
+      "item": "vine_rod",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 540
+      },
+      "target_damage": [],
+      "target_debuffs": [],
+      "target_slows": [
+        [
+          1.0,
+          60
+        ]
+      ],
+      "target_stuns": []
+    },
+    {
+      "extra_damage": [],
+      "extra_debuffs": [],
+      "hero_hp": 1000,
+      "item": "demon_maw",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "target_damage": [],
+      "target_debuffs": [],
+      "target_slows": [],
+      "target_stuns": []
+    },
+    {
+      "extra_damage": [
+        [
+          50,
+          "blue",
+          null
+        ]
+      ],
+      "extra_debuffs": [],
+      "hero_hp": 1000,
+      "item": "cleave_axe",
+      "state": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "target_damage": [],
+      "target_debuffs": [],
+      "target_slows": [],
+      "target_stuns": []
+    }
+  ],
+  "role_cases": [
+    {
+      "magic": false,
+      "role": ""
+    },
+    {
+      "magic": true,
+      "role": "Mage"
+    },
+    {
+      "magic": true,
+      "role": "Mage/Trickster"
+    },
+    {
+      "magic": true,
+      "role": "Boss/Magic"
+    },
+    {
+      "magic": true,
+      "role": "Sorcerer"
+    },
+    {
+      "magic": true,
+      "role": "Caster"
+    },
+    {
+      "magic": true,
+      "role": "Warlock"
+    },
+    {
+      "magic": true,
+      "role": "Witch"
+    },
+    {
+      "magic": true,
+      "role": "Sage"
+    },
+    {
+      "magic": true,
+      "role": "Prophet"
+    },
+    {
+      "magic": true,
+      "role": "Priestess"
+    },
+    {
+      "magic": true,
+      "role": "Pyromancer"
+    },
+    {
+      "magic": true,
+      "role": "Necromancer"
+    },
+    {
+      "magic": true,
+      "role": "Shaman"
+    },
+    {
+      "magic": true,
+      "role": "Summoner"
+    },
+    {
+      "magic": true,
+      "role": "Chorister"
+    },
+    {
+      "magic": true,
+      "role": "Farseer"
+    },
+    {
+      "magic": true,
+      "role": "Starweaver"
+    },
+    {
+      "magic": true,
+      "role": "Hexblade"
+    },
+    {
+      "magic": true,
+      "role": "Eldritch Knight"
+    },
+    {
+      "magic": false,
+      "role": "Anti-Mage"
+    },
+    {
+      "magic": false,
+      "role": "Fighter"
+    },
+    {
+      "magic": false,
+      "role": "Tank"
+    },
+    {
+      "magic": false,
+      "role": "Marksman"
+    },
+    {
+      "magic": false,
+      "role": "Assassin"
+    }
+  ],
+  "schema": 1,
+  "source_sha256": "dd29a34e8c264d5a81dddf79206d1511da082923f7a881ae8122e4ea1781b442",
+  "suggest_cases": [
+    {
+      "owned": [],
+      "range": 70,
+      "role": "Tank",
+      "suggestion": "cleave_axe"
+    },
+    {
+      "owned": [
+        "leviathan_heart"
+      ],
+      "range": 70,
+      "role": "Tank",
+      "suggestion": "cleave_axe"
+    },
+    {
+      "owned": [
+        "cleave_axe",
+        "holy_rapier"
+      ],
+      "range": 70,
+      "role": "Tank",
+      "suggestion": "leviathan_heart"
+    },
+    {
+      "owned": [],
+      "range": 70,
+      "role": "Bruiser",
+      "suggestion": "cleave_axe"
+    },
+    {
+      "owned": [
+        "leviathan_heart"
+      ],
+      "range": 70,
+      "role": "Bruiser",
+      "suggestion": "cleave_axe"
+    },
+    {
+      "owned": [
+        "cleave_axe",
+        "holy_rapier"
+      ],
+      "range": 70,
+      "role": "Bruiser",
+      "suggestion": "leviathan_heart"
+    },
+    {
+      "owned": [],
+      "range": 70,
+      "role": "Fighter",
+      "suggestion": "cleave_axe"
+    },
+    {
+      "owned": [
+        "leviathan_heart"
+      ],
+      "range": 70,
+      "role": "Fighter",
+      "suggestion": "cleave_axe"
+    },
+    {
+      "owned": [
+        "cleave_axe",
+        "holy_rapier"
+      ],
+      "range": 70,
+      "role": "Fighter",
+      "suggestion": "leviathan_heart"
+    },
+    {
+      "owned": [],
+      "range": 150,
+      "role": "Marksman",
+      "suggestion": "dead_edge"
+    },
+    {
+      "owned": [
+        "leviathan_heart"
+      ],
+      "range": 150,
+      "role": "Marksman",
+      "suggestion": "dead_edge"
+    },
+    {
+      "owned": [
+        "cleave_axe",
+        "holy_rapier"
+      ],
+      "range": 150,
+      "role": "Marksman",
+      "suggestion": "dead_edge"
+    },
+    {
+      "owned": [],
+      "range": 150,
+      "role": "Assassin",
+      "suggestion": "dead_edge"
+    },
+    {
+      "owned": [
+        "leviathan_heart"
+      ],
+      "range": 150,
+      "role": "Assassin",
+      "suggestion": "dead_edge"
+    },
+    {
+      "owned": [
+        "cleave_axe",
+        "holy_rapier"
+      ],
+      "range": 150,
+      "role": "Assassin",
+      "suggestion": "dead_edge"
+    },
+    {
+      "owned": [],
+      "range": 150,
+      "role": "Mage",
+      "suggestion": "astral_codex"
+    },
+    {
+      "owned": [
+        "leviathan_heart"
+      ],
+      "range": 150,
+      "role": "Mage",
+      "suggestion": "astral_codex"
+    },
+    {
+      "owned": [
+        "cleave_axe",
+        "holy_rapier"
+      ],
+      "range": 150,
+      "role": "Mage",
+      "suggestion": "astral_codex"
+    },
+    {
+      "owned": [],
+      "range": 150,
+      "role": "Trickster",
+      "suggestion": "octarine_core"
+    },
+    {
+      "owned": [
+        "leviathan_heart"
+      ],
+      "range": 150,
+      "role": "Trickster",
+      "suggestion": "octarine_core"
+    },
+    {
+      "owned": [
+        "cleave_axe",
+        "holy_rapier"
+      ],
+      "range": 150,
+      "role": "Trickster",
+      "suggestion": "octarine_core"
+    },
+    {
+      "owned": [],
+      "range": 150,
+      "role": "Boss/Magic",
+      "suggestion": "astral_codex"
+    },
+    {
+      "owned": [
+        "leviathan_heart"
+      ],
+      "range": 150,
+      "role": "Boss/Magic",
+      "suggestion": "astral_codex"
+    },
+    {
+      "owned": [
+        "cleave_axe",
+        "holy_rapier"
+      ],
+      "range": 150,
+      "role": "Boss/Magic",
+      "suggestion": "astral_codex"
+    },
+    {
+      "owned": [],
+      "range": 150,
+      "role": "Anti-Mage",
+      "suggestion": "octarine_core"
+    },
+    {
+      "owned": [
+        "leviathan_heart"
+      ],
+      "range": 150,
+      "role": "Anti-Mage",
+      "suggestion": "octarine_core"
+    },
+    {
+      "owned": [
+        "cleave_axe",
+        "holy_rapier"
+      ],
+      "range": 150,
+      "role": "Anti-Mage",
+      "suggestion": "octarine_core"
+    },
+    {
+      "owned": [],
+      "range": 150,
+      "role": "Summoner",
+      "suggestion": "astral_codex"
+    },
+    {
+      "owned": [
+        "leviathan_heart"
+      ],
+      "range": 150,
+      "role": "Summoner",
+      "suggestion": "astral_codex"
+    },
+    {
+      "owned": [
+        "cleave_axe",
+        "holy_rapier"
+      ],
+      "range": 150,
+      "role": "Summoner",
+      "suggestion": "astral_codex"
+    },
+    {
+      "owned": [],
+      "range": 70,
+      "role": "Unknown",
+      "suggestion": "cleave_axe"
+    },
+    {
+      "owned": [
+        "leviathan_heart"
+      ],
+      "range": 70,
+      "role": "Unknown",
+      "suggestion": "cleave_axe"
+    },
+    {
+      "owned": [
+        "cleave_axe",
+        "holy_rapier"
+      ],
+      "range": 70,
+      "role": "Unknown",
+      "suggestion": "steel_aegis"
+    }
+  ],
+  "trigger_cases": [
+    {
+      "after": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 1500,
+        "blood_frenzy_timer": 300,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "before": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "enemy_damage": [
+        [],
+        []
+      ],
+      "hero_hp": 200,
+      "hero_x": 0,
+      "hero_y": 0,
+      "item": "demon_maw",
+      "target_damage": [],
+      "target_debuffs": [],
+      "target_silences": [],
+      "target_slows": [],
+      "target_stuns": []
+    },
+    {
+      "after": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 2400,
+        "guard_timer": 420,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "before": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "enemy_damage": [
+        [],
+        []
+      ],
+      "hero_hp": 208,
+      "hero_x": 0,
+      "hero_y": 0,
+      "item": "scarlet_bulwark",
+      "target_damage": [],
+      "target_debuffs": [],
+      "target_silences": [],
+      "target_slows": [],
+      "target_stuns": []
+    },
+    {
+      "after": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 1800,
+        "veil_timer": 150,
+        "vine_cd": 0
+      },
+      "before": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "enemy_damage": [
+        [],
+        []
+      ],
+      "hero_hp": 204,
+      "hero_x": 0,
+      "hero_y": 0,
+      "item": "tempest_vane",
+      "target_damage": [],
+      "target_debuffs": [],
+      "target_silences": [],
+      "target_slows": [],
+      "target_stuns": []
+    },
+    {
+      "after": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 1080,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "before": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "enemy_damage": [
+        [
+          [
+            80,
+            "blue",
+            "magic"
+          ]
+        ],
+        [
+          [
+            80,
+            "blue",
+            "magic"
+          ]
+        ]
+      ],
+      "hero_hp": 200,
+      "hero_x": 0,
+      "hero_y": 0,
+      "item": "fenrir_chain",
+      "target_damage": [
+        [
+          80,
+          "blue",
+          "magic"
+        ]
+      ],
+      "target_debuffs": [],
+      "target_silences": [],
+      "target_slows": [],
+      "target_stuns": [
+        72
+      ]
+    },
+    {
+      "after": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 1080,
+        "rend_timer": 300,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "before": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "enemy_damage": [
+        [],
+        []
+      ],
+      "hero_hp": 205,
+      "hero_x": 0,
+      "hero_y": 0,
+      "item": "sanguine_thorn",
+      "target_damage": [],
+      "target_debuffs": [
+        [
+          "atk_slow",
+          1.0,
+          300,
+          null
+        ],
+        [
+          "skill_down",
+          1.0,
+          300,
+          null
+        ]
+      ],
+      "target_silences": [],
+      "target_slows": [],
+      "target_stuns": []
+    },
+    {
+      "after": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 1500,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "before": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "enemy_damage": [
+        [],
+        []
+      ],
+      "hero_hp": 203,
+      "hero_x": 0,
+      "hero_y": 0,
+      "item": "abyss_breaker",
+      "target_damage": [],
+      "target_debuffs": [],
+      "target_silences": [],
+      "target_slows": [],
+      "target_stuns": [
+        72
+      ]
+    },
+    {
+      "after": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 30,
+        "static_timer": 59,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "before": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 1,
+        "static_timer": 60,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "enemy_damage": [
+        [
+          [
+            65,
+            "blue",
+            "magic"
+          ]
+        ],
+        [
+          [
+            65,
+            "blue",
+            "magic"
+          ]
+        ]
+      ],
+      "hero_hp": 200,
+      "hero_x": 0,
+      "hero_y": 0,
+      "item": "thunder_coil",
+      "target_damage": [
+        [
+          65,
+          "blue",
+          "magic"
+        ]
+      ],
+      "target_debuffs": [],
+      "target_silences": [],
+      "target_slows": [],
+      "target_stuns": []
+    },
+    {
+      "after": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 1500,
+        "thorn_timer": 270,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "before": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "enemy_damage": [
+        [],
+        []
+      ],
+      "hero_hp": 200,
+      "hero_x": 0,
+      "hero_y": 0,
+      "item": "razor_carapace",
+      "target_damage": [],
+      "target_debuffs": [],
+      "target_silences": [],
+      "target_slows": [],
+      "target_stuns": []
+    },
+    {
+      "after": {
+        "arcane_cd": 0,
+        "arctic_cd": 1440,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "before": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "enemy_damage": [
+        [
+          [
+            130,
+            "blue",
+            "magic"
+          ]
+        ],
+        [
+          [
+            130,
+            "blue",
+            "magic"
+          ]
+        ]
+      ],
+      "hero_hp": 205,
+      "hero_x": 0,
+      "hero_y": 0,
+      "item": "everfrost_guard",
+      "target_damage": [
+        [
+          130,
+          "blue",
+          "magic"
+        ]
+      ],
+      "target_debuffs": [],
+      "target_silences": [],
+      "target_slows": [
+        [
+          0.45,
+          210
+        ]
+      ],
+      "target_stuns": []
+    },
+    {
+      "after": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 1500,
+        "gale_timer": 180,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "before": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "enemy_damage": [
+        [],
+        []
+      ],
+      "hero_hp": 203,
+      "hero_x": -130.0,
+      "hero_y": 0.0,
+      "item": "gale_pike",
+      "target_damage": [],
+      "target_debuffs": [],
+      "target_silences": [],
+      "target_slows": [],
+      "target_stuns": []
+    },
+    {
+      "after": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 1080,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "before": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "enemy_damage": [
+        [
+          [
+            110,
+            "blue",
+            "magic"
+          ]
+        ],
+        [
+          [
+            110,
+            "blue",
+            "magic"
+          ]
+        ]
+      ],
+      "hero_hp": 206,
+      "hero_x": 0,
+      "hero_y": 0,
+      "item": "searbrand",
+      "target_damage": [
+        [
+          110,
+          "blue",
+          "magic"
+        ]
+      ],
+      "target_debuffs": [
+        [
+          "burn",
+          22,
+          180,
+          "blue"
+        ]
+      ],
+      "target_silences": [],
+      "target_slows": [],
+      "target_stuns": []
+    },
+    {
+      "after": {
+        "arcane_cd": 1440,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "before": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "enemy_damage": [
+        [
+          [
+            150,
+            "blue",
+            "magic"
+          ]
+        ],
+        [
+          [
+            150,
+            "blue",
+            "magic"
+          ]
+        ]
+      ],
+      "hero_hp": 204,
+      "hero_x": 0,
+      "hero_y": 0,
+      "item": "astral_codex",
+      "target_damage": [
+        [
+          150,
+          "blue",
+          "magic"
+        ]
+      ],
+      "target_debuffs": [
+        [
+          "atk_slow",
+          1.0,
+          90,
+          null
+        ],
+        [
+          "skill_down",
+          1.0,
+          90,
+          null
+        ]
+      ],
+      "target_silences": [],
+      "target_slows": [],
+      "target_stuns": []
+    },
+    {
+      "after": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 1080,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "before": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "enemy_damage": [
+        [
+          [
+            300,
+            "blue",
+            "magic"
+          ]
+        ],
+        []
+      ],
+      "hero_hp": 200,
+      "hero_x": 0,
+      "hero_y": 0,
+      "item": "fulgur_scepter",
+      "target_damage": [
+        [
+          300,
+          "blue",
+          "magic"
+        ]
+      ],
+      "target_debuffs": [],
+      "target_silences": [],
+      "target_slows": [],
+      "target_stuns": []
+    },
+    {
+      "after": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 1800,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "before": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "enemy_damage": [
+        [],
+        []
+      ],
+      "hero_hp": 204,
+      "hero_x": 0,
+      "hero_y": 0,
+      "item": "hex_idol",
+      "target_damage": [],
+      "target_debuffs": [
+        [
+          "atk_slow",
+          1.0,
+          150,
+          null
+        ],
+        [
+          "skill_down",
+          1.0,
+          150,
+          null
+        ]
+      ],
+      "target_silences": [],
+      "target_slows": [],
+      "target_stuns": [
+        150
+      ]
+    },
+    {
+      "after": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 1200,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "before": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "enemy_damage": [
+        [],
+        []
+      ],
+      "hero_hp": 204,
+      "hero_x": 0,
+      "hero_y": 0,
+      "item": "rift_veil",
+      "target_damage": [],
+      "target_debuffs": [],
+      "target_silences": [],
+      "target_slows": [],
+      "target_stuns": []
+    },
+    {
+      "after": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 2700,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "before": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "enemy_damage": [
+        [],
+        []
+      ],
+      "hero_hp": 456,
+      "hero_x": 0,
+      "hero_y": 0,
+      "item": "vital_stone",
+      "target_damage": [],
+      "target_debuffs": [],
+      "target_silences": [],
+      "target_slows": [],
+      "target_stuns": []
+    },
+    {
+      "after": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 1500,
+        "ghost_timer": 150,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "before": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "enemy_damage": [
+        [],
+        []
+      ],
+      "hero_hp": 203,
+      "hero_x": 0,
+      "hero_y": 0,
+      "item": "spectral_charm",
+      "target_damage": [],
+      "target_debuffs": [],
+      "target_silences": [],
+      "target_slows": [],
+      "target_stuns": []
+    },
+    {
+      "after": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "before": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 540,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "enemy_damage": [
+        [],
+        []
+      ],
+      "hero_hp": 206.25,
+      "hero_x": 0,
+      "hero_y": 0,
+      "item": "leviathan_heart",
+      "target_damage": [],
+      "target_debuffs": [],
+      "target_silences": [],
+      "target_slows": [],
+      "target_stuns": []
+    },
+    {
+      "after": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 4,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "before": {
+        "arcane_cd": 0,
+        "arctic_cd": 0,
+        "aura_armor": 0,
+        "aura_armor_reduction": 0,
+        "aura_as": 0,
+        "aura_guard_block": 0,
+        "bash_cd": 0,
+        "blood_frenzy_cd": 0,
+        "blood_frenzy_timer": 0,
+        "chains_cd": 0,
+        "empower_charge": 5,
+        "fulgur_cd": 0,
+        "gale_cd": 0,
+        "gale_timer": 0,
+        "ghost_cd": 0,
+        "ghost_timer": 0,
+        "guard_cd": 0,
+        "guard_timer": 0,
+        "hex_cd": 0,
+        "last_damage_timer": 0,
+        "overwhelm_cd": 0,
+        "pact_cd": 0,
+        "pierce_bash_cd": 0,
+        "rend_cd": 0,
+        "rend_timer": 0,
+        "rift_cd": 0,
+        "searbrand_cd": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "static_timer": 0,
+        "thorn_cd": 0,
+        "thorn_timer": 0,
+        "veil_cd": 0,
+        "veil_timer": 0,
+        "vine_cd": 0
+      },
+      "enemy_damage": [
+        [],
+        []
+      ],
+      "hero_hp": 204,
+      "hero_x": 0,
+      "hero_y": 0,
+      "item": "runic_gavel",
+      "target_damage": [],
+      "target_debuffs": [],
+      "target_silences": [],
+      "target_slows": [],
+      "target_stuns": []
+    }
+  ]
+}

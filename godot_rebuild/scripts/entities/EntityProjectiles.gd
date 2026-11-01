@@ -145,13 +145,17 @@ static func _hit(model: RefCounted, proj: Dictionary, target: BattleUnit) -> voi
 	var source: BattleUnit = proj.get("source")
 	if proj.kind == "hero":
 		if float(proj.damage) > 0.0:
-			target.take_damage(
+			var dealt := target.take_damage(
 				float(proj.damage),
 				str(proj.team),
 				"projectile",
 				source,
 				str(proj.get("school", ""))
 			)
+			if source != null and source.items != null and not bool(proj.get("is_skill", false)):
+				EntityItems.on_ranged_attack_hit(
+					source, target, dealt, model.enemies_of(str(proj.team)), model
+				)
 			model.add_effect(
 				target.pos, "CRIT!" if bool(proj.get("is_crit", false)) else "", Color.WHITE, 18
 			)

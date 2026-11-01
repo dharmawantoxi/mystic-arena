@@ -448,6 +448,7 @@ func setup_hero(
 	skill_max.q = int(stats.get("skill_cooldown", 300))
 	color = data.color(stats.get("color"), Color.CYAN)
 	items = UnitInventory.new(data.data.get("items", {}))
+	items.hero = self
 	is_melee_hero = attack_range <= 80.0
 	if is_melee_hero:
 		attack_range = clampf(attack_range, 50.0, 80.0)
@@ -556,6 +557,8 @@ func apply_scaling(hp_mult: float, damage_mult: float, speed_mult: float) -> voi
 
 
 func apply_debuff(kind_name: String, amount: float, duration: int, source_team := "") -> void:
+	if kind == Kind.HERO and items != null and kind_name in ["slow", "atk_slow"]:
+		amount *= 1.0 - items.slow_resist()
 	if kind == Kind.BOSS and kind_name in ["slow", "atk_slow"]:
 		amount = minf(0.35, amount * (1.0 - tenacity))
 		duration = int(duration * (1.0 - tenacity))
@@ -563,6 +566,8 @@ func apply_debuff(kind_name: String, amount: float, duration: int, source_team :
 
 
 func item_timer(key: String) -> int:
+	if items != null:
+		return items.timer(key)
 	return int(item_state.get(key, 0))
 
 
@@ -629,6 +634,8 @@ func _apply_hp_loss(effective: float, source: BattleUnit) -> void:
 	if source != null:
 		source.damage_dealt += effective
 		killed_by = source
+	if kind == Kind.HERO and items != null and effective > 0.0 and world != null:
+		EntityItems.notify_damage_taken(self, world.rng, effective, source, world)
 	if _hp <= 0.0:
 		alive = false
 		death_anim = 20
@@ -642,8 +649,12 @@ func _apply_hp_loss(effective: float, source: BattleUnit) -> void:
 
 
 func heal(amount: float) -> void:
-	if alive:
-		hp = minf(max_hp, _hp + amount)
+	if not alive:
+		return
+	var value := amount
+	if kind == Kind.HERO and items != null:
+		value *= 1.0 + items.heal_amp()
+	hp = status.modified_heal(_hp, minf(max_hp, _hp + value))
 
 
 func tick_timers(data: CoreData) -> void:
@@ -675,8 +686,7 @@ func tick_timers(data: CoreData) -> void:
 		and no_damage_timer >= int(data.rule("CASTLE_SHIELD_REGEN_DELAY", 120))
 	):
 		shield = minf(shield_max, shield + float(data.rule("CASTLE_SHIELD_REGEN_RATE", 3.5)))
-	if kind == Kind.HERO and items != null:
-		heal(items.hp_regen() / 60.0)
+	# Item HP regen is applied by EntityItems.update (hero_items.py parity).
 
 
 func move_toward_point(point: Vector2) -> void:
@@ -718,14 +728,41 @@ func is_magic_hero() -> bool:
 	# hero_items.py uses the role-based Magic attribute for magic_only items;
 	# it is intentionally separate from the analyzed damage school.
 	var role := str(stats.get("role", "")).to_lower()
-	for keyword: String in ["mage", "caster", "sorcerer", "magic", "warlock", "necro"]:
+	if role.is_empty() or "anti-mage" in role:
+		return false
+	for keyword: String in [
+		"mage",
+		"magic",
+		"sorcer",
+		"caster",
+		"warlock",
+		"witch",
+		"sage",
+		"prophet",
+		"priestess",
+		"pyro",
+		"necro",
+		"shaman",
+		"summoner",
+		"chorister",
+		"farseer",
+		"starweaver",
+		"hex",
+		"eldritch"
+	]:
 		if keyword in role:
 			return true
 	return false
 
 
 func cast_skill(key: String, _enemies: Array[BattleUnit]) -> bool:
-	if kind != Kind.HERO or not alive or status.stun_timer > 0 or not key in skill_cooldowns:
+	if (
+		kind != Kind.HERO
+		or not alive
+		or status.stun_timer > 0
+		or status.silence_timer > 0
+		or not key in skill_cooldowns
+	):
 		return false
 	if int(skill_cooldowns[key]) > 0:
 		return false
@@ -764,6 +801,8 @@ func kit_enemies(units: Array, towers: Array, bases: Array) -> Array:
 
 func kit_skill_damage() -> int:
 	var amp := 1.0 + (status.dmg_amp_amount if status.dmg_amp_timer > 0 else 0.0)
+	if kind == Kind.HERO and items != null:
+		amp *= 1.0 + items.skill_amp()
 	return int(round(skill_damage * amp * (1.0 - status.skill_down_amount)))
 
 
