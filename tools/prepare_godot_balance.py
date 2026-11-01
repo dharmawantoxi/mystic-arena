@@ -71,6 +71,38 @@ def _text(value: dict) -> str:
     return json.dumps(_jsonable(value), ensure_ascii=False, indent=2, allow_nan=False, sort_keys=True) + "\n"
 
 
+def _first_diffs(expected, actual, prefix: str = "$", limit: int = 8) -> list[str]:
+    """Small, deterministic diagnostic for a stale --check (never writes)."""
+    out: list[str] = []
+
+    def walk(want, got, path: str) -> None:
+        if len(out) >= limit:
+            return
+        if isinstance(want, dict) and isinstance(got, dict):
+            for key in sorted(set(want) | set(got)):
+                if key not in want:
+                    out.append(f"{path}.{key}: unexpected key")
+                elif key not in got:
+                    out.append(f"{path}.{key}: missing key")
+                else:
+                    walk(want[key], got[key], f"{path}.{key}")
+                if len(out) >= limit:
+                    return
+        elif isinstance(want, list) and isinstance(got, list):
+            if len(want) != len(got):
+                out.append(f"{path}: length {len(got)} != {len(want)}")
+                return
+            for index, (want_item, got_item) in enumerate(zip(want, got)):
+                walk(want_item, got_item, f"{path}[{index}]")
+                if len(out) >= limit:
+                    return
+        elif want != got:
+            out.append(f"{path}: tracked={got!r} oracle={want!r}")
+
+    walk(expected, actual, prefix)
+    return out
+
+
 def raw_catalog() -> dict:
     core = core_prep.assignments(ROOT / "_core.py", upper_only=True)
     return core_prep.raw_hero_catalog(core)
@@ -302,10 +334,24 @@ def main() -> int:
         oracle = build_oracle(module, raw)
         outputs = {CONTRACT: _text(contract), FIXTURE: _text(oracle)}
         if args.check:
-            stale = [str(path.relative_to(ROOT)) for path, text in outputs.items()
-                     if not path.is_file() or path.read_text(encoding="utf-8") != text]
+            stale: list[str] = []
+            for path, text in outputs.items():
+                if not path.is_file():
+                    stale.append(f"{path.relative_to(ROOT)}: missing")
+                    continue
+                tracked = path.read_text(encoding="utf-8")
+                if tracked == text:
+                    continue
+                detail = ""
+                try:
+                    diffs = _first_diffs(json.loads(text), json.loads(tracked))
+                    if diffs:
+                        detail = "\n  " + "\n  ".join(diffs)
+                except ValueError:
+                    detail = "\n  tracked file is not valid JSON"
+                stale.append(f"{path.relative_to(ROOT)}: stale{detail}")
             if stale:
-                parser.exit(1, "Stale balance data: %s; run tools/prepare_godot_balance.py\n" % ", ".join(stale))
+                parser.exit(1, "Stale balance data; run tools/prepare_godot_balance.py\n" + "\n".join(stale) + "\n")
         else:
             for path, text in outputs.items():
                 path.parent.mkdir(parents=True, exist_ok=True)
