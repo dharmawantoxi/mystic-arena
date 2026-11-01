@@ -1,6 +1,9 @@
 # ================================
 # main.py - ENTRY POINT (Android / touchscreen first)
 #
+# Port native entry point: godot_rebuild/project.godot
+# Cakupan: docs/GODOT_MAIN_MIGRATION.md (gameplay Python tetap referensi).
+#
 # Versi lama (keyboard + controller) disimpan di
 # main_desktop_legacy.py sebagai rujukan.
 #

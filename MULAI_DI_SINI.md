@@ -2,7 +2,7 @@
 
 Tiga langkah untuk versi Android Pygame: **uji di PC → unggah ke GitHub → build APK**.
 
-> **Catatan Godot:** proyek port yang aktif adalah `godot_rebuild/`, dan parity penuh dengan Pygame belum tercapai. Lihat [Status parity Godot ↔ Pygame](docs/GODOT_PYGAME_PARITY_STATUS.md) untuk gap, bukti, dan kriteria selesai. Jangan gunakan runbook/converter Godot lama sebagai status proyek aktif.
+> **Catatan Godot:** port `main.py` tersedia di [`godot_rebuild/`](godot_rebuild/README.md). Ini application shell native, bukan port gameplay penuh. Baca [cakupan migrasi](docs/GODOT_MAIN_MIGRATION.md). Panduan Pygame di bawah tetap untuk versi referensi.
 
 ---
 
