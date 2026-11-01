@@ -68,7 +68,12 @@ def _module(name: str, path: Path):
     return module
 
 
-def hero_catalog(core: dict) -> dict:
+def raw_hero_catalog(core: dict) -> dict:
+    """Assemble the playable catalog before hero_balance.apply_to_catalog().
+
+    Kept separate so the native balance migration can oracle the exact same
+    pre-balance input that prepare_godot_core.py balances for core_data.json.
+    """
     bosses = _module("mystic_boss_data", ROOT / "bosses/boss_data.py")
     catalog = {key: dict(value) for key, value in core["HERO_TYPES"].items()}
     for value in catalog.values():
@@ -81,6 +86,11 @@ def hero_catalog(core: dict) -> dict:
             catalog[key] = dict(unlock, is_boss_hero=True, boss_class=kind,
                                 unlock_require_boss=key, unlock_cost=4500,
                                 source_boss_name=boss.get("name", key.title()))
+    return catalog
+
+
+def hero_catalog(core: dict) -> dict:
+    catalog = raw_hero_catalog(core)
     # The balance module is pure Python and is the authoritative final pass.
     balance = _module("mystic_hero_balance", ROOT / "hero_balance.py")
     balance.apply_to_catalog(catalog)

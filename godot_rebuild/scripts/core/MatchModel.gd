@@ -514,7 +514,13 @@ func buy_hero(hero_type: String, free := false) -> bool:
 	var hero := BattleUnit.new()
 	hero.id = _id()
 	hero.world = self
-	hero.setup_hero(data, hero_type, "blue", Vector2(180, 560))
+	hero.setup_hero(
+		data,
+		hero_type,
+		"blue",
+		Vector2(180, 560),
+		data.balance.boss_unlocks_for_purchases(purchased_heroes)
+	)
 	heroes.append(hero)
 	selected_hero = hero
 	return true

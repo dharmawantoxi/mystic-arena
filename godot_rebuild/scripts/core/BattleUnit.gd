@@ -80,7 +80,7 @@ var hurt_flash_timer := 0
 var spawn_anim := 20
 var upgrade_flash := 0
 var shoot_flash_timer := 0
-var active_skill := ""
+var active_skill: Variant = ""
 var active_skill_timer := 0
 var auto_cast_enabled := true
 var auto_cast_check_timer := 0
@@ -426,7 +426,9 @@ func activate_castle_shield(data: CoreData) -> bool:
 	return true
 
 
-func setup_hero(data: CoreData, hero_type: String, team_name: String, position: Vector2) -> void:
+func setup_hero(
+	data: CoreData, hero_type: String, team_name: String, position: Vector2, boss_unlocks := 0
+) -> void:
 	kind = Kind.HERO
 	unit_type = hero_type
 	team = team_name
@@ -460,6 +462,16 @@ func setup_hero(data: CoreData, hero_type: String, team_name: String, position: 
 	dmg_type = str(archetype.get("dmg_type", "PHYSICAL"))
 	playstyle = str(archetype.get("playstyle", "FIGHTER"))
 	dmg_school = dmg_type.to_lower()
+	if data.balance.is_starter(hero_type):
+		# Catch-up is player-state dependent, so it is applied at unit creation,
+		# after melee compensation, and never baked into the shop catalog.
+		var catchup := data.balance.starter_catchup(hero_type, boss_unlocks, 1)
+		if float(catchup[0]) != 1.0 or float(catchup[1]) != 1.0:
+			var caught := data.balance.starter_catchup_stats(
+				hero_type, {"hp": base_hp, "damage": base_damage}, boss_unlocks, 1
+			)
+			base_hp = float(caught[0])
+			base_damage = float(caught[1])
 	_apply_hero_level(data)
 	HeroSkillKit.init_state(self)
 

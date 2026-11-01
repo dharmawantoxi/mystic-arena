@@ -1,4 +1,4 @@
-name: Godot native core + entity + render + system + archetypes migration
+name: Godot native core + entity + render + system + archetypes + balance migration
 
 on:
   workflow_dispatch:
@@ -12,6 +12,8 @@ on:
       - 'tools/prepare_godot_main.py'
       - 'tools/prepare_godot_core.py'
       - 'tools/prepare_godot_archetypes.py'
+      - 'tools/prepare_godot_balance.py'
+      - 'tools/test_godot_balance_prepare.py'
       - 'tools/test_godot_archetypes_prepare.py'
       - 'tools/test_godot_core_prepare.py'
       - '_core.py'
@@ -55,6 +57,8 @@ on:
       - 'tools/prepare_godot_main.py'
       - 'tools/prepare_godot_core.py'
       - 'tools/prepare_godot_archetypes.py'
+      - 'tools/prepare_godot_balance.py'
+      - 'tools/test_godot_balance_prepare.py'
       - 'tools/test_godot_archetypes_prepare.py'
       - 'tools/test_godot_core_prepare.py'
       - '_core.py'
@@ -117,6 +121,8 @@ jobs:
           python tools/test_godot_core_prepare.py
           python tools/prepare_godot_archetypes.py --check
           python tools/test_godot_archetypes_prepare.py
+          python tools/prepare_godot_balance.py --check
+          python tools/test_godot_balance_prepare.py
           python tools/prepare_godot_entities.py --check
           python tools/test_godot_entity_prepare.py
           python tools/prepare_godot_render.py --check
