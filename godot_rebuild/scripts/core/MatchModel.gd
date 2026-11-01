@@ -5,6 +5,7 @@ extends RefCounted
 ## Combat, projectiles, AI, items and baked entity visuals run in GDScript.
 signal notification(text: String)
 signal match_finished(victory: bool)
+signal render_event(kind: String, data: Dictionary)
 
 var data := CoreData.new()
 var level_number := 1
@@ -58,6 +59,7 @@ var effects: Array[Dictionary] = []
 var popups: Array[Dictionary] = []
 var shake := 0.0
 var notifications: Array[String] = []
+var first_blood := false
 
 
 func clear_unit_refs() -> void:
@@ -252,6 +254,10 @@ func _update_waves() -> void:
 			red_base.upgrade_castle(data)
 		waves.enqueue_wave(blue_base.level, red_base.level, wave_number, data.data.get("rules", {}))
 		_notify("Wave %d" % wave_number)
+	render_event.emit("wave", {"number": wave_number})
+	render_event.emit(
+		"path_preview", {"paths": [data.lane("top"), data.lane("mid"), data.lane("bot")]}
+	)
 	for team: String in ["blue", "red"]:
 		var spawn := waves.pop_spawn(team, spawn_delay)
 		if spawn.is_empty():
@@ -289,6 +295,7 @@ func _spawn_boss(boss_type: String) -> void:
 	active_boss.setup_boss(data, boss_type, data.lane("mid"))
 	active_boss.apply_scaling(enemy_hp_mult, enemy_damage_mult, enemy_speed_mult)
 	_notify(str(active_boss.stats.get("entrance_text", active_boss.display_name)))
+	render_event.emit("boss_intro", {"unit": active_boss})
 
 
 func _update_unit(unit: BattleUnit) -> void:
@@ -341,6 +348,7 @@ func _attack(attacker: BattleUnit, target: BattleUnit) -> void:
 			attacker.heal(dealt * lifesteal)
 			EntityItems.on_attack(attacker, target, amount, enemies_of(attacker.team), self)
 		add_effect(target.pos, "hit", attacker.color, 10)
+		add_damage_number(target.pos, int(dealt), is_crit, attacker.dmg_school)
 
 
 func _update_tower(tower: BattleUnit) -> void:
@@ -375,6 +383,7 @@ func _process_rewards() -> void:
 	for minion: BattleUnit in minions:
 		if not minion.alive and not minion.rewarded:
 			minion.rewarded = true
+			render_event.emit("death", {"pos": minion.pos, "team": minion.team, "size": "small"})
 			if minion.team == "red":
 				gold += minion.gold_reward
 				score += minion.gold_reward
@@ -382,24 +391,36 @@ func _process_rewards() -> void:
 				combo += 1
 				combo_timer = 180
 				max_combo = maxi(max_combo, combo)
+				render_event.emit("gold", {"pos": minion.pos, "amount": minion.gold_reward})
+				render_event.emit("combo_kill", {})
+				if not first_blood:
+					first_blood = true
+					render_event.emit(
+						"achievement",
+						{"title": "First Blood", "description": "Kill pertama diraih!"}
+					)
 			else:
 				ai_gold += minion.gold_reward
 	for tower: BattleUnit in towers:
 		if not tower.alive and not tower.rewarded:
 			tower.rewarded = true
+			render_event.emit("death", {"pos": tower.pos, "team": tower.team, "size": "medium"})
 			if tower.team == "red":
 				gold += tower.gold_reward
 				score += tower.gold_reward
 				red_towers_destroyed += 1
+				render_event.emit("gold", {"pos": tower.pos, "amount": tower.gold_reward})
 			else:
 				ai_gold += tower.gold_reward
 	for hero: BattleUnit in heroes + enemy_heroes:
 		if not hero.alive and not hero.rewarded:
 			hero.rewarded = true
 			hero.respawn_timer = 600
+			render_event.emit("death", {"pos": hero.pos, "team": hero.team, "size": "medium"})
 			if hero.team == "red":
 				gold += 150
 				score += 150
+				render_event.emit("gold", {"pos": hero.pos, "amount": 150})
 			else:
 				ai_gold += 150
 	if active_boss != null and not active_boss.alive and active_boss.defeated:
@@ -410,6 +431,12 @@ func _process_rewards() -> void:
 		if active_boss.unit_type not in unlocked_bosses:
 			unlocked_bosses.append(active_boss.unit_type)
 		_notify("%s defeated!" % active_boss.display_name)
+		render_event.emit("boss_death", {"unit": active_boss})
+		render_event.emit("gold", {"pos": active_boss.pos, "amount": active_boss.gold_reward})
+		render_event.emit(
+			"achievement",
+			{"title": "Boss Slayer", "description": "%s dikalahkan!" % active_boss.display_name}
+		)
 		active_boss = null
 		_try_spawn_mini()
 
@@ -570,7 +597,18 @@ func cast_hero_skill(hero: BattleUnit, key: String) -> bool:
 	return hero.cast_skill(key, enemies_of(hero.team))
 
 
+func add_damage_number(
+	position: Vector2, amount: int, critical := false, damage_type := "normal"
+) -> void:
+	render_event.emit(
+		"damage", {"pos": position, "amount": amount, "critical": critical, "type": damage_type}
+	)
+
+
 func add_effect(position: Vector2, effect_type: String, effect_color: Color, radius: int) -> void:
+	render_event.emit(
+		"effect", {"pos": position, "type": effect_type, "color": effect_color, "radius": radius}
+	)
 	effects.append(
 		{
 			"pos": position,
@@ -586,6 +624,7 @@ func add_effect(position: Vector2, effect_type: String, effect_color: Color, rad
 
 
 func add_popup(position: Vector2, text: String, popup_color: Color) -> void:
+	render_event.emit("popup", {"pos": position, "text": text, "color": popup_color})
 	popups.append({"pos": position, "text": text, "color": popup_color, "age": 0, "ttl": 60})
 	if popups.size() > 40:
 		popups.pop_front()
@@ -593,6 +632,7 @@ func add_popup(position: Vector2, text: String, popup_color: Color) -> void:
 
 func add_shake(amount: float) -> void:
 	shake = maxf(shake, amount)
+	render_event.emit("shake", {"amount": amount})
 
 
 func _update_effects() -> void:

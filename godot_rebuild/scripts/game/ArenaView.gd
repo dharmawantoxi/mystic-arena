@@ -8,15 +8,18 @@ var font: Font
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	font = ThemeDB.fallback_font
+	font = RenderCache.font()
 
 
 func _draw() -> void:
 	if game == null or font == null:
 		return
 	var model := game.model
-	draw_rect(Rect2(Vector2.ZERO, size), Color("101820"))
-	_draw_lanes(model)
+	var shake := game.effects.shake_offset()
+	draw_set_transform(shake)
+	game.map_view.draw_static(self)
+	if game.map_view.missing_texture:
+		_draw_lanes(model)
 	_draw_slots(model)
 	for tower: BattleUnit in model.towers:
 		_draw_unit(tower, true)
@@ -29,7 +32,9 @@ func _draw() -> void:
 	if model.active_boss != null and model.active_boss.alive:
 		_draw_unit(model.active_boss, true)
 	EntityVisuals.draw_projectiles(self, model)
-	EntityVisuals.draw_effects(self, model, font)
+	game.map_view.draw_dynamic(self, model.frame)
+	game.effects.draw(self)
+	draw_set_transform(Vector2.ZERO)
 	_draw_top_bar(model)
 	_draw_selection(model)
 	_draw_notifications(model)
@@ -45,6 +50,7 @@ func _draw() -> void:
 		_draw_item_shop()
 	if game.result_visible:
 		_draw_result()
+	game.cinematics.draw(self, model.frame)
 
 
 func _draw_lanes(model: MatchModel) -> void:

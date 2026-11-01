@@ -1,0 +1,197 @@
+{
+  "_generated_by": "tools/prepare_godot_render.py",
+  "_source": "_render.py + map_components/_bundle.py (AST contract, no pygame import)",
+  "effect_caps": {
+    "MAX_FLOATING": 300,
+    "MAX_PARTICLES": 500,
+    "MAX_EXPLOSIONS": 80
+  },
+  "timings": {
+    "combo": 120,
+    "wave": 120,
+    "path_preview": 120,
+    "achievement": 180,
+    "boss_intro": 100,
+    "boss_death": [
+      60,
+      90
+    ],
+    "celebration": 120,
+    "level_fade_in": 30
+  },
+  "shops": {
+    "radiant": [
+      340,
+      540
+    ],
+    "dire": [
+      940,
+      180
+    ],
+    "size": 60
+  },
+  "fonts": {
+    "title": "Cinzel.ttf",
+    "body": "Barlow-Regular.ttf",
+    "body_medium": "Barlow-Medium.ttf",
+    "body_semibold": "Barlow-SemiBold.ttf",
+    "body_bold": "Barlow-Bold.ttf"
+  },
+  "easings": {
+    "_ease_out_back": [
+      0.0,
+      0.817409688,
+      1.0876975,
+      1.064136563,
+      1.0
+    ],
+    "_ease_in_back": [
+      0.0,
+      -0.064136563,
+      -0.0876975,
+      0.182590312,
+      1.0
+    ],
+    "_ease_out_cubic": [
+      0.0,
+      0.578125,
+      0.875,
+      0.984375,
+      1.0
+    ],
+    "_ease_out_elastic": [
+      0,
+      0.911611652,
+      1.015625,
+      1.005524272,
+      1
+    ]
+  },
+  "quality_presets": {
+    "low": {
+      "max_damage_numbers": 8,
+      "particle_ratio": 0.35
+    },
+    "medium": {
+      "max_damage_numbers": 16,
+      "particle_ratio": 0.65
+    },
+    "high": {
+      "max_damage_numbers": 32,
+      "particle_ratio": 1.0
+    }
+  },
+  "map_bake_seed": 20260907,
+  "map_themes": [
+    "abyss",
+    "abyssal",
+    "abysstide",
+    "astral",
+    "celestialpeaks",
+    "cosmic",
+    "crimson",
+    "crimsondevourer",
+    "crimsonmatriarch",
+    "croweye",
+    "crystalstorm",
+    "desert",
+    "earthborn",
+    "eldritch",
+    "elementweave",
+    "emberlion",
+    "emberweaver",
+    "empyrean",
+    "eternalflame",
+    "eternalwarlord",
+    "explosiveart",
+    "forest",
+    "frostveil",
+    "haunted",
+    "heartbane",
+    "hexbound",
+    "hollowbane",
+    "ice",
+    "lunarherald",
+    "moonborn",
+    "moonfang",
+    "moonreaper",
+    "nethervenom",
+    "ocean",
+    "outlaw",
+    "primordial",
+    "radiant",
+    "royal",
+    "sanctum",
+    "sandshadow",
+    "sawmill",
+    "shadowchain",
+    "skyfury",
+    "solaris",
+    "soulforged",
+    "spectral",
+    "sundered",
+    "sunfist",
+    "tempest",
+    "violet",
+    "voidbound",
+    "voidwing",
+    "volcanic",
+    "warshade"
+  ],
+  "map_png_sha256": {
+    "abyss": "59624ef4f811f65fbca24c2d1a4215d13f05c678409f337e7542e5e740c3fa8f",
+    "abyssal": "1de9e7a309888c33ed8e4593cea4cb6b30dd7482bd11305118b5e37deedb70da",
+    "abysstide": "04af8e392f7ac0d3626852fa4e6c9b8e8d4d4ac2a9b5d4bcbc60caeb1c3c2b26",
+    "astral": "3c2fc9c071c5aae62243df73c368a907ddf2c30bcfebf838fef294f5476b7436",
+    "celestialpeaks": "ee660729607f2730817fd8920d157fc5015064bcfadd17eecfdf299a233b8446",
+    "cosmic": "9865e14a9d99fa532e8e6eafcd8f9727ec649909df3a0c56ce92d2630af94c1b",
+    "crimson": "25c4756020a8dac300dc883d78231469d3477ec8188247a8da51fa18d9ed8b82",
+    "crimsondevourer": "69a5721de96e5fba0bef748fc5befc402748f5141bd95255a70725bcd5896482",
+    "crimsonmatriarch": "8809665b13f16f4288c6fc2b12b84311f22dd2acca70c367470eb720808ea041",
+    "croweye": "2df4b7494cc2123489acfd40612b4254aecae5d7ebfc6b42559ca8b64d858dc3",
+    "crystalstorm": "6739453af1c49104faf63ee0a8f29326a504c44637eb841c41218b79f6bcded3",
+    "desert": "e1796399383a0e3aadedeaf204e48fedc563d510c5ef153c979d0d4c4509325c",
+    "earthborn": "de8fc70452ed996f75f07c638717488773afcfec6cb834ad56a89cca65a7bb12",
+    "eldritch": "62c958c37c56c1b9a3496e86ceff483c9828091986e3b3b774b56fc12f3581ee",
+    "elementweave": "cc071508da95131114a5be5dbfea797ed74fa18d9b03795dccd9125b8bbdbf46",
+    "emberlion": "169f778061915433df35952cff780681fdecc2dbe93b1891dd25584c34564557",
+    "emberweaver": "bb8d2a722d41e172480d86af986be71ebce7e85623439bc39807883c390ae42c",
+    "empyrean": "8a7c54b0fca509426bfe11bf009ece1e693fbade9da9189a762bad612220dcc5",
+    "eternalflame": "b7da7a07e971a6a94b9a262fe27ae12d52e0fe5ab33d134594b876a53ac6211d",
+    "eternalwarlord": "80299ce0b7a4c31ce59f394bbfbe1c793dfd525e5cfff03325fd494fd25f5b76",
+    "explosiveart": "4862da2f94b0da2583ac2b1857aa87f9e4883f25f7b4dd9323a5280240ebe29e",
+    "forest": "a57503a7615bbd27d9cdc257d368970e3a82528242871588ea72ce1415e40b26",
+    "frostveil": "f055ae0fa2eb98a6f8c3f428e19f882108fa9f67f8206f2fa18b12afeb63d5d8",
+    "haunted": "65a10cd79d4f1e5791d443a6ade8a38bf1df5d4ec0d7a480c9c1fb606deafdc0",
+    "heartbane": "9fbbfd5de391c443019e40fa3d09cfa1707f211374ef4c0f8b6f0534927b1fd2",
+    "hexbound": "868a7c964dfc908f4f9055048052524d442a9d451a27d2fc4aaa8bc5b597d163",
+    "hollowbane": "369c82ee166741e05daa4ba3b977b814bd8148df450d28f8a5527a52031d2b17",
+    "ice": "4a761f9f65e663e71d32edeecf88b75e84278a4318bfc83f01c4e95bb87591a8",
+    "lunarherald": "fd81417bcad3689ef878e1db23ccf06ae4c4123ec6d1bc05530098f55c614c0a",
+    "moonborn": "f5dac391044370ba70aa73a66c9846c88a022c45d59407b8d59299623ee8824b",
+    "moonfang": "de6a7c5dc055c99f47bcb44b7c4e9fab0e06e25fdb0bbb73872fc1f12f10efcc",
+    "moonreaper": "ff4badc9d0b96d1cee3afc121fbcbcf9cea386aa1591dc33cb18f009d5561248",
+    "nethervenom": "120247a47654a4109b61dd056603aafeb01967cfda84c11cfda2429c2b83745b",
+    "ocean": "d4731a9019d4d909491c4cfd80798481fe4314a5317efc8d2db3ad00b54912a9",
+    "outlaw": "ed203eafe056722a0b08ab229fcc28426e4b7ac12a2d037a3ed56660fcd75468",
+    "primordial": "37ed92b204b7248e392702e8892db305268c05cacac50a5545d0be7489b1801c",
+    "radiant": "7ad3d0c22e00c0d4fda3a13309c42a9605276875577bb5943d5ad8f31aad66c4",
+    "royal": "d15eaef3e18aa3851d67f1ca9ce1ab4268b522f8b33b1144804acdf3b204e09e",
+    "sanctum": "dcd335932b6287b0655e6d927f113664772c2537f0dce393fc176291e8d6086b",
+    "sandshadow": "fef729200139c3ada0ceb55eeba74482b232692df3909bc6d354e180b19f2f0c",
+    "sawmill": "0b367b05460afa2639a27b81f884c31d86f5755fb06583d11794621099ec564f",
+    "shadowchain": "5ce23332e109aa7f77d0546cc5006389a402b6971696edbf6ea4038fcd60093a",
+    "skyfury": "9032d2ae85b78762c7050bcc0602c789f8d07680dc790913e7b6a40408bcdd22",
+    "solaris": "e80bc065bfc8d639be1a7991b03b075602f7f2b934d02a379e553e142d7f5c46",
+    "soulforged": "e19ba8e5432ac2b4de707cc139f9e933b73c968e9a405ba4ff6a543da335aed9",
+    "spectral": "5db77aa651409bd5da87d01eee121dd4c2e7b99d24f82985ae4868034a47ac8e",
+    "sundered": "1d50a9d72d6f6754d85bc12e59d2a62937267e71c8363b0180189974e830d04a",
+    "sunfist": "388f506868e528e4c720c43218f3d62484a8109a851b8b7d32bfd65e119bb4f0",
+    "tempest": "9d9cb3f64cdeb8e3bdf11b37b8aa339fd83e1d1ca87a122a17249719ab829292",
+    "violet": "56e2004f9383802f8c3e659a605f1e7e7a4118824b63721e8a46812cb00caac7",
+    "voidbound": "5386430178f990dcf8e9f6c03ba4f4889812249d7b03ade1c215c01573356746",
+    "voidwing": "1a1ecfbf44e1fcf6cd8e51f6728824d6a78ce6be221075022cded844474d5dd5",
+    "volcanic": "2239c1e8d12fddd2bee6296a6164bc6db73dcb7e00cb1d58761d7d54a7733f06",
+    "warshade": "95f7b5364e64b4c8a8330af97ad2a44e0b77bb2702d6bd5b0a2a2af92c9ffd95"
+  }
+}
