@@ -1181,6 +1181,10 @@ def export_map_bakes(only=None):
             total_kb += kb
             manifest["maps"][name] = {
                 "file": "res://assets/maps/%s.png" % name, "w": w, "h": h,
+                "river_points": [[int(x), int(y)] for x, y in mr.river_points],
+                "torch_stones": [[int(x), int(y)] for x, y in mr.torch_stones],
+                "radiant_shop": [int(mr.radiant_shop_pos[0]), int(mr.radiant_shop_pos[1])],
+                "dire_shop": [int(mr.dire_shop_pos[0]), int(mr.dire_shop_pos[1])],
             }
             print("[convert] maps: %-12s %dx%d  %d KB" % (name, w, h, kb))
 

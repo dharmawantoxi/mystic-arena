@@ -157,7 +157,8 @@ static func _hit(model: RefCounted, proj: Dictionary, target: BattleUnit) -> voi
 			)
 		return
 	var bullet_type := str(proj.get("bullet_type", "normal"))
-	target.take_damage(float(proj.damage), str(proj.team), "projectile", source)
+	var dealt := target.take_damage(float(proj.damage), str(proj.team), "projectile", source)
+	model.add_damage_number(target.pos, int(dealt), false, "normal")
 	var special: Dictionary = proj.get("special", {})
 	var enemies: Array[BattleUnit] = model.enemies_of(str(proj.team))
 	if bullet_type == "cannon":

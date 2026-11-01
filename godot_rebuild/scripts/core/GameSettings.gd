@@ -17,6 +17,7 @@ const DEFAULTS := {
 	"language": "id",
 	"input_mode": "keyboard",
 	"debug": false,
+	"render_quality": "high",
 }
 const DIFFICULTY_MODES := ["easy", "normal", "hard"]
 const SPEEDS := [0.5, 1.0, 1.5, 2.0]
@@ -48,6 +49,8 @@ func _normalize() -> void:
 		values.difficulty = "normal"
 	if not values.language in ["id", "en"]:
 		values.language = "id"
+	if not values.render_quality in ["low", "medium", "high"]:
+		values.render_quality = "high"
 	if not values.input_mode in ["keyboard", "controller"]:
 		values.input_mode = "keyboard"
 	if not values.fps_limit in [0, 30, 60, 120]:

@@ -125,6 +125,22 @@ def main() -> int:
     check(len(baked_props["nexus"]) == 2, "Baked nexus sprite manifest")
     check("EntityProjectiles.update(self)" in (PROJECT / "scripts/core/MatchModel.gd").read_text(encoding="utf-8"), "Match model updates traveling projectiles")
     check("EntityVisuals.draw_unit" in (PROJECT / "scripts/game/ArenaView.gd").read_text(encoding="utf-8"), "Arena renderer uses baked entity sprites")
+    render_dir = PROJECT / "scripts/render"
+    for name in ("RenderCache.gd", "RenderQuality.gd", "RenderEasing.gd", "MapView.gd", "CombatEffects.gd", "RenderCinematics.gd"):
+        check((render_dir / name).is_file(), f"Native render module: {name}")
+    render_data = json.loads((PROJECT / "data/render_data.json").read_text(encoding="utf-8"))
+    map_bakes = json.loads((PROJECT / "data/map_bakes.json").read_text(encoding="utf-8"))["maps"]
+    check(len(render_data["map_themes"]) == 54, "Render contract covers 54 themes")
+    check(len(map_bakes) == 54, "54 baked map textures")
+    check(len(list((PROJECT / "assets/maps").glob("*.png"))) == 54, "54 map PNG assets")
+    check(render_data["effect_caps"] == {"MAX_FLOATING": 300, "MAX_PARTICLES": 500, "MAX_EXPLOSIONS": 80}, "EffectManager caps parity")
+    arena_text = (PROJECT / "scripts/game/ArenaView.gd").read_text(encoding="utf-8")
+    check("game.map_view.draw_static" in arena_text, "Arena renderer uses baked map")
+    check("game.effects.draw" in arena_text, "Arena renderer uses native EffectManager")
+    check("game.cinematics.draw" in arena_text, "Arena renderer draws cinematics")
+    core_game_text = (PROJECT / "scripts/game/CoreGame.gd").read_text(encoding="utf-8")
+    check("func cinematic_active() -> bool:" in core_game_text, "CoreGame implements cinematic pause contract")
+    check("signal render_event" in (PROJECT / "scripts/core/MatchModel.gd").read_text(encoding="utf-8"), "MatchModel emits render events")
     print(f"PASS: {checks} native project/source checks")
     return 0
 

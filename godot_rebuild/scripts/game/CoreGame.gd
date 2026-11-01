@@ -21,6 +21,9 @@ var result_victory := false
 var reward_summary: Dictionary = {}
 var button_rects: Dictionary = {}
 var speed_accumulator := 0.0
+var map_view := MapView.new()
+var effects := CombatEffects.new()
+var cinematics := RenderCinematics.new()
 var _reward_granted := false
 var _context_attached := false
 
@@ -28,6 +31,9 @@ var _context_attached := false
 func _exit_tree() -> void:
 	model.clear_unit_refs()
 	EntityVisuals.clear_cache()
+	RenderCache.clear_cache()
+	effects.clear()
+	cinematics.clear()
 
 
 func attach_context(
@@ -58,7 +64,19 @@ func configure(level: int, replay := false) -> void:
 		settings.load_values()
 	var save_data := save_repo.load_slot()
 	model.setup(config, save_data, str(settings.values.difficulty), replay)
-	model.match_finished.connect(_on_match_finished)
+	if not model.match_finished.is_connected(_on_match_finished):
+		model.match_finished.connect(_on_match_finished)
+	if not model.render_event.is_connected(_on_render_event):
+		model.render_event.connect(_on_render_event)
+	effects.configure(settings.values)
+	effects.clear()
+	cinematics.clear()
+	map_view.configure(
+		str(config.get("map_theme", "forest")),
+		model.data,
+		RenderQuality.from_settings(settings.values)
+	)
+	cinematics.start_level_intro(config, model.data, str(settings.values.difficulty))
 	view = ArenaViewScript.new()
 	view.game = self
 	add_child(view)
@@ -70,20 +88,77 @@ func combat_ready() -> bool:
 	return model.data.valid() and not model.level_config.is_empty()
 
 
+func cinematic_active() -> bool:
+	return cinematics.blocking()
+
+
+func skip_cinematic() -> void:
+	cinematics.skip()
+	if view != null:
+		view.queue_redraw()
+
+
 func simulation_step() -> void:
 	if not combat_ready() or result_visible:
+		return
+	if cinematics.blocking():
+		cinematics.update()
+		if view != null:
+			view.queue_redraw()
 		return
 	speed_accumulator += clampf(float(settings.values.game_speed), 0.5, 2.0)
 	while speed_accumulator >= 1.0:
 		speed_accumulator -= 1.0
 		model.step()
+		effects.update()
+		map_view.update(model.frame)
+		cinematics.update()
 		if model.state != "playing":
 			break
 	if view != null:
 		view.queue_redraw()
 
 
+func _on_render_event(kind: String, data: Dictionary) -> void:
+	match kind:
+		"damage":
+			effects.add_damage_number(
+				data.pos,
+				int(data.amount),
+				bool(data.get("critical", false)),
+				str(data.get("type", "normal"))
+			)
+		"gold":
+			effects.add_gold_popup(data.pos, int(data.amount))
+		"popup":
+			effects.add_popup(data.pos, str(data.text), data.color)
+		"effect":
+			effects.add_effect(data.pos, str(data.type), data.color, int(data.radius))
+		"shake":
+			effects.add_shake(float(data.amount))
+		"death":
+			effects.add_death_explosion(data.pos, str(data.team), str(data.get("size", "medium")))
+		"combo_kill":
+			effects.register_combo_kill()
+		"wave":
+			effects.announce_wave(int(data.number))
+		"path_preview":
+			effects.show_path_preview(data.paths)
+		"achievement":
+			effects.unlock_achievement(
+				str(data.title), str(data.description), str(data.get("icon", "star"))
+			)
+		"boss_intro":
+			cinematics.start_boss_intro(data.unit, model.data)
+		"boss_death":
+			cinematics.start_boss_death(data.unit)
+			effects.add_shake(25.0)
+
+
 func pointer_action(action: Dictionary) -> void:
+	if cinematics.blocking():
+		cinematics.skip()
+		return
 	var pos: Vector2 = action.get("pos", Vector2.ZERO)
 	var kind := str(action.get("kind", "tap"))
 	if kind == "scroll":
@@ -99,6 +174,8 @@ func pointer_action(action: Dictionary) -> void:
 	if result_visible or shop_open or item_shop_open or build_popup:
 		_close_popups()
 		return
+	if _handle_map_shop(pos):
+		return
 	if kind == "long_press":
 		var slot := _slot_at(pos)
 		if slot >= 0:
@@ -106,21 +183,7 @@ func pointer_action(action: Dictionary) -> void:
 			build_popup = true
 			_layout_buttons()
 		return
-	for hero: BattleUnit in model.heroes:
-		if hero.alive and hero.pos.distance_to(pos) <= hero.radius + 12:
-			model.selected_hero = hero
-			model.selected_tower = null
-			_layout_buttons()
-			return
-	for tower: BattleUnit in model.towers:
-		if tower.alive and tower.pos.distance_to(pos) <= tower.radius + 10:
-			model.selected_tower = tower
-			model.selected_hero = null
-			_layout_buttons()
-			return
-	if model.blue_base.pos.distance_to(pos) <= model.blue_base.radius + 10:
-		model.selected_tower = model.blue_base
-		_layout_buttons()
+	if _select_unit_at(pos):
 		return
 	var slot := _slot_at(pos)
 	if slot >= 0:
@@ -132,6 +195,39 @@ func pointer_action(action: Dictionary) -> void:
 		model.selected_hero.move_toward_point(pos)
 
 
+func _select_unit_at(pos: Vector2) -> bool:
+	for hero: BattleUnit in model.heroes:
+		if hero.alive and hero.pos.distance_to(pos) <= hero.radius + 12:
+			model.selected_hero = hero
+			model.selected_tower = null
+			_layout_buttons()
+			return true
+	for tower: BattleUnit in model.towers:
+		if tower.alive and tower.pos.distance_to(pos) <= tower.radius + 10:
+			model.selected_tower = tower
+			model.selected_hero = null
+			_layout_buttons()
+			return true
+	if model.blue_base.pos.distance_to(pos) <= model.blue_base.radius + 10:
+		model.selected_tower = model.blue_base
+		_layout_buttons()
+		return true
+	return false
+
+
+func _handle_map_shop(pos: Vector2) -> bool:
+	var shop := map_view.shop_at(pos)
+	if shop == "item":
+		item_shop_open = true
+		effects.popup_show()
+		_layout_buttons()
+		return true
+	if shop == "hero":
+		_toggle_shop()
+		return true
+	return false
+
+
 func _slot_at(pos: Vector2) -> int:
 	for index in range(model.build_slots_blue.size()):
 		var slot := model.build_slots_blue[index]
@@ -141,6 +237,9 @@ func _slot_at(pos: Vector2) -> int:
 
 
 func key_pressed(key: Key) -> void:
+	if cinematics.blocking() and key in [KEY_SPACE, KEY_ENTER]:
+		cinematics.skip()
+		return
 	if handle_dev_key(key):
 		return
 	match key:
@@ -208,6 +307,10 @@ func _toggle_shop() -> void:
 	shop_open = not shop_open
 	item_shop_open = false
 	build_popup = false
+	if shop_open:
+		effects.popup_show()
+	else:
+		effects.popup_hide()
 	_layout_buttons()
 
 
@@ -215,6 +318,7 @@ func _close_popups() -> void:
 	shop_open = false
 	item_shop_open = false
 	build_popup = false
+	effects.popup_hide()
 	_layout_buttons()
 
 
