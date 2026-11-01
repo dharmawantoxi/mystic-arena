@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import hashlib
 import json
 import operator
 from pathlib import Path
@@ -154,6 +155,39 @@ def main() -> int:
     check("func play_positional(" in (PROJECT / "scripts/audio/AudioDirector.gd").read_text(encoding="utf-8"), "AudioDirector positional audio")
     check("func migrate_legacy_save(" in (PROJECT / "scripts/core/SaveRepository.gd").read_text(encoding="utf-8"), "SaveRepository legacy migration")
     check("var adaptive_quality := AdaptiveQuality.new()" in (PROJECT / "scripts/Main.gd").read_text(encoding="utf-8"), "Main adaptive quality wired")
+    archetype_path = PROJECT / "scripts/core/HeroArchetypes.gd"
+    check(archetype_path.is_file(), "Native HeroArchetypes module exists")
+    archetypes = json.loads((PROJECT / "data/hero_archetypes.json").read_text(encoding="utf-8"))
+    oracle = json.loads((PROJECT / "tests/fixtures/hero_archetypes_parity.json").read_text(encoding="utf-8"))
+    check(archetypes["schema"] == 1 and archetypes["source"] == "hero_archetypes.py", "Archetype contract schema/source")
+    check(archetypes["source_sha256"] == hashlib.sha256((ROOT / "hero_archetypes.py").read_bytes()).hexdigest(), "Archetype source hash current")
+    check(oracle["source_sha256"] == archetypes["source_sha256"], "Archetype oracle hash current")
+    check(len(archetypes["archetypes"]) == 222 and len(archetypes["boss_resistances"]) == 216, "Archetype 222/216 coverage")
+    check(set(archetypes["archetypes"]) == set(core["heroes"]), "Archetypes cover the playable hero catalog exactly")
+    boss_keys = set(core["bosses"]["mini"]) | set(core["bosses"]["true"])
+    check(set(archetypes["boss_resistances"]) == boss_keys, "Boss resistances cover the boss catalog exactly")
+    check(set(oracle["heroes"]) == set(core["heroes"]) and set(oracle["bosses"]) == boss_keys, "Python oracle covers every runtime row")
+    for name in ("ARMOR_FACTOR", "ARMOR_MAX", "MR_MAX"):
+        check(gd_constant(archetype_path, name) == constant(ROOT / "hero_archetypes.py", name), f"Archetype source constant: {name}")
+    core_data_text = (PROJECT / "scripts/core/CoreData.gd").read_text(encoding="utf-8")
+    check("var archetypes: HeroArchetypes" in core_data_text and "archetypes.valid()" in core_data_text, "CoreData loads and validates archetypes")
+    unit_text = (PROJECT / "scripts/core/BattleUnit.gd").read_text(encoding="utf-8")
+    check("data.archetypes.get_archetype(hero_type, stats)" in unit_text, "Hero setup uses analyzed archetype/manual override")
+    check("data.archetypes.boss_resistances_for(boss_type, boss_class, stats)" in unit_text, "Boss setup uses calibrated resistance/clamp helper")
+    check("intentionally separate from the analyzed damage school" in unit_text, "Role-based item Magic attribute stays separate from damage school")
+    combat_text = (PROJECT / "scripts/entities/EntityCombat.gd").read_text(encoding="utf-8")
+    check("HeroArchetypes.physical_mitigation(unit.armor)" in combat_text, "Boss combat uses source armor curve")
+    check("unit.status.armor_shred_amount * HeroArchetypes.ARMOR_FACTOR" in combat_text, "Boss armor shred subtracts after curve")
+    check("minf(HeroArchetypes.MR_MAX, unit.magic_resist)" in combat_text, "Boss magic resistance uses source cap")
+    menu_text = (PROJECT / "scripts/ui/MenuView.gd").read_text(encoding="utf-8")
+    check("arch.short_label(hero_type, stats)" in menu_text and "arch.detail_label(hero_type, stats)" in menu_text, "Hero shop displays school/tier/power")
+    arena_text = (PROJECT / "scripts/game/ArenaView.gd").read_text(encoding="utf-8")
+    check("func _draw_boss_resistances(" in arena_text and "boss.resist_profile" in arena_text, "Arena displays boss resistance profile")
+    check("_test_archetypes()" in (PROJECT / "tests/run_all.gd").read_text(encoding="utf-8"), "Native suite runs archetype parity")
+    for workflow in ("godot-check.yml", "godot-rebuild.yml"):
+        workflow_text = (ROOT / ".github/workflows" / workflow).read_text(encoding="utf-8")
+        check("tools/prepare_godot_archetypes.py --check" in workflow_text, f"CI archetype staleness gate: {workflow}")
+        check("tools/test_godot_archetypes_prepare.py" in workflow_text, f"CI archetype exporter tests: {workflow}")
     print(f"PASS: {checks} native project/source checks")
     return 0
 

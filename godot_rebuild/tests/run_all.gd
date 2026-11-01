@@ -25,12 +25,23 @@ func near(a: float, b: float) -> bool:
 	return absf(a - b) < 0.000001
 
 
+func archetype_equal(actual: Dictionary, expected: Dictionary) -> bool:
+	return (
+		str(actual.get("dmg_type", "")) == str(expected.get("dmg_type", ""))
+		and str(actual.get("playstyle", "")) == str(expected.get("playstyle", ""))
+		and str(actual.get("tier", "")) == str(expected.get("tier", ""))
+		and int(actual.get("power", 0)) == int(expected.get("power", 0))
+		and bool(actual.get("derived", false)) == bool(expected.get("derived", false))
+	)
+
+
 func _run() -> void:
 	_test_state()
 	_test_clock()
 	_test_gestures()
 	_test_settings()
 	_test_core_data()
+	_test_archetypes()
 	_test_core_rules()
 	_test_core_save()
 	_test_core_services()
@@ -534,6 +545,15 @@ func _test_app() -> void:
 	sliders[0].value = 0.5
 	check(app.settings.values.master_volume == 0.5, "slider updates shared settings")
 	check(app.audio.settings.master_volume == 0.5, "slider updates audio director")
+	app.menu.show_heroes()
+	var hero_buttons := app.menu.root.find_children("*", "Button", true, false)
+	var school_labels := 0
+	for button: Button in hero_buttons:
+		if "PHY" in button.text or "MAG" in button.text:
+			school_labels += 1
+	check(hero_buttons.size() >= 222, "hero shop renders the analyzed catalog")
+	check(school_labels == 222, "hero shop renders school/tier/power labels")
+	check("snapshot" in hero_buttons[0].tooltip_text, "hero shop explains tier/power snapshot")
 	app.menu.show_main()
 	var before: int = cloud.polls
 	app._process(0.016)
@@ -683,6 +703,149 @@ func _test_core_data() -> void:
 	check(data.lane("top").size() > 100 and data.lane("river").size() > 50, "lanes exported")
 	check(data.hero("kaizen").get("hp", 0) == 550, "hero balance applied")
 	check(not data.text("menu_play", "id").is_empty(), "localization exported")
+
+
+func _test_archetypes() -> void:
+	var file := FileAccess.open("res://tests/fixtures/hero_archetypes_parity.json", FileAccess.READ)
+	check(file != null, "archetype Python oracle fixture exists")
+	if file == null:
+		return
+	var oracle: Dictionary = JSON.parse_string(file.get_as_text())
+	var data := CoreData.new()
+	var arch := data.archetypes
+	check(arch.valid(), "native archetype contract loads")
+	check(arch.archetypes.size() == 222, "222 analyzed hero archetypes")
+	check(arch.boss_resistances.size() == 216, "216 calibrated boss resistances")
+	for hero_type: String in oracle.heroes:
+		var row: Dictionary = oracle.heroes[hero_type]
+		var matches := archetype_equal(arch.get_archetype(hero_type), row.expected)
+		check(
+			matches and arch.school_of(hero_type) == str(row.school),
+			"hero archetype parity: " + hero_type
+		)
+	for row: Dictionary in oracle.hero_overrides:
+		var stats: Dictionary = row.stats
+		var matches := archetype_equal(arch.get_archetype(row.hero_type, stats), row.expected)
+		check(
+			matches and arch.school_of(row.hero_type, stats) == str(row.school),
+			"hero manual override parity: %s/%s" % [row.hero_type, row.stats.dmg_type]
+		)
+	for boss_type: String in oracle.bosses:
+		var expected: Array = oracle.bosses[boss_type]
+		var actual := arch.get_boss_resistances(boss_type)
+		check(
+			int(actual[0]) == int(expected[0]) and near(float(actual[1]), float(expected[1])),
+			"boss resistance parity: " + boss_type
+		)
+	for row: Dictionary in oracle.boss_fallbacks:
+		var actual := arch.get_boss_resistances(row.boss_type, row.boss_class)
+		var expected: Array = row.expected
+		check(
+			int(actual[0]) == int(expected[0]) and near(float(actual[1]), float(expected[1])),
+			"boss fallback/table precedence: %s/%s" % [row.boss_type, row.boss_class]
+		)
+	for row: Dictionary in oracle.profiles:
+		var actual := arch.resist_from_profile(
+			row.profile,
+			row.boss_class,
+			row.get("base", {}),
+			row.get("mods", {}),
+			float(row.get("armor_scale", 1.0)),
+			float(row.get("mr_scale", 1.0)),
+			float(row.get("armor_off", 0.0))
+		)
+		var expected: Array = row.expected
+		check(
+			int(actual[0]) == int(expected[0]) and near(float(actual[1]), float(expected[1])),
+			"boss profile/clamp/round parity: %s/%s" % [row.profile, row.boss_class]
+		)
+	for row: Dictionary in oracle.boss_setups:
+		var actual := arch.boss_resistances_for(row.boss_type, row.boss_class, row.stats)
+		var expected: Dictionary = row.expected
+		check(
+			(
+				int(actual.armor) == int(expected.armor)
+				and near(float(actual.magic_resist), float(expected.magic_resist))
+				and str(actual.profile) == str(expected.profile)
+			),
+			"boss setup override parity: " + row.boss_type
+		)
+	for row: Array in oracle.mitigation:
+		check(
+			near(HeroArchetypes.physical_mitigation(float(row[0])), float(row[1])),
+			"physical mitigation parity: armor %s" % row[0]
+		)
+	var vex := BattleUnit.new()
+	vex.setup_hero(data, "vex", "blue", Vector2(300, 300))
+	check(
+		vex.dmg_school == "magic" and vex.is_magic_hero(),
+		"analyzed magic hero drives damage school"
+	)
+	var kaizen := BattleUnit.new()
+	kaizen.setup_hero(data, "kaizen", "blue", Vector2(300, 300))
+	check(kaizen.dmg_school == "physical" and not kaizen.is_magic_hero(), "analyzed physical hero")
+	var forced_data := CoreData.new()
+	forced_data.data["heroes"]["vex"]["dmg_type"] = "PHYSICAL"
+	var forced := BattleUnit.new()
+	forced.setup_hero(forced_data, "vex", "blue", Vector2(300, 300))
+	check(
+		forced.dmg_school == "physical" and forced.playstyle == "FIGHTER",
+		"manual hero school override wins"
+	)
+	var gornak := BattleUnit.new()
+	gornak.setup_boss(data, "gornak", data.lane("mid"))
+	check(
+		gornak.armor == 8 and near(gornak.magic_resist, 0.187) and gornak.resist_profile == "magic",
+		"boss setup reads calibrated table, not zero"
+	)
+	var manual_data := CoreData.new()
+	manual_data.data["bosses"]["mini"]["gornak"]["armor"] = 999
+	manual_data.data["bosses"]["mini"]["gornak"]["magic_resist"] = 0.99
+	var manual_boss := BattleUnit.new()
+	manual_boss.setup_boss(manual_data, "gornak", manual_data.lane("mid"))
+	check(
+		manual_boss.armor == 40 and near(manual_boss.magic_resist, 0.45),
+		"manual boss resistances clamp"
+	)
+	var boss := BattleUnit.new()
+	boss.setup_boss(data, "abaddon", data.lane("mid"))
+	boss.damage_reduction = 0.0
+	boss.max_damage_per_hit = 0
+	var physical := EntityCombat.boss_pre_damage(boss, 100.0, "physical", null)
+	var armor_reduction := clampf(1.0 - HeroArchetypes.physical_mitigation(32.0), 0.0, 0.60)
+	check(
+		near(physical, 100.0 * (1.0 - armor_reduction)),
+		"boss armor uses source curve and 0.60 reduction cap"
+	)
+	boss.status.armor_shred_amount = 2.0
+	boss.status.armor_shred_timer = 60
+	var shredded := EntityCombat.boss_pre_damage(boss, 100.0, "physical", null)
+	var reduction := (
+		1.0 - HeroArchetypes.physical_mitigation(32.0) - 2.0 * HeroArchetypes.ARMOR_FACTOR
+	)
+	check(
+		near(shredded, 100.0 * (1.0 - clampf(reduction, 0.0, 0.60))),
+		"boss shred subtracts after armor curve"
+	)
+	var magic := EntityCombat.boss_pre_damage(boss, 100.0, "magic", null)
+	check(near(magic, 100.0 * (1.0 - 0.095)), "boss magic resistance applies")
+	check(arch.short_label("akaroth") == "PHY·TNK", "tank shop label parity")
+	check(
+		"Tier C" in arch.detail_label("vex") and "Power 6" in arch.detail_label("vex"),
+		"tier/power shop detail"
+	)
+	check(HeroArchetypes.school_color("MAGIC") == Color("96c4ff"), "magic label color parity")
+	var copy_entry := arch.get_archetype("vex")
+	copy_entry["dmg_type"] = "PHYSICAL"
+	check(arch.school_of("vex") == "magic", "archetype lookup returns defensive copy")
+	var missing_path := "user://missing_archetypes_%d.json" % Time.get_ticks_usec()
+	var missing := HeroArchetypes.new(missing_path)
+	check(
+		not missing.valid() and not missing.load_error.is_empty(),
+		"missing archetype data fails closed"
+	)
+	var invalid_core := CoreData.new("res://data/core_data.json", missing_path)
+	check(not invalid_core.valid(), "CoreData rejects missing archetype contract")
 
 
 func _test_core_rules() -> void:

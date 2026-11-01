@@ -36,6 +36,7 @@ func _draw() -> void:
 	game.effects.draw(self)
 	draw_set_transform(Vector2.ZERO)
 	_draw_top_bar(model)
+	_draw_boss_resistances(model)
 	_draw_selection(model)
 	_draw_notifications(model)
 	if game.dev.show_debug:
@@ -131,6 +132,32 @@ func _draw_top_bar(model: MatchModel) -> void:
 	draw_string(font, Vector2(size.x - 220, 35), state, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Ui.TEXT)
 
 
+func _draw_boss_resistances(model: MatchModel) -> void:
+	var boss := model.active_boss
+	if boss == null or not boss.alive:
+		return
+	var rect := Rect2(size.x - 344, 62, 320, 58)
+	draw_rect(rect, Color(0.02, 0.03, 0.06, 0.82))
+	draw_string(
+		font,
+		rect.position + Vector2(12, 23),
+		"%s · %s" % [boss.display_name, boss.resist_profile.to_upper()],
+		HORIZONTAL_ALIGNMENT_LEFT,
+		rect.size.x - 24,
+		15,
+		Ui.GOLD
+	)
+	draw_string(
+		font,
+		rect.position + Vector2(12, 45),
+		"ARMOR %d · MAGIC RESIST %.1f%%" % [int(boss.armor), boss.magic_resist * 100.0],
+		HORIZONTAL_ALIGNMENT_LEFT,
+		rect.size.x - 24,
+		14,
+		Ui.TEXT
+	)
+
+
 func _draw_selection(model: MatchModel) -> void:
 	if model.selected_tower != null and model.selected_tower.alive:
 		var tower := model.selected_tower
@@ -147,8 +174,15 @@ func _draw_selection(model: MatchModel) -> void:
 	elif model.selected_hero != null and model.selected_hero.alive:
 		var hero := model.selected_hero
 		var info := (
-			"%s L%d  HP %d/%d  DMG %d"
-			% [hero.display_name, hero.level, int(hero.hp), int(hero.max_hp), int(hero.damage)]
+			"%s L%d  HP %d/%d  DMG %d  ·  %s"
+			% [
+				hero.display_name,
+				hero.level,
+				int(hero.hp),
+				int(hero.max_hp),
+				int(hero.damage),
+				game.model.data.archetypes.short_label(hero.unit_type, hero.stats),
+			]
 		)
 		draw_string(font, Vector2(24, 210), info, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Ui.TEXT)
 		if game.button_rects.has("upgrade"):

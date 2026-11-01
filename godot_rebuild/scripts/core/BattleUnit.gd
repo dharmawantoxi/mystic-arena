@@ -92,6 +92,10 @@ var heal_target_ratio := 0.80
 var base_heal_rate := 3.0
 var passive_heal_rate := 0.15
 var dmg_school := "physical"
+var dmg_type := "PHYSICAL"
+var playstyle := "FIGHTER"
+var archetype: Dictionary = {}
+var resist_profile := "balanced"
 var is_melee_hero := false
 var ai_level := 1
 var tower_kind := "outer"
@@ -452,7 +456,10 @@ func setup_hero(data: CoreData, hero_type: String, team_name: String, position: 
 	else:
 		attack_range = clampf(attack_range, 120.0, 220.0)
 	base_speed = speed
-	dmg_school = "magic" if is_magic_hero() else "physical"
+	archetype = data.archetypes.get_archetype(hero_type, stats)
+	dmg_type = str(archetype.get("dmg_type", "PHYSICAL"))
+	playstyle = str(archetype.get("playstyle", "FIGHTER"))
+	dmg_school = dmg_type.to_lower()
 	_apply_hero_level(data)
 	HeroSkillKit.init_state(self)
 
@@ -502,8 +509,10 @@ func setup_boss(data: CoreData, boss_type: String, lane_path: PackedVector2Array
 	attack_cooldown = int(stats.get("attack_cooldown", 40))
 	gold_reward = int(stats.get("gold_reward", 350))
 	radius = float(stats.get("radius", 30))
-	armor = float(stats.get("armor", 0.0))
-	magic_resist = float(stats.get("magic_resist", 0.0))
+	var resistances := data.archetypes.boss_resistances_for(boss_type, boss_class, stats)
+	armor = float(resistances.armor)
+	magic_resist = float(resistances.magic_resist)
+	resist_profile = str(resistances.profile)
 	color = data.color(stats.get("color"), Color.PURPLE)
 	if not path.is_empty():
 		pos = path[path.size() - 1]
@@ -694,6 +703,8 @@ func respawn(_data: CoreData) -> void:
 
 
 func is_magic_hero() -> bool:
+	# hero_items.py uses the role-based Magic attribute for magic_only items;
+	# it is intentionally separate from the analyzed damage school.
 	var role := str(stats.get("role", "")).to_lower()
 	for keyword: String in ["mage", "caster", "sorcerer", "magic", "warlock", "necro"]:
 		if keyword in role:

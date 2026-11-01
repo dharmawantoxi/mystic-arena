@@ -3,10 +3,16 @@ extends RefCounted
 
 ## Native access to data exported from _core.py and its pure data modules.
 var data: Dictionary = {}
+var archetypes: HeroArchetypes
 var load_error := ""
 
 
-func _init(path := "res://data/core_data.json") -> void:
+func _init(
+	path := "res://data/core_data.json", archetype_path := HeroArchetypes.DEFAULT_PATH
+) -> void:
+	archetypes = HeroArchetypes.new(archetype_path)
+	if not archetypes.valid():
+		load_error = archetypes.load_error
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		load_error = "Cannot open %s" % path
@@ -19,7 +25,7 @@ func _init(path := "res://data/core_data.json") -> void:
 
 
 func valid() -> bool:
-	return load_error.is_empty() and data.get("schema", 0) == 1
+	return load_error.is_empty() and archetypes.valid() and data.get("schema", 0) == 1
 
 
 func rule(key: String, fallback: Variant = null) -> Variant:
