@@ -6,6 +6,7 @@ const State := preload("res://scripts/core/AppState.gd")
 const Clock := preload("res://scripts/core/FixedClock.gd")
 const Gesture := preload("res://scripts/core/GestureTracker.gd")
 const BossKit := preload("res://scripts/entities/generated/BossKit.gd")
+const BalanceParity := preload("res://tests/HeroBalanceParityTest.gd")
 var checks := 0
 var failures := 0
 
@@ -42,6 +43,7 @@ func _run() -> void:
 	_test_settings()
 	_test_core_data()
 	_test_archetypes()
+	_test_balance()
 	_test_core_rules()
 	_test_core_save()
 	_test_core_services()
@@ -703,6 +705,10 @@ func _test_core_data() -> void:
 	check(data.lane("top").size() > 100 and data.lane("river").size() > 50, "lanes exported")
 	check(data.hero("kaizen").get("hp", 0) == 550, "hero balance applied")
 	check(not data.text("menu_play", "id").is_empty(), "localization exported")
+
+
+func _test_balance() -> void:
+	BalanceParity.run(self)
 
 
 func _test_archetypes() -> void:

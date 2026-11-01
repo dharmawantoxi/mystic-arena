@@ -172,7 +172,11 @@ func _buy_hero() -> bool:
 	hero.world = model
 	var offset: float = model.enemy_heroes.size() * 40 - 40
 	hero.setup_hero(
-		model.data, purchase_target, "red", model.red_base.pos + Vector2(-60, 30 + offset)
+		model.data,
+		purchase_target,
+		"red",
+		model.red_base.pos + Vector2(-60, 30 + offset),
+		model.data.balance.boss_unlocks_for_purchases(model.purchased_heroes)
 	)
 	model.enemy_heroes.append(hero)
 	model.ai_gold -= purchase_cost
