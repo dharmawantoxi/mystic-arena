@@ -171,7 +171,8 @@ func pointer_action(action: Dictionary) -> void:
 	var kind := str(action.get("kind", "tap"))
 	if kind == "scroll":
 		if item_shop_open:
-			item_page = clampi(item_page + int(action.get("value", 1)), 0, 1)
+			var pages := maxi(1, model.data.items.page_count())
+			item_page = clampi(item_page + int(action.get("value", 1)), 0, pages - 1)
 		return
 	if kind not in ["tap", "long_press", "double_tap"]:
 		return
@@ -357,7 +358,7 @@ func _ui_action(name: String) -> void:
 			"close":
 				_close_popups()
 			"item_page":
-				item_page = 1 - item_page
+				item_page = (item_page + 1) % maxi(1, model.data.items.page_count())
 			"upgrade":
 				_upgrade_selected()
 			"sell":
@@ -401,13 +402,10 @@ func _layout_buttons() -> void:
 		button_rects["close"] = Rect2(590, 560, 100, 44)
 		return
 	if item_shop_open:
+		var pages := maxi(1, model.data.items.page_count())
+		item_page = clampi(item_page, 0, pages - 1)
 		var index := 0
-		var items: Dictionary = model.data.data.get("items", {})
-		for item_id: String in items:
-			var item: Dictionary = items[item_id]
-			var tier := int(item.get("tier", 1))
-			if tier != item_page + 1:
-				continue
+		for item_id: String in model.data.items.page_items(item_page):
 			if index >= 10:
 				break
 			button_rects["buy_item:" + item_id] = Rect2(

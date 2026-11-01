@@ -74,6 +74,8 @@ func clear_unit_refs() -> void:
 		unit.killed_by = null
 		unit.target = null
 		unit.world = null
+		if unit.items != null:
+			unit.items.hero = null
 		for key: String in unit.kit:
 			if unit.kit[key] is BattleUnit:
 				unit.kit[key] = null
@@ -84,6 +86,7 @@ func clear_unit_refs() -> void:
 	spatial.clear()
 	effects.clear()
 	popups.clear()
+	EntityItems.clear()
 	ai = null
 
 
@@ -236,6 +239,7 @@ func step() -> void:
 		ai_gold += int(data.rule("GOLD_PER_SECOND", 3)) + maxi(0, wave_number)
 	_update_waves()
 	_update_spatial_grid()
+	EntityItems.update_auras(self)
 	var units := all_units()
 	for unit: BattleUnit in units:
 		unit.tick_timers(data)
@@ -349,15 +353,22 @@ func _attack(attacker: BattleUnit, target: BattleUnit) -> void:
 	var amount := attacker.damage
 	var is_crit := false
 	if attacker.kind == BattleUnit.Kind.HERO and attacker.items != null:
-		var crit := attacker.items.sum_stat("crit_chance")
-		if crit > 0.0 and rng.randf() < crit:
-			amount *= maxf(1.0, attacker.items.sum_stat("crit_mult"))
+		var rend: Variant = attacker.items.rend_crit()
+		if rend != null:
+			amount *= float(rend)
 			is_crit = true
+		else:
+			var crit := attacker.items.roll_crit(rng)
+			if bool(crit[0]):
+				amount *= float(crit[1])
+				is_crit = true
 	if (
 		attacker.kind == BattleUnit.Kind.HERO
 		and attacker.attack_range > 80.0
 		and attacker.unit_type != "morgath"
 	):
+		if attacker.items != null:
+			attacker.heal(amount * attacker.items.lifesteal())
 		EntityProjectiles.spawn_hero(self, attacker, target, amount, is_crit)
 		return
 	var dealt := target.take_damage(
@@ -365,15 +376,9 @@ func _attack(attacker: BattleUnit, target: BattleUnit) -> void:
 	)
 	if attacker.kind == BattleUnit.Kind.HERO:
 		if attacker.items != null:
-			var lifesteal := attacker.items.lifesteal()
-			if attacker.item_timer("blood_frenzy") > 0:
-				lifesteal += float(
-					attacker.items.catalog.get("demon_maw", {}).get("active", {}).get(
-						"lifesteal_bonus", 0.0
-					)
-				)
-			attacker.heal(dealt * lifesteal)
-			EntityItems.on_attack(attacker, target, amount, enemies_of(attacker.team), self)
+			EntityItems.on_basic_attack_hit(
+				attacker, target, dealt, enemies_of(attacker.team), self
+			)
 		add_effect(target.pos, "hit", attacker.color, 10)
 		add_damage_number(target.pos, int(dealt), is_crit, attacker.dmg_school)
 
@@ -602,21 +607,48 @@ func upgrade_selected_hero() -> bool:
 	return selected_hero.upgrade_hero(data)
 
 
-func buy_item(item_id: String) -> bool:
-	if selected_hero == null or not selected_hero.alive:
+func buy_item(item_id: String, hero: BattleUnit = null) -> bool:
+	var target := hero
+	if target == null:
+		target = selected_hero
+	if target == null:
+		for candidate: BattleUnit in heroes:
+			if candidate.alive:
+				target = candidate
+				break
+	if target == null and not heroes.is_empty():
+		target = heroes[0]
+	if target == null or target.items == null:
 		return false
 	var item := data.item(item_id)
 	var cost := int(item.get("cost", 0))
 	if item.is_empty() or gold < cost:
 		return false
-	if selected_hero.items.used() >= UnitInventory.MAX_SLOTS:
-		selected_hero.items.pending.append(item_id)
-	elif not selected_hero.items.add(
-		item_id, selected_hero.attack_range, selected_hero.is_magic_hero()
-	):
+	var inv := target.items
+	if inv.used_slots() + inv.pending.size() >= UnitInventory.MAX_SLOTS:
+		return false
+	if bool(item.get("melee_only", false)) and target.attack_range > 80.0:
+		return false
+	if bool(item.get("magic_only", false)) and not target.is_magic_hero():
+		return false
+	if not target.alive:
+		inv.pending.append(item_id)
+		gold -= cost
+		return true
+	if not inv.add(item_id, target.attack_range, target.is_magic_hero()):
 		return false
 	gold -= cost
-	selected_hero._apply_hero_level(data)
+	target._apply_hero_level(data)
+	return true
+
+
+func drop_item(hero: BattleUnit, item_id: String) -> bool:
+	if hero == null or hero.items == null:
+		return false
+	var index := hero.items.slots.find(item_id)
+	if index < 0 or hero.items.remove(index).is_empty():
+		return false
+	hero._apply_hero_level(data)
 	return true
 
 

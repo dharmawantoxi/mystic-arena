@@ -36,7 +36,7 @@ static func hero_pre_damage(
 	if bool(kit.get("shadow_realm_active", false)) or bool(kit.get("veil_active", false)):
 		result.miss = true
 		return result
-	if unit.items != null and unit.items.has("tempest_vane") and unit.item_timer("veil") > 0:
+	if unit.items != null and unit.items.is_veiled():
 		result.miss = true
 		return result
 	var physical := school == "physical"
@@ -49,17 +49,19 @@ static func hero_pre_damage(
 		return result
 	var evasion := float(kit.get("evasion", 0.0))
 	if unit.items != null:
-		evasion += unit.items.sum_stat("evasion")
+		evasion = maxf(evasion, unit.items.evasion())
 	var blind := 0.0
 	if source != null:
 		blind = source.status.blind_amount if source.status.blind_timer > 0 else 0.0
 	var true_strike := source != null and bool(source.kit.get("true_strike_active", false))
+	if source != null and source.items != null and source.items.has_true_strike():
+		true_strike = true
 	if physical and not true_strike and rng.randf() < clampf(evasion + blind, 0.0, 0.9):
 		result.miss = true
 		return result
 	var block := 0.0
 	if unit.items != null:
-		block = unit.items.block_amount(source)
+		block = unit.items.roll_block(rng)
 	if bool(kit.get("bristleback_active", false)):
 		var reduction := 0.70 if physical else 0.85
 		result.amount = amount * (1.0 - reduction)

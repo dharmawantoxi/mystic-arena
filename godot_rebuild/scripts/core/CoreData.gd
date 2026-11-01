@@ -5,13 +5,15 @@ extends RefCounted
 var data: Dictionary = {}
 var archetypes: HeroArchetypes
 var balance: HeroBalance
+var items: HeroItems
 var load_error := ""
 
 
 func _init(
 	path := "res://data/core_data.json",
 	archetype_path := HeroArchetypes.DEFAULT_PATH,
-	balance_path := HeroBalance.DEFAULT_PATH
+	balance_path := HeroBalance.DEFAULT_PATH,
+	items_path := HeroItems.DEFAULT_PATH
 ) -> void:
 	archetypes = HeroArchetypes.new(archetype_path)
 	if not archetypes.valid():
@@ -19,6 +21,9 @@ func _init(
 	balance = HeroBalance.new(archetypes, balance_path)
 	if load_error.is_empty() and not balance.valid():
 		load_error = balance.load_error
+	items = HeroItems.new(items_path)
+	if load_error.is_empty() and not items.valid():
+		load_error = items.load_error
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		load_error = "Cannot open %s" % path
@@ -35,6 +40,7 @@ func valid() -> bool:
 		load_error.is_empty()
 		and archetypes.valid()
 		and balance.valid()
+		and items.valid()
 		and data.get("schema", 0) == 1
 	)
 
@@ -62,6 +68,8 @@ func boss(boss_type: String) -> Dictionary:
 
 
 func item(item_id: String) -> Dictionary:
+	if items != null and items.valid():
+		return items.item(item_id)
 	return data.get("items", {}).get(item_id, {})
 
 

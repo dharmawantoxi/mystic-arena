@@ -1,0 +1,2817 @@
+{
+  "catalog": {
+    "abyss_breaker": {
+      "active": {
+        "cooldown": 1500,
+        "name": "Overwhelm",
+        "stun": 72
+      },
+      "bash": {
+        "chance": 0.22,
+        "cooldown": 140,
+        "damage": 55,
+        "stun": 54
+      },
+      "category": "control",
+      "color": [
+        90,
+        130,
+        220
+      ],
+      "cost": 5500,
+      "desc": "+35 Damage, +300 HP, +16% heal diterima, +30% tahan slow. Bash 22%: stun 0.9 dtk + 55 dmg. Overwhelm (auto): stun target 1.2 dtk.",
+      "desc_en": "+35 Damage, +300 HP, +16% incoming heal, +30% slow resist. Bash 22%: stun 0.9s + 55 dmg. Overwhelm (auto): stuns the target for 1.2s.",
+      "drops_on_death": false,
+      "flavor": "Pedang Komandan Jurang yang memutus jiwa.",
+      "glow": [
+        140,
+        180,
+        255
+      ],
+      "icon": "abyss_breaker.png",
+      "melee_only": false,
+      "name": "Abyss Breaker",
+      "stats": {
+        "damage": 35,
+        "heal_amp": 0.16,
+        "hp": 300,
+        "hp_regen": 3,
+        "slow_resist": 0.3
+      }
+    },
+    "astral_codex": {
+      "active": {
+        "cooldown": 1440,
+        "damage": 150,
+        "name": "Arcane Nova",
+        "radius": 260,
+        "silence_duration": 90,
+        "trigger_enemies": 2
+      },
+      "category": "mystic",
+      "color": [
+        155,
+        90,
+        235
+      ],
+      "cost": 6000,
+      "desc": "+280 HP, +4 HP/reg, 18% CDR, 12% Spell Lifesteal. SKILL AMP: +25% damage semua skill. Saat >=2 musuh dekat: Arcane Nova, 150 magic dmg + silence 1.5 dtk (CD 24 dtk). HANYA untuk hero beratribut Magic.",
+      "desc_en": "+280 HP, +4 HP regen, 18% CDR, 12% Spell Lifesteal. SKILL AMP: +25% damage to all skills. When 2+ enemies are near: Arcane Nova, 150 magic dmg + 1.5s silence (24s CD). MAGIC-attribute heroes ONLY.",
+      "drops_on_death": false,
+      "flavor": "Kitab bintang yang halamannya menulis ulang hukum arus sihir setiap kali dibuka.",
+      "glow": [
+        210,
+        155,
+        255
+      ],
+      "icon": "astral_codex.png",
+      "magic_only": true,
+      "melee_only": false,
+      "name": "Astral Codex",
+      "stats": {
+        "cooldown_reduction": 0.18,
+        "hp": 280,
+        "hp_regen": 4,
+        "skill_amp": 0.25,
+        "spell_vamp": 0.12
+      }
+    },
+    "basilisk_breath": {
+      "category": "poison",
+      "color": [
+        140,
+        210,
+        90
+      ],
+      "cost": 5750,
+      "desc": "+26 Damage, +30 AS, +260 HP, +3 HP/reg. Serangan meracuni: 2.2% Max HP/0.5 dtk selama 3 dtk (maks 60/tick). 30% tembakan menyambar 2 musuh lain (70% dmg).",
+      "desc_en": "+26 Damage, +30 AS, +260 HP, +3 HP regen. Attacks poison: 2.2% Max HP per 0.5s for 3s (cap 60/tick). 30% of shots hit 2 other enemies (70% damage).",
+      "drops_on_death": false,
+      "flavor": "Embun racun hydra yang merayap di setiap luka.",
+      "glow": [
+        190,
+        255,
+        130
+      ],
+      "icon": "basilisk_breath.png",
+      "melee_only": false,
+      "multishot": {
+        "chance": 0.3,
+        "damage_pct": 0.7,
+        "name": "Polycephaly",
+        "radius": 200,
+        "targets": 2
+      },
+      "name": "Basilisk Breath",
+      "on_attack": {
+        "cap_damage": 60,
+        "duration": 180,
+        "max_hp_pct_per_tick": 0.022,
+        "name": "Miasma",
+        "tick": 30
+      },
+      "stats": {
+        "attack_speed": 30,
+        "damage": 26,
+        "hp": 260,
+        "hp_regen": 3
+      }
+    },
+    "cleave_axe": {
+      "category": "splash",
+      "color": [
+        200,
+        220,
+        240
+      ],
+      "cost": 4500,
+      "desc": "+34 Damage, +3 HP/reg. Serangan melee membelah: 50% damage ke musuh dalam radius 110 (hanya melee).",
+      "desc_en": "+34 Damage, +3 HP regen. Melee attacks cleave: 50% damage to enemies within 110 radius (melee only).",
+      "drops_on_death": false,
+      "flavor": "Kapak berukir yang menebas apapun di depannya.",
+      "glow": [
+        150,
+        210,
+        255
+      ],
+      "icon": "cleave_axe.png",
+      "melee_only": true,
+      "name": "Cleave Axe",
+      "passive": {
+        "cleave_pct": 0.5,
+        "cleave_radius": 110,
+        "name": "Cleave"
+      },
+      "stats": {
+        "damage": 34,
+        "hp_regen": 3.0
+      }
+    },
+    "corroder": {
+      "category": "shred",
+      "color": [
+        140,
+        220,
+        90
+      ],
+      "cost": 4500,
+      "desc": "+65 Damage. Serangan mengikis 6 Armor target selama 6 detik (target menerima damage lebih besar).",
+      "desc_en": "+65 Damage. Attacks shred 6 Armor from the target for 6 seconds (target takes more damage).",
+      "drops_on_death": false,
+      "flavor": "Bilah berkarat yang melarutkan zirah dan daging.",
+      "glow": [
+        190,
+        255,
+        140
+      ],
+      "icon": "corroder.png",
+      "melee_only": false,
+      "name": "Corroder",
+      "passive": {
+        "armor_shred": 6,
+        "duration": 360,
+        "name": "Corrosion"
+      },
+      "stats": {
+        "damage": 65
+      }
+    },
+    "dead_edge": {
+      "category": "crit",
+      "color": [
+        220,
+        60,
+        60
+      ],
+      "cost": 4500,
+      "desc": "+52 Damage. 25% peluang Critical Strike (200% damage).",
+      "desc_en": "+52 Damage. 25% chance to Critical Strike (200% damage).",
+      "drops_on_death": false,
+      "flavor": "Tebasan maut yang berdentang di ujung setiap medan tempur.",
+      "glow": [
+        255,
+        90,
+        90
+      ],
+      "icon": "dead_edge.png",
+      "melee_only": false,
+      "name": "Dead Edge",
+      "stats": {
+        "crit_chance": 0.25,
+        "crit_mult": 2.0,
+        "damage": 52
+      }
+    },
+    "demon_maw": {
+      "active": {
+        "cooldown": 1500,
+        "duration": 300,
+        "hp_threshold": 0.35,
+        "lifesteal_bonus": 1.2,
+        "name": "Blood Frenzy"
+      },
+      "category": "lifesteal",
+      "color": [
+        180,
+        30,
+        30
+      ],
+      "cost": 4500,
+      "desc": "+20 Damage, +4 Armor, 20% Lifesteal. Saat HP < 35%: aktif Blood Frenzy, lifesteal 140% selama 5 detik.",
+      "desc_en": "+20 Damage, +4 Armor, 20% Lifesteal. Below 35% HP: Blood Frenzy activates, 140% lifesteal for 5 seconds.",
+      "drops_on_death": false,
+      "flavor": "Topeng iblis yang lapar akan darah lawan.",
+      "glow": [
+        255,
+        70,
+        70
+      ],
+      "icon": "demon_maw.png",
+      "melee_only": false,
+      "name": "Demon Maw",
+      "stats": {
+        "armor": 4,
+        "damage": 20,
+        "lifesteal": 0.2
+      }
+    },
+    "everfrost_guard": {
+      "active": {
+        "cooldown": 1440,
+        "damage": 130,
+        "name": "Arctic Blast",
+        "radius": 280,
+        "slow": 0.45,
+        "slow_duration": 210,
+        "trigger_enemies": 2
+      },
+      "aura": {
+        "enemy_anti_heal": 0.4,
+        "enemy_atk_slow": 0.3,
+        "enemy_radius": 300,
+        "name": "Freezing Aura"
+      },
+      "category": "frost",
+      "color": [
+        120,
+        190,
+        230
+      ],
+      "cost": 5500,
+      "desc": "+10 Armor, +5 HP/reg, 10% CDR. Aura: musuh dekat -30% AS & heal -40%. Saat >=2 musuh dekat: Arctic Blast 130 dmg + slow 45% (3.5 dtk).",
+      "desc_en": "+10 Armor, +5 HP regen, 10% CDR. Aura: nearby enemies lose 30% AS & 40% healing. When 2+ enemies are near: Arctic Blast 130 dmg + 45% slow for 3.5s.",
+      "drops_on_death": false,
+      "flavor": "Bongkahan es abadi yang membekukan setiap denyut nadi.",
+      "glow": [
+        180,
+        230,
+        255
+      ],
+      "icon": "everfrost_guard.png",
+      "melee_only": false,
+      "name": "Everfrost Guard",
+      "stats": {
+        "armor": 10,
+        "cooldown_reduction": 0.1,
+        "hp_regen": 5
+      }
+    },
+    "fenrir_chain": {
+      "active": {
+        "cooldown": 1080,
+        "damage": 80,
+        "name": "Binding Chains",
+        "root_duration": 72,
+        "root_radius": 220,
+        "trigger_enemies": 2,
+        "trigger_radius": 220
+      },
+      "category": "control",
+      "color": [
+        240,
+        190,
+        90
+      ],
+      "cost": 5250,
+      "desc": "+30 Damage, +30 AS, +250 HP. 20% serangan menyambar 3 musuh (45 dmg). Saat >=2 musuh dekat: rantai mengikat mereka 1.2 dtk + 80 dmg.",
+      "desc_en": "+30 Damage, +30 AS, +250 HP. 20% of attacks chain to 3 enemies (45 dmg). When 2+ enemies are near: chains root them for 1.2s + 80 dmg.",
+      "drops_on_death": false,
+      "flavor": "Rantai para dewa yang membelenggu serigala purba.",
+      "glow": [
+        255,
+        230,
+        150
+      ],
+      "icon": "fenrir_chain.png",
+      "melee_only": false,
+      "name": "Fenrir Chain",
+      "on_attack": {
+        "chance": 0.2,
+        "damage": 45,
+        "name": "Arc Chain",
+        "radius": 240,
+        "targets": 3
+      },
+      "stats": {
+        "attack_speed": 30,
+        "damage": 30,
+        "hp": 250
+      }
+    },
+    "frostbound_eye": {
+      "category": "ice",
+      "color": [
+        120,
+        200,
+        220
+      ],
+      "cost": 5250,
+      "desc": "+20 Damage, +250 HP, +4 HP/reg. Tiap serangan memperlambat 28% (gerak & serang) + anti-heal 45% selama 3 detik.",
+      "desc_en": "+20 Damage, +250 HP, +4 HP regen. Each attack slows by 28% (move & attack) and applies 45% anti-heal for 3 seconds.",
+      "drops_on_death": false,
+      "flavor": "Mata es yang membekukan darah di setiap luka.",
+      "glow": [
+        180,
+        240,
+        255
+      ],
+      "icon": "frostbound_eye.png",
+      "melee_only": false,
+      "name": "Frostbound Eye",
+      "on_attack": {
+        "anti_heal": 0.45,
+        "atk_slow": 0.28,
+        "duration": 180,
+        "name": "Frostbite",
+        "slow": 0.28
+      },
+      "stats": {
+        "damage": 20,
+        "hp": 250,
+        "hp_regen": 4
+      }
+    },
+    "fulgur_scepter": {
+      "active": {
+        "cooldown": 1080,
+        "damage": 300,
+        "name": "Energy Blast"
+      },
+      "category": "burst",
+      "color": [
+        255,
+        180,
+        60
+      ],
+      "cost": 6000,
+      "desc": "+15 Damage, +200 HP, 10% SKILL AMP, 8% Spell Lifesteal. Saat menyerang (auto): Energy Blast - hantam target dengan 300 magic damage (CD 18 dtk). HANYA hero Magic.",
+      "desc_en": "+15 Damage, +200 HP, 10% SKILL AMP, 8% Spell Lifesteal. When attacking (auto): Energy Blast - slams your target for 300 magic damage (18s CD). MAGIC heroes ONLY.",
+      "drops_on_death": false,
+      "flavor": "Tongkat petir yang menyimpan satu badai di ujungnya.",
+      "glow": [
+        255,
+        220,
+        120
+      ],
+      "icon": "fulgur_scepter.png",
+      "magic_only": true,
+      "melee_only": false,
+      "name": "Fulgur Scepter",
+      "stats": {
+        "damage": 15,
+        "hp": 200,
+        "skill_amp": 0.1,
+        "spell_vamp": 0.08
+      }
+    },
+    "gale_pike": {
+      "active": {
+        "as_bonus": 55,
+        "cooldown": 1500,
+        "dash_distance": 130,
+        "duration": 180,
+        "hp_threshold": 0.4,
+        "name": "Gale Leap"
+      },
+      "category": "reach",
+      "color": [
+        150,
+        230,
+        200
+      ],
+      "cost": 5250,
+      "desc": "+18 Damage, +25 AS, +200 HP, +3 HP/reg, +90 jangkauan (ranged). Saat HP < 40%: Gale Leap - mundur 130px + +55 AS selama 3 dtk (CD 25 dtk).",
+      "desc_en": "+18 Damage, +25 AS, +200 HP, +3 HP regen, +90 attack range (ranged). Below 40% HP: Gale Leap - dash back 130px + +55 AS for 3s (25s CD).",
+      "drops_on_death": false,
+      "flavor": "Tombak angin yang mengulur jarak secepat kilat.",
+      "glow": [
+        200,
+        255,
+        230
+      ],
+      "icon": "gale_pike.png",
+      "melee_only": false,
+      "name": "Gale Pike",
+      "stats": {
+        "attack_speed": 25,
+        "damage": 18,
+        "hp": 200,
+        "hp_regen": 3,
+        "range_bonus": 90
+      }
+    },
+    "hex_idol": {
+      "active": {
+        "cooldown": 1800,
+        "name": "Hexcraft",
+        "silence": 150,
+        "stun": 150
+      },
+      "category": "control",
+      "color": [
+        170,
+        220,
+        90
+      ],
+      "cost": 5750,
+      "desc": "+250 HP, +4 HP/reg, 6% Spell Lifesteal, 10% CDR. Saat menyerang (auto): HEX target - stun + silence selama 2.5 dtk (CD 30 dtk). HANYA hero Magic.",
+      "desc_en": "+250 HP, +4 HP regen, 6% Spell Lifesteal, 10% CDR. When attacking (auto): HEX the target - stun + silence for 2.5s (30s CD). MAGIC heroes ONLY.",
+      "drops_on_death": false,
+      "flavor": "Arca vodu yang mengubah musuh jadi boneka bisu.",
+      "glow": [
+        210,
+        255,
+        140
+      ],
+      "icon": "hex_idol.png",
+      "magic_only": true,
+      "melee_only": false,
+      "name": "Hex Idol",
+      "stats": {
+        "cooldown_reduction": 0.1,
+        "hp": 250,
+        "hp_regen": 4,
+        "spell_vamp": 0.06
+      }
+    },
+    "holy_rapier": {
+      "category": "damage",
+      "color": [
+        255,
+        220,
+        80
+      ],
+      "cost": 4500,
+      "desc": "+120 Damage. HILANG saat hero mati (tidak dijatuhkan).",
+      "desc_en": "+120 Damage. LOST when the hero dies (not dropped).",
+      "drops_on_death": true,
+      "flavor": "Kilau cahaya yang hanya pantas dipegang oleh yang hidup.",
+      "glow": [
+        255,
+        245,
+        150
+      ],
+      "icon": "holy_rapier.png",
+      "melee_only": false,
+      "name": "Holy Rapier",
+      "stats": {
+        "damage": 120
+      }
+    },
+    "leviathan_heart": {
+      "category": "tank",
+      "color": [
+        80,
+        220,
+        120
+      ],
+      "cost": 4500,
+      "desc": "+35% Max HP, +6 HP/reg. Di luar pertempuran (5 dtk tanpa damage): regenerasi 1.5% Max HP per detik.",
+      "desc_en": "+35% Max HP, +6 HP regen. Out of combat (5s without damage): regenerate 1.5% Max HP per second.",
+      "drops_on_death": false,
+      "flavor": "Jantung purba yang berdegup menyamai lautan.",
+      "glow": [
+        130,
+        255,
+        160
+      ],
+      "icon": "leviathan_heart.png",
+      "melee_only": false,
+      "name": "Leviathan Heart",
+      "passive": {
+        "combat_timeout": 300,
+        "name": "Leviathan Vitality",
+        "out_of_combat_regen_pct": 0.015
+      },
+      "stats": {
+        "hp_pct": 0.35,
+        "hp_regen": 6.0
+      }
+    },
+    "monarch_wings": {
+      "category": "agility",
+      "color": [
+        230,
+        140,
+        220
+      ],
+      "cost": 5000,
+      "desc": "+38 Damage, +30 Attack Speed, 28% Evasion (peluang menghindari serangan fisik sepenuhnya).",
+      "desc_en": "+38 Damage, +30 Attack Speed, 28% Evasion (chance to fully dodge physical attacks).",
+      "drops_on_death": false,
+      "flavor": "Sayap raja kupu-kupu yang menolak setiap bilah.",
+      "glow": [
+        255,
+        190,
+        250
+      ],
+      "icon": "monarch_wings.png",
+      "melee_only": false,
+      "name": "Monarch Wings",
+      "stats": {
+        "attack_speed": 30,
+        "damage": 38,
+        "evasion": 0.28
+      }
+    },
+    "moon_shard": {
+      "category": "attack_speed",
+      "color": [
+        130,
+        220,
+        255
+      ],
+      "cost": 4500,
+      "desc": "+75 Attack Speed. Serangan secepat cahaya bulan.",
+      "desc_en": "+75 Attack Speed. Strikes as fast as moonlight.",
+      "drops_on_death": false,
+      "flavor": "Serpihan rembulan yang membeku jadi kristal.",
+      "glow": [
+        180,
+        240,
+        255
+      ],
+      "icon": "moon_shard.png",
+      "melee_only": false,
+      "name": "Moon Shard",
+      "stats": {
+        "attack_speed": 75
+      }
+    },
+    "octarine_core": {
+      "category": "caster",
+      "color": [
+        180,
+        80,
+        230
+      ],
+      "cost": 4500,
+      "desc": "+300 HP, +2 HP/reg, 15% Cooldown Reduction, 10% Spell Lifesteal (heal = 10% damage skill yang dikeluarkan).",
+      "desc_en": "+300 HP, +2 HP regen, 15% Cooldown Reduction, 10% Spell Lifesteal (heal = 10% of skill damage dealt).",
+      "drops_on_death": false,
+      "flavor": "Inti ungu yang berputar dengan kekuatan arcane.",
+      "glow": [
+        220,
+        130,
+        255
+      ],
+      "icon": "octarine_core.png",
+      "melee_only": false,
+      "name": "Octarine Core",
+      "stats": {
+        "cooldown_reduction": 0.15,
+        "hp": 300,
+        "hp_regen": 2.0,
+        "spell_vamp": 0.1
+      }
+    },
+    "razor_carapace": {
+      "active": {
+        "cooldown": 1500,
+        "duration": 270,
+        "hp_threshold": 0.55,
+        "name": "Thornmail",
+        "reflect_pct": 0.85
+      },
+      "category": "thorn",
+      "color": [
+        180,
+        180,
+        200
+      ],
+      "cost": 5000,
+      "desc": "+18 Damage, +8 Armor, 10% CDR. Saat HP < 55%: Thornmail 4.5 dtk - pantulkan 85% damage yang kamu terima ke penyerang.",
+      "desc_en": "+18 Damage, +8 Armor, 10% CDR. Below 55% HP: Thornmail for 4.5s - reflect 85% of damage you take back to the attacker.",
+      "drops_on_death": false,
+      "flavor": "Cangkang bergerigi yang membalas setiap luka.",
+      "glow": [
+        230,
+        230,
+        255
+      ],
+      "icon": "razor_carapace.png",
+      "melee_only": false,
+      "name": "Razor Carapace",
+      "stats": {
+        "armor": 8,
+        "cooldown_reduction": 0.1,
+        "damage": 18
+      }
+    },
+    "rift_veil": {
+      "active": {
+        "cooldown": 1200,
+        "damage_amp": 0.15,
+        "duration": 360,
+        "name": "Discord Field",
+        "radius": 320,
+        "trigger_enemies": 2
+      },
+      "category": "burst",
+      "color": [
+        130,
+        120,
+        240
+      ],
+      "cost": 5500,
+      "desc": "+260 HP, +4 HP/reg, 6% Spell Lifesteal. Saat >=2 musuh dekat (auto): Discord Field - musuh dalam 320px menerima +15% damage selama 6 dtk (CD 20 dtk). HANYA hero Magic.",
+      "desc_en": "+260 HP, +4 HP regen, 6% Spell Lifesteal. When 2+ enemies are near (auto): Discord Field - enemies within 320px take +15% damage for 6s (20s CD). MAGIC heroes ONLY.",
+      "drops_on_death": false,
+      "flavor": "Cadar retakan yang menyingkap sisi rapuh musuh.",
+      "glow": [
+        180,
+        170,
+        255
+      ],
+      "icon": "rift_veil.png",
+      "magic_only": true,
+      "melee_only": false,
+      "name": "Rift Veil",
+      "stats": {
+        "hp": 260,
+        "hp_regen": 4,
+        "spell_vamp": 0.06
+      }
+    },
+    "runic_gavel": {
+      "category": "arcane",
+      "color": [
+        200,
+        130,
+        240
+      ],
+      "cost": 5250,
+      "desc": "+28 Damage, +250 HP, +4 HP/reg, 15% CDR. Setiap 9 dtk: serangan berikutnya menambah 130 magic damage ke target (Empower Strike).",
+      "desc_en": "+28 Damage, +250 HP, +4 HP regen, 15% CDR. Every 9s your next attack adds 130 magic damage to the target (Empower Strike).",
+      "drops_on_death": false,
+      "flavor": "Palu runik yang menyimpan muatan sihir tiap hembusan.",
+      "glow": [
+        235,
+        180,
+        255
+      ],
+      "icon": "runic_gavel.png",
+      "melee_only": false,
+      "name": "Runic Gavel",
+      "passive": {
+        "charge_time": 540,
+        "damage": 130,
+        "name": "Empower Strike"
+      },
+      "stats": {
+        "cooldown_reduction": 0.15,
+        "damage": 28,
+        "hp": 250,
+        "hp_regen": 4
+      }
+    },
+    "sage_scepter": {
+      "category": "caster",
+      "color": [
+        120,
+        190,
+        255
+      ],
+      "cost": 5000,
+      "desc": "+200 HP, +3 HP/reg, 15% SKILL AMP, 8% Spell Lifesteal, 8% CDR. Penambat arus sihir murni bagi sang bijak. HANYA hero Magic.",
+      "desc_en": "+200 HP, +3 HP regen, 15% SKILL AMP, 8% Spell Lifesteal, 8% CDR. A pure conduit of arcane current for the wise. MAGIC heroes ONLY.",
+      "drops_on_death": false,
+      "flavor": "Tongkat bijak yang mendengar denyut setiap mantra.",
+      "glow": [
+        170,
+        220,
+        255
+      ],
+      "icon": "sage_scepter.png",
+      "magic_only": true,
+      "melee_only": false,
+      "name": "Sage Scepter",
+      "stats": {
+        "cooldown_reduction": 0.08,
+        "hp": 200,
+        "hp_regen": 3,
+        "skill_amp": 0.15,
+        "spell_vamp": 0.08
+      }
+    },
+    "sanguine_thorn": {
+      "active": {
+        "cooldown": 1080,
+        "crit_mult": 1.5,
+        "damage_amp": 0.3,
+        "duration": 300,
+        "name": "Soul Rend"
+      },
+      "category": "burst",
+      "color": [
+        230,
+        60,
+        110
+      ],
+      "cost": 6000,
+      "desc": "+25 Damage, +60 AS, +5 HP/reg. Soul Rend (auto): silence target 5 dtk, seranganmu ke target crit 150%, target menerima +30% damage.",
+      "desc_en": "+25 Damage, +60 AS, +5 HP regen. Soul Rend (auto): silences the target for 5s, your attacks on it crit for 150%, target takes +30% damage.",
+      "drops_on_death": false,
+      "flavor": "Duri darah yang menagih nyawa setiap korbannya.",
+      "glow": [
+        255,
+        120,
+        160
+      ],
+      "icon": "sanguine_thorn.png",
+      "melee_only": false,
+      "name": "Sanguine Thorn",
+      "stats": {
+        "attack_speed": 60,
+        "damage": 25,
+        "hp_regen": 5
+      }
+    },
+    "scarlet_bulwark": {
+      "active": {
+        "ally_radius": 320,
+        "base_block": 35,
+        "cooldown": 2400,
+        "duration": 420,
+        "hp_threshold": 0.45,
+        "max_hp_block_pct": 0.02,
+        "name": "Bulwark Guard"
+      },
+      "block": {
+        "chance": 0.55,
+        "melee_block": 25,
+        "ranged_block": 14
+      },
+      "category": "guard",
+      "color": [
+        200,
+        60,
+        60
+      ],
+      "cost": 5000,
+      "desc": "+250 HP, +8 HP/reg, +6 Armor. Blok pasif 55% (25 dmg). Saat HP < 45%: Guard 7 dtk, kamu & sekutu dekat blokir 35+2% Max HP per serangan.",
+      "desc_en": "+250 HP, +8 HP regen, +6 Armor. Passive block 55% (25 dmg). Below 45% HP: Guard for 7s, you & nearby allies block 35 + 2% Max HP per attack.",
+      "drops_on_death": false,
+      "flavor": "Perisai kirmizi penahan amukan Tahun Kegelapan.",
+      "glow": [
+        255,
+        110,
+        110
+      ],
+      "icon": "scarlet_bulwark.png",
+      "melee_only": false,
+      "name": "Scarlet Bulwark",
+      "stats": {
+        "armor": 6,
+        "hp": 250,
+        "hp_regen": 8
+      }
+    },
+    "searbrand": {
+      "active": {
+        "burn_dps": 22,
+        "burn_duration": 180,
+        "cooldown": 1080,
+        "damage": 110,
+        "name": "Brand Burst",
+        "radius": 320,
+        "trigger_enemies": 2
+      },
+      "aura": {
+        "burn_dps": 6,
+        "enemy_anti_heal": 0.5,
+        "enemy_radius": 300,
+        "name": "Cauterize"
+      },
+      "category": "mortal",
+      "color": [
+        235,
+        95,
+        60
+      ],
+      "cost": 5750,
+      "desc": "+12 Damage, +320 HP, +6 HP/reg, 15% CDR. AURA CAUTERIZE (300px): musuh di dekat HILANG 50% kemampuan heal-nya + bakar 6 dmg/dtk. Saat >=2 musuh dekat: Brand Burst, 110 magic dmg + bakar 22 dmg/dtk selama 3 dtk (CD 18 dtk).",
+      "desc_en": "+12 Damage, +320 HP, +6 HP regen, 15% CDR. CAUTERIZE AURA (300px): nearby enemies LOSE 50% of their healing + take 6 dmg/s burn. When 2+ enemies are near: Brand Burst deals 110 magic dmg and burns 22 dmg/s for 3s (18s CD).",
+      "drops_on_death": false,
+      "flavor": "Besi berpijar yang mencauter luka - apa pun yang menerima bekasnya tak akan pernah utuh kembali.",
+      "glow": [
+        255,
+        150,
+        110
+      ],
+      "icon": "searbrand.png",
+      "melee_only": false,
+      "name": "Searbrand",
+      "stats": {
+        "cooldown_reduction": 0.15,
+        "damage": 20,
+        "hp": 320,
+        "hp_regen": 6
+      }
+    },
+    "solar_brand": {
+      "aura": {
+        "blind": 0.18,
+        "burn_dps": 28,
+        "enemy_radius": 280,
+        "name": "Scorched Earth"
+      },
+      "category": "inferno",
+      "color": [
+        255,
+        190,
+        60
+      ],
+      "cost": 5500,
+      "desc": "+30 Damage, +280 HP, +5 HP/reg. Aura: musuh dalam 280px terbakar 28 dmg/dtk & serangannya 18% lebih sering meleset.",
+      "desc_en": "+30 Damage, +280 HP, +5 HP regen. Aura: enemies within 280px burn for 28 dmg/s and have 18% more chance to miss.",
+      "drops_on_death": false,
+      "flavor": "Cap matahari yang membakar apa pun yang mendekat.",
+      "glow": [
+        255,
+        230,
+        140
+      ],
+      "icon": "solar_brand.png",
+      "melee_only": false,
+      "name": "Solar Brand",
+      "stats": {
+        "damage": 30,
+        "hp": 280,
+        "hp_regen": 5
+      }
+    },
+    "spectral_charm": {
+      "active": {
+        "cooldown": 1500,
+        "duration": 150,
+        "hp_threshold": 0.3,
+        "name": "Spectral Form"
+      },
+      "category": "utility",
+      "color": [
+        190,
+        220,
+        255
+      ],
+      "cost": 5500,
+      "desc": "+230 HP, +3 HP/reg, +10% Move Speed, 6% Spell Lifesteal. Saat HP < 30% (auto): Spectral Form 2.5 dtk - semua serangan FISIK meleset (sihir tetap kena) (CD 25 dtk). HANYA hero Magic.",
+      "desc_en": "+230 HP, +3 HP regen, +10% Move Speed, 6% Spell Lifesteal. Below 30% HP (auto): Spectral Form for 2.5s - all PHYSICAL attacks miss (magic still hits) (25s CD). MAGIC heroes ONLY.",
+      "drops_on_death": false,
+      "flavor": "Jimat kabut yang membuat tubuhmu seketika tanpa wujud.",
+      "glow": [
+        225,
+        240,
+        255
+      ],
+      "icon": "spectral_charm.png",
+      "magic_only": true,
+      "melee_only": false,
+      "name": "Spectral Charm",
+      "stats": {
+        "hp": 230,
+        "hp_regen": 3,
+        "move_speed_pct": 0.1,
+        "spell_vamp": 0.06
+      }
+    },
+    "steel_aegis": {
+      "aura": {
+        "ally_armor": 2,
+        "ally_attack_speed": 10,
+        "ally_radius": 320,
+        "enemy_armor_reduction": 2,
+        "enemy_radius": 320,
+        "name": "Steel Aura"
+      },
+      "category": "as_armor",
+      "color": [
+        180,
+        200,
+        230
+      ],
+      "cost": 4500,
+      "desc": "+4 Armor, +30 Attack Speed. Aura: sekutu di dekat dapat +2 Armor & +10 AS; musuh di dekat kehilangan 2 Armor.",
+      "desc_en": "+4 Armor, +30 Attack Speed. Aura: nearby allies gain +2 Armor & +10 AS; nearby enemies lose 2 Armor.",
+      "drops_on_death": false,
+      "flavor": "Zirah baja yang berdenyut memberi semangat kawan.",
+      "glow": [
+        120,
+        170,
+        255
+      ],
+      "icon": "steel_aegis.png",
+      "melee_only": false,
+      "name": "Steel Aegis",
+      "stats": {
+        "armor": 6,
+        "attack_speed": 30
+      }
+    },
+    "sundering_cudgel": {
+      "bash": {
+        "chance": 0.28,
+        "cooldown": 120,
+        "damage": 55,
+        "name": "Piercing Bash",
+        "stun": 15
+      },
+      "category": "pierce",
+      "color": [
+        230,
+        180,
+        70
+      ],
+      "cost": 5000,
+      "desc": "+45 Damage, +25 AS. Serangan TIDAK PERNAH meleset (True Strike). 28% serangan memukul mundir target: stun 0.25 dtk + 55 dmg (CD 2 dtk).",
+      "desc_en": "+45 Damage, +25 AS. Your attacks NEVER miss (True Strike). 28% of attacks bash the target: 0.25s stun + 55 dmg (2s cooldown).",
+      "drops_on_death": false,
+      "flavor": "Tongkat pemukul legendaris yang menembus segala kilah.",
+      "glow": [
+        255,
+        220,
+        130
+      ],
+      "icon": "sundering_cudgel.png",
+      "melee_only": false,
+      "name": "Sundering Cudgel",
+      "stats": {
+        "attack_speed": 25,
+        "damage": 48
+      }
+    },
+    "tempest_vane": {
+      "active": {
+        "cooldown": 1800,
+        "duration": 150,
+        "hp_threshold": 0.4,
+        "name": "Tempest Veil"
+      },
+      "category": "utility",
+      "color": [
+        120,
+        210,
+        230
+      ],
+      "cost": 5500,
+      "desc": "+250 HP, +4 HP/reg, +12% Move Speed. Saat HP < 40%: kebal semua damage 2.5 dtk (tidak bisa menyerang), cooldown 30 dtk.",
+      "desc_en": "+250 HP, +4 HP regen, +12% Move Speed. Below 40% HP: immune to all damage for 2.5s (cannot attack), 30s cooldown.",
+      "drops_on_death": false,
+      "flavor": "Baling-baling angin yang menyembunyikan pemakainya.",
+      "glow": [
+        180,
+        240,
+        255
+      ],
+      "icon": "tempest_vane.png",
+      "melee_only": false,
+      "name": "Tempest Vane",
+      "stats": {
+        "hp": 250,
+        "hp_regen": 4,
+        "move_speed_pct": 0.12
+      }
+    },
+    "thunder_coil": {
+      "active": {
+        "cooldown": 1200,
+        "damage": 65,
+        "duration": 480,
+        "name": "Static Charge",
+        "proc_chance": 0.2,
+        "radius": 260,
+        "targets": 4,
+        "tick": 30
+      },
+      "category": "static",
+      "color": [
+        250,
+        220,
+        90
+      ],
+      "cost": 5250,
+      "desc": "+25 Damage, +65 AS. 22% serangan menyambar 3 musuh (40 dmg). Saat dipukul: 20% perisai statis 8 dtk, menyambar 4 musuh tiap 0.5 dtk (65 dmg).",
+      "desc_en": "+25 Damage, +65 AS. 22% of attacks chain to 3 enemies (40 dmg). When hit: 20% chance of a static shield for 8s, zapping 4 enemies every 0.5s (65 dmg).",
+      "drops_on_death": false,
+      "flavor": "Kumparan badai yang ditempa palu dewa guntur.",
+      "glow": [
+        255,
+        245,
+        160
+      ],
+      "icon": "thunder_coil.png",
+      "melee_only": false,
+      "name": "Thunder Coil",
+      "on_attack": {
+        "chance": 0.22,
+        "damage": 40,
+        "name": "Arc Lightning",
+        "radius": 240,
+        "targets": 3
+      },
+      "stats": {
+        "attack_speed": 65,
+        "damage": 25
+      }
+    },
+    "vine_rod": {
+      "category": "control",
+      "color": [
+        90,
+        200,
+        120
+      ],
+      "cost": 5000,
+      "desc": "+15 Damage, +240 HP, +3 HP/reg, 5% Spell Lifesteal. Serangannya men-ROOT target 1 dtk (tak bisa bergerak; CD internal 9 dtk). HANYA hero Magic.",
+      "desc_en": "+15 Damage, +240 HP, +3 HP regen, 5% Spell Lifesteal. Your attacks ROOT the target for 1s (cannot move; 9s internal CD). MAGIC heroes ONLY.",
+      "drops_on_death": false,
+      "flavor": "Tongkat sulur hidup yang tak pernah melepaskan cengkeramannya.",
+      "glow": [
+        150,
+        240,
+        170
+      ],
+      "icon": "vine_rod.png",
+      "magic_only": true,
+      "melee_only": false,
+      "name": "Vine Rod",
+      "on_attack": {
+        "cooldown": 540,
+        "name": "Entangle",
+        "root_duration": 60
+      },
+      "stats": {
+        "damage": 15,
+        "hp": 240,
+        "hp_regen": 3,
+        "spell_vamp": 0.05
+      }
+    },
+    "vital_stone": {
+      "active": {
+        "cooldown": 2700,
+        "heal_pct": 0.25,
+        "hp_threshold": 0.35,
+        "name": "Vitality Pact"
+      },
+      "category": "lifesteal",
+      "color": [
+        230,
+        80,
+        110
+      ],
+      "cost": 5250,
+      "desc": "+320 HP, +6 HP/reg, 20% Spell Lifesteal. Saat HP < 35% (auto): Vitality Pact - pulihkan 25% Max HP seketika (CD 45 dtk). HANYA hero Magic.",
+      "desc_en": "+320 HP, +6 HP regen, 20% Spell Lifesteal. Below 35% HP (auto): Vitality Pact - instantly restore 25% Max HP (45s CD). MAGIC heroes ONLY.",
+      "drops_on_death": false,
+      "flavor": "Batu darah yang berdegup menyamai jantung pemakainya.",
+      "glow": [
+        255,
+        140,
+        170
+      ],
+      "icon": "vital_stone.png",
+      "magic_only": true,
+      "melee_only": false,
+      "name": "Vital Stone",
+      "stats": {
+        "hp": 320,
+        "hp_regen": 6,
+        "spell_vamp": 0.2
+      }
+    }
+  },
+  "category_info": {
+    "agility": [
+      "AGILITY",
+      [
+        255,
+        190,
+        250
+      ]
+    ],
+    "arcane": [
+      "ARCANE",
+      [
+        235,
+        180,
+        255
+      ]
+    ],
+    "as_armor": [
+      "AURA",
+      [
+        130,
+        170,
+        255
+      ]
+    ],
+    "attack_speed": [
+      "SPEED",
+      [
+        130,
+        220,
+        255
+      ]
+    ],
+    "burst": [
+      "BURST",
+      [
+        255,
+        120,
+        160
+      ]
+    ],
+    "caster": [
+      "CASTER",
+      [
+        190,
+        120,
+        255
+      ]
+    ],
+    "control": [
+      "CONTROL",
+      [
+        255,
+        200,
+        110
+      ]
+    ],
+    "crit": [
+      "CRIT",
+      [
+        255,
+        100,
+        100
+      ]
+    ],
+    "damage": [
+      "DAMAGE",
+      [
+        255,
+        200,
+        80
+      ]
+    ],
+    "frost": [
+      "FROST",
+      [
+        180,
+        230,
+        255
+      ]
+    ],
+    "guard": [
+      "GUARD",
+      [
+        255,
+        120,
+        120
+      ]
+    ],
+    "ice": [
+      "ICE",
+      [
+        180,
+        240,
+        255
+      ]
+    ],
+    "inferno": [
+      "INFERNO",
+      [
+        255,
+        210,
+        120
+      ]
+    ],
+    "lifesteal": [
+      "LIFESTEAL",
+      [
+        200,
+        60,
+        60
+      ]
+    ],
+    "mortal": [
+      "MORTAL",
+      [
+        255,
+        140,
+        100
+      ]
+    ],
+    "mystic": [
+      "MYSTIC",
+      [
+        210,
+        155,
+        255
+      ]
+    ],
+    "pierce": [
+      "PIERCE",
+      [
+        255,
+        220,
+        130
+      ]
+    ],
+    "poison": [
+      "POISON",
+      [
+        190,
+        255,
+        130
+      ]
+    ],
+    "reach": [
+      "REACH",
+      [
+        200,
+        255,
+        230
+      ]
+    ],
+    "shred": [
+      "SHRED",
+      [
+        190,
+        255,
+        140
+      ]
+    ],
+    "splash": [
+      "CLEAVE",
+      [
+        150,
+        200,
+        255
+      ]
+    ],
+    "static": [
+      "STATIC",
+      [
+        255,
+        245,
+        160
+      ]
+    ],
+    "tank": [
+      "TANK",
+      [
+        90,
+        200,
+        120
+      ]
+    ],
+    "thorn": [
+      "THORN",
+      [
+        230,
+        230,
+        255
+      ]
+    ],
+    "utility": [
+      "UTILITY",
+      [
+        180,
+        240,
+        255
+      ]
+    ]
+  },
+  "category_to_class": {
+    "arcane": "magic",
+    "as_armor": "tank",
+    "caster": "magic",
+    "frost": "tank",
+    "guard": "tank",
+    "inferno": "tank",
+    "mortal": "tank",
+    "mystic": "magic",
+    "tank": "tank",
+    "thorn": "tank"
+  },
+  "class_info": {
+    "magic": [
+      "MAGIC",
+      [
+        200,
+        145,
+        255
+      ]
+    ],
+    "physical": [
+      "PHYSICAL",
+      [
+        255,
+        150,
+        80
+      ]
+    ],
+    "tank": [
+      "TANK",
+      [
+        115,
+        225,
+        145
+      ]
+    ]
+  },
+  "class_item_order": {
+    "magic": [
+      "octarine_core",
+      "runic_gavel",
+      "astral_codex",
+      "sage_scepter",
+      "fulgur_scepter",
+      "hex_idol",
+      "rift_veil",
+      "vital_stone",
+      "vine_rod",
+      "spectral_charm"
+    ],
+    "physical": [
+      "dead_edge",
+      "holy_rapier",
+      "demon_maw",
+      "cleave_axe",
+      "moon_shard",
+      "monarch_wings",
+      "corroder",
+      "fenrir_chain",
+      "sanguine_thorn",
+      "thunder_coil",
+      "sundering_cudgel",
+      "frostbound_eye",
+      "gale_pike",
+      "basilisk_breath"
+    ],
+    "tank": [
+      "leviathan_heart",
+      "steel_aegis",
+      "scarlet_bulwark",
+      "tempest_vane",
+      "abyss_breaker",
+      "razor_carapace",
+      "everfrost_guard",
+      "solar_brand",
+      "searbrand"
+    ]
+  },
+  "class_overrides": {
+    "abyss_breaker": "tank",
+    "tempest_vane": "tank"
+  },
+  "classes": {
+    "magic": "magic",
+    "physical": "physical",
+    "tank": "tank"
+  },
+  "field_labels": {
+    "ally_armor": [
+      "Armor Sekutu",
+      "Ally Armor"
+    ],
+    "ally_attack_speed": [
+      "AS Sekutu",
+      "Ally Attack Speed"
+    ],
+    "ally_radius": [
+      "Radius Sekutu",
+      "Ally Radius"
+    ],
+    "anti_heal": [
+      "Anti-Heal",
+      "Anti-Heal"
+    ],
+    "armor": [
+      "Armor",
+      "Armor"
+    ],
+    "armor_shred": [
+      "Kikis Armor",
+      "Armor Shred"
+    ],
+    "as_bonus": [
+      "Bonus Attack Speed",
+      "Attack Speed Bonus"
+    ],
+    "atk_slow": [
+      "Slow Serang",
+      "Attack Slow"
+    ],
+    "attack_speed": [
+      "Attack Speed",
+      "Attack Speed"
+    ],
+    "base_block": [
+      "Block Dasar",
+      "Base Block"
+    ],
+    "blind": [
+      "Musuh Melenceng",
+      "Enemy Miss Chance"
+    ],
+    "burn_dps": [
+      "Bakar (dmg/dtk)",
+      "Burn (dmg/s)"
+    ],
+    "burn_duration": [
+      "Durasi Bakar",
+      "Burn Duration"
+    ],
+    "cap_damage": [
+      "Batas Damage",
+      "Damage Cap"
+    ],
+    "chance": [
+      "Peluang",
+      "Chance"
+    ],
+    "charge_time": [
+      "Waktu Isi Muatan",
+      "Charge Time"
+    ],
+    "cleave_pct": [
+      "Splash Damage",
+      "Cleave Damage"
+    ],
+    "cleave_radius": [
+      "Radius Splash",
+      "Cleave Radius"
+    ],
+    "combat_timeout": [
+      "Timeout Tempur",
+      "Combat Timeout"
+    ],
+    "cooldown": [
+      "Cooldown",
+      "Cooldown"
+    ],
+    "cooldown_reduction": [
+      "Cooldown Reduction",
+      "Cooldown Reduction"
+    ],
+    "crit_chance": [
+      "Peluang Crit",
+      "Crit Chance"
+    ],
+    "crit_mult": [
+      "Pengali Crit",
+      "Crit Multiplier"
+    ],
+    "damage": [
+      "Damage",
+      "Damage"
+    ],
+    "damage_amp": [
+      "Amplifikasi Damage",
+      "Damage Amp"
+    ],
+    "damage_pct": [
+      "Damage Tembakan Ekstra",
+      "Extra Shot Damage"
+    ],
+    "dash_distance": [
+      "Jarak Dorong",
+      "Dash Distance"
+    ],
+    "duration": [
+      "Durasi",
+      "Duration"
+    ],
+    "enemy_anti_heal": [
+      "Anti-Heal Musuh",
+      "Enemy Anti-Heal"
+    ],
+    "enemy_armor_reduction": [
+      "Kurangi Armor Musuh",
+      "Enemy Armor Reduction"
+    ],
+    "enemy_atk_slow": [
+      "AS Musuh Berkurang",
+      "Enemy AS Reduction"
+    ],
+    "enemy_radius": [
+      "Radius Musuh",
+      "Enemy Radius"
+    ],
+    "evasion": [
+      "Evasion",
+      "Evasion"
+    ],
+    "heal_amp": [
+      "Heal Diterima",
+      "Incoming Heal"
+    ],
+    "heal_pct": [
+      "Heal (% Max HP)",
+      "Heal (% Max HP)"
+    ],
+    "hp": [
+      "Max HP",
+      "Max HP"
+    ],
+    "hp_pct": [
+      "Max HP",
+      "Max HP"
+    ],
+    "hp_regen": [
+      "HP Regen",
+      "HP Regen"
+    ],
+    "hp_threshold": [
+      "Ambang HP",
+      "HP Threshold"
+    ],
+    "lifesteal": [
+      "Lifesteal",
+      "Lifesteal"
+    ],
+    "lifesteal_bonus": [
+      "Bonus Lifesteal",
+      "Lifesteal Bonus"
+    ],
+    "max_hp_block_pct": [
+      "Block (% Max HP)",
+      "Block (% Max HP)"
+    ],
+    "max_hp_pct_per_tick": [
+      "Racun (% Max HP/tick)",
+      "Poison (% Max HP/tick)"
+    ],
+    "melee_block": [
+      "Block (Melee)",
+      "Block (Melee)"
+    ],
+    "move_speed_pct": [
+      "Move Speed",
+      "Move Speed"
+    ],
+    "out_of_combat_regen_pct": [
+      "Regen Luar Tempur",
+      "Out-of-Combat Regen"
+    ],
+    "proc_chance": [
+      "Peluang Aktif",
+      "Proc Chance"
+    ],
+    "radius": [
+      "Radius",
+      "Radius"
+    ],
+    "range_bonus": [
+      "Bonus Jangkauan",
+      "Attack Range Bonus"
+    ],
+    "ranged_block": [
+      "Block (Ranged)",
+      "Block (Ranged)"
+    ],
+    "reflect_pct": [
+      "Pantulan Damage",
+      "Damage Reflect"
+    ],
+    "root_duration": [
+      "Durasi Root",
+      "Root Duration"
+    ],
+    "root_radius": [
+      "Radius Root",
+      "Root Radius"
+    ],
+    "silence": [
+      "Silence",
+      "Silence"
+    ],
+    "silence_duration": [
+      "Durasi Silence",
+      "Silence Duration"
+    ],
+    "skill_amp": [
+      "Skill Amp",
+      "Skill Amp"
+    ],
+    "slow": [
+      "Slow Gerak",
+      "Move Slow"
+    ],
+    "slow_duration": [
+      "Durasi Slow",
+      "Slow Duration"
+    ],
+    "slow_resist": [
+      "Tahan Slow",
+      "Slow Resist"
+    ],
+    "spell_vamp": [
+      "Spell Lifesteal",
+      "Spell Lifesteal"
+    ],
+    "stun": [
+      "Stun",
+      "Stun"
+    ],
+    "targets": [
+      "Jumlah Target",
+      "Targets"
+    ],
+    "tick": [
+      "Interval Tick",
+      "Tick Interval"
+    ],
+    "trigger_enemies": [
+      "Pemicu Musuh Dekat",
+      "Trigger Enemies"
+    ],
+    "trigger_radius": [
+      "Radius Pemicu",
+      "Trigger Radius"
+    ]
+  },
+  "frame_keys": [
+    "burn_duration",
+    "charge_time",
+    "combat_timeout",
+    "cooldown",
+    "duration",
+    "root_duration",
+    "silence",
+    "silence_duration",
+    "slow_duration",
+    "stun",
+    "tick"
+  ],
+  "group_labels": {
+    "active": [
+      "AKTIF",
+      "ACTIVE"
+    ],
+    "aura": [
+      "AURA",
+      "AURA"
+    ],
+    "bash": [
+      "BASH",
+      "BASH"
+    ],
+    "block": [
+      "BLOCK",
+      "BLOCK"
+    ],
+    "multishot": [
+      "MULTISHOT",
+      "MULTISHOT"
+    ],
+    "on_attack": [
+      "EFEK SERANGAN",
+      "ON-ATTACK"
+    ],
+    "passive": [
+      "PASIF",
+      "PASSIVE"
+    ],
+    "stats": [
+      "STAT",
+      "STATS"
+    ]
+  },
+  "item_flat_cost": 4500,
+  "item_shop_order": [
+    "dead_edge",
+    "holy_rapier",
+    "demon_maw",
+    "cleave_axe",
+    "moon_shard",
+    "monarch_wings",
+    "corroder",
+    "fenrir_chain",
+    "sanguine_thorn",
+    "thunder_coil",
+    "sundering_cudgel",
+    "frostbound_eye",
+    "gale_pike",
+    "basilisk_breath",
+    "octarine_core",
+    "runic_gavel",
+    "astral_codex",
+    "sage_scepter",
+    "fulgur_scepter",
+    "hex_idol",
+    "rift_veil",
+    "vital_stone",
+    "vine_rod",
+    "spectral_charm",
+    "leviathan_heart",
+    "steel_aegis",
+    "scarlet_bulwark",
+    "tempest_vane",
+    "abyss_breaker",
+    "razor_carapace",
+    "everfrost_guard",
+    "solar_brand",
+    "searbrand"
+  ],
+  "items_per_page": 8,
+  "magic_role_keywords": [
+    "mage",
+    "magic",
+    "sorcer",
+    "caster",
+    "warlock",
+    "witch",
+    "sage",
+    "prophet",
+    "priestess",
+    "pyro",
+    "necro",
+    "shaman",
+    "summoner",
+    "chorister",
+    "farseer",
+    "starweaver",
+    "hex",
+    "eldritch"
+  ],
+  "max_item_slots": 6,
+  "mech_field_order": {
+    "abyss_breaker": {
+      "active": [
+        "name",
+        "stun",
+        "cooldown"
+      ],
+      "bash": [
+        "chance",
+        "damage",
+        "stun",
+        "cooldown"
+      ],
+      "stats": [
+        "damage",
+        "hp",
+        "hp_regen",
+        "heal_amp",
+        "slow_resist"
+      ]
+    },
+    "astral_codex": {
+      "active": [
+        "name",
+        "trigger_enemies",
+        "radius",
+        "damage",
+        "silence_duration",
+        "cooldown"
+      ],
+      "stats": [
+        "hp",
+        "hp_regen",
+        "cooldown_reduction",
+        "spell_vamp",
+        "skill_amp"
+      ]
+    },
+    "basilisk_breath": {
+      "multishot": [
+        "name",
+        "chance",
+        "targets",
+        "radius",
+        "damage_pct"
+      ],
+      "on_attack": [
+        "name",
+        "max_hp_pct_per_tick",
+        "tick",
+        "duration",
+        "cap_damage"
+      ],
+      "stats": [
+        "damage",
+        "attack_speed",
+        "hp",
+        "hp_regen"
+      ]
+    },
+    "cleave_axe": {
+      "passive": [
+        "name",
+        "cleave_pct",
+        "cleave_radius"
+      ],
+      "stats": [
+        "damage",
+        "hp_regen"
+      ]
+    },
+    "corroder": {
+      "passive": [
+        "name",
+        "armor_shred",
+        "duration"
+      ],
+      "stats": [
+        "damage"
+      ]
+    },
+    "dead_edge": {
+      "stats": [
+        "damage",
+        "crit_chance",
+        "crit_mult"
+      ]
+    },
+    "demon_maw": {
+      "active": [
+        "name",
+        "hp_threshold",
+        "lifesteal_bonus",
+        "duration",
+        "cooldown"
+      ],
+      "stats": [
+        "damage",
+        "armor",
+        "lifesteal"
+      ]
+    },
+    "everfrost_guard": {
+      "active": [
+        "name",
+        "trigger_enemies",
+        "radius",
+        "damage",
+        "slow",
+        "slow_duration",
+        "cooldown"
+      ],
+      "aura": [
+        "name",
+        "enemy_radius",
+        "enemy_atk_slow",
+        "enemy_anti_heal"
+      ],
+      "stats": [
+        "armor",
+        "hp_regen",
+        "cooldown_reduction"
+      ]
+    },
+    "fenrir_chain": {
+      "active": [
+        "name",
+        "trigger_enemies",
+        "trigger_radius",
+        "root_radius",
+        "root_duration",
+        "damage",
+        "cooldown"
+      ],
+      "on_attack": [
+        "name",
+        "chance",
+        "damage",
+        "targets",
+        "radius"
+      ],
+      "stats": [
+        "damage",
+        "attack_speed",
+        "hp"
+      ]
+    },
+    "frostbound_eye": {
+      "on_attack": [
+        "name",
+        "slow",
+        "atk_slow",
+        "anti_heal",
+        "duration"
+      ],
+      "stats": [
+        "damage",
+        "hp",
+        "hp_regen"
+      ]
+    },
+    "fulgur_scepter": {
+      "active": [
+        "name",
+        "damage",
+        "cooldown"
+      ],
+      "stats": [
+        "damage",
+        "hp",
+        "skill_amp",
+        "spell_vamp"
+      ]
+    },
+    "gale_pike": {
+      "active": [
+        "name",
+        "hp_threshold",
+        "dash_distance",
+        "as_bonus",
+        "duration",
+        "cooldown"
+      ],
+      "stats": [
+        "damage",
+        "attack_speed",
+        "hp",
+        "hp_regen",
+        "range_bonus"
+      ]
+    },
+    "hex_idol": {
+      "active": [
+        "name",
+        "stun",
+        "silence",
+        "cooldown"
+      ],
+      "stats": [
+        "hp",
+        "hp_regen",
+        "spell_vamp",
+        "cooldown_reduction"
+      ]
+    },
+    "holy_rapier": {
+      "stats": [
+        "damage"
+      ]
+    },
+    "leviathan_heart": {
+      "passive": [
+        "name",
+        "out_of_combat_regen_pct",
+        "combat_timeout"
+      ],
+      "stats": [
+        "hp_pct",
+        "hp_regen"
+      ]
+    },
+    "monarch_wings": {
+      "stats": [
+        "damage",
+        "attack_speed",
+        "evasion"
+      ]
+    },
+    "moon_shard": {
+      "stats": [
+        "attack_speed"
+      ]
+    },
+    "octarine_core": {
+      "stats": [
+        "hp",
+        "cooldown_reduction",
+        "spell_vamp",
+        "hp_regen"
+      ]
+    },
+    "razor_carapace": {
+      "active": [
+        "name",
+        "hp_threshold",
+        "reflect_pct",
+        "duration",
+        "cooldown"
+      ],
+      "stats": [
+        "damage",
+        "armor",
+        "cooldown_reduction"
+      ]
+    },
+    "rift_veil": {
+      "active": [
+        "name",
+        "trigger_enemies",
+        "radius",
+        "damage_amp",
+        "duration",
+        "cooldown"
+      ],
+      "stats": [
+        "hp",
+        "hp_regen",
+        "spell_vamp"
+      ]
+    },
+    "runic_gavel": {
+      "passive": [
+        "name",
+        "charge_time",
+        "damage"
+      ],
+      "stats": [
+        "damage",
+        "hp",
+        "hp_regen",
+        "cooldown_reduction"
+      ]
+    },
+    "sage_scepter": {
+      "stats": [
+        "hp",
+        "hp_regen",
+        "skill_amp",
+        "spell_vamp",
+        "cooldown_reduction"
+      ]
+    },
+    "sanguine_thorn": {
+      "active": [
+        "name",
+        "duration",
+        "crit_mult",
+        "damage_amp",
+        "cooldown"
+      ],
+      "stats": [
+        "damage",
+        "attack_speed",
+        "hp_regen"
+      ]
+    },
+    "scarlet_bulwark": {
+      "active": [
+        "name",
+        "hp_threshold",
+        "ally_radius",
+        "base_block",
+        "max_hp_block_pct",
+        "duration",
+        "cooldown"
+      ],
+      "block": [
+        "chance",
+        "melee_block",
+        "ranged_block"
+      ],
+      "stats": [
+        "hp",
+        "hp_regen",
+        "armor"
+      ]
+    },
+    "searbrand": {
+      "active": [
+        "name",
+        "trigger_enemies",
+        "radius",
+        "damage",
+        "burn_dps",
+        "burn_duration",
+        "cooldown"
+      ],
+      "aura": [
+        "name",
+        "enemy_radius",
+        "enemy_anti_heal",
+        "burn_dps"
+      ],
+      "stats": [
+        "damage",
+        "hp",
+        "hp_regen",
+        "cooldown_reduction"
+      ]
+    },
+    "solar_brand": {
+      "aura": [
+        "name",
+        "enemy_radius",
+        "burn_dps",
+        "blind"
+      ],
+      "stats": [
+        "damage",
+        "hp",
+        "hp_regen"
+      ]
+    },
+    "spectral_charm": {
+      "active": [
+        "name",
+        "hp_threshold",
+        "duration",
+        "cooldown"
+      ],
+      "stats": [
+        "hp",
+        "hp_regen",
+        "move_speed_pct",
+        "spell_vamp"
+      ]
+    },
+    "steel_aegis": {
+      "aura": [
+        "name",
+        "ally_radius",
+        "ally_armor",
+        "ally_attack_speed",
+        "enemy_radius",
+        "enemy_armor_reduction"
+      ],
+      "stats": [
+        "armor",
+        "attack_speed"
+      ]
+    },
+    "sundering_cudgel": {
+      "bash": [
+        "name",
+        "chance",
+        "damage",
+        "stun",
+        "cooldown"
+      ],
+      "stats": [
+        "damage",
+        "attack_speed"
+      ]
+    },
+    "tempest_vane": {
+      "active": [
+        "name",
+        "hp_threshold",
+        "duration",
+        "cooldown"
+      ],
+      "stats": [
+        "hp",
+        "hp_regen",
+        "move_speed_pct"
+      ]
+    },
+    "thunder_coil": {
+      "active": [
+        "name",
+        "proc_chance",
+        "duration",
+        "tick",
+        "damage",
+        "targets",
+        "radius",
+        "cooldown"
+      ],
+      "on_attack": [
+        "name",
+        "chance",
+        "damage",
+        "targets",
+        "radius"
+      ],
+      "stats": [
+        "damage",
+        "attack_speed"
+      ]
+    },
+    "vine_rod": {
+      "on_attack": [
+        "name",
+        "root_duration",
+        "cooldown"
+      ],
+      "stats": [
+        "damage",
+        "hp",
+        "hp_regen",
+        "spell_vamp"
+      ]
+    },
+    "vital_stone": {
+      "active": [
+        "name",
+        "hp_threshold",
+        "heal_pct",
+        "cooldown"
+      ],
+      "stats": [
+        "hp",
+        "hp_regen",
+        "spell_vamp"
+      ]
+    }
+  },
+  "mech_groups": [
+    "stats",
+    "passive",
+    "active",
+    "aura",
+    "block",
+    "on_attack",
+    "multishot",
+    "bash"
+  ],
+  "mech_value_types": {
+    "abyss_breaker": {
+      "active": {
+        "cooldown": "int",
+        "name": "str",
+        "stun": "int"
+      },
+      "bash": {
+        "chance": "float",
+        "cooldown": "int",
+        "damage": "int",
+        "stun": "int"
+      },
+      "stats": {
+        "damage": "int",
+        "heal_amp": "float",
+        "hp": "int",
+        "hp_regen": "int",
+        "slow_resist": "float"
+      }
+    },
+    "astral_codex": {
+      "active": {
+        "cooldown": "int",
+        "damage": "int",
+        "name": "str",
+        "radius": "int",
+        "silence_duration": "int",
+        "trigger_enemies": "int"
+      },
+      "stats": {
+        "cooldown_reduction": "float",
+        "hp": "int",
+        "hp_regen": "int",
+        "skill_amp": "float",
+        "spell_vamp": "float"
+      }
+    },
+    "basilisk_breath": {
+      "multishot": {
+        "chance": "float",
+        "damage_pct": "float",
+        "name": "str",
+        "radius": "int",
+        "targets": "int"
+      },
+      "on_attack": {
+        "cap_damage": "int",
+        "duration": "int",
+        "max_hp_pct_per_tick": "float",
+        "name": "str",
+        "tick": "int"
+      },
+      "stats": {
+        "attack_speed": "int",
+        "damage": "int",
+        "hp": "int",
+        "hp_regen": "int"
+      }
+    },
+    "cleave_axe": {
+      "passive": {
+        "cleave_pct": "float",
+        "cleave_radius": "int",
+        "name": "str"
+      },
+      "stats": {
+        "damage": "int",
+        "hp_regen": "float"
+      }
+    },
+    "corroder": {
+      "passive": {
+        "armor_shred": "int",
+        "duration": "int",
+        "name": "str"
+      },
+      "stats": {
+        "damage": "int"
+      }
+    },
+    "dead_edge": {
+      "stats": {
+        "crit_chance": "float",
+        "crit_mult": "float",
+        "damage": "int"
+      }
+    },
+    "demon_maw": {
+      "active": {
+        "cooldown": "int",
+        "duration": "int",
+        "hp_threshold": "float",
+        "lifesteal_bonus": "float",
+        "name": "str"
+      },
+      "stats": {
+        "armor": "int",
+        "damage": "int",
+        "lifesteal": "float"
+      }
+    },
+    "everfrost_guard": {
+      "active": {
+        "cooldown": "int",
+        "damage": "int",
+        "name": "str",
+        "radius": "int",
+        "slow": "float",
+        "slow_duration": "int",
+        "trigger_enemies": "int"
+      },
+      "aura": {
+        "enemy_anti_heal": "float",
+        "enemy_atk_slow": "float",
+        "enemy_radius": "int",
+        "name": "str"
+      },
+      "stats": {
+        "armor": "int",
+        "cooldown_reduction": "float",
+        "hp_regen": "int"
+      }
+    },
+    "fenrir_chain": {
+      "active": {
+        "cooldown": "int",
+        "damage": "int",
+        "name": "str",
+        "root_duration": "int",
+        "root_radius": "int",
+        "trigger_enemies": "int",
+        "trigger_radius": "int"
+      },
+      "on_attack": {
+        "chance": "float",
+        "damage": "int",
+        "name": "str",
+        "radius": "int",
+        "targets": "int"
+      },
+      "stats": {
+        "attack_speed": "int",
+        "damage": "int",
+        "hp": "int"
+      }
+    },
+    "frostbound_eye": {
+      "on_attack": {
+        "anti_heal": "float",
+        "atk_slow": "float",
+        "duration": "int",
+        "name": "str",
+        "slow": "float"
+      },
+      "stats": {
+        "damage": "int",
+        "hp": "int",
+        "hp_regen": "int"
+      }
+    },
+    "fulgur_scepter": {
+      "active": {
+        "cooldown": "int",
+        "damage": "int",
+        "name": "str"
+      },
+      "stats": {
+        "damage": "int",
+        "hp": "int",
+        "skill_amp": "float",
+        "spell_vamp": "float"
+      }
+    },
+    "gale_pike": {
+      "active": {
+        "as_bonus": "int",
+        "cooldown": "int",
+        "dash_distance": "int",
+        "duration": "int",
+        "hp_threshold": "float",
+        "name": "str"
+      },
+      "stats": {
+        "attack_speed": "int",
+        "damage": "int",
+        "hp": "int",
+        "hp_regen": "int",
+        "range_bonus": "int"
+      }
+    },
+    "hex_idol": {
+      "active": {
+        "cooldown": "int",
+        "name": "str",
+        "silence": "int",
+        "stun": "int"
+      },
+      "stats": {
+        "cooldown_reduction": "float",
+        "hp": "int",
+        "hp_regen": "int",
+        "spell_vamp": "float"
+      }
+    },
+    "holy_rapier": {
+      "stats": {
+        "damage": "int"
+      }
+    },
+    "leviathan_heart": {
+      "passive": {
+        "combat_timeout": "int",
+        "name": "str",
+        "out_of_combat_regen_pct": "float"
+      },
+      "stats": {
+        "hp_pct": "float",
+        "hp_regen": "float"
+      }
+    },
+    "monarch_wings": {
+      "stats": {
+        "attack_speed": "int",
+        "damage": "int",
+        "evasion": "float"
+      }
+    },
+    "moon_shard": {
+      "stats": {
+        "attack_speed": "int"
+      }
+    },
+    "octarine_core": {
+      "stats": {
+        "cooldown_reduction": "float",
+        "hp": "int",
+        "hp_regen": "float",
+        "spell_vamp": "float"
+      }
+    },
+    "razor_carapace": {
+      "active": {
+        "cooldown": "int",
+        "duration": "int",
+        "hp_threshold": "float",
+        "name": "str",
+        "reflect_pct": "float"
+      },
+      "stats": {
+        "armor": "int",
+        "cooldown_reduction": "float",
+        "damage": "int"
+      }
+    },
+    "rift_veil": {
+      "active": {
+        "cooldown": "int",
+        "damage_amp": "float",
+        "duration": "int",
+        "name": "str",
+        "radius": "int",
+        "trigger_enemies": "int"
+      },
+      "stats": {
+        "hp": "int",
+        "hp_regen": "int",
+        "spell_vamp": "float"
+      }
+    },
+    "runic_gavel": {
+      "passive": {
+        "charge_time": "int",
+        "damage": "int",
+        "name": "str"
+      },
+      "stats": {
+        "cooldown_reduction": "float",
+        "damage": "int",
+        "hp": "int",
+        "hp_regen": "int"
+      }
+    },
+    "sage_scepter": {
+      "stats": {
+        "cooldown_reduction": "float",
+        "hp": "int",
+        "hp_regen": "int",
+        "skill_amp": "float",
+        "spell_vamp": "float"
+      }
+    },
+    "sanguine_thorn": {
+      "active": {
+        "cooldown": "int",
+        "crit_mult": "float",
+        "damage_amp": "float",
+        "duration": "int",
+        "name": "str"
+      },
+      "stats": {
+        "attack_speed": "int",
+        "damage": "int",
+        "hp_regen": "int"
+      }
+    },
+    "scarlet_bulwark": {
+      "active": {
+        "ally_radius": "int",
+        "base_block": "int",
+        "cooldown": "int",
+        "duration": "int",
+        "hp_threshold": "float",
+        "max_hp_block_pct": "float",
+        "name": "str"
+      },
+      "block": {
+        "chance": "float",
+        "melee_block": "int",
+        "ranged_block": "int"
+      },
+      "stats": {
+        "armor": "int",
+        "hp": "int",
+        "hp_regen": "int"
+      }
+    },
+    "searbrand": {
+      "active": {
+        "burn_dps": "int",
+        "burn_duration": "int",
+        "cooldown": "int",
+        "damage": "int",
+        "name": "str",
+        "radius": "int",
+        "trigger_enemies": "int"
+      },
+      "aura": {
+        "burn_dps": "int",
+        "enemy_anti_heal": "float",
+        "enemy_radius": "int",
+        "name": "str"
+      },
+      "stats": {
+        "cooldown_reduction": "float",
+        "damage": "int",
+        "hp": "int",
+        "hp_regen": "int"
+      }
+    },
+    "solar_brand": {
+      "aura": {
+        "blind": "float",
+        "burn_dps": "int",
+        "enemy_radius": "int",
+        "name": "str"
+      },
+      "stats": {
+        "damage": "int",
+        "hp": "int",
+        "hp_regen": "int"
+      }
+    },
+    "spectral_charm": {
+      "active": {
+        "cooldown": "int",
+        "duration": "int",
+        "hp_threshold": "float",
+        "name": "str"
+      },
+      "stats": {
+        "hp": "int",
+        "hp_regen": "int",
+        "move_speed_pct": "float",
+        "spell_vamp": "float"
+      }
+    },
+    "steel_aegis": {
+      "aura": {
+        "ally_armor": "int",
+        "ally_attack_speed": "int",
+        "ally_radius": "int",
+        "enemy_armor_reduction": "int",
+        "enemy_radius": "int",
+        "name": "str"
+      },
+      "stats": {
+        "armor": "int",
+        "attack_speed": "int"
+      }
+    },
+    "sundering_cudgel": {
+      "bash": {
+        "chance": "float",
+        "cooldown": "int",
+        "damage": "int",
+        "name": "str",
+        "stun": "int"
+      },
+      "stats": {
+        "attack_speed": "int",
+        "damage": "int"
+      }
+    },
+    "tempest_vane": {
+      "active": {
+        "cooldown": "int",
+        "duration": "int",
+        "hp_threshold": "float",
+        "name": "str"
+      },
+      "stats": {
+        "hp": "int",
+        "hp_regen": "int",
+        "move_speed_pct": "float"
+      }
+    },
+    "thunder_coil": {
+      "active": {
+        "cooldown": "int",
+        "damage": "int",
+        "duration": "int",
+        "name": "str",
+        "proc_chance": "float",
+        "radius": "int",
+        "targets": "int",
+        "tick": "int"
+      },
+      "on_attack": {
+        "chance": "float",
+        "damage": "int",
+        "name": "str",
+        "radius": "int",
+        "targets": "int"
+      },
+      "stats": {
+        "attack_speed": "int",
+        "damage": "int"
+      }
+    },
+    "vine_rod": {
+      "on_attack": {
+        "cooldown": "int",
+        "name": "str",
+        "root_duration": "int"
+      },
+      "stats": {
+        "damage": "int",
+        "hp": "int",
+        "hp_regen": "int",
+        "spell_vamp": "float"
+      }
+    },
+    "vital_stone": {
+      "active": {
+        "cooldown": "int",
+        "heal_pct": "float",
+        "hp_threshold": "float",
+        "name": "str"
+      },
+      "stats": {
+        "hp": "int",
+        "hp_regen": "int",
+        "spell_vamp": "float"
+      }
+    }
+  },
+  "pct_keys": [
+    "anti_heal",
+    "atk_slow",
+    "blind",
+    "chance",
+    "cleave_pct",
+    "cooldown_reduction",
+    "crit_chance",
+    "damage_amp",
+    "damage_pct",
+    "enemy_anti_heal",
+    "enemy_atk_slow",
+    "evasion",
+    "heal_amp",
+    "heal_pct",
+    "hp_pct",
+    "hp_threshold",
+    "lifesteal",
+    "lifesteal_bonus",
+    "max_hp_block_pct",
+    "max_hp_pct_per_tick",
+    "move_speed_pct",
+    "out_of_combat_regen_pct",
+    "proc_chance",
+    "reflect_pct",
+    "skill_amp",
+    "slow",
+    "slow_resist",
+    "spell_vamp"
+  ],
+  "schema": 1,
+  "shop_page_meta": [
+    [
+      "physical",
+      1,
+      2
+    ],
+    [
+      "physical",
+      2,
+      2
+    ],
+    [
+      "magic",
+      1,
+      2
+    ],
+    [
+      "magic",
+      2,
+      2
+    ],
+    [
+      "tank",
+      1,
+      2
+    ],
+    [
+      "tank",
+      2,
+      2
+    ]
+  ],
+  "shop_pages": [
+    [
+      "dead_edge",
+      "holy_rapier",
+      "demon_maw",
+      "cleave_axe",
+      "moon_shard",
+      "monarch_wings",
+      "corroder",
+      "fenrir_chain"
+    ],
+    [
+      "sanguine_thorn",
+      "thunder_coil",
+      "sundering_cudgel",
+      "frostbound_eye",
+      "gale_pike",
+      "basilisk_breath"
+    ],
+    [
+      "octarine_core",
+      "runic_gavel",
+      "astral_codex",
+      "sage_scepter",
+      "fulgur_scepter",
+      "hex_idol",
+      "rift_veil",
+      "vital_stone"
+    ],
+    [
+      "vine_rod",
+      "spectral_charm"
+    ],
+    [
+      "leviathan_heart",
+      "steel_aegis",
+      "scarlet_bulwark",
+      "tempest_vane",
+      "abyss_breaker",
+      "razor_carapace",
+      "everfrost_guard",
+      "solar_brand"
+    ],
+    [
+      "searbrand"
+    ]
+  ],
+  "source": "hero_items.py",
+  "source_sha256": "dd29a34e8c264d5a81dddf79206d1511da082923f7a881ae8122e4ea1781b442"
+}

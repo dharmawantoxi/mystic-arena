@@ -7,6 +7,7 @@ const Clock := preload("res://scripts/core/FixedClock.gd")
 const Gesture := preload("res://scripts/core/GestureTracker.gd")
 const BossKit := preload("res://scripts/entities/generated/BossKit.gd")
 const BalanceParity := preload("res://tests/HeroBalanceParityTest.gd")
+const ItemsParity := preload("res://tests/HeroItemsParityTest.gd")
 var checks := 0
 var failures := 0
 
@@ -44,6 +45,7 @@ func _run() -> void:
 	_test_core_data()
 	_test_archetypes()
 	_test_balance()
+	_test_items()
 	_test_core_rules()
 	_test_core_save()
 	_test_core_services()
@@ -709,6 +711,10 @@ func _test_core_data() -> void:
 
 func _test_balance() -> void:
 	BalanceParity.run(self)
+
+
+func _test_items() -> void:
+	ItemsParity.run(self)
 
 
 func _test_archetypes() -> void:
