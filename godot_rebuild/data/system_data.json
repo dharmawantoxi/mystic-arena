@@ -1,0 +1,150 @@
+{
+  "_generated_by": "tools/prepare_godot_system.py",
+  "_source": "_system.py (AST contract, no pygame import)",
+  "performance": {
+    "frustum_margin": 80,
+    "screen": [
+      1280,
+      720
+    ],
+    "spatial_cell_size": 60,
+    "fps_history_size": 120,
+    "fps_display_window": 30,
+    "fps_refresh_frames": 10,
+    "adaptive_history_size": 30,
+    "adaptive_high_threshold": 50,
+    "adaptive_medium_threshold": 35
+  },
+  "audio": {
+    "channels": 32,
+    "volumes": {
+      "master": 0.7,
+      "sfx": 0.6,
+      "voice": 0.5,
+      "bgm": 0.35,
+      "ambient": 0.25
+    },
+    "throttle_ms": {
+      "goblin_spawn": 200,
+      "minion_death": 120,
+      "tower_destroyed": 300,
+      "bullet_hit": 40,
+      "nexus_hit": 300,
+      "ui_click": 50
+    },
+    "default_throttle_ms": 50,
+    "positional_max_distance": 800,
+    "positional_min_volume": 0.15,
+    "manifest": [
+      {
+        "name": "goblin_spawn",
+        "file": "goblin_spawn.wav",
+        "category": "voice"
+      },
+      {
+        "name": "ambient_forest",
+        "file": "ambient_forest.wav",
+        "category": "ambient"
+      },
+      {
+        "name": "bullet_hit",
+        "file": "bullet_hit.wav",
+        "category": "sfx"
+      },
+      {
+        "name": "explosion",
+        "file": "explosion.wav",
+        "category": "sfx"
+      },
+      {
+        "name": "nexus_hit",
+        "file": "nexus_hit.wav",
+        "category": "sfx"
+      },
+      {
+        "name": "minion_death",
+        "file": "minion_death.wav",
+        "category": "sfx"
+      },
+      {
+        "name": "tower_destroyed",
+        "file": "tower_destroyed.wav",
+        "category": "sfx"
+      },
+      {
+        "name": "ui_click",
+        "file": "ui_click.wav",
+        "category": "sfx"
+      },
+      {
+        "name": "ui_buy",
+        "file": "ui_buy.wav",
+        "category": "sfx"
+      },
+      {
+        "name": "ui_upgrade",
+        "file": "ui_upgrade.wav",
+        "category": "sfx"
+      },
+      {
+        "name": "ui_error",
+        "file": "ui_error.wav",
+        "category": "sfx"
+      },
+      {
+        "name": "ui_sell",
+        "file": "ui_sell.wav",
+        "category": "sfx"
+      },
+      {
+        "name": "wave_start",
+        "file": "wave_start.wav",
+        "category": "sfx"
+      },
+      {
+        "name": "victory",
+        "file": "victory.wav",
+        "category": "sfx"
+      },
+      {
+        "name": "defeat",
+        "file": "defeat.wav",
+        "category": "sfx"
+      },
+      {
+        "name": "hero_skill",
+        "file": "hero_skill.wav",
+        "category": "sfx"
+      },
+      {
+        "name": "hero_spawn",
+        "file": "hero_spawn.wav",
+        "category": "sfx"
+      }
+    ]
+  },
+  "save": {
+    "num_slots": 3,
+    "empty_save_keys": [
+      "unlocked_bosses",
+      "purchased_heroes",
+      "meta_gold",
+      "completed_levels",
+      "last_played_level",
+      "slot_created",
+      "slot_last_played",
+      "slot_playtime_seconds",
+      "level_stats",
+      "run_difficulty"
+    ],
+    "level_stats_defaults": {
+      "best_score": 0,
+      "best_time_seconds": 0,
+      "total_attempts": 0,
+      "wins": 0,
+      "total_kills": 0,
+      "max_combo": 0,
+      "total_playtime_seconds": 0
+    }
+  }
+}

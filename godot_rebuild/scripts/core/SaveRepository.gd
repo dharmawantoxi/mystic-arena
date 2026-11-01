@@ -58,6 +58,7 @@ func exists(slot: int) -> bool:
 func load_slot(slot := -1, now := 0.0) -> Dictionary:
 	if slot < 0:
 		slot = current_slot
+	migrate_legacy_save()
 	last_error = ""
 	if not exists(slot):
 		return empty_save(now)
@@ -124,8 +125,74 @@ func slot_info(slot: int) -> Dictionary:
 		"highest_level": highest,
 		"last_played_level": int(data.get("last_played_level", 1)),
 		"purchased_heroes": data.get("purchased_heroes", []),
+		"unlocked_bosses": data.get("unlocked_bosses", []),
+		"slot_created": float(data.get("slot_created", 0)),
+		"slot_last_played": float(data.get("slot_last_played", 0)),
 		"slot_playtime_seconds": int(data.get("slot_playtime_seconds", 0)),
+		"playtime_seconds": int(data.get("slot_playtime_seconds", 0)),
 	}
+
+
+func all_slot_info() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for slot in range(1, NUM_SLOTS + 1):
+		result.append(slot_info(slot))
+	return result
+
+
+func migrate_legacy_save() -> bool:
+	var legacy := "%s/progress.json" % directory
+	if not FileAccess.file_exists(legacy) or exists(1):
+		return false
+	var bytes := FileAccess.get_file_as_bytes(legacy)
+	if bytes.is_empty():
+		return false
+	var dir_err := DirAccess.make_dir_recursive_absolute(directory)
+	if dir_err != OK:
+		return false
+	var file := FileAccess.open(slot_path(1), FileAccess.WRITE)
+	if file == null:
+		return false
+	file.store_buffer(bytes)
+	file.close()
+	DirAccess.rename_absolute(legacy, legacy + ".bak")
+	return true
+
+
+static func format_playtime(seconds: int) -> String:
+	var hours := int(seconds / 3600.0)
+	var minutes := int(fmod(seconds, 3600.0) / 60.0)
+	if hours > 0:
+		return "%dh %dm" % [hours, minutes]
+	return "%dm" % minutes
+
+
+static func format_time(seconds: int) -> String:
+	if seconds == 0:
+		return "--:--"
+	var minutes := int(seconds / 60.0)
+	var secs := int(fmod(seconds, 60.0))
+	return "%d:%02d" % [minutes, secs]
+
+
+static func format_last_played(timestamp: float, now: float) -> String:
+	if timestamp == 0.0:
+		return "Never"
+	var elapsed := now - timestamp
+	if elapsed < 60.0:
+		return "Just now"
+	if elapsed < 3600.0:
+		return "%dm ago" % int(elapsed / 60.0)
+	if elapsed < 86400.0:
+		return "%dh ago" % int(elapsed / 3600.0)
+	if elapsed < 604800.0:
+		return "%dd ago" % int(elapsed / 86400.0)
+	var date := Time.get_datetime_dict_from_unix_time(int(timestamp))
+	var months := [
+		"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+	]
+	var month: String = months[clampi(int(date.month) - 1, 0, 11)]
+	return "%02d %s %d" % [int(date.day), month, int(date.year)]
 
 
 static func empty_level_stats() -> Dictionary:

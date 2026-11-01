@@ -60,6 +60,7 @@ var popups: Array[Dictionary] = []
 var shake := 0.0
 var notifications: Array[String] = []
 var first_blood := false
+var spatial := SpatialGrid.new()
 
 
 func clear_unit_refs() -> void:
@@ -80,6 +81,7 @@ func clear_unit_refs() -> void:
 	selected_hero = null
 	active_boss = null
 	projectiles.clear()
+	spatial.clear()
 	effects.clear()
 	popups.clear()
 	ai = null
@@ -183,6 +185,30 @@ func all_units() -> Array[BattleUnit]:
 	return result
 
 
+func _update_spatial_grid() -> void:
+	spatial.clear()
+	for unit: BattleUnit in all_units():
+		if unit.alive:
+			spatial.insert(unit)
+
+
+func query_enemies_in_range(pos: Vector2, radius: float, team: String) -> Array[BattleUnit]:
+	return spatial.query_range(pos.x, pos.y, radius, team)
+
+
+func nearest_enemy_in_range(pos: Vector2, radius: float, team: String) -> BattleUnit:
+	var best := _nearest(pos, query_enemies_in_range(pos, radius, team), radius)
+	for tower: BattleUnit in towers:
+		if tower.team != team and tower.alive and pos.distance_to(tower.pos) <= radius:
+			if best == null or pos.distance_to(tower.pos) < pos.distance_to(best.pos):
+				best = tower
+	var base := red_base if team == "blue" else blue_base
+	if base.alive and pos.distance_to(base.pos) <= radius:
+		if best == null or pos.distance_to(base.pos) < pos.distance_to(best.pos):
+			best = base
+	return best
+
+
 func enemies_of(team: String) -> Array[BattleUnit]:
 	var result: Array[BattleUnit] = []
 	for unit: BattleUnit in all_units():
@@ -209,6 +235,7 @@ func step() -> void:
 		gold_milli = income.milli
 		ai_gold += int(data.rule("GOLD_PER_SECOND", 3)) + maxi(0, wave_number)
 	_update_waves()
+	_update_spatial_grid()
 	var units := all_units()
 	for unit: BattleUnit in units:
 		unit.tick_timers(data)
@@ -354,7 +381,7 @@ func _attack(attacker: BattleUnit, target: BattleUnit) -> void:
 func _update_tower(tower: BattleUnit) -> void:
 	if tower.attack_timer > 0:
 		return
-	var target := _nearest(tower.pos, enemies_of(tower.team), tower.attack_range)
+	var target := nearest_enemy_in_range(tower.pos, tower.attack_range, tower.team)
 	if target == null:
 		return
 	tower.attack_timer = tower.effective_attack_cd()
@@ -367,7 +394,7 @@ func _update_tower(tower: BattleUnit) -> void:
 		self, tower, target, bullet_type, tower.pos + Vector2(0, -20), tower.stats
 	)
 	if bool(tower.stats.get("double_shot", false)):
-		var second := _nearest(tower.pos, enemies_of(tower.team), tower.attack_range)
+		var second := nearest_enemy_in_range(tower.pos, tower.attack_range, tower.team)
 		if second != null and second != target:
 			EntityProjectiles.spawn_tower(
 				self, tower, second, bullet_type, tower.pos + Vector2(0, -20), tower.stats

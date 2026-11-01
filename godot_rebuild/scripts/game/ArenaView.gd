@@ -75,7 +75,7 @@ func _draw_slots(model: MatchModel) -> void:
 
 
 func _draw_unit(unit: BattleUnit, show_bar: bool) -> void:
-	if not unit.alive:
+	if not unit.alive or not FrustumCuller.is_visible(unit.pos, unit.radius):
 		return
 	var color := unit.color if unit.team == "blue" else unit.color.lerp(Color("ff4444"), 0.35)
 	if unit.selected or unit == game.model.selected_tower or unit == game.model.selected_hero:

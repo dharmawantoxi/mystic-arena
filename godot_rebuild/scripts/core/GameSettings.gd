@@ -18,6 +18,7 @@ const DEFAULTS := {
 	"input_mode": "keyboard",
 	"debug": false,
 	"render_quality": "high",
+	"auto_quality": false,
 }
 const DIFFICULTY_MODES := ["easy", "normal", "hard"]
 const SPEEDS := [0.5, 1.0, 1.5, 2.0]

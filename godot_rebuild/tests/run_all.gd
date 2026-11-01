@@ -37,6 +37,7 @@ func _run() -> void:
 	_test_core_match()
 	_test_entities()
 	_test_render()
+	await _test_system()
 	_test_hud()
 	await _test_app()
 	await _test_audio()
@@ -311,6 +312,140 @@ func _test_render() -> void:
 	game.free()
 	RenderCache.clear_cache()
 	EntityVisuals.clear_cache()
+
+
+func _test_system() -> void:
+	check(FrustumCuller.MARGIN == 80, "frustum margin parity")
+	check(FrustumCuller.is_visible(Vector2(-110, 360), 30), "frustum left boundary inclusive")
+	check(not FrustumCuller.is_visible(Vector2(-111, 360), 30), "frustum left outside")
+	check(FrustumCuller.is_visible(Vector2(1390, 360), 30), "frustum right boundary inclusive")
+	check(not FrustumCuller.is_visible(Vector2(1391, 360), 30), "frustum right outside")
+	var grid := SpatialGrid.new()
+	check(grid.cell_size == 60, "spatial cell size parity")
+	var units: Array[BattleUnit] = []
+	var positions := [
+		Vector2(0, 0),
+		Vector2(60, 0),
+		Vector2(0, 60),
+		Vector2(60, 60),
+		Vector2(30, 30),
+		Vector2(-1, -1),
+		Vector2(500, 500)
+	]
+	for index in range(positions.size()):
+		var unit := BattleUnit.new()
+		unit.id = index
+		unit.pos = positions[index]
+		unit.team = "red" if index % 2 == 0 else "blue"
+		unit.alive = index != 4
+		units.append(unit)
+		grid.insert(unit)
+	var found := grid.query_range(30, 30, 70, "blue")
+	var expected: Array[BattleUnit] = []
+	for unit: BattleUnit in units:
+		if unit.team != "blue" and unit.alive and unit.pos.distance_to(Vector2(30, 30)) <= 70:
+			expected.append(unit)
+	check(found.size() == expected.size(), "spatial team filter count")
+	for unit: BattleUnit in expected:
+		check(unit in found, "spatial team filter membership")
+	var all_found := grid.query_range(30, 30, 70)
+	check(all_found.size() >= found.size(), "spatial unfiltered includes dead")
+	check(grid.query_range(500, 500, 10, "blue").size() == 1, "spatial far bucket")
+	grid.clear()
+	check(grid.bucket_count() == 0, "spatial clear")
+	var fps := FpsCounter.new()
+	check(not fps.enabled, "fps counter disabled by default")
+	fps.toggle()
+	check(fps.enabled, "fps counter toggle")
+	for index in range(1, 11):
+		fps.update(float(index))
+	check(fps.fps_history.size() == 10, "fps history grows")
+	check(near(fps.display_fps, 10.0), "fps refresh at 10 frames")
+	check(near(fps.display_avg, 5.5), "fps display average")
+	check(near(fps.display_min, 1.0), "fps display min")
+	check(near(fps.display_max, 10.0), "fps display max")
+	for index in range(130):
+		fps.update(60.0)
+	check(fps.fps_history.size() == FpsCounter.HISTORY_SIZE, "fps history capped at 120")
+	check(fps.status() == "SMOOTH", "fps status smooth")
+	var adaptive := AdaptiveQuality.new()
+	for index in range(10):
+		adaptive.tick(60.0)
+	check(adaptive.quality == "high", "adaptive high threshold")
+	adaptive.reset()
+	for index in range(10):
+		adaptive.tick(40.0)
+	check(adaptive.quality == "medium", "adaptive medium threshold")
+	adaptive.reset()
+	for index in range(10):
+		adaptive.tick(20.0)
+	check(adaptive.quality == "low", "adaptive low threshold")
+	check(near(adaptive.get_fps(), 20.0), "adaptive last fps")
+	var audio := AudioDirector.new()
+	root.add_child(audio)
+	await process_frame
+	audio.play_bgm("bgm_battle", 0.0)
+	check(audio.current_bgm == "bgm_battle", "sound manager current bgm")
+	audio.pause_bgm()
+	check(audio.bgm_paused and audio.bgm.stream_paused, "pause bgm")
+	audio.resume_bgm()
+	check(not audio.bgm_paused and not audio.bgm.stream_paused, "resume bgm")
+	audio.set_master_volume(0.5)
+	check(near(float(audio.settings.master_volume), 0.5), "set master volume")
+	audio.set_master_volume(2.0)
+	check(near(float(audio.settings.master_volume), 1.0), "master volume clamped")
+	check(
+		not audio.play_positional("ui_click", Vector2(2000, 0), Vector2.ZERO, 800, 1.0, 5000),
+		"positional out of range"
+	)
+	check(
+		audio.play_positional("ui_click", Vector2(100, 0), Vector2.ZERO, 800, 1.0, 6000),
+		"positional in range"
+	)
+	check(
+		not audio.play_positional("ui_click", Vector2(100, 0), Vector2.ZERO, 800, 1.0, 6010),
+		"positional respects throttle"
+	)
+	audio.stop_bgm(0.0)
+	check(audio.current_bgm.is_empty() and not audio.bgm.playing, "stop bgm")
+	audio.play_ambient("ambient_forest", 0.8, 0.0)
+	check(audio.ambient.playing, "ambient loop starts")
+	audio.stop_ambient(0.0)
+	check(not audio.ambient.playing, "stop ambient")
+	audio.stop_all()
+	audio.streams.clear()
+	audio.free()
+	for _frame in range(6):
+		await process_frame
+	check(SaveRepository.format_playtime(3660) == "1h 1m", "format playtime hours")
+	check(SaveRepository.format_playtime(120) == "2m", "format playtime minutes")
+	check(SaveRepository.format_time(0) == "--:--", "format time zero")
+	check(SaveRepository.format_time(65) == "1:05", "format time minutes")
+	var now := 1700000000.0
+	check(SaveRepository.format_last_played(0, now) == "Never", "last played never")
+	check(SaveRepository.format_last_played(now - 30, now) == "Just now", "last played just now")
+	check(SaveRepository.format_last_played(now - 120, now) == "2m ago", "last played minutes")
+	check(SaveRepository.format_last_played(now - 7200, now) == "2h ago", "last played hours")
+	check(SaveRepository.format_last_played(now - 172800, now) == "2d ago", "last played days")
+	var repo := SaveRepository.new("user://test_system_save_%d" % Time.get_ticks_usec())
+	DirAccess.make_dir_recursive_absolute(repo.directory)
+	var legacy := FileAccess.open(repo.directory + "/progress.json", FileAccess.WRITE)
+	legacy.store_string(JSON.stringify({"meta_gold": 42}))
+	legacy.close()
+	var loaded := repo.load_slot(1)
+	check(int(loaded.meta_gold) == 42, "legacy save migrated")
+	check(repo.exists(1), "legacy migration creates slot 1")
+	check(FileAccess.file_exists(repo.directory + "/progress.json.bak"), "legacy save backed up")
+	check(not repo.migrate_legacy_save(), "legacy migration idempotent")
+	check(repo.all_slot_info().size() == 3, "all slot info count")
+	var info := repo.slot_info(1)
+	check(info.has("unlocked_bosses") and info.has("playtime_seconds"), "slot info system fields")
+	repo.delete_slot(1)
+	DirAccess.remove_absolute(repo.directory + "/progress.json.bak")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(repo.directory))
+	var model := MatchModel.new()
+	check(model.spatial.cell_size == 60, "match model spatial grid wired")
+	model.clear_unit_refs()
 
 
 func _test_hud() -> void:

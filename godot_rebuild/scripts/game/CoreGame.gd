@@ -119,6 +119,14 @@ func simulation_step() -> void:
 		view.queue_redraw()
 
 
+func apply_render_quality(level: String) -> void:
+	if str(effects.quality.get("level", "high")) == level:
+		return
+	var preset := RenderQuality.preset(level)
+	effects.quality = preset
+	map_view.configure(map_view.theme_name, model.data, preset)
+
+
 func _on_render_event(kind: String, data: Dictionary) -> void:
 	match kind:
 		"damage":
