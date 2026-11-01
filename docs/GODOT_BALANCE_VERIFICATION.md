@@ -13,7 +13,7 @@ Tanggal: 2026-11-01 · Branch: `arena/295140de-mystic-arena` · Proyek: `godot_r
 | `tools/prepare_godot_entities.py --check` | PASS — sha256 `9cba05ebd821` |
 | `tools/prepare_godot_render.py --check` | PASS — 54 tema; sha256 `77d01b73d863` |
 | `tools/prepare_godot_system.py --check` | PASS — 17 suara, 3 slot; sha256 `a6b5508c7681` |
-| Exporter tests core/main/entity/archetypes/balance/render/system | **33 passed** (4/2/3/7/7/5/5) |
+| Exporter tests core/main/entity/archetypes/balance/render/system | **34 passed** (4/2/3/7/8/5/5) |
 | `tools/test_cloud_save.py` | 18 lulus, 0 gagal |
 | `godot_rebuild/tests/validate_project.py` | **PASS: 241 checks** |
 | `gdparse` (58 `.gd`, termasuk generated) | PASS |
@@ -48,6 +48,11 @@ dan pembelian hero AI, serta fail-closed `CoreData` saat kontrak balance hilang.
 - Determinisme JSON diuji dengan `PYTHONHASHSEED=1` dan `99`; `--check` lulus
   tanpa menulis ulang file. Urutan key fixture memakai `sort_keys=True` karena
   iterasi set Python pada paritas sel dapat berubah antar hash seed.
+- Float **fixture oracle** dinormalisasi ke 12 desimal agar `--check` stabil
+  lintas versi CPython (built-in `sum` 3.12 memakai kompensasi sehingga laporan
+  kalibrasi berbeda ~1 ulp dari 3.11). Kontrak data dan konstanta sumber tidak
+  dibulatkan; toleransi parity runtime 1e-6, dan tes exporter mengunci normalisasi
+  ini terhadap noise 1e-16.
 
 Contoh runtime Kaizen (level 1, **setelah** kompensasi melee native +15% HP /
 +20% damage, sebelum item/upgrade):

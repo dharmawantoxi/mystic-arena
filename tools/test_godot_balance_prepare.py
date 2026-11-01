@@ -57,6 +57,13 @@ class BalancePrepareTests(unittest.TestCase):
         self.assertIn("fix", self.oracle["last"])
         self.assertEqual(self.oracle["source_sha256"], self.contract["source_sha256"])
 
+    def test_fixture_float_normalization_absorbs_cpython_sum_noise(self):
+        noisy = prep._jsonable(copy.deepcopy(self.oracle))
+        for delta in noisy["calibrate"]["report"]["_mods_mini"].values():
+            delta[1] += 1e-16
+        self.assertEqual(prep._text(self.oracle, float_digits=12), prep._text(noisy, float_digits=12))
+        self.assertEqual(self.contract["constants"]["ehp_per_hp"], self.module.EHP_PER_HP)
+
     def test_catchup_and_unlock_semantics(self):
         self.assertEqual(self.module.starter_catchup("gornak", 0, 1), (1.0, 1.0))
         self.assertEqual(self.module.starter_catchup("kaizen", 12, 1), (1.0, 1.0))

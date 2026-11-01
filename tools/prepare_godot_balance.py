@@ -55,20 +55,29 @@ def _row(stats: dict) -> dict:
     return {key: copy.deepcopy(stats[key]) for key in BALANCE_FIELDS if key in stats}
 
 
-def _jsonable(value):
+def _jsonable(value, float_digits: int | None = None):
     if isinstance(value, tuple):
-        return [_jsonable(v) for v in value]
+        return [_jsonable(v, float_digits) for v in value]
     if isinstance(value, list):
-        return [_jsonable(v) for v in value]
+        return [_jsonable(v, float_digits) for v in value]
     if isinstance(value, dict):
-        return {str(k): _jsonable(v) for k, v in value.items()}
-    if isinstance(value, float) and not math.isfinite(value):
-        raise AssertionError(f"Non-finite balance value: {value!r}")
+        return {str(k): _jsonable(v, float_digits) for k, v in value.items()}
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise AssertionError(f"Non-finite balance value: {value!r}")
+        # The oracle fixture is compared with 1e-6 tolerances at runtime.
+        # Normalizing its floats keeps --check byte-stable across CPython
+        # versions (3.12's compensated built-in sum differs in the last ulp
+        # from 3.11 inside calibration reports). The data contract is NOT
+        # rounded, so source constants/pristine stats stay exact.
+        if float_digits is not None:
+            return round(value, float_digits)
     return value
 
 
-def _text(value: dict) -> str:
-    return json.dumps(_jsonable(value), ensure_ascii=False, indent=2, allow_nan=False, sort_keys=True) + "\n"
+def _text(value: dict, float_digits: int | None = None) -> str:
+    return json.dumps(_jsonable(value, float_digits), ensure_ascii=False, indent=2,
+                      allow_nan=False, sort_keys=True) + "\n"
 
 
 def _first_diffs(expected, actual, prefix: str = "$", limit: int = 8) -> list[str]:
@@ -332,7 +341,7 @@ def main() -> int:
         raw = raw_catalog()
         contract = build_contract(module, raw=raw)
         oracle = build_oracle(module, raw)
-        outputs = {CONTRACT: _text(contract), FIXTURE: _text(oracle)}
+        outputs = {CONTRACT: _text(contract), FIXTURE: _text(oracle, float_digits=12)}
         if args.check:
             stale: list[str] = []
             for path, text in outputs.items():

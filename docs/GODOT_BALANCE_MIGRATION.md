@@ -80,8 +80,10 @@ terhadap oracle yang sesuai, bukan membandingkan hasil antara tahap yang berbeda
 
 `--check` membandingkan byte secara deterministik (JSON sort-key) dan tidak
 menulis apa pun. Hash sumber bergeser, katalog core basi, cakupan kurang, atau
-nilai non-finite membuat gate gagal. SHA-256 kontrak saat migrasi:
-`21f081a432de`.
+nilai non-finite membuat gate gagal. Float fixture oracle dinormalisasi ke 12
+desimal supaya gate stabil lintas versi CPython (perbedaan ~1 ulp pada built-in
+`sum` 3.11 vs 3.12); kontrak data/konstanta sumber tetap exact. SHA-256 kontrak
+saat migrasi: `21f081a432de`.
 
 ## Integrasi CI
 
