@@ -338,6 +338,33 @@ def main() -> int:
         check("tools/prepare_godot_tactical.py --check" in workflow_text, f"CI tactical staleness gate: {workflow}")
         check("tools/test_godot_tactical_prepare.py" in workflow_text, f"CI tactical exporter tests: {workflow}")
         check("tools/test_godot_tactical_parity.py" in workflow_text, f"CI tactical oracle gate: {workflow}")
+    ui_theme_path = PROJECT / "scripts/ui/UiTheme.gd"
+    check(ui_theme_path.is_file(), "Native UiTheme module exists")
+    for helper in ("UiThemeSurfaces", "UiThemeText", "UiThemeIcons", "UiThemeComponents", "UiThemeComponentsExtra", "UiThemeDraw", "UiThemeTextures", "UiThemeButton", "UiThemePanel"):
+        check((PROJECT / f"scripts/ui/{helper}.gd").is_file(), f"Native {helper} module exists")
+    ui_theme = json.loads((PROJECT / "data/ui_theme.json").read_text(encoding="utf-8"))
+    ui_theme_oracle = json.loads((PROJECT / "tests/fixtures/ui_theme_parity.json").read_text(encoding="utf-8"))
+    check(ui_theme["schema"] == 1 and ui_theme["source"] == "ui_theme.py", "UiTheme contract schema/source")
+    check(ui_theme["source_sha256"] == hashlib.sha256((ROOT / "ui_theme.py").read_bytes()).hexdigest(), "UiTheme source hash current")
+    check(ui_theme_oracle["source_sha256"] == ui_theme["source_sha256"], "UiTheme oracle hash current")
+    check(len(ui_theme["palette"]) == 32 and len(ui_theme["icons"]) == 29, "UiTheme palette/icon coverage")
+    check(ui_theme["config"]["button"]["hover_inflate"] == [18, 8], "UiTheme button hover inflation preserved")
+    check(ui_theme["cheap_alpha_default"] is True, "UiTheme cheap-alpha default preserved")
+    check(len(ui_theme["anchors"]) >= 30, "UiTheme source anchors cover formulas")
+    check(len(ui_theme_oracle["components"]) == 188, "UiTheme oracle 188 component cases")
+    check(len(ui_theme_oracle["icons"]) == 90, "UiTheme oracle 90 icon cases")
+    check(len(ui_theme_oracle["surfaces"]["gradient"]) == 4 and len(ui_theme_oracle["surfaces"]["radial"]) == 4, "UiTheme surface oracle coverage")
+    ui_facade = (PROJECT / "scripts/ui/Ui.gd").read_text(encoding="utf-8")
+    check("UiThemePanel" in ui_facade and "UiThemeButton" in ui_facade, "Ui facade uses native theme controls")
+    check("UiTheme.set_quality" in (PROJECT / "scripts/Main.gd").read_text(encoding="utf-8"), "Main propagates render quality to UiTheme")
+    check('UiTheme.color("bg_deep")' in (PROJECT / "scripts/ui/MenuView.gd").read_text(encoding="utf-8"), "MenuView uses source background palette")
+    check("UiThemeParity.run(self)" in (PROJECT / "tests/run_all.gd").read_text(encoding="utf-8"), "Native suite runs ui_theme parity")
+    check((PROJECT / "tests/UiThemeParityTest.gd").is_file(), "UiTheme parity test module exists")
+    for workflow in ("godot-check.yml", "godot-rebuild.yml"):
+        workflow_text = (ROOT / ".github/workflows" / workflow).read_text(encoding="utf-8")
+        check("tools/prepare_godot_ui_theme.py --check" in workflow_text, f"CI ui_theme staleness gate: {workflow}")
+        check("tools/test_godot_ui_theme_prepare.py" in workflow_text, f"CI ui_theme exporter tests: {workflow}")
+        check("tools/test_godot_ui_theme_parity.py" in workflow_text, f"CI ui_theme oracle gate: {workflow}")
     print(f"PASS: {checks} native project/source checks")
     return 0
 

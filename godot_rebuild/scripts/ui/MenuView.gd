@@ -32,8 +32,9 @@ var _status_label: Label
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	UiTheme.set_quality(str(settings.values.get("render_quality", "high")))
 	background = ColorRect.new()
-	background.color = Color("090914")
+	background.color = UiTheme.color("bg_deep")
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -135,7 +136,7 @@ func _message(text: String) -> void:
 
 
 func show_main() -> void:
-	background.color = Color("090914")
+	background.color = UiTheme.color("bg_deep")
 	page = "main"
 	pause_mode = false
 	_clear()

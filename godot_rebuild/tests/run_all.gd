@@ -12,6 +12,7 @@ const LightingParity := preload("res://tests/LightingParityTest.gd")
 const LocalizationParity := preload("res://tests/LocalizationParityTest.gd")
 const SplashParity := preload("res://tests/SplashParityTest.gd")
 const TacticalParity := preload("res://tests/TacticalParityTest.gd")
+const UiThemeParity := preload("res://tests/UiThemeParityTest.gd")
 var checks := 0
 var failures := 0
 
@@ -50,6 +51,7 @@ func _run() -> void:
 	_test_localization()
 	_test_splash()
 	_test_tactical()
+	_test_ui_theme()
 	_test_archetypes()
 	_test_balance()
 	_test_items()
@@ -739,6 +741,10 @@ func _test_splash() -> void:
 
 func _test_tactical() -> void:
 	TacticalParity.run(self)
+
+
+func _test_ui_theme() -> void:
+	UiThemeParity.run(self)
 
 
 func _test_archetypes() -> void:
