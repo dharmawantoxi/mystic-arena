@@ -16,7 +16,7 @@ func simulation_step() -> void:
 	ticks += 1
 
 
-func hold_begin(action: String) -> void:
+func hold_begin(action: String, _follow_mouse := false) -> void:
 	holds.append(action)
 	events.append("start:" + action)
 

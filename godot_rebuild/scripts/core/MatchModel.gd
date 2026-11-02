@@ -38,6 +38,8 @@ var build_slots_red: Array[Dictionary] = []
 var selected_tower: BattleUnit
 var selected_hero: BattleUnit
 var selected_slot := -1
+var mouse_x := 0.0
+var mouse_y := 0.0
 var red_towers_destroyed := 0
 var true_boss_spawned := false
 var bosses_defeated: Array[String] = []
@@ -65,6 +67,8 @@ var spatial := SpatialGrid.new()
 
 func clear_unit_refs() -> void:
 	# BattleUnit is RefCounted; break target/source cycles before replacing a match.
+	tactical.reset()
+	tactical.attach(null)
 	var units := all_units()
 	units.append_array(towers)
 	units.append_array([blue_base, red_base])
@@ -98,6 +102,14 @@ func setup(
 	seed_value := 0
 ) -> void:
 	clear_unit_refs()
+	tactical.reset()
+	tactical.attach(self)
+	if not tactical.feedback.is_connected(_on_tactical_feedback):
+		tactical.feedback.connect(_on_tactical_feedback)
+	if not tactical.sound.is_connected(_on_tactical_sound):
+		tactical.sound.connect(_on_tactical_sound)
+	if not tactical.effect.is_connected(_on_tactical_effect):
+		tactical.effect.connect(_on_tactical_effect)
 	level_config = config
 	level_number = int(config.get("level_number", 1))
 	is_replay = replay
@@ -257,7 +269,7 @@ func step() -> void:
 	_update_effects()
 	_process_rewards()
 	_respawn_heroes()
-	tactical.update(1.0 / 60.0, self)
+	tactical.update(self)
 	combo_timer = maxi(0, combo_timer - 1)
 	if combo_timer == 0:
 		combo = 0
@@ -493,6 +505,22 @@ func _cleanup() -> void:
 		selected_tower = null
 
 
+func _on_tactical_feedback(text: String, color: Color) -> void:
+	_notify(text)
+	render_event.emit("popup", {"pos": Vector2(640, 100), "text": text, "color": color})
+
+
+func _on_tactical_sound(name: String, volume: float) -> void:
+	render_event.emit("tactical_sound", {"name": name, "volume": volume})
+
+
+func _on_tactical_effect(kind: String, data: Dictionary) -> void:
+	if kind == "damage_number":
+		render_event.emit("popup", {"pos": data.pos, "text": data.text, "color": Color.WHITE})
+	else:
+		render_event.emit(kind, data)
+
+
 func _notify(text: String) -> void:
 	notifications.append(text)
 	if notifications.size() > 8:
@@ -714,44 +742,6 @@ func _update_effects() -> void:
 		if int(popup.age) < int(popup.ttl):
 			keep_popups.append(popup)
 	popups = keep_popups
-
-
-func apply_tactical(command: String, _delta: float) -> void:
-	if command.is_empty():
-		for hero: BattleUnit in heroes:
-			hero.tactical_target = null
-			hero.has_tactical_move = false
-		return
-	for hero: BattleUnit in heroes:
-		if not hero.alive:
-			continue
-		match command:
-			"gather", "gather_push":
-				hero.tactical_target = null
-				hero.has_tactical_move = true
-				hero.tactical_move = Vector2(640, 360) if command == "gather" else Vector2(900, 300)
-			"protect_castle", "auto_protect":
-				hero.tactical_target = null
-				hero.has_tactical_move = true
-				hero.tactical_move = blue_base.pos + Vector2(60, -40)
-			"protect_tower":
-				var blue_towers: Array[BattleUnit] = []
-				for tower: BattleUnit in towers:
-					if tower.team == "blue" and tower.alive:
-						blue_towers.append(tower)
-				var tower := _nearest(blue_base.pos, blue_towers, 2000.0)
-				if tower != null:
-					hero.has_tactical_move = true
-					hero.tactical_move = tower.pos
-			"attack_boss":
-				if active_boss != null and active_boss.alive:
-					hero.tactical_target = active_boss
-			"attack_damage_dealer":
-				var best: BattleUnit = null
-				for enemy: BattleUnit in enemy_heroes:
-					if enemy.alive and (best == null or enemy.damage_dealt > best.damage_dealt):
-						best = enemy
-				hero.tactical_target = best
 
 
 func match_stats() -> Dictionary:

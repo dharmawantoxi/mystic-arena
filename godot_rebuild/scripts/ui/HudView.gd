@@ -15,6 +15,8 @@ var tactical_buttons: Dictionary = {}
 var skill_buttons: Dictionary = {}
 var shop_button: Button
 var item_button: Button
+var tactical: TacticalCommands = null
+var _tactical_font: Font = null
 
 
 func _ready() -> void:
@@ -139,3 +141,102 @@ func apply_safe_area(safe: Rect2) -> void:
 		button.position.x = safe.end.x - 220
 		button.position.y = maxf(button.position.y, safe.position.y + 236)
 	status.position = Vector2(left, safe.end.y - 28)
+
+
+func _process(_delta: float) -> void:
+	if tactical != null:
+		queue_redraw()
+
+
+func _draw() -> void:
+	if tactical == null or not tactical.valid():
+		return
+	_draw_tactical_world(tactical.world_draw_data())
+	_draw_tactical_ui(tactical.ui_draw_data())
+
+
+func _draw_tactical_world(data: Dictionary) -> void:
+	if data.is_empty():
+		return
+	for line: Dictionary in data.get("lines", []):
+		draw_line(
+			Vector2(line.start[0], line.start[1]),
+			Vector2(line.end[0], line.end[1]),
+			_color(line.color),
+			float(line.width)
+		)
+	for circle: Dictionary in data.get("circles", []):
+		var center := Vector2(circle.center[0], circle.center[1])
+		var color := _color(circle.color)
+		if int(circle.width) > 0:
+			draw_arc(center, float(circle.radius), 0.0, TAU, 48, color, float(circle.width))
+		else:
+			draw_circle(center, float(circle.radius), color)
+
+
+func _draw_tactical_ui(data: Dictionary) -> void:
+	if data.is_empty() or tactical.feedback_text.is_empty():
+		return
+	var font := _get_tactical_font()
+	var font_size := int(tactical.cfg.draw_ui_font_size)
+	var text := tactical.feedback_text
+	var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+	var inflate: Array = data.inflate
+	var size := Vector2(text_size.x + float(inflate[0]), text_size.y + float(inflate[1]))
+	var center := Vector2(data.center[0], data.center[1])
+	var rect := Rect2(center - size * 0.5, size)
+	var alpha := float(data.alpha) / 255.0
+	var bg := Color(0, 0, 0, float(data.bg_alpha) / 255.0)
+	draw_rect(rect, bg)
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0, 0, 0, 0)
+	box.border_color = _color(
+		[
+			tactical.feedback_color[0],
+			tactical.feedback_color[1],
+			tactical.feedback_color[2],
+			data.alpha
+		]
+	)
+	box.set_border_width_all(int(data.border_width))
+	box.set_corner_radius_all(int(data.border_radius))
+	draw_style_box(box, rect)
+	var text_pos := (
+		rect.position
+		+ Vector2(float(inflate[0]) * 0.5, float(inflate[1]) * 0.5 + font.get_ascent(font_size))
+	)
+	var shadow := Color(0, 0, 0, float(data.shadow_alpha) / 255.0)
+	draw_string(
+		font,
+		text_pos + Vector2.ONE * float(data.shadow_offset),
+		text,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1,
+		font_size,
+		shadow
+	)
+	var col := _color(
+		[
+			tactical.feedback_color[0],
+			tactical.feedback_color[1],
+			tactical.feedback_color[2],
+			data.alpha
+		]
+	)
+	draw_string(font, text_pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, col)
+
+
+func _get_tactical_font() -> Font:
+	if _tactical_font != null:
+		return _tactical_font
+	var path := "res://assets/fonts/Barlow-Bold.ttf"
+	if ResourceLoader.exists(path):
+		_tactical_font = load(path) as Font
+	if _tactical_font == null:
+		_tactical_font = Ui.font(false)
+	return _tactical_font
+
+
+static func _color(row: Array) -> Color:
+	var alpha := float(row[3]) / 255.0 if row.size() > 3 else 1.0
+	return Color(float(row[0]) / 255.0, float(row[1]) / 255.0, float(row[2]) / 255.0, alpha)
