@@ -18,6 +18,8 @@ ROOT = Path(__file__).resolve().parents[1]
 PROJECT = ROOT / "godot_rebuild"
 FIELDS = ("level_number", "name", "description", "map_theme", "bgm_track", "unlock_after_level")
 IMAGES = ("logo.png", "icon.png")
+# Optional splash logo variants, in splash_screen.LOGO_PATHS order.
+SPLASH_LOGO_VARIANTS = ("splash_logo.png", "logo.jpg", "logo.jpeg")
 
 
 def level_catalog() -> list[dict]:
@@ -66,6 +68,10 @@ def main() -> int:
         jobs.append((font, PROJECT / "assets/fonts" / font.name))
     for name in IMAGES:
         jobs.append((ROOT / "assets" / name, PROJECT / "assets" / name))
+    for name in SPLASH_LOGO_VARIANTS:
+        source = ROOT / "assets" / name
+        if source.is_file():
+            jobs.append((source, PROJECT / "assets" / name))
     for sound in sorted((ROOT / "assets/sounds").glob("*.wav")):
         jobs.append((sound, PROJECT / "assets/sounds" / f"{sound.stem}.{audio_extension(sound)}"))
     license_file = ROOT / "assets/sounds/LISENSI_DAN_SUMBER.txt"

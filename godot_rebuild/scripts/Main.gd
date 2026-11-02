@@ -125,6 +125,7 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(func() -> void: hud.apply_safe_area(_safe_rect()))
 	hud.action_pressed.connect(_hud_action)
 	splash = SplashView.new()
+	splash.configure(RenderQuality.from_settings(settings.values))
 	add_child(splash)
 	splash.finished.connect(_splash_finished)
 	debug_overlay = DebugView.new()
@@ -258,6 +259,8 @@ func _settings_changed() -> void:
 	Engine.max_fps = settings.effective_fps(touch_mode)
 	audio.apply_settings(settings.values)
 	controller.enabled = str(settings.values.input_mode) == "controller"
+	if splash != null:
+		splash.configure(RenderQuality.from_settings(settings.values))
 	if not controller.enabled:
 		controller_cursor.visible = false
 	if menu != null and menu.core_data.localization != null:
@@ -338,6 +341,10 @@ func _controller_cursor_moved(position: Vector2) -> void:
 
 
 func _controller_action(action: String) -> void:
+	if state.current == State.Kind.SPLASH:
+		if splash != null:
+			splash.skip()
+		return
 	if state.current in [State.Kind.MENU, State.Kind.PAUSE]:
 		menu.controller_action(action)
 		return

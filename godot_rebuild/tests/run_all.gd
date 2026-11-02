@@ -10,6 +10,7 @@ const BalanceParity := preload("res://tests/HeroBalanceParityTest.gd")
 const ItemsParity := preload("res://tests/HeroItemsParityTest.gd")
 const LightingParity := preload("res://tests/LightingParityTest.gd")
 const LocalizationParity := preload("res://tests/LocalizationParityTest.gd")
+const SplashParity := preload("res://tests/SplashParityTest.gd")
 var checks := 0
 var failures := 0
 
@@ -46,6 +47,7 @@ func _run() -> void:
 	_test_settings()
 	_test_core_data()
 	_test_localization()
+	_test_splash()
 	_test_archetypes()
 	_test_balance()
 	_test_items()
@@ -727,6 +729,10 @@ func _test_lighting() -> void:
 
 func _test_localization() -> void:
 	LocalizationParity.run(self)
+
+
+func _test_splash() -> void:
+	SplashParity.run(self)
 
 
 func _test_archetypes() -> void:
