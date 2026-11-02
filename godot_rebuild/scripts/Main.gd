@@ -264,8 +264,10 @@ func confirm_quit() -> void:
 
 func _settings_changed() -> void:
 	Engine.max_fps = settings.effective_fps(touch_mode)
+	UiTheme.set_quality(str(settings.values.get("render_quality", "high")))
 	audio.apply_settings(settings.values)
 	controller.enabled = str(settings.values.input_mode) == "controller"
+	UiTheme.set_quality(str(settings.values.get("render_quality", "high")))
 	if splash != null:
 		splash.configure(RenderQuality.from_settings(settings.values))
 	if not controller.enabled:
@@ -319,6 +321,7 @@ func _process(delta: float) -> void:
 	):
 		_quality_timer = 0
 		game.call("apply_render_quality", adaptive_quality.quality)
+		UiTheme.set_quality(adaptive_quality.quality)
 	debug_overlay.refresh(frame_fps, state.label(), clock, game)
 
 
