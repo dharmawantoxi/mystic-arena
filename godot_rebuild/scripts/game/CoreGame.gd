@@ -64,6 +64,7 @@ func configure(level: int, replay := false) -> void:
 		settings.load_values()
 	var save_data := save_repo.load_slot()
 	model.setup(config, save_data, str(settings.values.difficulty), replay)
+	apply_language(str(settings.values.language))
 	if not model.match_finished.is_connected(_on_match_finished):
 		model.match_finished.connect(_on_match_finished)
 	if not model.render_event.is_connected(_on_render_event):
@@ -83,6 +84,11 @@ func configure(level: int, replay := false) -> void:
 	add_child(view)
 	view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_layout_buttons()
+
+
+func apply_language(language: String) -> void:
+	if model.data.localization != null and model.data.localization.valid():
+		model.data.localization.set_language(language)
 
 
 func combat_ready() -> bool:

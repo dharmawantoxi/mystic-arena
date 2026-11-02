@@ -1,0 +1,2936 @@
+{
+  "edge_cases": [
+    {
+      "args": {},
+      "expected": "no_such_localization_key",
+      "key": "no_such_localization_key",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "+{count} queued",
+      "key": "queued",
+      "language": "en"
+    },
+    {
+      "args": {
+        "count": 7,
+        "extra": "ignored"
+      },
+      "expected": "+7 queued",
+      "key": "queued",
+      "language": "en"
+    },
+    {
+      "args": {
+        "hero": "Aldric"
+      },
+      "expected": "{hero} purchased {item}!",
+      "key": "forge_purchase",
+      "language": "en"
+    }
+  ],
+  "label_cases": [
+    {
+      "expected": "English",
+      "input": ""
+    },
+    {
+      "expected": "English",
+      "input": "en"
+    },
+    {
+      "expected": "Bahasa Indonesia",
+      "input": "id"
+    },
+    {
+      "expected": "Bahasa Indonesia",
+      "input": "fr"
+    }
+  ],
+  "language_cases": [
+    {
+      "active": "id",
+      "input": "id",
+      "label": "Bahasa Indonesia",
+      "returned": "id"
+    },
+    {
+      "active": "en",
+      "input": "en",
+      "label": "English",
+      "returned": "en"
+    },
+    {
+      "active": "id",
+      "input": "fr",
+      "label": "Bahasa Indonesia",
+      "returned": "id"
+    },
+    {
+      "active": "id",
+      "input": "",
+      "label": "Bahasa Indonesia",
+      "returned": "id"
+    },
+    {
+      "active": "id",
+      "input": "EN",
+      "label": "Bahasa Indonesia",
+      "returned": "id"
+    }
+  ],
+  "missing_args_cases": [
+    {
+      "expected": "+{count} antrean",
+      "key": "queued",
+      "language": "id"
+    },
+    {
+      "expected": "({count} item diantrikan)",
+      "key": "queued_item_count",
+      "language": "id"
+    },
+    {
+      "expected": "Inventory {hero} penuh.",
+      "key": "inventory_full",
+      "language": "id"
+    },
+    {
+      "expected": "{hero} bukan hero beratribut Magic - item ini tidak bisa dipakai.",
+      "key": "magic_only_denied",
+      "language": "id"
+    },
+    {
+      "expected": "{hero} membeli {item}!",
+      "key": "forge_purchase",
+      "language": "id"
+    },
+    {
+      "expected": "{item} untuk {hero} dikirim setelah respawn!",
+      "key": "forge_queued",
+      "language": "id"
+    },
+    {
+      "expected": "Item Forge dikirim ke {hero}: {items}!",
+      "key": "forge_delivered",
+      "language": "id"
+    },
+    {
+      "expected": "HAL {page}",
+      "key": "shop_page_label",
+      "language": "id"
+    },
+    {
+      "expected": "Melepas {item} (tanpa refund)",
+      "key": "item_dropped",
+      "language": "id"
+    },
+    {
+      "expected": "Melepas {item}",
+      "key": "item_dropped_short",
+      "language": "id"
+    },
+    {
+      "expected": "DIMILIKI: {count}",
+      "key": "item_detail_owned",
+      "language": "id"
+    },
+    {
+      "expected": "+{count} queued",
+      "key": "queued",
+      "language": "en"
+    },
+    {
+      "expected": "({count} item(s) queued)",
+      "key": "queued_item_count",
+      "language": "en"
+    },
+    {
+      "expected": "{hero}'s inventory is full.",
+      "key": "inventory_full",
+      "language": "en"
+    },
+    {
+      "expected": "{hero} is not a Magic-attribute hero - this item cannot be equipped.",
+      "key": "magic_only_denied",
+      "language": "en"
+    },
+    {
+      "expected": "{hero} purchased {item}!",
+      "key": "forge_purchase",
+      "language": "en"
+    },
+    {
+      "expected": "{item} for {hero} will be delivered after respawn!",
+      "key": "forge_queued",
+      "language": "en"
+    },
+    {
+      "expected": "Forge items delivered to {hero}: {items}!",
+      "key": "forge_delivered",
+      "language": "en"
+    },
+    {
+      "expected": "PAGE {page}",
+      "key": "shop_page_label",
+      "language": "en"
+    },
+    {
+      "expected": "Dropped {item} (no refund)",
+      "key": "item_dropped",
+      "language": "en"
+    },
+    {
+      "expected": "Dropped {item}",
+      "key": "item_dropped_short",
+      "language": "en"
+    },
+    {
+      "expected": "OWNED: {count}",
+      "key": "item_detail_owned",
+      "language": "en"
+    }
+  ],
+  "source_sha256": "b3f6ede52b8ab372eb3c06cfaa15651ed5bd618d3349ec81af534840be6eaf48",
+  "tr_cases": [
+    {
+      "args": {},
+      "expected": "Bahasa",
+      "key": "language",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "MATI",
+      "key": "dead",
+      "language": "id"
+    },
+    {
+      "args": {
+        "count": 3
+      },
+      "expected": "+3 antrean",
+      "key": "queued",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "(dikirim setelah respawn)",
+      "key": "delivery_after_respawn",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "MATI — pembelian baru dikirim setelah respawn",
+      "key": "dead_delivery_hint",
+      "language": "id"
+    },
+    {
+      "args": {
+        "count": 3
+      },
+      "expected": "(3 item diantrikan)",
+      "key": "queued_item_count",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Tidak ada hero untuk menerima item.",
+      "key": "no_hero",
+      "language": "id"
+    },
+    {
+      "args": {
+        "hero": "Aldric"
+      },
+      "expected": "Inventory Aldric penuh.",
+      "key": "inventory_full",
+      "language": "id"
+    },
+    {
+      "args": {
+        "hero": "Aldric"
+      },
+      "expected": "Aldric bukan hero beratribut Magic - item ini tidak bisa dipakai.",
+      "key": "magic_only_denied",
+      "language": "id"
+    },
+    {
+      "args": {
+        "hero": "Aldric",
+        "item": "Moon Shard"
+      },
+      "expected": "Aldric membeli Moon Shard!",
+      "key": "forge_purchase",
+      "language": "id"
+    },
+    {
+      "args": {
+        "hero": "Aldric",
+        "item": "Moon Shard"
+      },
+      "expected": "Moon Shard untuk Aldric dikirim setelah respawn!",
+      "key": "forge_queued",
+      "language": "id"
+    },
+    {
+      "args": {
+        "hero": "Aldric",
+        "items": "Moon Shard, Aegis"
+      },
+      "expected": "Item Forge dikirim ke Aldric: Moon Shard, Aegis!",
+      "key": "forge_delivered",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "(belum ada hero - summon dulu di HERO SHOP)",
+      "key": "shop_no_hero_yet",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "TIDAK ADA HERO HIDUP - summon hero di HERO SHOP dulu; item di bawah tetap bisa dilihat.",
+      "key": "shop_no_hero_banner",
+      "language": "id"
+    },
+    {
+      "args": {
+        "page": 2
+      },
+      "expected": "HAL 2",
+      "key": "shop_page_label",
+      "language": "id"
+    },
+    {
+      "args": {
+        "item": "Moon Shard"
+      },
+      "expected": "Melepas Moon Shard (tanpa refund)",
+      "key": "item_dropped",
+      "language": "id"
+    },
+    {
+      "args": {
+        "item": "Moon Shard"
+      },
+      "expected": "Melepas Moon Shard",
+      "key": "item_dropped_short",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "TAP KARTU ITEM = INFO LENGKAP",
+      "key": "item_card_detail_hint",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "DESKRIPSI",
+      "key": "item_detail_description",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "STAT & EFEK",
+      "key": "item_detail_stats",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "RIWAYAT",
+      "key": "item_detail_flavor",
+      "language": "id"
+    },
+    {
+      "args": {
+        "count": 3
+      },
+      "expected": "DIMILIKI: 3",
+      "key": "item_detail_owned",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Ketuk di luar kotak untuk menutup detail",
+      "key": "item_detail_close_hint",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "(ketuk: info  •  tahan/kanan: drop)",
+      "key": "item_inventory_hint",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "pilih",
+      "key": "hud_hint_select",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "skill",
+      "key": "hud_hint_skill",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "toko",
+      "key": "hud_hint_shop",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "klik",
+      "key": "hud_hint_click",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "klik kanan",
+      "key": "hud_hint_right_click",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "jeda",
+      "key": "hud_hint_pause",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "tutup",
+      "key": "hud_hint_close",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "beli",
+      "key": "hud_hint_buy",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "ulangi",
+      "key": "hud_hint_replay",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "lanjut",
+      "key": "hud_hint_next",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "menu",
+      "key": "hud_hint_menu",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "TOKO",
+      "key": "shop_title",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "TUTUP  (H)",
+      "key": "shop_close",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "MENARA",
+      "key": "shop_tab_tower",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "ITEM",
+      "key": "shop_tab_item",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "HERO",
+      "key": "shop_tab_hero",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "NEXUS",
+      "key": "shop_tab_nexus",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "tidak ada yang dipilih",
+      "key": "shop_context_none",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "menara",
+      "key": "shop_label_tower",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "slot",
+      "key": "shop_label_slot",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "BELI UNTUK:",
+      "key": "shop_buy_for",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "DEAD - belum ada antrean Item Forge di build ini",
+      "key": "shop_dead_no_forge",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Item dibeli per hero: 6 slot, harga 4500-6000 gold per tier.",
+      "key": "shop_item_note",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "%s — %d/%d slot item",
+      "key": "shop_item_slots",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Tipe serangan: %s · %s — item bertanda hanya untuk tipe itu.",
+      "key": "shop_item_attack_type",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Dimiliki: %s",
+      "key": "shop_item_owned",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "dimiliki",
+      "key": "shop_item_owned_suffix",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Sudah dimiliki",
+      "key": "shop_reason_owned",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Slot penuh (6/6)",
+      "key": "shop_reason_full",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "MELEE ONLY — hero ini ranged",
+      "key": "shop_reason_melee",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "MAGIC ONLY — hero ini bukan magic",
+      "key": "shop_reason_magic",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Gold kurang",
+      "key": "shop_reason_poor",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Pilih hero Radiant untuk melihat status & upgrade.",
+      "key": "shop_hero_select_hint",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Beli hero (%d/%d dimiliki, termasuk yang respawn):",
+      "key": "shop_hero_buy_list",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Hero lain (%d total di heroes.json) terbuka lewat progres level — lihat SaveManager.unlocked_heroes.",
+      "key": "shop_hero_others",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": " · DIMILIKI",
+      "key": "shop_hero_owned_badge",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Level maksimum tercapai.",
+      "key": "shop_max_level",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Level maksimum (%d) tercapai.",
+      "key": "shop_max_level_count",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Upgrade ke Lv.%d — %d gold",
+      "key": "shop_upgrade_to",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "HP x%.2f, damage & jangkauan naik.",
+      "key": "shop_upgrade_stat_note",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Klik lingkaran slot di lane untuk membangun menara.",
+      "key": "shop_tower_hint",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Slot kosong: Radiant %d · Dire %d  (3 slot per lane per tim)",
+      "key": "shop_tower_free_slots",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Klik menara milikmu untuk upgrade / jual / Regen Shield.",
+      "key": "shop_tower_click_upgrade",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Slot ini milik Dire — tidak bisa dibangun.",
+      "key": "shop_tower_slot_dire",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Slot sudah terisi menara.",
+      "key": "shop_tower_slot_taken",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Slot kosong di lane %s — bangun menara Lv1 (%d gold)",
+      "key": "shop_tower_slot_empty",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Catatan: stat Lv1 semua jalur sama (Archer Lv1); kekuatannya baru muncul setelah upgrade ke Lv2.",
+      "key": "shop_tower_build_note",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Upgrade Lv1 -> Lv2 memilih jalur dan menaikkan HP x%.2f.",
+      "key": "shop_tower_path_note",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Spesial: %s",
+      "key": "shop_tower_special",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Menara Dire — tidak bisa di-upgrade atau dijual.",
+      "key": "shop_tower_dire_locked",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Pilih jalur upgrade ke Lv2:",
+      "key": "shop_tower_pick_path",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Regen Shield: AKTIF (shield pulih setelah 3 detik tidak kena damage)",
+      "key": "shop_regen_active",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Beli Regen Shield — %d gold",
+      "key": "shop_regen_buy",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Shield menara ikut regen (paritas Tower.activate_regen_shield).",
+      "key": "shop_regen_note",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Regen Shield terbuka di Lv.%d+ (harga %d gold)",
+      "key": "shop_regen_locked",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Jual menara (+%d gold)",
+      "key": "shop_tower_sell",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Refund 50% dari total biaya upgrade yang sudah dibayar.",
+      "key": "shop_tower_sell_note",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Radiant Nexus sudah hancur.",
+      "key": "shop_nexus_dead",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Nexus sudah level maksimum.",
+      "key": "shop_nexus_max",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Upgrade Nexus ke Lv.%d — %d gold",
+      "key": "shop_nexus_upgrade",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Castle Shield GRATIS aktif (sampai wave 10) — damage tersisa dikurangi %.0f%%.",
+      "key": "shop_nexus_free_shield",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Beli Castle Shield — %d gold",
+      "key": "shop_nexus_shield_buy",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Shield permanen: menyerap damage 1:1, sisanya dimitigasi %.0f%%.",
+      "key": "shop_nexus_shield_note",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Castle Shield sudah dibeli.",
+      "key": "shop_nexus_shield_owned",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Dire Nexus: Lv%d · HP %d/%d · shield %d/%d — hancurkan untuk MENANG.",
+      "key": "shop_nexus_enemy",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "tidak ada hero dipilih",
+      "key": "skillbar_no_hero",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "H → HERO: beli hero, lalu klik untuk memilih",
+      "key": "skillbar_buy_hint",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Tutup panel (batal pilih hero)",
+      "key": "skillbar_close_tip",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Auto-cast selalu ON (paritas v29: toggle no-op)",
+      "key": "skillbar_autocast_tip",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "slot item %d kosong",
+      "key": "skillbar_slot_empty",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Buka ITEM FORGE untuk hero ini",
+      "key": "skillbar_forge_tip",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "ULANGI  (R)",
+      "key": "over_replay",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "MENU UTAMA  (ESC)",
+      "key": "over_menu",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "ulangi",
+      "key": "over_replay_hint",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "lanjut level",
+      "key": "over_next_hint",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "menu utama",
+      "key": "over_menu_hint",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Nexus Radiant hancur — kalah tidak dibayar.",
+      "key": "over_defeat_note",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Meta reward: +%d gold (%s) tersimpan ke save.",
+      "key": "over_meta_reward",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "LANJUT KE LEVEL %d  (ENTER)",
+      "key": "over_next_button",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "menang pertama",
+      "key": "over_reward_first_win",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "replay pertama",
+      "key": "over_reward_first_replay",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "replay berulang",
+      "key": "over_reward_replay",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "LANJUTKAN — LEVEL %d",
+      "key": "menu_continue",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "MULAI GAME",
+      "key": "menu_play",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "CARA MAIN (HOW TO PLAY)",
+      "key": "menu_how_to_play",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "PENGATURAN (SETTINGS)",
+      "key": "menu_settings",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "KREDIT",
+      "key": "menu_credits",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "KELUAR GAME",
+      "key": "menu_quit",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "KEMBALI",
+      "key": "menu_back",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Meta gold: %d  ·  %d / %d level selesai  ·  %d hero dimiliki",
+      "key": "menu_meta_summary",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Keluar dari Mystic Arena?",
+      "key": "menu_exit_question",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "YA, KELUAR",
+      "key": "menu_exit_yes",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "BATAL",
+      "key": "menu_cancel",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "PILIH SLOT SAVE",
+      "key": "slot_title",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Pilih slot untuk lanjut, atau mulai permainan baru",
+      "key": "slot_subtitle",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "KOSONG",
+      "key": "slot_empty",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Ketuk untuk mulai permainan baru",
+      "key": "slot_empty_hint",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "LEVEL TERTINGGI SELESAI",
+      "key": "slot_highest",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Belum ada level selesai",
+      "key": "slot_no_levels",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "TERAKHIR DIMAINKAN",
+      "key": "slot_last_played",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "MULAI BARU",
+      "key": "slot_start_new",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "LANJUTKAN",
+      "key": "slot_continue",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "HAPUS SAVE",
+      "key": "slot_delete",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "HAPUS SLOT?",
+      "key": "slot_delete_title",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Hapus SAVE GAME %d?",
+      "key": "slot_delete_question",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Tindakan ini tidak bisa dibatalkan!",
+      "key": "slot_delete_warning",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "YA, HAPUS",
+      "key": "slot_delete_yes",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "PILIH LEVEL",
+      "key": "lvl_title",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "MUDAH",
+      "key": "lvl_diff_easy",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "NORMAL",
+      "key": "lvl_diff_normal",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "SULIT",
+      "key": "lvl_diff_hard",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "SULIT (+%d%%)",
+      "key": "lvl_diff_hard_pct",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "SELESAI: %d / %d  ·  hard = musuh +15%% HP, +10%% damage (scaling aktif)",
+      "key": "lvl_progress",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "LEVELS JSON BELUM DIMUAT — jalankan dulu:\npython tools/convert_to_godot.py",
+      "key": "lvl_json_missing",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "SELESAI",
+      "key": "lvl_badge_done",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "TERKUNCI",
+      "key": "lvl_badge_locked",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "SIAP MAIN",
+      "key": "lvl_badge_ready",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Tema: %s  ·  Mini boss: %s  ·  True boss: %s",
+      "key": "lvl_theme_line",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "SKOR TERBAIK",
+      "key": "lvl_stat_score",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "WAKTU TERBAIK",
+      "key": "lvl_stat_time",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Belum ada statistik",
+      "key": "lvl_stat_none",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "MAIN",
+      "key": "lvl_play",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "MAIN LAGI",
+      "key": "lvl_replay",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Selesaikan Level %d dulu untuk membuka",
+      "key": "lvl_locked_hint",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "PHY = fisik kena armor  ·  MAG = sihir tembus armor  ·  TNK = badak",
+      "key": "hshop_legend",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Tidak ada hero di kategori ini.",
+      "key": "hshop_empty",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "heroes.json BELUM DIMUAT — jalankan dulu: python tools/convert_to_godot.py",
+      "key": "hshop_json_missing",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "DIMILIKI",
+      "key": "hshop_owned",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Kalahkan: %s",
+      "key": "hshop_defeat",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "GRATIS",
+      "key": "hshop_free",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "BUKA",
+      "key": "hshop_unlock",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "PENGATURAN",
+      "key": "set_title",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Volume Master",
+      "key": "set_volume_master",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Volume SFX",
+      "key": "set_volume_sfx",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Volume Musik (BGM)",
+      "key": "set_volume_bgm",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Volume Voice",
+      "key": "set_volume_voice",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "CLOUD: OFF (PC / belum diset)",
+      "key": "set_cloud_off",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "UPLOAD SAVE KE CLOUD",
+      "key": "set_cloud_upload",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "DOWNLOAD SAVE DARI CLOUD",
+      "key": "set_cloud_download",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Cloud disinkronkan via akun Google (Android)",
+      "key": "set_cloud_note",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Cloud tidak tersedia di build ini (hanya Android + Play Games)",
+      "key": "set_cloud_unavailable",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "MASUK KE CLOUD",
+      "key": "set_cloud_sign_in",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "TERHUBUNG KE GOOGLE PLAY GAMES",
+      "key": "set_cloud_connected",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "BELUM MASUK KE GOOGLE PLAY GAMES",
+      "key": "set_cloud_signed_out",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "SEDANG MENYINKRONKAN...",
+      "key": "set_cloud_busy",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Masuk ke Google Play Games dulu.",
+      "key": "set_cloud_sign_in_required",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Save berhasil diunggah ke cloud.",
+      "key": "set_cloud_upload_success",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Save cloud ditemukan.",
+      "key": "set_cloud_download_found",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "PULIHKAN SAVE CLOUD?",
+      "key": "set_cloud_restore_title",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Pulihkan %d slot dari akun Google ini?",
+      "key": "set_cloud_restore_confirm",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "GANTI save lokal dengan %d slot cloud? Progres lokal akan ditimpa.",
+      "key": "set_cloud_restore_replace",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Level tertinggi: %d  ·  Gold: %d",
+      "key": "set_cloud_restore_summary",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "PULIHKAN",
+      "key": "set_cloud_restore",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Save cloud berhasil dipulihkan.",
+      "key": "set_cloud_restore_success",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Belum ada save lokal untuk diunggah.",
+      "key": "set_cloud_no_local_save",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Operasi cloud gagal. Coba lagi.",
+      "key": "set_cloud_operation_failed",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Dipilih di layar PILIH LEVEL, sebelum match dimulai.",
+      "key": "set_diff_note",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "TANPA BATAS",
+      "key": "set_fps_unlimited",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "PROGRESI",
+      "key": "set_progression",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "HAPUS SAVE GAME %d",
+      "key": "set_delete_save",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Volume, toggle & bahasa disimpan di SaveManager.data[\"settings\"] per slot dan langsung berlaku.",
+      "key": "set_store_note",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "CARA MAIN",
+      "key": "howto_title",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "TUJUAN",
+      "key": "howto_goal",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Hancurkan Nexus (castle) Dire sebelum Nexus Radiant hancur.",
+      "key": "howto_goal_1",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Menang = meta gold untuk membuka hero di HERO SHOP.",
+      "key": "howto_goal_2",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "MEMBANGUN MENARA",
+      "key": "howto_towers",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Klik lingkaran slot kosong (+) di lane lalu bangun menara (100 gold).",
+      "key": "howto_towers_1",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "4 jalur: Archer / Cannon / Ice / Mage. Upgrade Lv1→Lv2 memilih jalur.",
+      "key": "howto_towers_2",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "HERO & SKILL",
+      "key": "howto_heroes",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Mulai tanpa hero. Buka H → HERO untuk membeli hero yang sudah di-unlock.",
+      "key": "howto_heroes_1",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Maksimal 5 hero unik. Hero mati respawn setelah 10 detik dengan level/item tetap.",
+      "key": "howto_heroes_2",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Klik hero Radiant untuk memilihnya, lalu Q/W/E/R untuk skill (R = ultimate).",
+      "key": "howto_heroes_3",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Hero yang tidak dipilih bertarung sendiri (auto-cast).",
+      "key": "howto_heroes_4",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "WAVE MINION",
+      "key": "howto_waves",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Wave pertama setelah 5 detik. Minion keluar bertahap di ketiga lane.",
+      "key": "howto_waves_1",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Wave berikutnya menunggu 25 detik dan semua minion wave lama habis.",
+      "key": "howto_waves_2",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "TOKO (B)",
+      "key": "howto_shop",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "4 tab: MENARA / ITEM / HERO / NEXUS. Item = 6 slot per hero.",
+      "key": "howto_shop_1",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Upgrade nexus menaikkan HP + skala minion timmu.",
+      "key": "howto_shop_2",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "PROGRESI",
+      "key": "howto_progress",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Menang pertama: 3000 meta gold. Replay menang: 1500 (sekali), lalu 200.",
+      "key": "howto_progress_1",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Boss yang dikalahkan + castle jatuh = heronya terbuka GRATIS.",
+      "key": "howto_progress_2",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "ENTER setelah menang = lanjut level berikutnya (tema & boss baru).",
+      "key": "howto_progress_3",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "MODE SULIT",
+      "key": "howto_hard",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Hard: musuh +15% HP, +10% damage, castle Dire mulai lebih tinggi.",
+      "key": "howto_hard_1",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Gold income lebih kecil (x0.75). Mudah: x1.25.",
+      "key": "howto_hard_2",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "LANJUT MAIN (RESUME)",
+      "key": "pause_resume",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "MENU UTAMA",
+      "key": "pause_menu",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Jeda (P / ESC)",
+      "key": "rail_pause_tip",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Buka panel perintah taktis (hold tombol untuk menahan perintah)",
+      "key": "tac_toggle_tip",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Semua hero kumpul & serang bersama (tahan untuk terus aktif)",
+      "key": "tac_gather_tip",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Min 2 hero lindungi tower (tahan untuk terus aktif)",
+      "key": "tac_protect_tower_tip",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Semua hero lindungi castle (tahan untuk terus aktif)",
+      "key": "tac_protect_castle_tip",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Semua hero serang boss (tahan untuk terus aktif)",
+      "key": "tac_attack_boss_tip",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Fokus hero musuh damage terbesar (tahan untuk terus aktif)",
+      "key": "tac_attack_dd_tip",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Top up gold untuk membuka hero di HERO SHOP",
+      "key": "topup_subtitle",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "BELI",
+      "key": "shop_card_buy",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Dimiliki: %d",
+      "key": "shop_card_owned",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "GOLD KURANG",
+      "key": "shop_card_poor",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "PILIH HERO",
+      "key": "shop_card_no_hero",
+      "language": "id"
+    },
+    {
+      "args": {},
+      "expected": "Language",
+      "key": "language",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "DEAD",
+      "key": "dead",
+      "language": "en"
+    },
+    {
+      "args": {
+        "count": 3
+      },
+      "expected": "+3 queued",
+      "key": "queued",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "(delivered after respawn)",
+      "key": "delivery_after_respawn",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "DEAD — new purchases are delivered after respawn",
+      "key": "dead_delivery_hint",
+      "language": "en"
+    },
+    {
+      "args": {
+        "count": 3
+      },
+      "expected": "(3 item(s) queued)",
+      "key": "queued_item_count",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "There is no hero to receive this item.",
+      "key": "no_hero",
+      "language": "en"
+    },
+    {
+      "args": {
+        "hero": "Aldric"
+      },
+      "expected": "Aldric's inventory is full.",
+      "key": "inventory_full",
+      "language": "en"
+    },
+    {
+      "args": {
+        "hero": "Aldric"
+      },
+      "expected": "Aldric is not a Magic-attribute hero - this item cannot be equipped.",
+      "key": "magic_only_denied",
+      "language": "en"
+    },
+    {
+      "args": {
+        "hero": "Aldric",
+        "item": "Moon Shard"
+      },
+      "expected": "Aldric purchased Moon Shard!",
+      "key": "forge_purchase",
+      "language": "en"
+    },
+    {
+      "args": {
+        "hero": "Aldric",
+        "item": "Moon Shard"
+      },
+      "expected": "Moon Shard for Aldric will be delivered after respawn!",
+      "key": "forge_queued",
+      "language": "en"
+    },
+    {
+      "args": {
+        "hero": "Aldric",
+        "items": "Moon Shard, Aegis"
+      },
+      "expected": "Forge items delivered to Aldric: Moon Shard, Aegis!",
+      "key": "forge_delivered",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "(no heroes yet - summon one at HERO SHOP first)",
+      "key": "shop_no_hero_yet",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "NO HEROES ALIVE - summon a hero at HERO SHOP first; items below can still be browsed.",
+      "key": "shop_no_hero_banner",
+      "language": "en"
+    },
+    {
+      "args": {
+        "page": 2
+      },
+      "expected": "PAGE 2",
+      "key": "shop_page_label",
+      "language": "en"
+    },
+    {
+      "args": {
+        "item": "Moon Shard"
+      },
+      "expected": "Dropped Moon Shard (no refund)",
+      "key": "item_dropped",
+      "language": "en"
+    },
+    {
+      "args": {
+        "item": "Moon Shard"
+      },
+      "expected": "Dropped Moon Shard",
+      "key": "item_dropped_short",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "TAP AN ITEM CARD = FULL INFO",
+      "key": "item_card_detail_hint",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "DESCRIPTION",
+      "key": "item_detail_description",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "STATS & EFFECTS",
+      "key": "item_detail_stats",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "LORE",
+      "key": "item_detail_flavor",
+      "language": "en"
+    },
+    {
+      "args": {
+        "count": 3
+      },
+      "expected": "OWNED: 3",
+      "key": "item_detail_owned",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Tap outside the box to close details",
+      "key": "item_detail_close_hint",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "(tap: info  •  hold/right-click: drop)",
+      "key": "item_inventory_hint",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "select",
+      "key": "hud_hint_select",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "skill",
+      "key": "hud_hint_skill",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "shop",
+      "key": "hud_hint_shop",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "click",
+      "key": "hud_hint_click",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "right-click",
+      "key": "hud_hint_right_click",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "pause",
+      "key": "hud_hint_pause",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "close",
+      "key": "hud_hint_close",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "buy",
+      "key": "hud_hint_buy",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "replay",
+      "key": "hud_hint_replay",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "next",
+      "key": "hud_hint_next",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "menu",
+      "key": "hud_hint_menu",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "SHOP",
+      "key": "shop_title",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "CLOSE  (H)",
+      "key": "shop_close",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "TOWERS",
+      "key": "shop_tab_tower",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "ITEMS",
+      "key": "shop_tab_item",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "HERO",
+      "key": "shop_tab_hero",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "NEXUS",
+      "key": "shop_tab_nexus",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "nothing selected",
+      "key": "shop_context_none",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "tower",
+      "key": "shop_label_tower",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "slot",
+      "key": "shop_label_slot",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "BUY FOR:",
+      "key": "shop_buy_for",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "DEAD - no Item Forge queue in this build",
+      "key": "shop_dead_no_forge",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Items are bought per hero: 6 slots, priced 4500-6000 gold per tier.",
+      "key": "shop_item_note",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "%s — %d/%d item slots",
+      "key": "shop_item_slots",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Attack type: %s · %s — tagged items only fit that type.",
+      "key": "shop_item_attack_type",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Owned: %s",
+      "key": "shop_item_owned",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "owned",
+      "key": "shop_item_owned_suffix",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Already owned",
+      "key": "shop_reason_owned",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Inventory full (6/6)",
+      "key": "shop_reason_full",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "MELEE ONLY — this hero is ranged",
+      "key": "shop_reason_melee",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "MAGIC ONLY — this hero is not magic",
+      "key": "shop_reason_magic",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Not enough gold",
+      "key": "shop_reason_poor",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Select a Radiant hero to see its stats & upgrades.",
+      "key": "shop_hero_select_hint",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Buy heroes (%d/%d owned, including the ones waiting to respawn):",
+      "key": "shop_hero_buy_list",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Other heroes (%d total in heroes.json) unlock through level progress — see SaveManager.unlocked_heroes.",
+      "key": "shop_hero_others",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": " · OWNED",
+      "key": "shop_hero_owned_badge",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Maximum level reached.",
+      "key": "shop_max_level",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Maximum level (%d) reached.",
+      "key": "shop_max_level_count",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Upgrade to Lv.%d — %d gold",
+      "key": "shop_upgrade_to",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "HP x%.2f, damage and range go up.",
+      "key": "shop_upgrade_stat_note",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Click a slot circle on a lane to build a tower.",
+      "key": "shop_tower_hint",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Empty slots: Radiant %d · Dire %d  (3 slots per lane per team)",
+      "key": "shop_tower_free_slots",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Click one of your towers to upgrade / sell / Regen Shield.",
+      "key": "shop_tower_click_upgrade",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "This slot belongs to Dire — it cannot be built.",
+      "key": "shop_tower_slot_dire",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "This slot already holds a tower.",
+      "key": "shop_tower_slot_taken",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Empty slot on lane %s — build a Lv1 tower (%d gold)",
+      "key": "shop_tower_slot_empty",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Note: Lv1 stats are the same on every path (Archer Lv1); its strength only appears after upgrading to Lv2.",
+      "key": "shop_tower_build_note",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Upgrading Lv1 -> Lv2 picks the path and raises HP by x%.2f.",
+      "key": "shop_tower_path_note",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Special: %s",
+      "key": "shop_tower_special",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Dire tower — it cannot be upgraded or sold.",
+      "key": "shop_tower_dire_locked",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Pick the Lv2 upgrade path:",
+      "key": "shop_tower_pick_path",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Regen Shield: ACTIVE (shield recovers after 3 seconds without damage)",
+      "key": "shop_regen_active",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Buy Regen Shield — %d gold",
+      "key": "shop_regen_buy",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "The tower shield regenerates too (parity Tower.activate_regen_shield).",
+      "key": "shop_regen_note",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Regen Shield unlocks at Lv.%d+ (costs %d gold)",
+      "key": "shop_regen_locked",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Sell tower (+%d gold)",
+      "key": "shop_tower_sell",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Refunds 50% of the upgrade costs already paid.",
+      "key": "shop_tower_sell_note",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "The Radiant Nexus is already destroyed.",
+      "key": "shop_nexus_dead",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "The Nexus is already at maximum level.",
+      "key": "shop_nexus_max",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Upgrade Nexus to Lv.%d — %d gold",
+      "key": "shop_nexus_upgrade",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "FREE Castle Shield is active (until wave 10) — leftover damage is reduced by %.0f%%.",
+      "key": "shop_nexus_free_shield",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Buy Castle Shield — %d gold",
+      "key": "shop_nexus_shield_buy",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Permanent shield: it absorbs damage 1:1, the rest is mitigated by %.0f%%.",
+      "key": "shop_nexus_shield_note",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Castle Shield already purchased.",
+      "key": "shop_nexus_shield_owned",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Dire Nexus: Lv%d · HP %d/%d · shield %d/%d — destroy it to WIN.",
+      "key": "shop_nexus_enemy",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "no hero selected",
+      "key": "skillbar_no_hero",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "H → HERO: buy a hero, then click it to select",
+      "key": "skillbar_buy_hint",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Close panel (deselect hero)",
+      "key": "skillbar_close_tip",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Auto-cast is always ON (parity v29: toggle no-op)",
+      "key": "skillbar_autocast_tip",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "item slot %d empty",
+      "key": "skillbar_slot_empty",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Open ITEM FORGE for this hero",
+      "key": "skillbar_forge_tip",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "REPLAY  (R)",
+      "key": "over_replay",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "MAIN MENU  (ESC)",
+      "key": "over_menu",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "replay",
+      "key": "over_replay_hint",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "next level",
+      "key": "over_next_hint",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "main menu",
+      "key": "over_menu_hint",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Radiant Nexus destroyed — a defeat pays nothing.",
+      "key": "over_defeat_note",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Meta reward: +%d gold (%s) saved to the save file.",
+      "key": "over_meta_reward",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "NEXT LEVEL %d  (ENTER)",
+      "key": "over_next_button",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "first win",
+      "key": "over_reward_first_win",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "first replay",
+      "key": "over_reward_first_replay",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "repeat replay",
+      "key": "over_reward_replay",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "CONTINUE — LEVEL %d",
+      "key": "menu_continue",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "PLAY GAME",
+      "key": "menu_play",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "HOW TO PLAY",
+      "key": "menu_how_to_play",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "SETTINGS",
+      "key": "menu_settings",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "CREDITS",
+      "key": "menu_credits",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "QUIT GAME",
+      "key": "menu_quit",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "BACK",
+      "key": "menu_back",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Meta gold: %d  ·  %d / %d levels completed  ·  %d heroes owned",
+      "key": "menu_meta_summary",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Leave Mystic Arena?",
+      "key": "menu_exit_question",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "YES, QUIT",
+      "key": "menu_exit_yes",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "CANCEL",
+      "key": "menu_cancel",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "SELECT SAVE SLOT",
+      "key": "slot_title",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Pick a slot to continue, or start a new game",
+      "key": "slot_subtitle",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "EMPTY",
+      "key": "slot_empty",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Tap to start a new game",
+      "key": "slot_empty_hint",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "HIGHEST LEVEL COMPLETED",
+      "key": "slot_highest",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "No levels completed yet",
+      "key": "slot_no_levels",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "LAST PLAYED",
+      "key": "slot_last_played",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "START NEW",
+      "key": "slot_start_new",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "CONTINUE",
+      "key": "slot_continue",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "DELETE SAVE",
+      "key": "slot_delete",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "DELETE SLOT?",
+      "key": "slot_delete_title",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Delete SAVE GAME %d?",
+      "key": "slot_delete_question",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "This action cannot be undone!",
+      "key": "slot_delete_warning",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "YES, DELETE",
+      "key": "slot_delete_yes",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "SELECT LEVEL",
+      "key": "lvl_title",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "EASY",
+      "key": "lvl_diff_easy",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "NORMAL",
+      "key": "lvl_diff_normal",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "HARD",
+      "key": "lvl_diff_hard",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "HARD (+%d%%)",
+      "key": "lvl_diff_hard_pct",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "COMPLETED: %d / %d  ·  hard = enemies +15%% HP, +10%% damage (scaling on)",
+      "key": "lvl_progress",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "LEVELS JSON NOT LOADED YET — run it first:\npython tools/convert_to_godot.py",
+      "key": "lvl_json_missing",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "DONE",
+      "key": "lvl_badge_done",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "LOCKED",
+      "key": "lvl_badge_locked",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "READY TO PLAY",
+      "key": "lvl_badge_ready",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Theme: %s  ·  Mini boss: %s  ·  True boss: %s",
+      "key": "lvl_theme_line",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "BEST SCORE",
+      "key": "lvl_stat_score",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "BEST TIME",
+      "key": "lvl_stat_time",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "No stats yet",
+      "key": "lvl_stat_none",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "PLAY",
+      "key": "lvl_play",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "PLAY AGAIN",
+      "key": "lvl_replay",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Complete Level %d first to unlock",
+      "key": "lvl_locked_hint",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "PHY = physical hits armor  ·  MAG = magic pierces armor  ·  TNK = wall",
+      "key": "hshop_legend",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "There are no heroes in this category.",
+      "key": "hshop_empty",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "heroes.json NOT LOADED YET — run it first: python tools/convert_to_godot.py",
+      "key": "hshop_json_missing",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "OWNED",
+      "key": "hshop_owned",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Defeat: %s",
+      "key": "hshop_defeat",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "FREE",
+      "key": "hshop_free",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "UNLOCK",
+      "key": "hshop_unlock",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "SETTINGS",
+      "key": "set_title",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Master Volume",
+      "key": "set_volume_master",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "SFX Volume",
+      "key": "set_volume_sfx",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Music Volume (BGM)",
+      "key": "set_volume_bgm",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Voice Volume",
+      "key": "set_volume_voice",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "CLOUD: OFF (PC / not configured)",
+      "key": "set_cloud_off",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "UPLOAD SAVE TO CLOUD",
+      "key": "set_cloud_upload",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "DOWNLOAD SAVE FROM CLOUD",
+      "key": "set_cloud_download",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Cloud syncs through your Google account (Android)",
+      "key": "set_cloud_note",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Cloud is not available in this build (Android + Play Games only)",
+      "key": "set_cloud_unavailable",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "SIGN IN TO CLOUD",
+      "key": "set_cloud_sign_in",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "SIGNED IN TO GOOGLE PLAY GAMES",
+      "key": "set_cloud_connected",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "NOT SIGNED IN TO GOOGLE PLAY GAMES",
+      "key": "set_cloud_signed_out",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "SYNC IN PROGRESS...",
+      "key": "set_cloud_busy",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Sign in to Google Play Games first.",
+      "key": "set_cloud_sign_in_required",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Save uploaded to cloud.",
+      "key": "set_cloud_upload_success",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Cloud save found.",
+      "key": "set_cloud_download_found",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "RESTORE CLOUD SAVE?",
+      "key": "set_cloud_restore_title",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Restore %d slot(s) from this Google account?",
+      "key": "set_cloud_restore_confirm",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "REPLACE local saves with %d cloud slot(s)? Local progress will be overwritten.",
+      "key": "set_cloud_restore_replace",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Highest level: %d  ·  Gold: %d",
+      "key": "set_cloud_restore_summary",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "RESTORE",
+      "key": "set_cloud_restore",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Cloud save restored.",
+      "key": "set_cloud_restore_success",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "No local save is available to upload.",
+      "key": "set_cloud_no_local_save",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Cloud operation failed. Try again.",
+      "key": "set_cloud_operation_failed",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Picked on the SELECT LEVEL screen, before the match starts.",
+      "key": "set_diff_note",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "UNLIMITED",
+      "key": "set_fps_unlimited",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "PROGRESSION",
+      "key": "set_progression",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "DELETE SAVE GAME %d",
+      "key": "set_delete_save",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Volume, toggles and language live in SaveManager.data[\"settings\"] per slot and apply right away.",
+      "key": "set_store_note",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "HOW TO PLAY",
+      "key": "howto_title",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "GOAL",
+      "key": "howto_goal",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Destroy the Dire Nexus (castle) before the Radiant Nexus falls.",
+      "key": "howto_goal_1",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Winning pays meta gold that unlocks heroes in the HERO SHOP.",
+      "key": "howto_goal_2",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "BUILDING TOWERS",
+      "key": "howto_towers",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Click an empty slot circle (+) on a lane and build a tower (100 gold).",
+      "key": "howto_towers_1",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "4 paths: Archer / Cannon / Ice / Mage. The Lv1→Lv2 upgrade picks the path.",
+      "key": "howto_towers_2",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "HEROES & SKILLS",
+      "key": "howto_heroes",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "You start without heroes. Open H → HERO to buy one you already unlocked.",
+      "key": "howto_heroes_1",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Up to 5 unique heroes. A dead hero respawns after 10 seconds keeping its level and items.",
+      "key": "howto_heroes_2",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Click a Radiant hero to select it, then Q/W/E/R for skills (R = ultimate).",
+      "key": "howto_heroes_3",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Heroes you do not select fight on their own (auto-cast).",
+      "key": "howto_heroes_4",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "MINION WAVES",
+      "key": "howto_waves",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "The first wave arrives after 5 seconds. Minions trickle out on all three lanes.",
+      "key": "howto_waves_1",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "The next wave waits 25 seconds and for every minion of the old wave to fall.",
+      "key": "howto_waves_2",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "SHOP (B)",
+      "key": "howto_shop",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "4 tabs: TOWERS / ITEMS / HERO / NEXUS. Items use 6 slots per hero.",
+      "key": "howto_shop_1",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Upgrading the nexus raises its HP and your team's minion scale.",
+      "key": "howto_shop_2",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "PROGRESSION",
+      "key": "howto_progress",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "First win: 3000 meta gold. A winning replay: 1500 (once), then 200.",
+      "key": "howto_progress_1",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "A boss defeated plus its castle fallen unlocks that hero for FREE.",
+      "key": "howto_progress_2",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "ENTER after a win moves on to the next level (new theme & boss).",
+      "key": "howto_progress_3",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "HARD MODE",
+      "key": "howto_hard",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Hard: enemies +15% HP, +10% damage, the Dire castle starts higher.",
+      "key": "howto_hard_1",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Gold income is smaller (x0.75). Easy: x1.25.",
+      "key": "howto_hard_2",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "RESUME GAME",
+      "key": "pause_resume",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "MAIN MENU",
+      "key": "pause_menu",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Pause (P / ESC)",
+      "key": "rail_pause_tip",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Open the tactical command panel (hold a key to keep the command active)",
+      "key": "tac_toggle_tip",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "All heroes gather and attack together (hold to keep it active)",
+      "key": "tac_gather_tip",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "At least 2 heroes guard the tower (hold to keep it active)",
+      "key": "tac_protect_tower_tip",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "All heroes defend the castle (hold to keep it active)",
+      "key": "tac_protect_castle_tip",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "All heroes attack the boss (hold to keep it active)",
+      "key": "tac_attack_boss_tip",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Focus the enemy hero with the biggest damage (hold to keep it active)",
+      "key": "tac_attack_dd_tip",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Buy gold to unlock heroes in the HERO SHOP",
+      "key": "topup_subtitle",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "BUY",
+      "key": "shop_card_buy",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "Owned: %d",
+      "key": "shop_card_owned",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "NOT AFFORDABLE",
+      "key": "shop_card_poor",
+      "language": "en"
+    },
+    {
+      "args": {},
+      "expected": "SELECT HERO",
+      "key": "shop_card_no_hero",
+      "language": "en"
+    }
+  ]
+}

@@ -263,6 +263,28 @@ def main() -> int:
         check("pygame==2.6.1" in workflow_text, f"CI pins pygame oracle: {workflow}")
         check("tools/prepare_godot_lighting.py --check" in workflow_text, f"CI lighting staleness gate: {workflow}")
         check("tools/test_godot_lighting_prepare.py" in workflow_text, f"CI lighting exporter tests: {workflow}")
+    localization_path = PROJECT / "scripts/core/Localization.gd"
+    check(localization_path.is_file(), "Native Localization module exists")
+    localization = json.loads((PROJECT / "data/localization.json").read_text(encoding="utf-8"))
+    localization_oracle = json.loads((PROJECT / "tests/fixtures/localization_parity.json").read_text(encoding="utf-8"))
+    check(localization["schema"] == 1 and localization["source"] == "localization.py", "Localization contract schema/source")
+    check(localization["source_sha256"] == hashlib.sha256((ROOT / "localization.py").read_bytes()).hexdigest(), "Localization source hash current")
+    check(localization_oracle["source_sha256"] == localization["source_sha256"], "Localization oracle hash current")
+    check(localization["languages"] == ["id", "en"] and localization["default_language"] == "id", "Localization languages/default")
+    check(localization["key_count"] == 224 and len(localization["key_order"]) == 224, "Localization 224 keys")
+    check(localization["texts"] == core.get("localization", {}), "Localization contract matches core table")
+    check(len(localization_oracle["tr_cases"]) == 448 and len(localization_oracle["missing_args_cases"]) == 22, "Localization oracle coverage")
+    core_data_text = (PROJECT / "scripts/core/CoreData.gd").read_text(encoding="utf-8")
+    check("var localization: Localization" in core_data_text and "localization.tr_for" in core_data_text, "CoreData delegates text to Localization")
+    check("apply_language" in (PROJECT / "scripts/game/CoreGame.gd").read_text(encoding="utf-8"), "CoreGame applies settings language")
+    check("localization.set_language" in (PROJECT / "scripts/Main.gd").read_text(encoding="utf-8"), "Main propagates language changes")
+    check("get_language_label" in (PROJECT / "scripts/ui/MenuView.gd").read_text(encoding="utf-8"), "MenuView shows language labels")
+    check("LocalizationParity.run(self)" in (PROJECT / "tests/run_all.gd").read_text(encoding="utf-8"), "Native suite runs localization parity")
+    check((PROJECT / "tests/LocalizationParityTest.gd").is_file(), "Localization parity test module exists")
+    for workflow in ("godot-check.yml", "godot-rebuild.yml"):
+        workflow_text = (ROOT / ".github/workflows" / workflow).read_text(encoding="utf-8")
+        check("tools/prepare_godot_localization.py --check" in workflow_text, f"CI localization staleness gate: {workflow}")
+        check("tools/test_godot_localization_prepare.py" in workflow_text, f"CI localization exporter tests: {workflow}")
     print(f"PASS: {checks} native project/source checks")
     return 0
 
