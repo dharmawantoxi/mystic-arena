@@ -166,6 +166,11 @@ func _on_render_event(kind: String, data: Dictionary) -> void:
 			effects.unlock_achievement(
 				str(data.title), str(data.description), str(data.get("icon", "star"))
 			)
+		"boss_attack":
+			var attacker: BattleUnit = data.unit
+			sound_requested.emit(
+				"hero_melee" if attacker.attack_range < 110.0 else "hero_ranged", 1.0
+			)
 		"boss_intro":
 			cinematics.start_boss_intro(data.unit, model.data)
 		"boss_death":

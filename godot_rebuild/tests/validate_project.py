@@ -338,6 +338,72 @@ def main() -> int:
         check("tools/prepare_godot_tactical.py --check" in workflow_text, f"CI tactical staleness gate: {workflow}")
         check("tools/test_godot_tactical_prepare.py" in workflow_text, f"CI tactical exporter tests: {workflow}")
         check("tools/test_godot_tactical_parity.py" in workflow_text, f"CI tactical oracle gate: {workflow}")
+    # ── bosses: closed-world contract + native port ──
+    boss_source = ROOT / "bosses"
+    boss_files = sorted(q.name for q in boss_source.glob("*.py"))
+    check(len(boss_files) == 61, "bosses source has 61 Python files (including __init__.py)")
+    check((boss_source / "_boss_index.py").is_file(), "bosses generated renderer index exists")
+    check((boss_source / "base_boss.py").is_file(), "bosses runtime source exists")
+    check((boss_source / "boss_data.py").is_file(), "bosses data source exists")
+    boss_contract_path = PROJECT / "data/bosses.json"
+    check(boss_contract_path.is_file(), "native bosses contract exists")
+    boss_contract = json.loads(boss_contract_path.read_text(encoding="utf-8"))
+    check(boss_contract.get("schema") == 1, "bosses contract schema")
+    check(boss_contract.get("counts", {}).get("files") == 61, "bosses contract covers 61 source files")
+    check(boss_contract.get("counts", {}).get("mini") == 162, "bosses contract covers 162 mini bosses")
+    check(boss_contract.get("counts", {}).get("true") == 54, "bosses contract covers 54 true bosses")
+    check(boss_contract.get("counts", {}).get("smart_ai") == 79, "bosses contract covers 79 smart-AI bosses")
+    check(len(boss_contract.get("bosses", {})) == 216, "bosses contract index has 216 entries")
+    check(len(boss_contract.get("files", {})) == 61, "bosses contract hashes every source file")
+    check(all("png" in row.get("art", {}) for row in boss_contract.get("bosses", {}).values()),
+          "every boss has a baked sprite strip")
+    check(boss_contract.get("bosses", {}).get("morvaeth2", {}).get("module") == "level42",
+          "boss renderer alias morvaeth2 -> level42")
+    for name, row in boss_contract.get("files", {}).items():
+        check(hashlib.sha256((boss_source / name).read_bytes()).hexdigest() == row["sha256"],
+              f"bosses source hash current: {name}")
+    check((PROJECT / "tests/fixtures/bosses_parity.json").is_file(), "bosses pygame oracle fixture exists")
+    for rel in (
+        "scripts/core/BossCatalog.gd",
+        "scripts/entities/BossController.gd",
+        "scripts/entities/BossCombat.gd",
+        "scripts/entities/BossVisuals.gd",
+        "tests/BossParityTest.gd",
+    ):
+        check((PROJECT / rel).is_file(), f"native bosses module exists: {rel}")
+    catalog = (PROJECT / "scripts/core/BossCatalog.gd").read_text(encoding="utf-8")
+    check("func normalize(" in catalog and "func _rebalance(" in catalog, "BossCatalog ports normalization pipeline")
+    check("func _unlock_stats(" in catalog and "func _unlock_range(" in catalog, "BossCatalog ports hero-unlock normalization")
+    check("pristine_order" in catalog, "BossCatalog preserves source tie order")
+    controller = (PROJECT / "scripts/entities/BossController.gd").read_text(encoding="utf-8")
+    check("BossKit.dispatch(" in controller, "BossController dispatches generated smart-AI kit")
+    check("func _basic_attack(" in controller and "cleave_ratio" in controller, "BossController ports basic attack + cleave")
+    check("func _chase(" in controller and "kite_mode" in controller, "BossController ports ranged kiting")
+    check("func _move_forward(" in controller and "budget" in controller, "BossController ports lane movement budget")
+    check("func _enrage(" in controller and "0.50" in controller and "0.40" in controller, "BossController ports enrage thresholds")
+    combat = (PROJECT / "scripts/entities/BossCombat.gd").read_text(encoding="utf-8")
+    check("blind_timer" in combat and "dmg_amp_timer" in combat, "BossCombat ports blind/amp order")
+    check("armor_shred_amount" in combat and "max_damage_per_hit" in combat, "BossCombat ports shred/cap order")
+    visuals = (PROJECT / "scripts/entities/BossVisuals.gd").read_text(encoding="utf-8")
+    check("func draw_entrance(" in visuals and "func draw_over(" in visuals, "BossVisuals ports entrance/nameplate")
+    check("label_top(" in visuals, "BossVisuals uses BOSS_LABEL_TOP anchor")
+    core_data_text = (PROJECT / "scripts/core/CoreData.gd").read_text(encoding="utf-8")
+    check("bosses: BossCatalog" in core_data_text and "matches_core(data)" in core_data_text, "CoreData validates boss catalog")
+    unit_text = (PROJECT / "scripts/core/BattleUnit.gd").read_text(encoding="utf-8")
+    check("BossCombat.take_damage(" in unit_text, "BattleUnit routes boss damage through BossCombat")
+    check("ability_timer = 0" in unit_text, "boss ability timers start at zero")
+    movement = (PROJECT / "scripts/entities/EntityMovement.gd").read_text(encoding="utf-8")
+    check("BossController.update(model, unit)" in movement, "EntityMovement delegates boss tick to BossController")
+    match_model = (PROJECT / "scripts/core/MatchModel.gd").read_text(encoding="utf-8")
+    check("if unit.kind != BattleUnit.Kind.BOSS:" in match_model, "MatchModel avoids double-ticking boss timers")
+    arena = (PROJECT / "scripts/game/ArenaView.gd").read_text(encoding="utf-8")
+    check("BossVisuals.draw_under(" in arena and "BossVisuals.draw_over(" in arena, "ArenaView draws boss aura/nameplate")
+    check("BossParity.run(self)" in (PROJECT / "tests/run_all.gd").read_text(encoding="utf-8"), "native runner includes bosses parity")
+    for workflow in ("godot-check.yml", "godot-rebuild.yml"):
+        workflow_text = (ROOT / ".github/workflows" / workflow).read_text(encoding="utf-8")
+        check("tools/prepare_godot_bosses.py --check" in workflow_text, f"CI bosses staleness gate: {workflow}")
+        check("tools/test_godot_bosses_prepare.py" in workflow_text, f"CI bosses exporter tests: {workflow}")
+        check("tools/test_godot_bosses_parity.py" in workflow_text, f"CI bosses oracle gate: {workflow}")
     ui_theme_path = PROJECT / "scripts/ui/UiTheme.gd"
     check(ui_theme_path.is_file(), "Native UiTheme module exists")
     for helper in ("UiThemeSurfaces", "UiThemeText", "UiThemeIcons", "UiThemeComponents", "UiThemeComponentsExtra", "UiThemeDraw", "UiThemeTextures", "UiThemeButton", "UiThemePanel"):

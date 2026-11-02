@@ -1,4 +1,4 @@
-name: Godot Check (Lite - 30s)
+name: Godot Check (Lite)
 
 # Fast checks for the active main.py migration. The removed legacy godot/
 # project and its missing fixtures are not prerequisites for this project.
@@ -13,6 +13,9 @@ on:
       - 'tools/test_godot_balance_prepare.py'
       - 'tools/prepare_godot_items.py'
       - 'tools/test_godot_items_prepare.py'
+      - 'tools/prepare_godot_bosses.py'
+      - 'tools/test_godot_bosses_prepare.py'
+      - 'tools/test_godot_bosses_parity.py'
       - 'tools/prepare_godot_lighting.py'
       - 'tools/test_godot_lighting_prepare.py'
       - 'tools/prepare_godot_localization.py'
@@ -80,6 +83,9 @@ on:
       - 'tools/test_godot_balance_prepare.py'
       - 'tools/prepare_godot_items.py'
       - 'tools/test_godot_items_prepare.py'
+      - 'tools/prepare_godot_bosses.py'
+      - 'tools/test_godot_bosses_prepare.py'
+      - 'tools/test_godot_bosses_parity.py'
       - 'tools/prepare_godot_lighting.py'
       - 'tools/test_godot_lighting_prepare.py'
       - 'tools/prepare_godot_localization.py'
@@ -147,9 +153,9 @@ permissions:
 
 jobs:
   check:
-    name: Linter cepat (30s)
+    name: Linter cepat
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -169,6 +175,9 @@ jobs:
           python3 tools/prepare_godot_items.py --check
           python3 tools/test_godot_items_prepare.py
           python3 -m pip install --quiet pygame==2.6.1
+          python3 tools/prepare_godot_bosses.py --check
+          python3 tools/test_godot_bosses_prepare.py
+          python3 tools/test_godot_bosses_parity.py
           python3 tools/prepare_godot_lighting.py --check
           python3 tools/test_godot_lighting_prepare.py
           python3 tools/prepare_godot_localization.py --check

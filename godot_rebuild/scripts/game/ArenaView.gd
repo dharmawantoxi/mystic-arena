@@ -82,9 +82,16 @@ func _draw_unit(unit: BattleUnit, show_bar: bool) -> void:
 	if unit.selected or unit == game.model.selected_tower or unit == game.model.selected_hero:
 		draw_arc(unit.pos, unit.radius + 8, 0, TAU, 32, Ui.GOLD, 2.0)
 		draw_circle(unit.pos, unit.attack_range, Color(color.r, color.g, color.b, 0.06))
+	if unit.kind == BattleUnit.Kind.BOSS:
+		BossVisuals.draw_under(self, unit)
+		if unit.entrance_timer > 0:
+			return
 	if not EntityVisuals.draw_unit(self, unit, game.model.frame):
 		draw_circle(unit.pos, unit.radius, color)
 		draw_arc(unit.pos, unit.radius, 0, TAU, 24, Color(0, 0, 0, 0.5), 2.0)
+	if unit.kind == BattleUnit.Kind.BOSS:
+		BossVisuals.draw_over(self, unit, font)
+		return
 	if unit.shield_active and unit.shield > 0:
 		draw_arc(unit.pos, unit.radius + 4, 0, TAU, 24, Color(0.4, 0.8, 1.0, 0.8), 2.0)
 	if show_bar:

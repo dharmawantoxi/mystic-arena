@@ -119,6 +119,12 @@ var defense_timer := 0
 var cleave_radius := 80.0
 var cleave_ratio := 0.40
 var basic_attack_seq := 0
+var prev_pos := Vector2.ZERO
+var ability_active := false
+var ability_active_timer := 0
+var enrage_pulse := 0.0
+var dmg_scaling_mult := 1.0
+var blind_roll_override := -1.0
 var attack_facing := 1
 var attack_lock_timer := 0
 var kite_mode := "hold"
@@ -509,6 +515,7 @@ func upgrade_hero(data: CoreData) -> bool:
 func setup_boss(data: CoreData, boss_type: String, lane_path: PackedVector2Array) -> void:
 	kind = Kind.BOSS
 	unit_type = boss_type
+	facing = -1
 	team = "red"
 	path = lane_path
 	stats = data.boss(boss_type)
@@ -535,28 +542,37 @@ func setup_boss(data: CoreData, boss_type: String, lane_path: PackedVector2Array
 	base_damage = damage
 	base_speed = speed
 	ability_cooldown_max = int(stats.get("ability_cooldown", 240))
-	ability_timer = ability_cooldown_max
+	ability_timer = 0
+	ability2_cooldown_max = int(stats.get("ability2_cooldown", 0))
+	ability2_heal_pct = float(stats.get("ability2_heal_pct", 0.0))
+	ability2_timer = 0
 	ability_damage = float(stats.get("ability_damage", 100))
 	ability_range = float(stats.get("ability_range", 150))
 	entrance_timer = 180 if boss_class == "true" else 120
 	damage_reduction = 0.30 if boss_class == "true" else 0.20
 	max_damage_per_hit = int(max_hp * (0.08 if boss_class == "true" else 0.12))
+	prev_pos = pos
 	kit = BossKit.DEFAULT_KIT.duplicate(true)
 	kit["kit_ready"] = false
 
 
 func apply_scaling(hp_mult: float, damage_mult: float, speed_mult: float) -> void:
+	dmg_scaling_mult = damage_mult
 	max_hp = int(max_hp * hp_mult)
 	_hp = max_hp
 	damage = int(damage * damage_mult)
 	base_damage = damage
-	ability_damage *= damage_mult
+	ability_damage = int(ability_damage * damage_mult)
 	speed *= speed_mult
 	base_speed = speed
 	max_damage_per_hit = int(max_hp * (0.08 if boss_class == "true" else 0.12))
 
 
 func apply_debuff(kind_name: String, amount: float, duration: int, source_team := "") -> void:
+	if kind == Kind.BOSS and kind_name == "stun":
+		duration = int(duration * 0.45)
+		if duration <= 0:
+			return
 	if kind == Kind.HERO and items != null and kind_name in ["slow", "atk_slow"]:
 		amount *= 1.0 - items.slow_resist()
 	if kind == Kind.BOSS and kind_name in ["slow", "atk_slow"]:
@@ -578,6 +594,8 @@ func take_damage(
 	source: BattleUnit = null,
 	school := ""
 ) -> float:
+	if kind == Kind.BOSS:
+		return BossCombat.take_damage(self, amount, from_team, damage_type, source, school)
 	if not alive or amount <= 0.0 or from_team == team:
 		return 0.0
 	var resolved := EntityCombat.resolve_school(self, damage_type, source, school)
@@ -893,12 +911,18 @@ func kit_fx_impact(x: float, y: float, radius: float, skill: String) -> void:
 
 func kit_get_stats() -> Dictionary:
 	var result := stats.duplicate(true)
-	var mult := 1.0 - status.skill_down_amount
+	var mult := 1.0
+	if status.skill_down_timer > 0:
+		mult *= maxf(0.0, 1.0 - status.skill_down_amount)
+	if dmg_scaling_mult != 1.0:
+		mult *= dmg_scaling_mult
 	if is_enraged:
 		mult *= 1.25
-	for key: String in result:
-		if "damage" in key and result[key] is float:
-			result[key] = float(result[key]) * mult
+	if mult != 1.0:
+		for key: String in result:
+			var value: Variant = result[key]
+			if "damage" in key and (value is float or value is int) and not value is bool:
+				result[key] = HeroBalance.py_round(float(value) * mult)
 	return result
 
 
@@ -908,7 +932,7 @@ func kit_stats_full() -> Dictionary:
 
 func kit_skill_hit(enemy: BattleUnit, dmg: float) -> void:
 	if enemy != null:
-		enemy.take_damage(dmg, team, "magic", self)
+		enemy.take_damage(dmg, team)
 
 
 func kit_apply_slow(enemy: BattleUnit, amount: float, frames: int) -> void:

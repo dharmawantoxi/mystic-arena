@@ -1,7 +1,6 @@
 class_name EntityMovement
 extends RefCounted
 
-const BossKit = preload("res://scripts/entities/generated/BossKit.gd")
 const HeroSkillKit = preload("res://scripts/entities/generated/HeroSkillKit.gd")
 
 ## Hero/minion/boss movement and targeting from _entity.py.
@@ -9,6 +8,9 @@ const HeroSkillKit = preload("res://scripts/entities/generated/HeroSkillKit.gd")
 
 static func update(model: RefCounted, unit: BattleUnit) -> void:
 	if not unit.alive:
+		return
+	if unit.kind == BattleUnit.Kind.BOSS:
+		BossController.update(model, unit)
 		return
 	unit.anim_time += 1
 	unit.pulse += 0.1
@@ -28,8 +30,6 @@ static func update(model: RefCounted, unit: BattleUnit) -> void:
 			_update_hero(model, unit)
 		BattleUnit.Kind.MINION:
 			_update_minion(model, unit)
-		BattleUnit.Kind.BOSS:
-			_update_boss(model, unit)
 
 
 static func _update_hero(model: RefCounted, hero: BattleUnit) -> void:
@@ -162,66 +162,6 @@ static func _minion_target(
 	if best == null:
 		best = model._nearest(minion.pos, enemies, 120.0)
 	return best
-
-
-static func _update_boss(model: RefCounted, boss: BattleUnit) -> void:
-	if boss.entrance_timer > 0:
-		boss.entrance_timer -= 1
-		boss.is_moving = false
-		return
-	_check_enrage(model, boss)
-	var enemies: Array[BattleUnit] = model.enemies_of("red")
-	var target: BattleUnit = model._nearest(boss.pos, enemies, 900.0)
-	boss.target = target
-	var dist := boss.pos.distance_to(target.pos) if target != null else INF
-	if target != null:
-		boss.facing = 1 if target.pos.x >= boss.pos.x else -1
-	BossKit.dispatch(boss, boss.unit_type, enemies, dist)
-	boss.ability_timer = maxi(0, boss.ability_timer - 1)
-	if boss.ability_timer <= 0 and target != null and dist <= boss.ability_range:
-		boss.ability_timer = boss.ability_cooldown_max
-		boss.active_skill = "ability"
-		boss.active_skill_timer = 60
-		boss.attack_lock_timer = 60
-		for enemy: BattleUnit in enemies:
-			if enemy.pos.distance_to(boss.pos) <= boss.ability_range:
-				enemy.take_damage(boss.ability_damage, "red", "magic", boss)
-		model.add_effect(boss.pos, "boss_ability", boss.color, int(boss.ability_range))
-	if boss.attack_lock_timer > 0:
-		boss.attack_lock_timer -= 1
-		boss.is_moving = false
-		return
-	if target != null and dist <= boss.attack_range + target.radius:
-		model._attack(boss, target)
-		if boss.cleave_radius > 0:
-			for enemy: BattleUnit in enemies:
-				if enemy != target and enemy.pos.distance_to(boss.pos) <= boss.cleave_radius:
-					enemy.take_damage(boss.damage * boss.cleave_ratio, "red", "physical", boss)
-		return
-	_follow_path(boss)
-
-
-static func _check_enrage(model: RefCounted, boss: BattleUnit) -> void:
-	if boss.enrage_triggered:
-		return
-	var threshold := 0.50 if boss.boss_class == "true" else 0.40
-	if boss.hp / maxf(1.0, boss.max_hp) > threshold:
-		return
-	boss.enrage_triggered = true
-	boss.is_enraged = true
-	if boss.boss_class == "true":
-		boss.speed *= 1.25
-		boss.damage *= 1.25
-		boss.ability_damage *= 1.25
-		boss.ability_cooldown_max = maxi(18, int(boss.ability_cooldown_max * 0.75))
-		model.add_shake(25)
-	else:
-		boss.speed *= 1.15
-		boss.damage *= 1.20
-		boss.ability_damage *= 1.20
-		boss.ability_cooldown_max = maxi(20, int(boss.ability_cooldown_max * 0.80))
-		model.add_shake(15)
-	model.add_popup(boss.pos, "ENRAGED!", Color("ff5533"))
 
 
 static func _follow_path(unit: BattleUnit) -> void:
