@@ -58,8 +58,13 @@ python tools/test_godot_bosses_prepare.py
 python tools/test_godot_bosses_parity.py
 ```
 
-Status CI PR akan diperbarui setelah push. Belum ada klaim lulus CI sebelum
-check GitHub benar-benar selesai.
+Hasil CI PR #390 (head `1a16292`):
+
+- Godot Check (Lite): run `41525067646` ✅
+- Godot native migration (PR): run `41525067693` ✅
+- Godot native migration (push): run `41525055310` ✅
+
+`gh pr checks 390` menunjukkan semua check lulus dan merge state CLEAN.
 
 ## Tidak diverifikasi
 
