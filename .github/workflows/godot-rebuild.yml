@@ -26,6 +26,11 @@ on:
       - 'tools/test_godot_splash_parity.py'
       - 'splash_screen.py'
       - 'tools/gen_splash_cpp.py'
+      - 'tools/prepare_godot_tactical.py'
+      - 'tools/test_godot_tactical_prepare.py'
+      - 'tools/test_godot_tactical_parity.py'
+      - 'tactical_commands.py'
+      - 'tools/test_godot_match_parity.py'
       - 'tools/test_godot_archetypes_prepare.py'
       - 'tools/test_godot_core_prepare.py'
       - '_core.py'
@@ -85,6 +90,11 @@ on:
       - 'tools/test_godot_splash_parity.py'
       - 'splash_screen.py'
       - 'tools/gen_splash_cpp.py'
+      - 'tools/prepare_godot_tactical.py'
+      - 'tools/test_godot_tactical_prepare.py'
+      - 'tools/test_godot_tactical_parity.py'
+      - 'tactical_commands.py'
+      - 'tools/test_godot_match_parity.py'
       - 'tools/test_godot_archetypes_prepare.py'
       - 'tools/test_godot_core_prepare.py'
       - '_core.py'
@@ -164,6 +174,9 @@ jobs:
             python tools/prepare_godot_splash.py --check
             python tools/test_godot_splash_prepare.py
             python tools/test_godot_splash_parity.py
+            python tools/prepare_godot_tactical.py --check
+            python tools/test_godot_tactical_prepare.py
+            python tools/test_godot_tactical_parity.py
             python tools/test_localization.py
             python tools/prepare_godot_entities.py --check
             python tools/test_godot_entity_prepare.py

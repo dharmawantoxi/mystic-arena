@@ -1,6 +1,8 @@
 class_name CoreGame
 extends GameplayPort
 
+signal sound_requested(name: String, volume: float)
+
 ## Native _core.Game replacement: simulation + input + shop + dev + rewards.
 const ArenaViewScript := preload("res://scripts/game/ArenaView.gd")
 var model := MatchModel.new()
@@ -169,6 +171,8 @@ func _on_render_event(kind: String, data: Dictionary) -> void:
 		"boss_death":
 			cinematics.start_boss_death(data.unit)
 			effects.add_shake(25.0)
+		"tactical_sound":
+			sound_requested.emit(str(data.name), float(data.get("volume", 1.0)))
 
 
 func pointer_action(action: Dictionary) -> void:
@@ -308,12 +312,17 @@ func hud_action(action: String) -> void:
 			model.buy_tower_regen_shield()
 
 
-func hold_begin(action: String) -> void:
-	model.tactical.hold_begin(action, Time.get_ticks_msec() / 1000.0)
+func hold_begin(action: String, follow_mouse := false) -> void:
+	model.tactical.hold_start(action, [], follow_mouse)
 
 
 func hold_end(action: String) -> void:
-	model.tactical.hold_end(action, Time.get_ticks_msec() / 1000.0)
+	model.tactical.hold_end(action)
+
+
+func set_mouse(pos: Vector2) -> void:
+	model.mouse_x = pos.x
+	model.mouse_y = pos.y
 
 
 func release_all_holds() -> void:

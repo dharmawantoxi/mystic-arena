@@ -11,6 +11,7 @@ const ItemsParity := preload("res://tests/HeroItemsParityTest.gd")
 const LightingParity := preload("res://tests/LightingParityTest.gd")
 const LocalizationParity := preload("res://tests/LocalizationParityTest.gd")
 const SplashParity := preload("res://tests/SplashParityTest.gd")
+const TacticalParity := preload("res://tests/TacticalParityTest.gd")
 var checks := 0
 var failures := 0
 
@@ -48,6 +49,7 @@ func _run() -> void:
 	_test_core_data()
 	_test_localization()
 	_test_splash()
+	_test_tactical()
 	_test_archetypes()
 	_test_balance()
 	_test_items()
@@ -735,6 +737,10 @@ func _test_splash() -> void:
 	SplashParity.run(self)
 
 
+func _test_tactical() -> void:
+	TacticalParity.run(self)
+
+
 func _test_archetypes() -> void:
 	var file := FileAccess.open("res://tests/fixtures/hero_archetypes_parity.json", FileAccess.READ)
 	check(file != null, "archetype Python oracle fixture exists")
@@ -932,13 +938,22 @@ func _test_core_rules() -> void:
 		"schedule deterministic with seed"
 	)
 	check(waves.composition(1, 13, data.data.rules).count("troll") == 2, "late wave composition")
-	var tactical := TacticalCommands.new()
-	tactical.hold_begin("gather", 0.0)
-	tactical.hold_end("gather", 0.1)
-	check(tactical.command_timer > 9.0, "quick tap keeps full duration")
-	tactical.hold_begin("gather", 1.0)
-	tactical.hold_end("gather", 2.0)
-	check(tactical.command_timer <= 0.5, "long hold release tail")
+	var tac_model := MatchModel.new()
+	var tac_hero := BattleUnit.new()
+	tac_hero.kind = BattleUnit.Kind.HERO
+	tac_hero.alive = true
+	tac_model.heroes.append(tac_hero)
+	var tactical := tac_model.tactical
+	tactical.attach(tac_model)
+	tactical.hold_start("gather")
+	tactical.hold_end("gather")
+	check(tactical.command_timer == 600, "quick tap keeps full duration")
+	tactical.reset()
+	tactical.hold_start("gather")
+	for _frame in range(25):
+		tactical.update()
+	tactical.hold_end("gather")
+	check(tactical.command_timer <= 30, "long hold release tail")
 
 
 func _test_core_save() -> void:
@@ -1088,9 +1103,9 @@ func _test_core_match() -> void:
 	model.selected_hero.pos = model.red_base.pos
 	model.selected_hero.skill_cooldowns.q = 0
 	check(model.cast_skill("q"), "hero skill casts")
-	model.tactical.hold_begin("protect_castle", 0.0)
-	model.tactical.update(0.5, model)
-	check(model.heroes[0].has_tactical_move, "tactical command moves hero")
+	model.tactical.hold_start("protect_castle")
+	model.tactical.update(model)
+	check(model.heroes[0].has_destination, "tactical command moves hero")
 	model.red_base.take_damage(model.red_base.max_hp + model.red_base.shield + 1, "blue", "true")
 	model.step()
 	check(model.state == "victory", "victory detected")

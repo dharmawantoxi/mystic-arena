@@ -152,6 +152,7 @@ func _sync_visibility() -> void:
 	menu.visible = state.current == State.Kind.MENU or state.current == State.Kind.PAUSE
 	hud.visible = state.current == State.Kind.GAME
 	game_host.visible = state.current == State.Kind.GAME or state.current == State.Kind.PAUSE
+	hud.tactical = game.model.tactical if game is CoreGame else null
 	if game != null:
 		hud.sync_view(
 			game.cinematic_active(),
@@ -163,6 +164,10 @@ func _sync_visibility() -> void:
 			game.combat_ready()
 		)
 		hud.show_tactical_buttons(game.combat_ready())
+
+
+func _on_game_sound(name: String, volume: float) -> void:
+	audio.play_sfx(name, volume)
 
 
 func _splash_finished() -> void:
@@ -204,6 +209,8 @@ func start_game(level: int, replay := false) -> void:
 		game.attach_context(save_repo, settings, cloud_port, topup_port, voucher, controller)
 	game.configure(level, replay)
 	game_host.add_child(game)
+	if game is CoreGame and not game.sound_requested.is_connected(_on_game_sound):
+		game.sound_requested.connect(_on_game_sound)
 	game.next_level_requested.connect(func() -> void: pending_action = "next")
 	game.replay_requested.connect(func() -> void: pending_action = "replay")
 	game.menu_requested.connect(func() -> void: pending_action = "menu")
@@ -465,6 +472,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if state.current != State.Kind.GAME:
 		return
+	if event is InputEventMouseMotion and game != null:
+		game.set_mouse(_logical_position(event.position))
 	if event is InputEventScreenTouch:
 		var position := _logical_position(event.position)
 		if event.pressed:
@@ -551,7 +560,7 @@ func _begin_hold(source: String, command: String) -> void:
 	var already_held := command in held_sources.values()
 	held_sources[source] = command
 	if not already_held:
-		game.hold_begin(command)
+		game.hold_begin(command, source.begins_with("key:") and command == "gather")
 
 
 func _end_hold(source: String) -> void:

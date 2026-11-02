@@ -54,7 +54,7 @@ func hud_action(_action: String) -> void:
 	pass
 
 
-func hold_begin(_action: String) -> void:
+func hold_begin(_action: String, _follow_mouse := false) -> void:
 	pass
 
 
