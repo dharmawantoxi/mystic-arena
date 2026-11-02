@@ -1,0 +1,257 @@
+{
+  "cheap_alpha_default": true,
+  "config": {
+    "accent": [
+      255,
+      190,
+      60
+    ],
+    "accent_2": [
+      200,
+      140,
+      255
+    ],
+    "accent_fac": 0.85,
+    "accent_len": 46,
+    "accent_offsets": [
+      [
+        -6,
+        "ACCENT"
+      ],
+      [
+        6,
+        "ACCENT_2"
+      ]
+    ],
+    "accent_pad": 18,
+    "accent_width": 2,
+    "alpha_epsilon": 0.001,
+    "band_target": 48,
+    "dim_floor": 0.35,
+    "dim_span": 0.65,
+    "duration": 3.0,
+    "fade_in": 0.4,
+    "fade_out": 0.45,
+    "font_fallback_sizes": {
+      "hint": 18,
+      "presents": 40,
+      "sub": 26,
+      "title": 110,
+      "title_below": 80
+    },
+    "font_sizes": {
+      "hint": 16,
+      "presents": 34,
+      "sub": 22,
+      "title": 92,
+      "title_below": 66
+    },
+    "game_name": "MYSTIC ARENA",
+    "glow_alpha": 12,
+    "glow_fill": 0.28,
+    "glow_grow": 2,
+    "glow_layers": [
+      [
+        24,
+        1
+      ],
+      [
+        14,
+        2
+      ],
+      [
+        8,
+        3
+      ]
+    ],
+    "glow_offset": 1,
+    "glow_pad": 30,
+    "glow_step": -3,
+    "grad_bot": [
+      6,
+      6,
+      14
+    ],
+    "grad_mid": [
+      22,
+      16,
+      38
+    ],
+    "grad_split": 0.55,
+    "grad_top": [
+      8,
+      8,
+      18
+    ],
+    "grow_min": 0.85,
+    "grow_quant": 20,
+    "grow_span": 0.15,
+    "grow_time": 0.9,
+    "hint_alpha": 140,
+    "hint_margin": 48,
+    "hint_text": "Tap anywhere to skip",
+    "logo_lift": 26,
+    "logo_max_h": 320.0,
+    "logo_max_w": 340.0,
+    "logo_paths": [
+      "assets/logo.png",
+      "assets/splash_logo.png",
+      "assets/logo.jpg",
+      "assets/logo.jpeg"
+    ],
+    "move_amp": 0.05,
+    "move_rate": 0.8,
+    "particle_colors": [
+      [
+        255,
+        210,
+        120
+      ],
+      [
+        230,
+        160,
+        255
+      ],
+      [
+        255,
+        245,
+        230
+      ],
+      [
+        180,
+        200,
+        255
+      ]
+    ],
+    "particle_count": 46,
+    "particle_min_r": 1,
+    "prange_drift": [
+      -0.12,
+      0.12
+    ],
+    "prange_phase": [
+      0,
+      6.283185307179586
+    ],
+    "prange_r": [
+      0.6,
+      2.4
+    ],
+    "prange_speed": [
+      0.08,
+      0.35
+    ],
+    "skip_done": 0.25,
+    "skip_fade": 0.25,
+    "style_hint": "body_medium",
+    "style_presents": "body_bold",
+    "style_sub": "body_semibold",
+    "sub_below": 88,
+    "sub_text_only": 66,
+    "tagline": "A MOBA TOWER DEFENSE ADVENTURE",
+    "text_dim": [
+      160,
+      155,
+      170
+    ],
+    "text_main": [
+      245,
+      240,
+      230
+    ],
+    "title_below": 46,
+    "title_delay": 0.5,
+    "title_max": 255,
+    "title_ramp": 0.6,
+    "twinkle_rate": 2.5,
+    "vig_slope": 2.2,
+    "vig_start": 140,
+    "vig_step": -2,
+    "wrap_below": -6.0,
+    "wrap_margin": 6.0
+  },
+  "font_files": {
+    "body": "Barlow-Regular.ttf",
+    "body_bold": "Barlow-Bold.ttf",
+    "body_medium": "Barlow-Medium.ttf",
+    "body_semibold": "Barlow-SemiBold.ttf",
+    "title": "Cinzel.ttf"
+  },
+  "particle_seed": 1234,
+  "perf_source_sha256": "3bd534ca6e7f3a12951d39ddcb4d66a475d7596bac23ea6026d4bf83416343bb",
+  "render_source_sha256": "abc69c9be3f260155b03cc4adcf1458d7640db3e693fc138c5772b55e99aca9b",
+  "rng": "godot-RandomNumberGenerator-seeded-1234",
+  "schema": 1,
+  "source": "splash_screen.py",
+  "source_lines": {
+    "accent": 32,
+    "accent_2": 33,
+    "accent_fac": 318,
+    "accent_len": 318,
+    "accent_offsets": 318,
+    "accent_pad": 318,
+    "accent_width": 318,
+    "alpha_epsilon": 178,
+    "band_target": 178,
+    "dim_floor": 178,
+    "dim_span": 178,
+    "duration": 23,
+    "fade_in": 167,
+    "fade_out": 167,
+    "font_fallback_sizes": 69,
+    "font_sizes": 69,
+    "game_name": 22,
+    "glow_alpha": 257,
+    "glow_fill": 318,
+    "glow_grow": 318,
+    "glow_layers": 318,
+    "glow_offset": 318,
+    "glow_pad": 257,
+    "glow_step": 257,
+    "grad_bot": 178,
+    "grad_mid": 178,
+    "grad_split": 178,
+    "grad_top": 178,
+    "grow_min": 257,
+    "grow_quant": 257,
+    "grow_span": 257,
+    "grow_time": 257,
+    "hint_alpha": 178,
+    "hint_margin": 178,
+    "hint_text": 178,
+    "logo_lift": 178,
+    "logo_max_h": 257,
+    "logo_max_w": 257,
+    "logo_paths": 24,
+    "move_amp": 136,
+    "move_rate": 136,
+    "particle_colors": 115,
+    "particle_count": 55,
+    "particle_min_r": 178,
+    "prange_drift": 113,
+    "prange_phase": 114,
+    "prange_r": 111,
+    "prange_speed": 112,
+    "skip_done": 136,
+    "skip_fade": 167,
+    "style_hint": 76,
+    "style_presents": 72,
+    "style_sub": 75,
+    "sub_below": 257,
+    "sub_text_only": 257,
+    "tagline": 257,
+    "text_dim": 35,
+    "text_main": 34,
+    "title_below": 257,
+    "title_delay": 136,
+    "title_max": 136,
+    "title_ramp": 136,
+    "twinkle_rate": 178,
+    "vig_slope": 178,
+    "vig_start": 178,
+    "vig_step": 178,
+    "wrap_below": 136,
+    "wrap_margin": 136
+  },
+  "source_sha256": "f25d8a8edeb241073bc2eb4aa6475acb6e1e54c60f632bd2fa5dd752d4155713"
+}
