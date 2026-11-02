@@ -260,6 +260,10 @@ func _settings_changed() -> void:
 	controller.enabled = str(settings.values.input_mode) == "controller"
 	if not controller.enabled:
 		controller_cursor.visible = false
+	if menu != null and menu.core_data.localization != null:
+		menu.core_data.localization.set_language(str(settings.values.language))
+	if game is CoreGame:
+		game.apply_language(str(settings.values.language))
 
 
 func _release_input() -> void:

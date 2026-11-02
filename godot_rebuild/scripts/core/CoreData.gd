@@ -6,6 +6,7 @@ var data: Dictionary = {}
 var archetypes: HeroArchetypes
 var balance: HeroBalance
 var items: HeroItems
+var localization: Localization
 var load_error := ""
 
 
@@ -13,7 +14,8 @@ func _init(
 	path := "res://data/core_data.json",
 	archetype_path := HeroArchetypes.DEFAULT_PATH,
 	balance_path := HeroBalance.DEFAULT_PATH,
-	items_path := HeroItems.DEFAULT_PATH
+	items_path := HeroItems.DEFAULT_PATH,
+	localization_path := Localization.DEFAULT_PATH
 ) -> void:
 	archetypes = HeroArchetypes.new(archetype_path)
 	if not archetypes.valid():
@@ -24,6 +26,9 @@ func _init(
 	items = HeroItems.new(items_path)
 	if load_error.is_empty() and not items.valid():
 		load_error = items.load_error
+	localization = Localization.new(localization_path)
+	if load_error.is_empty() and not localization.valid():
+		load_error = localization.load_error
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		load_error = "Cannot open %s" % path
@@ -41,6 +46,7 @@ func valid() -> bool:
 		and archetypes.valid()
 		and balance.valid()
 		and items.valid()
+		and localization.valid()
 		and data.get("schema", 0) == 1
 	)
 
@@ -87,6 +93,8 @@ func color(value: Variant, fallback := Color.WHITE) -> Color:
 
 
 func text(key: String, language := "id", args: Dictionary = {}) -> String:
+	if localization != null and localization.valid():
+		return localization.tr_for(key, language, args)
 	var table: Dictionary = data.get("localization", {}).get(language, {})
 	var value := str(table.get(key, data.get("localization", {}).get("id", {}).get(key, key)))
 	for arg: String in args:

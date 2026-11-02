@@ -348,14 +348,24 @@ func show_settings(values: GameSettings) -> void:
 			values.set_value("game_speed", float(value))
 			settings_changed.emit()
 	)
+	var language_options: Array = ["id", "en"]
+	var language_labels: Array = []
+	var language_title := "Language"
+	if core_data.localization != null and core_data.localization.valid():
+		core_data.localization.set_language(str(values.values.language))
+		language_options = core_data.localization.languages.duplicate()
+		language_title = core_data.localization.tr_text("language")
+		for code: String in language_options:
+			language_labels.append(core_data.localization.get_language_label(code))
 	_option_row(
 		box,
-		"Language",
-		["id", "en"],
+		language_title,
+		language_options,
 		str(values.values.language),
 		func(value: String) -> void:
 			values.set_value("language", value)
-			settings_changed.emit()
+			settings_changed.emit(),
+		language_labels
 	)
 	_option_row(
 		box,
@@ -402,7 +412,12 @@ func show_settings(values: GameSettings) -> void:
 
 
 func _option_row(
-	parent: Node, label_text: String, options: Array, current: String, callback: Callable
+	parent: Node,
+	label_text: String,
+	options: Array,
+	current: String,
+	callback: Callable,
+	labels: Array = []
 ) -> void:
 	var row := HBoxContainer.new()
 	parent.add_child(row)
@@ -411,8 +426,9 @@ func _option_row(
 	row.add_child(label)
 	var option := OptionButton.new()
 	option.custom_minimum_size = Vector2(220, 44)
-	for value: String in options:
-		option.add_item(value)
+	for index in range(options.size()):
+		var text := str(labels[index]) if labels.size() == options.size() else str(options[index])
+		option.add_item(text)
 	option.select(maxi(0, options.find(current)))
 	option.item_selected.connect(func(index: int) -> void: callback.call(options[index]))
 	row.add_child(option)

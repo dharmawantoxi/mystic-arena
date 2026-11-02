@@ -9,6 +9,7 @@ const BossKit := preload("res://scripts/entities/generated/BossKit.gd")
 const BalanceParity := preload("res://tests/HeroBalanceParityTest.gd")
 const ItemsParity := preload("res://tests/HeroItemsParityTest.gd")
 const LightingParity := preload("res://tests/LightingParityTest.gd")
+const LocalizationParity := preload("res://tests/LocalizationParityTest.gd")
 var checks := 0
 var failures := 0
 
@@ -44,6 +45,7 @@ func _run() -> void:
 	_test_gestures()
 	_test_settings()
 	_test_core_data()
+	_test_localization()
 	_test_archetypes()
 	_test_balance()
 	_test_items()
@@ -721,6 +723,10 @@ func _test_items() -> void:
 
 func _test_lighting() -> void:
 	LightingParity.run(self)
+
+
+func _test_localization() -> void:
+	LocalizationParity.run(self)
 
 
 func _test_archetypes() -> void:

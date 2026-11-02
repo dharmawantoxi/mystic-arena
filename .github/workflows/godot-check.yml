@@ -15,12 +15,16 @@ on:
       - 'tools/test_godot_items_prepare.py'
       - 'tools/prepare_godot_lighting.py'
       - 'tools/test_godot_lighting_prepare.py'
+      - 'tools/prepare_godot_localization.py'
+      - 'tools/test_godot_localization_prepare.py'
+      - 'tools/test_godot_localization_parity.py'
       - 'tools/test_godot_archetypes_prepare.py'
       - 'tools/test_godot_core_prepare.py'
       - '_core.py'
       - 'hero_balance.py'
       - 'hero_items.py'
       - 'lighting.py'
+      - 'localization.py'
       - 'bosses/boss_data.py'
       - 'localization.py'
       - 'topup_currency.py'
@@ -64,12 +68,16 @@ on:
       - 'tools/test_godot_items_prepare.py'
       - 'tools/prepare_godot_lighting.py'
       - 'tools/test_godot_lighting_prepare.py'
+      - 'tools/prepare_godot_localization.py'
+      - 'tools/test_godot_localization_prepare.py'
+      - 'tools/test_godot_localization_parity.py'
       - 'tools/test_godot_archetypes_prepare.py'
       - 'tools/test_godot_core_prepare.py'
       - '_core.py'
       - 'hero_balance.py'
       - 'hero_items.py'
       - 'lighting.py'
+      - 'localization.py'
       - 'bosses/boss_data.py'
       - 'localization.py'
       - 'topup_currency.py'
@@ -135,6 +143,10 @@ jobs:
           python3 -m pip install --quiet pygame==2.6.1
           python3 tools/prepare_godot_lighting.py --check
           python3 tools/test_godot_lighting_prepare.py
+          python3 tools/prepare_godot_localization.py --check
+          python3 tools/test_godot_localization_prepare.py
+          python3 tools/test_godot_localization_parity.py
+          python3 tools/test_localization.py
           python3 tools/prepare_godot_entities.py --check
           python3 tools/test_godot_entity_prepare.py
           python3 tools/prepare_godot_render.py --check
