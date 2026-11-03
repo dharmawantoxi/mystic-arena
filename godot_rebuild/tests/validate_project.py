@@ -431,6 +431,84 @@ def main() -> int:
         check("tools/prepare_godot_ui_theme.py --check" in workflow_text, f"CI ui_theme staleness gate: {workflow}")
         check("tools/test_godot_ui_theme_prepare.py" in workflow_text, f"CI ui_theme exporter tests: {workflow}")
         check("tools/test_godot_ui_theme_parity.py" in workflow_text, f"CI ui_theme oracle gate: {workflow}")
+    # ── hero_skills: closed-world Python oracle + native facade ──
+    skill_source = ROOT / "hero_skills"
+    skill_files = sorted(path.name for path in skill_source.glob("*.py"))
+    check(skill_files == ["__init__.py", "_bundle.py"], "hero_skills source has exactly 2 Python files")
+    skill_digest = hashlib.sha256()
+    for name in ("__init__.py", "_bundle.py"):
+        data = (skill_source / name).read_bytes()
+        skill_digest.update(name.encode("utf-8"))
+        skill_digest.update(b"\0")
+        skill_digest.update(data)
+    skill_contract_path = PROJECT / "data/hero_skills.json"
+    check(skill_contract_path.is_file(), "native hero skills contract exists")
+    skill_contract = json.loads(skill_contract_path.read_text(encoding="utf-8"))
+    skill_oracle = json.loads((PROJECT / "tests/fixtures/hero_skills_parity.json").read_text(encoding="utf-8"))
+    check(skill_contract["schema"] == 1 and skill_contract["source"] == "hero_skills/", "hero skills contract schema/source")
+    check(skill_contract["source_sha256"] == skill_digest.hexdigest(), "hero skills source hash current")
+    for name, expected in skill_contract["source_files"].items():
+        check(
+            hashlib.sha256((skill_source / name).read_bytes()).hexdigest() == expected,
+            f"hero skills per-file hash current: {name}",
+        )
+    kit_path = PROJECT / "scripts/entities/generated/HeroSkillKit.gd"
+    kit_hash = hashlib.sha256(kit_path.read_bytes()).hexdigest()
+    check(skill_contract["generated_kit"]["sha256"] == kit_hash, "hero skills generated kit hash current")
+    for name in (
+        "tools/gen_hero_skill_kit.py",
+        "tools/prepare_godot_entities.py",
+        "tools/prepare_godot_hero_skills.py",
+    ):
+        expected = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
+        check(skill_contract["tooling_sha256"][name] == expected, f"hero skills tool hash current: {name}")
+    check(skill_oracle["source_sha256"] == skill_contract["source_sha256"], "hero skills oracle source hash current")
+    check(
+        skill_oracle["generated_kit_sha256"] == skill_contract["generated_kit"]["sha256"],
+        "hero skills oracle generated kit hash current",
+    )
+    check(len(skill_contract["handler_map"]) == 222, "hero skills contract covers 222 handlers")
+    check(len(skill_contract["registry"]) == 66, "hero skills contract covers 66 boss recipes")
+    check(len(skill_contract["state_keys"]) == 91, "hero skills contract covers 91 kit state keys")
+    check(skill_contract["counts"]["kit_static_functions"] == 330, "hero skills contract covers 330 kit functions")
+    check(len(skill_oracle["hero_kind_cases"]) == 223, "hero skills oracle covers heroes + unknown")
+    check(len(skill_oracle["visual_duration_cases"]) == 892, "hero skills oracle covers visual durations")
+    check(len(skill_oracle["registry_cases"]) == 868, "hero skills oracle covers recipe slots")
+    check(len(skill_oracle["geometry_cases"]) == 3 and len(skill_oracle["trigger_cases"]) == 37,
+          "hero skills oracle covers geometry and cooldown triggers")
+    skill_loader = (PROJECT / "scripts/core/HeroSkills.gd").read_text(encoding="utf-8")
+    check("class_name HeroSkills" in skill_loader and "static func shared()" in skill_loader,
+          "native HeroSkills facade exists")
+    check("func trigger_plan(" in skill_loader and "func enemies_in_range(" in skill_loader,
+          "native HeroSkills ports BaseSkill helpers")
+    check("KIT.cast_q(" in skill_loader, "native HeroSkills delegates to the generated kit")
+    core_data_text = (PROJECT / "scripts/core/CoreData.gd").read_text(encoding="utf-8")
+    check("skills_path := HeroSkills.DEFAULT_PATH" in core_data_text and "skills.valid()" in core_data_text,
+          "CoreData validates the hero skills contract")
+    unit_text = (PROJECT / "scripts/core/BattleUnit.gd").read_text(encoding="utf-8")
+    check("HeroSkills.shared().init_state(self)" in unit_text and "HeroSkills.shared().cast(self, key" in unit_text,
+          "BattleUnit routes skill state/casts through HeroSkills")
+    check('preload("res://scripts/entities/generated/HeroSkillKit.gd")' not in unit_text,
+          "BattleUnit no longer preloads the generated kit directly")
+    movement = (PROJECT / "scripts/entities/EntityMovement.gd").read_text(encoding="utf-8")
+    check("HeroSkills.shared().update_timers(" in movement, "EntityMovement ticks skills through HeroSkills")
+    check('preload("res://scripts/entities/generated/HeroSkillKit.gd")' not in movement,
+          "EntityMovement no longer preloads the generated kit directly")
+    check("SkillsParity.run(self)" in (PROJECT / "tests/run_all.gd").read_text(encoding="utf-8"),
+          "native runner includes hero skills parity")
+    skill_parity_path = PROJECT / "tests/HeroSkillsParityTest.gd"
+    check(skill_parity_path.is_file(), "hero skills parity test module exists")
+    check("hero_skills_parity.json" in skill_parity_path.read_text(encoding="utf-8"),
+          "hero skills parity test consumes the Python oracle")
+    for workflow in ("godot-check.yml", "godot-rebuild.yml"):
+        workflow_text = (ROOT / ".github/workflows" / workflow).read_text(encoding="utf-8")
+        check("tools/prepare_godot_hero_skills.py --check" in workflow_text, f"CI hero skills staleness gate: {workflow}")
+        check("tools/test_godot_hero_skills_prepare.py" in workflow_text, f"CI hero skills exporter tests: {workflow}")
+        check("hero_skills/**" in workflow_text, f"CI watches hero_skills source: {workflow}")
+        check("tools/prepare_godot_hero_skills.py" in workflow_text, f"CI watches hero skills exporter: {workflow}")
+        check("tools/test_godot_hero_skills_prepare.py" in workflow_text, f"CI watches hero skills exporter test: {workflow}")
+        check("godot_rebuild/scripts/core/HeroSkills.gd" in workflow_text, f"CI watches native hero skills facade: {workflow}")
+        check("godot_rebuild/tests/HeroSkillsParityTest.gd" in workflow_text, f"CI watches hero skills parity test: {workflow}")
     print(f"PASS: {checks} native project/source checks")
     return 0
 

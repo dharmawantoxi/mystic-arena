@@ -8,6 +8,7 @@ var balance: HeroBalance
 var items: HeroItems
 var localization: Localization
 var bosses: BossCatalog
+var skills: HeroSkills
 var load_error := ""
 
 
@@ -17,7 +18,8 @@ func _init(
 	balance_path := HeroBalance.DEFAULT_PATH,
 	items_path := HeroItems.DEFAULT_PATH,
 	localization_path := Localization.DEFAULT_PATH,
-	boss_path := BossCatalog.DEFAULT_PATH
+	boss_path := BossCatalog.DEFAULT_PATH,
+	skills_path := HeroSkills.DEFAULT_PATH
 ) -> void:
 	archetypes = HeroArchetypes.new(archetype_path)
 	if not archetypes.valid():
@@ -31,6 +33,9 @@ func _init(
 	localization = Localization.new(localization_path)
 	if load_error.is_empty() and not localization.valid():
 		load_error = localization.load_error
+	skills = HeroSkills.new(skills_path)
+	if load_error.is_empty() and not skills.valid():
+		load_error = skills.load_error
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		load_error = "Cannot open %s" % path
@@ -56,6 +61,8 @@ func valid() -> bool:
 		and localization.valid()
 		and bosses != null
 		and bosses.valid()
+		and skills != null
+		and skills.valid()
 		and data.get("schema", 0) == 1
 	)
 

@@ -6,10 +6,15 @@ Gameplay default sekarang `scenes/CoreGame.tscn`.
 
 > **Batas migrasi:** loop aplikasi, ekonomi, wave, combat data-driven, save slot,
 > menu/progres, input/controller, pengaturan, developer mode, dan kontrak
-> top-up/cloud sudah native. Skill/rig bespoke per hero/boss, cinematic Pygame,
-> plugin Play Games nyata, dan server top-up nyata **belum** diklaim parity.
+> top-up/cloud sudah native. Registri `hero_skills/`, helper `BaseSkill`, durasi
+> visual, cooldown/range/AoE, dan dispatch ke `HeroSkillKit.gd` kini punya
+> kontrak hash, oracle Python, serta parity test aktif di `run_all.gd`. Yang
+> **belum** diklaim parity adalah rig/sprite/cinematic Pygame per hero/boss,
+> fidelitas piksel FX/audio, plugin Play Games nyata, dan server top-up nyata.
 > Layanan eksternal mengembalikan status unavailable/unverified, bukan sukses
-> palsu. Kode Python tetap utuh sebagai referensi.
+> palsu. Kode Python tetap utuh sebagai referensi/oracle. Lihat
+> `docs/GODOT_HERO_SKILLS_MIGRATION.md` dan
+> `docs/GODOT_HERO_SKILLS_VERIFICATION.md`.
 
 ## Menjalankan
 
@@ -19,6 +24,11 @@ Dari root repositori:
 # satu kali: salin font/gambar/audio dan ekspor metadata 54 level
 python3 tools/prepare_godot_main.py
 python3 tools/prepare_godot_core.py
+
+# kontrak hero_skills/ (Python oracle -> native data + fixture)
+python3 tools/prepare_godot_entities.py --check
+python3 tools/prepare_godot_hero_skills.py --check
+python3 tools/test_godot_hero_skills_prepare.py
 
 # impor aset native, lalu jalankan
 godot --path godot_rebuild --editor --import
@@ -42,6 +52,9 @@ menghentikan aplikasi. Jalankan alat persiapan setelah mengubah aset sumber.
 | `scripts/core/GestureTracker.gd` | Tap, double tap, long press, drag, scroll, fling |
 | `scripts/core/GameSettings.gd` | Preferensi audio/FPS/gameplay di `user://godot_settings.cfg` |
 | `scripts/core/MatchModel.gd` | Simulasi pertandingan, wave, combat, AI, reward |
+| `scripts/core/HeroSkills.gd`, `data/hero_skills.json` | Kontrak/registri 222 handler skill, helper `BaseSkill`, façade ke kit generated |
+| `scripts/entities/generated/HeroSkillKit.gd` | Transpilasi Q/W/E/R bespoke dari `hero_skills/_bundle.py` |
+| `tests/HeroSkillsParityTest.gd`, `tests/fixtures/hero_skills_parity.json` | Paritas kontrak + oracle Python yang dipanggil `run_all.gd` |
 | `scripts/core/SaveRepository.gd` | 3 save slot, progres, statistik, voucher/top-up dedupe |
 | `scripts/core/ControllerCore.gd` | State machine controller native |
 | `scripts/core/DevMode.gd` | Developer hotkey/cheat gated debug |

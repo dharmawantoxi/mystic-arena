@@ -5,7 +5,6 @@ extends RefCounted
 ## Bespoke skills are transpiled into entities/generated; visuals use baked strips.
 enum Kind { MINION, TOWER, CASTLE, HERO, BOSS }
 
-const HeroSkillKit = preload("res://scripts/entities/generated/HeroSkillKit.gd")
 const BossKit = preload("res://scripts/entities/generated/BossKit.gd")
 
 var id := 0
@@ -480,7 +479,7 @@ func setup_hero(
 			base_hp = float(caught[0])
 			base_damage = float(caught[1])
 	_apply_hero_level(data)
-	HeroSkillKit.init_state(self)
+	HeroSkills.shared().init_state(self)
 
 
 func _apply_hero_level(data: CoreData) -> void:
@@ -788,16 +787,7 @@ func cast_skill(key: String, _enemies: Array[BattleUnit]) -> bool:
 		return false
 	var towers: Array = world.towers
 	var bases: Array = [world.blue_base, world.red_base]
-	var ok := false
-	match key:
-		"q":
-			ok = HeroSkillKit.cast_q(self, world.all_units(), towers, bases)
-		"w":
-			ok = HeroSkillKit.cast_w(self, world.all_units(), towers, bases)
-		"e":
-			ok = HeroSkillKit.cast_e(self, world.all_units(), towers, bases)
-		"r":
-			ok = HeroSkillKit.cast_r(self, world.all_units(), towers, bases)
+	var ok := HeroSkills.shared().cast(self, key, world.all_units(), towers, bases)
 	if ok:
 		if items != null and items.cooldown_reduction() > 0.0:
 			skill_cooldowns[key] = int(
