@@ -7,6 +7,7 @@ var archetypes: HeroArchetypes
 var balance: HeroBalance
 var items: HeroItems
 var localization: Localization
+var bosses: BossCatalog
 var load_error := ""
 
 
@@ -15,7 +16,8 @@ func _init(
 	archetype_path := HeroArchetypes.DEFAULT_PATH,
 	balance_path := HeroBalance.DEFAULT_PATH,
 	items_path := HeroItems.DEFAULT_PATH,
-	localization_path := Localization.DEFAULT_PATH
+	localization_path := Localization.DEFAULT_PATH,
+	boss_path := BossCatalog.DEFAULT_PATH
 ) -> void:
 	archetypes = HeroArchetypes.new(archetype_path)
 	if not archetypes.valid():
@@ -38,6 +40,11 @@ func _init(
 		load_error = "Invalid core data JSON"
 		return
 	data = parsed
+	bosses = BossCatalog.new(boss_path)
+	if load_error.is_empty() and not bosses.valid():
+		load_error = bosses.load_error
+	elif load_error.is_empty() and not bosses.matches_core(data):
+		load_error = "Boss catalog/normalization disagrees with core_data"
 
 
 func valid() -> bool:
@@ -47,6 +54,8 @@ func valid() -> bool:
 		and balance.valid()
 		and items.valid()
 		and localization.valid()
+		and bosses != null
+		and bosses.valid()
 		and data.get("schema", 0) == 1
 	)
 
@@ -67,10 +76,10 @@ func hero(hero_type: String) -> Dictionary:
 
 
 func boss(boss_type: String) -> Dictionary:
-	var bosses: Dictionary = data.get("bosses", {})
-	if bosses.get("mini", {}).has(boss_type):
-		return bosses.mini[boss_type]
-	return bosses.get("true", {}).get(boss_type, {})
+	var table: Dictionary = data.get("bosses", {})
+	if table.get("true", {}).has(boss_type):
+		return table["true"][boss_type]
+	return table.get("mini", {}).get(boss_type, {})
 
 
 func item(item_id: String) -> Dictionary:

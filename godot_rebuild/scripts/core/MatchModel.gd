@@ -254,7 +254,8 @@ func step() -> void:
 	EntityItems.update_auras(self)
 	var units := all_units()
 	for unit: BattleUnit in units:
-		unit.tick_timers(data)
+		if unit.kind != BattleUnit.Kind.BOSS:
+			unit.tick_timers(data)
 		_update_unit(unit)
 	for tower: BattleUnit in towers:
 		if tower.alive:

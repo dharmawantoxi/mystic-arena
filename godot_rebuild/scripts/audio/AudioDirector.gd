@@ -18,6 +18,8 @@ const SFX := {
 	"defeat": "sfx",
 	"hero_skill": "sfx",
 	"hero_spawn": "sfx",
+	"hero_melee": "sfx",
+	"hero_ranged": "sfx",
 	"ambient_forest": "ambient",
 }
 const THROTTLE_MS := {
@@ -27,6 +29,8 @@ const THROTTLE_MS := {
 	"bullet_hit": 40,
 	"nexus_hit": 300,
 	"ui_click": 50,
+	"hero_melee": 80,
+	"hero_ranged": 100,
 }
 var bgm := AudioStreamPlayer.new()
 var ambient := AudioStreamPlayer.new()

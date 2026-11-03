@@ -16,6 +16,9 @@ on:
       - 'tools/test_godot_balance_prepare.py'
       - 'tools/prepare_godot_items.py'
       - 'tools/test_godot_items_prepare.py'
+      - 'tools/prepare_godot_bosses.py'
+      - 'tools/test_godot_bosses_prepare.py'
+      - 'tools/test_godot_bosses_parity.py'
       - 'tools/prepare_godot_lighting.py'
       - 'tools/test_godot_lighting_prepare.py'
       - 'tools/prepare_godot_localization.py'
@@ -84,6 +87,9 @@ on:
       - 'tools/test_godot_balance_prepare.py'
       - 'tools/prepare_godot_items.py'
       - 'tools/test_godot_items_prepare.py'
+      - 'tools/prepare_godot_bosses.py'
+      - 'tools/test_godot_bosses_prepare.py'
+      - 'tools/test_godot_bosses_parity.py'
       - 'tools/prepare_godot_lighting.py'
       - 'tools/test_godot_lighting_prepare.py'
       - 'tools/prepare_godot_localization.py'
@@ -174,6 +180,9 @@ jobs:
             python tools/prepare_godot_items.py --check
             python tools/test_godot_items_prepare.py
             python -m pip install --quiet pygame==2.6.1
+            python tools/prepare_godot_bosses.py --check
+            python tools/test_godot_bosses_prepare.py
+            python tools/test_godot_bosses_parity.py
             python tools/prepare_godot_lighting.py --check
             python tools/test_godot_lighting_prepare.py
             python tools/prepare_godot_localization.py --check
