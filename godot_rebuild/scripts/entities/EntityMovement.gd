@@ -1,8 +1,6 @@
 class_name EntityMovement
 extends RefCounted
 
-const HeroSkillKit = preload("res://scripts/entities/generated/HeroSkillKit.gd")
-
 ## Hero/minion/boss movement and targeting from _entity.py.
 
 
@@ -34,7 +32,7 @@ static func update(model: RefCounted, unit: BattleUnit) -> void:
 
 static func _update_hero(model: RefCounted, hero: BattleUnit) -> void:
 	var enemies: Array[BattleUnit] = model.enemies_of(hero.team)
-	HeroSkillKit.update_timers(
+	HeroSkills.shared().update_timers(
 		hero, model.all_units(), model.towers, [model.blue_base, model.red_base]
 	)
 	EntityItems.update(hero, enemies, model)

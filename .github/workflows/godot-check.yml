@@ -57,6 +57,10 @@ on:
       - 'tools/gen_boss_smart_ai.py'
       - 'tools/prepare_godot_entities.py'
       - 'tools/test_godot_entity_prepare.py'
+      - 'tools/prepare_godot_hero_skills.py'
+      - 'tools/test_godot_hero_skills_prepare.py'
+      - 'godot_rebuild/scripts/core/HeroSkills.gd'
+      - 'godot_rebuild/tests/HeroSkillsParityTest.gd'
       - '_render.py'
       - 'mobile/perf.py'
       - 'map_components/**'
@@ -127,6 +131,10 @@ on:
       - 'tools/gen_boss_smart_ai.py'
       - 'tools/prepare_godot_entities.py'
       - 'tools/test_godot_entity_prepare.py'
+      - 'tools/prepare_godot_hero_skills.py'
+      - 'tools/test_godot_hero_skills_prepare.py'
+      - 'godot_rebuild/scripts/core/HeroSkills.gd'
+      - 'godot_rebuild/tests/HeroSkillsParityTest.gd'
       - '_render.py'
       - 'mobile/perf.py'
       - 'map_components/**'
@@ -195,6 +203,8 @@ jobs:
           python3 tools/test_localization.py
           python3 tools/prepare_godot_entities.py --check
           python3 tools/test_godot_entity_prepare.py
+          python3 tools/prepare_godot_hero_skills.py --check
+          python3 tools/test_godot_hero_skills_prepare.py
           python3 tools/prepare_godot_render.py --check
           python3 tools/test_godot_render_prepare.py
           python3 tools/prepare_godot_system.py --check

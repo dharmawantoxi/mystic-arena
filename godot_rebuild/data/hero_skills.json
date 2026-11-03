@@ -1,0 +1,4587 @@
+{
+  "auto_register": {
+    "base_hero_modules": [
+      [
+        "kaizen",
+        "kaizen_skills",
+        "KaizenSkills"
+      ],
+      [
+        "grimjaw",
+        "grimjaw_skills",
+        "GrimjawSkills"
+      ],
+      [
+        "sylara",
+        "sylara_skills",
+        "SylaraSkills"
+      ],
+      [
+        "vex",
+        "vex_skills",
+        "VexSkills"
+      ],
+      [
+        "thorne",
+        "thorne_skills",
+        "ThorneSkills"
+      ],
+      [
+        "zephyr",
+        "zephyr_skills",
+        "ZephyrSkills"
+      ]
+    ],
+    "boss_handler": "BossHeroSkills",
+    "boss_types": [
+      "abaddon",
+      "aelyrion",
+      "aeralith",
+      "akahime",
+      "akaroth",
+      "akashari",
+      "akirakumo",
+      "akiraze",
+      "alchemist",
+      "ancient_apparition",
+      "astraelion",
+      "aurelian",
+      "aurelion",
+      "aurelix",
+      "aurelyssa",
+      "aurethzar",
+      "aurex",
+      "auroth",
+      "azkharion",
+      "azureth",
+      "bhorgathul",
+      "broggmar",
+      "brumhar",
+      "celwynn",
+      "cogsworth",
+      "cryssalia",
+      "deidara",
+      "dorakai",
+      "drakar",
+      "drav",
+      "emberwick",
+      "garumenshi",
+      "ghrakmaal",
+      "gorath",
+      "gornak",
+      "gravefang",
+      "gravewake",
+      "grimjack",
+      "grimkor",
+      "grimstalker",
+      "grondarthul",
+      "grondmauris",
+      "hitokage",
+      "hollowbane",
+      "ignakhor",
+      "ignirus",
+      "ignis_drachorn",
+      "infrakzaar",
+      "kaedrin",
+      "kaeldris",
+      "kaelthar",
+      "kaelthorn",
+      "kaelthys",
+      "kaelvyrn",
+      "kaerinya",
+      "kaerissa",
+      "kaervosth",
+      "kagetsuka",
+      "kaineroth",
+      "kairenji",
+      "kaithros",
+      "kaizoku_raijin",
+      "kaoruken",
+      "karzhul",
+      "kassadin",
+      "kazreth",
+      "kazuren",
+      "kazureth",
+      "kenshiro",
+      "khalros",
+      "khalzaredh",
+      "khazan",
+      "korokai",
+      "krobellus",
+      "krognarr",
+      "kryvoxar",
+      "kunkka",
+      "kurogari",
+      "kyrenzai",
+      "kyumirra",
+      "leoric",
+      "luminar",
+      "lyrenya",
+      "lyrienne",
+      "lyssarethys",
+      "malzareth",
+      "malzeroth",
+      "molgravar",
+      "morgath",
+      "morkhaera",
+      "morkhelvis",
+      "morthraxis",
+      "morthyrax",
+      "morvaenthir",
+      "morvaeth",
+      "morvaeth2",
+      "morvakhul",
+      "morvath",
+      "morvein",
+      "morvekhar",
+      "morvyssk",
+      "naraka",
+      "nazulmor",
+      "nexthyrius",
+      "nixweaver",
+      "nyrellieth",
+      "nyrethzalv",
+      "nyxallaria",
+      "nyxara",
+      "nyxarath",
+      "nyxareth",
+      "nyxareva",
+      "nyxariel",
+      "nyxaris",
+      "nyxaroth",
+      "nyxharr",
+      "nyxraal",
+      "nyxthrael",
+      "nyzrak",
+      "obanai",
+      "okeanora",
+      "pyraena",
+      "pyraethis",
+      "pyraklos",
+      "pyrenth",
+      "pyrhaan",
+      "rakzhan",
+      "ravokkar",
+      "raz",
+      "razak",
+      "rynvara",
+      "sanguire",
+      "sanguiveth",
+      "sasori",
+      "seiryukong",
+      "selunara",
+      "seraphienne",
+      "sethrakhar",
+      "shimorakh",
+      "shirotaka",
+      "sirakzan",
+      "solara",
+      "solareth",
+      "solvanth",
+      "solvarin",
+      "sunakage",
+      "sylvantheros",
+      "syrentha",
+      "syrindra",
+      "thalakryon",
+      "thalgryn",
+      "thalryndel",
+      "thargoroth",
+      "thoraz",
+      "thorgaruk",
+      "thornvaegrim",
+      "thorvak",
+      "thorvin",
+      "tsukiyora",
+      "urgharun",
+      "ursath",
+      "vaelindra",
+      "vaelkorr",
+      "vaelmyrra",
+      "vaerith",
+      "valekris",
+      "valthar",
+      "vardrok",
+      "vargrath",
+      "vargroth",
+      "varkul",
+      "varkuthar",
+      "velmyrth",
+      "verdanix",
+      "veshtrax",
+      "vessyra",
+      "vhaerinth",
+      "vhaerith",
+      "vhalzun",
+      "vhorethzir",
+      "vhyssarion",
+      "vokrahn",
+      "vorenmarr",
+      "vorgath",
+      "vorthakul",
+      "vraskhan",
+      "vulkareth",
+      "vyraeth",
+      "wiro",
+      "xaelmoran",
+      "xaerissa",
+      "xareth",
+      "xarnathul",
+      "xarnthuul",
+      "xelnarath",
+      "xerakhotep",
+      "xerakkuth",
+      "xerathis",
+      "xharokh",
+      "xirthalis",
+      "xyrael",
+      "yamako",
+      "yhoranth",
+      "yomigetsu",
+      "zahkareth",
+      "zarethyr",
+      "zhaeris",
+      "zharakzuul",
+      "zharok",
+      "zhyrakaan",
+      "zhyvrek",
+      "zorashi",
+      "zorathiel",
+      "zorothrax",
+      "zulkhaven",
+      "zyvareth"
+    ]
+  },
+  "base": {
+    "cooldown_fields": {
+      "e": "e_cooldown",
+      "q": "skill_timer",
+      "r": "r_cooldown",
+      "w": "w_cooldown"
+    },
+    "cooldown_max_fields": {
+      "e": "e_cooldown_max",
+      "q": "skill_cooldown_max",
+      "r": "r_cooldown_max",
+      "w": "w_cooldown_max"
+    },
+    "default_visual_duration": {
+      "e": 60,
+      "q": 60,
+      "r": 100,
+      "w": 90
+    },
+    "require_target": true,
+    "skill_range_fallback": 200.0,
+    "skill_sound": "hero_skill",
+    "skill_sound_team": "blue",
+    "target_range_slack": 1.15,
+    "trigger_shake": {
+      "e": 6.0,
+      "q": 8.0,
+      "r": 15.0,
+      "w": 5.0
+    },
+    "trigger_sound_volume": {
+      "e": 0.7,
+      "q": 0.7,
+      "r": 1.0,
+      "w": 0.6
+    }
+  },
+  "base_modules": [
+    [
+      "kaizen",
+      "kaizen_skills",
+      "KaizenSkills"
+    ],
+    [
+      "grimjaw",
+      "grimjaw_skills",
+      "GrimjawSkills"
+    ],
+    [
+      "sylara",
+      "sylara_skills",
+      "SylaraSkills"
+    ],
+    [
+      "vex",
+      "vex_skills",
+      "VexSkills"
+    ],
+    [
+      "thorne",
+      "thorne_skills",
+      "ThorneSkills"
+    ],
+    [
+      "zephyr",
+      "zephyr_skills",
+      "ZephyrSkills"
+    ]
+  ],
+  "boss_hero_visual_duration": {
+    "nyzrak": {
+      "e": 70,
+      "q": 50,
+      "r": 90,
+      "w": 50
+    },
+    "vhalzun": {
+      "e": 60,
+      "q": 60,
+      "r": 100,
+      "w": 80
+    }
+  },
+  "bridge_methods": [
+    "kit_apply_slow",
+    "kit_atk_timer",
+    "kit_can_move",
+    "kit_catalog_all",
+    "kit_enemies",
+    "kit_fx_cast",
+    "kit_fx_impact",
+    "kit_get_stats",
+    "kit_has_atk_timer",
+    "kit_has_hp",
+    "kit_has_slow",
+    "kit_hero_levels",
+    "kit_hit",
+    "kit_lock",
+    "kit_lock_attack",
+    "kit_popup",
+    "kit_shake",
+    "kit_skill_damage",
+    "kit_skill_hit",
+    "kit_skill_proj",
+    "kit_slow",
+    "kit_sound",
+    "kit_stats_full",
+    "kit_unit_alive"
+  ],
+  "counts": {
+    "boss_types": 216,
+    "classes": 8,
+    "hero_handlers": 222,
+    "kit_static_functions": 330,
+    "methods": 340,
+    "recipe_methods": 264,
+    "recipes": 66,
+    "source_files": 2,
+    "starters": 6,
+    "state_keys": 91
+  },
+  "default_visual_duration": {
+    "e": 60,
+    "q": 60,
+    "r": 100,
+    "w": 90
+  },
+  "generated_kit": {
+    "lines": 5807,
+    "path": "res://scripts/entities/generated/HeroSkillKit.gd",
+    "sha256": "ddc43b0f7356a2b6e9996b394099a457d2a98e670afc70bd41fc3a586a09d994",
+    "static_functions": 330
+  },
+  "handler_map": {
+    "abaddon": "BossHeroSkills",
+    "aelyrion": "BossHeroSkills",
+    "aeralith": "BossHeroSkills",
+    "akahime": "BossHeroSkills",
+    "akaroth": "BossHeroSkills",
+    "akashari": "BossHeroSkills",
+    "akirakumo": "BossHeroSkills",
+    "akiraze": "BossHeroSkills",
+    "alchemist": "BossHeroSkills",
+    "ancient_apparition": "BossHeroSkills",
+    "astraelion": "BossHeroSkills",
+    "aurelian": "BossHeroSkills",
+    "aurelion": "BossHeroSkills",
+    "aurelix": "BossHeroSkills",
+    "aurelyssa": "BossHeroSkills",
+    "aurethzar": "BossHeroSkills",
+    "aurex": "BossHeroSkills",
+    "auroth": "BossHeroSkills",
+    "azkharion": "BossHeroSkills",
+    "azureth": "BossHeroSkills",
+    "bhorgathul": "BossHeroSkills",
+    "broggmar": "BossHeroSkills",
+    "brumhar": "BossHeroSkills",
+    "celwynn": "BossHeroSkills",
+    "cogsworth": "BossHeroSkills",
+    "cryssalia": "BossHeroSkills",
+    "deidara": "BossHeroSkills",
+    "dorakai": "BossHeroSkills",
+    "drakar": "BossHeroSkills",
+    "drav": "BossHeroSkills",
+    "emberwick": "BossHeroSkills",
+    "garumenshi": "BossHeroSkills",
+    "ghrakmaal": "BossHeroSkills",
+    "gorath": "BossHeroSkills",
+    "gornak": "BossHeroSkills",
+    "gravefang": "BossHeroSkills",
+    "gravewake": "BossHeroSkills",
+    "grimjack": "BossHeroSkills",
+    "grimjaw": "GrimjawSkills",
+    "grimkor": "BossHeroSkills",
+    "grimstalker": "BossHeroSkills",
+    "grondarthul": "BossHeroSkills",
+    "grondmauris": "BossHeroSkills",
+    "hitokage": "BossHeroSkills",
+    "hollowbane": "BossHeroSkills",
+    "ignakhor": "BossHeroSkills",
+    "ignirus": "BossHeroSkills",
+    "ignis_drachorn": "BossHeroSkills",
+    "infrakzaar": "BossHeroSkills",
+    "kaedrin": "BossHeroSkills",
+    "kaeldris": "BossHeroSkills",
+    "kaelthar": "BossHeroSkills",
+    "kaelthorn": "BossHeroSkills",
+    "kaelthys": "BossHeroSkills",
+    "kaelvyrn": "BossHeroSkills",
+    "kaerinya": "BossHeroSkills",
+    "kaerissa": "BossHeroSkills",
+    "kaervosth": "BossHeroSkills",
+    "kagetsuka": "BossHeroSkills",
+    "kaineroth": "BossHeroSkills",
+    "kairenji": "BossHeroSkills",
+    "kaithros": "BossHeroSkills",
+    "kaizen": "KaizenSkills",
+    "kaizoku_raijin": "BossHeroSkills",
+    "kaoruken": "BossHeroSkills",
+    "karzhul": "BossHeroSkills",
+    "kassadin": "BossHeroSkills",
+    "kazreth": "BossHeroSkills",
+    "kazuren": "BossHeroSkills",
+    "kazureth": "BossHeroSkills",
+    "kenshiro": "BossHeroSkills",
+    "khalros": "BossHeroSkills",
+    "khalzaredh": "BossHeroSkills",
+    "khazan": "BossHeroSkills",
+    "korokai": "BossHeroSkills",
+    "krobellus": "BossHeroSkills",
+    "krognarr": "BossHeroSkills",
+    "kryvoxar": "BossHeroSkills",
+    "kunkka": "BossHeroSkills",
+    "kurogari": "BossHeroSkills",
+    "kyrenzai": "BossHeroSkills",
+    "kyumirra": "BossHeroSkills",
+    "leoric": "BossHeroSkills",
+    "luminar": "BossHeroSkills",
+    "lyrenya": "BossHeroSkills",
+    "lyrienne": "BossHeroSkills",
+    "lyssarethys": "BossHeroSkills",
+    "malzareth": "BossHeroSkills",
+    "malzeroth": "BossHeroSkills",
+    "molgravar": "BossHeroSkills",
+    "morgath": "BossHeroSkills",
+    "morkhaera": "BossHeroSkills",
+    "morkhelvis": "BossHeroSkills",
+    "morthraxis": "BossHeroSkills",
+    "morthyrax": "BossHeroSkills",
+    "morvaenthir": "BossHeroSkills",
+    "morvaeth": "BossHeroSkills",
+    "morvaeth2": "BossHeroSkills",
+    "morvakhul": "BossHeroSkills",
+    "morvath": "BossHeroSkills",
+    "morvein": "BossHeroSkills",
+    "morvekhar": "BossHeroSkills",
+    "morvyssk": "BossHeroSkills",
+    "naraka": "BossHeroSkills",
+    "nazulmor": "BossHeroSkills",
+    "nexthyrius": "BossHeroSkills",
+    "nixweaver": "BossHeroSkills",
+    "nyrellieth": "BossHeroSkills",
+    "nyrethzalv": "BossHeroSkills",
+    "nyxallaria": "BossHeroSkills",
+    "nyxara": "BossHeroSkills",
+    "nyxarath": "BossHeroSkills",
+    "nyxareth": "BossHeroSkills",
+    "nyxareva": "BossHeroSkills",
+    "nyxariel": "BossHeroSkills",
+    "nyxaris": "BossHeroSkills",
+    "nyxaroth": "BossHeroSkills",
+    "nyxharr": "BossHeroSkills",
+    "nyxraal": "BossHeroSkills",
+    "nyxthrael": "BossHeroSkills",
+    "nyzrak": "BossHeroSkills",
+    "obanai": "BossHeroSkills",
+    "okeanora": "BossHeroSkills",
+    "pyraena": "BossHeroSkills",
+    "pyraethis": "BossHeroSkills",
+    "pyraklos": "BossHeroSkills",
+    "pyrenth": "BossHeroSkills",
+    "pyrhaan": "BossHeroSkills",
+    "rakzhan": "BossHeroSkills",
+    "ravokkar": "BossHeroSkills",
+    "raz": "BossHeroSkills",
+    "razak": "BossHeroSkills",
+    "rynvara": "BossHeroSkills",
+    "sanguire": "BossHeroSkills",
+    "sanguiveth": "BossHeroSkills",
+    "sasori": "BossHeroSkills",
+    "seiryukong": "BossHeroSkills",
+    "selunara": "BossHeroSkills",
+    "seraphienne": "BossHeroSkills",
+    "sethrakhar": "BossHeroSkills",
+    "shimorakh": "BossHeroSkills",
+    "shirotaka": "BossHeroSkills",
+    "sirakzan": "BossHeroSkills",
+    "solara": "BossHeroSkills",
+    "solareth": "BossHeroSkills",
+    "solvanth": "BossHeroSkills",
+    "solvarin": "BossHeroSkills",
+    "sunakage": "BossHeroSkills",
+    "sylara": "SylaraSkills",
+    "sylvantheros": "BossHeroSkills",
+    "syrentha": "BossHeroSkills",
+    "syrindra": "BossHeroSkills",
+    "thalakryon": "BossHeroSkills",
+    "thalgryn": "BossHeroSkills",
+    "thalryndel": "BossHeroSkills",
+    "thargoroth": "BossHeroSkills",
+    "thoraz": "BossHeroSkills",
+    "thorgaruk": "BossHeroSkills",
+    "thorne": "ThorneSkills",
+    "thornvaegrim": "BossHeroSkills",
+    "thorvak": "BossHeroSkills",
+    "thorvin": "BossHeroSkills",
+    "tsukiyora": "BossHeroSkills",
+    "urgharun": "BossHeroSkills",
+    "ursath": "BossHeroSkills",
+    "vaelindra": "BossHeroSkills",
+    "vaelkorr": "BossHeroSkills",
+    "vaelmyrra": "BossHeroSkills",
+    "vaerith": "BossHeroSkills",
+    "valekris": "BossHeroSkills",
+    "valthar": "BossHeroSkills",
+    "vardrok": "BossHeroSkills",
+    "vargrath": "BossHeroSkills",
+    "vargroth": "BossHeroSkills",
+    "varkul": "BossHeroSkills",
+    "varkuthar": "BossHeroSkills",
+    "velmyrth": "BossHeroSkills",
+    "verdanix": "BossHeroSkills",
+    "veshtrax": "BossHeroSkills",
+    "vessyra": "BossHeroSkills",
+    "vex": "VexSkills",
+    "vhaerinth": "BossHeroSkills",
+    "vhaerith": "BossHeroSkills",
+    "vhalzun": "BossHeroSkills",
+    "vhorethzir": "BossHeroSkills",
+    "vhyssarion": "BossHeroSkills",
+    "vokrahn": "BossHeroSkills",
+    "vorenmarr": "BossHeroSkills",
+    "vorgath": "BossHeroSkills",
+    "vorthakul": "BossHeroSkills",
+    "vraskhan": "BossHeroSkills",
+    "vulkareth": "BossHeroSkills",
+    "vyraeth": "BossHeroSkills",
+    "wiro": "BossHeroSkills",
+    "xaelmoran": "BossHeroSkills",
+    "xaerissa": "BossHeroSkills",
+    "xareth": "BossHeroSkills",
+    "xarnathul": "BossHeroSkills",
+    "xarnthuul": "BossHeroSkills",
+    "xelnarath": "BossHeroSkills",
+    "xerakhotep": "BossHeroSkills",
+    "xerakkuth": "BossHeroSkills",
+    "xerathis": "BossHeroSkills",
+    "xharokh": "BossHeroSkills",
+    "xirthalis": "BossHeroSkills",
+    "xyrael": "BossHeroSkills",
+    "yamako": "BossHeroSkills",
+    "yhoranth": "BossHeroSkills",
+    "yomigetsu": "BossHeroSkills",
+    "zahkareth": "BossHeroSkills",
+    "zarethyr": "BossHeroSkills",
+    "zephyr": "ZephyrSkills",
+    "zhaeris": "BossHeroSkills",
+    "zharakzuul": "BossHeroSkills",
+    "zharok": "BossHeroSkills",
+    "zhyrakaan": "BossHeroSkills",
+    "zhyvrek": "BossHeroSkills",
+    "zorashi": "BossHeroSkills",
+    "zorathiel": "BossHeroSkills",
+    "zorothrax": "BossHeroSkills",
+    "zulkhaven": "BossHeroSkills",
+    "zyvareth": "BossHeroSkills"
+  },
+  "legacy_aliases": {
+    "extra": {
+      "boss_hero_skills": [
+        "BaseSkill",
+        "BossHeroSkills",
+        "math"
+      ],
+      "grimjaw_skills": [
+        "BaseSkill",
+        "GrimjawSkills",
+        "math"
+      ],
+      "kaizen_skills": [
+        "BaseSkill",
+        "KaizenSkills",
+        "math"
+      ],
+      "sylara_skills": [
+        "BaseSkill",
+        "HERO_TYPES",
+        "SylaraSkills",
+        "math"
+      ],
+      "thorne_skills": [
+        "BaseSkill",
+        "ThorneSkills",
+        "math"
+      ],
+      "vex_skills": [
+        "BaseSkill",
+        "VexSkills",
+        "math"
+      ],
+      "zephyr_skills": [
+        "BaseSkill",
+        "ZephyrSkills",
+        "math"
+      ]
+    },
+    "plain": {
+      "base_skill": [
+        "BaseSkill",
+        "SoundManager",
+        "math"
+      ]
+    }
+  },
+  "methods": {
+    "BaseSkill": {
+      "__init__": {
+        "args": [
+          "self",
+          "hero"
+        ],
+        "arity": 1,
+        "lineno": 49
+      },
+      "_acquire_target": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases",
+          "range_val"
+        ],
+        "arity": 4,
+        "lineno": 211
+      },
+      "_add_popup": {
+        "args": [
+          "self",
+          "x",
+          "y",
+          "text",
+          "is_critical",
+          "damage_type"
+        ],
+        "arity": 5,
+        "lineno": 146
+      },
+      "_apply_slow": {
+        "args": [
+          "self",
+          "target",
+          "amount",
+          "duration"
+        ],
+        "arity": 3,
+        "lineno": 122
+      },
+      "_apply_stun": {
+        "args": [
+          "self",
+          "target",
+          "duration"
+        ],
+        "arity": 2,
+        "lineno": 127
+      },
+      "_check_e_cooldown": {
+        "args": [
+          "self"
+        ],
+        "arity": 0,
+        "lineno": 171
+      },
+      "_check_q_cooldown": {
+        "args": [
+          "self"
+        ],
+        "arity": 0,
+        "lineno": 163
+      },
+      "_check_r_cooldown": {
+        "args": [
+          "self"
+        ],
+        "arity": 0,
+        "lineno": 175
+      },
+      "_check_w_cooldown": {
+        "args": [
+          "self"
+        ],
+        "arity": 0,
+        "lineno": 167
+      },
+      "_deal_aoe_damage": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases",
+          "range_val",
+          "damage_multiplier"
+        ],
+        "arity": 5,
+        "lineno": 105
+      },
+      "_get_enemies": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 84
+      },
+      "_get_enemies_in_range": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases",
+          "range_val",
+          "center_x",
+          "center_y"
+        ],
+        "arity": 6,
+        "lineno": 89
+      },
+      "_get_visual_duration": {
+        "args": [
+          "self",
+          "key"
+        ],
+        "arity": 1,
+        "lineno": 270
+      },
+      "_has_target": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases",
+          "range_val"
+        ],
+        "arity": 4,
+        "lineno": 244
+      },
+      "_play_skill_sound": {
+        "args": [
+          "self",
+          "volume"
+        ],
+        "arity": 1,
+        "lineno": 141
+      },
+      "_set_active_skill": {
+        "args": [
+          "self",
+          "key",
+          "duration"
+        ],
+        "arity": 2,
+        "lineno": 277
+      },
+      "_shake_screen": {
+        "args": [
+          "self",
+          "intensity"
+        ],
+        "arity": 1,
+        "lineno": 132
+      },
+      "_skill_range": {
+        "args": [
+          "self",
+          "fallback"
+        ],
+        "arity": 1,
+        "lineno": 198
+      },
+      "_trigger_e_cooldown": {
+        "args": [
+          "self",
+          "shake_amount",
+          "visual_duration"
+        ],
+        "arity": 2,
+        "lineno": 311
+      },
+      "_trigger_q_cooldown": {
+        "args": [
+          "self",
+          "shake_amount",
+          "visual_duration"
+        ],
+        "arity": 2,
+        "lineno": 297
+      },
+      "_trigger_r_cooldown": {
+        "args": [
+          "self",
+          "shake_amount",
+          "visual_duration"
+        ],
+        "arity": 2,
+        "lineno": 318
+      },
+      "_trigger_w_cooldown": {
+        "args": [
+          "self",
+          "shake_amount",
+          "visual_duration"
+        ],
+        "arity": 2,
+        "lineno": 304
+      },
+      "cast_e": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 72
+      },
+      "cast_q": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 64
+      },
+      "cast_r": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 76
+      },
+      "cast_w": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 68
+      },
+      "init_state": {
+        "args": [
+          "self"
+        ],
+        "arity": 0,
+        "lineno": 56
+      },
+      "update_timers": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 60
+      }
+    },
+    "BossHeroSkills": {
+      "_cast_e_aeralith_vacuum": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2338
+      },
+      "_cast_e_akahime_shadow": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3464
+      },
+      "_cast_e_akashari_scream": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1964
+      },
+      "_cast_e_astraelion_forceescape": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3601
+      },
+      "_cast_e_aurelion_kingscommand": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3428
+      },
+      "_cast_e_aurelix_shockwave": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2470
+      },
+      "_cast_e_aurelyssa_wings": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2503
+      },
+      "_cast_e_aurethzar_frost": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2303
+      },
+      "_cast_e_aurex_aegis": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2368
+      },
+      "_cast_e_auroth_consecration": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2898
+      },
+      "_cast_e_azureth_ancientseal": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2763
+      },
+      "_cast_e_berserkers_call": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1142
+      },
+      "_cast_e_chemical_rage": {
+        "args": [
+          "self",
+          "h"
+        ],
+        "arity": 1,
+        "lineno": 1236
+      },
+      "_cast_e_counterspell": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1052
+      },
+      "_cast_e_cryssalia_frostbites": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3325
+      },
+      "_cast_e_darkness_gale": {
+        "args": [
+          "self",
+          "h"
+        ],
+        "arity": 1,
+        "lineno": 1185
+      },
+      "_cast_e_dragon_blood": {
+        "args": [
+          "self",
+          "h"
+        ],
+        "arity": 1,
+        "lineno": 1502
+      },
+      "_cast_e_gravewake_shell": {
+        "args": [
+          "self",
+          "h"
+        ],
+        "arity": 1,
+        "lineno": 1802
+      },
+      "_cast_e_ice_blast": {
+        "args": [
+          "self",
+          "h"
+        ],
+        "arity": 1,
+        "lineno": 1319
+      },
+      "_cast_e_ignirus_burstfireball": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3034
+      },
+      "_cast_e_kaeldris_moment": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2629
+      },
+      "_cast_e_kaelthar_fistcrack": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3363
+      },
+      "_cast_e_kaelthorn_defendersassault": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3189
+      },
+      "_cast_e_kenshiro_gale": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2041
+      },
+      "_cast_e_khazan_spin": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2078
+      },
+      "_cast_e_krobellus_siphon": {
+        "args": [
+          "self",
+          "h"
+        ],
+        "arity": 1,
+        "lineno": 1569
+      },
+      "_cast_e_krognarr_rampart": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2194
+      },
+      "_cast_e_kunkka_ghost": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1685
+      },
+      "_cast_e_leoric_concealblast": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3074
+      },
+      "_cast_e_luminar_wisp": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2797
+      },
+      "_cast_e_magnetic_field": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1096
+      },
+      "_cast_e_malzareth_poison": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1926
+      },
+      "_cast_e_morkhaera_energyimpact": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3393
+      },
+      "_cast_e_morthraxis_phantommob": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3702
+      },
+      "_cast_e_morvaenthir_essence": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3635
+      },
+      "_cast_e_morvein_spectralcharge": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2933
+      },
+      "_cast_e_naraka_hammer": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2152
+      },
+      "_cast_e_nazulmor_tidalrage": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2584
+      },
+      "_cast_e_nyxarath_presence": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1752
+      },
+      "_cast_e_nyxareth_spacetime": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3289
+      },
+      "_cast_e_nyxareva_sacrifice": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2401
+      },
+      "_cast_e_nyxthrael_darknightfall": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3497
+      },
+      "_cast_e_pyraethis_sunray": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2862
+      },
+      "_cast_e_pyraklos_bulwark": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2659
+      },
+      "_cast_e_raz_surge": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2233
+      },
+      "_cast_e_seiryukong_jingusoldiers": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3147
+      },
+      "_cast_e_shirotaka_shadowclones": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3114
+      },
+      "_cast_e_solara_luminosity": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2827
+      },
+      "_cast_e_solvanth_laworder": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3221
+      },
+      "_cast_e_solvarin_degen": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2729
+      },
+      "_cast_e_sylvantheros_treants": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3531
+      },
+      "_cast_e_syrentha_mirror": {
+        "args": [
+          "self",
+          "h"
+        ],
+        "arity": 1,
+        "lineno": 1845
+      },
+      "_cast_e_thalakryon_tidalrage": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2433
+      },
+      "_cast_e_thalgryn_morph": {
+        "args": [
+          "self",
+          "h"
+        ],
+        "arity": 1,
+        "lineno": 1887
+      },
+      "_cast_e_thornvaegrim_saplingthrow": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3667
+      },
+      "_cast_e_thorvak_vengeance": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2965
+      },
+      "_cast_e_vaelindra_violetrequiem": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3564
+      },
+      "_cast_e_vargrath_devilstrike": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2551
+      },
+      "_cast_e_velmyrth_blur": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2695
+      },
+      "_cast_e_vhalzun_reapers_scythe": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1634
+      },
+      "_cast_e_vorenmarr_upheaval": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1995
+      },
+      "_cast_e_vraskhan_deathslash": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2273
+      },
+      "_cast_e_winters_curse": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1415
+      },
+      "_cast_e_wiro_dash": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2108
+      },
+      "_cast_e_xyrael_tempest": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3257
+      },
+      "_cast_e_yamako_woodgolem": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3000
+      },
+      "_cast_q_acid_spray": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1209
+      },
+      "_cast_q_aeralith_tailwind": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2325
+      },
+      "_cast_q_akahime_petalbarrage": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3449
+      },
+      "_cast_q_akashari_strike": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1946
+      },
+      "_cast_q_arctic_burn": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1370
+      },
+      "_cast_q_astraelion_swordfall": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3585
+      },
+      "_cast_q_aurelion_callcourage": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3412
+      },
+      "_cast_q_aurelix_timebomb": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2458
+      },
+      "_cast_q_aurelyssa_whirlwind": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2489
+      },
+      "_cast_q_aurethzar_marksman": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2290
+      },
+      "_cast_q_aurex_shieldcrash": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2356
+      },
+      "_cast_q_auroth_ionicedge": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2883
+      },
+      "_cast_q_azureth_arcanebolt": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2750
+      },
+      "_cast_q_battle_hunger": {
+        "args": [
+          "self",
+          "h"
+        ],
+        "arity": 1,
+        "lineno": 1119
+      },
+      "_cast_q_cryssalia_frostshock": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3310
+      },
+      "_cast_q_dragon_breath": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1457
+      },
+      "_cast_q_gravewake_anchor": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1775
+      },
+      "_cast_q_ice_vortex": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1267
+      },
+      "_cast_q_ignirus_searingtorrent": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3021
+      },
+      "_cast_q_kaeldris_overwhelming": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2609
+      },
+      "_cast_q_kaelthar_chargingfist": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3342
+      },
+      "_cast_q_kaelthorn_bravestfighter": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3168
+      },
+      "_cast_q_kenshiro_swiftslash": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2021
+      },
+      "_cast_q_khazan_chained": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2056
+      },
+      "_cast_q_krobellus_exorcism": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1541
+      },
+      "_cast_q_krognarr_strike": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2179
+      },
+      "_cast_q_kunkka_tide": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1663
+      },
+      "_cast_q_leoric_fearlesscharge": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3053
+      },
+      "_cast_q_luminar_illuminate": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2782
+      },
+      "_cast_q_malzareth_disruption": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1908
+      },
+      "_cast_q_mana_break": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1031
+      },
+      "_cast_q_mist_coil": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1169
+      },
+      "_cast_q_morkhaera_spiritburst": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3380
+      },
+      "_cast_q_morthraxis_batimpale": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3684
+      },
+      "_cast_q_morvaenthir_soulfragment": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3620
+      },
+      "_cast_q_morvein_puncture": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2917
+      },
+      "_cast_q_naraka_chaos": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2132
+      },
+      "_cast_q_nazulmor_typhoon": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2568
+      },
+      "_cast_q_nyxarath_shadowraze": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1718
+      },
+      "_cast_q_nyxareth_starsplit": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3276
+      },
+      "_cast_q_nyxareva_darkslash": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2387
+      },
+      "_cast_q_nyxthrael_ambush": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3481
+      },
+      "_cast_q_pyraethis_icarusdive": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2846
+      },
+      "_cast_q_pyraklos_spearmars": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2646
+      },
+      "_cast_q_raz_overdrive": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2213
+      },
+      "_cast_q_seiryukong_boundless": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3131
+      },
+      "_cast_q_shirotaka_hiraishin": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3093
+      },
+      "_cast_q_solara_starbreaker": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2814
+      },
+      "_cast_q_solvanth_ringpunishment": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3206
+      },
+      "_cast_q_solvarin_purification": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2714
+      },
+      "_cast_q_spark_wraith": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1078
+      },
+      "_cast_q_sylvantheros_sprout": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3516
+      },
+      "_cast_q_syrentha_riptide": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1820
+      },
+      "_cast_q_thalakryon_bolt": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2418
+      },
+      "_cast_q_thalgryn_waveform": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1866
+      },
+      "_cast_q_thornvaegrim_bramble": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3652
+      },
+      "_cast_q_thorvak_seed": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2950
+      },
+      "_cast_q_vaelindra_energywave": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3548
+      },
+      "_cast_q_vargrath_bloodthirst": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2529
+      },
+      "_cast_q_velmyrth_dagger": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2678
+      },
+      "_cast_q_vhalzun_death_pulse": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1606
+      },
+      "_cast_q_vorenmarr_bonds": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1983
+      },
+      "_cast_q_vraskhan_thorned": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2250
+      },
+      "_cast_q_wiro_windcut": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2095
+      },
+      "_cast_q_xyrael_finch": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3238
+      },
+      "_cast_q_yamako_deepforest": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2984
+      },
+      "_cast_r_aeralith_skyrider": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2348
+      },
+      "_cast_r_akahime_higanbana": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3471
+      },
+      "_cast_r_akashari_sonic": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1970
+      },
+      "_cast_r_astraelion_zeroreturn": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3610
+      },
+      "_cast_r_aurelion_kingssummon": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3437
+      },
+      "_cast_r_aurelix_transcend": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2479
+      },
+      "_cast_r_aurelyssa_phantom": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2519
+      },
+      "_cast_r_aurethzar_thunder": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2311
+      },
+      "_cast_r_aurex_spin": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2377
+      },
+      "_cast_r_auroth_guardian": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2907
+      },
+      "_cast_r_azureth_mysticflare": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2772
+      },
+      "_cast_r_cold_embrace": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1434
+      },
+      "_cast_r_cold_feet": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1329
+      },
+      "_cast_r_cryssalia_coldest": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3332
+      },
+      "_cast_r_culling_blade": {
+        "args": [
+          "self",
+          "h"
+        ],
+        "arity": 1,
+        "lineno": 1155
+      },
+      "_cast_r_death_sever": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1198
+      },
+      "_cast_r_elder_dragon_form": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1516
+      },
+      "_cast_r_gravewake_ravage": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1807
+      },
+      "_cast_r_greevils_greed": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1249
+      },
+      "_cast_r_ignirus_vengeance": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3043
+      },
+      "_cast_r_kaeldris_duel": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2636
+      },
+      "_cast_r_kaelthar_fistbreak": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3370
+      },
+      "_cast_r_kaelthorn_chivalryfists": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3196
+      },
+      "_cast_r_kenshiro_supremacy": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2048
+      },
+      "_cast_r_khazan_vanish": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2085
+      },
+      "_cast_r_krobellus_crypt": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1584
+      },
+      "_cast_r_krognarr_eruption": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2203
+      },
+      "_cast_r_kunkka_torrent": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1701
+      },
+      "_cast_r_leoric_immortality": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3083
+      },
+      "_cast_r_luminar_spiritform": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2804
+      },
+      "_cast_r_malzareth_disillusion": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1933
+      },
+      "_cast_r_mana_void": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1062
+      },
+      "_cast_r_morkhaera_ethereal": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3402
+      },
+      "_cast_r_morthraxis_baleful": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3711
+      },
+      "_cast_r_morvaenthir_shadowrealm": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3642
+      },
+      "_cast_r_morvein_phantomform": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2940
+      },
+      "_cast_r_naraka_execution": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2161
+      },
+      "_cast_r_nazulmor_chaotic": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2593
+      },
+      "_cast_r_nyxarath_requiem": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1762
+      },
+      "_cast_r_nyxareth_astrorealm": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3298
+      },
+      "_cast_r_nyxareva_avatar": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2408
+      },
+      "_cast_r_nyxthrael_shadowbringer": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3506
+      },
+      "_cast_r_pyraethis_supernova": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2871
+      },
+      "_cast_r_pyraklos_arena": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2668
+      },
+      "_cast_r_raz_gloom": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2240
+      },
+      "_cast_r_seiryukong_wukong": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3156
+      },
+      "_cast_r_shirotaka_paperbomb": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3121
+      },
+      "_cast_r_solara_solarguardian": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2836
+      },
+      "_cast_r_solvanth_wrath": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3228
+      },
+      "_cast_r_solvarin_guardian": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2738
+      },
+      "_cast_r_sylvantheros_wrath": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3538
+      },
+      "_cast_r_syrentha_siren": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1853
+      },
+      "_cast_r_tempest_double": {
+        "args": [
+          "self",
+          "h"
+        ],
+        "arity": 1,
+        "lineno": 1108
+      },
+      "_cast_r_thalakryon_metamorph": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2442
+      },
+      "_cast_r_thalgryn_replicate": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1895
+      },
+      "_cast_r_thornvaegrim_grasp": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3674
+      },
+      "_cast_r_thorvak_dryad": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2972
+      },
+      "_cast_r_vaelindra_realm": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3573
+      },
+      "_cast_r_vargrath_souldom": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2558
+      },
+      "_cast_r_velmyrth_coup": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2702
+      },
+      "_cast_r_vhalzun_ghost_shroud": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1645
+      },
+      "_cast_r_vorenmarr_golem": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2007
+      },
+      "_cast_r_vraskhan_omni": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2280
+      },
+      "_cast_r_wiro_typhoon": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2122
+      },
+      "_cast_r_xyrael_lightness": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3264
+      },
+      "_cast_r_yamako_kannon": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3009
+      },
+      "_cast_w_aeralith_windblade": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2331
+      },
+      "_cast_w_akahime_soulscroll": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3455
+      },
+      "_cast_w_akashari_blink": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1953
+      },
+      "_cast_w_aphotic_shield": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1176
+      },
+      "_cast_w_astraelion_spiritblade": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3594
+      },
+      "_cast_w_aurelion_guardianassault": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3421
+      },
+      "_cast_w_aurelix_will": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2464
+      },
+      "_cast_w_aurelyssa_sweep": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2496
+      },
+      "_cast_w_aurethzar_piercing": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2296
+      },
+      "_cast_w_aurex_voltblast": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2362
+      },
+      "_cast_w_auroth_ward": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2889
+      },
+      "_cast_w_azureth_concussive": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2756
+      },
+      "_cast_w_blink": {
+        "args": [
+          "self",
+          "h"
+        ],
+        "arity": 1,
+        "lineno": 1038
+      },
+      "_cast_w_chilling_touch": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1285
+      },
+      "_cast_w_counter_helix": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1133
+      },
+      "_cast_w_cryssalia_bitterfrost": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3316
+      },
+      "_cast_w_dragon_tail": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1490
+      },
+      "_cast_w_flux": {
+        "args": [
+          "self",
+          "h"
+        ],
+        "arity": 1,
+        "lineno": 1085
+      },
+      "_cast_w_gravewake_tide": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1790
+      },
+      "_cast_w_ignirus_flameshot": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3027
+      },
+      "_cast_w_kaeldris_press": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2615
+      },
+      "_cast_w_kaelthar_quake": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3356
+      },
+      "_cast_w_kaelthorn_justiceblade": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3182
+      },
+      "_cast_w_kenshiro_assault": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2027
+      },
+      "_cast_w_khazan_leap": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2062
+      },
+      "_cast_w_krobellus_silence": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1554
+      },
+      "_cast_w_krognarr_seismic": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2185
+      },
+      "_cast_w_kunkka_xmark": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1675
+      },
+      "_cast_w_leoric_sacredhammer": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3067
+      },
+      "_cast_w_luminar_blindinglight": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2788
+      },
+      "_cast_w_malzareth_soul": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1918
+      },
+      "_cast_w_morkhaera_airstrike": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3386
+      },
+      "_cast_w_morthraxis_sanguine": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3693
+      },
+      "_cast_w_morvaenthir_spiritbind": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3626
+      },
+      "_cast_w_morvein_violentstrike": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2926
+      },
+      "_cast_w_naraka_shadowstep": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2138
+      },
+      "_cast_w_nazulmor_aquashield": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2575
+      },
+      "_cast_w_nyxarath_necro": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1738
+      },
+      "_cast_w_nyxareth_realworld": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3282
+      },
+      "_cast_w_nyxareva_mortalwound": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2393
+      },
+      "_cast_w_nyxthrael_nightfall": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3490
+      },
+      "_cast_w_pyraethis_firespirits": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2855
+      },
+      "_cast_w_pyraklos_rebuke": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2652
+      },
+      "_cast_w_raz_searing": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2219
+      },
+      "_cast_w_seiryukong_treedance": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3140
+      },
+      "_cast_w_shirotaka_waterboundary": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3105
+      },
+      "_cast_w_solara_celestialhammer": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2820
+      },
+      "_cast_w_solvanth_gloriouspathway": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3212
+      },
+      "_cast_w_solvarin_repel": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2720
+      },
+      "_cast_w_splinter_blast": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1396
+      },
+      "_cast_w_sylvantheros_teleport": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3524
+      },
+      "_cast_w_syrentha_song": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1835
+      },
+      "_cast_w_thalakryon_aquashield": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2424
+      },
+      "_cast_w_thalgryn_adaptive": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1879
+      },
+      "_cast_w_thornvaegrim_twistedadvance": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3660
+      },
+      "_cast_w_thorvak_natureswrath": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2958
+      },
+      "_cast_w_unstable_concoction": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1216
+      },
+      "_cast_w_vaelindra_spacering": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3557
+      },
+      "_cast_w_vargrath_charge": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2535
+      },
+      "_cast_w_velmyrth_strike": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2686
+      },
+      "_cast_w_vhalzun_heartstopper": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 1619
+      },
+      "_cast_w_vorenmarr_power": {
+        "args": [
+          "self",
+          "h"
+        ],
+        "arity": 1,
+        "lineno": 1991
+      },
+      "_cast_w_vraskhan_leap": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2264
+      },
+      "_cast_w_wiro_whirl": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2101
+      },
+      "_cast_w_xyrael_defiant": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 3250
+      },
+      "_cast_w_yamako_woodcreation": {
+        "args": [
+          "self",
+          "h",
+          "enemies"
+        ],
+        "arity": 2,
+        "lineno": 2993
+      },
+      "_fallback_cast": {
+        "args": [
+          "self",
+          "h",
+          "enemies",
+          "skill_key"
+        ],
+        "arity": 3,
+        "lineno": 962
+      },
+      "_generic_cast": {
+        "args": [
+          "self",
+          "skill_key",
+          "all_units",
+          "all_towers",
+          "all_bases",
+          "cooldown_check",
+          "cooldown_trigger",
+          "shake_amount"
+        ],
+        "arity": 7,
+        "lineno": 888
+      },
+      "_get_visual_duration": {
+        "args": [
+          "self",
+          "key"
+        ],
+        "arity": 1,
+        "lineno": 473
+      },
+      "cast_e": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 1013
+      },
+      "cast_q": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 999
+      },
+      "cast_r": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 1020
+      },
+      "cast_w": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 1006
+      },
+      "init_state": {
+        "args": [
+          "self"
+        ],
+        "arity": 0,
+        "lineno": 345
+      },
+      "update_timers": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 383
+      }
+    },
+    "GrimjawSkills": {
+      "cast_e": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 3889
+      },
+      "cast_q": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 3848
+      },
+      "cast_r": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 3917
+      },
+      "cast_w": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 3869
+      },
+      "init_state": {
+        "args": [
+          "self"
+        ],
+        "arity": 0,
+        "lineno": 3753
+      },
+      "update_timers": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 3780
+      }
+    },
+    "KaizenSkills": {
+      "_cast_dash_strike": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 4056
+      },
+      "_cast_steel_wind": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 4048
+      },
+      "cast_e": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 4098
+      },
+      "cast_q": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 4022
+      },
+      "cast_r": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 4121
+      },
+      "cast_w": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 4085
+      },
+      "init_state": {
+        "args": [
+          "self"
+        ],
+        "arity": 0,
+        "lineno": 3981
+      },
+      "update_timers": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 3992
+      }
+    },
+    "SylaraSkills": {
+      "_release_powershot": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 4409
+      },
+      "cast_e": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 4334
+      },
+      "cast_q": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 4250
+      },
+      "cast_r": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 4391
+      },
+      "cast_w": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 4312
+      },
+      "init_state": {
+        "args": [
+          "self"
+        ],
+        "arity": 0,
+        "lineno": 4173
+      },
+      "update_timers": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 4195
+      }
+    },
+    "ThorneSkills": {
+      "cast_e": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 4638
+      },
+      "cast_q": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 4563
+      },
+      "cast_r": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 4666
+      },
+      "cast_w": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 4612
+      },
+      "init_state": {
+        "args": [
+          "self"
+        ],
+        "arity": 0,
+        "lineno": 4493
+      },
+      "update_timers": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 4521
+      }
+    },
+    "VexSkills": {
+      "cast_e": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 4886
+      },
+      "cast_q": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 4801
+      },
+      "cast_r": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 4939
+      },
+      "cast_w": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 4854
+      },
+      "init_state": {
+        "args": [
+          "self"
+        ],
+        "arity": 0,
+        "lineno": 4732
+      },
+      "update_timers": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 4751
+      }
+    },
+    "ZephyrSkills": {
+      "cast_e": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 5144
+      },
+      "cast_q": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 5086
+      },
+      "cast_r": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 5197
+      },
+      "cast_w": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 5124
+      },
+      "init_state": {
+        "args": [
+          "self"
+        ],
+        "arity": 0,
+        "lineno": 4992
+      },
+      "update_timers": {
+        "args": [
+          "self",
+          "all_units",
+          "all_towers",
+          "all_bases"
+        ],
+        "arity": 3,
+        "lineno": 5016
+      }
+    }
+  },
+  "recipe_methods": [
+    "_cast_e_aeralith_vacuum",
+    "_cast_e_akahime_shadow",
+    "_cast_e_akashari_scream",
+    "_cast_e_astraelion_forceescape",
+    "_cast_e_aurelion_kingscommand",
+    "_cast_e_aurelix_shockwave",
+    "_cast_e_aurelyssa_wings",
+    "_cast_e_aurethzar_frost",
+    "_cast_e_aurex_aegis",
+    "_cast_e_auroth_consecration",
+    "_cast_e_azureth_ancientseal",
+    "_cast_e_berserkers_call",
+    "_cast_e_chemical_rage",
+    "_cast_e_counterspell",
+    "_cast_e_cryssalia_frostbites",
+    "_cast_e_darkness_gale",
+    "_cast_e_dragon_blood",
+    "_cast_e_gravewake_shell",
+    "_cast_e_ice_blast",
+    "_cast_e_ignirus_burstfireball",
+    "_cast_e_kaeldris_moment",
+    "_cast_e_kaelthar_fistcrack",
+    "_cast_e_kaelthorn_defendersassault",
+    "_cast_e_kenshiro_gale",
+    "_cast_e_khazan_spin",
+    "_cast_e_krobellus_siphon",
+    "_cast_e_krognarr_rampart",
+    "_cast_e_kunkka_ghost",
+    "_cast_e_leoric_concealblast",
+    "_cast_e_luminar_wisp",
+    "_cast_e_magnetic_field",
+    "_cast_e_malzareth_poison",
+    "_cast_e_morkhaera_energyimpact",
+    "_cast_e_morthraxis_phantommob",
+    "_cast_e_morvaenthir_essence",
+    "_cast_e_morvein_spectralcharge",
+    "_cast_e_naraka_hammer",
+    "_cast_e_nazulmor_tidalrage",
+    "_cast_e_nyxarath_presence",
+    "_cast_e_nyxareth_spacetime",
+    "_cast_e_nyxareva_sacrifice",
+    "_cast_e_nyxthrael_darknightfall",
+    "_cast_e_pyraethis_sunray",
+    "_cast_e_pyraklos_bulwark",
+    "_cast_e_raz_surge",
+    "_cast_e_seiryukong_jingusoldiers",
+    "_cast_e_shirotaka_shadowclones",
+    "_cast_e_solara_luminosity",
+    "_cast_e_solvanth_laworder",
+    "_cast_e_solvarin_degen",
+    "_cast_e_sylvantheros_treants",
+    "_cast_e_syrentha_mirror",
+    "_cast_e_thalakryon_tidalrage",
+    "_cast_e_thalgryn_morph",
+    "_cast_e_thornvaegrim_saplingthrow",
+    "_cast_e_thorvak_vengeance",
+    "_cast_e_vaelindra_violetrequiem",
+    "_cast_e_vargrath_devilstrike",
+    "_cast_e_velmyrth_blur",
+    "_cast_e_vhalzun_reapers_scythe",
+    "_cast_e_vorenmarr_upheaval",
+    "_cast_e_vraskhan_deathslash",
+    "_cast_e_winters_curse",
+    "_cast_e_wiro_dash",
+    "_cast_e_xyrael_tempest",
+    "_cast_e_yamako_woodgolem",
+    "_cast_q_acid_spray",
+    "_cast_q_aeralith_tailwind",
+    "_cast_q_akahime_petalbarrage",
+    "_cast_q_akashari_strike",
+    "_cast_q_arctic_burn",
+    "_cast_q_astraelion_swordfall",
+    "_cast_q_aurelion_callcourage",
+    "_cast_q_aurelix_timebomb",
+    "_cast_q_aurelyssa_whirlwind",
+    "_cast_q_aurethzar_marksman",
+    "_cast_q_aurex_shieldcrash",
+    "_cast_q_auroth_ionicedge",
+    "_cast_q_azureth_arcanebolt",
+    "_cast_q_battle_hunger",
+    "_cast_q_cryssalia_frostshock",
+    "_cast_q_dragon_breath",
+    "_cast_q_gravewake_anchor",
+    "_cast_q_ice_vortex",
+    "_cast_q_ignirus_searingtorrent",
+    "_cast_q_kaeldris_overwhelming",
+    "_cast_q_kaelthar_chargingfist",
+    "_cast_q_kaelthorn_bravestfighter",
+    "_cast_q_kenshiro_swiftslash",
+    "_cast_q_khazan_chained",
+    "_cast_q_krobellus_exorcism",
+    "_cast_q_krognarr_strike",
+    "_cast_q_kunkka_tide",
+    "_cast_q_leoric_fearlesscharge",
+    "_cast_q_luminar_illuminate",
+    "_cast_q_malzareth_disruption",
+    "_cast_q_mana_break",
+    "_cast_q_mist_coil",
+    "_cast_q_morkhaera_spiritburst",
+    "_cast_q_morthraxis_batimpale",
+    "_cast_q_morvaenthir_soulfragment",
+    "_cast_q_morvein_puncture",
+    "_cast_q_naraka_chaos",
+    "_cast_q_nazulmor_typhoon",
+    "_cast_q_nyxarath_shadowraze",
+    "_cast_q_nyxareth_starsplit",
+    "_cast_q_nyxareva_darkslash",
+    "_cast_q_nyxthrael_ambush",
+    "_cast_q_pyraethis_icarusdive",
+    "_cast_q_pyraklos_spearmars",
+    "_cast_q_raz_overdrive",
+    "_cast_q_seiryukong_boundless",
+    "_cast_q_shirotaka_hiraishin",
+    "_cast_q_solara_starbreaker",
+    "_cast_q_solvanth_ringpunishment",
+    "_cast_q_solvarin_purification",
+    "_cast_q_spark_wraith",
+    "_cast_q_sylvantheros_sprout",
+    "_cast_q_syrentha_riptide",
+    "_cast_q_thalakryon_bolt",
+    "_cast_q_thalgryn_waveform",
+    "_cast_q_thornvaegrim_bramble",
+    "_cast_q_thorvak_seed",
+    "_cast_q_vaelindra_energywave",
+    "_cast_q_vargrath_bloodthirst",
+    "_cast_q_velmyrth_dagger",
+    "_cast_q_vhalzun_death_pulse",
+    "_cast_q_vorenmarr_bonds",
+    "_cast_q_vraskhan_thorned",
+    "_cast_q_wiro_windcut",
+    "_cast_q_xyrael_finch",
+    "_cast_q_yamako_deepforest",
+    "_cast_r_aeralith_skyrider",
+    "_cast_r_akahime_higanbana",
+    "_cast_r_akashari_sonic",
+    "_cast_r_astraelion_zeroreturn",
+    "_cast_r_aurelion_kingssummon",
+    "_cast_r_aurelix_transcend",
+    "_cast_r_aurelyssa_phantom",
+    "_cast_r_aurethzar_thunder",
+    "_cast_r_aurex_spin",
+    "_cast_r_auroth_guardian",
+    "_cast_r_azureth_mysticflare",
+    "_cast_r_cold_embrace",
+    "_cast_r_cold_feet",
+    "_cast_r_cryssalia_coldest",
+    "_cast_r_culling_blade",
+    "_cast_r_death_sever",
+    "_cast_r_elder_dragon_form",
+    "_cast_r_gravewake_ravage",
+    "_cast_r_greevils_greed",
+    "_cast_r_ignirus_vengeance",
+    "_cast_r_kaeldris_duel",
+    "_cast_r_kaelthar_fistbreak",
+    "_cast_r_kaelthorn_chivalryfists",
+    "_cast_r_kenshiro_supremacy",
+    "_cast_r_khazan_vanish",
+    "_cast_r_krobellus_crypt",
+    "_cast_r_krognarr_eruption",
+    "_cast_r_kunkka_torrent",
+    "_cast_r_leoric_immortality",
+    "_cast_r_luminar_spiritform",
+    "_cast_r_malzareth_disillusion",
+    "_cast_r_mana_void",
+    "_cast_r_morkhaera_ethereal",
+    "_cast_r_morthraxis_baleful",
+    "_cast_r_morvaenthir_shadowrealm",
+    "_cast_r_morvein_phantomform",
+    "_cast_r_naraka_execution",
+    "_cast_r_nazulmor_chaotic",
+    "_cast_r_nyxarath_requiem",
+    "_cast_r_nyxareth_astrorealm",
+    "_cast_r_nyxareva_avatar",
+    "_cast_r_nyxthrael_shadowbringer",
+    "_cast_r_pyraethis_supernova",
+    "_cast_r_pyraklos_arena",
+    "_cast_r_raz_gloom",
+    "_cast_r_seiryukong_wukong",
+    "_cast_r_shirotaka_paperbomb",
+    "_cast_r_solara_solarguardian",
+    "_cast_r_solvanth_wrath",
+    "_cast_r_solvarin_guardian",
+    "_cast_r_sylvantheros_wrath",
+    "_cast_r_syrentha_siren",
+    "_cast_r_tempest_double",
+    "_cast_r_thalakryon_metamorph",
+    "_cast_r_thalgryn_replicate",
+    "_cast_r_thornvaegrim_grasp",
+    "_cast_r_thorvak_dryad",
+    "_cast_r_vaelindra_realm",
+    "_cast_r_vargrath_souldom",
+    "_cast_r_velmyrth_coup",
+    "_cast_r_vhalzun_ghost_shroud",
+    "_cast_r_vorenmarr_golem",
+    "_cast_r_vraskhan_omni",
+    "_cast_r_wiro_typhoon",
+    "_cast_r_xyrael_lightness",
+    "_cast_r_yamako_kannon",
+    "_cast_w_aeralith_windblade",
+    "_cast_w_akahime_soulscroll",
+    "_cast_w_akashari_blink",
+    "_cast_w_aphotic_shield",
+    "_cast_w_astraelion_spiritblade",
+    "_cast_w_aurelion_guardianassault",
+    "_cast_w_aurelix_will",
+    "_cast_w_aurelyssa_sweep",
+    "_cast_w_aurethzar_piercing",
+    "_cast_w_aurex_voltblast",
+    "_cast_w_auroth_ward",
+    "_cast_w_azureth_concussive",
+    "_cast_w_blink",
+    "_cast_w_chilling_touch",
+    "_cast_w_counter_helix",
+    "_cast_w_cryssalia_bitterfrost",
+    "_cast_w_dragon_tail",
+    "_cast_w_flux",
+    "_cast_w_gravewake_tide",
+    "_cast_w_ignirus_flameshot",
+    "_cast_w_kaeldris_press",
+    "_cast_w_kaelthar_quake",
+    "_cast_w_kaelthorn_justiceblade",
+    "_cast_w_kenshiro_assault",
+    "_cast_w_khazan_leap",
+    "_cast_w_krobellus_silence",
+    "_cast_w_krognarr_seismic",
+    "_cast_w_kunkka_xmark",
+    "_cast_w_leoric_sacredhammer",
+    "_cast_w_luminar_blindinglight",
+    "_cast_w_malzareth_soul",
+    "_cast_w_morkhaera_airstrike",
+    "_cast_w_morthraxis_sanguine",
+    "_cast_w_morvaenthir_spiritbind",
+    "_cast_w_morvein_violentstrike",
+    "_cast_w_naraka_shadowstep",
+    "_cast_w_nazulmor_aquashield",
+    "_cast_w_nyxarath_necro",
+    "_cast_w_nyxareth_realworld",
+    "_cast_w_nyxareva_mortalwound",
+    "_cast_w_nyxthrael_nightfall",
+    "_cast_w_pyraethis_firespirits",
+    "_cast_w_pyraklos_rebuke",
+    "_cast_w_raz_searing",
+    "_cast_w_seiryukong_treedance",
+    "_cast_w_shirotaka_waterboundary",
+    "_cast_w_solara_celestialhammer",
+    "_cast_w_solvanth_gloriouspathway",
+    "_cast_w_solvarin_repel",
+    "_cast_w_splinter_blast",
+    "_cast_w_sylvantheros_teleport",
+    "_cast_w_syrentha_song",
+    "_cast_w_thalakryon_aquashield",
+    "_cast_w_thalgryn_adaptive",
+    "_cast_w_thornvaegrim_twistedadvance",
+    "_cast_w_thorvak_natureswrath",
+    "_cast_w_unstable_concoction",
+    "_cast_w_vaelindra_spacering",
+    "_cast_w_vargrath_charge",
+    "_cast_w_velmyrth_strike",
+    "_cast_w_vhalzun_heartstopper",
+    "_cast_w_vorenmarr_power",
+    "_cast_w_vraskhan_leap",
+    "_cast_w_wiro_whirl",
+    "_cast_w_xyrael_defiant",
+    "_cast_w_yamako_woodcreation"
+  ],
+  "registry": {
+    "abaddon": {
+      "e": "_cast_e_darkness_gale",
+      "q": "_cast_q_mist_coil",
+      "r": "_cast_r_death_sever",
+      "w": "_cast_w_aphotic_shield"
+    },
+    "aeralith": {
+      "e": "_cast_e_aeralith_vacuum",
+      "q": "_cast_q_aeralith_tailwind",
+      "r": "_cast_r_aeralith_skyrider",
+      "w": "_cast_w_aeralith_windblade"
+    },
+    "akahime": {
+      "e": "_cast_e_akahime_shadow",
+      "q": "_cast_q_akahime_petalbarrage",
+      "r": "_cast_r_akahime_higanbana",
+      "w": "_cast_w_akahime_soulscroll"
+    },
+    "akashari": {
+      "e": "_cast_e_akashari_scream",
+      "q": "_cast_q_akashari_strike",
+      "r": "_cast_r_akashari_sonic",
+      "w": "_cast_w_akashari_blink"
+    },
+    "alchemist": {
+      "e": "_cast_e_chemical_rage",
+      "q": "_cast_q_acid_spray",
+      "r": "_cast_r_greevils_greed",
+      "w": "_cast_w_unstable_concoction"
+    },
+    "ancient_apparition": {
+      "e": "_cast_e_ice_blast",
+      "q": "_cast_q_ice_vortex",
+      "r": "_cast_r_cold_feet",
+      "w": "_cast_w_chilling_touch"
+    },
+    "astraelion": {
+      "e": "_cast_e_astraelion_forceescape",
+      "q": "_cast_q_astraelion_swordfall",
+      "r": "_cast_r_astraelion_zeroreturn",
+      "w": "_cast_w_astraelion_spiritblade"
+    },
+    "aurelion": {
+      "e": "_cast_e_aurelion_kingscommand",
+      "q": "_cast_q_aurelion_callcourage",
+      "r": "_cast_r_aurelion_kingssummon",
+      "w": "_cast_w_aurelion_guardianassault"
+    },
+    "aurelix": {
+      "e": "_cast_e_aurelix_shockwave",
+      "q": "_cast_q_aurelix_timebomb",
+      "r": "_cast_r_aurelix_transcend",
+      "w": "_cast_w_aurelix_will"
+    },
+    "aurelyssa": {
+      "e": "_cast_e_aurelyssa_wings",
+      "q": "_cast_q_aurelyssa_whirlwind",
+      "r": "_cast_r_aurelyssa_phantom",
+      "w": "_cast_w_aurelyssa_sweep"
+    },
+    "aurethzar": {
+      "e": "_cast_e_aurethzar_frost",
+      "q": "_cast_q_aurethzar_marksman",
+      "r": "_cast_r_aurethzar_thunder",
+      "w": "_cast_w_aurethzar_piercing"
+    },
+    "aurex": {
+      "e": "_cast_e_aurex_aegis",
+      "q": "_cast_q_aurex_shieldcrash",
+      "r": "_cast_r_aurex_spin",
+      "w": "_cast_w_aurex_voltblast"
+    },
+    "auroth": {
+      "e": "_cast_e_auroth_consecration",
+      "q": "_cast_q_auroth_ionicedge",
+      "r": "_cast_r_auroth_guardian",
+      "w": "_cast_w_auroth_ward"
+    },
+    "azureth": {
+      "e": "_cast_e_azureth_ancientseal",
+      "q": "_cast_q_azureth_arcanebolt",
+      "r": "_cast_r_azureth_mysticflare",
+      "w": "_cast_w_azureth_concussive"
+    },
+    "cryssalia": {
+      "e": "_cast_e_cryssalia_frostbites",
+      "q": "_cast_q_cryssalia_frostshock",
+      "r": "_cast_r_cryssalia_coldest",
+      "w": "_cast_w_cryssalia_bitterfrost"
+    },
+    "drakar": {
+      "e": "_cast_e_berserkers_call",
+      "q": "_cast_q_battle_hunger",
+      "r": "_cast_r_culling_blade",
+      "w": "_cast_w_counter_helix"
+    },
+    "gornak": {
+      "e": "_cast_e_counterspell",
+      "q": "_cast_q_mana_break",
+      "r": "_cast_r_mana_void",
+      "w": "_cast_w_blink"
+    },
+    "gravewake": {
+      "e": "_cast_e_gravewake_shell",
+      "q": "_cast_q_gravewake_anchor",
+      "r": "_cast_r_gravewake_ravage",
+      "w": "_cast_w_gravewake_tide"
+    },
+    "ignirus": {
+      "e": "_cast_e_ignirus_burstfireball",
+      "q": "_cast_q_ignirus_searingtorrent",
+      "r": "_cast_r_ignirus_vengeance",
+      "w": "_cast_w_ignirus_flameshot"
+    },
+    "ignis_drachorn": {
+      "e": "_cast_e_dragon_blood",
+      "q": "_cast_q_dragon_breath",
+      "r": "_cast_r_elder_dragon_form",
+      "w": "_cast_w_dragon_tail"
+    },
+    "kaeldris": {
+      "e": "_cast_e_kaeldris_moment",
+      "q": "_cast_q_kaeldris_overwhelming",
+      "r": "_cast_r_kaeldris_duel",
+      "w": "_cast_w_kaeldris_press"
+    },
+    "kaelthar": {
+      "e": "_cast_e_kaelthar_fistcrack",
+      "q": "_cast_q_kaelthar_chargingfist",
+      "r": "_cast_r_kaelthar_fistbreak",
+      "w": "_cast_w_kaelthar_quake"
+    },
+    "kaelthorn": {
+      "e": "_cast_e_kaelthorn_defendersassault",
+      "q": "_cast_q_kaelthorn_bravestfighter",
+      "r": "_cast_r_kaelthorn_chivalryfists",
+      "w": "_cast_w_kaelthorn_justiceblade"
+    },
+    "kenshiro": {
+      "e": "_cast_e_kenshiro_gale",
+      "q": "_cast_q_kenshiro_swiftslash",
+      "r": "_cast_r_kenshiro_supremacy",
+      "w": "_cast_w_kenshiro_assault"
+    },
+    "khazan": {
+      "e": "_cast_e_khazan_spin",
+      "q": "_cast_q_khazan_chained",
+      "r": "_cast_r_khazan_vanish",
+      "w": "_cast_w_khazan_leap"
+    },
+    "krobellus": {
+      "e": "_cast_e_krobellus_siphon",
+      "q": "_cast_q_krobellus_exorcism",
+      "r": "_cast_r_krobellus_crypt",
+      "w": "_cast_w_krobellus_silence"
+    },
+    "krognarr": {
+      "e": "_cast_e_krognarr_rampart",
+      "q": "_cast_q_krognarr_strike",
+      "r": "_cast_r_krognarr_eruption",
+      "w": "_cast_w_krognarr_seismic"
+    },
+    "kunkka": {
+      "e": "_cast_e_kunkka_ghost",
+      "q": "_cast_q_kunkka_tide",
+      "r": "_cast_r_kunkka_torrent",
+      "w": "_cast_w_kunkka_xmark"
+    },
+    "leoric": {
+      "e": "_cast_e_leoric_concealblast",
+      "q": "_cast_q_leoric_fearlesscharge",
+      "r": "_cast_r_leoric_immortality",
+      "w": "_cast_w_leoric_sacredhammer"
+    },
+    "luminar": {
+      "e": "_cast_e_luminar_wisp",
+      "q": "_cast_q_luminar_illuminate",
+      "r": "_cast_r_luminar_spiritform",
+      "w": "_cast_w_luminar_blindinglight"
+    },
+    "malzareth": {
+      "e": "_cast_e_malzareth_poison",
+      "q": "_cast_q_malzareth_disruption",
+      "r": "_cast_r_malzareth_disillusion",
+      "w": "_cast_w_malzareth_soul"
+    },
+    "morgath": {
+      "e": "_cast_e_magnetic_field",
+      "q": "_cast_q_spark_wraith",
+      "r": "_cast_r_tempest_double",
+      "w": "_cast_w_flux"
+    },
+    "morkhaera": {
+      "e": "_cast_e_morkhaera_energyimpact",
+      "q": "_cast_q_morkhaera_spiritburst",
+      "r": "_cast_r_morkhaera_ethereal",
+      "w": "_cast_w_morkhaera_airstrike"
+    },
+    "morthraxis": {
+      "e": "_cast_e_morthraxis_phantommob",
+      "q": "_cast_q_morthraxis_batimpale",
+      "r": "_cast_r_morthraxis_baleful",
+      "w": "_cast_w_morthraxis_sanguine"
+    },
+    "morvaenthir": {
+      "e": "_cast_e_morvaenthir_essence",
+      "q": "_cast_q_morvaenthir_soulfragment",
+      "r": "_cast_r_morvaenthir_shadowrealm",
+      "w": "_cast_w_morvaenthir_spiritbind"
+    },
+    "morvein": {
+      "e": "_cast_e_morvein_spectralcharge",
+      "q": "_cast_q_morvein_puncture",
+      "r": "_cast_r_morvein_phantomform",
+      "w": "_cast_w_morvein_violentstrike"
+    },
+    "naraka": {
+      "e": "_cast_e_naraka_hammer",
+      "q": "_cast_q_naraka_chaos",
+      "r": "_cast_r_naraka_execution",
+      "w": "_cast_w_naraka_shadowstep"
+    },
+    "nazulmor": {
+      "e": "_cast_e_nazulmor_tidalrage",
+      "q": "_cast_q_nazulmor_typhoon",
+      "r": "_cast_r_nazulmor_chaotic",
+      "w": "_cast_w_nazulmor_aquashield"
+    },
+    "nyxarath": {
+      "e": "_cast_e_nyxarath_presence",
+      "q": "_cast_q_nyxarath_shadowraze",
+      "r": "_cast_r_nyxarath_requiem",
+      "w": "_cast_w_nyxarath_necro"
+    },
+    "nyxareth": {
+      "e": "_cast_e_nyxareth_spacetime",
+      "q": "_cast_q_nyxareth_starsplit",
+      "r": "_cast_r_nyxareth_astrorealm",
+      "w": "_cast_w_nyxareth_realworld"
+    },
+    "nyxareva": {
+      "e": "_cast_e_nyxareva_sacrifice",
+      "q": "_cast_q_nyxareva_darkslash",
+      "r": "_cast_r_nyxareva_avatar",
+      "w": "_cast_w_nyxareva_mortalwound"
+    },
+    "nyxthrael": {
+      "e": "_cast_e_nyxthrael_darknightfall",
+      "q": "_cast_q_nyxthrael_ambush",
+      "r": "_cast_r_nyxthrael_shadowbringer",
+      "w": "_cast_w_nyxthrael_nightfall"
+    },
+    "nyzrak": {
+      "e": "_cast_e_winters_curse",
+      "q": "_cast_q_arctic_burn",
+      "r": "_cast_r_cold_embrace",
+      "w": "_cast_w_splinter_blast"
+    },
+    "pyraethis": {
+      "e": "_cast_e_pyraethis_sunray",
+      "q": "_cast_q_pyraethis_icarusdive",
+      "r": "_cast_r_pyraethis_supernova",
+      "w": "_cast_w_pyraethis_firespirits"
+    },
+    "pyraklos": {
+      "e": "_cast_e_pyraklos_bulwark",
+      "q": "_cast_q_pyraklos_spearmars",
+      "r": "_cast_r_pyraklos_arena",
+      "w": "_cast_w_pyraklos_rebuke"
+    },
+    "raz": {
+      "e": "_cast_e_raz_surge",
+      "q": "_cast_q_raz_overdrive",
+      "r": "_cast_r_raz_gloom",
+      "w": "_cast_w_raz_searing"
+    },
+    "seiryukong": {
+      "e": "_cast_e_seiryukong_jingusoldiers",
+      "q": "_cast_q_seiryukong_boundless",
+      "r": "_cast_r_seiryukong_wukong",
+      "w": "_cast_w_seiryukong_treedance"
+    },
+    "shirotaka": {
+      "e": "_cast_e_shirotaka_shadowclones",
+      "q": "_cast_q_shirotaka_hiraishin",
+      "r": "_cast_r_shirotaka_paperbomb",
+      "w": "_cast_w_shirotaka_waterboundary"
+    },
+    "solara": {
+      "e": "_cast_e_solara_luminosity",
+      "q": "_cast_q_solara_starbreaker",
+      "r": "_cast_r_solara_solarguardian",
+      "w": "_cast_w_solara_celestialhammer"
+    },
+    "solvanth": {
+      "e": "_cast_e_solvanth_laworder",
+      "q": "_cast_q_solvanth_ringpunishment",
+      "r": "_cast_r_solvanth_wrath",
+      "w": "_cast_w_solvanth_gloriouspathway"
+    },
+    "solvarin": {
+      "e": "_cast_e_solvarin_degen",
+      "q": "_cast_q_solvarin_purification",
+      "r": "_cast_r_solvarin_guardian",
+      "w": "_cast_w_solvarin_repel"
+    },
+    "sylvantheros": {
+      "e": "_cast_e_sylvantheros_treants",
+      "q": "_cast_q_sylvantheros_sprout",
+      "r": "_cast_r_sylvantheros_wrath",
+      "w": "_cast_w_sylvantheros_teleport"
+    },
+    "syrentha": {
+      "e": "_cast_e_syrentha_mirror",
+      "q": "_cast_q_syrentha_riptide",
+      "r": "_cast_r_syrentha_siren",
+      "w": "_cast_w_syrentha_song"
+    },
+    "thalakryon": {
+      "e": "_cast_e_thalakryon_tidalrage",
+      "q": "_cast_q_thalakryon_bolt",
+      "r": "_cast_r_thalakryon_metamorph",
+      "w": "_cast_w_thalakryon_aquashield"
+    },
+    "thalgryn": {
+      "e": "_cast_e_thalgryn_morph",
+      "q": "_cast_q_thalgryn_waveform",
+      "r": "_cast_r_thalgryn_replicate",
+      "w": "_cast_w_thalgryn_adaptive"
+    },
+    "thornvaegrim": {
+      "e": "_cast_e_thornvaegrim_saplingthrow",
+      "q": "_cast_q_thornvaegrim_bramble",
+      "r": "_cast_r_thornvaegrim_grasp",
+      "w": "_cast_w_thornvaegrim_twistedadvance"
+    },
+    "thorvak": {
+      "e": "_cast_e_thorvak_vengeance",
+      "q": "_cast_q_thorvak_seed",
+      "r": "_cast_r_thorvak_dryad",
+      "w": "_cast_w_thorvak_natureswrath"
+    },
+    "vaelindra": {
+      "e": "_cast_e_vaelindra_violetrequiem",
+      "q": "_cast_q_vaelindra_energywave",
+      "r": "_cast_r_vaelindra_realm",
+      "w": "_cast_w_vaelindra_spacering"
+    },
+    "vargrath": {
+      "e": "_cast_e_vargrath_devilstrike",
+      "q": "_cast_q_vargrath_bloodthirst",
+      "r": "_cast_r_vargrath_souldom",
+      "w": "_cast_w_vargrath_charge"
+    },
+    "velmyrth": {
+      "e": "_cast_e_velmyrth_blur",
+      "q": "_cast_q_velmyrth_dagger",
+      "r": "_cast_r_velmyrth_coup",
+      "w": "_cast_w_velmyrth_strike"
+    },
+    "vhalzun": {
+      "e": "_cast_e_vhalzun_reapers_scythe",
+      "q": "_cast_q_vhalzun_death_pulse",
+      "r": "_cast_r_vhalzun_ghost_shroud",
+      "w": "_cast_w_vhalzun_heartstopper"
+    },
+    "vorenmarr": {
+      "e": "_cast_e_vorenmarr_upheaval",
+      "q": "_cast_q_vorenmarr_bonds",
+      "r": "_cast_r_vorenmarr_golem",
+      "w": "_cast_w_vorenmarr_power"
+    },
+    "vraskhan": {
+      "e": "_cast_e_vraskhan_deathslash",
+      "q": "_cast_q_vraskhan_thorned",
+      "r": "_cast_r_vraskhan_omni",
+      "w": "_cast_w_vraskhan_leap"
+    },
+    "wiro": {
+      "e": "_cast_e_wiro_dash",
+      "q": "_cast_q_wiro_windcut",
+      "r": "_cast_r_wiro_typhoon",
+      "w": "_cast_w_wiro_whirl"
+    },
+    "xyrael": {
+      "e": "_cast_e_xyrael_tempest",
+      "q": "_cast_q_xyrael_finch",
+      "r": "_cast_r_xyrael_lightness",
+      "w": "_cast_w_xyrael_defiant"
+    },
+    "yamako": {
+      "e": "_cast_e_yamako_woodgolem",
+      "q": "_cast_q_yamako_deepforest",
+      "r": "_cast_r_yamako_kannon",
+      "w": "_cast_w_yamako_woodcreation"
+    }
+  },
+  "runtime": {
+    "cooldown_units": "frames",
+    "fallback_handler": "BossHeroSkills",
+    "generated_kit": "res://scripts/entities/generated/HeroSkillKit.gd",
+    "missing_recipe": "",
+    "unknown_handler": "",
+    "visual_units": "frames"
+  },
+  "schema": 1,
+  "skill_keys": [
+    "q",
+    "w",
+    "e",
+    "r"
+  ],
+  "source": "hero_skills/",
+  "source_files": {
+    "__init__.py": "47e57ef483fd15c087a9c52d19fc76a988e8e9612a56ad6bbbccc5bb5a7619ad",
+    "_bundle.py": "4c1d1261aeca2eeef58881ea016d5ff477d769e546a5d1a8132a73bef9e8bc1e"
+  },
+  "source_sha256": "f4f540d8d1b479c48e4ed59b972c55b09734256cdbb08a18c41e792bcaee26ce",
+  "starters": [
+    "kaizen",
+    "grimjaw",
+    "sylara",
+    "vex",
+    "thorne",
+    "zephyr"
+  ],
+  "state_keys": [
+    "_astral_prison_active",
+    "_astral_prison_target",
+    "_astral_prison_timer",
+    "_bedlam_active",
+    "_bedlam_timer",
+    "_blade_fury_active",
+    "_blade_fury_timer",
+    "_bramble_active",
+    "_bramble_origin",
+    "_bramble_timer",
+    "_bristleback_active",
+    "_bristleback_timer",
+    "_crit_buff_active",
+    "_crit_buff_timer",
+    "_curse_active",
+    "_curse_target",
+    "_curse_timer",
+    "_dash_timer",
+    "_essence_flux_active",
+    "_essence_flux_timer",
+    "_focus_fire_active",
+    "_focus_fire_timer",
+    "_fortify_active",
+    "_fortify_timer",
+    "_heal_ward_active",
+    "_heal_ward_pos",
+    "_heal_ward_timer",
+    "_holy_shield_active",
+    "_holy_shield_timer",
+    "_is_dashing",
+    "_omnislash_active",
+    "_omnislash_target",
+    "_omnislash_timer",
+    "_original_attack_cd",
+    "_original_damage",
+    "_original_speed",
+    "_powershot_charging",
+    "_powershot_timer",
+    "_q_reset_timer",
+    "_q_stack",
+    "_rage_active",
+    "_rage_timer",
+    "_sanity_eclipse_active",
+    "_sanity_eclipse_timer",
+    "_shackle_active",
+    "_shackle_target",
+    "_shackle_timer",
+    "_shadow_realm_active",
+    "_shadow_realm_timer",
+    "_spawn_skill_projectile",
+    "_spray_timer",
+    "_spraying_quills",
+    "_ulti_active",
+    "_ulti_timer",
+    "_viscous_nose_active",
+    "_viscous_nose_timer",
+    "_war_cry_timer",
+    "_warpath_active",
+    "_warpath_timer",
+    "_wind_wall_timer",
+    "_windrun_active",
+    "_windrun_timer",
+    "blink_from_x",
+    "blink_from_y",
+    "clones_active_timer",
+    "clones_positions",
+    "cold_feet_target_x",
+    "cold_feet_target_y",
+    "defense_boost",
+    "defense_timer",
+    "dragon_blood_active",
+    "dragon_blood_timer",
+    "dragon_form_active",
+    "dragon_form_timer",
+    "flux_active_timer",
+    "flux_target",
+    "mana_void_x",
+    "mana_void_y",
+    "r_dir_x",
+    "r_dir_y",
+    "rage_active",
+    "rage_timer",
+    "shield_active",
+    "shield_timer",
+    "vortex_active_timer",
+    "vortex_x",
+    "vortex_y",
+    "w_dir_x",
+    "w_dir_y",
+    "w_target_x",
+    "w_target_y"
+  ],
+  "tooling_sha256": {
+    "tools/gen_hero_skill_kit.py": "6a67dd062bf2157588ff9db2d4af4fe7dc9e943d343afbb065bac5a792ad3a11",
+    "tools/prepare_godot_entities.py": "15cb2b8c1497a96c03a0dc16c7744201fa011aa14e12280d79a7fda4edc225a5",
+    "tools/prepare_godot_hero_skills.py": "c240f2890559b862a7cce6fd7b38564dbcf248b0c6e9bf68a6528cb226db5471"
+  },
+  "visual_duration": {
+    "grimjaw": {
+      "e": 60,
+      "q": 180,
+      "r": 90,
+      "w": 90
+    },
+    "kaizen": {
+      "e": 60,
+      "q": 60,
+      "r": 100,
+      "w": 90
+    },
+    "sylara": {
+      "e": 150,
+      "q": 180,
+      "r": 60,
+      "w": 180
+    },
+    "thorne": {
+      "e": 60,
+      "q": 40,
+      "r": 120,
+      "w": 100
+    },
+    "vex": {
+      "e": 60,
+      "q": 40,
+      "r": 80,
+      "w": 100
+    },
+    "zephyr": {
+      "e": 180,
+      "q": 240,
+      "r": 240,
+      "w": 180
+    }
+  }
+}

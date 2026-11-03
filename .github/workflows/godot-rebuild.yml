@@ -60,6 +60,10 @@ on:
       - 'tools/gen_boss_smart_ai.py'
       - 'tools/prepare_godot_entities.py'
       - 'tools/test_godot_entity_prepare.py'
+      - 'tools/prepare_godot_hero_skills.py'
+      - 'tools/test_godot_hero_skills_prepare.py'
+      - 'godot_rebuild/scripts/core/HeroSkills.gd'
+      - 'godot_rebuild/tests/HeroSkillsParityTest.gd'
       - '_render.py'
       - 'mobile/perf.py'
       - 'map_components/**'
@@ -131,6 +135,10 @@ on:
       - 'tools/gen_boss_smart_ai.py'
       - 'tools/prepare_godot_entities.py'
       - 'tools/test_godot_entity_prepare.py'
+      - 'tools/prepare_godot_hero_skills.py'
+      - 'tools/test_godot_hero_skills_prepare.py'
+      - 'godot_rebuild/scripts/core/HeroSkills.gd'
+      - 'godot_rebuild/tests/HeroSkillsParityTest.gd'
       - '_render.py'
       - 'mobile/perf.py'
       - 'map_components/**'
@@ -194,12 +202,14 @@ jobs:
             python tools/prepare_godot_tactical.py --check
             python tools/test_godot_tactical_prepare.py
             python tools/test_godot_tactical_parity.py
-          python tools/prepare_godot_ui_theme.py --check
-          python tools/test_godot_ui_theme_prepare.py
-          python tools/test_godot_ui_theme_parity.py
+            python tools/prepare_godot_ui_theme.py --check
+            python tools/test_godot_ui_theme_prepare.py
+            python tools/test_godot_ui_theme_parity.py
             python tools/test_localization.py
             python tools/prepare_godot_entities.py --check
             python tools/test_godot_entity_prepare.py
+            python3 tools/prepare_godot_hero_skills.py --check
+            python3 tools/test_godot_hero_skills_prepare.py
             python tools/prepare_godot_render.py --check
             python tools/test_godot_render_prepare.py
             python tools/prepare_godot_system.py --check
