@@ -144,6 +144,18 @@ static func update(model: RefCounted) -> void:
 static func _hit(model: RefCounted, proj: Dictionary, target: BattleUnit) -> void:
 	var source: BattleUnit = proj.get("source")
 	if proj.kind == "hero":
+		# Python explicitly suppresses all basic-attack impact feedback.
+		if source != null and bool(proj.get("is_skill", false)):
+			model.hero_fx.projectile_impact(
+				source,
+				target.pos,
+				float(proj.get("angle", 0.0)),
+				float(proj.damage),
+				bool(proj.get("is_crit", false))
+			)
+			HeroFeedback.projectile_hit(
+				model.feel, source.unit_type, float(proj.damage), bool(proj.get("is_crit", false))
+			)
 		if float(proj.damage) > 0.0:
 			var dealt := target.take_damage(
 				float(proj.damage),

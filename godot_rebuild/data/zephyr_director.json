@@ -1,0 +1,48 @@
+{
+  "attack_phases": [
+    [
+      "ANTICIPATION",
+      0.0,
+      0.16
+    ],
+    [
+      "WINDUP",
+      0.16,
+      0.34
+    ],
+    [
+      "SWING",
+      0.34,
+      0.52
+    ],
+    [
+      "IMPACT",
+      0.52,
+      0.6
+    ],
+    [
+      "FOLLOW",
+      0.6,
+      0.8
+    ],
+    [
+      "RECOVERY",
+      0.8,
+      1.0
+    ]
+  ],
+  "priority": {
+    "ATTACK": 40,
+    "CAST": 35,
+    "CHARGE": 30,
+    "DEATH": 100,
+    "HIT": 60,
+    "HURT": 65,
+    "IDLE": 0,
+    "RUN": 15,
+    "SKILL": 50,
+    "SPECIAL": 55,
+    "SWING": 45,
+    "WALK": 10
+  }
+}

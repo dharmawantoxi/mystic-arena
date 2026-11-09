@@ -16,6 +16,57 @@ Gameplay default sekarang `scenes/CoreGame.tscn`.
 > `docs/GODOT_HERO_SKILLS_MIGRATION.md` dan
 > `docs/GODOT_HERO_SKILLS_VERIFICATION.md`.
 
+## Migrasi renderer heroes
+
+`HeroVisuals.gd` menyediakan pemilih pose native dan progress cast skill.
+`HeroCombatFeel.gd` menyediakan bus hit-stop/shake per match; feedback skill
+lima starter ditranspilasi ke `generated/HeroFeedback.gd` dari AST Python.
+`ZephyrBolt.gd` menggambar bolt prosedural native; 80 kasus geometri direkam
+dari fungsi Python asli. Blending glow/rasterisasi belum parity piksel.
+`HeroLiveFx.gd` menambahkan partikel impact skill Zephyr (pool per owner,
+cap 96, quality budget, slow-motion dan cleanup); full director tetap parsial.
+Oracle tersedia melalui `tools/prepare_godot_zephyr_particles.py --check`.
+`ZephyrSwingTrail.gd` menambahkan trail tiga lapis dengan sampled staff
+attachment dari rig Python. Body/trail Zephyr memakai timeline serangan yang
+sama; periksa `tools/prepare_godot_zephyr_trail.py --check`. Ini belum port
+seluruh rig/director atau pembuktian parity piksel.
+Particle renderer mencakup pixel/streak/shard/spark/glow dan fallback pixel;
+12 trajectory fixture serta smoke render Pygame menguji command/helper sumber,
+bukan parity piksel native. Full director tetap tertinggal.
+`ZephyrSkill.gd` memindahkan lifecycle/emisi q/w/e/r, dipicu cast sukses, cap
+3 per owner, dengan oracle AST dan random tape. Jalankan
+`tools/prepare_godot_zephyr_skill.py --check`. Front SkillFX (release glow/ring, area rune, impact ring) sudah native dengan
+312 oracle kasus; ground haze/ring/retakan juga native dengan 288 oracle kasus.
+Ground digambar di bawah karakter dan menunggu update fase pertama. Blending/raster native belum
+parity piksel.
+`ZephyrDirectorState.gd` memindahkan prioritas state, phase attack dan debu
+start swing. Oracle mencakup 31 sampel; adapter memakai timer animasi native
+setelah simulasi. Body procedural rig dan full orchestration tetap belum selesai.
+`ZephyrVisualProjectile.gd` dan sistemnya menyediakan visual bolt independen:
+homing, ribbon, tail particles, impact/expiry dan cap 14 per owner. API eksplisit
+`HeroLiveFx.spawn_visual_projectile` tidak mengganti damage projectile gameplay
+atau menambah bolt otomatis ke semua cast. Oracle menguji tujuh skenario dan
+manager, termasuk pemeriksaan shim terhadap Pygame Vector2 asli.
+`GrimjawHurt.gd` menambahkan foreground hurt streak dan empat band flash khusus
+Grimjaw; cap 108 dan budget round-to-even berasal dari sumber. `GrimjawParticle`
+dan pool-nya menambahkan ember/smoke, back/front layer, serta death edge
+8 ember + 5 smoke dan shake sekali. Stream serta tujuh bentuk partikel
+(termasuk glow/spark Grimjaw) sudah native. `GrimjawSkill.gd` kini menghubungkan
+lifecycle/emisi q/w/e/r ke cast sukses (cap 3), serta front ring coretan, rune
+dan chevron (780 oracle kasus). Ground FX, paket tambahan on_cast, live palette
+sync dan full director Grimjaw masih tertinggal.
+`ZephyrHurt.gd` menambahkan observer penurunan HP, tiga hurt streak dan hit
+flash 0.16 detik. Observasi memakai clock FX sebelum simulasi (damage baru
+terlihat tick berikutnya); source-prefix oracle tersedia di fixture partikel.
+`ZephyrImpact.gd` menambahkan flash/shockwave/slash/spark untuk benturan skill,
+dengan cap 8 per owner dan oracle/helper smoke test Pygame. Jalankan
+`tools/prepare_godot_zephyr_impact.py --check`; blending/rasterisasi native
+masih belum parity piksel.
+Kontrak `data/heroes_renderers.json` memvalidasi sumber `heroes/`, atlas 222
+unit, dan status migrasi per modul (bukan klaim seluruh FX sudah native). Jalankan `python3 tools/prepare_godot_heroes.py --check` dan
+`python3 tools/test_godot_heroes_prepare.py`. Cakupan dan batas parity visual
+tercantum di [catatan migrasi heroes](../docs/GODOT_HEROES_MIGRATION.md).
+
 ## Menjalankan
 
 Dari root repositori:
@@ -134,3 +185,8 @@ Android SDK serta export templates Godot 4.7.2 melalui editor. Konfigurasikan
 keystore debug/release lokal, lalu Export Project. Jangan mengubah application ID
 untuk update aplikasi yang sudah terbit. Kredensial tidak disimpan di repo.
 Preset ini belum menghasilkan atau memvalidasi APK/AAB di lingkungan pengerjaan.
+
+Grimjaw SkillFX now also emits ground primitives (rings/dashes, non-ward cracks,
+posterized haze and hatch marks), replayed against 780 source-AST ground cases.
+This supersedes earlier notes that the ground layer is empty; blending/pixel
+parity and full Grimjaw director/rig migration remain outside this slice.

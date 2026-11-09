@@ -791,7 +791,7 @@ class ImpactFX:
             ln = (16 + 34 * pw) * ft
             fl = _scratch(int(ln * 2 + 8), int(ln * 2 + 8))
             c = int(ln + 4)
-            for i in range(4):
+            for k in range(4):
                 a = self.angle + k * math.pi / 4
                 L = ln if k % 2 == 0 else ln * 0.42
                 pygame.draw.line(
@@ -822,7 +822,7 @@ class ImpactFX:
         if t < 0.6:
             st = 1.0 - t / 0.6
             r0 = int((6 + 20 * pw) * (0.3 + 1.1 * t))
-            for i in range(4):
+            for k in range(4):
                 ang = self.angle + k * math.pi / 4 + 0.19
                 L = (7 + 15 * pw) * st * (1.0 if k % 2 else 0.55)
                 pygame.draw.line(

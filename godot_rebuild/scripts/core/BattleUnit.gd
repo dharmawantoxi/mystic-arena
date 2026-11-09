@@ -74,13 +74,25 @@ var facing := 1
 var pulse := 0.0
 var anim_time := 0
 var is_moving := false
-var attack_anim_timer := 0
+var attack_anim_duration := 1
+var attack_anim_timer := 0:
+	set(value):
+		if value > attack_anim_timer:
+			attack_anim_duration = value
+		attack_anim_timer = value
 var hurt_flash_timer := 0
 var spawn_anim := 20
 var upgrade_flash := 0
 var shoot_flash_timer := 0
 var active_skill: Variant = ""
-var active_skill_timer := 0
+var active_skill_duration := 0
+var visual_skill: Variant = ""
+var active_skill_timer := 0:
+	set(value):
+		if value > active_skill_timer or visual_skill != active_skill:
+			active_skill_duration = value
+			visual_skill = active_skill
+		active_skill_timer = value
 var auto_cast_enabled := true
 var auto_cast_check_timer := 0
 var destination_auto := false
@@ -789,6 +801,8 @@ func cast_skill(key: String, _enemies: Array[BattleUnit]) -> bool:
 	var bases: Array = [world.blue_base, world.red_base]
 	var ok := HeroSkills.shared().cast(self, key, world.all_units(), towers, bases)
 	if ok:
+		HeroFeedback.cast(world.feel, unit_type, key)
+		world.hero_fx.cast(self, key)
 		if items != null and items.cooldown_reduction() > 0.0:
 			skill_cooldowns[key] = int(
 				round(int(skill_cooldowns[key]) * (1.0 - items.cooldown_reduction()))

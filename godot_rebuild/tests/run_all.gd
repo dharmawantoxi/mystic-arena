@@ -2,6 +2,7 @@ class_name MysticTestRunner
 extends SceneTree
 
 ## Native regression tests. Run after --editor --import, not as a gameplay demo.
+const HeroMigrationTests := preload("res://tests/HeroMigrationTest.gd")
 const State := preload("res://scripts/core/AppState.gd")
 const Clock := preload("res://scripts/core/FixedClock.gd")
 const Gesture := preload("res://scripts/core/GestureTracker.gd")
@@ -58,6 +59,7 @@ func _run() -> void:
 	_test_balance()
 	_test_items()
 	_test_hero_skills()
+	HeroMigrationTests.run(self)
 	_test_bosses()
 	_test_core_rules()
 	_test_core_save()
@@ -1125,8 +1127,12 @@ func _test_core_match() -> void:
 	model.tactical.update(model)
 	check(model.heroes[0].has_destination, "tactical command moves hero")
 	model.red_base.take_damage(model.red_base.max_hp + model.red_base.shield + 1, "blue", "true")
-	model.step()
-	check(model.state == "victory", "victory detected")
+	# Cast feedback may leave up to MAX_FRAMES of legitimate hit-stop.
+	for _index in range(HeroCombatFeel.MAX_FRAMES + 1):
+		model.step()
+		if model.state != "playing":
+			break
+	check(model.state == "victory", "victory detected after bounded hit-stop")
 	var dev := DevMode.new()
 	dev.allowed = true
 	var model2 := MatchModel.new()

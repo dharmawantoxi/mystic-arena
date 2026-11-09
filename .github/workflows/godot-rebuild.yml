@@ -58,6 +58,30 @@ on:
       - 'hero_archetypes.py'
       - 'tools/gen_hero_skill_kit.py'
       - 'tools/gen_boss_smart_ai.py'
+      - 'tools/prepare_godot_zephyr_impact.py'
+      - 'tools/test_godot_zephyr_impact_prepare.py'
+      - 'tools/prepare_godot_zephyr_trail.py'
+      - 'tools/test_godot_zephyr_trail_prepare.py'
+      - 'tools/prepare_godot_grimjaw_skill.py'
+      - 'tools/test_godot_grimjaw_skill_prepare.py'
+      - 'tools/prepare_godot_grimjaw_hurt.py'
+      - 'tools/test_godot_grimjaw_hurt_prepare.py'
+      - 'tools/prepare_godot_zephyr_projectile.py'
+      - 'tools/test_godot_zephyr_projectile_prepare.py'
+      - 'tools/prepare_godot_zephyr_director.py'
+      - 'tools/test_godot_zephyr_director_prepare.py'
+      - 'tools/prepare_godot_zephyr_skill.py'
+      - 'tools/test_godot_zephyr_skill_prepare.py'
+      - 'tools/prepare_godot_zephyr_particles.py'
+      - 'tools/test_godot_zephyr_particles_prepare.py'
+      - 'tools/prepare_godot_zephyr_bolt.py'
+      - 'tools/test_godot_zephyr_bolt_prepare.py'
+      - 'tools/prepare_godot_hero_feedback.py'
+      - 'tools/test_godot_hero_feedback_prepare.py'
+      - 'tools/prepare_godot_combat_feel.py'
+      - 'tools/test_godot_combat_feel_prepare.py'
+      - 'tools/prepare_godot_heroes.py'
+      - 'tools/test_godot_heroes_prepare.py'
       - 'tools/prepare_godot_entities.py'
       - 'tools/test_godot_entity_prepare.py'
       - 'tools/prepare_godot_hero_skills.py'
@@ -133,6 +157,30 @@ on:
       - 'hero_archetypes.py'
       - 'tools/gen_hero_skill_kit.py'
       - 'tools/gen_boss_smart_ai.py'
+      - 'tools/prepare_godot_zephyr_impact.py'
+      - 'tools/test_godot_zephyr_impact_prepare.py'
+      - 'tools/prepare_godot_zephyr_trail.py'
+      - 'tools/test_godot_zephyr_trail_prepare.py'
+      - 'tools/prepare_godot_grimjaw_skill.py'
+      - 'tools/test_godot_grimjaw_skill_prepare.py'
+      - 'tools/prepare_godot_grimjaw_hurt.py'
+      - 'tools/test_godot_grimjaw_hurt_prepare.py'
+      - 'tools/prepare_godot_zephyr_projectile.py'
+      - 'tools/test_godot_zephyr_projectile_prepare.py'
+      - 'tools/prepare_godot_zephyr_director.py'
+      - 'tools/test_godot_zephyr_director_prepare.py'
+      - 'tools/prepare_godot_zephyr_skill.py'
+      - 'tools/test_godot_zephyr_skill_prepare.py'
+      - 'tools/prepare_godot_zephyr_particles.py'
+      - 'tools/test_godot_zephyr_particles_prepare.py'
+      - 'tools/prepare_godot_zephyr_bolt.py'
+      - 'tools/test_godot_zephyr_bolt_prepare.py'
+      - 'tools/prepare_godot_hero_feedback.py'
+      - 'tools/test_godot_hero_feedback_prepare.py'
+      - 'tools/prepare_godot_combat_feel.py'
+      - 'tools/test_godot_combat_feel_prepare.py'
+      - 'tools/prepare_godot_heroes.py'
+      - 'tools/test_godot_heroes_prepare.py'
       - 'tools/prepare_godot_entities.py'
       - 'tools/test_godot_entity_prepare.py'
       - 'tools/prepare_godot_hero_skills.py'
@@ -206,6 +254,30 @@ jobs:
             python tools/test_godot_ui_theme_prepare.py
             python tools/test_godot_ui_theme_parity.py
             python tools/test_localization.py
+            python tools/prepare_godot_zephyr_impact.py --check
+            python tools/test_godot_zephyr_impact_prepare.py
+            python tools/prepare_godot_zephyr_trail.py --check
+            python tools/test_godot_zephyr_trail_prepare.py
+            python tools/prepare_godot_grimjaw_skill.py --check
+            python tools/test_godot_grimjaw_skill_prepare.py
+            python tools/prepare_godot_grimjaw_hurt.py --check
+            python tools/test_godot_grimjaw_hurt_prepare.py
+            python tools/prepare_godot_zephyr_projectile.py --check
+            python tools/test_godot_zephyr_projectile_prepare.py
+            python tools/prepare_godot_zephyr_director.py --check
+            python tools/test_godot_zephyr_director_prepare.py
+            python tools/prepare_godot_zephyr_skill.py --check
+            python tools/test_godot_zephyr_skill_prepare.py
+            python tools/prepare_godot_zephyr_particles.py --check
+            python tools/test_godot_zephyr_particles_prepare.py
+            python tools/prepare_godot_zephyr_bolt.py --check
+            python tools/test_godot_zephyr_bolt_prepare.py
+            python tools/prepare_godot_hero_feedback.py --check
+            python tools/test_godot_hero_feedback_prepare.py
+            python tools/prepare_godot_combat_feel.py --check
+            python tools/test_godot_combat_feel_prepare.py
+            python tools/prepare_godot_heroes.py --check
+            python tools/test_godot_heroes_prepare.py
             python tools/prepare_godot_entities.py --check
             python tools/test_godot_entity_prepare.py
             python3 tools/prepare_godot_hero_skills.py --check
@@ -281,6 +353,8 @@ jobs:
           python3 - <<'PY'
           import os
           from pathlib import Path
+          import re
+          from collections import Counter
           summary = ['### Godot runtime diagnostics']
           for stage in ('import', 'tests', 'boot'):
               path = Path(f'/tmp/godot-{stage}.log')
@@ -290,6 +364,14 @@ jobs:
               selected = [(i, line) for i, line in enumerate(lines)
                           if any(marker in line for marker in
                                  ('SCRIPT ERROR:', 'ERROR:', 'FAIL:', 'Parse Error', 'PASS:'))]
+              if stage == 'tests':
+                  failures = [line for line in lines if line.startswith('FAIL:')]
+                  groups = Counter(re.split(r'/| got=| number| array| value', line)[0] for line in failures)
+                  overview = ' | '.join(f'{count}x {label}' for label, count in groups.most_common(24))
+                  if overview:
+                      print('::error title=Godot failure groups::' + overview.replace('%', '%25'), flush=True)
+                  for line in failures[:12]:
+                      print('::error title=Godot first failures::' + line[:1800].replace('%', '%25'), flush=True)
               for index, line in selected[-12:]:
                   context = ' | '.join(lines[max(0, index - 1):index + 3])[:1200]
                   context = context.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')

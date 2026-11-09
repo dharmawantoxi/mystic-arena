@@ -7,6 +7,8 @@ signal notification(text: String)
 signal match_finished(victory: bool)
 signal render_event(kind: String, data: Dictionary)
 
+var feel := HeroCombatFeel.new()
+var hero_fx := HeroLiveFx.new()
 var data := CoreData.new()
 var level_number := 1
 var level_config: Dictionary = {}
@@ -66,6 +68,8 @@ var spatial := SpatialGrid.new()
 
 
 func clear_unit_refs() -> void:
+	feel.reset()
+	hero_fx.clear()
 	# BattleUnit is RefCounted; break target/source cycles before replacing a match.
 	tactical.reset()
 	tactical.attach(null)
@@ -240,6 +244,8 @@ func enemies_of(team: String) -> Array[BattleUnit]:
 
 func step() -> void:
 	if state != "playing":
+		return
+	if feel.should_freeze_frame():
 		return
 	frame += 1
 	gold_timer += 1
