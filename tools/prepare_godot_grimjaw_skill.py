@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Execute original Grimjaw SkillFX lifecycle/emissions with fixed palette/tape.
 
-Front primitive geometry included; no ground, live palette-sync, full director or RNG parity.
+Front/ground primitive geometry included; no live palette-sync, full director or RNG parity.
 """
 import argparse
 import ast
@@ -69,11 +69,28 @@ def front_environment(detail, glow):
     return env
 
 
-def front_cases():
+def ground_environment(detail, glow):
+    env = front_environment(detail, glow)
+    env["pygame"].Rect = zephyr.Rect
+    env["pygame"].SRCALPHA = 0
+    env["_SURF_CACHE"] = {}
+    env["_cache_put"] = lambda _key, surface: surface
+    def ellipse(surface, color, rect, width=0):
+        box = rect.values if isinstance(rect, zephyr.Rect) else list(rect)
+        surface.commands.append(["oval", list(color), box, width])
+    env["pygame"].draw.ellipse = ellipse
+    tree = ast.parse(SOURCE.read_text())
+    helpers = [n for n in tree.body if isinstance(n, ast.FunctionDef)
+               and n.name == "ground_glow_surface"]
+    exec(compile(ast.Module(body=helpers, type_ignores=[]), str(SOURCE), "exec"), env)
+    return env
+
+
+def front_cases(ground=False):
     cases = []
     for detail in (.35, .55, 1.0):
         for glow in (False, True):
-            env = front_environment(detail, glow)
+            env = (ground_environment if ground else front_environment)(detail, glow)
             for key in "qwer":
                 for facing in ((-1, 1) if key == "e" else (1,)):
                     for x, y in ((100.75, 200.25), (-20.75, -10.25)):
@@ -88,7 +105,7 @@ def front_cases():
                         for phase, age, active in samples:
                             skill.phase, skill.age, skill.active = phase, age, active
                             canvas = Surface()
-                            skill.draw_front(canvas)
+                            (skill.draw_ground if ground else skill.draw_front)(canvas)
                             cases.append({"key": key, "x": x, "y": y, "detail": detail,
                                           "glow": glow, "facing": facing, "phase": phase,
                                           "age_f64": struct.pack("<d", age).hex(), "age": age, "active": active, "commands": canvas.commands})
@@ -135,8 +152,8 @@ def build():
     config = {"timeline": cls.TIMELINE, "radius": cls.RADIUS, "colors": colors,
               "palette": env["P"], "director_limit": limit, "timeline_f64": {key: [struct.pack("<d", v).hex() for v in values] for key, values in cls.TIMELINE.items()}}
     fixture = {"schema": 1, "source_sha256": hashlib.sha256(SOURCE.read_bytes()).hexdigest(),
-               "scope": "Grimjaw SkillFX lifecycle/emissions/front primitives; fixed palette/seed/tape, not pixels",
-               "random_tape": hurt.particles.TAPE, "cases": cases, "front": front_cases()}
+               "scope": "Grimjaw SkillFX lifecycle/emissions/front/ground primitives; fixed palette/seed/tape, not pixels",
+               "random_tape": hurt.particles.TAPE, "cases": cases, "front": front_cases(), "ground": front_cases(ground=True)}
     return json.loads(json.dumps(fixture)), json.loads(json.dumps(config))
 
 

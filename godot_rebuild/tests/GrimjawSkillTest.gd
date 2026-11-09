@@ -28,9 +28,6 @@ static func run(runner) -> void:
 				sample.expected[index],
 				"Grimjaw skill emission"
 			)
-		runner.check(
-			skill.ground_commands().is_empty(), "Grimjaw ground skill geometry is still pending"
-		)
 	for sample: Dictionary in fixture.front:
 		var skill := GrimjawSkill.new()
 		skill.spawn(sample.key, sample.x, sample.y)
@@ -44,6 +41,19 @@ static func run(runner) -> void:
 			skill.front_commands(sample.detail),
 			sample.commands,
 			"Grimjaw front primitive geometry"
+		)
+	for sample: Dictionary in fixture.ground:
+		var skill := GrimjawSkill.new()
+		skill.spawn(sample.key, sample.x, sample.y, 0.0, 1234)
+		skill.age = str(sample.age_f64).hex_decode().decode_double(0)
+		skill.phase = sample.phase
+		skill.active = sample.active
+		skill.glow_allowed = sample.glow
+		Compare._equal(
+			runner,
+			skill.ground_commands(sample.detail),
+			sample.commands,
+			"Grimjaw ground primitive geometry"
 		)
 	_adapter(runner)
 

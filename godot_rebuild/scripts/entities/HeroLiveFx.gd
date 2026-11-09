@@ -402,6 +402,8 @@ func draw_ground(canvas: CanvasItem) -> void:
 		system.draw(canvas, "back")
 	for records: Array in skills.values():
 		for skill: ZephyrSkill in records:
+			if skill is GrimjawSkill:
+				skill.glow_allowed = glow_enabled
 			ZephyrBolt.draw_shapes(canvas, skill.ground_commands(maxf(0.35, budget)))
 
 

@@ -185,3 +185,8 @@ Android SDK serta export templates Godot 4.7.2 melalui editor. Konfigurasikan
 keystore debug/release lokal, lalu Export Project. Jangan mengubah application ID
 untuk update aplikasi yang sudah terbit. Kredensial tidak disimpan di repo.
 Preset ini belum menghasilkan atau memvalidasi APK/AAB di lingkungan pengerjaan.
+
+Grimjaw SkillFX now also emits ground primitives (rings/dashes, non-ward cracks,
+posterized haze and hatch marks), replayed against 780 source-AST ground cases.
+This supersedes earlier notes that the ground layer is empty; blending/pixel
+parity and full Grimjaw director/rig migration remain outside this slice.

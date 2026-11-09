@@ -14,6 +14,30 @@ import prepare_godot_grimjaw_skill as prepare
 
 
 class GrimjawSkillPrepareTest(unittest.TestCase):
+    def test_ground_coverage_and_glow_gate(self):
+        cases = prepare.front_cases(ground=True)
+        self.assertEqual(len(cases), 780)
+        self.assertEqual({c["phase"] for c in cases}, {"cast", "charge", "release", "area", "impact", "fade"})
+        for case in cases:
+            if not case["active"]:
+                self.assertEqual(case["commands"], [])
+        def commands(key, glow):
+            return next(c["commands"] for c in cases if c["key"] == key and c["phase"] == "release"
+                        and c["detail"] == 1.0 and c["glow"] == glow and c["x"] > 0)
+        for key in "qwer":
+            self.assertEqual(len(commands(key, True)) - len(commands(key, False)), 6)
+        self.assertFalse(any(c[0] == "line" and c[1][3] == 255 for c in commands("w", False)))
+        self.assertTrue(any(c[0] == "line" and c[1][3] == 255 for c in commands("q", False)))
+
+    def test_ground_oracle_tracks_source(self):
+        original = prepare.SOURCE.read_text()
+        baseline = prepare.front_cases(ground=True)
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "grimjaw_fx.py"
+            source.write_text(original.replace("int(200 - 90 * t)", "int(199 - 90 * t)"))
+            with patch.object(prepare, "SOURCE", source):
+                self.assertNotEqual(baseline, prepare.front_cases(ground=True))
+
     def test_current_and_deterministic(self):
         fixture, config = prepare.build()
         self.assertEqual((fixture, config), prepare.build())

@@ -693,3 +693,27 @@ di `data/heroes_renderers.json` dan tidak menganggap hash sebagai parity.
 | `xerathis_fx.py` | Belum native |
 | `zephyr_fx.py` | Feedback, bolt, partikel, SwingTrail, ImpactFX, SkillFX, hurt dan director state/swing native; sampled attachment; full director/rig dan parity piksel belum selesai |
 | `zharok_fx.py` | Belum native |
+
+## Grimjaw ground primitives and native CI follow-up
+
+The previous empty `GrimjawSkill.ground_commands` milestone is superseded:
+charge dashes, release/area rings, non-ward deterministic cracks, expanding fade
+rings, and the three posterized haze bands plus three hatch marks are now
+ported. The glow quality flag is applied before ground rendering, not only
+before front rendering. Ring white uses the Grimjaw palette; ward deliberately
+omits cracks. Primitive recording still does not validate scratch overwrite,
+additive blending, or raster/pixel parity.
+
+The source-AST oracle adds 780 ground cases across Q/W/E/R, signed fractional
+positions, phase boundaries, three detail levels, glow on/off, and inactive
+expiry. Native replay restores exact IEEE-754 sample ages. Python tests cover
+glow gating, opaque crack behavior, and mutation sensitivity of source ring
+alpha. The affected preparer suite now has 13 passing tests; static validation
+has 657 passing checks. Native CI for this ground milestone is pending.
+
+Before this ground addition, commit `ef4a39c` passed the native regression job
+and actual main-scene boot in CI (run 42554947271). This resolves the earlier
+94 failures via exact timing inputs and standalone test clock/setup fixes;
+no comparator tolerance was relaxed. Full hero migration remains incomplete:
+Grimjaw orchestration, trails/projectiles/rig, other heroes, and pixel parity
+remain separate work.

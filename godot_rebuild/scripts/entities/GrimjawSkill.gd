@@ -2,7 +2,7 @@ class_name GrimjawSkill
 extends ZephyrSkill
 
 ## Reuses scalar state/tape storage, not Zephyr emission formulas or visuals.
-## Ground visuals and full cast/director effects remain pending.
+## Full cast/director orchestration remains pending.
 static var grimjaw_config: Dictionary = {}
 var col_a: Array = []
 var col_b: Array = []
@@ -368,5 +368,117 @@ func _doodle_ring(r: int, thickness: int, rgb: Array, opacity: int) -> Array:
 	return result
 
 
-func ground_commands(_detail := 1.0) -> Array:
-	return []
+func ground_commands(detail := 1.0) -> Array:
+	if not active:
+		return []
+	var tint := [col_a, col_b]
+	var result: Array = []
+	var t_all := minf(1.0, age / total)
+	var haze := int(floor(int(radius * (0.9 + 0.25 * sin(age * 4.0))) / 8.0)) * 8
+	var power := python_round(0.30 * (1.0 - absf(t_all - 0.35) * 1.4) / 0.05) * 0.05
+	if power > 0.02 and haze >= 8 and glow_allowed:
+		for bi in 3:
+			var f: float = [0.30, 0.58, 1.0][bi]
+			var k := power * f
+			if k <= 0.004:
+				continue
+			var rx := maxi(2, int(haze * f))
+			var ry := maxi(1, int(haze * f * 0.5))
+			var dy := python_round((hash01(haze * 23 + bi * 5) - 0.5) * 2)
+			result.append(
+				[
+					"oval",
+					[
+						int(col_a[0] * k),
+						int(col_a[1] * k),
+						int(col_a[2] * k),
+						mini(255, int(255 * k))
+					],
+					[int(x) - rx, int(y) - ry + dy, rx * 2, ry * 2],
+					0
+				]
+			)
+		for k in 3:
+			var sx := int((haze * 2 + 4) * (0.30 + 0.20 * k)) + int(x) - haze - 2
+			var length := int(haze * (0.22 + 0.10 * hash01(haze * 7 + k)))
+			var yy := int(y) + int((hash01(haze * 11 + k * 3) - 0.5) * haze * 0.6)
+			result.append(
+				[
+					"line",
+					[
+						int(col_a[0] * power),
+						int(col_a[1] * power),
+						int(col_a[2] * power),
+						mini(255, int(190 * power))
+					],
+					[sx, yy],
+					[sx + length, yy + 1],
+					1
+				]
+			)
+	if phase == "charge":
+		var t := age / t_charge
+		_ground_ring(
+			result,
+			int(radius * (1.25 - 0.25 * t)),
+			tint[0],
+			int(120 + 90 * t),
+			true,
+			t * 6.0,
+			detail
+		)
+	elif phase == "release" or phase == "area":
+		var t := minf(1.0, (age - t_charge) / maxf(0.001, t_area - t_charge))
+		_ground_ring(result, int(radius), tint[0], int(200 - 90 * t), false, 0.0, detail)
+		_ground_ring(result, int(radius * 0.66), tint[1], int(160 - 70 * t), true, -t * 5.0, detail)
+		if kind != "w":
+			_ground_cracks(result, tint[1], int(170 * (1.0 - t)), detail)
+	else:
+		var t := minf(1.0, (age - t_area) / maxf(0.001, total - t_area))
+		_ground_ring(
+			result,
+			int(radius * (1.0 + 0.35 * t)),
+			tint[1],
+			int(150 * (1.0 - t)),
+			false,
+			0.0,
+			detail
+		)
+	return result
+
+
+func _ground_ring(
+	result: Array, r: int, rgb: Array, opacity: int, dashed: bool, rotation: float, detail: float
+) -> void:
+	if opacity <= 5 or r <= 3:
+		return
+	var rgba := [rgb[0], rgb[1], rgb[2], opacity]
+	var cx := r + 4
+	var cy := int((int(r * 0.9) + 8) / 2)
+	if not dashed:
+		var box := [int(x) - r, int(y) - int(r * 0.42), r * 2, int(r * 0.84)]
+		result.append(["oval", rgba, box, 3])
+		var white: Array = grimjaw_config.palette.fx_white
+		result.append(
+			[
+				"oval",
+				[white[0], white[1], white[2], int(opacity / 3)],
+				[box[0] + 3, box[1] + 1, box[2] - 6, box[3] - 3],
+				1
+			]
+		)
+	else:
+		var segments := clampi(int(16 * detail), 8, 16)
+		for i in segments:
+			if i % 2 and detail >= 0.55:
+				continue
+			var angle := i * TAU / segments + rotation
+			var first := [
+				int(cx + cos(angle) * r) + int(x) - cx,
+				int(cy + sin(angle) * r * 0.42) + int(y) - cy
+			]
+			var second := [
+				int(cx + cos(angle + 0.26) * r) + int(x) - cx,
+				int(cy + sin(angle + 0.26) * r * 0.42) + int(y) - cy
+			]
+			result.append(["line", rgba, first, second, 3])
