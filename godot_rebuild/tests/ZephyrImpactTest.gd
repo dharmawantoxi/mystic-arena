@@ -23,7 +23,10 @@ static func run(runner) -> void:
 			impact.active = bool(frame.state.active)
 			Compare._equal(runner, impact.snapshot(), frame.state, "impact absolute age state")
 			Compare._equal(
-				runner, impact.commands(), frame.commands, "impact primitive/helper commands"
+				runner,
+				impact.commands(),
+				frame.commands,
+				"impact args=%s fraction=%s" % [JSON.stringify(sample.args), str(frame.fraction)]
 			)
 		impact = _spawn(sample.args)
 		for step: Dictionary in sample.lifecycle:

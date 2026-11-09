@@ -104,13 +104,46 @@ static func _equal(runner, actual: Variant, expected: Variant, label: String) ->
 		runner.check(actual is Array, label + " array")
 		if not actual is Array:
 			return
-		runner.check(actual.size() == expected.size(), label + " array size")
+		runner.check(
+			actual.size() == expected.size(),
+			label + " array size got=%d expected=%d" % [actual.size(), expected.size()]
+		)
+		if actual.size() != expected.size():
+			return
 		for index in mini(actual.size(), expected.size()):
 			_equal(runner, actual[index], expected[index], label + "/%d" % index)
 	elif expected is float or expected is int:
-		runner.check(runner.near(float(actual), float(expected)), label + " number")
+		if not (actual is int or actual is float):
+			runner.check(
+				false,
+				(
+					label
+					+ " number type got="
+					+ JSON.stringify(actual)
+					+ " expected="
+					+ JSON.stringify(expected)
+				)
+			)
+			return
+		var equal: bool = runner.near(float(actual), float(expected))
+		runner.check(
+			equal,
+			(
+				label + " number"
+				if equal
+				else (
+					label
+					+ " number got="
+					+ JSON.stringify(actual, "", false, true)
+					+ " expected="
+					+ JSON.stringify(expected, "", false, true)
+				)
+			)
+		)
 	else:
-		runner.check(actual == expected, label + " value")
+		runner.check(
+			actual == expected, label + " value got=" + str(actual) + " expected=" + str(expected)
+		)
 
 
 static func _lifecycle(runner) -> void:
