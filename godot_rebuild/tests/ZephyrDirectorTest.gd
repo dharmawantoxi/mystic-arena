@@ -45,10 +45,12 @@ static func _integration(runner) -> void:
 	fx.capture_trails([owner], 1032)
 	runner.check(fx.systems[key].live.size() == 2, "continuous swing does not repeat edge")
 	owner.attack_anim_timer = 20
+	owner.attack_anim_duration = 100
 	fx.update(feel, 1048, [owner])
 	fx.capture_trails([owner], 1048)
 	runner.check(fx.directors[key].edge == "end", "leaving swing emits end edge")
 	owner.attack_anim_timer = 50
+	owner.attack_anim_duration = 100
 	fx.update(feel, 1064, [owner])
 	fx.capture_trails([owner], 1064)
 	runner.check(fx.systems[key].live.size() == 4, "new swing emits another pair")
