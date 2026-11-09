@@ -30,7 +30,7 @@ static func run(runner) -> void:
 			)
 	for sample: Dictionary in fixture.front:
 		var skill := ZephyrSkill.new().spawn(sample.kind, sample.x, sample.y)
-		skill.age = sample.age
+		skill.age = str(sample.age_f64).hex_decode().decode_double(0)
 		skill.phase = sample.phase
 		skill.active = sample.active
 		Compare._equal(
@@ -42,7 +42,7 @@ static func run(runner) -> void:
 	)
 	for sample: Dictionary in fixture.ground:
 		var skill := ZephyrSkill.new().spawn(sample.kind, sample.x, sample.y, 0.0, 1234)
-		skill.age = sample.age
+		skill.age = str(sample.age_f64).hex_decode().decode_double(0)
 		skill.phase = sample.phase
 		skill.active = sample.active
 		Compare._equal(
@@ -79,6 +79,7 @@ static func _integration(runner) -> void:
 	feel.hit_stop(0.08)
 	fx.update(feel, 1056)
 	runner.check(runner.near(fx.skills[key][0].age, age + 0.016 * 0.18), "skill uses slow FX clock")
+	feel.reset()
 	for index in 100:
 		fx.update(feel, 1100 + index * 50)
 	runner.check(fx.skills.is_empty(), "expired skills remove owner map")

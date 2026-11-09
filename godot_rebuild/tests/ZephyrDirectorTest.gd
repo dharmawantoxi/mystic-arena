@@ -23,8 +23,8 @@ static func _integration(runner) -> void:
 	var owner := BattleUnit.new()
 	owner.kind = BattleUnit.Kind.HERO
 	owner.unit_type = "zephyr"
-	owner.attack_anim_duration = 100
 	owner.attack_anim_timer = 60
+	owner.attack_anim_duration = 100
 	owner.pos = Vector2(30, 50)
 	var key := owner.get_instance_id()
 	var fx := HeroLiveFx.new()

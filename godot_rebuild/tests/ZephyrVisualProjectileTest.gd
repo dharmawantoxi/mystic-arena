@@ -95,6 +95,7 @@ static func _adapter(runner) -> void:
 		runner.near(projectile.position[0], x + 520.0 * 0.016 * 0.18),
 		"visual projectile uses slow clock"
 	)
+	feel.reset()
 	for index in 80:
 		fx.update(feel, 1100 + index * 50)
 	runner.check(fx.visual_projectiles.is_empty(), "expired visual manager is removed")

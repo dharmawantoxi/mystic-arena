@@ -10,6 +10,7 @@ import argparse
 import ast
 import hashlib
 import json
+import struct
 from pathlib import Path
 import prepare_godot_zephyr_bolt as bolt
 
@@ -114,7 +115,7 @@ def build():
                         impact.active = fraction < 1.0
                         surface = Surface()
                         impact.draw(surface)
-                        rows.append({"fraction": fraction, "state": snapshot(impact), "commands": surface.commands})
+                        rows.append({"age_f64": struct.pack("<d", impact.age).hex(), "fraction": fraction, "state": snapshot(impact), "commands": surface.commands})
                     impact = env["ImpactFX"](*args)
                     lifecycle = []
                     for dt in (0.0, 0.016, 0.1, 0.6):

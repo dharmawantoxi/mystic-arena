@@ -30,6 +30,11 @@ static func ensure_loaded() -> void:
 		var file := FileAccess.open("res://data/zephyr_skill.json", FileAccess.READ)
 		if file != null:
 			config = JSON.parse_string(file.get_as_text())
+			for key: String in config.timeline_f64:
+				var values: Array = []
+				for bits: String in config.timeline_f64[key]:
+					values.append(bits.hex_decode().decode_double(0))
+				config.timeline[key] = values
 
 
 func spawn(

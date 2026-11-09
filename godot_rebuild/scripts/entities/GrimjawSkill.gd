@@ -15,6 +15,11 @@ static func ensure_grimjaw_loaded() -> void:
 		var file := FileAccess.open("res://data/grimjaw_skill.json", FileAccess.READ)
 		if file != null:
 			grimjaw_config = JSON.parse_string(file.get_as_text())
+			for key: String in grimjaw_config.timeline_f64:
+				var values: Array = []
+				for bits: String in grimjaw_config.timeline_f64[key]:
+					values.append(bits.hex_decode().decode_double(0))
+				grimjaw_config.timeline[key] = values
 
 
 func spawn(

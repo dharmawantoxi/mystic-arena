@@ -34,7 +34,7 @@ static func run(runner) -> void:
 	for sample: Dictionary in fixture.front:
 		var skill := GrimjawSkill.new()
 		skill.spawn(sample.key, sample.x, sample.y)
-		skill.age = sample.age
+		skill.age = str(sample.age_f64).hex_decode().decode_double(0)
 		skill.phase = sample.phase
 		skill.active = sample.active
 		skill.facing = int(sample.facing)
@@ -80,6 +80,7 @@ static func _adapter(runner) -> void:
 	runner.check(
 		runner.near(fx.skills[key][0].age, age + .016 * .18), "Grimjaw skill uses slow FX clock"
 	)
+	feel.reset()
 	for index in 100:
 		fx.update(feel, 1100 + index * 50)
 	runner.check(

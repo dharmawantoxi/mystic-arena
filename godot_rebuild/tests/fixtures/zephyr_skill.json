@@ -3135,6 +3135,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 0.35,
       "kind": "q",
@@ -3145,6 +3146,7 @@
     {
       "active": true,
       "age": 0.15,
+      "age_f64": "333333333333c33f",
       "commands": [],
       "detail": 0.35,
       "kind": "q",
@@ -3155,6 +3157,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "glow",
@@ -3196,6 +3199,7 @@
     {
       "active": true,
       "age": 0.37,
+      "age_f64": "ae47e17a14aed73f",
       "commands": [
         [
           "glow",
@@ -3237,6 +3241,7 @@
     {
       "active": true,
       "age": 0.4386,
+      "age_f64": "6ea301bc0512dc3f",
       "commands": [
         [
           "glow",
@@ -3278,6 +3283,7 @@
     {
       "active": true,
       "age": 0.44,
+      "age_f64": "295c8fc2f528dc3f",
       "commands": [
         [
           "polygon",
@@ -3613,6 +3619,7 @@
     {
       "active": true,
       "age": 0.8900000000000001,
+      "age_f64": "7c14ae47e17aec3f",
       "commands": [
         [
           "polygon",
@@ -3948,6 +3955,7 @@
     {
       "active": true,
       "age": 1.3310000000000002,
+      "age_f64": "b39defa7c64bf53f",
       "commands": [
         [
           "polygon",
@@ -4283,6 +4291,7 @@
     {
       "active": true,
       "age": 1.34,
+      "age_f64": "713d0ad7a370f53f",
       "commands": [
         [
           "circle",
@@ -4309,6 +4318,7 @@
     {
       "active": true,
       "age": 1.4300000000000002,
+      "age_f64": "e27a14ae47e1f63f",
       "commands": [
         [
           "circle",
@@ -4335,6 +4345,7 @@
     {
       "active": true,
       "age": 1.5182,
+      "age_f64": "5f984c158c4af83f",
       "commands": [
         [
           "circle",
@@ -4361,6 +4372,7 @@
     {
       "active": true,
       "age": 1.52,
+      "age_f64": "52b81e85eb51f83f",
       "commands": [],
       "detail": 0.35,
       "kind": "q",
@@ -4371,6 +4383,7 @@
     {
       "active": false,
       "age": 2.0700000000000003,
+      "age_f64": "90c2f5285c8f0040",
       "commands": [],
       "detail": 0.35,
       "kind": "q",
@@ -4381,6 +4394,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 0.35,
       "kind": "q",
@@ -4391,6 +4405,7 @@
     {
       "active": true,
       "age": 0.15,
+      "age_f64": "333333333333c33f",
       "commands": [],
       "detail": 0.35,
       "kind": "q",
@@ -4401,6 +4416,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "glow",
@@ -4442,6 +4458,7 @@
     {
       "active": true,
       "age": 0.37,
+      "age_f64": "ae47e17a14aed73f",
       "commands": [
         [
           "glow",
@@ -4483,6 +4500,7 @@
     {
       "active": true,
       "age": 0.4386,
+      "age_f64": "6ea301bc0512dc3f",
       "commands": [
         [
           "glow",
@@ -4524,6 +4542,7 @@
     {
       "active": true,
       "age": 0.44,
+      "age_f64": "295c8fc2f528dc3f",
       "commands": [
         [
           "polygon",
@@ -4859,6 +4878,7 @@
     {
       "active": true,
       "age": 0.8900000000000001,
+      "age_f64": "7c14ae47e17aec3f",
       "commands": [
         [
           "polygon",
@@ -5194,6 +5214,7 @@
     {
       "active": true,
       "age": 1.3310000000000002,
+      "age_f64": "b39defa7c64bf53f",
       "commands": [
         [
           "polygon",
@@ -5529,6 +5550,7 @@
     {
       "active": true,
       "age": 1.34,
+      "age_f64": "713d0ad7a370f53f",
       "commands": [
         [
           "circle",
@@ -5555,6 +5577,7 @@
     {
       "active": true,
       "age": 1.4300000000000002,
+      "age_f64": "e27a14ae47e1f63f",
       "commands": [
         [
           "circle",
@@ -5581,6 +5604,7 @@
     {
       "active": true,
       "age": 1.5182,
+      "age_f64": "5f984c158c4af83f",
       "commands": [
         [
           "circle",
@@ -5607,6 +5631,7 @@
     {
       "active": true,
       "age": 1.52,
+      "age_f64": "52b81e85eb51f83f",
       "commands": [],
       "detail": 0.35,
       "kind": "q",
@@ -5617,6 +5642,7 @@
     {
       "active": false,
       "age": 2.0700000000000003,
+      "age_f64": "90c2f5285c8f0040",
       "commands": [],
       "detail": 0.35,
       "kind": "q",
@@ -5627,6 +5653,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 0.35,
       "kind": "w",
@@ -5637,6 +5664,7 @@
     {
       "active": true,
       "age": 0.12,
+      "age_f64": "b81e85eb51b8be3f",
       "commands": [],
       "detail": 0.35,
       "kind": "w",
@@ -5647,6 +5675,7 @@
     {
       "active": true,
       "age": 0.24,
+      "age_f64": "b81e85eb51b8ce3f",
       "commands": [
         [
           "glow",
@@ -5688,6 +5717,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "glow",
@@ -5729,6 +5759,7 @@
     {
       "active": true,
       "age": 0.3588,
+      "age_f64": "d881734694f6d63f",
       "commands": [
         [
           "glow",
@@ -5770,6 +5801,7 @@
     {
       "active": true,
       "age": 0.36,
+      "age_f64": "0ad7a3703d0ad73f",
       "commands": [
         [
           "polygon",
@@ -6105,6 +6137,7 @@
     {
       "active": true,
       "age": 0.9600000000000001,
+      "age_f64": "b91e85eb51b8ee3f",
       "commands": [
         [
           "polygon",
@@ -6440,6 +6473,7 @@
     {
       "active": true,
       "age": 1.548,
+      "age_f64": "f853e3a59bc4f83f",
       "commands": [
         [
           "polygon",
@@ -6775,6 +6809,7 @@
     {
       "active": true,
       "age": 1.56,
+      "age_f64": "f6285c8fc2f5f83f",
       "commands": [
         [
           "circle",
@@ -6801,6 +6836,7 @@
     {
       "active": true,
       "age": 1.6300000000000001,
+      "age_f64": "15ae47e17a14fa3f",
       "commands": [
         [
           "circle",
@@ -6827,6 +6863,7 @@
     {
       "active": true,
       "age": 1.6986,
+      "age_f64": "05c58f31772dfb3f",
       "commands": [
         [
           "circle",
@@ -6853,6 +6890,7 @@
     {
       "active": true,
       "age": 1.7000000000000002,
+      "age_f64": "343333333333fb3f",
       "commands": [],
       "detail": 0.35,
       "kind": "w",
@@ -6863,6 +6901,7 @@
     {
       "active": false,
       "age": 2.3000000000000003,
+      "age_f64": "6766666666660240",
       "commands": [],
       "detail": 0.35,
       "kind": "w",
@@ -6873,6 +6912,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 0.35,
       "kind": "w",
@@ -6883,6 +6923,7 @@
     {
       "active": true,
       "age": 0.12,
+      "age_f64": "b81e85eb51b8be3f",
       "commands": [],
       "detail": 0.35,
       "kind": "w",
@@ -6893,6 +6934,7 @@
     {
       "active": true,
       "age": 0.24,
+      "age_f64": "b81e85eb51b8ce3f",
       "commands": [
         [
           "glow",
@@ -6934,6 +6976,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "glow",
@@ -6975,6 +7018,7 @@
     {
       "active": true,
       "age": 0.3588,
+      "age_f64": "d881734694f6d63f",
       "commands": [
         [
           "glow",
@@ -7016,6 +7060,7 @@
     {
       "active": true,
       "age": 0.36,
+      "age_f64": "0ad7a3703d0ad73f",
       "commands": [
         [
           "polygon",
@@ -7351,6 +7396,7 @@
     {
       "active": true,
       "age": 0.9600000000000001,
+      "age_f64": "b91e85eb51b8ee3f",
       "commands": [
         [
           "polygon",
@@ -7686,6 +7732,7 @@
     {
       "active": true,
       "age": 1.548,
+      "age_f64": "f853e3a59bc4f83f",
       "commands": [
         [
           "polygon",
@@ -8021,6 +8068,7 @@
     {
       "active": true,
       "age": 1.56,
+      "age_f64": "f6285c8fc2f5f83f",
       "commands": [
         [
           "circle",
@@ -8047,6 +8095,7 @@
     {
       "active": true,
       "age": 1.6300000000000001,
+      "age_f64": "15ae47e17a14fa3f",
       "commands": [
         [
           "circle",
@@ -8073,6 +8122,7 @@
     {
       "active": true,
       "age": 1.6986,
+      "age_f64": "05c58f31772dfb3f",
       "commands": [
         [
           "circle",
@@ -8099,6 +8149,7 @@
     {
       "active": true,
       "age": 1.7000000000000002,
+      "age_f64": "343333333333fb3f",
       "commands": [],
       "detail": 0.35,
       "kind": "w",
@@ -8109,6 +8160,7 @@
     {
       "active": false,
       "age": 2.3000000000000003,
+      "age_f64": "6766666666660240",
       "commands": [],
       "detail": 0.35,
       "kind": "w",
@@ -8119,6 +8171,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 0.35,
       "kind": "e",
@@ -8129,6 +8182,7 @@
     {
       "active": true,
       "age": 0.1,
+      "age_f64": "9a9999999999b93f",
       "commands": [],
       "detail": 0.35,
       "kind": "e",
@@ -8139,6 +8193,7 @@
     {
       "active": true,
       "age": 0.2,
+      "age_f64": "9a9999999999c93f",
       "commands": [
         [
           "glow",
@@ -8180,6 +8235,7 @@
     {
       "active": true,
       "age": 0.26,
+      "age_f64": "a4703d0ad7a3d03f",
       "commands": [
         [
           "glow",
@@ -8221,6 +8277,7 @@
     {
       "active": true,
       "age": 0.3188,
+      "age_f64": "48bf7d1d3867d43f",
       "commands": [
         [
           "glow",
@@ -8262,6 +8319,7 @@
     {
       "active": true,
       "age": 0.32,
+      "age_f64": "7b14ae47e17ad43f",
       "commands": [
         [
           "polygon",
@@ -8597,6 +8655,7 @@
     {
       "active": true,
       "age": 0.6699999999999999,
+      "age_f64": "703d0ad7a370e53f",
       "commands": [
         [
           "polygon",
@@ -8932,6 +8991,7 @@
     {
       "active": true,
       "age": 1.013,
+      "age_f64": "6891ed7c3f35f03f",
       "commands": [
         [
           "polygon",
@@ -9267,6 +9327,7 @@
     {
       "active": true,
       "age": 1.02,
+      "age_f64": "52b81e85eb51f03f",
       "commands": [
         [
           "circle",
@@ -9293,6 +9354,7 @@
     {
       "active": true,
       "age": 1.13,
+      "age_f64": "14ae47e17a14f23f",
       "commands": [
         [
           "circle",
@@ -9319,6 +9381,7 @@
     {
       "active": true,
       "age": 1.2378,
+      "age_f64": "20d26f5f07cef33f",
       "commands": [
         [
           "circle",
@@ -9345,6 +9408,7 @@
     {
       "active": true,
       "age": 1.24,
+      "age_f64": "d7a3703d0ad7f33f",
       "commands": [],
       "detail": 0.35,
       "kind": "e",
@@ -9355,6 +9419,7 @@
     {
       "active": false,
       "age": 1.69,
+      "age_f64": "0ad7a3703d0afb3f",
       "commands": [],
       "detail": 0.35,
       "kind": "e",
@@ -9365,6 +9430,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 0.35,
       "kind": "e",
@@ -9375,6 +9441,7 @@
     {
       "active": true,
       "age": 0.1,
+      "age_f64": "9a9999999999b93f",
       "commands": [],
       "detail": 0.35,
       "kind": "e",
@@ -9385,6 +9452,7 @@
     {
       "active": true,
       "age": 0.2,
+      "age_f64": "9a9999999999c93f",
       "commands": [
         [
           "glow",
@@ -9426,6 +9494,7 @@
     {
       "active": true,
       "age": 0.26,
+      "age_f64": "a4703d0ad7a3d03f",
       "commands": [
         [
           "glow",
@@ -9467,6 +9536,7 @@
     {
       "active": true,
       "age": 0.3188,
+      "age_f64": "48bf7d1d3867d43f",
       "commands": [
         [
           "glow",
@@ -9508,6 +9578,7 @@
     {
       "active": true,
       "age": 0.32,
+      "age_f64": "7b14ae47e17ad43f",
       "commands": [
         [
           "polygon",
@@ -9843,6 +9914,7 @@
     {
       "active": true,
       "age": 0.6699999999999999,
+      "age_f64": "703d0ad7a370e53f",
       "commands": [
         [
           "polygon",
@@ -10178,6 +10250,7 @@
     {
       "active": true,
       "age": 1.013,
+      "age_f64": "6891ed7c3f35f03f",
       "commands": [
         [
           "polygon",
@@ -10513,6 +10586,7 @@
     {
       "active": true,
       "age": 1.02,
+      "age_f64": "52b81e85eb51f03f",
       "commands": [
         [
           "circle",
@@ -10539,6 +10613,7 @@
     {
       "active": true,
       "age": 1.13,
+      "age_f64": "14ae47e17a14f23f",
       "commands": [
         [
           "circle",
@@ -10565,6 +10640,7 @@
     {
       "active": true,
       "age": 1.2378,
+      "age_f64": "20d26f5f07cef33f",
       "commands": [
         [
           "circle",
@@ -10591,6 +10667,7 @@
     {
       "active": true,
       "age": 1.24,
+      "age_f64": "d7a3703d0ad7f33f",
       "commands": [],
       "detail": 0.35,
       "kind": "e",
@@ -10601,6 +10678,7 @@
     {
       "active": false,
       "age": 1.69,
+      "age_f64": "0ad7a3703d0afb3f",
       "commands": [],
       "detail": 0.35,
       "kind": "e",
@@ -10611,6 +10689,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 0.35,
       "kind": "r",
@@ -10621,6 +10700,7 @@
     {
       "active": true,
       "age": 0.21,
+      "age_f64": "e17a14ae47e1ca3f",
       "commands": [],
       "detail": 0.35,
       "kind": "r",
@@ -10631,6 +10711,7 @@
     {
       "active": true,
       "age": 0.42,
+      "age_f64": "e17a14ae47e1da3f",
       "commands": [
         [
           "glow",
@@ -10672,6 +10753,7 @@
     {
       "active": true,
       "age": 0.51,
+      "age_f64": "52b81e85eb51e03f",
       "commands": [
         [
           "glow",
@@ -10713,6 +10795,7 @@
     {
       "active": true,
       "age": 0.5982,
+      "age_f64": "4df38e537424e33f",
       "commands": [
         [
           "glow",
@@ -10754,6 +10837,7 @@
     {
       "active": true,
       "age": 0.6,
+      "age_f64": "333333333333e33f",
       "commands": [
         [
           "polygon",
@@ -11089,6 +11173,7 @@
     {
       "active": true,
       "age": 1.2999999999999998,
+      "age_f64": "ccccccccccccf43f",
       "commands": [
         [
           "polygon",
@@ -11424,6 +11509,7 @@
     {
       "active": true,
       "age": 1.9859999999999998,
+      "age_f64": "2cb29defa7c6ff3f",
       "commands": [
         [
           "polygon",
@@ -11759,6 +11845,7 @@
     {
       "active": true,
       "age": 2.0,
+      "age_f64": "0000000000000040",
       "commands": [
         [
           "circle",
@@ -11785,6 +11872,7 @@
     {
       "active": true,
       "age": 2.13,
+      "age_f64": "0ad7a3703d0a0140",
       "commands": [
         [
           "circle",
@@ -11811,6 +11899,7 @@
     {
       "active": true,
       "age": 2.2573999999999996,
+      "age_f64": "56ec2fbb270f0240",
       "commands": [
         [
           "circle",
@@ -11837,6 +11926,7 @@
     {
       "active": true,
       "age": 2.26,
+      "age_f64": "14ae47e17a140240",
       "commands": [],
       "detail": 0.35,
       "kind": "r",
@@ -11847,6 +11937,7 @@
     {
       "active": false,
       "age": 3.0599999999999996,
+      "age_f64": "7a14ae47e17a0840",
       "commands": [],
       "detail": 0.35,
       "kind": "r",
@@ -11857,6 +11948,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 0.35,
       "kind": "r",
@@ -11867,6 +11959,7 @@
     {
       "active": true,
       "age": 0.21,
+      "age_f64": "e17a14ae47e1ca3f",
       "commands": [],
       "detail": 0.35,
       "kind": "r",
@@ -11877,6 +11970,7 @@
     {
       "active": true,
       "age": 0.42,
+      "age_f64": "e17a14ae47e1da3f",
       "commands": [
         [
           "glow",
@@ -11918,6 +12012,7 @@
     {
       "active": true,
       "age": 0.51,
+      "age_f64": "52b81e85eb51e03f",
       "commands": [
         [
           "glow",
@@ -11959,6 +12054,7 @@
     {
       "active": true,
       "age": 0.5982,
+      "age_f64": "4df38e537424e33f",
       "commands": [
         [
           "glow",
@@ -12000,6 +12096,7 @@
     {
       "active": true,
       "age": 0.6,
+      "age_f64": "333333333333e33f",
       "commands": [
         [
           "polygon",
@@ -12335,6 +12432,7 @@
     {
       "active": true,
       "age": 1.2999999999999998,
+      "age_f64": "ccccccccccccf43f",
       "commands": [
         [
           "polygon",
@@ -12670,6 +12768,7 @@
     {
       "active": true,
       "age": 1.9859999999999998,
+      "age_f64": "2cb29defa7c6ff3f",
       "commands": [
         [
           "polygon",
@@ -13005,6 +13104,7 @@
     {
       "active": true,
       "age": 2.0,
+      "age_f64": "0000000000000040",
       "commands": [
         [
           "circle",
@@ -13031,6 +13131,7 @@
     {
       "active": true,
       "age": 2.13,
+      "age_f64": "0ad7a3703d0a0140",
       "commands": [
         [
           "circle",
@@ -13057,6 +13158,7 @@
     {
       "active": true,
       "age": 2.2573999999999996,
+      "age_f64": "56ec2fbb270f0240",
       "commands": [
         [
           "circle",
@@ -13083,6 +13185,7 @@
     {
       "active": true,
       "age": 2.26,
+      "age_f64": "14ae47e17a140240",
       "commands": [],
       "detail": 0.35,
       "kind": "r",
@@ -13093,6 +13196,7 @@
     {
       "active": false,
       "age": 3.0599999999999996,
+      "age_f64": "7a14ae47e17a0840",
       "commands": [],
       "detail": 0.35,
       "kind": "r",
@@ -13103,6 +13207,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 0.55,
       "kind": "q",
@@ -13113,6 +13218,7 @@
     {
       "active": true,
       "age": 0.15,
+      "age_f64": "333333333333c33f",
       "commands": [],
       "detail": 0.55,
       "kind": "q",
@@ -13123,6 +13229,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "glow",
@@ -13164,6 +13271,7 @@
     {
       "active": true,
       "age": 0.37,
+      "age_f64": "ae47e17a14aed73f",
       "commands": [
         [
           "glow",
@@ -13205,6 +13313,7 @@
     {
       "active": true,
       "age": 0.4386,
+      "age_f64": "6ea301bc0512dc3f",
       "commands": [
         [
           "glow",
@@ -13246,6 +13355,7 @@
     {
       "active": true,
       "age": 0.44,
+      "age_f64": "295c8fc2f528dc3f",
       "commands": [
         [
           "polygon",
@@ -13662,6 +13772,7 @@
     {
       "active": true,
       "age": 0.8900000000000001,
+      "age_f64": "7c14ae47e17aec3f",
       "commands": [
         [
           "polygon",
@@ -14078,6 +14189,7 @@
     {
       "active": true,
       "age": 1.3310000000000002,
+      "age_f64": "b39defa7c64bf53f",
       "commands": [
         [
           "polygon",
@@ -14494,6 +14606,7 @@
     {
       "active": true,
       "age": 1.34,
+      "age_f64": "713d0ad7a370f53f",
       "commands": [
         [
           "circle",
@@ -14520,6 +14633,7 @@
     {
       "active": true,
       "age": 1.4300000000000002,
+      "age_f64": "e27a14ae47e1f63f",
       "commands": [
         [
           "circle",
@@ -14546,6 +14660,7 @@
     {
       "active": true,
       "age": 1.5182,
+      "age_f64": "5f984c158c4af83f",
       "commands": [
         [
           "circle",
@@ -14572,6 +14687,7 @@
     {
       "active": true,
       "age": 1.52,
+      "age_f64": "52b81e85eb51f83f",
       "commands": [],
       "detail": 0.55,
       "kind": "q",
@@ -14582,6 +14698,7 @@
     {
       "active": false,
       "age": 2.0700000000000003,
+      "age_f64": "90c2f5285c8f0040",
       "commands": [],
       "detail": 0.55,
       "kind": "q",
@@ -14592,6 +14709,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 0.55,
       "kind": "q",
@@ -14602,6 +14720,7 @@
     {
       "active": true,
       "age": 0.15,
+      "age_f64": "333333333333c33f",
       "commands": [],
       "detail": 0.55,
       "kind": "q",
@@ -14612,6 +14731,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "glow",
@@ -14653,6 +14773,7 @@
     {
       "active": true,
       "age": 0.37,
+      "age_f64": "ae47e17a14aed73f",
       "commands": [
         [
           "glow",
@@ -14694,6 +14815,7 @@
     {
       "active": true,
       "age": 0.4386,
+      "age_f64": "6ea301bc0512dc3f",
       "commands": [
         [
           "glow",
@@ -14735,6 +14857,7 @@
     {
       "active": true,
       "age": 0.44,
+      "age_f64": "295c8fc2f528dc3f",
       "commands": [
         [
           "polygon",
@@ -15151,6 +15274,7 @@
     {
       "active": true,
       "age": 0.8900000000000001,
+      "age_f64": "7c14ae47e17aec3f",
       "commands": [
         [
           "polygon",
@@ -15567,6 +15691,7 @@
     {
       "active": true,
       "age": 1.3310000000000002,
+      "age_f64": "b39defa7c64bf53f",
       "commands": [
         [
           "polygon",
@@ -15983,6 +16108,7 @@
     {
       "active": true,
       "age": 1.34,
+      "age_f64": "713d0ad7a370f53f",
       "commands": [
         [
           "circle",
@@ -16009,6 +16135,7 @@
     {
       "active": true,
       "age": 1.4300000000000002,
+      "age_f64": "e27a14ae47e1f63f",
       "commands": [
         [
           "circle",
@@ -16035,6 +16162,7 @@
     {
       "active": true,
       "age": 1.5182,
+      "age_f64": "5f984c158c4af83f",
       "commands": [
         [
           "circle",
@@ -16061,6 +16189,7 @@
     {
       "active": true,
       "age": 1.52,
+      "age_f64": "52b81e85eb51f83f",
       "commands": [],
       "detail": 0.55,
       "kind": "q",
@@ -16071,6 +16200,7 @@
     {
       "active": false,
       "age": 2.0700000000000003,
+      "age_f64": "90c2f5285c8f0040",
       "commands": [],
       "detail": 0.55,
       "kind": "q",
@@ -16081,6 +16211,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 0.55,
       "kind": "w",
@@ -16091,6 +16222,7 @@
     {
       "active": true,
       "age": 0.12,
+      "age_f64": "b81e85eb51b8be3f",
       "commands": [],
       "detail": 0.55,
       "kind": "w",
@@ -16101,6 +16233,7 @@
     {
       "active": true,
       "age": 0.24,
+      "age_f64": "b81e85eb51b8ce3f",
       "commands": [
         [
           "glow",
@@ -16142,6 +16275,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "glow",
@@ -16183,6 +16317,7 @@
     {
       "active": true,
       "age": 0.3588,
+      "age_f64": "d881734694f6d63f",
       "commands": [
         [
           "glow",
@@ -16224,6 +16359,7 @@
     {
       "active": true,
       "age": 0.36,
+      "age_f64": "0ad7a3703d0ad73f",
       "commands": [
         [
           "polygon",
@@ -16640,6 +16776,7 @@
     {
       "active": true,
       "age": 0.9600000000000001,
+      "age_f64": "b91e85eb51b8ee3f",
       "commands": [
         [
           "polygon",
@@ -17056,6 +17193,7 @@
     {
       "active": true,
       "age": 1.548,
+      "age_f64": "f853e3a59bc4f83f",
       "commands": [
         [
           "polygon",
@@ -17472,6 +17610,7 @@
     {
       "active": true,
       "age": 1.56,
+      "age_f64": "f6285c8fc2f5f83f",
       "commands": [
         [
           "circle",
@@ -17498,6 +17637,7 @@
     {
       "active": true,
       "age": 1.6300000000000001,
+      "age_f64": "15ae47e17a14fa3f",
       "commands": [
         [
           "circle",
@@ -17524,6 +17664,7 @@
     {
       "active": true,
       "age": 1.6986,
+      "age_f64": "05c58f31772dfb3f",
       "commands": [
         [
           "circle",
@@ -17550,6 +17691,7 @@
     {
       "active": true,
       "age": 1.7000000000000002,
+      "age_f64": "343333333333fb3f",
       "commands": [],
       "detail": 0.55,
       "kind": "w",
@@ -17560,6 +17702,7 @@
     {
       "active": false,
       "age": 2.3000000000000003,
+      "age_f64": "6766666666660240",
       "commands": [],
       "detail": 0.55,
       "kind": "w",
@@ -17570,6 +17713,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 0.55,
       "kind": "w",
@@ -17580,6 +17724,7 @@
     {
       "active": true,
       "age": 0.12,
+      "age_f64": "b81e85eb51b8be3f",
       "commands": [],
       "detail": 0.55,
       "kind": "w",
@@ -17590,6 +17735,7 @@
     {
       "active": true,
       "age": 0.24,
+      "age_f64": "b81e85eb51b8ce3f",
       "commands": [
         [
           "glow",
@@ -17631,6 +17777,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "glow",
@@ -17672,6 +17819,7 @@
     {
       "active": true,
       "age": 0.3588,
+      "age_f64": "d881734694f6d63f",
       "commands": [
         [
           "glow",
@@ -17713,6 +17861,7 @@
     {
       "active": true,
       "age": 0.36,
+      "age_f64": "0ad7a3703d0ad73f",
       "commands": [
         [
           "polygon",
@@ -18129,6 +18278,7 @@
     {
       "active": true,
       "age": 0.9600000000000001,
+      "age_f64": "b91e85eb51b8ee3f",
       "commands": [
         [
           "polygon",
@@ -18545,6 +18695,7 @@
     {
       "active": true,
       "age": 1.548,
+      "age_f64": "f853e3a59bc4f83f",
       "commands": [
         [
           "polygon",
@@ -18961,6 +19112,7 @@
     {
       "active": true,
       "age": 1.56,
+      "age_f64": "f6285c8fc2f5f83f",
       "commands": [
         [
           "circle",
@@ -18987,6 +19139,7 @@
     {
       "active": true,
       "age": 1.6300000000000001,
+      "age_f64": "15ae47e17a14fa3f",
       "commands": [
         [
           "circle",
@@ -19013,6 +19166,7 @@
     {
       "active": true,
       "age": 1.6986,
+      "age_f64": "05c58f31772dfb3f",
       "commands": [
         [
           "circle",
@@ -19039,6 +19193,7 @@
     {
       "active": true,
       "age": 1.7000000000000002,
+      "age_f64": "343333333333fb3f",
       "commands": [],
       "detail": 0.55,
       "kind": "w",
@@ -19049,6 +19204,7 @@
     {
       "active": false,
       "age": 2.3000000000000003,
+      "age_f64": "6766666666660240",
       "commands": [],
       "detail": 0.55,
       "kind": "w",
@@ -19059,6 +19215,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 0.55,
       "kind": "e",
@@ -19069,6 +19226,7 @@
     {
       "active": true,
       "age": 0.1,
+      "age_f64": "9a9999999999b93f",
       "commands": [],
       "detail": 0.55,
       "kind": "e",
@@ -19079,6 +19237,7 @@
     {
       "active": true,
       "age": 0.2,
+      "age_f64": "9a9999999999c93f",
       "commands": [
         [
           "glow",
@@ -19120,6 +19279,7 @@
     {
       "active": true,
       "age": 0.26,
+      "age_f64": "a4703d0ad7a3d03f",
       "commands": [
         [
           "glow",
@@ -19161,6 +19321,7 @@
     {
       "active": true,
       "age": 0.3188,
+      "age_f64": "48bf7d1d3867d43f",
       "commands": [
         [
           "glow",
@@ -19202,6 +19363,7 @@
     {
       "active": true,
       "age": 0.32,
+      "age_f64": "7b14ae47e17ad43f",
       "commands": [
         [
           "polygon",
@@ -19618,6 +19780,7 @@
     {
       "active": true,
       "age": 0.6699999999999999,
+      "age_f64": "703d0ad7a370e53f",
       "commands": [
         [
           "polygon",
@@ -20034,6 +20197,7 @@
     {
       "active": true,
       "age": 1.013,
+      "age_f64": "6891ed7c3f35f03f",
       "commands": [
         [
           "polygon",
@@ -20450,6 +20614,7 @@
     {
       "active": true,
       "age": 1.02,
+      "age_f64": "52b81e85eb51f03f",
       "commands": [
         [
           "circle",
@@ -20476,6 +20641,7 @@
     {
       "active": true,
       "age": 1.13,
+      "age_f64": "14ae47e17a14f23f",
       "commands": [
         [
           "circle",
@@ -20502,6 +20668,7 @@
     {
       "active": true,
       "age": 1.2378,
+      "age_f64": "20d26f5f07cef33f",
       "commands": [
         [
           "circle",
@@ -20528,6 +20695,7 @@
     {
       "active": true,
       "age": 1.24,
+      "age_f64": "d7a3703d0ad7f33f",
       "commands": [],
       "detail": 0.55,
       "kind": "e",
@@ -20538,6 +20706,7 @@
     {
       "active": false,
       "age": 1.69,
+      "age_f64": "0ad7a3703d0afb3f",
       "commands": [],
       "detail": 0.55,
       "kind": "e",
@@ -20548,6 +20717,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 0.55,
       "kind": "e",
@@ -20558,6 +20728,7 @@
     {
       "active": true,
       "age": 0.1,
+      "age_f64": "9a9999999999b93f",
       "commands": [],
       "detail": 0.55,
       "kind": "e",
@@ -20568,6 +20739,7 @@
     {
       "active": true,
       "age": 0.2,
+      "age_f64": "9a9999999999c93f",
       "commands": [
         [
           "glow",
@@ -20609,6 +20781,7 @@
     {
       "active": true,
       "age": 0.26,
+      "age_f64": "a4703d0ad7a3d03f",
       "commands": [
         [
           "glow",
@@ -20650,6 +20823,7 @@
     {
       "active": true,
       "age": 0.3188,
+      "age_f64": "48bf7d1d3867d43f",
       "commands": [
         [
           "glow",
@@ -20691,6 +20865,7 @@
     {
       "active": true,
       "age": 0.32,
+      "age_f64": "7b14ae47e17ad43f",
       "commands": [
         [
           "polygon",
@@ -21107,6 +21282,7 @@
     {
       "active": true,
       "age": 0.6699999999999999,
+      "age_f64": "703d0ad7a370e53f",
       "commands": [
         [
           "polygon",
@@ -21523,6 +21699,7 @@
     {
       "active": true,
       "age": 1.013,
+      "age_f64": "6891ed7c3f35f03f",
       "commands": [
         [
           "polygon",
@@ -21939,6 +22116,7 @@
     {
       "active": true,
       "age": 1.02,
+      "age_f64": "52b81e85eb51f03f",
       "commands": [
         [
           "circle",
@@ -21965,6 +22143,7 @@
     {
       "active": true,
       "age": 1.13,
+      "age_f64": "14ae47e17a14f23f",
       "commands": [
         [
           "circle",
@@ -21991,6 +22170,7 @@
     {
       "active": true,
       "age": 1.2378,
+      "age_f64": "20d26f5f07cef33f",
       "commands": [
         [
           "circle",
@@ -22017,6 +22197,7 @@
     {
       "active": true,
       "age": 1.24,
+      "age_f64": "d7a3703d0ad7f33f",
       "commands": [],
       "detail": 0.55,
       "kind": "e",
@@ -22027,6 +22208,7 @@
     {
       "active": false,
       "age": 1.69,
+      "age_f64": "0ad7a3703d0afb3f",
       "commands": [],
       "detail": 0.55,
       "kind": "e",
@@ -22037,6 +22219,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 0.55,
       "kind": "r",
@@ -22047,6 +22230,7 @@
     {
       "active": true,
       "age": 0.21,
+      "age_f64": "e17a14ae47e1ca3f",
       "commands": [],
       "detail": 0.55,
       "kind": "r",
@@ -22057,6 +22241,7 @@
     {
       "active": true,
       "age": 0.42,
+      "age_f64": "e17a14ae47e1da3f",
       "commands": [
         [
           "glow",
@@ -22098,6 +22283,7 @@
     {
       "active": true,
       "age": 0.51,
+      "age_f64": "52b81e85eb51e03f",
       "commands": [
         [
           "glow",
@@ -22139,6 +22325,7 @@
     {
       "active": true,
       "age": 0.5982,
+      "age_f64": "4df38e537424e33f",
       "commands": [
         [
           "glow",
@@ -22180,6 +22367,7 @@
     {
       "active": true,
       "age": 0.6,
+      "age_f64": "333333333333e33f",
       "commands": [
         [
           "polygon",
@@ -22596,6 +22784,7 @@
     {
       "active": true,
       "age": 1.2999999999999998,
+      "age_f64": "ccccccccccccf43f",
       "commands": [
         [
           "polygon",
@@ -23012,6 +23201,7 @@
     {
       "active": true,
       "age": 1.9859999999999998,
+      "age_f64": "2cb29defa7c6ff3f",
       "commands": [
         [
           "polygon",
@@ -23428,6 +23618,7 @@
     {
       "active": true,
       "age": 2.0,
+      "age_f64": "0000000000000040",
       "commands": [
         [
           "circle",
@@ -23454,6 +23645,7 @@
     {
       "active": true,
       "age": 2.13,
+      "age_f64": "0ad7a3703d0a0140",
       "commands": [
         [
           "circle",
@@ -23480,6 +23672,7 @@
     {
       "active": true,
       "age": 2.2573999999999996,
+      "age_f64": "56ec2fbb270f0240",
       "commands": [
         [
           "circle",
@@ -23506,6 +23699,7 @@
     {
       "active": true,
       "age": 2.26,
+      "age_f64": "14ae47e17a140240",
       "commands": [],
       "detail": 0.55,
       "kind": "r",
@@ -23516,6 +23710,7 @@
     {
       "active": false,
       "age": 3.0599999999999996,
+      "age_f64": "7a14ae47e17a0840",
       "commands": [],
       "detail": 0.55,
       "kind": "r",
@@ -23526,6 +23721,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 0.55,
       "kind": "r",
@@ -23536,6 +23732,7 @@
     {
       "active": true,
       "age": 0.21,
+      "age_f64": "e17a14ae47e1ca3f",
       "commands": [],
       "detail": 0.55,
       "kind": "r",
@@ -23546,6 +23743,7 @@
     {
       "active": true,
       "age": 0.42,
+      "age_f64": "e17a14ae47e1da3f",
       "commands": [
         [
           "glow",
@@ -23587,6 +23785,7 @@
     {
       "active": true,
       "age": 0.51,
+      "age_f64": "52b81e85eb51e03f",
       "commands": [
         [
           "glow",
@@ -23628,6 +23827,7 @@
     {
       "active": true,
       "age": 0.5982,
+      "age_f64": "4df38e537424e33f",
       "commands": [
         [
           "glow",
@@ -23669,6 +23869,7 @@
     {
       "active": true,
       "age": 0.6,
+      "age_f64": "333333333333e33f",
       "commands": [
         [
           "polygon",
@@ -24085,6 +24286,7 @@
     {
       "active": true,
       "age": 1.2999999999999998,
+      "age_f64": "ccccccccccccf43f",
       "commands": [
         [
           "polygon",
@@ -24501,6 +24703,7 @@
     {
       "active": true,
       "age": 1.9859999999999998,
+      "age_f64": "2cb29defa7c6ff3f",
       "commands": [
         [
           "polygon",
@@ -24917,6 +25120,7 @@
     {
       "active": true,
       "age": 2.0,
+      "age_f64": "0000000000000040",
       "commands": [
         [
           "circle",
@@ -24943,6 +25147,7 @@
     {
       "active": true,
       "age": 2.13,
+      "age_f64": "0ad7a3703d0a0140",
       "commands": [
         [
           "circle",
@@ -24969,6 +25174,7 @@
     {
       "active": true,
       "age": 2.2573999999999996,
+      "age_f64": "56ec2fbb270f0240",
       "commands": [
         [
           "circle",
@@ -24995,6 +25201,7 @@
     {
       "active": true,
       "age": 2.26,
+      "age_f64": "14ae47e17a140240",
       "commands": [],
       "detail": 0.55,
       "kind": "r",
@@ -25005,6 +25212,7 @@
     {
       "active": false,
       "age": 3.0599999999999996,
+      "age_f64": "7a14ae47e17a0840",
       "commands": [],
       "detail": 0.55,
       "kind": "r",
@@ -25015,6 +25223,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 1.0,
       "kind": "q",
@@ -25025,6 +25234,7 @@
     {
       "active": true,
       "age": 0.15,
+      "age_f64": "333333333333c33f",
       "commands": [],
       "detail": 1.0,
       "kind": "q",
@@ -25035,6 +25245,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "glow",
@@ -25076,6 +25287,7 @@
     {
       "active": true,
       "age": 0.37,
+      "age_f64": "ae47e17a14aed73f",
       "commands": [
         [
           "glow",
@@ -25117,6 +25329,7 @@
     {
       "active": true,
       "age": 0.4386,
+      "age_f64": "6ea301bc0512dc3f",
       "commands": [
         [
           "glow",
@@ -25158,6 +25371,7 @@
     {
       "active": true,
       "age": 0.44,
+      "age_f64": "295c8fc2f528dc3f",
       "commands": [
         [
           "polygon",
@@ -25709,6 +25923,7 @@
     {
       "active": true,
       "age": 0.8900000000000001,
+      "age_f64": "7c14ae47e17aec3f",
       "commands": [
         [
           "polygon",
@@ -26260,6 +26475,7 @@
     {
       "active": true,
       "age": 1.3310000000000002,
+      "age_f64": "b39defa7c64bf53f",
       "commands": [
         [
           "polygon",
@@ -26811,6 +27027,7 @@
     {
       "active": true,
       "age": 1.34,
+      "age_f64": "713d0ad7a370f53f",
       "commands": [
         [
           "circle",
@@ -26837,6 +27054,7 @@
     {
       "active": true,
       "age": 1.4300000000000002,
+      "age_f64": "e27a14ae47e1f63f",
       "commands": [
         [
           "circle",
@@ -26863,6 +27081,7 @@
     {
       "active": true,
       "age": 1.5182,
+      "age_f64": "5f984c158c4af83f",
       "commands": [
         [
           "circle",
@@ -26889,6 +27108,7 @@
     {
       "active": true,
       "age": 1.52,
+      "age_f64": "52b81e85eb51f83f",
       "commands": [],
       "detail": 1.0,
       "kind": "q",
@@ -26899,6 +27119,7 @@
     {
       "active": false,
       "age": 2.0700000000000003,
+      "age_f64": "90c2f5285c8f0040",
       "commands": [],
       "detail": 1.0,
       "kind": "q",
@@ -26909,6 +27130,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 1.0,
       "kind": "q",
@@ -26919,6 +27141,7 @@
     {
       "active": true,
       "age": 0.15,
+      "age_f64": "333333333333c33f",
       "commands": [],
       "detail": 1.0,
       "kind": "q",
@@ -26929,6 +27152,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "glow",
@@ -26970,6 +27194,7 @@
     {
       "active": true,
       "age": 0.37,
+      "age_f64": "ae47e17a14aed73f",
       "commands": [
         [
           "glow",
@@ -27011,6 +27236,7 @@
     {
       "active": true,
       "age": 0.4386,
+      "age_f64": "6ea301bc0512dc3f",
       "commands": [
         [
           "glow",
@@ -27052,6 +27278,7 @@
     {
       "active": true,
       "age": 0.44,
+      "age_f64": "295c8fc2f528dc3f",
       "commands": [
         [
           "polygon",
@@ -27603,6 +27830,7 @@
     {
       "active": true,
       "age": 0.8900000000000001,
+      "age_f64": "7c14ae47e17aec3f",
       "commands": [
         [
           "polygon",
@@ -28154,6 +28382,7 @@
     {
       "active": true,
       "age": 1.3310000000000002,
+      "age_f64": "b39defa7c64bf53f",
       "commands": [
         [
           "polygon",
@@ -28705,6 +28934,7 @@
     {
       "active": true,
       "age": 1.34,
+      "age_f64": "713d0ad7a370f53f",
       "commands": [
         [
           "circle",
@@ -28731,6 +28961,7 @@
     {
       "active": true,
       "age": 1.4300000000000002,
+      "age_f64": "e27a14ae47e1f63f",
       "commands": [
         [
           "circle",
@@ -28757,6 +28988,7 @@
     {
       "active": true,
       "age": 1.5182,
+      "age_f64": "5f984c158c4af83f",
       "commands": [
         [
           "circle",
@@ -28783,6 +29015,7 @@
     {
       "active": true,
       "age": 1.52,
+      "age_f64": "52b81e85eb51f83f",
       "commands": [],
       "detail": 1.0,
       "kind": "q",
@@ -28793,6 +29026,7 @@
     {
       "active": false,
       "age": 2.0700000000000003,
+      "age_f64": "90c2f5285c8f0040",
       "commands": [],
       "detail": 1.0,
       "kind": "q",
@@ -28803,6 +29037,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 1.0,
       "kind": "w",
@@ -28813,6 +29048,7 @@
     {
       "active": true,
       "age": 0.12,
+      "age_f64": "b81e85eb51b8be3f",
       "commands": [],
       "detail": 1.0,
       "kind": "w",
@@ -28823,6 +29059,7 @@
     {
       "active": true,
       "age": 0.24,
+      "age_f64": "b81e85eb51b8ce3f",
       "commands": [
         [
           "glow",
@@ -28864,6 +29101,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "glow",
@@ -28905,6 +29143,7 @@
     {
       "active": true,
       "age": 0.3588,
+      "age_f64": "d881734694f6d63f",
       "commands": [
         [
           "glow",
@@ -28946,6 +29185,7 @@
     {
       "active": true,
       "age": 0.36,
+      "age_f64": "0ad7a3703d0ad73f",
       "commands": [
         [
           "polygon",
@@ -29497,6 +29737,7 @@
     {
       "active": true,
       "age": 0.9600000000000001,
+      "age_f64": "b91e85eb51b8ee3f",
       "commands": [
         [
           "polygon",
@@ -30048,6 +30289,7 @@
     {
       "active": true,
       "age": 1.548,
+      "age_f64": "f853e3a59bc4f83f",
       "commands": [
         [
           "polygon",
@@ -30599,6 +30841,7 @@
     {
       "active": true,
       "age": 1.56,
+      "age_f64": "f6285c8fc2f5f83f",
       "commands": [
         [
           "circle",
@@ -30625,6 +30868,7 @@
     {
       "active": true,
       "age": 1.6300000000000001,
+      "age_f64": "15ae47e17a14fa3f",
       "commands": [
         [
           "circle",
@@ -30651,6 +30895,7 @@
     {
       "active": true,
       "age": 1.6986,
+      "age_f64": "05c58f31772dfb3f",
       "commands": [
         [
           "circle",
@@ -30677,6 +30922,7 @@
     {
       "active": true,
       "age": 1.7000000000000002,
+      "age_f64": "343333333333fb3f",
       "commands": [],
       "detail": 1.0,
       "kind": "w",
@@ -30687,6 +30933,7 @@
     {
       "active": false,
       "age": 2.3000000000000003,
+      "age_f64": "6766666666660240",
       "commands": [],
       "detail": 1.0,
       "kind": "w",
@@ -30697,6 +30944,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 1.0,
       "kind": "w",
@@ -30707,6 +30955,7 @@
     {
       "active": true,
       "age": 0.12,
+      "age_f64": "b81e85eb51b8be3f",
       "commands": [],
       "detail": 1.0,
       "kind": "w",
@@ -30717,6 +30966,7 @@
     {
       "active": true,
       "age": 0.24,
+      "age_f64": "b81e85eb51b8ce3f",
       "commands": [
         [
           "glow",
@@ -30758,6 +31008,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "glow",
@@ -30799,6 +31050,7 @@
     {
       "active": true,
       "age": 0.3588,
+      "age_f64": "d881734694f6d63f",
       "commands": [
         [
           "glow",
@@ -30840,6 +31092,7 @@
     {
       "active": true,
       "age": 0.36,
+      "age_f64": "0ad7a3703d0ad73f",
       "commands": [
         [
           "polygon",
@@ -31391,6 +31644,7 @@
     {
       "active": true,
       "age": 0.9600000000000001,
+      "age_f64": "b91e85eb51b8ee3f",
       "commands": [
         [
           "polygon",
@@ -31942,6 +32196,7 @@
     {
       "active": true,
       "age": 1.548,
+      "age_f64": "f853e3a59bc4f83f",
       "commands": [
         [
           "polygon",
@@ -32493,6 +32748,7 @@
     {
       "active": true,
       "age": 1.56,
+      "age_f64": "f6285c8fc2f5f83f",
       "commands": [
         [
           "circle",
@@ -32519,6 +32775,7 @@
     {
       "active": true,
       "age": 1.6300000000000001,
+      "age_f64": "15ae47e17a14fa3f",
       "commands": [
         [
           "circle",
@@ -32545,6 +32802,7 @@
     {
       "active": true,
       "age": 1.6986,
+      "age_f64": "05c58f31772dfb3f",
       "commands": [
         [
           "circle",
@@ -32571,6 +32829,7 @@
     {
       "active": true,
       "age": 1.7000000000000002,
+      "age_f64": "343333333333fb3f",
       "commands": [],
       "detail": 1.0,
       "kind": "w",
@@ -32581,6 +32840,7 @@
     {
       "active": false,
       "age": 2.3000000000000003,
+      "age_f64": "6766666666660240",
       "commands": [],
       "detail": 1.0,
       "kind": "w",
@@ -32591,6 +32851,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 1.0,
       "kind": "e",
@@ -32601,6 +32862,7 @@
     {
       "active": true,
       "age": 0.1,
+      "age_f64": "9a9999999999b93f",
       "commands": [],
       "detail": 1.0,
       "kind": "e",
@@ -32611,6 +32873,7 @@
     {
       "active": true,
       "age": 0.2,
+      "age_f64": "9a9999999999c93f",
       "commands": [
         [
           "glow",
@@ -32652,6 +32915,7 @@
     {
       "active": true,
       "age": 0.26,
+      "age_f64": "a4703d0ad7a3d03f",
       "commands": [
         [
           "glow",
@@ -32693,6 +32957,7 @@
     {
       "active": true,
       "age": 0.3188,
+      "age_f64": "48bf7d1d3867d43f",
       "commands": [
         [
           "glow",
@@ -32734,6 +32999,7 @@
     {
       "active": true,
       "age": 0.32,
+      "age_f64": "7b14ae47e17ad43f",
       "commands": [
         [
           "polygon",
@@ -33285,6 +33551,7 @@
     {
       "active": true,
       "age": 0.6699999999999999,
+      "age_f64": "703d0ad7a370e53f",
       "commands": [
         [
           "polygon",
@@ -33836,6 +34103,7 @@
     {
       "active": true,
       "age": 1.013,
+      "age_f64": "6891ed7c3f35f03f",
       "commands": [
         [
           "polygon",
@@ -34387,6 +34655,7 @@
     {
       "active": true,
       "age": 1.02,
+      "age_f64": "52b81e85eb51f03f",
       "commands": [
         [
           "circle",
@@ -34413,6 +34682,7 @@
     {
       "active": true,
       "age": 1.13,
+      "age_f64": "14ae47e17a14f23f",
       "commands": [
         [
           "circle",
@@ -34439,6 +34709,7 @@
     {
       "active": true,
       "age": 1.2378,
+      "age_f64": "20d26f5f07cef33f",
       "commands": [
         [
           "circle",
@@ -34465,6 +34736,7 @@
     {
       "active": true,
       "age": 1.24,
+      "age_f64": "d7a3703d0ad7f33f",
       "commands": [],
       "detail": 1.0,
       "kind": "e",
@@ -34475,6 +34747,7 @@
     {
       "active": false,
       "age": 1.69,
+      "age_f64": "0ad7a3703d0afb3f",
       "commands": [],
       "detail": 1.0,
       "kind": "e",
@@ -34485,6 +34758,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 1.0,
       "kind": "e",
@@ -34495,6 +34769,7 @@
     {
       "active": true,
       "age": 0.1,
+      "age_f64": "9a9999999999b93f",
       "commands": [],
       "detail": 1.0,
       "kind": "e",
@@ -34505,6 +34780,7 @@
     {
       "active": true,
       "age": 0.2,
+      "age_f64": "9a9999999999c93f",
       "commands": [
         [
           "glow",
@@ -34546,6 +34822,7 @@
     {
       "active": true,
       "age": 0.26,
+      "age_f64": "a4703d0ad7a3d03f",
       "commands": [
         [
           "glow",
@@ -34587,6 +34864,7 @@
     {
       "active": true,
       "age": 0.3188,
+      "age_f64": "48bf7d1d3867d43f",
       "commands": [
         [
           "glow",
@@ -34628,6 +34906,7 @@
     {
       "active": true,
       "age": 0.32,
+      "age_f64": "7b14ae47e17ad43f",
       "commands": [
         [
           "polygon",
@@ -35179,6 +35458,7 @@
     {
       "active": true,
       "age": 0.6699999999999999,
+      "age_f64": "703d0ad7a370e53f",
       "commands": [
         [
           "polygon",
@@ -35730,6 +36010,7 @@
     {
       "active": true,
       "age": 1.013,
+      "age_f64": "6891ed7c3f35f03f",
       "commands": [
         [
           "polygon",
@@ -36281,6 +36562,7 @@
     {
       "active": true,
       "age": 1.02,
+      "age_f64": "52b81e85eb51f03f",
       "commands": [
         [
           "circle",
@@ -36307,6 +36589,7 @@
     {
       "active": true,
       "age": 1.13,
+      "age_f64": "14ae47e17a14f23f",
       "commands": [
         [
           "circle",
@@ -36333,6 +36616,7 @@
     {
       "active": true,
       "age": 1.2378,
+      "age_f64": "20d26f5f07cef33f",
       "commands": [
         [
           "circle",
@@ -36359,6 +36643,7 @@
     {
       "active": true,
       "age": 1.24,
+      "age_f64": "d7a3703d0ad7f33f",
       "commands": [],
       "detail": 1.0,
       "kind": "e",
@@ -36369,6 +36654,7 @@
     {
       "active": false,
       "age": 1.69,
+      "age_f64": "0ad7a3703d0afb3f",
       "commands": [],
       "detail": 1.0,
       "kind": "e",
@@ -36379,6 +36665,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 1.0,
       "kind": "r",
@@ -36389,6 +36676,7 @@
     {
       "active": true,
       "age": 0.21,
+      "age_f64": "e17a14ae47e1ca3f",
       "commands": [],
       "detail": 1.0,
       "kind": "r",
@@ -36399,6 +36687,7 @@
     {
       "active": true,
       "age": 0.42,
+      "age_f64": "e17a14ae47e1da3f",
       "commands": [
         [
           "glow",
@@ -36440,6 +36729,7 @@
     {
       "active": true,
       "age": 0.51,
+      "age_f64": "52b81e85eb51e03f",
       "commands": [
         [
           "glow",
@@ -36481,6 +36771,7 @@
     {
       "active": true,
       "age": 0.5982,
+      "age_f64": "4df38e537424e33f",
       "commands": [
         [
           "glow",
@@ -36522,6 +36813,7 @@
     {
       "active": true,
       "age": 0.6,
+      "age_f64": "333333333333e33f",
       "commands": [
         [
           "polygon",
@@ -37073,6 +37365,7 @@
     {
       "active": true,
       "age": 1.2999999999999998,
+      "age_f64": "ccccccccccccf43f",
       "commands": [
         [
           "polygon",
@@ -37624,6 +37917,7 @@
     {
       "active": true,
       "age": 1.9859999999999998,
+      "age_f64": "2cb29defa7c6ff3f",
       "commands": [
         [
           "polygon",
@@ -38175,6 +38469,7 @@
     {
       "active": true,
       "age": 2.0,
+      "age_f64": "0000000000000040",
       "commands": [
         [
           "circle",
@@ -38201,6 +38496,7 @@
     {
       "active": true,
       "age": 2.13,
+      "age_f64": "0ad7a3703d0a0140",
       "commands": [
         [
           "circle",
@@ -38227,6 +38523,7 @@
     {
       "active": true,
       "age": 2.2573999999999996,
+      "age_f64": "56ec2fbb270f0240",
       "commands": [
         [
           "circle",
@@ -38253,6 +38550,7 @@
     {
       "active": true,
       "age": 2.26,
+      "age_f64": "14ae47e17a140240",
       "commands": [],
       "detail": 1.0,
       "kind": "r",
@@ -38263,6 +38561,7 @@
     {
       "active": false,
       "age": 3.0599999999999996,
+      "age_f64": "7a14ae47e17a0840",
       "commands": [],
       "detail": 1.0,
       "kind": "r",
@@ -38273,6 +38572,7 @@
     {
       "active": true,
       "age": 0,
+      "age_f64": "0000000000000000",
       "commands": [],
       "detail": 1.0,
       "kind": "r",
@@ -38283,6 +38583,7 @@
     {
       "active": true,
       "age": 0.21,
+      "age_f64": "e17a14ae47e1ca3f",
       "commands": [],
       "detail": 1.0,
       "kind": "r",
@@ -38293,6 +38594,7 @@
     {
       "active": true,
       "age": 0.42,
+      "age_f64": "e17a14ae47e1da3f",
       "commands": [
         [
           "glow",
@@ -38334,6 +38636,7 @@
     {
       "active": true,
       "age": 0.51,
+      "age_f64": "52b81e85eb51e03f",
       "commands": [
         [
           "glow",
@@ -38375,6 +38678,7 @@
     {
       "active": true,
       "age": 0.5982,
+      "age_f64": "4df38e537424e33f",
       "commands": [
         [
           "glow",
@@ -38416,6 +38720,7 @@
     {
       "active": true,
       "age": 0.6,
+      "age_f64": "333333333333e33f",
       "commands": [
         [
           "polygon",
@@ -38967,6 +39272,7 @@
     {
       "active": true,
       "age": 1.2999999999999998,
+      "age_f64": "ccccccccccccf43f",
       "commands": [
         [
           "polygon",
@@ -39518,6 +39824,7 @@
     {
       "active": true,
       "age": 1.9859999999999998,
+      "age_f64": "2cb29defa7c6ff3f",
       "commands": [
         [
           "polygon",
@@ -40069,6 +40376,7 @@
     {
       "active": true,
       "age": 2.0,
+      "age_f64": "0000000000000040",
       "commands": [
         [
           "circle",
@@ -40095,6 +40403,7 @@
     {
       "active": true,
       "age": 2.13,
+      "age_f64": "0ad7a3703d0a0140",
       "commands": [
         [
           "circle",
@@ -40121,6 +40430,7 @@
     {
       "active": true,
       "age": 2.2573999999999996,
+      "age_f64": "56ec2fbb270f0240",
       "commands": [
         [
           "circle",
@@ -40147,6 +40457,7 @@
     {
       "active": true,
       "age": 2.26,
+      "age_f64": "14ae47e17a140240",
       "commands": [],
       "detail": 1.0,
       "kind": "r",
@@ -40157,6 +40468,7 @@
     {
       "active": false,
       "age": 3.0599999999999996,
+      "age_f64": "7a14ae47e17a0840",
       "commands": [],
       "detail": 1.0,
       "kind": "r",
@@ -40169,6 +40481,7 @@
     {
       "active": true,
       "age": 0.15,
+      "age_f64": "333333333333c33f",
       "commands": [
         [
           "oval",
@@ -40500,6 +40813,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "oval",
@@ -40935,6 +41249,7 @@
     {
       "active": true,
       "age": 0.37,
+      "age_f64": "ae47e17a14aed73f",
       "commands": [
         [
           "oval",
@@ -41370,6 +41685,7 @@
     {
       "active": true,
       "age": 0.4386,
+      "age_f64": "6ea301bc0512dc3f",
       "commands": [
         [
           "oval",
@@ -41805,6 +42121,7 @@
     {
       "active": true,
       "age": 0.44,
+      "age_f64": "295c8fc2f528dc3f",
       "commands": [
         [
           "oval",
@@ -42240,6 +42557,7 @@
     {
       "active": true,
       "age": 0.8900000000000001,
+      "age_f64": "7c14ae47e17aec3f",
       "commands": [
         [
           "oval",
@@ -42675,6 +42993,7 @@
     {
       "active": true,
       "age": 1.3310000000000002,
+      "age_f64": "b39defa7c64bf53f",
       "commands": [
         [
           "oval",
@@ -43038,6 +43357,7 @@
     {
       "active": true,
       "age": 1.34,
+      "age_f64": "713d0ad7a370f53f",
       "commands": [
         [
           "oval",
@@ -43257,6 +43577,7 @@
     {
       "active": true,
       "age": 1.4300000000000002,
+      "age_f64": "e27a14ae47e1f63f",
       "commands": [
         [
           "oval",
@@ -43460,6 +43781,7 @@
     {
       "active": true,
       "age": 1.5182,
+      "age_f64": "5f984c158c4af83f",
       "commands": [
         [
           "oval",
@@ -43663,6 +43985,7 @@
     {
       "active": true,
       "age": 1.52,
+      "age_f64": "52b81e85eb51f83f",
       "commands": [
         [
           "oval",
@@ -43866,6 +44189,7 @@
     {
       "active": false,
       "age": 2.0700000000000003,
+      "age_f64": "90c2f5285c8f0040",
       "commands": [],
       "detail": 0.35,
       "kind": "q",
@@ -43876,6 +44200,7 @@
     {
       "active": true,
       "age": 0.15,
+      "age_f64": "333333333333c33f",
       "commands": [
         [
           "oval",
@@ -44207,6 +44532,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "oval",
@@ -44642,6 +44968,7 @@
     {
       "active": true,
       "age": 0.37,
+      "age_f64": "ae47e17a14aed73f",
       "commands": [
         [
           "oval",
@@ -45077,6 +45404,7 @@
     {
       "active": true,
       "age": 0.4386,
+      "age_f64": "6ea301bc0512dc3f",
       "commands": [
         [
           "oval",
@@ -45512,6 +45840,7 @@
     {
       "active": true,
       "age": 0.44,
+      "age_f64": "295c8fc2f528dc3f",
       "commands": [
         [
           "oval",
@@ -45947,6 +46276,7 @@
     {
       "active": true,
       "age": 0.8900000000000001,
+      "age_f64": "7c14ae47e17aec3f",
       "commands": [
         [
           "oval",
@@ -46382,6 +46712,7 @@
     {
       "active": true,
       "age": 1.3310000000000002,
+      "age_f64": "b39defa7c64bf53f",
       "commands": [
         [
           "oval",
@@ -46745,6 +47076,7 @@
     {
       "active": true,
       "age": 1.34,
+      "age_f64": "713d0ad7a370f53f",
       "commands": [
         [
           "oval",
@@ -46964,6 +47296,7 @@
     {
       "active": true,
       "age": 1.4300000000000002,
+      "age_f64": "e27a14ae47e1f63f",
       "commands": [
         [
           "oval",
@@ -47167,6 +47500,7 @@
     {
       "active": true,
       "age": 1.5182,
+      "age_f64": "5f984c158c4af83f",
       "commands": [
         [
           "oval",
@@ -47370,6 +47704,7 @@
     {
       "active": true,
       "age": 1.52,
+      "age_f64": "52b81e85eb51f83f",
       "commands": [
         [
           "oval",
@@ -47573,6 +47908,7 @@
     {
       "active": false,
       "age": 2.0700000000000003,
+      "age_f64": "90c2f5285c8f0040",
       "commands": [],
       "detail": 0.35,
       "kind": "q",
@@ -47583,6 +47919,7 @@
     {
       "active": true,
       "age": 0.12,
+      "age_f64": "b81e85eb51b8be3f",
       "commands": [
         [
           "oval",
@@ -47898,6 +48235,7 @@
     {
       "active": true,
       "age": 0.24,
+      "age_f64": "b81e85eb51b8ce3f",
       "commands": [
         [
           "oval",
@@ -48333,6 +48671,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "oval",
@@ -48768,6 +49107,7 @@
     {
       "active": true,
       "age": 0.3588,
+      "age_f64": "d881734694f6d63f",
       "commands": [
         [
           "oval",
@@ -49203,6 +49543,7 @@
     {
       "active": true,
       "age": 0.36,
+      "age_f64": "0ad7a3703d0ad73f",
       "commands": [
         [
           "oval",
@@ -49638,6 +49979,7 @@
     {
       "active": true,
       "age": 0.9600000000000001,
+      "age_f64": "b91e85eb51b8ee3f",
       "commands": [
         [
           "oval",
@@ -50073,6 +50415,7 @@
     {
       "active": true,
       "age": 1.548,
+      "age_f64": "f853e3a59bc4f83f",
       "commands": [
         [
           "oval",
@@ -50420,6 +50763,7 @@
     {
       "active": true,
       "age": 1.56,
+      "age_f64": "f6285c8fc2f5f83f",
       "commands": [
         [
           "oval",
@@ -50623,6 +50967,7 @@
     {
       "active": true,
       "age": 1.6300000000000001,
+      "age_f64": "15ae47e17a14fa3f",
       "commands": [
         [
           "oval",
@@ -50826,6 +51171,7 @@
     {
       "active": true,
       "age": 1.6986,
+      "age_f64": "05c58f31772dfb3f",
       "commands": [
         [
           "oval",
@@ -51029,6 +51375,7 @@
     {
       "active": true,
       "age": 1.7000000000000002,
+      "age_f64": "343333333333fb3f",
       "commands": [
         [
           "oval",
@@ -51232,6 +51579,7 @@
     {
       "active": false,
       "age": 2.3000000000000003,
+      "age_f64": "6766666666660240",
       "commands": [],
       "detail": 0.35,
       "kind": "w",
@@ -51242,6 +51590,7 @@
     {
       "active": true,
       "age": 0.12,
+      "age_f64": "b81e85eb51b8be3f",
       "commands": [
         [
           "oval",
@@ -51557,6 +51906,7 @@
     {
       "active": true,
       "age": 0.24,
+      "age_f64": "b81e85eb51b8ce3f",
       "commands": [
         [
           "oval",
@@ -51992,6 +52342,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "oval",
@@ -52427,6 +52778,7 @@
     {
       "active": true,
       "age": 0.3588,
+      "age_f64": "d881734694f6d63f",
       "commands": [
         [
           "oval",
@@ -52862,6 +53214,7 @@
     {
       "active": true,
       "age": 0.36,
+      "age_f64": "0ad7a3703d0ad73f",
       "commands": [
         [
           "oval",
@@ -53297,6 +53650,7 @@
     {
       "active": true,
       "age": 0.9600000000000001,
+      "age_f64": "b91e85eb51b8ee3f",
       "commands": [
         [
           "oval",
@@ -53732,6 +54086,7 @@
     {
       "active": true,
       "age": 1.548,
+      "age_f64": "f853e3a59bc4f83f",
       "commands": [
         [
           "oval",
@@ -54079,6 +54434,7 @@
     {
       "active": true,
       "age": 1.56,
+      "age_f64": "f6285c8fc2f5f83f",
       "commands": [
         [
           "oval",
@@ -54282,6 +54638,7 @@
     {
       "active": true,
       "age": 1.6300000000000001,
+      "age_f64": "15ae47e17a14fa3f",
       "commands": [
         [
           "oval",
@@ -54485,6 +54842,7 @@
     {
       "active": true,
       "age": 1.6986,
+      "age_f64": "05c58f31772dfb3f",
       "commands": [
         [
           "oval",
@@ -54688,6 +55046,7 @@
     {
       "active": true,
       "age": 1.7000000000000002,
+      "age_f64": "343333333333fb3f",
       "commands": [
         [
           "oval",
@@ -54891,6 +55250,7 @@
     {
       "active": false,
       "age": 2.3000000000000003,
+      "age_f64": "6766666666660240",
       "commands": [],
       "detail": 0.35,
       "kind": "w",
@@ -54901,6 +55261,7 @@
     {
       "active": true,
       "age": 0.1,
+      "age_f64": "9a9999999999b93f",
       "commands": [
         [
           "oval",
@@ -55232,6 +55593,7 @@
     {
       "active": true,
       "age": 0.2,
+      "age_f64": "9a9999999999c93f",
       "commands": [
         [
           "oval",
@@ -55667,6 +56029,7 @@
     {
       "active": true,
       "age": 0.26,
+      "age_f64": "a4703d0ad7a3d03f",
       "commands": [
         [
           "oval",
@@ -56102,6 +56465,7 @@
     {
       "active": true,
       "age": 0.3188,
+      "age_f64": "48bf7d1d3867d43f",
       "commands": [
         [
           "oval",
@@ -56537,6 +56901,7 @@
     {
       "active": true,
       "age": 0.32,
+      "age_f64": "7b14ae47e17ad43f",
       "commands": [
         [
           "oval",
@@ -56972,6 +57337,7 @@
     {
       "active": true,
       "age": 0.6699999999999999,
+      "age_f64": "703d0ad7a370e53f",
       "commands": [
         [
           "oval",
@@ -57407,6 +57773,7 @@
     {
       "active": true,
       "age": 1.013,
+      "age_f64": "6891ed7c3f35f03f",
       "commands": [
         [
           "oval",
@@ -57770,6 +58137,7 @@
     {
       "active": true,
       "age": 1.02,
+      "age_f64": "52b81e85eb51f03f",
       "commands": [
         [
           "oval",
@@ -57989,6 +58357,7 @@
     {
       "active": true,
       "age": 1.13,
+      "age_f64": "14ae47e17a14f23f",
       "commands": [
         [
           "oval",
@@ -58192,6 +58561,7 @@
     {
       "active": true,
       "age": 1.2378,
+      "age_f64": "20d26f5f07cef33f",
       "commands": [
         [
           "oval",
@@ -58395,6 +58765,7 @@
     {
       "active": true,
       "age": 1.24,
+      "age_f64": "d7a3703d0ad7f33f",
       "commands": [
         [
           "oval",
@@ -58598,6 +58969,7 @@
     {
       "active": false,
       "age": 1.69,
+      "age_f64": "0ad7a3703d0afb3f",
       "commands": [],
       "detail": 0.35,
       "kind": "e",
@@ -58608,6 +58980,7 @@
     {
       "active": true,
       "age": 0.1,
+      "age_f64": "9a9999999999b93f",
       "commands": [
         [
           "oval",
@@ -58939,6 +59312,7 @@
     {
       "active": true,
       "age": 0.2,
+      "age_f64": "9a9999999999c93f",
       "commands": [
         [
           "oval",
@@ -59374,6 +59748,7 @@
     {
       "active": true,
       "age": 0.26,
+      "age_f64": "a4703d0ad7a3d03f",
       "commands": [
         [
           "oval",
@@ -59809,6 +60184,7 @@
     {
       "active": true,
       "age": 0.3188,
+      "age_f64": "48bf7d1d3867d43f",
       "commands": [
         [
           "oval",
@@ -60244,6 +60620,7 @@
     {
       "active": true,
       "age": 0.32,
+      "age_f64": "7b14ae47e17ad43f",
       "commands": [
         [
           "oval",
@@ -60679,6 +61056,7 @@
     {
       "active": true,
       "age": 0.6699999999999999,
+      "age_f64": "703d0ad7a370e53f",
       "commands": [
         [
           "oval",
@@ -61114,6 +61492,7 @@
     {
       "active": true,
       "age": 1.013,
+      "age_f64": "6891ed7c3f35f03f",
       "commands": [
         [
           "oval",
@@ -61477,6 +61856,7 @@
     {
       "active": true,
       "age": 1.02,
+      "age_f64": "52b81e85eb51f03f",
       "commands": [
         [
           "oval",
@@ -61696,6 +62076,7 @@
     {
       "active": true,
       "age": 1.13,
+      "age_f64": "14ae47e17a14f23f",
       "commands": [
         [
           "oval",
@@ -61899,6 +62280,7 @@
     {
       "active": true,
       "age": 1.2378,
+      "age_f64": "20d26f5f07cef33f",
       "commands": [
         [
           "oval",
@@ -62102,6 +62484,7 @@
     {
       "active": true,
       "age": 1.24,
+      "age_f64": "d7a3703d0ad7f33f",
       "commands": [
         [
           "oval",
@@ -62305,6 +62688,7 @@
     {
       "active": false,
       "age": 1.69,
+      "age_f64": "0ad7a3703d0afb3f",
       "commands": [],
       "detail": 0.35,
       "kind": "e",
@@ -62315,6 +62699,7 @@
     {
       "active": true,
       "age": 0.21,
+      "age_f64": "e17a14ae47e1ca3f",
       "commands": [
         [
           "oval",
@@ -62646,6 +63031,7 @@
     {
       "active": true,
       "age": 0.42,
+      "age_f64": "e17a14ae47e1da3f",
       "commands": [
         [
           "oval",
@@ -63081,6 +63467,7 @@
     {
       "active": true,
       "age": 0.51,
+      "age_f64": "52b81e85eb51e03f",
       "commands": [
         [
           "oval",
@@ -63516,6 +63903,7 @@
     {
       "active": true,
       "age": 0.5982,
+      "age_f64": "4df38e537424e33f",
       "commands": [
         [
           "oval",
@@ -63951,6 +64339,7 @@
     {
       "active": true,
       "age": 0.6,
+      "age_f64": "333333333333e33f",
       "commands": [
         [
           "oval",
@@ -64386,6 +64775,7 @@
     {
       "active": true,
       "age": 1.2999999999999998,
+      "age_f64": "ccccccccccccf43f",
       "commands": [
         [
           "oval",
@@ -64821,6 +65211,7 @@
     {
       "active": true,
       "age": 1.9859999999999998,
+      "age_f64": "2cb29defa7c6ff3f",
       "commands": [
         [
           "oval",
@@ -65168,6 +65559,7 @@
     {
       "active": true,
       "age": 2.0,
+      "age_f64": "0000000000000040",
       "commands": [
         [
           "oval",
@@ -65371,6 +65763,7 @@
     {
       "active": true,
       "age": 2.13,
+      "age_f64": "0ad7a3703d0a0140",
       "commands": [
         [
           "oval",
@@ -65574,6 +65967,7 @@
     {
       "active": true,
       "age": 2.2573999999999996,
+      "age_f64": "56ec2fbb270f0240",
       "commands": [
         [
           "oval",
@@ -65777,6 +66171,7 @@
     {
       "active": true,
       "age": 2.26,
+      "age_f64": "14ae47e17a140240",
       "commands": [
         [
           "oval",
@@ -65980,6 +66375,7 @@
     {
       "active": false,
       "age": 3.0599999999999996,
+      "age_f64": "7a14ae47e17a0840",
       "commands": [],
       "detail": 0.35,
       "kind": "r",
@@ -65990,6 +66386,7 @@
     {
       "active": true,
       "age": 0.21,
+      "age_f64": "e17a14ae47e1ca3f",
       "commands": [
         [
           "oval",
@@ -66321,6 +66718,7 @@
     {
       "active": true,
       "age": 0.42,
+      "age_f64": "e17a14ae47e1da3f",
       "commands": [
         [
           "oval",
@@ -66756,6 +67154,7 @@
     {
       "active": true,
       "age": 0.51,
+      "age_f64": "52b81e85eb51e03f",
       "commands": [
         [
           "oval",
@@ -67191,6 +67590,7 @@
     {
       "active": true,
       "age": 0.5982,
+      "age_f64": "4df38e537424e33f",
       "commands": [
         [
           "oval",
@@ -67626,6 +68026,7 @@
     {
       "active": true,
       "age": 0.6,
+      "age_f64": "333333333333e33f",
       "commands": [
         [
           "oval",
@@ -68061,6 +68462,7 @@
     {
       "active": true,
       "age": 1.2999999999999998,
+      "age_f64": "ccccccccccccf43f",
       "commands": [
         [
           "oval",
@@ -68496,6 +68898,7 @@
     {
       "active": true,
       "age": 1.9859999999999998,
+      "age_f64": "2cb29defa7c6ff3f",
       "commands": [
         [
           "oval",
@@ -68843,6 +69246,7 @@
     {
       "active": true,
       "age": 2.0,
+      "age_f64": "0000000000000040",
       "commands": [
         [
           "oval",
@@ -69046,6 +69450,7 @@
     {
       "active": true,
       "age": 2.13,
+      "age_f64": "0ad7a3703d0a0140",
       "commands": [
         [
           "oval",
@@ -69249,6 +69654,7 @@
     {
       "active": true,
       "age": 2.2573999999999996,
+      "age_f64": "56ec2fbb270f0240",
       "commands": [
         [
           "oval",
@@ -69452,6 +69858,7 @@
     {
       "active": true,
       "age": 2.26,
+      "age_f64": "14ae47e17a140240",
       "commands": [
         [
           "oval",
@@ -69655,6 +70062,7 @@
     {
       "active": false,
       "age": 3.0599999999999996,
+      "age_f64": "7a14ae47e17a0840",
       "commands": [],
       "detail": 0.35,
       "kind": "r",
@@ -69665,6 +70073,7 @@
     {
       "active": true,
       "age": 0.15,
+      "age_f64": "333333333333c33f",
       "commands": [
         [
           "oval",
@@ -69996,6 +70405,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "oval",
@@ -70467,6 +70877,7 @@
     {
       "active": true,
       "age": 0.37,
+      "age_f64": "ae47e17a14aed73f",
       "commands": [
         [
           "oval",
@@ -70938,6 +71349,7 @@
     {
       "active": true,
       "age": 0.4386,
+      "age_f64": "6ea301bc0512dc3f",
       "commands": [
         [
           "oval",
@@ -71409,6 +71821,7 @@
     {
       "active": true,
       "age": 0.44,
+      "age_f64": "295c8fc2f528dc3f",
       "commands": [
         [
           "oval",
@@ -71880,6 +72293,7 @@
     {
       "active": true,
       "age": 0.8900000000000001,
+      "age_f64": "7c14ae47e17aec3f",
       "commands": [
         [
           "oval",
@@ -72351,6 +72765,7 @@
     {
       "active": true,
       "age": 1.3310000000000002,
+      "age_f64": "b39defa7c64bf53f",
       "commands": [
         [
           "oval",
@@ -72714,6 +73129,7 @@
     {
       "active": true,
       "age": 1.34,
+      "age_f64": "713d0ad7a370f53f",
       "commands": [
         [
           "oval",
@@ -72933,6 +73349,7 @@
     {
       "active": true,
       "age": 1.4300000000000002,
+      "age_f64": "e27a14ae47e1f63f",
       "commands": [
         [
           "oval",
@@ -73136,6 +73553,7 @@
     {
       "active": true,
       "age": 1.5182,
+      "age_f64": "5f984c158c4af83f",
       "commands": [
         [
           "oval",
@@ -73339,6 +73757,7 @@
     {
       "active": true,
       "age": 1.52,
+      "age_f64": "52b81e85eb51f83f",
       "commands": [
         [
           "oval",
@@ -73542,6 +73961,7 @@
     {
       "active": false,
       "age": 2.0700000000000003,
+      "age_f64": "90c2f5285c8f0040",
       "commands": [],
       "detail": 0.55,
       "kind": "q",
@@ -73552,6 +73972,7 @@
     {
       "active": true,
       "age": 0.15,
+      "age_f64": "333333333333c33f",
       "commands": [
         [
           "oval",
@@ -73883,6 +74304,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "oval",
@@ -74354,6 +74776,7 @@
     {
       "active": true,
       "age": 0.37,
+      "age_f64": "ae47e17a14aed73f",
       "commands": [
         [
           "oval",
@@ -74825,6 +75248,7 @@
     {
       "active": true,
       "age": 0.4386,
+      "age_f64": "6ea301bc0512dc3f",
       "commands": [
         [
           "oval",
@@ -75296,6 +75720,7 @@
     {
       "active": true,
       "age": 0.44,
+      "age_f64": "295c8fc2f528dc3f",
       "commands": [
         [
           "oval",
@@ -75767,6 +76192,7 @@
     {
       "active": true,
       "age": 0.8900000000000001,
+      "age_f64": "7c14ae47e17aec3f",
       "commands": [
         [
           "oval",
@@ -76238,6 +76664,7 @@
     {
       "active": true,
       "age": 1.3310000000000002,
+      "age_f64": "b39defa7c64bf53f",
       "commands": [
         [
           "oval",
@@ -76601,6 +77028,7 @@
     {
       "active": true,
       "age": 1.34,
+      "age_f64": "713d0ad7a370f53f",
       "commands": [
         [
           "oval",
@@ -76820,6 +77248,7 @@
     {
       "active": true,
       "age": 1.4300000000000002,
+      "age_f64": "e27a14ae47e1f63f",
       "commands": [
         [
           "oval",
@@ -77023,6 +77452,7 @@
     {
       "active": true,
       "age": 1.5182,
+      "age_f64": "5f984c158c4af83f",
       "commands": [
         [
           "oval",
@@ -77226,6 +77656,7 @@
     {
       "active": true,
       "age": 1.52,
+      "age_f64": "52b81e85eb51f83f",
       "commands": [
         [
           "oval",
@@ -77429,6 +77860,7 @@
     {
       "active": false,
       "age": 2.0700000000000003,
+      "age_f64": "90c2f5285c8f0040",
       "commands": [],
       "detail": 0.55,
       "kind": "q",
@@ -77439,6 +77871,7 @@
     {
       "active": true,
       "age": 0.12,
+      "age_f64": "b81e85eb51b8be3f",
       "commands": [
         [
           "oval",
@@ -77754,6 +78187,7 @@
     {
       "active": true,
       "age": 0.24,
+      "age_f64": "b81e85eb51b8ce3f",
       "commands": [
         [
           "oval",
@@ -78225,6 +78659,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "oval",
@@ -78696,6 +79131,7 @@
     {
       "active": true,
       "age": 0.3588,
+      "age_f64": "d881734694f6d63f",
       "commands": [
         [
           "oval",
@@ -79167,6 +79603,7 @@
     {
       "active": true,
       "age": 0.36,
+      "age_f64": "0ad7a3703d0ad73f",
       "commands": [
         [
           "oval",
@@ -79638,6 +80075,7 @@
     {
       "active": true,
       "age": 0.9600000000000001,
+      "age_f64": "b91e85eb51b8ee3f",
       "commands": [
         [
           "oval",
@@ -80109,6 +80547,7 @@
     {
       "active": true,
       "age": 1.548,
+      "age_f64": "f853e3a59bc4f83f",
       "commands": [
         [
           "oval",
@@ -80456,6 +80895,7 @@
     {
       "active": true,
       "age": 1.56,
+      "age_f64": "f6285c8fc2f5f83f",
       "commands": [
         [
           "oval",
@@ -80659,6 +81099,7 @@
     {
       "active": true,
       "age": 1.6300000000000001,
+      "age_f64": "15ae47e17a14fa3f",
       "commands": [
         [
           "oval",
@@ -80862,6 +81303,7 @@
     {
       "active": true,
       "age": 1.6986,
+      "age_f64": "05c58f31772dfb3f",
       "commands": [
         [
           "oval",
@@ -81065,6 +81507,7 @@
     {
       "active": true,
       "age": 1.7000000000000002,
+      "age_f64": "343333333333fb3f",
       "commands": [
         [
           "oval",
@@ -81268,6 +81711,7 @@
     {
       "active": false,
       "age": 2.3000000000000003,
+      "age_f64": "6766666666660240",
       "commands": [],
       "detail": 0.55,
       "kind": "w",
@@ -81278,6 +81722,7 @@
     {
       "active": true,
       "age": 0.12,
+      "age_f64": "b81e85eb51b8be3f",
       "commands": [
         [
           "oval",
@@ -81593,6 +82038,7 @@
     {
       "active": true,
       "age": 0.24,
+      "age_f64": "b81e85eb51b8ce3f",
       "commands": [
         [
           "oval",
@@ -82064,6 +82510,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "oval",
@@ -82535,6 +82982,7 @@
     {
       "active": true,
       "age": 0.3588,
+      "age_f64": "d881734694f6d63f",
       "commands": [
         [
           "oval",
@@ -83006,6 +83454,7 @@
     {
       "active": true,
       "age": 0.36,
+      "age_f64": "0ad7a3703d0ad73f",
       "commands": [
         [
           "oval",
@@ -83477,6 +83926,7 @@
     {
       "active": true,
       "age": 0.9600000000000001,
+      "age_f64": "b91e85eb51b8ee3f",
       "commands": [
         [
           "oval",
@@ -83948,6 +84398,7 @@
     {
       "active": true,
       "age": 1.548,
+      "age_f64": "f853e3a59bc4f83f",
       "commands": [
         [
           "oval",
@@ -84295,6 +84746,7 @@
     {
       "active": true,
       "age": 1.56,
+      "age_f64": "f6285c8fc2f5f83f",
       "commands": [
         [
           "oval",
@@ -84498,6 +84950,7 @@
     {
       "active": true,
       "age": 1.6300000000000001,
+      "age_f64": "15ae47e17a14fa3f",
       "commands": [
         [
           "oval",
@@ -84701,6 +85154,7 @@
     {
       "active": true,
       "age": 1.6986,
+      "age_f64": "05c58f31772dfb3f",
       "commands": [
         [
           "oval",
@@ -84904,6 +85358,7 @@
     {
       "active": true,
       "age": 1.7000000000000002,
+      "age_f64": "343333333333fb3f",
       "commands": [
         [
           "oval",
@@ -85107,6 +85562,7 @@
     {
       "active": false,
       "age": 2.3000000000000003,
+      "age_f64": "6766666666660240",
       "commands": [],
       "detail": 0.55,
       "kind": "w",
@@ -85117,6 +85573,7 @@
     {
       "active": true,
       "age": 0.1,
+      "age_f64": "9a9999999999b93f",
       "commands": [
         [
           "oval",
@@ -85448,6 +85905,7 @@
     {
       "active": true,
       "age": 0.2,
+      "age_f64": "9a9999999999c93f",
       "commands": [
         [
           "oval",
@@ -85919,6 +86377,7 @@
     {
       "active": true,
       "age": 0.26,
+      "age_f64": "a4703d0ad7a3d03f",
       "commands": [
         [
           "oval",
@@ -86390,6 +86849,7 @@
     {
       "active": true,
       "age": 0.3188,
+      "age_f64": "48bf7d1d3867d43f",
       "commands": [
         [
           "oval",
@@ -86861,6 +87321,7 @@
     {
       "active": true,
       "age": 0.32,
+      "age_f64": "7b14ae47e17ad43f",
       "commands": [
         [
           "oval",
@@ -87332,6 +87793,7 @@
     {
       "active": true,
       "age": 0.6699999999999999,
+      "age_f64": "703d0ad7a370e53f",
       "commands": [
         [
           "oval",
@@ -87803,6 +88265,7 @@
     {
       "active": true,
       "age": 1.013,
+      "age_f64": "6891ed7c3f35f03f",
       "commands": [
         [
           "oval",
@@ -88166,6 +88629,7 @@
     {
       "active": true,
       "age": 1.02,
+      "age_f64": "52b81e85eb51f03f",
       "commands": [
         [
           "oval",
@@ -88385,6 +88849,7 @@
     {
       "active": true,
       "age": 1.13,
+      "age_f64": "14ae47e17a14f23f",
       "commands": [
         [
           "oval",
@@ -88588,6 +89053,7 @@
     {
       "active": true,
       "age": 1.2378,
+      "age_f64": "20d26f5f07cef33f",
       "commands": [
         [
           "oval",
@@ -88791,6 +89257,7 @@
     {
       "active": true,
       "age": 1.24,
+      "age_f64": "d7a3703d0ad7f33f",
       "commands": [
         [
           "oval",
@@ -88994,6 +89461,7 @@
     {
       "active": false,
       "age": 1.69,
+      "age_f64": "0ad7a3703d0afb3f",
       "commands": [],
       "detail": 0.55,
       "kind": "e",
@@ -89004,6 +89472,7 @@
     {
       "active": true,
       "age": 0.1,
+      "age_f64": "9a9999999999b93f",
       "commands": [
         [
           "oval",
@@ -89335,6 +89804,7 @@
     {
       "active": true,
       "age": 0.2,
+      "age_f64": "9a9999999999c93f",
       "commands": [
         [
           "oval",
@@ -89806,6 +90276,7 @@
     {
       "active": true,
       "age": 0.26,
+      "age_f64": "a4703d0ad7a3d03f",
       "commands": [
         [
           "oval",
@@ -90277,6 +90748,7 @@
     {
       "active": true,
       "age": 0.3188,
+      "age_f64": "48bf7d1d3867d43f",
       "commands": [
         [
           "oval",
@@ -90748,6 +91220,7 @@
     {
       "active": true,
       "age": 0.32,
+      "age_f64": "7b14ae47e17ad43f",
       "commands": [
         [
           "oval",
@@ -91219,6 +91692,7 @@
     {
       "active": true,
       "age": 0.6699999999999999,
+      "age_f64": "703d0ad7a370e53f",
       "commands": [
         [
           "oval",
@@ -91690,6 +92164,7 @@
     {
       "active": true,
       "age": 1.013,
+      "age_f64": "6891ed7c3f35f03f",
       "commands": [
         [
           "oval",
@@ -92053,6 +92528,7 @@
     {
       "active": true,
       "age": 1.02,
+      "age_f64": "52b81e85eb51f03f",
       "commands": [
         [
           "oval",
@@ -92272,6 +92748,7 @@
     {
       "active": true,
       "age": 1.13,
+      "age_f64": "14ae47e17a14f23f",
       "commands": [
         [
           "oval",
@@ -92475,6 +92952,7 @@
     {
       "active": true,
       "age": 1.2378,
+      "age_f64": "20d26f5f07cef33f",
       "commands": [
         [
           "oval",
@@ -92678,6 +93156,7 @@
     {
       "active": true,
       "age": 1.24,
+      "age_f64": "d7a3703d0ad7f33f",
       "commands": [
         [
           "oval",
@@ -92881,6 +93360,7 @@
     {
       "active": false,
       "age": 1.69,
+      "age_f64": "0ad7a3703d0afb3f",
       "commands": [],
       "detail": 0.55,
       "kind": "e",
@@ -92891,6 +93371,7 @@
     {
       "active": true,
       "age": 0.21,
+      "age_f64": "e17a14ae47e1ca3f",
       "commands": [
         [
           "oval",
@@ -93222,6 +93703,7 @@
     {
       "active": true,
       "age": 0.42,
+      "age_f64": "e17a14ae47e1da3f",
       "commands": [
         [
           "oval",
@@ -93693,6 +94175,7 @@
     {
       "active": true,
       "age": 0.51,
+      "age_f64": "52b81e85eb51e03f",
       "commands": [
         [
           "oval",
@@ -94164,6 +94647,7 @@
     {
       "active": true,
       "age": 0.5982,
+      "age_f64": "4df38e537424e33f",
       "commands": [
         [
           "oval",
@@ -94635,6 +95119,7 @@
     {
       "active": true,
       "age": 0.6,
+      "age_f64": "333333333333e33f",
       "commands": [
         [
           "oval",
@@ -95106,6 +95591,7 @@
     {
       "active": true,
       "age": 1.2999999999999998,
+      "age_f64": "ccccccccccccf43f",
       "commands": [
         [
           "oval",
@@ -95577,6 +96063,7 @@
     {
       "active": true,
       "age": 1.9859999999999998,
+      "age_f64": "2cb29defa7c6ff3f",
       "commands": [
         [
           "oval",
@@ -95924,6 +96411,7 @@
     {
       "active": true,
       "age": 2.0,
+      "age_f64": "0000000000000040",
       "commands": [
         [
           "oval",
@@ -96127,6 +96615,7 @@
     {
       "active": true,
       "age": 2.13,
+      "age_f64": "0ad7a3703d0a0140",
       "commands": [
         [
           "oval",
@@ -96330,6 +96819,7 @@
     {
       "active": true,
       "age": 2.2573999999999996,
+      "age_f64": "56ec2fbb270f0240",
       "commands": [
         [
           "oval",
@@ -96533,6 +97023,7 @@
     {
       "active": true,
       "age": 2.26,
+      "age_f64": "14ae47e17a140240",
       "commands": [
         [
           "oval",
@@ -96736,6 +97227,7 @@
     {
       "active": false,
       "age": 3.0599999999999996,
+      "age_f64": "7a14ae47e17a0840",
       "commands": [],
       "detail": 0.55,
       "kind": "r",
@@ -96746,6 +97238,7 @@
     {
       "active": true,
       "age": 0.21,
+      "age_f64": "e17a14ae47e1ca3f",
       "commands": [
         [
           "oval",
@@ -97077,6 +97570,7 @@
     {
       "active": true,
       "age": 0.42,
+      "age_f64": "e17a14ae47e1da3f",
       "commands": [
         [
           "oval",
@@ -97548,6 +98042,7 @@
     {
       "active": true,
       "age": 0.51,
+      "age_f64": "52b81e85eb51e03f",
       "commands": [
         [
           "oval",
@@ -98019,6 +98514,7 @@
     {
       "active": true,
       "age": 0.5982,
+      "age_f64": "4df38e537424e33f",
       "commands": [
         [
           "oval",
@@ -98490,6 +98986,7 @@
     {
       "active": true,
       "age": 0.6,
+      "age_f64": "333333333333e33f",
       "commands": [
         [
           "oval",
@@ -98961,6 +99458,7 @@
     {
       "active": true,
       "age": 1.2999999999999998,
+      "age_f64": "ccccccccccccf43f",
       "commands": [
         [
           "oval",
@@ -99432,6 +99930,7 @@
     {
       "active": true,
       "age": 1.9859999999999998,
+      "age_f64": "2cb29defa7c6ff3f",
       "commands": [
         [
           "oval",
@@ -99779,6 +100278,7 @@
     {
       "active": true,
       "age": 2.0,
+      "age_f64": "0000000000000040",
       "commands": [
         [
           "oval",
@@ -99982,6 +100482,7 @@
     {
       "active": true,
       "age": 2.13,
+      "age_f64": "0ad7a3703d0a0140",
       "commands": [
         [
           "oval",
@@ -100185,6 +100686,7 @@
     {
       "active": true,
       "age": 2.2573999999999996,
+      "age_f64": "56ec2fbb270f0240",
       "commands": [
         [
           "oval",
@@ -100388,6 +100890,7 @@
     {
       "active": true,
       "age": 2.26,
+      "age_f64": "14ae47e17a140240",
       "commands": [
         [
           "oval",
@@ -100591,6 +101094,7 @@
     {
       "active": false,
       "age": 3.0599999999999996,
+      "age_f64": "7a14ae47e17a0840",
       "commands": [],
       "detail": 0.55,
       "kind": "r",
@@ -100601,6 +101105,7 @@
     {
       "active": true,
       "age": 0.15,
+      "age_f64": "333333333333c33f",
       "commands": [
         [
           "oval",
@@ -100932,6 +101437,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "oval",
@@ -101655,6 +102161,7 @@
     {
       "active": true,
       "age": 0.37,
+      "age_f64": "ae47e17a14aed73f",
       "commands": [
         [
           "oval",
@@ -102378,6 +102885,7 @@
     {
       "active": true,
       "age": 0.4386,
+      "age_f64": "6ea301bc0512dc3f",
       "commands": [
         [
           "oval",
@@ -103101,6 +103609,7 @@
     {
       "active": true,
       "age": 0.44,
+      "age_f64": "295c8fc2f528dc3f",
       "commands": [
         [
           "oval",
@@ -103824,6 +104333,7 @@
     {
       "active": true,
       "age": 0.8900000000000001,
+      "age_f64": "7c14ae47e17aec3f",
       "commands": [
         [
           "oval",
@@ -104547,6 +105057,7 @@
     {
       "active": true,
       "age": 1.3310000000000002,
+      "age_f64": "b39defa7c64bf53f",
       "commands": [
         [
           "oval",
@@ -104910,6 +105421,7 @@
     {
       "active": true,
       "age": 1.34,
+      "age_f64": "713d0ad7a370f53f",
       "commands": [
         [
           "oval",
@@ -105129,6 +105641,7 @@
     {
       "active": true,
       "age": 1.4300000000000002,
+      "age_f64": "e27a14ae47e1f63f",
       "commands": [
         [
           "oval",
@@ -105332,6 +105845,7 @@
     {
       "active": true,
       "age": 1.5182,
+      "age_f64": "5f984c158c4af83f",
       "commands": [
         [
           "oval",
@@ -105535,6 +106049,7 @@
     {
       "active": true,
       "age": 1.52,
+      "age_f64": "52b81e85eb51f83f",
       "commands": [
         [
           "oval",
@@ -105738,6 +106253,7 @@
     {
       "active": false,
       "age": 2.0700000000000003,
+      "age_f64": "90c2f5285c8f0040",
       "commands": [],
       "detail": 1.0,
       "kind": "q",
@@ -105748,6 +106264,7 @@
     {
       "active": true,
       "age": 0.15,
+      "age_f64": "333333333333c33f",
       "commands": [
         [
           "oval",
@@ -106079,6 +106596,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "oval",
@@ -106802,6 +107320,7 @@
     {
       "active": true,
       "age": 0.37,
+      "age_f64": "ae47e17a14aed73f",
       "commands": [
         [
           "oval",
@@ -107525,6 +108044,7 @@
     {
       "active": true,
       "age": 0.4386,
+      "age_f64": "6ea301bc0512dc3f",
       "commands": [
         [
           "oval",
@@ -108248,6 +108768,7 @@
     {
       "active": true,
       "age": 0.44,
+      "age_f64": "295c8fc2f528dc3f",
       "commands": [
         [
           "oval",
@@ -108971,6 +109492,7 @@
     {
       "active": true,
       "age": 0.8900000000000001,
+      "age_f64": "7c14ae47e17aec3f",
       "commands": [
         [
           "oval",
@@ -109694,6 +110216,7 @@
     {
       "active": true,
       "age": 1.3310000000000002,
+      "age_f64": "b39defa7c64bf53f",
       "commands": [
         [
           "oval",
@@ -110057,6 +110580,7 @@
     {
       "active": true,
       "age": 1.34,
+      "age_f64": "713d0ad7a370f53f",
       "commands": [
         [
           "oval",
@@ -110276,6 +110800,7 @@
     {
       "active": true,
       "age": 1.4300000000000002,
+      "age_f64": "e27a14ae47e1f63f",
       "commands": [
         [
           "oval",
@@ -110479,6 +111004,7 @@
     {
       "active": true,
       "age": 1.5182,
+      "age_f64": "5f984c158c4af83f",
       "commands": [
         [
           "oval",
@@ -110682,6 +111208,7 @@
     {
       "active": true,
       "age": 1.52,
+      "age_f64": "52b81e85eb51f83f",
       "commands": [
         [
           "oval",
@@ -110885,6 +111412,7 @@
     {
       "active": false,
       "age": 2.0700000000000003,
+      "age_f64": "90c2f5285c8f0040",
       "commands": [],
       "detail": 1.0,
       "kind": "q",
@@ -110895,6 +111423,7 @@
     {
       "active": true,
       "age": 0.12,
+      "age_f64": "b81e85eb51b8be3f",
       "commands": [
         [
           "oval",
@@ -111210,6 +111739,7 @@
     {
       "active": true,
       "age": 0.24,
+      "age_f64": "b81e85eb51b8ce3f",
       "commands": [
         [
           "oval",
@@ -111933,6 +112463,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "oval",
@@ -112656,6 +113187,7 @@
     {
       "active": true,
       "age": 0.3588,
+      "age_f64": "d881734694f6d63f",
       "commands": [
         [
           "oval",
@@ -113379,6 +113911,7 @@
     {
       "active": true,
       "age": 0.36,
+      "age_f64": "0ad7a3703d0ad73f",
       "commands": [
         [
           "oval",
@@ -114102,6 +114635,7 @@
     {
       "active": true,
       "age": 0.9600000000000001,
+      "age_f64": "b91e85eb51b8ee3f",
       "commands": [
         [
           "oval",
@@ -114825,6 +115359,7 @@
     {
       "active": true,
       "age": 1.548,
+      "age_f64": "f853e3a59bc4f83f",
       "commands": [
         [
           "oval",
@@ -115172,6 +115707,7 @@
     {
       "active": true,
       "age": 1.56,
+      "age_f64": "f6285c8fc2f5f83f",
       "commands": [
         [
           "oval",
@@ -115375,6 +115911,7 @@
     {
       "active": true,
       "age": 1.6300000000000001,
+      "age_f64": "15ae47e17a14fa3f",
       "commands": [
         [
           "oval",
@@ -115578,6 +116115,7 @@
     {
       "active": true,
       "age": 1.6986,
+      "age_f64": "05c58f31772dfb3f",
       "commands": [
         [
           "oval",
@@ -115781,6 +116319,7 @@
     {
       "active": true,
       "age": 1.7000000000000002,
+      "age_f64": "343333333333fb3f",
       "commands": [
         [
           "oval",
@@ -115984,6 +116523,7 @@
     {
       "active": false,
       "age": 2.3000000000000003,
+      "age_f64": "6766666666660240",
       "commands": [],
       "detail": 1.0,
       "kind": "w",
@@ -115994,6 +116534,7 @@
     {
       "active": true,
       "age": 0.12,
+      "age_f64": "b81e85eb51b8be3f",
       "commands": [
         [
           "oval",
@@ -116309,6 +116850,7 @@
     {
       "active": true,
       "age": 0.24,
+      "age_f64": "b81e85eb51b8ce3f",
       "commands": [
         [
           "oval",
@@ -117032,6 +117574,7 @@
     {
       "active": true,
       "age": 0.3,
+      "age_f64": "333333333333d33f",
       "commands": [
         [
           "oval",
@@ -117755,6 +118298,7 @@
     {
       "active": true,
       "age": 0.3588,
+      "age_f64": "d881734694f6d63f",
       "commands": [
         [
           "oval",
@@ -118478,6 +119022,7 @@
     {
       "active": true,
       "age": 0.36,
+      "age_f64": "0ad7a3703d0ad73f",
       "commands": [
         [
           "oval",
@@ -119201,6 +119746,7 @@
     {
       "active": true,
       "age": 0.9600000000000001,
+      "age_f64": "b91e85eb51b8ee3f",
       "commands": [
         [
           "oval",
@@ -119924,6 +120470,7 @@
     {
       "active": true,
       "age": 1.548,
+      "age_f64": "f853e3a59bc4f83f",
       "commands": [
         [
           "oval",
@@ -120271,6 +120818,7 @@
     {
       "active": true,
       "age": 1.56,
+      "age_f64": "f6285c8fc2f5f83f",
       "commands": [
         [
           "oval",
@@ -120474,6 +121022,7 @@
     {
       "active": true,
       "age": 1.6300000000000001,
+      "age_f64": "15ae47e17a14fa3f",
       "commands": [
         [
           "oval",
@@ -120677,6 +121226,7 @@
     {
       "active": true,
       "age": 1.6986,
+      "age_f64": "05c58f31772dfb3f",
       "commands": [
         [
           "oval",
@@ -120880,6 +121430,7 @@
     {
       "active": true,
       "age": 1.7000000000000002,
+      "age_f64": "343333333333fb3f",
       "commands": [
         [
           "oval",
@@ -121083,6 +121634,7 @@
     {
       "active": false,
       "age": 2.3000000000000003,
+      "age_f64": "6766666666660240",
       "commands": [],
       "detail": 1.0,
       "kind": "w",
@@ -121093,6 +121645,7 @@
     {
       "active": true,
       "age": 0.1,
+      "age_f64": "9a9999999999b93f",
       "commands": [
         [
           "oval",
@@ -121424,6 +121977,7 @@
     {
       "active": true,
       "age": 0.2,
+      "age_f64": "9a9999999999c93f",
       "commands": [
         [
           "oval",
@@ -122147,6 +122701,7 @@
     {
       "active": true,
       "age": 0.26,
+      "age_f64": "a4703d0ad7a3d03f",
       "commands": [
         [
           "oval",
@@ -122870,6 +123425,7 @@
     {
       "active": true,
       "age": 0.3188,
+      "age_f64": "48bf7d1d3867d43f",
       "commands": [
         [
           "oval",
@@ -123593,6 +124149,7 @@
     {
       "active": true,
       "age": 0.32,
+      "age_f64": "7b14ae47e17ad43f",
       "commands": [
         [
           "oval",
@@ -124316,6 +124873,7 @@
     {
       "active": true,
       "age": 0.6699999999999999,
+      "age_f64": "703d0ad7a370e53f",
       "commands": [
         [
           "oval",
@@ -125039,6 +125597,7 @@
     {
       "active": true,
       "age": 1.013,
+      "age_f64": "6891ed7c3f35f03f",
       "commands": [
         [
           "oval",
@@ -125402,6 +125961,7 @@
     {
       "active": true,
       "age": 1.02,
+      "age_f64": "52b81e85eb51f03f",
       "commands": [
         [
           "oval",
@@ -125621,6 +126181,7 @@
     {
       "active": true,
       "age": 1.13,
+      "age_f64": "14ae47e17a14f23f",
       "commands": [
         [
           "oval",
@@ -125824,6 +126385,7 @@
     {
       "active": true,
       "age": 1.2378,
+      "age_f64": "20d26f5f07cef33f",
       "commands": [
         [
           "oval",
@@ -126027,6 +126589,7 @@
     {
       "active": true,
       "age": 1.24,
+      "age_f64": "d7a3703d0ad7f33f",
       "commands": [
         [
           "oval",
@@ -126230,6 +126793,7 @@
     {
       "active": false,
       "age": 1.69,
+      "age_f64": "0ad7a3703d0afb3f",
       "commands": [],
       "detail": 1.0,
       "kind": "e",
@@ -126240,6 +126804,7 @@
     {
       "active": true,
       "age": 0.1,
+      "age_f64": "9a9999999999b93f",
       "commands": [
         [
           "oval",
@@ -126571,6 +127136,7 @@
     {
       "active": true,
       "age": 0.2,
+      "age_f64": "9a9999999999c93f",
       "commands": [
         [
           "oval",
@@ -127294,6 +127860,7 @@
     {
       "active": true,
       "age": 0.26,
+      "age_f64": "a4703d0ad7a3d03f",
       "commands": [
         [
           "oval",
@@ -128017,6 +128584,7 @@
     {
       "active": true,
       "age": 0.3188,
+      "age_f64": "48bf7d1d3867d43f",
       "commands": [
         [
           "oval",
@@ -128740,6 +129308,7 @@
     {
       "active": true,
       "age": 0.32,
+      "age_f64": "7b14ae47e17ad43f",
       "commands": [
         [
           "oval",
@@ -129463,6 +130032,7 @@
     {
       "active": true,
       "age": 0.6699999999999999,
+      "age_f64": "703d0ad7a370e53f",
       "commands": [
         [
           "oval",
@@ -130186,6 +130756,7 @@
     {
       "active": true,
       "age": 1.013,
+      "age_f64": "6891ed7c3f35f03f",
       "commands": [
         [
           "oval",
@@ -130549,6 +131120,7 @@
     {
       "active": true,
       "age": 1.02,
+      "age_f64": "52b81e85eb51f03f",
       "commands": [
         [
           "oval",
@@ -130768,6 +131340,7 @@
     {
       "active": true,
       "age": 1.13,
+      "age_f64": "14ae47e17a14f23f",
       "commands": [
         [
           "oval",
@@ -130971,6 +131544,7 @@
     {
       "active": true,
       "age": 1.2378,
+      "age_f64": "20d26f5f07cef33f",
       "commands": [
         [
           "oval",
@@ -131174,6 +131748,7 @@
     {
       "active": true,
       "age": 1.24,
+      "age_f64": "d7a3703d0ad7f33f",
       "commands": [
         [
           "oval",
@@ -131377,6 +131952,7 @@
     {
       "active": false,
       "age": 1.69,
+      "age_f64": "0ad7a3703d0afb3f",
       "commands": [],
       "detail": 1.0,
       "kind": "e",
@@ -131387,6 +131963,7 @@
     {
       "active": true,
       "age": 0.21,
+      "age_f64": "e17a14ae47e1ca3f",
       "commands": [
         [
           "oval",
@@ -131718,6 +132295,7 @@
     {
       "active": true,
       "age": 0.42,
+      "age_f64": "e17a14ae47e1da3f",
       "commands": [
         [
           "oval",
@@ -132441,6 +133019,7 @@
     {
       "active": true,
       "age": 0.51,
+      "age_f64": "52b81e85eb51e03f",
       "commands": [
         [
           "oval",
@@ -133164,6 +133743,7 @@
     {
       "active": true,
       "age": 0.5982,
+      "age_f64": "4df38e537424e33f",
       "commands": [
         [
           "oval",
@@ -133887,6 +134467,7 @@
     {
       "active": true,
       "age": 0.6,
+      "age_f64": "333333333333e33f",
       "commands": [
         [
           "oval",
@@ -134610,6 +135191,7 @@
     {
       "active": true,
       "age": 1.2999999999999998,
+      "age_f64": "ccccccccccccf43f",
       "commands": [
         [
           "oval",
@@ -135333,6 +135915,7 @@
     {
       "active": true,
       "age": 1.9859999999999998,
+      "age_f64": "2cb29defa7c6ff3f",
       "commands": [
         [
           "oval",
@@ -135680,6 +136263,7 @@
     {
       "active": true,
       "age": 2.0,
+      "age_f64": "0000000000000040",
       "commands": [
         [
           "oval",
@@ -135883,6 +136467,7 @@
     {
       "active": true,
       "age": 2.13,
+      "age_f64": "0ad7a3703d0a0140",
       "commands": [
         [
           "oval",
@@ -136086,6 +136671,7 @@
     {
       "active": true,
       "age": 2.2573999999999996,
+      "age_f64": "56ec2fbb270f0240",
       "commands": [
         [
           "oval",
@@ -136289,6 +136875,7 @@
     {
       "active": true,
       "age": 2.26,
+      "age_f64": "14ae47e17a140240",
       "commands": [
         [
           "oval",
@@ -136492,6 +137079,7 @@
     {
       "active": false,
       "age": 3.0599999999999996,
+      "age_f64": "7a14ae47e17a0840",
       "commands": [],
       "detail": 1.0,
       "kind": "r",
@@ -136502,6 +137090,7 @@
     {
       "active": true,
       "age": 0.21,
+      "age_f64": "e17a14ae47e1ca3f",
       "commands": [
         [
           "oval",
@@ -136833,6 +137422,7 @@
     {
       "active": true,
       "age": 0.42,
+      "age_f64": "e17a14ae47e1da3f",
       "commands": [
         [
           "oval",
@@ -137556,6 +138146,7 @@
     {
       "active": true,
       "age": 0.51,
+      "age_f64": "52b81e85eb51e03f",
       "commands": [
         [
           "oval",
@@ -138279,6 +138870,7 @@
     {
       "active": true,
       "age": 0.5982,
+      "age_f64": "4df38e537424e33f",
       "commands": [
         [
           "oval",
@@ -139002,6 +139594,7 @@
     {
       "active": true,
       "age": 0.6,
+      "age_f64": "333333333333e33f",
       "commands": [
         [
           "oval",
@@ -139725,6 +140318,7 @@
     {
       "active": true,
       "age": 1.2999999999999998,
+      "age_f64": "ccccccccccccf43f",
       "commands": [
         [
           "oval",
@@ -140448,6 +141042,7 @@
     {
       "active": true,
       "age": 1.9859999999999998,
+      "age_f64": "2cb29defa7c6ff3f",
       "commands": [
         [
           "oval",
@@ -140795,6 +141390,7 @@
     {
       "active": true,
       "age": 2.0,
+      "age_f64": "0000000000000040",
       "commands": [
         [
           "oval",
@@ -140998,6 +141594,7 @@
     {
       "active": true,
       "age": 2.13,
+      "age_f64": "0ad7a3703d0a0140",
       "commands": [
         [
           "oval",
@@ -141201,6 +141798,7 @@
     {
       "active": true,
       "age": 2.2573999999999996,
+      "age_f64": "56ec2fbb270f0240",
       "commands": [
         [
           "oval",
@@ -141404,6 +142002,7 @@
     {
       "active": true,
       "age": 2.26,
+      "age_f64": "14ae47e17a140240",
       "commands": [
         [
           "oval",
@@ -141607,6 +142206,7 @@
     {
       "active": false,
       "age": 3.0599999999999996,
+      "age_f64": "7a14ae47e17a0840",
       "commands": [],
       "detail": 1.0,
       "kind": "r",

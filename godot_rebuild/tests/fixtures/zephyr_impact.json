@@ -10,6 +10,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -275,6 +276,7 @@
           }
         },
         {
+          "age_f64": "343333333333a33f",
           "commands": [
             [
               "glow",
@@ -540,6 +542,7 @@
           }
         },
         {
+          "age_f64": "1f85eb51b81eb53f",
           "commands": [
             [
               "ellipse",
@@ -735,6 +738,7 @@
           }
         },
         {
+          "age_f64": "295c8fc2f528c43f",
           "commands": [
             [
               "ellipse",
@@ -916,6 +920,7 @@
           }
         },
         {
+          "age_f64": "676666666666ca3f",
           "commands": [
             [
               "ellipse",
@@ -1043,6 +1048,7 @@
           }
         },
         {
+          "age_f64": "cccccccccccccc3f",
           "commands": [
             [
               "ellipse",
@@ -1098,6 +1104,7 @@
           }
         },
         {
+          "age_f64": "ccccccccccccd63f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -1118,6 +1125,7 @@
           }
         },
         {
+          "age_f64": "000000000000d83f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -1247,6 +1255,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -1512,6 +1521,7 @@
           }
         },
         {
+          "age_f64": "343333333333a33f",
           "commands": [
             [
               "glow",
@@ -1777,6 +1787,7 @@
           }
         },
         {
+          "age_f64": "1f85eb51b81eb53f",
           "commands": [
             [
               "ellipse",
@@ -1972,6 +1983,7 @@
           }
         },
         {
+          "age_f64": "295c8fc2f528c43f",
           "commands": [
             [
               "ellipse",
@@ -2153,6 +2165,7 @@
           }
         },
         {
+          "age_f64": "676666666666ca3f",
           "commands": [
             [
               "ellipse",
@@ -2280,6 +2293,7 @@
           }
         },
         {
+          "age_f64": "cccccccccccccc3f",
           "commands": [
             [
               "ellipse",
@@ -2335,6 +2349,7 @@
           }
         },
         {
+          "age_f64": "ccccccccccccd63f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -2355,6 +2370,7 @@
           }
         },
         {
+          "age_f64": "000000000000d83f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -2484,6 +2500,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -2766,6 +2783,7 @@
           }
         },
         {
+          "age_f64": "bc490c022b87a63f",
           "commands": [
             [
               "glow",
@@ -3048,6 +3066,7 @@
           }
         },
         {
+          "age_f64": "81b74082e2c7b83f",
           "commands": [
             [
               "ellipse",
@@ -3243,6 +3262,7 @@
           }
         },
         {
+          "age_f64": "9e8026c286a7c73f",
           "commands": [
             [
               "ellipse",
@@ -3424,6 +3444,7 @@
           }
         },
         {
+          "age_f64": "62e5d022dbf9ce3f",
           "commands": [
             [
               "ellipse",
@@ -3551,6 +3572,7 @@
           }
         },
         {
+          "age_f64": "4c37894160e5d03f",
           "commands": [
             [
               "ellipse",
@@ -3606,6 +3628,7 @@
           }
         },
         {
+          "age_f64": "8e976e1283c0da3f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -3626,6 +3649,7 @@
           }
         },
         {
+          "age_f64": "2a5c8fc2f528dc3f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -3755,6 +3779,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -4037,6 +4062,7 @@
           }
         },
         {
+          "age_f64": "bc490c022b87a63f",
           "commands": [
             [
               "glow",
@@ -4319,6 +4345,7 @@
           }
         },
         {
+          "age_f64": "81b74082e2c7b83f",
           "commands": [
             [
               "ellipse",
@@ -4514,6 +4541,7 @@
           }
         },
         {
+          "age_f64": "9e8026c286a7c73f",
           "commands": [
             [
               "ellipse",
@@ -4695,6 +4723,7 @@
           }
         },
         {
+          "age_f64": "62e5d022dbf9ce3f",
           "commands": [
             [
               "ellipse",
@@ -4822,6 +4851,7 @@
           }
         },
         {
+          "age_f64": "4c37894160e5d03f",
           "commands": [
             [
               "ellipse",
@@ -4877,6 +4907,7 @@
           }
         },
         {
+          "age_f64": "8e976e1283c0da3f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -4897,6 +4928,7 @@
           }
         },
         {
+          "age_f64": "2a5c8fc2f528dc3f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -5026,6 +5058,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -5308,6 +5341,7 @@
           }
         },
         {
+          "age_f64": "dacef753e3a5ab3f",
           "commands": [
             [
               "glow",
@@ -5590,6 +5624,7 @@
           }
         },
         {
+          "age_f64": "efc9c342ad69be3f",
           "commands": [
             [
               "ellipse",
@@ -5785,6 +5820,7 @@
           }
         },
         {
+          "age_f64": "64cc5d4bc807cd3f",
           "commands": [
             [
               "ellipse",
@@ -5966,6 +6002,7 @@
           }
         },
         {
+          "age_f64": "365eba490c02d33f",
           "commands": [
             [
               "ellipse",
@@ -6093,6 +6130,7 @@
           }
         },
         {
+          "age_f64": "23dbf97e6abcd43f",
           "commands": [
             [
               "ellipse",
@@ -6148,6 +6186,7 @@
           }
         },
         {
+          "age_f64": "d122dbf97e6ae03f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -6168,6 +6207,7 @@
           }
         },
         {
+          "age_f64": "48e17a14ae47e13f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -6297,6 +6337,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -6579,6 +6620,7 @@
           }
         },
         {
+          "age_f64": "dacef753e3a5ab3f",
           "commands": [
             [
               "glow",
@@ -6861,6 +6903,7 @@
           }
         },
         {
+          "age_f64": "efc9c342ad69be3f",
           "commands": [
             [
               "ellipse",
@@ -7056,6 +7099,7 @@
           }
         },
         {
+          "age_f64": "64cc5d4bc807cd3f",
           "commands": [
             [
               "ellipse",
@@ -7237,6 +7281,7 @@
           }
         },
         {
+          "age_f64": "365eba490c02d33f",
           "commands": [
             [
               "ellipse",
@@ -7364,6 +7409,7 @@
           }
         },
         {
+          "age_f64": "23dbf97e6abcd43f",
           "commands": [
             [
               "ellipse",
@@ -7419,6 +7465,7 @@
           }
         },
         {
+          "age_f64": "d122dbf97e6ae03f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -7439,6 +7486,7 @@
           }
         },
         {
+          "age_f64": "48e17a14ae47e13f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -7568,6 +7616,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -7833,6 +7882,7 @@
           }
         },
         {
+          "age_f64": "343333333333a33f",
           "commands": [
             [
               "glow",
@@ -8098,6 +8148,7 @@
           }
         },
         {
+          "age_f64": "1f85eb51b81eb53f",
           "commands": [
             [
               "ellipse",
@@ -8293,6 +8344,7 @@
           }
         },
         {
+          "age_f64": "295c8fc2f528c43f",
           "commands": [
             [
               "ellipse",
@@ -8474,6 +8526,7 @@
           }
         },
         {
+          "age_f64": "676666666666ca3f",
           "commands": [
             [
               "ellipse",
@@ -8601,6 +8654,7 @@
           }
         },
         {
+          "age_f64": "cccccccccccccc3f",
           "commands": [
             [
               "ellipse",
@@ -8656,6 +8710,7 @@
           }
         },
         {
+          "age_f64": "ccccccccccccd63f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -8676,6 +8731,7 @@
           }
         },
         {
+          "age_f64": "000000000000d83f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -8805,6 +8861,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -9070,6 +9127,7 @@
           }
         },
         {
+          "age_f64": "343333333333a33f",
           "commands": [
             [
               "glow",
@@ -9335,6 +9393,7 @@
           }
         },
         {
+          "age_f64": "1f85eb51b81eb53f",
           "commands": [
             [
               "ellipse",
@@ -9530,6 +9589,7 @@
           }
         },
         {
+          "age_f64": "295c8fc2f528c43f",
           "commands": [
             [
               "ellipse",
@@ -9711,6 +9771,7 @@
           }
         },
         {
+          "age_f64": "676666666666ca3f",
           "commands": [
             [
               "ellipse",
@@ -9838,6 +9899,7 @@
           }
         },
         {
+          "age_f64": "cccccccccccccc3f",
           "commands": [
             [
               "ellipse",
@@ -9893,6 +9955,7 @@
           }
         },
         {
+          "age_f64": "ccccccccccccd63f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -9913,6 +9976,7 @@
           }
         },
         {
+          "age_f64": "000000000000d83f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -10042,6 +10106,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -10324,6 +10389,7 @@
           }
         },
         {
+          "age_f64": "bc490c022b87a63f",
           "commands": [
             [
               "glow",
@@ -10606,6 +10672,7 @@
           }
         },
         {
+          "age_f64": "81b74082e2c7b83f",
           "commands": [
             [
               "ellipse",
@@ -10801,6 +10868,7 @@
           }
         },
         {
+          "age_f64": "9e8026c286a7c73f",
           "commands": [
             [
               "ellipse",
@@ -10982,6 +11050,7 @@
           }
         },
         {
+          "age_f64": "62e5d022dbf9ce3f",
           "commands": [
             [
               "ellipse",
@@ -11109,6 +11178,7 @@
           }
         },
         {
+          "age_f64": "4c37894160e5d03f",
           "commands": [
             [
               "ellipse",
@@ -11164,6 +11234,7 @@
           }
         },
         {
+          "age_f64": "8e976e1283c0da3f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -11184,6 +11255,7 @@
           }
         },
         {
+          "age_f64": "2a5c8fc2f528dc3f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -11313,6 +11385,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -11595,6 +11668,7 @@
           }
         },
         {
+          "age_f64": "bc490c022b87a63f",
           "commands": [
             [
               "glow",
@@ -11877,6 +11951,7 @@
           }
         },
         {
+          "age_f64": "81b74082e2c7b83f",
           "commands": [
             [
               "ellipse",
@@ -12072,6 +12147,7 @@
           }
         },
         {
+          "age_f64": "9e8026c286a7c73f",
           "commands": [
             [
               "ellipse",
@@ -12253,6 +12329,7 @@
           }
         },
         {
+          "age_f64": "62e5d022dbf9ce3f",
           "commands": [
             [
               "ellipse",
@@ -12380,6 +12457,7 @@
           }
         },
         {
+          "age_f64": "4c37894160e5d03f",
           "commands": [
             [
               "ellipse",
@@ -12435,6 +12513,7 @@
           }
         },
         {
+          "age_f64": "8e976e1283c0da3f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -12455,6 +12534,7 @@
           }
         },
         {
+          "age_f64": "2a5c8fc2f528dc3f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -12584,6 +12664,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -12866,6 +12947,7 @@
           }
         },
         {
+          "age_f64": "dacef753e3a5ab3f",
           "commands": [
             [
               "glow",
@@ -13148,6 +13230,7 @@
           }
         },
         {
+          "age_f64": "efc9c342ad69be3f",
           "commands": [
             [
               "ellipse",
@@ -13343,6 +13426,7 @@
           }
         },
         {
+          "age_f64": "64cc5d4bc807cd3f",
           "commands": [
             [
               "ellipse",
@@ -13524,6 +13608,7 @@
           }
         },
         {
+          "age_f64": "365eba490c02d33f",
           "commands": [
             [
               "ellipse",
@@ -13651,6 +13736,7 @@
           }
         },
         {
+          "age_f64": "23dbf97e6abcd43f",
           "commands": [
             [
               "ellipse",
@@ -13706,6 +13792,7 @@
           }
         },
         {
+          "age_f64": "d122dbf97e6ae03f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -13726,6 +13813,7 @@
           }
         },
         {
+          "age_f64": "48e17a14ae47e13f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -13855,6 +13943,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -14137,6 +14226,7 @@
           }
         },
         {
+          "age_f64": "dacef753e3a5ab3f",
           "commands": [
             [
               "glow",
@@ -14419,6 +14509,7 @@
           }
         },
         {
+          "age_f64": "efc9c342ad69be3f",
           "commands": [
             [
               "ellipse",
@@ -14614,6 +14705,7 @@
           }
         },
         {
+          "age_f64": "64cc5d4bc807cd3f",
           "commands": [
             [
               "ellipse",
@@ -14795,6 +14887,7 @@
           }
         },
         {
+          "age_f64": "365eba490c02d33f",
           "commands": [
             [
               "ellipse",
@@ -14922,6 +15015,7 @@
           }
         },
         {
+          "age_f64": "23dbf97e6abcd43f",
           "commands": [
             [
               "ellipse",
@@ -14977,6 +15071,7 @@
           }
         },
         {
+          "age_f64": "d122dbf97e6ae03f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -14997,6 +15092,7 @@
           }
         },
         {
+          "age_f64": "48e17a14ae47e13f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -15126,6 +15222,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -15391,6 +15488,7 @@
           }
         },
         {
+          "age_f64": "343333333333a33f",
           "commands": [
             [
               "glow",
@@ -15656,6 +15754,7 @@
           }
         },
         {
+          "age_f64": "1f85eb51b81eb53f",
           "commands": [
             [
               "ellipse",
@@ -15851,6 +15950,7 @@
           }
         },
         {
+          "age_f64": "295c8fc2f528c43f",
           "commands": [
             [
               "ellipse",
@@ -16032,6 +16132,7 @@
           }
         },
         {
+          "age_f64": "676666666666ca3f",
           "commands": [
             [
               "ellipse",
@@ -16159,6 +16260,7 @@
           }
         },
         {
+          "age_f64": "cccccccccccccc3f",
           "commands": [
             [
               "ellipse",
@@ -16214,6 +16316,7 @@
           }
         },
         {
+          "age_f64": "ccccccccccccd63f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -16234,6 +16337,7 @@
           }
         },
         {
+          "age_f64": "000000000000d83f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -16363,6 +16467,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -16628,6 +16733,7 @@
           }
         },
         {
+          "age_f64": "343333333333a33f",
           "commands": [
             [
               "glow",
@@ -16893,6 +16999,7 @@
           }
         },
         {
+          "age_f64": "1f85eb51b81eb53f",
           "commands": [
             [
               "ellipse",
@@ -17088,6 +17195,7 @@
           }
         },
         {
+          "age_f64": "295c8fc2f528c43f",
           "commands": [
             [
               "ellipse",
@@ -17269,6 +17377,7 @@
           }
         },
         {
+          "age_f64": "676666666666ca3f",
           "commands": [
             [
               "ellipse",
@@ -17396,6 +17505,7 @@
           }
         },
         {
+          "age_f64": "cccccccccccccc3f",
           "commands": [
             [
               "ellipse",
@@ -17451,6 +17561,7 @@
           }
         },
         {
+          "age_f64": "ccccccccccccd63f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -17471,6 +17582,7 @@
           }
         },
         {
+          "age_f64": "000000000000d83f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -17600,6 +17712,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -17882,6 +17995,7 @@
           }
         },
         {
+          "age_f64": "bc490c022b87a63f",
           "commands": [
             [
               "glow",
@@ -18164,6 +18278,7 @@
           }
         },
         {
+          "age_f64": "81b74082e2c7b83f",
           "commands": [
             [
               "ellipse",
@@ -18359,6 +18474,7 @@
           }
         },
         {
+          "age_f64": "9e8026c286a7c73f",
           "commands": [
             [
               "ellipse",
@@ -18540,6 +18656,7 @@
           }
         },
         {
+          "age_f64": "62e5d022dbf9ce3f",
           "commands": [
             [
               "ellipse",
@@ -18667,6 +18784,7 @@
           }
         },
         {
+          "age_f64": "4c37894160e5d03f",
           "commands": [
             [
               "ellipse",
@@ -18722,6 +18840,7 @@
           }
         },
         {
+          "age_f64": "8e976e1283c0da3f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -18742,6 +18861,7 @@
           }
         },
         {
+          "age_f64": "2a5c8fc2f528dc3f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -18871,6 +18991,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -19153,6 +19274,7 @@
           }
         },
         {
+          "age_f64": "bc490c022b87a63f",
           "commands": [
             [
               "glow",
@@ -19435,6 +19557,7 @@
           }
         },
         {
+          "age_f64": "81b74082e2c7b83f",
           "commands": [
             [
               "ellipse",
@@ -19630,6 +19753,7 @@
           }
         },
         {
+          "age_f64": "9e8026c286a7c73f",
           "commands": [
             [
               "ellipse",
@@ -19811,6 +19935,7 @@
           }
         },
         {
+          "age_f64": "62e5d022dbf9ce3f",
           "commands": [
             [
               "ellipse",
@@ -19938,6 +20063,7 @@
           }
         },
         {
+          "age_f64": "4c37894160e5d03f",
           "commands": [
             [
               "ellipse",
@@ -19993,6 +20119,7 @@
           }
         },
         {
+          "age_f64": "8e976e1283c0da3f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -20013,6 +20140,7 @@
           }
         },
         {
+          "age_f64": "2a5c8fc2f528dc3f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -20142,6 +20270,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -20424,6 +20553,7 @@
           }
         },
         {
+          "age_f64": "dacef753e3a5ab3f",
           "commands": [
             [
               "glow",
@@ -20706,6 +20836,7 @@
           }
         },
         {
+          "age_f64": "efc9c342ad69be3f",
           "commands": [
             [
               "ellipse",
@@ -20901,6 +21032,7 @@
           }
         },
         {
+          "age_f64": "64cc5d4bc807cd3f",
           "commands": [
             [
               "ellipse",
@@ -21082,6 +21214,7 @@
           }
         },
         {
+          "age_f64": "365eba490c02d33f",
           "commands": [
             [
               "ellipse",
@@ -21209,6 +21342,7 @@
           }
         },
         {
+          "age_f64": "23dbf97e6abcd43f",
           "commands": [
             [
               "ellipse",
@@ -21264,6 +21398,7 @@
           }
         },
         {
+          "age_f64": "d122dbf97e6ae03f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -21284,6 +21419,7 @@
           }
         },
         {
+          "age_f64": "48e17a14ae47e13f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -21413,6 +21549,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -21695,6 +21832,7 @@
           }
         },
         {
+          "age_f64": "dacef753e3a5ab3f",
           "commands": [
             [
               "glow",
@@ -21977,6 +22115,7 @@
           }
         },
         {
+          "age_f64": "efc9c342ad69be3f",
           "commands": [
             [
               "ellipse",
@@ -22172,6 +22311,7 @@
           }
         },
         {
+          "age_f64": "64cc5d4bc807cd3f",
           "commands": [
             [
               "ellipse",
@@ -22353,6 +22493,7 @@
           }
         },
         {
+          "age_f64": "365eba490c02d33f",
           "commands": [
             [
               "ellipse",
@@ -22480,6 +22621,7 @@
           }
         },
         {
+          "age_f64": "23dbf97e6abcd43f",
           "commands": [
             [
               "ellipse",
@@ -22535,6 +22677,7 @@
           }
         },
         {
+          "age_f64": "d122dbf97e6ae03f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -22555,6 +22698,7 @@
           }
         },
         {
+          "age_f64": "48e17a14ae47e13f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -22684,6 +22828,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -22949,6 +23094,7 @@
           }
         },
         {
+          "age_f64": "343333333333a33f",
           "commands": [
             [
               "glow",
@@ -23214,6 +23360,7 @@
           }
         },
         {
+          "age_f64": "1f85eb51b81eb53f",
           "commands": [
             [
               "ellipse",
@@ -23409,6 +23556,7 @@
           }
         },
         {
+          "age_f64": "295c8fc2f528c43f",
           "commands": [
             [
               "ellipse",
@@ -23590,6 +23738,7 @@
           }
         },
         {
+          "age_f64": "676666666666ca3f",
           "commands": [
             [
               "ellipse",
@@ -23717,6 +23866,7 @@
           }
         },
         {
+          "age_f64": "cccccccccccccc3f",
           "commands": [
             [
               "ellipse",
@@ -23772,6 +23922,7 @@
           }
         },
         {
+          "age_f64": "ccccccccccccd63f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -23792,6 +23943,7 @@
           }
         },
         {
+          "age_f64": "000000000000d83f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -23921,6 +24073,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -24186,6 +24339,7 @@
           }
         },
         {
+          "age_f64": "343333333333a33f",
           "commands": [
             [
               "glow",
@@ -24451,6 +24605,7 @@
           }
         },
         {
+          "age_f64": "1f85eb51b81eb53f",
           "commands": [
             [
               "ellipse",
@@ -24646,6 +24801,7 @@
           }
         },
         {
+          "age_f64": "295c8fc2f528c43f",
           "commands": [
             [
               "ellipse",
@@ -24827,6 +24983,7 @@
           }
         },
         {
+          "age_f64": "676666666666ca3f",
           "commands": [
             [
               "ellipse",
@@ -24954,6 +25111,7 @@
           }
         },
         {
+          "age_f64": "cccccccccccccc3f",
           "commands": [
             [
               "ellipse",
@@ -25009,6 +25167,7 @@
           }
         },
         {
+          "age_f64": "ccccccccccccd63f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -25029,6 +25188,7 @@
           }
         },
         {
+          "age_f64": "000000000000d83f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -25158,6 +25318,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -25440,6 +25601,7 @@
           }
         },
         {
+          "age_f64": "bc490c022b87a63f",
           "commands": [
             [
               "glow",
@@ -25722,6 +25884,7 @@
           }
         },
         {
+          "age_f64": "81b74082e2c7b83f",
           "commands": [
             [
               "ellipse",
@@ -25917,6 +26080,7 @@
           }
         },
         {
+          "age_f64": "9e8026c286a7c73f",
           "commands": [
             [
               "ellipse",
@@ -26098,6 +26262,7 @@
           }
         },
         {
+          "age_f64": "62e5d022dbf9ce3f",
           "commands": [
             [
               "ellipse",
@@ -26225,6 +26390,7 @@
           }
         },
         {
+          "age_f64": "4c37894160e5d03f",
           "commands": [
             [
               "ellipse",
@@ -26280,6 +26446,7 @@
           }
         },
         {
+          "age_f64": "8e976e1283c0da3f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -26300,6 +26467,7 @@
           }
         },
         {
+          "age_f64": "2a5c8fc2f528dc3f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -26429,6 +26597,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -26711,6 +26880,7 @@
           }
         },
         {
+          "age_f64": "bc490c022b87a63f",
           "commands": [
             [
               "glow",
@@ -26993,6 +27163,7 @@
           }
         },
         {
+          "age_f64": "81b74082e2c7b83f",
           "commands": [
             [
               "ellipse",
@@ -27188,6 +27359,7 @@
           }
         },
         {
+          "age_f64": "9e8026c286a7c73f",
           "commands": [
             [
               "ellipse",
@@ -27369,6 +27541,7 @@
           }
         },
         {
+          "age_f64": "62e5d022dbf9ce3f",
           "commands": [
             [
               "ellipse",
@@ -27496,6 +27669,7 @@
           }
         },
         {
+          "age_f64": "4c37894160e5d03f",
           "commands": [
             [
               "ellipse",
@@ -27551,6 +27725,7 @@
           }
         },
         {
+          "age_f64": "8e976e1283c0da3f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -27571,6 +27746,7 @@
           }
         },
         {
+          "age_f64": "2a5c8fc2f528dc3f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -27700,6 +27876,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -27982,6 +28159,7 @@
           }
         },
         {
+          "age_f64": "dacef753e3a5ab3f",
           "commands": [
             [
               "glow",
@@ -28264,6 +28442,7 @@
           }
         },
         {
+          "age_f64": "efc9c342ad69be3f",
           "commands": [
             [
               "ellipse",
@@ -28459,6 +28638,7 @@
           }
         },
         {
+          "age_f64": "64cc5d4bc807cd3f",
           "commands": [
             [
               "ellipse",
@@ -28640,6 +28820,7 @@
           }
         },
         {
+          "age_f64": "365eba490c02d33f",
           "commands": [
             [
               "ellipse",
@@ -28767,6 +28948,7 @@
           }
         },
         {
+          "age_f64": "23dbf97e6abcd43f",
           "commands": [
             [
               "ellipse",
@@ -28822,6 +29004,7 @@
           }
         },
         {
+          "age_f64": "d122dbf97e6ae03f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -28842,6 +29025,7 @@
           }
         },
         {
+          "age_f64": "48e17a14ae47e13f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -28971,6 +29155,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -29253,6 +29438,7 @@
           }
         },
         {
+          "age_f64": "dacef753e3a5ab3f",
           "commands": [
             [
               "glow",
@@ -29535,6 +29721,7 @@
           }
         },
         {
+          "age_f64": "efc9c342ad69be3f",
           "commands": [
             [
               "ellipse",
@@ -29730,6 +29917,7 @@
           }
         },
         {
+          "age_f64": "64cc5d4bc807cd3f",
           "commands": [
             [
               "ellipse",
@@ -29911,6 +30099,7 @@
           }
         },
         {
+          "age_f64": "365eba490c02d33f",
           "commands": [
             [
               "ellipse",
@@ -30038,6 +30227,7 @@
           }
         },
         {
+          "age_f64": "23dbf97e6abcd43f",
           "commands": [
             [
               "ellipse",
@@ -30093,6 +30283,7 @@
           }
         },
         {
+          "age_f64": "d122dbf97e6ae03f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -30113,6 +30304,7 @@
           }
         },
         {
+          "age_f64": "48e17a14ae47e13f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -30242,6 +30434,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -30507,6 +30700,7 @@
           }
         },
         {
+          "age_f64": "343333333333a33f",
           "commands": [
             [
               "glow",
@@ -30772,6 +30966,7 @@
           }
         },
         {
+          "age_f64": "1f85eb51b81eb53f",
           "commands": [
             [
               "ellipse",
@@ -30967,6 +31162,7 @@
           }
         },
         {
+          "age_f64": "295c8fc2f528c43f",
           "commands": [
             [
               "ellipse",
@@ -31148,6 +31344,7 @@
           }
         },
         {
+          "age_f64": "676666666666ca3f",
           "commands": [
             [
               "ellipse",
@@ -31275,6 +31472,7 @@
           }
         },
         {
+          "age_f64": "cccccccccccccc3f",
           "commands": [
             [
               "ellipse",
@@ -31330,6 +31528,7 @@
           }
         },
         {
+          "age_f64": "ccccccccccccd63f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -31350,6 +31549,7 @@
           }
         },
         {
+          "age_f64": "000000000000d83f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -31479,6 +31679,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -31744,6 +31945,7 @@
           }
         },
         {
+          "age_f64": "343333333333a33f",
           "commands": [
             [
               "glow",
@@ -32009,6 +32211,7 @@
           }
         },
         {
+          "age_f64": "1f85eb51b81eb53f",
           "commands": [
             [
               "ellipse",
@@ -32204,6 +32407,7 @@
           }
         },
         {
+          "age_f64": "295c8fc2f528c43f",
           "commands": [
             [
               "ellipse",
@@ -32385,6 +32589,7 @@
           }
         },
         {
+          "age_f64": "676666666666ca3f",
           "commands": [
             [
               "ellipse",
@@ -32512,6 +32717,7 @@
           }
         },
         {
+          "age_f64": "cccccccccccccc3f",
           "commands": [
             [
               "ellipse",
@@ -32567,6 +32773,7 @@
           }
         },
         {
+          "age_f64": "ccccccccccccd63f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -32587,6 +32794,7 @@
           }
         },
         {
+          "age_f64": "000000000000d83f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -32716,6 +32924,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -32998,6 +33207,7 @@
           }
         },
         {
+          "age_f64": "bc490c022b87a63f",
           "commands": [
             [
               "glow",
@@ -33280,6 +33490,7 @@
           }
         },
         {
+          "age_f64": "81b74082e2c7b83f",
           "commands": [
             [
               "ellipse",
@@ -33475,6 +33686,7 @@
           }
         },
         {
+          "age_f64": "9e8026c286a7c73f",
           "commands": [
             [
               "ellipse",
@@ -33656,6 +33868,7 @@
           }
         },
         {
+          "age_f64": "62e5d022dbf9ce3f",
           "commands": [
             [
               "ellipse",
@@ -33783,6 +33996,7 @@
           }
         },
         {
+          "age_f64": "4c37894160e5d03f",
           "commands": [
             [
               "ellipse",
@@ -33838,6 +34052,7 @@
           }
         },
         {
+          "age_f64": "8e976e1283c0da3f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -33858,6 +34073,7 @@
           }
         },
         {
+          "age_f64": "2a5c8fc2f528dc3f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -33987,6 +34203,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -34269,6 +34486,7 @@
           }
         },
         {
+          "age_f64": "bc490c022b87a63f",
           "commands": [
             [
               "glow",
@@ -34551,6 +34769,7 @@
           }
         },
         {
+          "age_f64": "81b74082e2c7b83f",
           "commands": [
             [
               "ellipse",
@@ -34746,6 +34965,7 @@
           }
         },
         {
+          "age_f64": "9e8026c286a7c73f",
           "commands": [
             [
               "ellipse",
@@ -34927,6 +35147,7 @@
           }
         },
         {
+          "age_f64": "62e5d022dbf9ce3f",
           "commands": [
             [
               "ellipse",
@@ -35054,6 +35275,7 @@
           }
         },
         {
+          "age_f64": "4c37894160e5d03f",
           "commands": [
             [
               "ellipse",
@@ -35109,6 +35331,7 @@
           }
         },
         {
+          "age_f64": "8e976e1283c0da3f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -35129,6 +35352,7 @@
           }
         },
         {
+          "age_f64": "2a5c8fc2f528dc3f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -35258,6 +35482,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -35540,6 +35765,7 @@
           }
         },
         {
+          "age_f64": "dacef753e3a5ab3f",
           "commands": [
             [
               "glow",
@@ -35822,6 +36048,7 @@
           }
         },
         {
+          "age_f64": "efc9c342ad69be3f",
           "commands": [
             [
               "ellipse",
@@ -36017,6 +36244,7 @@
           }
         },
         {
+          "age_f64": "64cc5d4bc807cd3f",
           "commands": [
             [
               "ellipse",
@@ -36198,6 +36426,7 @@
           }
         },
         {
+          "age_f64": "365eba490c02d33f",
           "commands": [
             [
               "ellipse",
@@ -36325,6 +36554,7 @@
           }
         },
         {
+          "age_f64": "23dbf97e6abcd43f",
           "commands": [
             [
               "ellipse",
@@ -36380,6 +36610,7 @@
           }
         },
         {
+          "age_f64": "d122dbf97e6ae03f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -36400,6 +36631,7 @@
           }
         },
         {
+          "age_f64": "48e17a14ae47e13f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -36529,6 +36761,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -36811,6 +37044,7 @@
           }
         },
         {
+          "age_f64": "dacef753e3a5ab3f",
           "commands": [
             [
               "glow",
@@ -37093,6 +37327,7 @@
           }
         },
         {
+          "age_f64": "efc9c342ad69be3f",
           "commands": [
             [
               "ellipse",
@@ -37288,6 +37523,7 @@
           }
         },
         {
+          "age_f64": "64cc5d4bc807cd3f",
           "commands": [
             [
               "ellipse",
@@ -37469,6 +37705,7 @@
           }
         },
         {
+          "age_f64": "365eba490c02d33f",
           "commands": [
             [
               "ellipse",
@@ -37596,6 +37833,7 @@
           }
         },
         {
+          "age_f64": "23dbf97e6abcd43f",
           "commands": [
             [
               "ellipse",
@@ -37651,6 +37889,7 @@
           }
         },
         {
+          "age_f64": "d122dbf97e6ae03f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -37671,6 +37910,7 @@
           }
         },
         {
+          "age_f64": "48e17a14ae47e13f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -37800,6 +38040,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -38065,6 +38306,7 @@
           }
         },
         {
+          "age_f64": "343333333333a33f",
           "commands": [
             [
               "glow",
@@ -38330,6 +38572,7 @@
           }
         },
         {
+          "age_f64": "1f85eb51b81eb53f",
           "commands": [
             [
               "ellipse",
@@ -38525,6 +38768,7 @@
           }
         },
         {
+          "age_f64": "295c8fc2f528c43f",
           "commands": [
             [
               "ellipse",
@@ -38706,6 +38950,7 @@
           }
         },
         {
+          "age_f64": "676666666666ca3f",
           "commands": [
             [
               "ellipse",
@@ -38833,6 +39078,7 @@
           }
         },
         {
+          "age_f64": "cccccccccccccc3f",
           "commands": [
             [
               "ellipse",
@@ -38888,6 +39134,7 @@
           }
         },
         {
+          "age_f64": "ccccccccccccd63f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -38908,6 +39155,7 @@
           }
         },
         {
+          "age_f64": "000000000000d83f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -39037,6 +39285,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -39302,6 +39551,7 @@
           }
         },
         {
+          "age_f64": "343333333333a33f",
           "commands": [
             [
               "glow",
@@ -39567,6 +39817,7 @@
           }
         },
         {
+          "age_f64": "1f85eb51b81eb53f",
           "commands": [
             [
               "ellipse",
@@ -39762,6 +40013,7 @@
           }
         },
         {
+          "age_f64": "295c8fc2f528c43f",
           "commands": [
             [
               "ellipse",
@@ -39943,6 +40195,7 @@
           }
         },
         {
+          "age_f64": "676666666666ca3f",
           "commands": [
             [
               "ellipse",
@@ -40070,6 +40323,7 @@
           }
         },
         {
+          "age_f64": "cccccccccccccc3f",
           "commands": [
             [
               "ellipse",
@@ -40125,6 +40379,7 @@
           }
         },
         {
+          "age_f64": "ccccccccccccd63f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -40145,6 +40400,7 @@
           }
         },
         {
+          "age_f64": "000000000000d83f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -40274,6 +40530,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -40556,6 +40813,7 @@
           }
         },
         {
+          "age_f64": "bc490c022b87a63f",
           "commands": [
             [
               "glow",
@@ -40838,6 +41096,7 @@
           }
         },
         {
+          "age_f64": "81b74082e2c7b83f",
           "commands": [
             [
               "ellipse",
@@ -41033,6 +41292,7 @@
           }
         },
         {
+          "age_f64": "9e8026c286a7c73f",
           "commands": [
             [
               "ellipse",
@@ -41214,6 +41474,7 @@
           }
         },
         {
+          "age_f64": "62e5d022dbf9ce3f",
           "commands": [
             [
               "ellipse",
@@ -41341,6 +41602,7 @@
           }
         },
         {
+          "age_f64": "4c37894160e5d03f",
           "commands": [
             [
               "ellipse",
@@ -41396,6 +41658,7 @@
           }
         },
         {
+          "age_f64": "8e976e1283c0da3f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -41416,6 +41679,7 @@
           }
         },
         {
+          "age_f64": "2a5c8fc2f528dc3f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -41545,6 +41809,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -41827,6 +42092,7 @@
           }
         },
         {
+          "age_f64": "bc490c022b87a63f",
           "commands": [
             [
               "glow",
@@ -42109,6 +42375,7 @@
           }
         },
         {
+          "age_f64": "81b74082e2c7b83f",
           "commands": [
             [
               "ellipse",
@@ -42304,6 +42571,7 @@
           }
         },
         {
+          "age_f64": "9e8026c286a7c73f",
           "commands": [
             [
               "ellipse",
@@ -42485,6 +42753,7 @@
           }
         },
         {
+          "age_f64": "62e5d022dbf9ce3f",
           "commands": [
             [
               "ellipse",
@@ -42612,6 +42881,7 @@
           }
         },
         {
+          "age_f64": "4c37894160e5d03f",
           "commands": [
             [
               "ellipse",
@@ -42667,6 +42937,7 @@
           }
         },
         {
+          "age_f64": "8e976e1283c0da3f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -42687,6 +42958,7 @@
           }
         },
         {
+          "age_f64": "2a5c8fc2f528dc3f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -42816,6 +43088,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -43098,6 +43371,7 @@
           }
         },
         {
+          "age_f64": "dacef753e3a5ab3f",
           "commands": [
             [
               "glow",
@@ -43380,6 +43654,7 @@
           }
         },
         {
+          "age_f64": "efc9c342ad69be3f",
           "commands": [
             [
               "ellipse",
@@ -43575,6 +43850,7 @@
           }
         },
         {
+          "age_f64": "64cc5d4bc807cd3f",
           "commands": [
             [
               "ellipse",
@@ -43756,6 +44032,7 @@
           }
         },
         {
+          "age_f64": "365eba490c02d33f",
           "commands": [
             [
               "ellipse",
@@ -43883,6 +44160,7 @@
           }
         },
         {
+          "age_f64": "23dbf97e6abcd43f",
           "commands": [
             [
               "ellipse",
@@ -43938,6 +44216,7 @@
           }
         },
         {
+          "age_f64": "d122dbf97e6ae03f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -43958,6 +44237,7 @@
           }
         },
         {
+          "age_f64": "48e17a14ae47e13f",
           "commands": [],
           "fraction": 1.0,
           "state": {
@@ -44087,6 +44367,7 @@
       ],
       "frames": [
         {
+          "age_f64": "0000000000000000",
           "commands": [
             [
               "glow",
@@ -44369,6 +44650,7 @@
           }
         },
         {
+          "age_f64": "dacef753e3a5ab3f",
           "commands": [
             [
               "glow",
@@ -44651,6 +44933,7 @@
           }
         },
         {
+          "age_f64": "efc9c342ad69be3f",
           "commands": [
             [
               "ellipse",
@@ -44846,6 +45129,7 @@
           }
         },
         {
+          "age_f64": "64cc5d4bc807cd3f",
           "commands": [
             [
               "ellipse",
@@ -45027,6 +45311,7 @@
           }
         },
         {
+          "age_f64": "365eba490c02d33f",
           "commands": [
             [
               "ellipse",
@@ -45154,6 +45439,7 @@
           }
         },
         {
+          "age_f64": "23dbf97e6abcd43f",
           "commands": [
             [
               "ellipse",
@@ -45209,6 +45495,7 @@
           }
         },
         {
+          "age_f64": "d122dbf97e6ae03f",
           "commands": [],
           "fraction": 0.95,
           "state": {
@@ -45229,6 +45516,7 @@
           }
         },
         {
+          "age_f64": "48e17a14ae47e13f",
           "commands": [],
           "fraction": 1.0,
           "state": {

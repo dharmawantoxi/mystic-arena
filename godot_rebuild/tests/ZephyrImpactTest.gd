@@ -19,7 +19,7 @@ static func run(runner) -> void:
 		var impact := _spawn(sample.args)
 		Compare._equal(runner, impact.snapshot(), sample.initial, "impact constructor")
 		for frame: Dictionary in sample.frames:
-			impact.age = float(frame.state.age)
+			impact.age = str(frame.age_f64).hex_decode().decode_double(0)
 			impact.active = bool(frame.state.active)
 			Compare._equal(runner, impact.snapshot(), frame.state, "impact absolute age state")
 			Compare._equal(

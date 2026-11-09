@@ -7,6 +7,7 @@ import argparse
 import ast
 import hashlib
 import json
+import struct
 from pathlib import Path
 import types
 import prepare_godot_grimjaw_hurt as hurt
@@ -90,7 +91,7 @@ def front_cases():
                             skill.draw_front(canvas)
                             cases.append({"key": key, "x": x, "y": y, "detail": detail,
                                           "glow": glow, "facing": facing, "phase": phase,
-                                          "age": age, "active": active, "commands": canvas.commands})
+                                          "age_f64": struct.pack("<d", age).hex(), "age": age, "active": active, "commands": canvas.commands})
     return cases
 
 
@@ -132,7 +133,7 @@ def build():
     cast = next(n for n in director.body if isinstance(n, ast.FunctionDef) and n.name == "on_cast")
     limit = ast.literal_eval(next(n for n in cast.body if isinstance(n, ast.If)).test.comparators[0])
     config = {"timeline": cls.TIMELINE, "radius": cls.RADIUS, "colors": colors,
-              "palette": env["P"], "director_limit": limit}
+              "palette": env["P"], "director_limit": limit, "timeline_f64": {key: [struct.pack("<d", v).hex() for v in values] for key, values in cls.TIMELINE.items()}}
     fixture = {"schema": 1, "source_sha256": hashlib.sha256(SOURCE.read_bytes()).hexdigest(),
                "scope": "Grimjaw SkillFX lifecycle/emissions/front primitives; fixed palette/seed/tape, not pixels",
                "random_tape": hurt.particles.TAPE, "cases": cases, "front": front_cases()}

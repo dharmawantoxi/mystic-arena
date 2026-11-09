@@ -4,6 +4,7 @@ import argparse
 import ast
 import hashlib
 import json
+import struct
 from pathlib import Path
 import types
 import prepare_godot_zephyr_particles as particles
@@ -110,7 +111,7 @@ def front_cases(ground=False):
                     else:
                         skill.draw_front(surface)
                     cases.append({"kind": kind, "x": x, "y": y, "detail": detail,
-                                  "phase": phase, "age": age, "active": active,
+                                  "phase": phase, "age_f64": struct.pack("<d", age).hex(), "age": age, "active": active,
                                   "commands": surface.commands})
     return cases
 
@@ -152,7 +153,7 @@ def build():
     guard = next(n for n in cast.body if isinstance(n, ast.If))
     limit = ast.literal_eval(guard.test.comparators[0])
     config = {"timeline": cls.TIMELINE, "tint": cls.TINT, "radius": cls.RADIUS,
-              "director_limit": limit}
+              "director_limit": limit, "timeline_f64": {key: [struct.pack("<d", v).hex() for v in values] for key, values in cls.TIMELINE.items()}}
     fixture = {"schema": 1, "source_sha256": hashlib.sha256(SOURCE.read_bytes()).hexdigest(),
                "scope": "SkillFX lifecycle/emission requests and front primitive/helper commands; fixed seed, no pixel/blending or RNG parity",
                "random_tape": particles.TAPE, "cases": cases, "front": front_cases(), "ground": front_cases(ground=True)}
