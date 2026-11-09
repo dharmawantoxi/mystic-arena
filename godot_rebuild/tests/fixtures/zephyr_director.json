@@ -1,0 +1,1008 @@
+{
+  "cases": [
+    [
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [],
+          "edge": "",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "ANTICIPATION",
+            "prev_state": "IDLE",
+            "state": "IDLE",
+            "state_time": 0.016,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": false,
+          "_zp_attack_progress": 0.0,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [],
+          "edge": "",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "ANTICIPATION",
+            "prev_state": "IDLE",
+            "state": "WALK",
+            "state_time": 0.016,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": true,
+          "_zp_attack_active": false,
+          "_zp_attack_progress": 0.0,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [],
+          "edge": "",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "ANTICIPATION",
+            "prev_state": "WALK",
+            "state": "RUN",
+            "state_time": 0.016,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": true,
+          "_zp_attack_active": false,
+          "_zp_attack_progress": 0.0,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 2.2,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [],
+          "edge": "",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "ANTICIPATION",
+            "prev_state": "RUN",
+            "state": "CHARGE",
+            "state_time": 0.016,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": true,
+          "_zp_attack_progress": 0.1,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [],
+          "edge": "",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "WINDUP",
+            "prev_state": "RUN",
+            "state": "CHARGE",
+            "state_time": 0.032,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": true,
+          "_zp_attack_progress": 0.2,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [
+            {
+              "count": 2,
+              "options": {
+                "colors": [
+                  [
+                    74,
+                    40,
+                    86
+                  ],
+                  [
+                    46,
+                    22,
+                    58
+                  ]
+                ],
+                "direction": 3.141592653589793,
+                "drag": 2.6,
+                "gravity": 90.0,
+                "life": [
+                  0.2,
+                  0.4
+                ],
+                "shape": "pixel",
+                "size": [
+                  2,
+                  4
+                ],
+                "speed": [
+                  30,
+                  90
+                ],
+                "spread": 1.1
+              },
+              "position": [
+                36.75,
+                21.75
+              ]
+            }
+          ],
+          "edge": "start",
+          "state": {
+            "_swing_seen": true,
+            "anim_phase": "SWING",
+            "prev_state": "CHARGE",
+            "state": "SWING",
+            "state_time": 0.016,
+            "swing_active": true
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": true,
+          "_zp_attack_progress": 0.35,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [],
+          "edge": "",
+          "state": {
+            "_swing_seen": true,
+            "anim_phase": "IMPACT",
+            "prev_state": "CHARGE",
+            "state": "SWING",
+            "state_time": 0.032,
+            "swing_active": true
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": true,
+          "_zp_attack_progress": 0.55,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.04,
+        "expected": {
+          "bursts": [],
+          "edge": "end",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "FOLLOW",
+            "prev_state": "CHARGE",
+            "state": "SWING",
+            "state_time": 0.07200000000000001,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": true,
+          "_zp_attack_progress": 0.7,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [],
+          "edge": "",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "RECOVERY",
+            "prev_state": "SWING",
+            "state": "ATTACK",
+            "state_time": 0.016,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": true,
+          "_zp_attack_progress": 0.9,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [],
+          "edge": "",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "ANTICIPATION",
+            "prev_state": "ATTACK",
+            "state": "SKILL",
+            "state_time": 0.016,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": false,
+          "_zp_attack_progress": 0.0,
+          "active_skill": "q",
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [],
+          "edge": "",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "ANTICIPATION",
+            "prev_state": "SKILL",
+            "state": "SPECIAL",
+            "state_time": 0.016,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": false,
+          "_zp_attack_progress": 0.0,
+          "active_skill": "r",
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [],
+          "edge": "",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "ANTICIPATION",
+            "prev_state": "SPECIAL",
+            "state": "HURT",
+            "state_time": 0.016,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": false,
+          "_zp_attack_progress": 0.0,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.1,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [],
+          "edge": "",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "ANTICIPATION",
+            "prev_state": "HURT",
+            "state": "DEATH",
+            "state_time": 0.016,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": false,
+          "_zp_attack_progress": 0.0,
+          "active_skill": null,
+          "alive": false,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [],
+          "edge": "",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "ANTICIPATION",
+            "prev_state": "HURT",
+            "state": "DEATH",
+            "state_time": 0.032,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": false,
+          "_zp_attack_progress": 0.0,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      }
+    ],
+    [
+      {
+        "dt": 0.05,
+        "expected": {
+          "bursts": [],
+          "edge": "",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "ANTICIPATION",
+            "prev_state": "IDLE",
+            "state": "HURT",
+            "state_time": 0.05,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": false,
+          "_zp_attack_progress": 0.0,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.1,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0,
+        "expected": {
+          "bursts": [],
+          "edge": "",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "ANTICIPATION",
+            "prev_state": "IDLE",
+            "state": "HURT",
+            "state_time": 0.05,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": false,
+          "_zp_attack_progress": 0.0,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 1e-06,
+        "expected": {
+          "bursts": [],
+          "edge": "",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "ANTICIPATION",
+            "prev_state": "IDLE",
+            "state": "HURT",
+            "state_time": 0.050001000000000004,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": false,
+          "_zp_attack_progress": 0.0,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [],
+          "edge": "",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "ANTICIPATION",
+            "prev_state": "HURT",
+            "state": "IDLE",
+            "state_time": 0.016,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": false,
+          "_zp_attack_progress": 0.0,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      }
+    ],
+    [
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [
+            {
+              "count": 2,
+              "options": {
+                "colors": [
+                  [
+                    74,
+                    40,
+                    86
+                  ],
+                  [
+                    46,
+                    22,
+                    58
+                  ]
+                ],
+                "direction": 0.0,
+                "drag": 2.6,
+                "gravity": 90.0,
+                "life": [
+                  0.2,
+                  0.4
+                ],
+                "shape": "pixel",
+                "size": [
+                  2,
+                  4
+                ],
+                "speed": [
+                  30,
+                  90
+                ],
+                "spread": 1.1
+              },
+              "position": [
+                24.75,
+                21.75
+              ]
+            }
+          ],
+          "edge": "start",
+          "state": {
+            "_swing_seen": true,
+            "anim_phase": "SWING",
+            "prev_state": "IDLE",
+            "state": "SWING",
+            "state_time": 0.016,
+            "swing_active": true
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": true,
+          "_zp_attack_progress": 0.4,
+          "active_skill": null,
+          "alive": true,
+          "facing": -1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [],
+          "edge": "",
+          "state": {
+            "_swing_seen": true,
+            "anim_phase": "SWING",
+            "prev_state": "IDLE",
+            "state": "SWING",
+            "state_time": 0.032,
+            "swing_active": true
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": true,
+          "_zp_attack_progress": 0.5,
+          "active_skill": null,
+          "alive": true,
+          "facing": -1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [],
+          "edge": "end",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "ANTICIPATION",
+            "prev_state": "IDLE",
+            "state": "SWING",
+            "state_time": 0.048,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": false,
+          "_zp_attack_progress": 0.0,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [
+            {
+              "count": 2,
+              "options": {
+                "colors": [
+                  [
+                    74,
+                    40,
+                    86
+                  ],
+                  [
+                    46,
+                    22,
+                    58
+                  ]
+                ],
+                "direction": 0.0,
+                "drag": 2.6,
+                "gravity": 90.0,
+                "life": [
+                  0.2,
+                  0.4
+                ],
+                "shape": "pixel",
+                "size": [
+                  2,
+                  4
+                ],
+                "speed": [
+                  30,
+                  90
+                ],
+                "spread": 1.1
+              },
+              "position": [
+                24.75,
+                21.75
+              ]
+            }
+          ],
+          "edge": "start",
+          "state": {
+            "_swing_seen": true,
+            "anim_phase": "IMPACT",
+            "prev_state": "IDLE",
+            "state": "SWING",
+            "state_time": 0.064,
+            "swing_active": true
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": true,
+          "_zp_attack_progress": 0.58,
+          "active_skill": null,
+          "alive": true,
+          "facing": -1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [],
+          "edge": "end",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "ANTICIPATION",
+            "prev_state": "SWING",
+            "state": "IDLE",
+            "state_time": 0.016,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": false,
+          "_zp_attack_progress": 0.0,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      }
+    ],
+    [
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [],
+          "edge": "",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "ANTICIPATION",
+            "prev_state": "IDLE",
+            "state": "CHARGE",
+            "state_time": 0.016,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": true,
+          "_zp_attack_progress": -1,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [],
+          "edge": "",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "WINDUP",
+            "prev_state": "IDLE",
+            "state": "CHARGE",
+            "state_time": 0.032,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": true,
+          "_zp_attack_progress": 0.16,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [
+            {
+              "count": 2,
+              "options": {
+                "colors": [
+                  [
+                    74,
+                    40,
+                    86
+                  ],
+                  [
+                    46,
+                    22,
+                    58
+                  ]
+                ],
+                "direction": 3.141592653589793,
+                "drag": 2.6,
+                "gravity": 90.0,
+                "life": [
+                  0.2,
+                  0.4
+                ],
+                "shape": "pixel",
+                "size": [
+                  2,
+                  4
+                ],
+                "speed": [
+                  30,
+                  90
+                ],
+                "spread": 1.1
+              },
+              "position": [
+                36.75,
+                21.75
+              ]
+            }
+          ],
+          "edge": "start",
+          "state": {
+            "_swing_seen": true,
+            "anim_phase": "SWING",
+            "prev_state": "CHARGE",
+            "state": "SWING",
+            "state_time": 0.016,
+            "swing_active": true
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": true,
+          "_zp_attack_progress": 0.34,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [],
+          "edge": "",
+          "state": {
+            "_swing_seen": true,
+            "anim_phase": "IMPACT",
+            "prev_state": "CHARGE",
+            "state": "SWING",
+            "state_time": 0.032,
+            "swing_active": true
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": true,
+          "_zp_attack_progress": 0.52,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [],
+          "edge": "end",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "FOLLOW",
+            "prev_state": "CHARGE",
+            "state": "SWING",
+            "state_time": 0.048,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": true,
+          "_zp_attack_progress": 0.6,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [],
+          "edge": "",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "RECOVERY",
+            "prev_state": "CHARGE",
+            "state": "SWING",
+            "state_time": 0.064,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": true,
+          "_zp_attack_progress": 0.8,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [],
+          "edge": "",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "RECOVERY",
+            "prev_state": "SWING",
+            "state": "ATTACK",
+            "state_time": 0.016,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": true,
+          "_zp_attack_progress": 1,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      },
+      {
+        "dt": 0.016,
+        "expected": {
+          "bursts": [],
+          "edge": "",
+          "state": {
+            "_swing_seen": false,
+            "anim_phase": "RECOVERY",
+            "prev_state": "SWING",
+            "state": "ATTACK",
+            "state_time": 0.032,
+            "swing_active": false
+          }
+        },
+        "input": {
+          "_moving_cached": false,
+          "_zp_attack_active": true,
+          "_zp_attack_progress": 2,
+          "active_skill": null,
+          "alive": true,
+          "facing": 1,
+          "hit_flash": 0.0,
+          "speed": 1.0,
+          "x": 30.75,
+          "y": -20.25
+        }
+      }
+    ]
+  ],
+  "schema": 1,
+  "scope": "director priority state and swing edges/burst only; not full director/rig",
+  "source_sha256": "e300cd26cc37e9a8aa824c07c2a80148c6016caee46c978566179ce109b9e964"
+}

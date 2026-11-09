@@ -58,6 +58,30 @@ on:
       - 'hero_archetypes.py'
       - 'tools/gen_hero_skill_kit.py'
       - 'tools/gen_boss_smart_ai.py'
+      - 'tools/prepare_godot_zephyr_impact.py'
+      - 'tools/test_godot_zephyr_impact_prepare.py'
+      - 'tools/prepare_godot_zephyr_trail.py'
+      - 'tools/test_godot_zephyr_trail_prepare.py'
+      - 'tools/prepare_godot_grimjaw_skill.py'
+      - 'tools/test_godot_grimjaw_skill_prepare.py'
+      - 'tools/prepare_godot_grimjaw_hurt.py'
+      - 'tools/test_godot_grimjaw_hurt_prepare.py'
+      - 'tools/prepare_godot_zephyr_projectile.py'
+      - 'tools/test_godot_zephyr_projectile_prepare.py'
+      - 'tools/prepare_godot_zephyr_director.py'
+      - 'tools/test_godot_zephyr_director_prepare.py'
+      - 'tools/prepare_godot_zephyr_skill.py'
+      - 'tools/test_godot_zephyr_skill_prepare.py'
+      - 'tools/prepare_godot_zephyr_particles.py'
+      - 'tools/test_godot_zephyr_particles_prepare.py'
+      - 'tools/prepare_godot_zephyr_bolt.py'
+      - 'tools/test_godot_zephyr_bolt_prepare.py'
+      - 'tools/prepare_godot_hero_feedback.py'
+      - 'tools/test_godot_hero_feedback_prepare.py'
+      - 'tools/prepare_godot_combat_feel.py'
+      - 'tools/test_godot_combat_feel_prepare.py'
+      - 'tools/prepare_godot_heroes.py'
+      - 'tools/test_godot_heroes_prepare.py'
       - 'tools/prepare_godot_entities.py'
       - 'tools/test_godot_entity_prepare.py'
       - 'tools/prepare_godot_hero_skills.py'
@@ -133,6 +157,30 @@ on:
       - 'hero_archetypes.py'
       - 'tools/gen_hero_skill_kit.py'
       - 'tools/gen_boss_smart_ai.py'
+      - 'tools/prepare_godot_zephyr_impact.py'
+      - 'tools/test_godot_zephyr_impact_prepare.py'
+      - 'tools/prepare_godot_zephyr_trail.py'
+      - 'tools/test_godot_zephyr_trail_prepare.py'
+      - 'tools/prepare_godot_grimjaw_skill.py'
+      - 'tools/test_godot_grimjaw_skill_prepare.py'
+      - 'tools/prepare_godot_grimjaw_hurt.py'
+      - 'tools/test_godot_grimjaw_hurt_prepare.py'
+      - 'tools/prepare_godot_zephyr_projectile.py'
+      - 'tools/test_godot_zephyr_projectile_prepare.py'
+      - 'tools/prepare_godot_zephyr_director.py'
+      - 'tools/test_godot_zephyr_director_prepare.py'
+      - 'tools/prepare_godot_zephyr_skill.py'
+      - 'tools/test_godot_zephyr_skill_prepare.py'
+      - 'tools/prepare_godot_zephyr_particles.py'
+      - 'tools/test_godot_zephyr_particles_prepare.py'
+      - 'tools/prepare_godot_zephyr_bolt.py'
+      - 'tools/test_godot_zephyr_bolt_prepare.py'
+      - 'tools/prepare_godot_hero_feedback.py'
+      - 'tools/test_godot_hero_feedback_prepare.py'
+      - 'tools/prepare_godot_combat_feel.py'
+      - 'tools/test_godot_combat_feel_prepare.py'
+      - 'tools/prepare_godot_heroes.py'
+      - 'tools/test_godot_heroes_prepare.py'
       - 'tools/prepare_godot_entities.py'
       - 'tools/test_godot_entity_prepare.py'
       - 'tools/prepare_godot_hero_skills.py'
@@ -206,6 +254,30 @@ jobs:
             python tools/test_godot_ui_theme_prepare.py
             python tools/test_godot_ui_theme_parity.py
             python tools/test_localization.py
+            python tools/prepare_godot_zephyr_impact.py --check
+            python tools/test_godot_zephyr_impact_prepare.py
+            python tools/prepare_godot_zephyr_trail.py --check
+            python tools/test_godot_zephyr_trail_prepare.py
+            python tools/prepare_godot_grimjaw_skill.py --check
+            python tools/test_godot_grimjaw_skill_prepare.py
+            python tools/prepare_godot_grimjaw_hurt.py --check
+            python tools/test_godot_grimjaw_hurt_prepare.py
+            python tools/prepare_godot_zephyr_projectile.py --check
+            python tools/test_godot_zephyr_projectile_prepare.py
+            python tools/prepare_godot_zephyr_director.py --check
+            python tools/test_godot_zephyr_director_prepare.py
+            python tools/prepare_godot_zephyr_skill.py --check
+            python tools/test_godot_zephyr_skill_prepare.py
+            python tools/prepare_godot_zephyr_particles.py --check
+            python tools/test_godot_zephyr_particles_prepare.py
+            python tools/prepare_godot_zephyr_bolt.py --check
+            python tools/test_godot_zephyr_bolt_prepare.py
+            python tools/prepare_godot_hero_feedback.py --check
+            python tools/test_godot_hero_feedback_prepare.py
+            python tools/prepare_godot_combat_feel.py --check
+            python tools/test_godot_combat_feel_prepare.py
+            python tools/prepare_godot_heroes.py --check
+            python tools/test_godot_heroes_prepare.py
             python tools/prepare_godot_entities.py --check
             python tools/test_godot_entity_prepare.py
             python3 tools/prepare_godot_hero_skills.py --check

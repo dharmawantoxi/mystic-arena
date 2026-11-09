@@ -25,13 +25,16 @@ func _draw() -> void:
 		_draw_unit(tower, true)
 	_draw_unit(model.blue_base, true)
 	_draw_unit(model.red_base, true)
+	model.hero_fx.draw_ground(self)
 	for minion: BattleUnit in model.minions:
 		_draw_unit(minion, false)
 	for hero: BattleUnit in model.heroes + model.enemy_heroes:
 		_draw_unit(hero, true)
 	if model.active_boss != null and model.active_boss.alive:
 		_draw_unit(model.active_boss, true)
+	model.hero_fx.draw_trails(self)
 	EntityVisuals.draw_projectiles(self, model)
+	model.hero_fx.draw(self)
 	game.map_view.draw_dynamic(self, model.frame)
 	game.effects.draw(self)
 	draw_set_transform(Vector2.ZERO)

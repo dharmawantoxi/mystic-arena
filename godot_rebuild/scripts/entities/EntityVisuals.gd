@@ -121,14 +121,17 @@ static func draw_unit(canvas: CanvasItem, unit: BattleUnit, frame: int) -> bool:
 		anchor = Vector2(float(entry.anchor[0]), float(entry.anchor[1]))
 		frame_size = Vector2(float(entry.frame_w), float(entry.frame_h))
 		per_row = int(entry.get("frames_per_row", 8))
-		if not unit.active_skill.is_empty() and entry.has("skills_png"):
+		if unit.active_skill != null and str(unit.active_skill) != "" and entry.has("skills_png"):
 			var skill_anims: Dictionary = entry.get("skill_anims", {})
 			if skill_anims.has(unit.active_skill):
 				var tex := texture(str(entry.skills_png))
 				if tex != null:
 					var range_arr: Array = skill_anims[unit.active_skill]
-					var count := int(range_arr[1])
-					var index := int(range_arr[0]) + int(frame * fps / 60.0) % maxi(1, count)
+					var index := HeroVisuals.loop_frame(range_arr, frame, fps)
+					if unit.kind == BattleUnit.Kind.HERO:
+						index = HeroVisuals.skill_frame(
+							range_arr, unit.active_skill_timer, unit.active_skill_duration
+						)
 					var sanchor := Vector2(
 						float(entry.skill_anchor[0]), float(entry.skill_anchor[1])
 					)
@@ -146,10 +149,7 @@ static func draw_unit(canvas: CanvasItem, unit: BattleUnit, frame: int) -> bool:
 						_lighting_options(entry, unit.team)
 					)
 					return true
-		if unit.attack_anim_timer > 0:
-			anim = "attack"
-		elif unit.is_moving:
-			anim = "walk"
+		anim = HeroVisuals.animation(unit)
 	elif unit.kind == BattleUnit.Kind.MINION:
 		entry = props.get("minions", {}).get("%s_%s" % [unit.unit_type, unit.team], {})
 		if entry.is_empty():
@@ -224,6 +224,8 @@ static func draw_unit(canvas: CanvasItem, unit: BattleUnit, frame: int) -> bool:
 	var range_arr: Array = anims[anim]
 	var count := maxi(1, int(range_arr[1]))
 	var index := int(range_arr[0]) + int(frame * fps / 60.0) % count
+	if unit.kind == BattleUnit.Kind.HERO and unit.unit_type == "zephyr" and anim == "attack":
+		index = HeroVisuals.attack_frame(range_arr, unit)
 	_draw_frame(
 		canvas,
 		tex,
@@ -294,6 +296,12 @@ static func draw_projectiles(canvas: CanvasItem, model: RefCounted) -> void:
 						pos - Vector2.from_angle(angle) * 8.0, pos, Color("ffeeaa"), 2.0
 					)
 		else:
+			var source: BattleUnit = proj.get("source")
+			if source != null and source.unit_type == "zephyr":
+				if ZephyrBolt.draw(
+					canvas, pos, angle, int(proj.get("age", 0)), bool(proj.get("is_crit", false))
+				):
+					continue
 			var tip := pos + Vector2.from_angle(angle) * 8.0
 			canvas.draw_line(pos - Vector2.from_angle(angle) * 8.0, tip, color, 2.5)
 			canvas.draw_circle(tip, 3.0, color)

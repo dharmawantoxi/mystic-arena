@@ -1,0 +1,134 @@
+{
+  "attachments": [
+    {
+      "inner": [
+        31.684000000000005,
+        -6.751999999999999
+      ],
+      "outer": [
+        46.3948,
+        -23.974399999999996
+      ],
+      "phase": "ANTICIPATION",
+      "progress": 0.0625,
+      "swinging": false
+    },
+    {
+      "inner": [
+        29.512,
+        -4.58
+      ],
+      "outer": [
+        43.1464,
+        -20.726
+      ],
+      "phase": "WINDUP",
+      "progress": 0.1875,
+      "swinging": false
+    },
+    {
+      "inner": [
+        15.032,
+        -25.576
+      ],
+      "outer": [
+        21.4904,
+        -52.127199999999995
+      ],
+      "phase": "WINDUP",
+      "progress": 0.3125,
+      "swinging": false
+    },
+    {
+      "inner": [
+        47.612,
+        -19.784000000000002
+      ],
+      "outer": [
+        70.2164,
+        -43.4648
+      ],
+      "phase": "SWING",
+      "progress": 0.4375,
+      "swinging": true
+    },
+    {
+      "inner": [
+        56.300000000000004,
+        -6.751999999999999
+      ],
+      "outer": [
+        83.21,
+        -23.974399999999996
+      ],
+      "phase": "IMPACT",
+      "progress": 0.5625,
+      "swinging": true
+    },
+    {
+      "inner": [
+        50.508,
+        3.3840000000000003
+      ],
+      "outer": [
+        74.54759999999999,
+        -8.8152
+      ],
+      "phase": "FOLLOW",
+      "progress": 0.6875,
+      "swinging": false
+    },
+    {
+      "inner": [
+        47.612,
+        7.004
+      ],
+      "outer": [
+        70.2164,
+        -3.4011999999999993
+      ],
+      "phase": "RECOVERY",
+      "progress": 0.8125,
+      "swinging": false
+    },
+    {
+      "inner": [
+        36.028000000000006,
+        -4.58
+      ],
+      "outer": [
+        52.8916,
+        -20.726
+      ],
+      "phase": "RECOVERY",
+      "progress": 0.9375,
+      "swinging": false
+    }
+  ],
+  "bake_pulse": 1.0,
+  "defaults": {
+    "active": false,
+    "color_core": [
+      255,
+      200,
+      236
+    ],
+    "color_edge": [
+      178,
+      32,
+      138
+    ],
+    "life": 0.26,
+    "points": [],
+    "samples": 7,
+    "width_boost": 1.0
+  },
+  "hero_scale": 0.4297,
+  "schema": 1,
+  "sources": {
+    "godot_rebuild/data/baked_units.json": "442338d05e370947cd0fe54bf9aa9158ea96eb2281b386d99911f0d51bf33418",
+    "heroes/_bundle.py": "48854b6aed608b5a61a7b27533c1cf118997d0bf64b49f1a0514cfac8a766bf2",
+    "heroes/zephyr_fx.py": "e300cd26cc37e9a8aa824c07c2a80148c6016caee46c978566179ce109b9e964",
+    "tools/convert_to_godot.py": "871c6c91dd834de0dda964c2c5e4b4537a7dc28a99418eb20f5d5ce6ed35b6a5"
+  }
+}

@@ -1,0 +1,3187 @@
+{
+  "manifest_sha256": "442338d05e370947cd0fe54bf9aa9158ea96eb2281b386d99911f0d51bf33418",
+  "migration": {
+    "__init__.py": {
+      "classes": 2,
+      "functions": 83,
+      "native": [
+        "res://scripts/entities/EntityVisuals.gd",
+        "res://scripts/entities/HeroVisuals.gd"
+      ],
+      "status": "sampled_atlas_only_procedural_port_pending"
+    },
+    "_bundle.py": {
+      "classes": 19,
+      "functions": 564,
+      "native": [
+        "res://scripts/entities/EntityVisuals.gd",
+        "res://scripts/entities/HeroVisuals.gd"
+      ],
+      "status": "sampled_atlas_only_procedural_port_pending"
+    },
+    "abaddon_fx.py": {
+      "classes": 7,
+      "functions": 67,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "alchemist_fx.py": {
+      "classes": 8,
+      "functions": 127,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "ancient_apparition_fx.py": {
+      "classes": 8,
+      "functions": 118,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "combat_feel.py": {
+      "classes": 2,
+      "functions": 21,
+      "native": [
+        "res://scripts/entities/HeroCombatFeel.gd"
+      ],
+      "oracle": "res://tests/fixtures/hero_combat_feel.json",
+      "status": "native_port_runtime_test_pending"
+    },
+    "gorath_fx.py": {
+      "classes": 8,
+      "functions": 133,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "gornak_fx.py": {
+      "classes": 8,
+      "functions": 128,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "gravefang_fx.py": {
+      "classes": 10,
+      "functions": 146,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "gravewake_fx.py": {
+      "classes": 8,
+      "functions": 117,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "grimjaw_fx.py": {
+      "classes": 10,
+      "functions": 120,
+      "hurt_oracle": "res://tests/fixtures/grimjaw_hurt.json",
+      "native": [
+        "res://scripts/entities/generated/HeroFeedback.gd",
+        "res://scripts/entities/GrimjawHurt.gd",
+        "res://scripts/entities/GrimjawParticle.gd",
+        "res://scripts/entities/GrimjawParticlePool.gd",
+        "res://scripts/entities/GrimjawSkill.gd",
+        "res://scripts/entities/HeroLiveFx.gd"
+      ],
+      "oracle": "res://tests/fixtures/hero_feedback.json",
+      "particle_oracle": "res://tests/fixtures/grimjaw_hurt.json",
+      "skill_oracle": "res://tests/fixtures/grimjaw_skill.json",
+      "status": "native_feedback_hurt_death_slices_full_director_pending"
+    },
+    "grimjaw_v1.py": {
+      "classes": 3,
+      "functions": 111,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "ignis_drachorn_fx.py": {
+      "classes": 11,
+      "functions": 155,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "kaizen_fx.py": {
+      "classes": 10,
+      "functions": 113,
+      "native": [
+        "res://scripts/entities/generated/HeroFeedback.gd"
+      ],
+      "oracle": "res://tests/fixtures/hero_feedback.json",
+      "status": "native_feedback_only_visual_director_pending"
+    },
+    "kaizen_v1.py": {
+      "classes": 2,
+      "functions": 76,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "khalros_fx.py": {
+      "classes": 11,
+      "functions": 103,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "krobellus_fx.py": {
+      "classes": 8,
+      "functions": 94,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "kunkka_fx.py": {
+      "classes": 8,
+      "functions": 114,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "nyxara_fx.py": {
+      "classes": 10,
+      "functions": 142,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "nyzrak_fx.py": {
+      "classes": 8,
+      "functions": 110,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "pyrenth_fx.py": {
+      "classes": 11,
+      "functions": 181,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "razak_fx.py": {
+      "classes": 8,
+      "functions": 135,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "sylara_fx.py": {
+      "classes": 10,
+      "functions": 143,
+      "native": [
+        "res://scripts/entities/generated/HeroFeedback.gd"
+      ],
+      "oracle": "res://tests/fixtures/hero_feedback.json",
+      "status": "native_feedback_only_visual_director_pending"
+    },
+    "sylara_v1.py": {
+      "classes": 3,
+      "functions": 112,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "syrentha_fx.py": {
+      "classes": 8,
+      "functions": 116,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "thalgryn_fx.py": {
+      "classes": 9,
+      "functions": 92,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "varkul_fx.py": {
+      "classes": 9,
+      "functions": 127,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "vex_fx.py": {
+      "classes": 10,
+      "functions": 145,
+      "native": [
+        "res://scripts/entities/generated/HeroFeedback.gd"
+      ],
+      "oracle": "res://tests/fixtures/hero_feedback.json",
+      "status": "native_feedback_only_visual_director_pending"
+    },
+    "vex_v1.py": {
+      "classes": 3,
+      "functions": 81,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "vhalzun_fx.py": {
+      "classes": 10,
+      "functions": 143,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "vokrahn_fx.py": {
+      "classes": 11,
+      "functions": 180,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "xerathis_fx.py": {
+      "classes": 8,
+      "functions": 104,
+      "native": [],
+      "status": "pending_native_port"
+    },
+    "zephyr_fx.py": {
+      "classes": 10,
+      "director_state_oracle": "res://tests/fixtures/zephyr_director.json",
+      "functions": 94,
+      "geometry_oracle": "res://tests/fixtures/zephyr_bolt.json",
+      "impact_oracle": "res://tests/fixtures/zephyr_impact.json",
+      "known_difference": "CanvasItem compositing/rasterization differs from pygame scratch surfaces and RGB_ADD",
+      "native": [
+        "res://scripts/entities/generated/HeroFeedback.gd",
+        "res://scripts/entities/ZephyrBolt.gd",
+        "res://scripts/entities/ZephyrParticle.gd",
+        "res://scripts/entities/ZephyrParticlePool.gd",
+        "res://scripts/entities/HeroLiveFx.gd",
+        "res://scripts/entities/ZephyrSwingTrail.gd",
+        "res://scripts/entities/ZephyrImpact.gd",
+        "res://scripts/entities/ZephyrHurt.gd",
+        "res://scripts/entities/ZephyrSkill.gd",
+        "res://scripts/entities/ZephyrDirectorState.gd",
+        "res://scripts/entities/ZephyrVisualProjectile.gd",
+        "res://scripts/entities/ZephyrVisualProjectileSystem.gd"
+      ],
+      "oracle": "res://tests/fixtures/hero_feedback.json",
+      "particle_oracle": "res://tests/fixtures/zephyr_particles.json",
+      "skill_oracle": "res://tests/fixtures/zephyr_skill.json",
+      "staff_attachments": "res://data/zephyr_trail.json",
+      "status": "native_zephyr_live_slices_full_director_pending",
+      "trail_oracle": "res://tests/fixtures/zephyr_trail.json",
+      "visual_projectile_oracle": "res://tests/fixtures/zephyr_projectile.json"
+    },
+    "zharok_fx.py": {
+      "classes": 11,
+      "functions": 176,
+      "native": [],
+      "status": "pending_native_port"
+    }
+  },
+  "schema": 1,
+  "scope": "baked bodies and sampled skill poses; not procedural rig/live FX parity",
+  "sources": {
+    "heroes/__init__.py": "89be830a35bc2a5fa020485f4c32a1910d2b29e262ced422e938f4bbe9fa46cd",
+    "heroes/_bundle.py": "48854b6aed608b5a61a7b27533c1cf118997d0bf64b49f1a0514cfac8a766bf2",
+    "heroes/abaddon_fx.py": "440029388ce78e618c8d3a857e9aee70f8abcb1e15e5d71724a53ed90f27839e",
+    "heroes/alchemist_fx.py": "b80d29baf887345c47d11db4fa41823e3d1647bb5a765b1114aed3bd62c69500",
+    "heroes/ancient_apparition_fx.py": "372499ae30820722158f863fb0e1d4806431a4d06dd1f7de0fc92bce8e68a063",
+    "heroes/combat_feel.py": "72f4f12965f3b64b3fb4aa38a390e819d41897664f6b70d1171199254813d1d8",
+    "heroes/gorath_fx.py": "1043c6158cee5debf89b2de561cf6d697920de3b2806b1473dc1c4ec49940435",
+    "heroes/gornak_fx.py": "8465547bce582e94b174e4de7f5b4abc928fb45f20e61d2aa1986962acb9def5",
+    "heroes/gravefang_fx.py": "3d712468119f0109b0d6248f9961bfe5b3f230b2db03f1039ec53caf1b627c52",
+    "heroes/gravewake_fx.py": "69d36b3b6165f88433c2bd42a638ac3ea51105a542b9f762975ba4554e72a950",
+    "heroes/grimjaw_fx.py": "8677292675484b7e71a1a45b8fc7f0a15574b2ec0cbf9ad7539093e1aa83d2ab",
+    "heroes/grimjaw_v1.py": "4cfdbe84a88f27a38f488e5452d71841fa7c9f1805e61f66349b373324fa4d4e",
+    "heroes/ignis_drachorn_fx.py": "dd16f74a90c7cf2ba7c3d81f6983a6d276ac40ba2d8607d4a4e387a23efbf982",
+    "heroes/kaizen_fx.py": "89eb7c75ad35c1aa7e032b65a2d45c238fc3a34c8f2b5f0df64afbc35b506b9d",
+    "heroes/kaizen_v1.py": "d5f7840f22807f5d605a0a0182d357c6feaabe33fafa01abac202d30250fea3e",
+    "heroes/khalros_fx.py": "12f865e408d3452ced20930972bd00a71ba5744ee7b3d361687b48cb5938e8b7",
+    "heroes/krobellus_fx.py": "57ea1b4b090936d991f532952e08512f615b141d3972a55c53511157d226cd5e",
+    "heroes/kunkka_fx.py": "76b3db3fdd4b4661716bade0f465fd8e140ad8fff93faf9761ba3b2dcdfd0ab8",
+    "heroes/nyxara_fx.py": "7a5ddb1b02b19ae5ae9056c8098c7ad830cdaf6b0aa00350257342ebdcaed2d9",
+    "heroes/nyzrak_fx.py": "3cc39b95ea3d22d77c13ae47047ba84a8e3ab9b5d987ddab71519569738b31a1",
+    "heroes/pyrenth_fx.py": "b239ea347c75533e24b834bef1b56fb787f731f9ef06fe5a737c4bbd70f0c149",
+    "heroes/razak_fx.py": "0168661cc36e5490b095945874875d05fe001f9db05d5ccf93958d878dd5b6e2",
+    "heroes/sylara_fx.py": "f6d4ce3e7263083c5aa530c3b2516fdc7e9b1e36ce38929d8ab822d287957776",
+    "heroes/sylara_v1.py": "cc82648dbfa7973bdd04902efca91bbd7866ce924bff222147445574549170ff",
+    "heroes/syrentha_fx.py": "19d2556ba180b3dcaa501899e5815280003ea3588d6f7d501c13429733e2a2c7",
+    "heroes/thalgryn_fx.py": "c69e8ab3fafa40a8c437de068f0924be281aeac0636a0ee5f1a5d2c95b44eceb",
+    "heroes/varkul_fx.py": "919fac03c7b695b751330509ddbad481cd32ea20354f60a207bf2d201ac9bb61",
+    "heroes/vex_fx.py": "5409b40c2fbce170ff852f64e0495a81925088f42ae86e4d2ea0a76c3840a8c6",
+    "heroes/vex_v1.py": "f7e473d44a6bc2f63bf7963b591bc7e5d214f737636bb67ebba6e2111e76343b",
+    "heroes/vhalzun_fx.py": "334b63ad70ecfcec9a3598caa72a23febf95a8dcb8d73fd230d7cd81aae89c11",
+    "heroes/vokrahn_fx.py": "1f07dae67ae46dae28a93d2cb7d0ed11b72ec1d89e66c5cdd1144f2547e95675",
+    "heroes/xerathis_fx.py": "c62fc19122cabd2b9a4d8d2bc5706a45e59368277257c3f9b83287ce81b7e6b2",
+    "heroes/zephyr_fx.py": "e300cd26cc37e9a8aa824c07c2a80148c6016caee46c978566179ce109b9e964",
+    "heroes/zharok_fx.py": "d38991b28d8ff2eb2a5809c4a3e8b432b16f385876d8875733c51accc3d1a537"
+  },
+  "units": {
+    "abaddon": {
+      "body": {
+        "height": 492,
+        "sha256": "98b764deee80a3a5d54a92cbf31be64e913fd8e7f19dcb0004b26d30c489f1d8",
+        "width": 1336
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 492,
+        "sha256": "17c0113e3d57077a33b83580dfafd04796e641646b6d0a48551eed26c2c85f64",
+        "width": 2720
+      }
+    },
+    "aelyrion": {
+      "body": {
+        "height": 465,
+        "sha256": "7fdca494eb3a215841d4439ebee78b8a0fbc18e9e2e429bd4874e71cd70a3145",
+        "width": 1240
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 465,
+        "sha256": "48449f312a0dba7259492a310c50843a2efeddafe9be818773c2a780992343e1",
+        "width": 2680
+      }
+    },
+    "aeralith": {
+      "body": {
+        "height": 573,
+        "sha256": "fbc3460bc1403c2fe5d5d323ac7a2ee6d9fb5f62c5595a5a7af4d930002520ea",
+        "width": 1712
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 660,
+        "sha256": "877b9271dbe89ccc3a20a4c1d14b9d4c5af6c59f43ebfa83bfe6e7cdcbe58b6f",
+        "width": 3008
+      }
+    },
+    "akahime": {
+      "body": {
+        "height": 435,
+        "sha256": "6772b3eb6005659f25cce72209c0bf1bf3da1b29636fdc80ca8e1661487224d1",
+        "width": 1232
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 462,
+        "sha256": "82c8e098edae2360d36df2d2a0761a58f2b6969d8db35007e052049a817d6189",
+        "width": 2680
+      }
+    },
+    "akaroth": {
+      "body": {
+        "height": 465,
+        "sha256": "e707f3a1779885ef657c02bc5aa1362bddf2607c64fcd782297ebbb7350eda8d",
+        "width": 1240
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 474,
+        "sha256": "991b300aa095dbeb108dbf9624dbba8da6900a752dda43b802102e546ad2b20e",
+        "width": 2680
+      }
+    },
+    "akashari": {
+      "body": {
+        "height": 375,
+        "sha256": "6cebaa6aa963ee6a59248755e00ce8a52306fb7eb2088c0fd7d33b70658bfaab",
+        "width": 1000
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 645,
+        "sha256": "2030e4857580dab6c58c25f3f974149438555766067c05631e4f89ccd101e802",
+        "width": 2520
+      }
+    },
+    "akirakumo": {
+      "body": {
+        "height": 495,
+        "sha256": "3a8c7d59e7232d4b73152544dfa7590f55425691c1a9a2eef30fdf4e9007c529",
+        "width": 1392
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 510,
+        "sha256": "2f3219161dde44d0e65b42f8eab53833dd8617004fb9a11af7381df95a27f99b",
+        "width": 2760
+      }
+    },
+    "akiraze": {
+      "body": {
+        "height": 495,
+        "sha256": "f09d4c05403cf2962c30c5021377eead0370f02878ee9fe3b7d8569e13884c6d",
+        "width": 2216
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "b5669f37f45f64f59d756a5907ead58ad218da29055b80c1d79757eeed3a1fc0",
+        "width": 2760
+      }
+    },
+    "alchemist": {
+      "body": {
+        "height": 537,
+        "sha256": "b20e4a034859ea479fc9ad31f45610f0e15bc19ce6435605bd3819d55aa74d54",
+        "width": 1344
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 1254,
+        "sha256": "5820af7c6012b34be5c871b4316c720b30e52c1ba9295a3fc2953a0732f968c4",
+        "width": 3744
+      }
+    },
+    "ancient_apparition": {
+      "body": {
+        "height": 444,
+        "sha256": "af5e3bff17daf3d83c4d0f5620cfec137ec0738bc12336c2cf19daacf76f3c63",
+        "width": 1184
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 444,
+        "sha256": "f1726111f18f5c3c44f0d41705527067ae02e82670167a4e0e1555371968ae86",
+        "width": 1184
+      }
+    },
+    "astraelion": {
+      "body": {
+        "height": 465,
+        "sha256": "f90d8a8b7c2ecc8c9ee137b9f0d2e8852dab8584433ff31d11e01552aa1f2441",
+        "width": 1240
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 516,
+        "sha256": "1917ec23496476db69a947edb4acdd61cbdec03d40525f61ee8041b7f7922251",
+        "width": 2488
+      }
+    },
+    "aurelian": {
+      "body": {
+        "height": 405,
+        "sha256": "7c9e82ede563b75dec2a94da2748f5351ac250fc39f73a25f0ff4eb9becf7ddf",
+        "width": 1232
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 552,
+        "sha256": "1d0c1d407dd977f2eec3fad347738d461b8097edaaf3f693964c513747d96757",
+        "width": 2544
+      }
+    },
+    "aurelion": {
+      "body": {
+        "height": 663,
+        "sha256": "d8f6578c2c06d63145f159a932c8ea9f9ac30d3c11dc3e7b89aec4323a81fb2a",
+        "width": 1768
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 663,
+        "sha256": "306ec2152035429765911c49a9b735f5cc5aa16d060e91a2054a03e8323c5382",
+        "width": 2944
+      }
+    },
+    "aurelix": {
+      "body": {
+        "height": 465,
+        "sha256": "cd4dfcf7b919b73541b3b415fbb85724673d82e30b7513726b3d3026baa39d0f",
+        "width": 1312
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 858,
+        "sha256": "0907889d88f5d476791752d0115addbfc49ecce36ffb1a0ad4aebd945e09e6b6",
+        "width": 2720
+      }
+    },
+    "aurelyssa": {
+      "body": {
+        "height": 405,
+        "sha256": "092e8fc265b17f2779219ddb3c8e386661b53e50ee2a7d9b73a3ad0ffa3d655f",
+        "width": 1152
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 441,
+        "sha256": "8535eb3685da355b7ba0392f005649c72a20a0cedcebc70cd96298d47e002025",
+        "width": 2272
+      }
+    },
+    "aurethzar": {
+      "body": {
+        "height": 645,
+        "sha256": "4952723b5f31c8b2209fb146ffa9179528699ef56b689a16e8ba3016240433c4",
+        "width": 1720
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 645,
+        "sha256": "c72fdd5ad5807572f52d0ce9503d98efcf0d6c07656d39635da858a0955c9ece",
+        "width": 2920
+      }
+    },
+    "aurex": {
+      "body": {
+        "height": 339,
+        "sha256": "905ce8c6441a702fd88b46687020f965c4d0092718490076d599ee60e5627e9e",
+        "width": 1104
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 408,
+        "sha256": "2dba81c007d90aebc1405949b092f7187fc8959faa4e4668e79591cddf7d2e07",
+        "width": 2392
+      }
+    },
+    "auroth": {
+      "body": {
+        "height": 495,
+        "sha256": "52e0fb0bfcb6b9df58fb81d7c6b0d388b27bcc8c90166ebcbb98d5746ec81c53",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 1005,
+        "sha256": "d001578816b2df20807a47f3218d1f7fc9af7c070a22215c8d8655f6b80fefaa",
+        "width": 2040
+      }
+    },
+    "azkharion": {
+      "body": {
+        "height": 555,
+        "sha256": "77e6bc71967e09c8aad6f5dba40ddd1dfa22a775ec905d89a8f8f679c7626af9",
+        "width": 1480
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 660,
+        "sha256": "eda15b3110ddb0577d66583606d6f56a7aaa43e82e4127d6a7c57bfefd330730",
+        "width": 2800
+      }
+    },
+    "azureth": {
+      "body": {
+        "height": 435,
+        "sha256": "20c95969fd66482922df816c49acd1206af789775460ccbb1a450ea585b6c5d0",
+        "width": 1232
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 465,
+        "sha256": "c5ba7f1f5cb445f6782ab8d919020788409b18f916befc0fca20f3f172b89191",
+        "width": 2680
+      }
+    },
+    "bhorgathul": {
+      "body": {
+        "height": 495,
+        "sha256": "90310797ab0e8bcbcf008e3c0e8598a4831b7f3674b23c4e0675669afe485c8d",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "eadd1953d851412e85088b46db62b77caa43b4ca3a48bbdc6a2d275796de1079",
+        "width": 2456
+      }
+    },
+    "broggmar": {
+      "body": {
+        "height": 495,
+        "sha256": "907b63691c157bfafb345b94a128c8cfc363d26e894395f1d849df567fa253d9",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "d76ae5459ec5b2dea0b7a7020aef431ad4003377a232b7417d49ad29cbee7f8a",
+        "width": 2720
+      }
+    },
+    "brumhar": {
+      "body": {
+        "height": 495,
+        "sha256": "a3db8c68055bb60fcd8bd0791189dc66c7c6f8dffafc3de972f326cf6eb671ef",
+        "width": 1600
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "9206960b97ae7eb972b80c476d1c122014dcd2451fd97430d9e4e7dcfbc40785",
+        "width": 2328
+      }
+    },
+    "celwynn": {
+      "body": {
+        "height": 465,
+        "sha256": "f9c6572c068f1a7d648ca1a7d00f00eb997a0e4157428d1a17037930c4f71ad0",
+        "width": 1240
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 465,
+        "sha256": "0f99584203fe416705c8b4181cf64c6f8aea0a1f4c220430cdbdd6f197a00fb8",
+        "width": 2664
+      }
+    },
+    "cogsworth": {
+      "body": {
+        "height": 453,
+        "sha256": "9c51dd9827c84e182a59c92c48607aafe467b028b09cd0fa8082c809ddac2c27",
+        "width": 1392
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 1311,
+        "sha256": "e402d5c6131b60ea6301ba5ae7219746cfbeae5f85dc7d19e182ce7a7d34a079",
+        "width": 3624
+      }
+    },
+    "cryssalia": {
+      "body": {
+        "height": 585,
+        "sha256": "eb7f94327a702f68894b395106f220f6953f0be29ef4150963d124d4f12d1878",
+        "width": 1560
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 846,
+        "sha256": "6fa5dbcc68daa1b70be90625e178dc849df6e6a6a13f430bc5a720310a330a7f",
+        "width": 3040
+      }
+    },
+    "deidara": {
+      "body": {
+        "height": 405,
+        "sha256": "48bb6965061f227b5222e56f596e735d376980137ce586d791a3d7565ea4d174",
+        "width": 1152
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 939,
+        "sha256": "6b71dcc2065457b4a8362c3862d54e26ea992b2706ddc09cda65ebd42e2e17bc",
+        "width": 2640
+      }
+    },
+    "dorakai": {
+      "body": {
+        "height": 465,
+        "sha256": "48dba993e891ba3df29ec5aec0a71480927f9c8032716cdbf7f5aab884272dc3",
+        "width": 1240
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 516,
+        "sha256": "eb0efa8a8da166a3416e13ca61cb4aedfaa87afc5bbf60037e63c4dfd0131b62",
+        "width": 2744
+      }
+    },
+    "drakar": {
+      "body": {
+        "height": 495,
+        "sha256": "3f2e59cc2cce8fa5da5801e98e8877962a2d783411569cd3f59062092382cb7a",
+        "width": 1520
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 1098,
+        "sha256": "62fb1147babe731fe4f9ce0273646e7d789fceb7dba7444b7d1b72841f32e05d",
+        "width": 3432
+      }
+    },
+    "drav": {
+      "body": {
+        "height": 525,
+        "sha256": "8530f68ae8b6076ec07e25f3a4e705d8292e98b46ab85cc02a0177b568ae97dd",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 555,
+        "sha256": "154a650edb6e05466524adafbd7c7d290069d4329c6fd1b3043bb6d57a4acc51",
+        "width": 2760
+      }
+    },
+    "emberwick": {
+      "body": {
+        "height": 495,
+        "sha256": "a5f215b80a0a2ba39f74e6f82fac2491c4c6995b8b4984338df37c2625f52bf9",
+        "width": 1472
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 576,
+        "sha256": "c37e99f6c1086485671fd2d2688452bf32983e5c2c5a100613bea374e5378ae3",
+        "width": 2800
+      }
+    },
+    "garumenshi": {
+      "body": {
+        "height": 258,
+        "sha256": "371b81c9af2e4e9f3c0a51bf15cb94fa3b7e36c5a2619625991472415a4bebd3",
+        "width": 992
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 465,
+        "sha256": "d1afac85af41081262c14080696ae1f9b520ffc15f5cc0979ea0ec351f51e828",
+        "width": 2640
+      }
+    },
+    "ghrakmaal": {
+      "body": {
+        "height": 555,
+        "sha256": "9f2f2f254a4866246110539306b50ee5d5f16a56c1f7956bb5b046edabb97a5e",
+        "width": 1480
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 555,
+        "sha256": "8bbd960a99cd9157fe35bc107f66b9a8cffe7dc03725cae4a2b42846095641d5",
+        "width": 2800
+      }
+    },
+    "gorath": {
+      "body": {
+        "height": 372,
+        "sha256": "9ef04c5b6d92bc5cfebb385537b02d41b2f4a0745a00966dabbb32b4969ac1ab",
+        "width": 992
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 1248,
+        "sha256": "d642b12da563bfbf61b406359cd67c35d14547cef5d12345894a672645b3e341",
+        "width": 3640
+      }
+    },
+    "gornak": {
+      "body": {
+        "height": 438,
+        "sha256": "6fcc1313d5c660d86ba0746a4b25a628adf9982353e88f3ac850ac0790e3e1cf",
+        "width": 984
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 1116,
+        "sha256": "2b4b581676c68f2a5f8e8ff9b19ddf5b1225ff4a92085eeae2d3d0617ca0689c",
+        "width": 3000
+      }
+    },
+    "gravefang": {
+      "body": {
+        "height": 495,
+        "sha256": "c5ac4e00e5d629d2a3d6323de1ff4978b12c2041ade9a793f61140c176ca44a6",
+        "width": 1096
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 648,
+        "sha256": "fee3046bf4facb24d109875c7cc2d555517cb39e55519c57bee75e753a01e85b",
+        "width": 2912
+      }
+    },
+    "gravewake": {
+      "body": {
+        "height": 492,
+        "sha256": "42a4fc91789eae25b1196ce8b00483a5b336361fe565bdc21ec32b1fbfaf6cea",
+        "width": 1312
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 543,
+        "sha256": "2770336223d91f69ba698a58f6c5c16d85c3db1e210df3dfd8a7cd089917a7d3",
+        "width": 2344
+      }
+    },
+    "grimjack": {
+      "body": {
+        "height": 435,
+        "sha256": "acde6443d1fb508dbd26d44b9ed58303ef0e147d1c70aff004cc6cdfde3b158b",
+        "width": 1312
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 453,
+        "sha256": "85d8ba95d62c5960b71a084b7c9f161043c9d1be24ca6b61dcfcaabf135b87fc",
+        "width": 2680
+      }
+    },
+    "grimjaw": {
+      "body": {
+        "height": 546,
+        "sha256": "9ce20a0c32eda9d296291093fd895bcbb428ffe1c639dbcdbe9ddb3798e1068c",
+        "width": 1432
+      },
+      "renderer": "hero",
+      "skills": {
+        "height": 591,
+        "sha256": "5e4054e6d06cd2fc3c5f7649d57723487544f5b9d72ca557e86aeb3730290130",
+        "width": 1752
+      }
+    },
+    "grimkor": {
+      "body": {
+        "height": 435,
+        "sha256": "4910b1490b2f3c7222575ae2d0c2656b8c672072e7bd7e4e0de75c3083430981",
+        "width": 1312
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 480,
+        "sha256": "199f253af01202accb948e5a5247debe367cbf6babecbb0c891d37841f01cf8e",
+        "width": 2600
+      }
+    },
+    "grimstalker": {
+      "body": {
+        "height": 465,
+        "sha256": "6ec5298e23cf543c0b8813ce41547482080d47d14630436489b1f8348985eefa",
+        "width": 1240
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 483,
+        "sha256": "501be1642e97d5bd9d85b6301f6c2fade31795deb089514c4bc757c3985e3e08",
+        "width": 2704
+      }
+    },
+    "grondarthul": {
+      "body": {
+        "height": 495,
+        "sha256": "8ae972d7c2daa06fa6e37fa6cd22b24a617c86503e9ea76ef7f6944cf4c338ad",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "309345944676e028578a4dab50ac382c597d73a8db58f35c73e92c11ed5da44c",
+        "width": 2592
+      }
+    },
+    "grondmauris": {
+      "body": {
+        "height": 525,
+        "sha256": "2111da475d4e1584c05fd3b5f433e43b0555e7f7369a1b085e629bc9d589f10f",
+        "width": 1472
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 984,
+        "sha256": "58ca4a82df7bca756675553afe3540e72c6df0ed1d39332f469e08ce7c0d8c29",
+        "width": 3016
+      }
+    },
+    "hitokage": {
+      "body": {
+        "height": 465,
+        "sha256": "468da247055b57bc040c921b4470e3f5d2a77d367a26f9da8963a98e1d7cc4d6",
+        "width": 1240
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 486,
+        "sha256": "f076f174d9ce46a6fe2e36b242d67ba592202d970152a851889ca91d21a4e2d6",
+        "width": 2432
+      }
+    },
+    "hollowbane": {
+      "body": {
+        "height": 435,
+        "sha256": "2c8690a75ff9083d23758969895b69ddfc53da6b7c1ba1ecff1ea2a0befdbe53",
+        "width": 1160
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 492,
+        "sha256": "6d1b3e578d6ee4efac032e758a4520ac24caea1bf9a3fa0fb5233a12909f3cb2",
+        "width": 2656
+      }
+    },
+    "ignakhor": {
+      "body": {
+        "height": 555,
+        "sha256": "f25da5a5a1b9d0a761df37870f27fe5ccd32a81c9b6269a4084790d637fdf02f",
+        "width": 1480
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 555,
+        "sha256": "17793352bf2188ba8f2c98b8ebdecb41a688c374d24dc64f72094fce0f128c65",
+        "width": 2800
+      }
+    },
+    "ignirus": {
+      "body": {
+        "height": 495,
+        "sha256": "f9ee3969afb45345942945b14671a27adfd618d513c2aaae74ee7d143e92925e",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "25e22ad56e36b8e5620fa791bb955dbcd48f4cbb281e24bdfd1a3445dfb05c93",
+        "width": 2720
+      }
+    },
+    "ignis_drachorn": {
+      "body": {
+        "height": 453,
+        "sha256": "2f57dda41d91d0a30df5860fff91e3a7c7382aaeb8bafbc5af06f6e01c402af3",
+        "width": 1032
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 564,
+        "sha256": "957cc03fe75f819f6f4cce7db3d6c6f9943dbc1ba8ca603574f50348c99c4b0b",
+        "width": 1384
+      }
+    },
+    "infrakzaar": {
+      "body": {
+        "height": 525,
+        "sha256": "102cf8cc3fca89d3d3deb6113005375b547d251cd3c1a232887a0048d50c79c4",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 957,
+        "sha256": "a96ade48b8af543dd2b0938eb800e8dc687a8d7ca2635dd5ea0546efea47520d",
+        "width": 2760
+      }
+    },
+    "kaedrin": {
+      "body": {
+        "height": 495,
+        "sha256": "6311dd63b9ee179bf0c62740efecc3e6067d40bd8225f5c9f7006ff6a66e449f",
+        "width": 1392
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "42f36cce7d1a4c8bfc8e6c0a20bb41a13bb4155384a06f235f4d2b8b1cf5cfcb",
+        "width": 2760
+      }
+    },
+    "kaeldris": {
+      "body": {
+        "height": 465,
+        "sha256": "586eb9fd87ee30cb6b3fb6958e82b70f09842a7393b120f0e4646701f22d19bd",
+        "width": 1312
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 516,
+        "sha256": "681b48de9a34c96f5668cf2fd5107f679d7feeea2288fae88dbe57477ff82a82",
+        "width": 2720
+      }
+    },
+    "kaelthar": {
+      "body": {
+        "height": 525,
+        "sha256": "d02eea2dff8260c01db29ebafa2104f7ca40ec7ec8a08651de48685ad139e0b8",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 624,
+        "sha256": "b2701ef42d9362572694151c41c1f3200b5eb61403cddca3e6ab631da9a13122",
+        "width": 1632
+      }
+    },
+    "kaelthorn": {
+      "body": {
+        "height": 435,
+        "sha256": "8905b3c1aebdb3e3ddc7d7ef957bd429bfbc511407d879923dad2272b91d477f",
+        "width": 1160
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 567,
+        "sha256": "929a00caa9644261a15c626f895daa03a28786e93023e7cbdae77acdff4b5a54",
+        "width": 2520
+      }
+    },
+    "kaelthys": {
+      "body": {
+        "height": 372,
+        "sha256": "1550a7808f57b373515577e7d9612c5e2352cc82f318ff4db1446c7b071e4f90",
+        "width": 1152
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 753,
+        "sha256": "196f0e35ae665588990055c58be1dbcb77b4435238d1502ea1079e4bbe9181ad",
+        "width": 2640
+      }
+    },
+    "kaelvyrn": {
+      "body": {
+        "height": 405,
+        "sha256": "9cd587132d66c9bede59af731b34f949105c8faf2e52a18ef1dafb4a8e7297b1",
+        "width": 1152
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 501,
+        "sha256": "dbf83c10efa500cecc1b3a84f0077e81c4c20ecb9dbc6f4d0c68d5e03a12f08a",
+        "width": 2640
+      }
+    },
+    "kaerinya": {
+      "body": {
+        "height": 525,
+        "sha256": "e5465cf91009fafd0e0444bc45803f96b36452f11df32b50a88b25703e110c6d",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 561,
+        "sha256": "9357f797c2193f49700fc84c55fc7100052c220bb590132f2d62e9e4d3957483",
+        "width": 2760
+      }
+    },
+    "kaerissa": {
+      "body": {
+        "height": 525,
+        "sha256": "ec011c2b97891385ccfa5090b5dd5e21a4dc83d63415a0f9726bcae5fdfba9f8",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 621,
+        "sha256": "8a7f9eefd3e3492acac4ef46654d70485b388af1ed0d3145c09d9af2e8e63a77",
+        "width": 2760
+      }
+    },
+    "kaervosth": {
+      "body": {
+        "height": 393,
+        "sha256": "fd61f47065969221fcf89af887013bc832501edc5665c3431452db1bc0d935ec",
+        "width": 1312
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 594,
+        "sha256": "b2634f32521b8927d6f4b438710283631ac33e60aebd3bbc9d025c1846c52f97",
+        "width": 2816
+      }
+    },
+    "kagetsuka": {
+      "body": {
+        "height": 555,
+        "sha256": "5139797063a3dd65923f3d5ec4fe91f402125743f30a2674a107c56b67d43331",
+        "width": 1480
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 663,
+        "sha256": "8bdcbc585f54a288ee3a2d109f78b5113169e756333019106369896d7ad73b83",
+        "width": 2304
+      }
+    },
+    "kaineroth": {
+      "body": {
+        "height": 576,
+        "sha256": "720c693d43ff1e082c782bc3c5dba9ccd30012f0797208bae3834932952765db",
+        "width": 1488
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 576,
+        "sha256": "9b66b1c47a63867d270aa4b0ebe9e3ef9e59347935f086131919375d2eb1ba7d",
+        "width": 2760
+      }
+    },
+    "kairenji": {
+      "body": {
+        "height": 435,
+        "sha256": "e7e8597dde10b30fd32ad4774c5a4e779ce61f57354eac7ebe2f7cd2ae05c066",
+        "width": 1232
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 723,
+        "sha256": "4d24032b02590e1493fb3e3d65364e3f26e1e59a14e1edd640c3e3aa756cdbe4",
+        "width": 2680
+      }
+    },
+    "kaithros": {
+      "body": {
+        "height": 495,
+        "sha256": "7c8c4f98bd8450bdcd24cb6468b3e19ab7fbdfac68a274ef258c323bb01e153d",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 639,
+        "sha256": "cf43a81449cacd1062f1d5d7740e61af5e7223a568e53e775735a1eaf5a1c62e",
+        "width": 2720
+      }
+    },
+    "kaizen": {
+      "body": {
+        "height": 498,
+        "sha256": "01d32bb444ba3acb78a4f5e4c8e95a37800eedfdca0783277a0c51c84d8379e7",
+        "width": 1488
+      },
+      "renderer": "hero",
+      "skills": {
+        "height": 903,
+        "sha256": "d2ce0c7a03265e7fe27c28a5f5cd54864c2dc474a6b31e9bc81cbec27b6dedf2",
+        "width": 2632
+      }
+    },
+    "kaizoku_raijin": {
+      "body": {
+        "height": 525,
+        "sha256": "57f8ba3faa346e93129309efa589570b0380f8a11f890ac963528cf2da5b6b20",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 525,
+        "sha256": "0d5285d6f72a8abc02ac8b1f299a6dd0c4613a49119fdc7974a3a79d8b887f0d",
+        "width": 2760
+      }
+    },
+    "kaoruken": {
+      "body": {
+        "height": 465,
+        "sha256": "3936f381d931482b1db6251caad80d8fc71af101225fff54d1cd4ac4f6ba0b87",
+        "width": 1312
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 555,
+        "sha256": "6bf7fa1c034f8ca192f098cd695eacc99c11e25774bdbad05fed753a2f008814",
+        "width": 2720
+      }
+    },
+    "karzhul": {
+      "body": {
+        "height": 465,
+        "sha256": "b4f83e3eec23ac81202b5e5a5c22fe3469706b6e99b2cbeda0f0d04015ea3c0c",
+        "width": 1312
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 510,
+        "sha256": "f13a4b230a75371ac0069ef8a29d70464c30ab226a7081a164969fe465395b1a",
+        "width": 2720
+      }
+    },
+    "kassadin": {
+      "body": {
+        "height": 525,
+        "sha256": "56c32e9e84c8606a67fc1da924c5ecf254e97cc9f29e9c77d4da9492dd909212",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 525,
+        "sha256": "2b0a214f3d0a04083c13555959fba9bcd8ccd3d62bc36c47e58279d759298f99",
+        "width": 2760
+      }
+    },
+    "kazreth": {
+      "body": {
+        "height": 555,
+        "sha256": "c41ab640bca03a96f625dd13ed9e3e1bdf60307e816f7f60c8cf8126c788a6ad",
+        "width": 1480
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 945,
+        "sha256": "545ef66da1e432e48b733e572c8df715af534ff64a6a5d7d245bd850000f89f0",
+        "width": 2800
+      }
+    },
+    "kazuren": {
+      "body": {
+        "height": 264,
+        "sha256": "49758847d61bfe3a8169e4a02ee2bd4ebba83259663e755e2498c61cf7ff69df",
+        "width": 1072
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "10ff87553939ae8bfc16b14d81e870f4e1959b81ea91dedc1cebdac72bf4aaea",
+        "width": 2720
+      }
+    },
+    "kazureth": {
+      "body": {
+        "height": 525,
+        "sha256": "1e7701b7ed180cb187b49d7a9569aba7de5591b78f5df25194994fcc4143509a",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 609,
+        "sha256": "59b17ec50530a80d7c087c3bfb98a8f4c2f4451fa18c1e27bb145561698b49b6",
+        "width": 2760
+      }
+    },
+    "kenshiro": {
+      "body": {
+        "height": 507,
+        "sha256": "0672e6a6e4255f0a4410c8c3af19bc1f304f19756dcdf7e4d2ee782820a0a34f",
+        "width": 1352
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 549,
+        "sha256": "8227343e9e703f8d840ce934f62872d60ddbc1bf9012911182d5b98896604c7e",
+        "width": 2872
+      }
+    },
+    "khalros": {
+      "body": {
+        "height": 435,
+        "sha256": "c0a4b7297f7afab82a1f138a875b5266a20f7f1c1b84993eeb519eecabe492ef",
+        "width": 1280
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 1284,
+        "sha256": "0f9dd7bd59342896f0945d743bf93cefb5f3c28e3858f2b7e6beb067f7361b02",
+        "width": 3784
+      }
+    },
+    "khalzaredh": {
+      "body": {
+        "height": 435,
+        "sha256": "8ed4d134640b230c53aba6db36f0e43821268a831df7523e2a9617fabb04b568",
+        "width": 1232
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 504,
+        "sha256": "7ad9ec394a6ce5a0b4cddcc3027c009fa099dc32167716e124c42e39fddbc82d",
+        "width": 2528
+      }
+    },
+    "khazan": {
+      "body": {
+        "height": 447,
+        "sha256": "ba201560a8a3891efde3b1daa03222f796eb985b3b3fed124fffd50ebcc4a1c0",
+        "width": 1192
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 423,
+        "sha256": "12c378236f92ffdbe6a030b3f94a847d95c1aa29d8e67512ec6de0051050d22f",
+        "width": 2624
+      }
+    },
+    "korokai": {
+      "body": {
+        "height": 465,
+        "sha256": "095333b85c77093bbedff5c585a4753a21c6d1bccabaac75a49516d3051468b8",
+        "width": 1240
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 465,
+        "sha256": "67141309e2880769e801bf75c73d1e88670234a423ffb3cf6e66a3b4b51d2845",
+        "width": 2680
+      }
+    },
+    "krobellus": {
+      "body": {
+        "height": 471,
+        "sha256": "6833adaa5a0fdbdf00c43014171bcd959d47c75f38dd63a14add8f5bcfe16b27",
+        "width": 1288
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 420,
+        "sha256": "f96a70a3a1db656dc189eb02e8776bf53e93823ec353881b946149a22e4251df",
+        "width": 1248
+      }
+    },
+    "krognarr": {
+      "body": {
+        "height": 525,
+        "sha256": "52f662395409684a4d405f1db183073867095aaaf1a8c1d84ff00dbdacda5501",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 525,
+        "sha256": "3bc0f69ec9e56c2c2d799b035d0fe2d92dc4549ebfe9a2a30580d3da53fd9606",
+        "width": 2760
+      }
+    },
+    "kryvoxar": {
+      "body": {
+        "height": 465,
+        "sha256": "fdc033ffe1b2c1c9170eba5654a73cecada7b0b9d714c8e894e75e90b5f4bcc9",
+        "width": 1240
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 540,
+        "sha256": "4ad2c290fc59d5369fb76ee980c9ae501ccfbf7a2dde40967ae09302a68ec9f2",
+        "width": 2704
+      }
+    },
+    "kunkka": {
+      "body": {
+        "height": 360,
+        "sha256": "f3fd39fde04532c92b65d04e199b0206070ef317a264e1cd5b62a06cdad69359",
+        "width": 992
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 447,
+        "sha256": "eaa207ea80f71bbb9219012ac682819f079b5146493ad1f3430d189c989dfbf6",
+        "width": 2504
+      }
+    },
+    "kurogari": {
+      "body": {
+        "height": 417,
+        "sha256": "9220692a53706ef17f72062d82afc7bcf73d1f2b44d7a2d650f7b0f84fd3f3dc",
+        "width": 1152
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 477,
+        "sha256": "aee2162cd509f25b3513e74e75891903270533e0b7b066300fcb19d7fe8633a4",
+        "width": 2432
+      }
+    },
+    "kyrenzai": {
+      "body": {
+        "height": 555,
+        "sha256": "4f36be538a05a75230cce7544527c28ebeda47255f59aa1df3d0103198b799a2",
+        "width": 1480
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 564,
+        "sha256": "ccda56b870ae482a14e56b6be41031c6d2c8b237e9ad354f33e648b9d02fa635",
+        "width": 2752
+      }
+    },
+    "kyumirra": {
+      "body": {
+        "height": 525,
+        "sha256": "823e5d7049c98366d100c652e4d9d40691e16a7ebb2e412f9ef4400b51e832dc",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 525,
+        "sha256": "46bfa26ca0a779f44ab3e20d98e622694e3a12077af79886f65cbfdb4ac1c611",
+        "width": 2672
+      }
+    },
+    "leoric": {
+      "body": {
+        "height": 495,
+        "sha256": "2a77a44decacab39215aa0c3d9172f0c5aeecf9d603397fe3421ae22a00d1b70",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "7a5f5fc98da3ff3fb8acb154902991a645da536d7fe060a3df66c618c55883fe",
+        "width": 1960
+      }
+    },
+    "luminar": {
+      "body": {
+        "height": 495,
+        "sha256": "3fb528afed51b02b08e8b55da9ead221be7eea82d5db55711ab9072c31bf3751",
+        "width": 1392
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "b01a4a90ed08657e8615f026f94c70fdef8d085aceee539525bc2ceac6e8f70c",
+        "width": 2760
+      }
+    },
+    "lyrenya": {
+      "body": {
+        "height": 525,
+        "sha256": "854767818ac752f489d59dfe3c36147c56b522e087293ab30f6fa83e2a0d5c92",
+        "width": 1720
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 540,
+        "sha256": "db0a1a0a121035fdf14edabc2f5cc1494ef8b27e7d1e7527f2f154b108377a17",
+        "width": 2688
+      }
+    },
+    "lyrienne": {
+      "body": {
+        "height": 495,
+        "sha256": "0ca46132a972a4790ff9c701c7ef7b8ac81d63ca68794c8ab99c842e34f164d8",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "5e5583f8d8ad87116005af9960870b429597c3fbf797329d919c764238f5a304",
+        "width": 2800
+      }
+    },
+    "lyssarethys": {
+      "body": {
+        "height": 525,
+        "sha256": "8aec0cd2902198dd3f45a205ccf10c540f0b43420b2f477028e5d0d3619ce651",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 525,
+        "sha256": "fbd1c941074e33676795f95f0f47eea84f7c9f2d7ee1e2adeca1088d755c3809",
+        "width": 2760
+      }
+    },
+    "malzareth": {
+      "body": {
+        "height": 375,
+        "sha256": "0251c4f8ae81842607eba3361ca571ce4ddc47cb983571300730343cfa6c7d4c",
+        "width": 1000
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 609,
+        "sha256": "d3bc4e5ff4ccf32f1ea11cd52cabb36a3ca32bcb0327ad6f11f4a8b6e5d70619",
+        "width": 2712
+      }
+    },
+    "malzeroth": {
+      "body": {
+        "height": 405,
+        "sha256": "747595da1f4e403227727715f727e86ee13217d8f057f3ddcbd59faacb36f8e3",
+        "width": 1232
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 408,
+        "sha256": "2267e874acf5ab3e6b4765c71248f33c4305af47f8eba10a5c6a39202e76c6d7",
+        "width": 2664
+      }
+    },
+    "molgravar": {
+      "body": {
+        "height": 585,
+        "sha256": "7d09431e66eca6b73a5a79c89e6db91a2095469d01ef9400e21fd5a4fda2cabd",
+        "width": 1560
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 585,
+        "sha256": "df33e517daeba49dab9aca551f7bc31ec3744f981913001abe2bb2bd28bed1bb",
+        "width": 2840
+      }
+    },
+    "morgath": {
+      "body": {
+        "height": 402,
+        "sha256": "9dbdaee480a4f6d5096d3db4b08bfc0e72e723ae73e7abc9a1b47ad0bb7cbcf2",
+        "width": 1072
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 876,
+        "sha256": "fc51730a38a9e16dc573a80353e0a06ecc909def249e081ddf100b5e033e3fd7",
+        "width": 3136
+      }
+    },
+    "morkhaera": {
+      "body": {
+        "height": 585,
+        "sha256": "3c736cec4d7e17546d968ed6f1df620bbdf6855becf69b581cbd74c710d49036",
+        "width": 1560
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 639,
+        "sha256": "4244a1423ae37d76bcf2a4f397d54a745fa187412753a5d9bef9e67fa634f5ff",
+        "width": 2912
+      }
+    },
+    "morkhelvis": {
+      "body": {
+        "height": 504,
+        "sha256": "85f05073107a609f204e66d1cc248dd755390f83c7f7a06ba81ba116ca3313c8",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "262543317952bf4032f300ee34ade304d4188ae3ea16eefedc6a7c562610db79",
+        "width": 2616
+      }
+    },
+    "morthraxis": {
+      "body": {
+        "height": 525,
+        "sha256": "5f6b9b29c9339615d672b18c3051cd69a3ef9082485e7f9db858ceec1a4a5b97",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 558,
+        "sha256": "f95b3fdd36ad36bf9d47dd83205bd2b28282067abd761188668807df4bb112ca",
+        "width": 2760
+      }
+    },
+    "morthyrax": {
+      "body": {
+        "height": 555,
+        "sha256": "d42a85d5c2cde3824892686a420a085738f0cd10e9fcce7b51d241cee727c4f3",
+        "width": 1480
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 555,
+        "sha256": "a0f222b2648cfed4f49e6defda04be99440e52c4a1b30e6dee2744b83b68fcdf",
+        "width": 2712
+      }
+    },
+    "morvaenthir": {
+      "body": {
+        "height": 465,
+        "sha256": "748f92b748cb47df44dd410c947932c6701820f394d9a915f3e79c3f93e97b17",
+        "width": 1240
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 516,
+        "sha256": "77b84d5970c827692b9fa426fd6c41d0301ff4c7ac010884ac227ca924c7984d",
+        "width": 2680
+      }
+    },
+    "morvaeth": {
+      "body": {
+        "height": 465,
+        "sha256": "4f978ef1bb3956531624de935e414b46a13e8651fa45ca08f2de53c33565005d",
+        "width": 1312
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 513,
+        "sha256": "9326a4b0f45c770205c2152cbc5957c5df94a56840bbaeb864e24daea36e5b44",
+        "width": 2720
+      }
+    },
+    "morvaeth2": {
+      "body": {
+        "height": 555,
+        "sha256": "9cdd967ae5f0aac8f38762efdd0e0ab6cb9ae39048d9c4ffcb278dcff6f2cc2e",
+        "width": 1480
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 591,
+        "sha256": "704588f344b04f2457b580fabd140ebe5593723557438fd787a91b7b0d9191e0",
+        "width": 2816
+      }
+    },
+    "morvakhul": {
+      "body": {
+        "height": 414,
+        "sha256": "fc75dce837d6254d927b959b1ac20dfc7b8463647fa50be895f57264f04623b7",
+        "width": 1392
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 585,
+        "sha256": "c46f01df3dd115bc2e94a4d761b42cbc3adcdb4f8867145e96383507956d722e",
+        "width": 2720
+      }
+    },
+    "morvath": {
+      "body": {
+        "height": 408,
+        "sha256": "714dad33007e3df8581109621da062a38659df97859b7e17a0e58a2e3cabf987",
+        "width": 1232
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 459,
+        "sha256": "7c3b63ab031adb93d905a1e87a2cc7a4178d0e24cc21c5aab6b54693e3f241e9",
+        "width": 2192
+      }
+    },
+    "morvein": {
+      "body": {
+        "height": 495,
+        "sha256": "ad0308227885d942c2039ce33878ce00c407355e3ba6819808854cc1ae8a50cd",
+        "width": 1392
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "82cb620f48bbd9adf1d5c4f715d64c952574ade02e7ae5399f1106e064360f97",
+        "width": 2480
+      }
+    },
+    "morvekhar": {
+      "body": {
+        "height": 525,
+        "sha256": "02ed5618a2e920b79a1b0e9fe383547b3d19028cf06a399feaec39adb37deb4e",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 525,
+        "sha256": "b53b81ac1738df3475fc2defd046a1247d77bd991242cd5f738d21c3699621b4",
+        "width": 2760
+      }
+    },
+    "morvyssk": {
+      "body": {
+        "height": 465,
+        "sha256": "2d0a62ebae6cce69186786b9bbf43f11346fa4f300b61a9cf65baa6b4d359b95",
+        "width": 1312
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 465,
+        "sha256": "e8a2b50feeea9e9b4fe0f7c1fc2bb32d3ef7ca90c98580c203c0b121d29aafb6",
+        "width": 2720
+      }
+    },
+    "naraka": {
+      "body": {
+        "height": 615,
+        "sha256": "81a0dc860e46f79cfe45669cda3ac1db5e7bed10496988e8c14402521486bcab",
+        "width": 1640
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 675,
+        "sha256": "bd3f2d91d5f597cfd12deebf404f5c692c4ffe492770256dfbd9dc0d86d6d2c3",
+        "width": 2880
+      }
+    },
+    "nazulmor": {
+      "body": {
+        "height": 555,
+        "sha256": "99a901c1131154b21d5f34bc70c167e5356d29648cb966ba06c9246ca60adc8e",
+        "width": 1480
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 555,
+        "sha256": "5872f84263767bbc665b5cbe507d7bed98c93618e16ab0375a3f130c7256ffa8",
+        "width": 2800
+      }
+    },
+    "nexthyrius": {
+      "body": {
+        "height": 645,
+        "sha256": "80ba26f02563ee1b93981988925886e078e4727739949f2a60016ed45aea0d89",
+        "width": 1720
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 645,
+        "sha256": "a768950d083484b205a1814ccc08d787a2bcb1e4eaf3ac97cf437b1c57314d44",
+        "width": 2920
+      }
+    },
+    "nixweaver": {
+      "body": {
+        "height": 363,
+        "sha256": "49a4748e2b7995f8257a8458d04deb8f773cb53f09825a7ac6473883fab8a461",
+        "width": 1856
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 363,
+        "sha256": "1e125fa83cfaa994cc18362bd51e7c100c1de7c704107d8ec6d7e6ddb0e9c4fd",
+        "width": 2832
+      }
+    },
+    "nyrellieth": {
+      "body": {
+        "height": 585,
+        "sha256": "0b73d3894119d68102004860ff62aa940368cd7ae9632d955177f55e85ab9aad",
+        "width": 1560
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 759,
+        "sha256": "962e13978f599998d7852caf82ab9c545801c37ac3f13162e86a7bf16b9faa64",
+        "width": 2840
+      }
+    },
+    "nyrethzalv": {
+      "body": {
+        "height": 585,
+        "sha256": "f67e375e937f2d9db0100d790eb5b2f25a14a600ef4050766878a0afb6083820",
+        "width": 1560
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 585,
+        "sha256": "6cd4a8d79203311a1469bbc9e69fb60381f5d7088f9f98bec605b8fe44c8fbf0",
+        "width": 2840
+      }
+    },
+    "nyxallaria": {
+      "body": {
+        "height": 525,
+        "sha256": "d48a1ca8bd39f28503902db3a673bfb13296ce21a2effe2b18149c950cfab8ee",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 537,
+        "sha256": "af0b0b81496e60e8c689c319ce2c77157154c9bf9fbcf7faa46574ffd83fe4f8",
+        "width": 2760
+      }
+    },
+    "nyxara": {
+      "body": {
+        "height": 465,
+        "sha256": "dab418e6c4c01d5d23b351131dffb3668e057a05ef0f3e71bb94fc261fb2cba9",
+        "width": 960
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 588,
+        "sha256": "5085dcc6d96f3f26d380bd091d27933e1910ee2789c6432eb496bf677f72a62b",
+        "width": 2432
+      }
+    },
+    "nyxarath": {
+      "body": {
+        "height": 375,
+        "sha256": "6dc6b31d2a1f9537ae50a3e37204c4693b07849ef5c8a78e571f2c24e6a507ad",
+        "width": 1000
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 669,
+        "sha256": "d1056baa1b2cdeb36420ddf79450e5a4fe16aa90fbfbfabef639d366055ccd3b",
+        "width": 2952
+      }
+    },
+    "nyxareth": {
+      "body": {
+        "height": 663,
+        "sha256": "6072833211db7f06a06f3fed29f13b32a7cb05c379da0817ae2f131d3e14195a",
+        "width": 1768
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 663,
+        "sha256": "93925f3b9e8709eca67f8a33d6dcd14d95f1a606a5f48dfd8aae54d7ff9e3cf7",
+        "width": 1768
+      }
+    },
+    "nyxareva": {
+      "body": {
+        "height": 465,
+        "sha256": "75867f3d32b35b7b99dfc6302f8bba5cc219a3e2711b20bca478a204852dd265",
+        "width": 1240
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 1095,
+        "sha256": "09b59a0b343b01c28a5b6562d3fd36fae5cb04fd5483994b14f5947a67310a9a",
+        "width": 2352
+      }
+    },
+    "nyxariel": {
+      "body": {
+        "height": 465,
+        "sha256": "9be438f0fdf1c19d2eddd73aa55da296581db72a51debb5f9ae57b9b59f85f61",
+        "width": 1240
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 465,
+        "sha256": "ec4bb42aba81a9d0f165a968bf24633bad3bf5402ecaeb608a65e272333cc0ec",
+        "width": 2680
+      }
+    },
+    "nyxaris": {
+      "body": {
+        "height": 405,
+        "sha256": "50342fa8f0eb423160ef8062f41e1afe6c42c88044e17dd7a7cf08e8102a7920",
+        "width": 1232
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 966,
+        "sha256": "ef40a9db50ebebaa97034956669f21107f420ad13ea06ab93078ca21e95d05a8",
+        "width": 2680
+      }
+    },
+    "nyxaroth": {
+      "body": {
+        "height": 465,
+        "sha256": "3774426713d4db558e92ccfdf2849ac4b05cf43afaa69770e7680789be4b2c7a",
+        "width": 1312
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 561,
+        "sha256": "3a52818fed45062a110cf4edd5a84f3f2dd0cf9fb2ca8dfc7e90d5dc4b7bfd0f",
+        "width": 2720
+      }
+    },
+    "nyxharr": {
+      "body": {
+        "height": 633,
+        "sha256": "96b23718d6846a61e607e625d623db4ffd53dd63c390bdda23c64a163a769fb0",
+        "width": 1688
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 633,
+        "sha256": "a4f1c135da9a4c5fdea48f3a227a08ed16f70c6a24fbd62c07dddd71720948b2",
+        "width": 2904
+      }
+    },
+    "nyxraal": {
+      "body": {
+        "height": 555,
+        "sha256": "e3f0e2b82fe2ac31c142eaf24fcf4e112a81768c9ce5129d80f800f88e38b584",
+        "width": 1480
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 603,
+        "sha256": "5305c153420adf4078a5711f50d7a6ec4c4b93d2b6494fa34360035a58d19351",
+        "width": 2736
+      }
+    },
+    "nyxthrael": {
+      "body": {
+        "height": 465,
+        "sha256": "8b33eda0a51b5cdbe83e67f8c5bc41156ae7d7558250a5ad51abb2a89b16c60d",
+        "width": 1240
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 960,
+        "sha256": "7a24e55aa629eda74a7b836cc23861d22bb2871e1494ad918d58f519bd523bd9",
+        "width": 2592
+      }
+    },
+    "nyzrak": {
+      "body": {
+        "height": 516,
+        "sha256": "78fba571bcb9d063e52caf35c23249c220a51740a43130715ba44ffdd2892d28",
+        "width": 1456
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 549,
+        "sha256": "c3c866db6a82264dd29006b77f8b8dd2a19a516d9737e589ea510c3188ceb5de",
+        "width": 2944
+      }
+    },
+    "obanai": {
+      "body": {
+        "height": 297,
+        "sha256": "f967805247f5d1e500ff8d21cb407edd2034043477e0cfa9072f10b0ace9a890",
+        "width": 672
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 456,
+        "sha256": "e0fe3a2261dc37fbe3799aff0a8a2d8d6b79fc60efcdf89f14b5762305d9d733",
+        "width": 2024
+      }
+    },
+    "okeanora": {
+      "body": {
+        "height": 585,
+        "sha256": "afd2155af3930ce192054eb71854fac6083a4b0a632b3774c073314043b37f0e",
+        "width": 1560
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 585,
+        "sha256": "263b30ae984065ef4e5a5a214df83157c5d45e313836ddca512682a146eadb0d",
+        "width": 2840
+      }
+    },
+    "pyraena": {
+      "body": {
+        "height": 495,
+        "sha256": "f43a093ed608581265b7df5c69c1f48fe5dd6d881ef819ae299f4611dd79caa2",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 987,
+        "sha256": "9ba8ad46e43ce4ba4f17d35adf8f7752889e4c961b5e72dc098c8713cc45e326",
+        "width": 2720
+      }
+    },
+    "pyraethis": {
+      "body": {
+        "height": 585,
+        "sha256": "fc27bd0d36edcaeb27cf5ee6a5731da59759627e500ca6bead585fb9eaa074e7",
+        "width": 1560
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 777,
+        "sha256": "65e6be45c30c4b97579bd184f4a790462217754e0982f18d119159379735f3f9",
+        "width": 3088
+      }
+    },
+    "pyraklos": {
+      "body": {
+        "height": 465,
+        "sha256": "d91d1e16379638644494eb28c92962db4cfb6b25df227a404deca8118c5fb877",
+        "width": 1344
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 477,
+        "sha256": "bcb6436f7e2e3410a5496db8d5d120be568dd77b093d8a97814e15cabdeee5bb",
+        "width": 2720
+      }
+    },
+    "pyrenth": {
+      "body": {
+        "height": 564,
+        "sha256": "5ec5636e52767a42d53632ec6f1a4d5c9592f7a7c499b07757c2d8fe83996e72",
+        "width": 1504
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 564,
+        "sha256": "bda5cc28589f5dbc6b0da07f9e06e2af1e5754b5c4a894ffd4b140a713255541",
+        "width": 2720
+      }
+    },
+    "pyrhaan": {
+      "body": {
+        "height": 465,
+        "sha256": "0871286a7f0188b644477eda1a6120f467b7e81e6f2199979ab3902018615fa5",
+        "width": 1240
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 465,
+        "sha256": "130666116fee7d688f78e4c1bebced22f5960c2d0c40a468ceeb8cf7e1c63519",
+        "width": 2096
+      }
+    },
+    "rakzhan": {
+      "body": {
+        "height": 465,
+        "sha256": "2112fa9cc5276cccf1a90ed7312d5df4bf7d455fda0cf5861e2ff939fc174f24",
+        "width": 1312
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 471,
+        "sha256": "69cc4c64fb2d4262cfd2cfd492d7dfcdaf7880ae1c432d37162f029deca60407",
+        "width": 2512
+      }
+    },
+    "ravokkar": {
+      "body": {
+        "height": 633,
+        "sha256": "ede00aae1d4164e32fff0b1fa9933ad1e6a21e9bbc0a42914cf1cdc68872c801",
+        "width": 1688
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 633,
+        "sha256": "c267669127bf9473af9f799fb8eeff0440876f2755f12de038a045c8e7ba5fd2",
+        "width": 2904
+      }
+    },
+    "raz": {
+      "body": {
+        "height": 507,
+        "sha256": "2c8a84668edd1dd926f97dbe195f95afe203234d117d3b1fda487ea9211e9928",
+        "width": 1352
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 1020,
+        "sha256": "093ada16ea631c5cbd6e29a3fc8141ea3cb37d8cbb2232fd7b685f6aad3e016f",
+        "width": 2872
+      }
+    },
+    "razak": {
+      "body": {
+        "height": 444,
+        "sha256": "b09f424da93b7060d6a89294090d25a706bcdf0f254850975927ad8cadde5ab7",
+        "width": 1184
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 1176,
+        "sha256": "201114095b8a808965f7369f1813415abafae5aa43d009d6301bc501f4a257da",
+        "width": 3632
+      }
+    },
+    "rynvara": {
+      "body": {
+        "height": 465,
+        "sha256": "8881bd6a80411b098bca64d1ad48220932aa7170519f07c50b5400e09514307d",
+        "width": 1240
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 465,
+        "sha256": "0a9386af911e15d334f76637ef0a79a41aed133f5057c7d6ce12ab7155e92533",
+        "width": 2680
+      }
+    },
+    "sanguire": {
+      "body": {
+        "height": 435,
+        "sha256": "428b4f970c6f5b552cf859015391624655802c11562804e1338e506e6fd7fd97",
+        "width": 1160
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 435,
+        "sha256": "f74b66899fa84330430ee387eae68b8bd454f1a03f5aace5db654a93dbb8c26e",
+        "width": 2640
+      }
+    },
+    "sanguiveth": {
+      "body": {
+        "height": 495,
+        "sha256": "0d4b7cee37d8c88f1da79913647ccfd0fc3aa68a3a573864706787f20b94e4b4",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "e4bd82ffc694060f73ee74d9452ab5e9d097b3664b996de028cac15433890015",
+        "width": 2632
+      }
+    },
+    "sasori": {
+      "body": {
+        "height": 525,
+        "sha256": "7eec1bb4925ab2f29c8263e3b9c34f539d5e0dfd614e4769f1de5f280bdcba56",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 804,
+        "sha256": "09821bc41bee5c12cf71a0d8e5fdce9482ac96fa219352063d050f5fa4f8adb1",
+        "width": 2832
+      }
+    },
+    "seiryukong": {
+      "body": {
+        "height": 585,
+        "sha256": "4badd6b259c07a86fa0bb50b04c97b12ca792a144c778ed8375dd756a63df841",
+        "width": 1560
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 585,
+        "sha256": "bc7740ee06036dc2468dd67cd0a333ddc2bdd7096da35331caf33ba4c525b538",
+        "width": 2320
+      }
+    },
+    "selunara": {
+      "body": {
+        "height": 465,
+        "sha256": "38adde3a817908e3f399223d40ff73ef020bb9d5bf4c5500d904c0becdf313f9",
+        "width": 1392
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 465,
+        "sha256": "c60a628f4409275b52d51e4bc5d1bc3457f57ffe8d3b63911e45889decfc9edc",
+        "width": 2760
+      }
+    },
+    "seraphienne": {
+      "body": {
+        "height": 645,
+        "sha256": "f98627994efe8c41fd40a39ea0e76f92d0a1f4d6b4ce0fbf9a77daf86e81cebf",
+        "width": 1720
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 660,
+        "sha256": "416d50955dcd213b290cf40dc97ef3e6524d5c5b90724a67baf71d0532ac4bba",
+        "width": 2920
+      }
+    },
+    "sethrakhar": {
+      "body": {
+        "height": 555,
+        "sha256": "6f59edc578ff5dff355153cda3a4ccdc779ac2583f73a6785a367f30e2ee1de3",
+        "width": 1480
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 555,
+        "sha256": "ace686f8a2b8fd41a1cc42c5b4e0986f33dac2f128f592dfaf2e1a9e28a1fcfe",
+        "width": 2624
+      }
+    },
+    "shimorakh": {
+      "body": {
+        "height": 465,
+        "sha256": "caf68d5e0239effe9a629f098af0042b49dd189cdd2b8298f268f46d22a94401",
+        "width": 1240
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 465,
+        "sha256": "e1abaf9cea2e214061a2163a86e26114467c1a7fe9ed6a8fecfc8a3d9c796069",
+        "width": 2680
+      }
+    },
+    "shirotaka": {
+      "body": {
+        "height": 495,
+        "sha256": "f60a5a8a40aa17b5452cbde46563817ae5f644097803e9c841c963ab9fb010fb",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "5aa4606f47c2e031d5628b5768cfe69b641ec0f12833aaddb6e5f264b4851a15",
+        "width": 2392
+      }
+    },
+    "sirakzan": {
+      "body": {
+        "height": 465,
+        "sha256": "8ce3cc2d97b5a9c724021dfdb75bc4b161b54c91d3e18197d9a575ee5e2fb865",
+        "width": 1312
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 465,
+        "sha256": "6080fa0179561a2b830d2e8c1bbc18c65241458a39323db665a98a48aaa4bc1c",
+        "width": 2720
+      }
+    },
+    "solara": {
+      "body": {
+        "height": 435,
+        "sha256": "88e5f0dd27ab2c595f7bb34068583775e8d05e9131cc43bab0470eb489efb3f8",
+        "width": 1232
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 975,
+        "sha256": "8daabb9018c2ead1c122af8f07fa42d4d3f15df626ee8cc199e208138d380ed0",
+        "width": 1800
+      }
+    },
+    "solareth": {
+      "body": {
+        "height": 585,
+        "sha256": "4f0302362d8ff3197afc539ec2cc156e2054833a15fbc8357537805d5491cc03",
+        "width": 1600
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 765,
+        "sha256": "3bd24d8b56dfb208694f880b645383f3ce37cfe286b5252fba5e0a156f15eb4f",
+        "width": 2976
+      }
+    },
+    "solvanth": {
+      "body": {
+        "height": 555,
+        "sha256": "1ea2b7eef1a165e2ce9a3176f6ddf2423acb133d3b7126c421f320922f7f64a3",
+        "width": 1480
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 1035,
+        "sha256": "927c3bee33e79aa228b008615127632726be0d3ae4589d3d04dd11a2a303c426",
+        "width": 2800
+      }
+    },
+    "solvarin": {
+      "body": {
+        "height": 555,
+        "sha256": "95c7bdfa3b8809d50cde704408cca9d5cf523e9666c5b0f1bcd9652dd1de94c6",
+        "width": 1480
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 576,
+        "sha256": "8e2c99100c17038acc99b04f80ea62a392567d9e0bedb768f3604a53f4a69c7a",
+        "width": 2800
+      }
+    },
+    "sunakage": {
+      "body": {
+        "height": 495,
+        "sha256": "27aa6d4c99ec3eed42c69d6bd79e5db3df8742f2a7916e1b6e22d3b340e2d51e",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "8f4f6541d956170c6d6b3e040116e0a735084d59301d78dbb9a76f6020043c55",
+        "width": 2720
+      }
+    },
+    "sylara": {
+      "body": {
+        "height": 399,
+        "sha256": "87b76cd984f9459e95bee9d37beda3a5b496403a9a884019537e1b95e604bf28",
+        "width": 720
+      },
+      "renderer": "hero",
+      "skills": {
+        "height": 525,
+        "sha256": "55624e4a92d767bd433442875302125d42175c9715b764431a269009288087b2",
+        "width": 2656
+      }
+    },
+    "sylvantheros": {
+      "body": {
+        "height": 435,
+        "sha256": "08141c3dbc5434269d791e39721eed1bc983e731133f3b568d93b6b489791445",
+        "width": 1160
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 918,
+        "sha256": "763e7000f04b17904eeda60075755e164df935f73a5ce8dd18dc1133b4b3a6f8",
+        "width": 2640
+      }
+    },
+    "syrentha": {
+      "body": {
+        "height": 444,
+        "sha256": "ad3de9b10dbdb4b2f024f815f75849927bc712d6396d95d5ca42dd87751542cf",
+        "width": 1336
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 474,
+        "sha256": "9ad75a0c1da232304f4eabec11b39c63e5eb7bd250511dd9e99f8c032981fc8f",
+        "width": 1712
+      }
+    },
+    "syrindra": {
+      "body": {
+        "height": 525,
+        "sha256": "7c255ebf287d1fa696339566fc1c25e6fd7e6a51e0f69d10031d1c7d05a0120e",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 525,
+        "sha256": "554d19564fe804e9e66aac25a574aeed80db1a1e2af08b2d64daca4a2b4038ea",
+        "width": 2760
+      }
+    },
+    "thalakryon": {
+      "body": {
+        "height": 525,
+        "sha256": "1593c70901f4f79169388248170fb15781de696d212be732258d5579ea759fbc",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 525,
+        "sha256": "23ea005b2c23167a9ad08e3b7c25f2a3d3a1f50dbc2bec031d0619ee732afc81",
+        "width": 2760
+      }
+    },
+    "thalgryn": {
+      "body": {
+        "height": 546,
+        "sha256": "4089c8b8de60af35e066eb7c237e512ff59031cc3f763cfe36417f84aa8ccfe7",
+        "width": 1232
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 471,
+        "sha256": "db48cba856f30701a3fa732fd25fdcf5378c3ed16bf269fd42c89cb8939ee08b",
+        "width": 1216
+      }
+    },
+    "thalryndel": {
+      "body": {
+        "height": 537,
+        "sha256": "b97ee78010dcf9435a87425e662703c2b60d7f3b699f02a89054b53730e9e68c",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 525,
+        "sha256": "a02a85d53b7acd925e210819e8ad6dd36502f46f562fca3acf71d171bb9a58ca",
+        "width": 2760
+      }
+    },
+    "thargoroth": {
+      "body": {
+        "height": 615,
+        "sha256": "80246c9f9762e4035873bba41f723e40b100e8f608a5e54d9d253176943ad11b",
+        "width": 1640
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 615,
+        "sha256": "f65ade49111683cc50fd7649ce68a9532e02fe5f8946a71f71fa9a7c6b71f2b0",
+        "width": 2880
+      }
+    },
+    "thoraz": {
+      "body": {
+        "height": 465,
+        "sha256": "2f194284130e100d5e404b32a02ac5966b7c5e8f15d31d393a601157a9108a6d",
+        "width": 1240
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 612,
+        "sha256": "7199cf75fa8a742af94ac25e8a1fb3a8280e0f0ccddf6ee806977e3e20c8277c",
+        "width": 2376
+      }
+    },
+    "thorgaruk": {
+      "body": {
+        "height": 552,
+        "sha256": "38d628be3852f248fcccb7b2aeb6a22e6fc497397c3adfca1a09ca74c2ed386c",
+        "width": 1480
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 648,
+        "sha256": "c4032a61c059a4609f241126044dcae16a005d0df469aadc00292b4188ebc2b2",
+        "width": 2800
+      }
+    },
+    "thorne": {
+      "body": {
+        "height": 612,
+        "sha256": "60b82ae280a5d1d7610cf74fb3a6bc0524d69722fe68130f7160f532fbc46d00",
+        "width": 1480
+      },
+      "renderer": "hero",
+      "skills": {
+        "height": 681,
+        "sha256": "66a44316ef8c7b0db7bdd8bc33fad782b7e1bd3305232b13f84c473b933ba624",
+        "width": 2296
+      }
+    },
+    "thornvaegrim": {
+      "body": {
+        "height": 495,
+        "sha256": "d85d3eb7020afaba42ecf9d43ff94a4387eb7bf059444d18ebbb45a59f2374e5",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "c0c556c3e943f99311671aba811a299687b1f7a72c180961e436a51856b98cb2",
+        "width": 2392
+      }
+    },
+    "thorvak": {
+      "body": {
+        "height": 495,
+        "sha256": "ce0637bfbc9ec5b576eeadb8ebbb9296e710492f7b200770c69cdefdc5a69e55",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "a4adf5394940c596fb428e8837e21a87290d8a34939ce6f6553ab2e6525fa824",
+        "width": 1904
+      }
+    },
+    "thorvin": {
+      "body": {
+        "height": 465,
+        "sha256": "2794f70b78aa4384bc2acc704707dbe42ae9a81cc3ae5b47e630df94a719719d",
+        "width": 1240
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 474,
+        "sha256": "ddfe3901742a151df2756eac237e46c1ce4913bdbde168cb96c1f5dc176615b5",
+        "width": 2568
+      }
+    },
+    "tsukiyora": {
+      "body": {
+        "height": 555,
+        "sha256": "52d9d43164d7b431670bdb3617652a3f8c1d2863f0afc1fc57e20fd67aab9f92",
+        "width": 1480
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 606,
+        "sha256": "ee2f6c3452540b64ef1c5d8ae8f60f6894721d3168cad49014e83124f54fe3e0",
+        "width": 2800
+      }
+    },
+    "urgharun": {
+      "body": {
+        "height": 495,
+        "sha256": "10339592f1ec4e2246ef4de9fa28049c790108469af25e2c2ac16611103a42c4",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 525,
+        "sha256": "8e4dfd545ea2a7c962f9784ad1c4b4992f03bfe1830bc1fb77ac23bd10b64d46",
+        "width": 1552
+      }
+    },
+    "ursath": {
+      "body": {
+        "height": 552,
+        "sha256": "38cf1284a68e46995183f6115d7e17c88d8299334feb1fac2fbb626849b19a57",
+        "width": 1480
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 552,
+        "sha256": "439d2ba2287ec3c5c389f320b324efec36707d1f720b8608ed87f587ed5d6723",
+        "width": 1608
+      }
+    },
+    "vaelindra": {
+      "body": {
+        "height": 585,
+        "sha256": "36f35c44c036547b4b8ecc05d37072a9d353d7b0eaeff17b499c6dc492882e8e",
+        "width": 1560
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 633,
+        "sha256": "051f1647aa15961a72236f3b739af1316b6102fade40d7f001d544a461e4d8d4",
+        "width": 2840
+      }
+    },
+    "vaelkorr": {
+      "body": {
+        "height": 405,
+        "sha256": "8580842ce0ab3b1fe2c9f3ee0619e89feddffb8839c223f4e810013cfcf002d4",
+        "width": 1152
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 432,
+        "sha256": "ed3cd3bc1f6d3cc47faf980bf0f3e166125e52df30bd6fe1469f0efe7218a97a",
+        "width": 2632
+      }
+    },
+    "vaelmyrra": {
+      "body": {
+        "height": 585,
+        "sha256": "8c19a5126f7dafa0a35946eb940c7eac09a0b880b7a50847e8069943ed062216",
+        "width": 1560
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 585,
+        "sha256": "3ce9b34466c6697d68959c9ac8c41784f06a16c54592ff98f14f8a7f6ff3d537",
+        "width": 1600
+      }
+    },
+    "vaerith": {
+      "body": {
+        "height": 402,
+        "sha256": "3754f32c2d1220aff25f6f8216752c48d474204339719b197e56ec859a0aad42",
+        "width": 1080
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 402,
+        "sha256": "a1a88cac41f23c556ce3baeb337b4399db1b074257be78a41396f01d9e3e2b00",
+        "width": 2472
+      }
+    },
+    "valekris": {
+      "body": {
+        "height": 525,
+        "sha256": "9263e30bd2f9d55238635dd7612a02ad92192d610f5b5ee1d647e12081982f9e",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 525,
+        "sha256": "2eab4abc166b4cf50e9144f42095a996cd8e51c8df0f4a50f331cc70d4555458",
+        "width": 2760
+      }
+    },
+    "valthar": {
+      "body": {
+        "height": 525,
+        "sha256": "2d5f210fa7102f47ab8fb5c9349f93a1960a6af7fb1078f60f4a707df50444da",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 525,
+        "sha256": "88a5154eab0e8153eeb564e8bc910903f54279dcb204392b7694f0e7c9bba54e",
+        "width": 2760
+      }
+    },
+    "vardrok": {
+      "body": {
+        "height": 495,
+        "sha256": "732d6e8c30610dfb421f665b948031d34f9e119a80ca8a1f87ea34be4ddc7ace",
+        "width": 1472
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 555,
+        "sha256": "2f4892a3605ec823378dd679b8ff77f0767a368766e72429b8f7c5d395d2cbc1",
+        "width": 2800
+      }
+    },
+    "vargrath": {
+      "body": {
+        "height": 495,
+        "sha256": "76a39a12ea47c7155900cdba3a956815091cf7d775026d22bcbf0095ece06e0d",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 825,
+        "sha256": "c6a857fc047c9a00c44672693efaa7bb4e4c6afef5878bedb25df86afc1998ee",
+        "width": 2928
+      }
+    },
+    "vargroth": {
+      "body": {
+        "height": 495,
+        "sha256": "5fcf58059c5d0468e9589b8cbcf90ce6b5f2041e30333f65bd328e206cc6c1c7",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 726,
+        "sha256": "2d6c6ae7cea9bb27386433f7f2b42b49a486624af8246581e8f7552487c81085",
+        "width": 2728
+      }
+    },
+    "varkul": {
+      "body": {
+        "height": 435,
+        "sha256": "b801c63fc6188ae7a495bd481c9fda0b9eafe8bb308a8574a89987fea6983de6",
+        "width": 1024
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 438,
+        "sha256": "41d770704ff389fc5714e91c886ee228e7755c112d73d84fff3cd5b5d001fd15",
+        "width": 1024
+      }
+    },
+    "varkuthar": {
+      "body": {
+        "height": 555,
+        "sha256": "ec2f5d443c784d38ddf8450ddff4071caea261c971d2ca0873896ab747f88c3b",
+        "width": 1480
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 555,
+        "sha256": "5354fee30266788f4c134d09c803bc6f2d5ad2db6ca2499179dbf3f1d84c211b",
+        "width": 2800
+      }
+    },
+    "velmyrth": {
+      "body": {
+        "height": 435,
+        "sha256": "e2e97f5ea360f53bf53af42319d1f38b88ba10493660cda19cb542e10ccad9be",
+        "width": 1232
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "0e20adb160a4de3ae8573fdd070422a69159d3d6e2298e1014a175356c80d43f",
+        "width": 2680
+      }
+    },
+    "verdanix": {
+      "body": {
+        "height": 495,
+        "sha256": "dc4027c8ea00092448b51846d153462629270d611632b73a90df1fbe87b0ecbe",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "4e38252b31e667c7e01839d491cf395b53e46888ae599614d1b556bf665b0763",
+        "width": 2688
+      }
+    },
+    "veshtrax": {
+      "body": {
+        "height": 495,
+        "sha256": "1ef5acd92933b69ce18317490e1cf3e8e62cf7edc9262e6970168452915bd09b",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 552,
+        "sha256": "9deaf4e5665e641036a54288fec1b003ec06084903b99a6c5f5c55af865d5c6f",
+        "width": 2872
+      }
+    },
+    "vessyra": {
+      "body": {
+        "height": 525,
+        "sha256": "49fd7ab183347fe742e6bc40eeb5f72d19e4f26c902b389e770eabee89cc776d",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 525,
+        "sha256": "e357413f4ab19f37e8aae6c07e9d926ec0b690e023688fac4acce783f2e70228",
+        "width": 2760
+      }
+    },
+    "vex": {
+      "body": {
+        "height": 441,
+        "sha256": "ccdf2b8645d25128cc8f968d7c28e6862ec20a814b25c16fcaf86d16c9dc9a7e",
+        "width": 984
+      },
+      "renderer": "hero",
+      "skills": {
+        "height": 570,
+        "sha256": "0f3303467d8afe2d7f0c5c218da1a64d07e4b67d0cb629bf78e892304d328605",
+        "width": 2504
+      }
+    },
+    "vhaerinth": {
+      "body": {
+        "height": 555,
+        "sha256": "a821698ca30e43895828b9a51808f3f5c1b729e6070e7b90c7700ff79382634a",
+        "width": 1480
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 555,
+        "sha256": "0e715748edd14ad21eaddb7076aa74ed35fd2adc099bf775df1249bd540fca49",
+        "width": 2800
+      }
+    },
+    "vhaerith": {
+      "body": {
+        "height": 525,
+        "sha256": "b4558dddfa161479e488b497cd6f5372a78b13a2f4463f32127847239a9874b7",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 525,
+        "sha256": "f4808f1b4fe4cf52fe7dc6684670322fc1ec94959b859c266c41f5d50992743c",
+        "width": 2760
+      }
+    },
+    "vhalzun": {
+      "body": {
+        "height": 495,
+        "sha256": "2289fd0c0a5ae6990ba6bc46f4b17d5ca93902b6f20d176878eb4b3ba063cdd3",
+        "width": 1232
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 633,
+        "sha256": "aa912fd1075ede90cacb825f2e269449d24cd26a477451b89462ed734bd1e379",
+        "width": 2432
+      }
+    },
+    "vhorethzir": {
+      "body": {
+        "height": 525,
+        "sha256": "a83698bf47db8a0f99910abf89f2b6f03ca62d3fa50c4483272dab253c43fba2",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 870,
+        "sha256": "16f5bfd02df013614b200eafec6b42042eb2fd942ad1ac8c227689f50d18b1a0",
+        "width": 2760
+      }
+    },
+    "vhyssarion": {
+      "body": {
+        "height": 387,
+        "sha256": "196d68b9036f79cdac7c9c0db28d4b1c0e7f35f2c805425a2b9696175ec10659",
+        "width": 1032
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 444,
+        "sha256": "9bd2e09b2aa8017bdae554978706de2d96f58db98f0f2a6989c9ca22194322a6",
+        "width": 3056
+      }
+    },
+    "vokrahn": {
+      "body": {
+        "height": 504,
+        "sha256": "03137a790305e0810c10da24fbe18051ba16f04d86467cc332d80bc1526a22c1",
+        "width": 1344
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 762,
+        "sha256": "2f4f2fff03f2e115f06106ec6c7a6ea2c7a957abb08abee8158ee6f2ef2e4245",
+        "width": 3928
+      }
+    },
+    "vorenmarr": {
+      "body": {
+        "height": 375,
+        "sha256": "6abc9a11878c0239550b052cf62ae9c974ea789cbd49a99e538fad4db67e9f13",
+        "width": 1000
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 435,
+        "sha256": "92c281cf3a280b5ae4ff53fccaba83de900378d928d51f7f54297dc727100c77",
+        "width": 2560
+      }
+    },
+    "vorgath": {
+      "body": {
+        "height": 465,
+        "sha256": "147ad2affeba0484fcbd139760ae9e2e0901bce18570cb9d0b23e6ea9b6796a8",
+        "width": 1240
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 537,
+        "sha256": "1c60cf91c6be8f3def4a02a282384836958ff114c992747743b84d7cf7d75379",
+        "width": 2680
+      }
+    },
+    "vorthakul": {
+      "body": {
+        "height": 537,
+        "sha256": "ce93e169294a063e69aa960d6d0f8ebe66eee8f17ab28813fe7db66311a05a4c",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 525,
+        "sha256": "1c41a86073fe2a6476848a0c8fb5e4381827c2612745d833c10ae38d58122237",
+        "width": 2760
+      }
+    },
+    "vraskhan": {
+      "body": {
+        "height": 525,
+        "sha256": "c456b29c1b2358049da26099a467c31854e793899d6a32763fa94dbbb58ecfad",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 525,
+        "sha256": "8c0ca543f13428c785a210104925cbbec10415afc21c3b38aa9723770443a405",
+        "width": 2760
+      }
+    },
+    "vulkareth": {
+      "body": {
+        "height": 417,
+        "sha256": "51b1ee82e581df7956a4c8e0ab1d8cf04eb13db0d3f51aa7dc30b74ee2ca4735",
+        "width": 1232
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 597,
+        "sha256": "f90eeed3876cf6b917880a5246ac93247a98a4a1ffb97d1fdc4d980a72c39ff2",
+        "width": 2784
+      }
+    },
+    "vyraeth": {
+      "body": {
+        "height": 555,
+        "sha256": "b1d9cf952ac83898423dadb8660e55f85442eee95a76c9a2d4621eac01dbe6de",
+        "width": 1480
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 555,
+        "sha256": "ea93feb4e353211b5f3b5852b0bfa1e0781dc9761b68622adcf2e9fc943aae50",
+        "width": 1992
+      }
+    },
+    "wiro": {
+      "body": {
+        "height": 507,
+        "sha256": "92d32a94f66027314f8c088944a0a9a43f475b41954fe47b9d003e258a2a742a",
+        "width": 1352
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 951,
+        "sha256": "755a5b8f16b613242ff80fa59aa8c7e4351ec8aa9a3ef24afbf97f7b581ca88a",
+        "width": 2872
+      }
+    },
+    "xaelmoran": {
+      "body": {
+        "height": 507,
+        "sha256": "1e9980c31b99958dd6dd0d1395aa047c8ffa42ec820018daa5b51efea0a91e8f",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "124bcb9e81ec81447ace6893b88d7d13382a6fa0ba2387ddec36a7df0753070f",
+        "width": 2720
+      }
+    },
+    "xaerissa": {
+      "body": {
+        "height": 555,
+        "sha256": "7af15c8c8f9a6ddec5a5bfe25e63fb357d6bde5afb80bd018cac89b008f76cda",
+        "width": 2104
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 555,
+        "sha256": "2295f71daa0ba4ff6e203d8d542b3a099592d8c78a1cc3291b400db4c7792f56",
+        "width": 3112
+      }
+    },
+    "xareth": {
+      "body": {
+        "height": 495,
+        "sha256": "2f50b07e11ce5f91b03733e13de71aa2d91dc5a0157cc3de0a4fea87f74a8ada",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "8048d71f032fed6240ba8061e8446faf5784aa537246d5444d28a8cc73fa7b57",
+        "width": 2720
+      }
+    },
+    "xarnathul": {
+      "body": {
+        "height": 525,
+        "sha256": "387cbd2ffc8313ed2ba15aaa0b0d3bbcd34054f0f9da8c2944caab5eebf4c1fc",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 1038,
+        "sha256": "1ad1e0e73a6a669b92c37152086082bbf124a009236cffe5a07f1a1e24dc1a0a",
+        "width": 2760
+      }
+    },
+    "xarnthuul": {
+      "body": {
+        "height": 555,
+        "sha256": "1d4a1edc9eabb41bb56b6dc3cb6c60d34a1399a396514833bbcf94ab5638638a",
+        "width": 1760
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 555,
+        "sha256": "13bcf856e5fd0ddde74919e91ad0525218033e363979a86c8bf65500d9e8307e",
+        "width": 2800
+      }
+    },
+    "xelnarath": {
+      "body": {
+        "height": 555,
+        "sha256": "cd60a48ab30908ebe3dc99f8b6f26b2921bd9bdeabf86f410940e20dc3a9a128",
+        "width": 1480
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 582,
+        "sha256": "2282a499c1990bd2facd894d144761bade408e1175592ebf49b265c4d7bf1c11",
+        "width": 2800
+      }
+    },
+    "xerakhotep": {
+      "body": {
+        "height": 525,
+        "sha256": "af0f3dcb7f98be7d1482d14cf812afd26d24abc8fe40ffef1d604c94a0d22358",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 525,
+        "sha256": "231c4f73f8025a6ccc6362f6edf29b347d523ae6136d227a75b443fa55af6fcc",
+        "width": 2736
+      }
+    },
+    "xerakkuth": {
+      "body": {
+        "height": 525,
+        "sha256": "d0500a8ff2587a0315ef1723afdb1709a6d31eb9c8b0cc71de56eb2288e21866",
+        "width": 1472
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 525,
+        "sha256": "5ec22ce4efde010aa603ee8aabfe928047a7bafedd873c02017341c2b8a77e1a",
+        "width": 2800
+      }
+    },
+    "xerathis": {
+      "body": {
+        "height": 423,
+        "sha256": "61bf61f1ef97c249b059a002f3095d55c168fdc0ffe02cfb386d668a7a046827",
+        "width": 1024
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 492,
+        "sha256": "a6d6a7a823346b8615c3895990def45c3d58639928ca2dd18219f0a0b081af7d",
+        "width": 2872
+      }
+    },
+    "xharokh": {
+      "body": {
+        "height": 555,
+        "sha256": "b4a334cc2a1f021e095291c6fed4edb222c42f093226bb67c37ddbd15e164ac5",
+        "width": 1480
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 681,
+        "sha256": "f42daeb015830dc89be6815ee08c90d331afca80293d97a2388ff2000266ec27",
+        "width": 2800
+      }
+    },
+    "xirthalis": {
+      "body": {
+        "height": 345,
+        "sha256": "84d8bd287e41fa2ec6e01ea43c4b2fd73645cd0459aec74b71ae322c16b24efd",
+        "width": 920
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 519,
+        "sha256": "96d44de3214f5087445be78d9ed3a5e6a2d23d9cacacf9feac68a8bdd3100ffd",
+        "width": 2624
+      }
+    },
+    "xyrael": {
+      "body": {
+        "height": 495,
+        "sha256": "2644e55372cfda3aaa904571d2370af785618c4506078a432e82d6c5ac22cb5d",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 558,
+        "sha256": "455f65d86642ce00b484acf248c20c3f071529f4c350ca015e14b89b3ee56b81",
+        "width": 1504
+      }
+    },
+    "yamako": {
+      "body": {
+        "height": 585,
+        "sha256": "8e067a4f80eccd7b59dd53dcf80163d1c00e358a4ea0deea04c9a7e59c2cbba1",
+        "width": 1560
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 633,
+        "sha256": "a736e57dc3196b4f8d301fc3982d824a78fad40179937a069df27f4144cf72b7",
+        "width": 2352
+      }
+    },
+    "yhoranth": {
+      "body": {
+        "height": 495,
+        "sha256": "eaa9c19d7f49f5b4c2efa33d22603697c54d9061b6276a8782b677ebfadf6f42",
+        "width": 1328
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "308adf3baf661902481a98daee427146516ad50368da29fe31aa6f84c38bb62d",
+        "width": 1976
+      }
+    },
+    "yomigetsu": {
+      "body": {
+        "height": 525,
+        "sha256": "c200bc3941389fb8ec03640755f7964d540471af707cc90c3aa76ebba9090c81",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 525,
+        "sha256": "b104f3150781de40bc297ae247a44bda044f4b1830b213deb82b7fbb18ad7ec0",
+        "width": 2760
+      }
+    },
+    "zahkareth": {
+      "body": {
+        "height": 555,
+        "sha256": "b583a5370a1030949ff725db430bdf9ba8f080be40e98a272b6cf450a1e1ad04",
+        "width": 1480
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 555,
+        "sha256": "9c84271994ee204152834e2b484d7195b9c780bc51409754b28fc0362f9f8ef6",
+        "width": 2800
+      }
+    },
+    "zarethyr": {
+      "body": {
+        "height": 495,
+        "sha256": "3c9085c9d18ae4d145ef289b81a927ad3121a222a7e7cc70a14a879813c71280",
+        "width": 1472
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 816,
+        "sha256": "c7bc444b4c925e92ce74cb82456a87cd2a5bcd53736aa7d7d408c6ad77299cae",
+        "width": 2880
+      }
+    },
+    "zephyr": {
+      "body": {
+        "height": 576,
+        "sha256": "25b5f0468db7c564b08005763d77d242181633e97f8c50f74619baaa9d88fd70",
+        "width": 1184
+      },
+      "renderer": "hero",
+      "skills": {
+        "height": 645,
+        "sha256": "9d30061d8324f3a984e14835597ca9b1b6c4749c1b633beb178c4d47ee8a8a05",
+        "width": 2760
+      }
+    },
+    "zhaeris": {
+      "body": {
+        "height": 435,
+        "sha256": "acf15f905ef9b0c3c607c7b23c6d36d69f1bcea4cc1fad6056c9fd3af742369e",
+        "width": 1160
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 1128,
+        "sha256": "34f6cced76930a2502d8cc48665626a91a82b87304e30502270a06e3da64985c",
+        "width": 2640
+      }
+    },
+    "zharakzuul": {
+      "body": {
+        "height": 615,
+        "sha256": "bf95b0f1cde324aa5418df24c15f35c2437747b0da8374fafee33b6c479e62b7",
+        "width": 1640
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 615,
+        "sha256": "e9e1311c11aabf94b21f84dc1409c930278c57ddaa9b37434d0ddd688a6d1bec",
+        "width": 2880
+      }
+    },
+    "zharok": {
+      "body": {
+        "height": 408,
+        "sha256": "7a92853d7dfed7efc2b8f3336e3a2e218a658fc86b69db9f9f7d481df48c22ca",
+        "width": 768
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 1431,
+        "sha256": "d2c110417c95ab0ff4da74ef5d87e65da0033ed7c00797033916842f28253dc6",
+        "width": 4112
+      }
+    },
+    "zhyrakaan": {
+      "body": {
+        "height": 525,
+        "sha256": "4130669a41fd23da5510eecac9f9b1cb513e98af268182b3e57104405b347c53",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 525,
+        "sha256": "e80ccd8d15a0d30d4157088891add645fbef026cd904a3e3e4d4452711defb62",
+        "width": 2760
+      }
+    },
+    "zhyvrek": {
+      "body": {
+        "height": 555,
+        "sha256": "9d49372e8d953c5c48c7766c07f6697ed9afc534b33a04e7b0dd5f7877d223e5",
+        "width": 1480
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 573,
+        "sha256": "1974c4cc71baea290c7d00001854e9f1f5f22418b7e644db9e462324fb69b8c3",
+        "width": 2800
+      }
+    },
+    "zorashi": {
+      "body": {
+        "height": 525,
+        "sha256": "977395a8def3efe89e8f1eec8eb4d61cdb8609173c19d6de3b54d04e5dd3d487",
+        "width": 1760
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 540,
+        "sha256": "7273431ed273a3cdc4b0475ad253bba6079281fb12c305ea7167ad8b85e88f93",
+        "width": 2712
+      }
+    },
+    "zorathiel": {
+      "body": {
+        "height": 525,
+        "sha256": "d1f97129e4d16f0377cfa2eac24435be105cbc365ce3b9e06c13fa4859489c02",
+        "width": 1400
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 555,
+        "sha256": "eda0fd43b7b33950e6c2e9785e4f605b107a7182f0dc9e3030be439015df5230",
+        "width": 2760
+      }
+    },
+    "zorothrax": {
+      "body": {
+        "height": 525,
+        "sha256": "91f744317264cbe69cfd2c11f6cf44cc8000a1e28c1ce3a580c828a1e1fb4c41",
+        "width": 1632
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 525,
+        "sha256": "8d688fa3f3d21c4d753d8c92c54fee416b28413b56c6b2380d8c5177d8665f57",
+        "width": 2760
+      }
+    },
+    "zulkhaven": {
+      "body": {
+        "height": 495,
+        "sha256": "ea5d5737b5ed307b07d6b1df23491a0dfd047a7aa307e4d6058b1ada0b26bd5a",
+        "width": 1320
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 495,
+        "sha256": "4fffae6672298a0f375c64ea7b3f0c5083c01f1384db9898f2be94f8cf39405b",
+        "width": 1552
+      }
+    },
+    "zyvareth": {
+      "body": {
+        "height": 555,
+        "sha256": "bb5d5d2684f3834e58426229314531dd1bd1c04cc137150c5ccc86f2551ce25a",
+        "width": 1552
+      },
+      "renderer": "boss",
+      "skills": {
+        "height": 597,
+        "sha256": "8de0ba3f6c14e796b9ea407cbe7cd01f49ee1c94cb0696dfe753b0baae8e3a7b",
+        "width": 2848
+      }
+    }
+  }
+}

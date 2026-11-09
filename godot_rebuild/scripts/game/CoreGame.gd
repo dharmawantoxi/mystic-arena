@@ -72,7 +72,11 @@ func configure(level: int, replay := false) -> void:
 	if not model.render_event.is_connected(_on_render_event):
 		model.render_event.connect(_on_render_event)
 	effects.configure(settings.values)
+	model.feel.shake_enabled = bool(settings.values.get("screen_shake_enabled", false))
+	if not model.feel.camera_shake.is_connected(effects.add_shake):
+		model.feel.camera_shake.connect(effects.add_shake)
 	EntityVisuals.configure(RenderQuality.from_settings(settings.values))
+	model.hero_fx.configure(RenderQuality.from_settings(settings.values))
 	effects.clear()
 	cinematics.clear()
 	map_view.configure(
@@ -115,6 +119,9 @@ func simulation_step() -> void:
 		if view != null:
 			view.queue_redraw()
 		return
+	# Shared real-time clock is advanced once, outside speed/catch-up steps.
+	var fx_time := Time.get_ticks_msec()
+	model.hero_fx.update(model.feel, fx_time, model.heroes + model.enemy_heroes, model.all_units())
 	speed_accumulator += clampf(float(settings.values.game_speed), 0.5, 2.0)
 	while speed_accumulator >= 1.0:
 		speed_accumulator -= 1.0
@@ -124,6 +131,7 @@ func simulation_step() -> void:
 		cinematics.update()
 		if model.state != "playing":
 			break
+	model.hero_fx.capture_trails(model.heroes + model.enemy_heroes, fx_time)
 	if view != null:
 		view.queue_redraw()
 
@@ -134,6 +142,7 @@ func apply_render_quality(level: String) -> void:
 	var preset := RenderQuality.preset(level)
 	effects.quality = preset
 	EntityVisuals.configure(preset)
+	model.hero_fx.configure(preset)
 	map_view.configure(map_view.theme_name, model.data, preset)
 
 

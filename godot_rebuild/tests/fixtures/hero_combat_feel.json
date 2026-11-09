@@ -1,0 +1,888 @@
+{
+  "cases": [
+    {
+      "actions": [
+        [
+          "hit_stop",
+          0.001
+        ],
+        [
+          "hit_stop",
+          0.08
+        ],
+        [
+          "hit_stop",
+          0.03
+        ],
+        [
+          "freeze"
+        ],
+        [
+          "freeze"
+        ],
+        [
+          "freeze"
+        ],
+        [
+          "freeze"
+        ],
+        [
+          "freeze"
+        ],
+        [
+          "freeze"
+        ]
+      ],
+      "expected": [
+        {
+          "max_duration": 0.0001,
+          "progress": 0.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 2,
+            "hitstop_total": 2,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 0.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 5,
+            "hitstop_total": 5,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 0.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 5,
+            "hitstop_total": 5,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 0.19999999999999996,
+          "result": true,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 4,
+            "hitstop_total": 5,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 0.4,
+          "result": true,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 3,
+            "hitstop_total": 5,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 0.6,
+          "result": true,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 2,
+            "hitstop_total": 5,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 0.8,
+          "result": true,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 1,
+            "hitstop_total": 5,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 1.0,
+          "result": true,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 5,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 1.0,
+          "result": false,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 0.0
+          }
+        }
+      ],
+      "name": "duration bounds and no stacking"
+    },
+    {
+      "actions": [
+        [
+          "hit_stop",
+          0.041666666666666664
+        ],
+        [
+          "freeze"
+        ],
+        [
+          "reset"
+        ],
+        [
+          "hit_stop",
+          0.075
+        ]
+      ],
+      "expected": [
+        {
+          "max_duration": 0.0001,
+          "progress": 0.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 2,
+            "hitstop_total": 2,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 0.5,
+          "result": true,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 1,
+            "hitstop_total": 2,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 0.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 4,
+            "hitstop_total": 4,
+            "shake": 0.0
+          }
+        }
+      ],
+      "name": "python ties to even"
+    },
+    {
+      "actions": [
+        [
+          "hit_stop",
+          "bad"
+        ],
+        [
+          "hit_stop",
+          null
+        ],
+        [
+          "hit_stop",
+          "0.05"
+        ],
+        [
+          "reset"
+        ],
+        [
+          "hit_stop",
+          false
+        ],
+        [
+          "reset"
+        ],
+        [
+          "hit_stop",
+          true
+        ]
+      ],
+      "expected": [
+        {
+          "max_duration": 0.0001,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 0.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 3,
+            "hitstop_total": 3,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 0.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 2,
+            "hitstop_total": 2,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 0.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 5,
+            "hitstop_total": 5,
+            "shake": 0.0
+          }
+        }
+      ],
+      "name": "invalid and coercion"
+    },
+    {
+      "actions": [
+        [
+          "hit_stop",
+          0.08
+        ],
+        [
+          "hit_stop_enabled",
+          false
+        ],
+        [
+          "freeze"
+        ],
+        [
+          "hit_stop",
+          0.08
+        ],
+        [
+          "hit_stop_enabled",
+          true
+        ],
+        [
+          "freeze"
+        ]
+      ],
+      "expected": [
+        {
+          "max_duration": 0.0001,
+          "progress": 0.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 5,
+            "hitstop_total": 5,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 0.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 5,
+            "hitstop_total": 5,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 1.0,
+          "result": false,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 5,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 5,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 5,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 1.0,
+          "result": false,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 0.0
+          }
+        }
+      ],
+      "name": "master switch"
+    },
+    {
+      "actions": [
+        [
+          "shake",
+          8.0,
+          0.22,
+          false
+        ],
+        [
+          "frame_dt",
+          100
+        ],
+        [
+          "frame_dt",
+          101
+        ],
+        [
+          "frame_dt",
+          101
+        ],
+        [
+          "hit_stop",
+          0.08
+        ],
+        [
+          "fx_dt",
+          117
+        ],
+        [
+          "fx_dt",
+          117
+        ],
+        [
+          "frame_dt",
+          1000
+        ],
+        [
+          "reset"
+        ],
+        [
+          "frame_dt",
+          2000
+        ]
+      ],
+      "expected": [
+        {
+          "max_duration": 0.154,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.154,
+          "shake_strength": 4.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 4.0
+          }
+        },
+        {
+          "max_duration": 0.154,
+          "progress": 1.0,
+          "result": 0.0,
+          "shake_duration": 0.154,
+          "shake_strength": 4.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 4.0
+          }
+        },
+        {
+          "max_duration": 0.154,
+          "progress": 1.0,
+          "result": 0.004166666666666667,
+          "shake_duration": 0.14983333333333332,
+          "shake_strength": 4.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 3.8917748917748916
+          }
+        },
+        {
+          "max_duration": 0.154,
+          "progress": 1.0,
+          "result": 0.004166666666666667,
+          "shake_duration": 0.14983333333333332,
+          "shake_strength": 4.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 3.8917748917748916
+          }
+        },
+        {
+          "max_duration": 0.154,
+          "progress": 0.0,
+          "result": null,
+          "shake_duration": 0.14983333333333332,
+          "shake_strength": 4.0,
+          "stats": {
+            "hitstop_frames": 5,
+            "hitstop_total": 5,
+            "shake": 3.8917748917748916
+          }
+        },
+        {
+          "max_duration": 0.154,
+          "progress": 0.0,
+          "result": 0.0028799999999999997,
+          "shake_duration": 0.1338333333333333,
+          "shake_strength": 4.0,
+          "stats": {
+            "hitstop_frames": 5,
+            "hitstop_total": 5,
+            "shake": 3.4761904761904754
+          }
+        },
+        {
+          "max_duration": 0.154,
+          "progress": 0.0,
+          "result": 0.0028799999999999997,
+          "shake_duration": 0.1338333333333333,
+          "shake_strength": 4.0,
+          "stats": {
+            "hitstop_frames": 5,
+            "hitstop_total": 5,
+            "shake": 3.4761904761904754
+          }
+        },
+        {
+          "max_duration": 0.154,
+          "progress": 0.0,
+          "result": 0.05,
+          "shake_duration": 0.0838333333333333,
+          "shake_strength": 4.0,
+          "stats": {
+            "hitstop_frames": 5,
+            "hitstop_total": 5,
+            "shake": 2.1774891774891767
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 1.0,
+          "result": 0.0,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 0.0
+          }
+        }
+      ],
+      "name": "clock caching and slow motion"
+    },
+    {
+      "actions": [
+        [
+          "shake",
+          3.9,
+          0.22,
+          false
+        ],
+        [
+          "shake",
+          8.0,
+          0.22,
+          false
+        ],
+        [
+          "shake",
+          4.0,
+          0.1,
+          false
+        ],
+        [
+          "update_shake",
+          0.05
+        ],
+        [
+          "add_shake",
+          2.0,
+          0.5
+        ],
+        [
+          "update_shake",
+          0.2
+        ],
+        [
+          "update_shake",
+          0.5
+        ],
+        [
+          "reset"
+        ]
+      ],
+      "expected": [
+        {
+          "max_duration": 0.0001,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.154,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.154,
+          "shake_strength": 4.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 4.0
+          }
+        },
+        {
+          "max_duration": 0.154,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.154,
+          "shake_strength": 4.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 4.0
+          }
+        },
+        {
+          "max_duration": 0.154,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.104,
+          "shake_strength": 4.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 2.7012987012987013
+          }
+        },
+        {
+          "max_duration": 0.5,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.5,
+          "shake_strength": 4.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 4.0
+          }
+        },
+        {
+          "max_duration": 0.5,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.3,
+          "shake_strength": 4.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 2.4
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 0.0
+          }
+        }
+      ],
+      "name": "shake threshold scaling and reset"
+    },
+    {
+      "actions": [
+        [
+          "shake_enabled",
+          false
+        ],
+        [
+          "shake",
+          10.0,
+          0.5,
+          false
+        ],
+        [
+          "add_shake",
+          20.0,
+          1.0
+        ],
+        [
+          "shake_enabled",
+          true
+        ],
+        [
+          "add_shake",
+          4.0,
+          0.4
+        ],
+        [
+          "add_shake",
+          -1.0,
+          1.0
+        ],
+        [
+          "add_shake",
+          5.0,
+          0.0
+        ],
+        [
+          "update_shake",
+          0.4
+        ]
+      ],
+      "expected": [
+        {
+          "max_duration": 0.0001,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 0.0
+          }
+        },
+        {
+          "max_duration": 0.4,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.4,
+          "shake_strength": 4.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 4.0
+          }
+        },
+        {
+          "max_duration": 0.4,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.4,
+          "shake_strength": 4.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 4.0
+          }
+        },
+        {
+          "max_duration": 0.4,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.4,
+          "shake_strength": 4.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 4.0
+          }
+        },
+        {
+          "max_duration": 0.0001,
+          "progress": 1.0,
+          "result": null,
+          "shake_duration": 0.0,
+          "shake_strength": 0.0,
+          "stats": {
+            "hitstop_frames": 0,
+            "hitstop_total": 0,
+            "shake": 0.0
+          }
+        }
+      ],
+      "name": "disabled shake"
+    }
+  ],
+  "schema": 1,
+  "source_sha256": "72f4f12965f3b64b3fb4aa38a390e819d41897664f6b70d1171199254813d1d8"
+}

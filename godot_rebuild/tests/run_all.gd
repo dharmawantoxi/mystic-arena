@@ -2,6 +2,7 @@ class_name MysticTestRunner
 extends SceneTree
 
 ## Native regression tests. Run after --editor --import, not as a gameplay demo.
+const HeroMigrationTests := preload("res://tests/HeroMigrationTest.gd")
 const State := preload("res://scripts/core/AppState.gd")
 const Clock := preload("res://scripts/core/FixedClock.gd")
 const Gesture := preload("res://scripts/core/GestureTracker.gd")
@@ -58,6 +59,7 @@ func _run() -> void:
 	_test_balance()
 	_test_items()
 	_test_hero_skills()
+	HeroMigrationTests.run(self)
 	_test_bosses()
 	_test_core_rules()
 	_test_core_save()

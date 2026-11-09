@@ -1,0 +1,1956 @@
+{
+  "cases": [
+    {
+      "events": [
+        [
+          "shake",
+          [
+            3.0,
+            0.26
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.027
+          ]
+        ]
+      ],
+      "hero": "grimjaw",
+      "method": "on_cast",
+      "params": {
+        "skill": "q"
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            1.0,
+            0.14
+          ]
+        ]
+      ],
+      "hero": "grimjaw",
+      "method": "on_cast",
+      "params": {
+        "skill": "w"
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            2.0,
+            0.18
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.024
+          ]
+        ]
+      ],
+      "hero": "grimjaw",
+      "method": "on_cast",
+      "params": {
+        "skill": "e"
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            4.0,
+            0.42
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.04
+          ]
+        ]
+      ],
+      "hero": "grimjaw",
+      "method": "on_cast",
+      "params": {
+        "skill": "r"
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            2.2,
+            0.2
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.021
+          ]
+        ]
+      ],
+      "hero": "kaizen",
+      "method": "on_cast",
+      "params": {
+        "skill": "q"
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            1.1,
+            0.14
+          ]
+        ]
+      ],
+      "hero": "kaizen",
+      "method": "on_cast",
+      "params": {
+        "skill": "w"
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            2.5,
+            0.22
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.024
+          ]
+        ]
+      ],
+      "hero": "kaizen",
+      "method": "on_cast",
+      "params": {
+        "skill": "e"
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            4.5,
+            0.4
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.04
+          ]
+        ]
+      ],
+      "hero": "kaizen",
+      "method": "on_cast",
+      "params": {
+        "skill": "r"
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            2.0,
+            0.18
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.02
+          ]
+        ]
+      ],
+      "hero": "sylara",
+      "method": "on_cast",
+      "params": {
+        "skill": "q"
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            2.5,
+            0.22
+          ]
+        ]
+      ],
+      "hero": "sylara",
+      "method": "on_cast",
+      "params": {
+        "skill": "w"
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            1.7,
+            0.18
+          ]
+        ]
+      ],
+      "hero": "sylara",
+      "method": "on_cast",
+      "params": {
+        "skill": "e"
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            1.5,
+            0.2
+          ]
+        ]
+      ],
+      "hero": "sylara",
+      "method": "on_cast",
+      "params": {
+        "skill": "r"
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            2.1,
+            0.2
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.021
+          ]
+        ]
+      ],
+      "hero": "vex",
+      "method": "on_cast",
+      "params": {
+        "skill": "q"
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            2.8,
+            0.24
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.025
+          ]
+        ]
+      ],
+      "hero": "vex",
+      "method": "on_cast",
+      "params": {
+        "skill": "w"
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            1.7,
+            0.18
+          ]
+        ]
+      ],
+      "hero": "vex",
+      "method": "on_cast",
+      "params": {
+        "skill": "e"
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            5.5,
+            0.42
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.04
+          ]
+        ]
+      ],
+      "hero": "vex",
+      "method": "on_cast",
+      "params": {
+        "skill": "r"
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            3.0,
+            0.18
+          ]
+        ]
+      ],
+      "hero": "zephyr",
+      "method": "on_cast",
+      "params": {
+        "skill": "q"
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            3.0,
+            0.18
+          ]
+        ]
+      ],
+      "hero": "zephyr",
+      "method": "on_cast",
+      "params": {
+        "skill": "w"
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            3.0,
+            0.18
+          ]
+        ]
+      ],
+      "hero": "zephyr",
+      "method": "on_cast",
+      "params": {
+        "skill": "e"
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            7.0,
+            0.42
+          ]
+        ]
+      ],
+      "hero": "zephyr",
+      "method": "on_cast",
+      "params": {
+        "skill": "r"
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            4.0,
+            0.18
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.038
+          ]
+        ]
+      ],
+      "hero": "grimjaw",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 0.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            7.0,
+            0.18
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.053
+          ]
+        ]
+      ],
+      "hero": "grimjaw",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 0.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            6.449999999999999,
+            0.236
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.052
+          ]
+        ]
+      ],
+      "hero": "grimjaw",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 0.7
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            9.45,
+            0.236
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.067
+          ]
+        ]
+      ],
+      "hero": "grimjaw",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 0.7
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            7.5,
+            0.26
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.057999999999999996
+          ]
+        ]
+      ],
+      "hero": "grimjaw",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 1.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            10.5,
+            0.26
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.073
+          ]
+        ]
+      ],
+      "hero": "grimjaw",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 1.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            9.25,
+            0.3
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.068
+          ]
+        ]
+      ],
+      "hero": "grimjaw",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 1.5
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            12.25,
+            0.3
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.083
+          ]
+        ]
+      ],
+      "hero": "grimjaw",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 1.5
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            11.0,
+            0.33999999999999997
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.068
+          ]
+        ]
+      ],
+      "hero": "grimjaw",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 2.3
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            14.0,
+            0.33999999999999997
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.083
+          ]
+        ]
+      ],
+      "hero": "grimjaw",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 2.3
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            3.6,
+            0.16
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.036
+          ]
+        ]
+      ],
+      "hero": "kaizen",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 0.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            6.2,
+            0.16
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.049999999999999996
+          ]
+        ]
+      ],
+      "hero": "kaizen",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 0.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            5.84,
+            0.216
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.049999999999999996
+          ]
+        ]
+      ],
+      "hero": "kaizen",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 0.7
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            8.44,
+            0.216
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.064
+          ]
+        ]
+      ],
+      "hero": "kaizen",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 0.7
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            6.800000000000001,
+            0.24
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.055999999999999994
+          ]
+        ]
+      ],
+      "hero": "kaizen",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 1.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            9.4,
+            0.24
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.06999999999999999
+          ]
+        ]
+      ],
+      "hero": "kaizen",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 1.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            8.4,
+            0.28
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.066
+          ]
+        ]
+      ],
+      "hero": "kaizen",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 1.5
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            11.0,
+            0.28
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.08
+          ]
+        ]
+      ],
+      "hero": "kaizen",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 1.5
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            10.0,
+            0.32
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.066
+          ]
+        ]
+      ],
+      "hero": "kaizen",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 2.3
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            12.6,
+            0.32
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.08
+          ]
+        ]
+      ],
+      "hero": "kaizen",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 2.3
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            3.2,
+            0.16
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.034
+          ]
+        ]
+      ],
+      "hero": "sylara",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 0.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            5.800000000000001,
+            0.16
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.048
+          ]
+        ]
+      ],
+      "hero": "sylara",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 0.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            5.3,
+            0.216
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.048
+          ]
+        ]
+      ],
+      "hero": "sylara",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 0.7
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            7.9,
+            0.216
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.062
+          ]
+        ]
+      ],
+      "hero": "sylara",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 0.7
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            6.2,
+            0.24
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.054000000000000006
+          ]
+        ]
+      ],
+      "hero": "sylara",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 1.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            8.8,
+            0.24
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.068
+          ]
+        ]
+      ],
+      "hero": "sylara",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 1.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            7.7,
+            0.28
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.064
+          ]
+        ]
+      ],
+      "hero": "sylara",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 1.5
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            10.3,
+            0.28
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.078
+          ]
+        ]
+      ],
+      "hero": "sylara",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 1.5
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            9.2,
+            0.32
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.064
+          ]
+        ]
+      ],
+      "hero": "sylara",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 2.3
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            11.799999999999999,
+            0.32
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.078
+          ]
+        ]
+      ],
+      "hero": "sylara",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 2.3
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            3.4,
+            0.16
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.036
+          ]
+        ]
+      ],
+      "hero": "vex",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 0.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            6.0,
+            0.16
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.049999999999999996
+          ]
+        ]
+      ],
+      "hero": "vex",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 0.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            5.64,
+            0.216
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.049999999999999996
+          ]
+        ]
+      ],
+      "hero": "vex",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 0.7
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            8.24,
+            0.216
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.064
+          ]
+        ]
+      ],
+      "hero": "vex",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 0.7
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            6.6,
+            0.24
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.055999999999999994
+          ]
+        ]
+      ],
+      "hero": "vex",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 1.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            9.2,
+            0.24
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.06999999999999999
+          ]
+        ]
+      ],
+      "hero": "vex",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 1.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            8.200000000000001,
+            0.28
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.066
+          ]
+        ]
+      ],
+      "hero": "vex",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 1.5
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            10.8,
+            0.28
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.08
+          ]
+        ]
+      ],
+      "hero": "vex",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 1.5
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            9.8,
+            0.32
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.066
+          ]
+        ]
+      ],
+      "hero": "vex",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 2.3
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            12.4,
+            0.32
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.08
+          ]
+        ]
+      ],
+      "hero": "vex",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 2.3
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            4.0,
+            0.18
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.038
+          ]
+        ]
+      ],
+      "hero": "zephyr",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 0.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            7.0,
+            0.18
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.053
+          ]
+        ]
+      ],
+      "hero": "zephyr",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 0.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            6.449999999999999,
+            0.236
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.052
+          ]
+        ]
+      ],
+      "hero": "zephyr",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 0.7
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            9.45,
+            0.236
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.067
+          ]
+        ]
+      ],
+      "hero": "zephyr",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 0.7
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            7.5,
+            0.26
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.057999999999999996
+          ]
+        ]
+      ],
+      "hero": "zephyr",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 1.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            10.5,
+            0.26
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.073
+          ]
+        ]
+      ],
+      "hero": "zephyr",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 1.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            9.25,
+            0.3
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.068
+          ]
+        ]
+      ],
+      "hero": "zephyr",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 1.5
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            12.25,
+            0.3
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.083
+          ]
+        ]
+      ],
+      "hero": "zephyr",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 1.5
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            11.0,
+            0.33999999999999997
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.068
+          ]
+        ]
+      ],
+      "hero": "zephyr",
+      "method": "on_impact",
+      "params": {
+        "crit": false,
+        "power": 2.3
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            14.0,
+            0.33999999999999997
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.083
+          ]
+        ]
+      ],
+      "hero": "zephyr",
+      "method": "on_impact",
+      "params": {
+        "crit": true,
+        "power": 2.3
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            5.45,
+            0.22
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.049
+          ]
+        ]
+      ],
+      "hero": "sylara",
+      "method": "projectile_hit",
+      "params": {
+        "crit": false,
+        "damage": 0.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            8.05,
+            0.22
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.063
+          ]
+        ]
+      ],
+      "hero": "sylara",
+      "method": "projectile_hit",
+      "params": {
+        "crit": true,
+        "damage": 0.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            8.45,
+            0.30000000000000004
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.064
+          ]
+        ]
+      ],
+      "hero": "sylara",
+      "method": "projectile_hit",
+      "params": {
+        "crit": false,
+        "damage": 45.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            11.049999999999999,
+            0.30000000000000004
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.078
+          ]
+        ]
+      ],
+      "hero": "sylara",
+      "method": "projectile_hit",
+      "params": {
+        "crit": true,
+        "damage": 45.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            9.2,
+            0.32
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.064
+          ]
+        ]
+      ],
+      "hero": "sylara",
+      "method": "projectile_hit",
+      "params": {
+        "crit": false,
+        "damage": 180.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            11.799999999999999,
+            0.32
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.078
+          ]
+        ]
+      ],
+      "hero": "sylara",
+      "method": "projectile_hit",
+      "params": {
+        "crit": true,
+        "damage": 180.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            5.800000000000001,
+            0.22
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.051
+          ]
+        ]
+      ],
+      "hero": "vex",
+      "method": "projectile_hit",
+      "params": {
+        "crit": false,
+        "damage": 0.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            8.4,
+            0.22
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.065
+          ]
+        ]
+      ],
+      "hero": "vex",
+      "method": "projectile_hit",
+      "params": {
+        "crit": true,
+        "damage": 0.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            9.22857142857143,
+            0.3057142857142857
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.066
+          ]
+        ]
+      ],
+      "hero": "vex",
+      "method": "projectile_hit",
+      "params": {
+        "crit": false,
+        "damage": 45.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            11.82857142857143,
+            0.3057142857142857
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.08
+          ]
+        ]
+      ],
+      "hero": "vex",
+      "method": "projectile_hit",
+      "params": {
+        "crit": true,
+        "damage": 45.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            9.8,
+            0.32
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.066
+          ]
+        ]
+      ],
+      "hero": "vex",
+      "method": "projectile_hit",
+      "params": {
+        "crit": false,
+        "damage": 180.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            12.4,
+            0.32
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.08
+          ]
+        ]
+      ],
+      "hero": "vex",
+      "method": "projectile_hit",
+      "params": {
+        "crit": true,
+        "damage": 180.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            6.449999999999999,
+            0.236
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.052
+          ]
+        ]
+      ],
+      "hero": "zephyr",
+      "method": "projectile_hit",
+      "params": {
+        "crit": false,
+        "damage": 0.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            9.45,
+            0.236
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.067
+          ]
+        ]
+      ],
+      "hero": "zephyr",
+      "method": "projectile_hit",
+      "params": {
+        "crit": true,
+        "damage": 0.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            9.95,
+            0.316
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.068
+          ]
+        ]
+      ],
+      "hero": "zephyr",
+      "method": "projectile_hit",
+      "params": {
+        "crit": false,
+        "damage": 45.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            12.95,
+            0.316
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.083
+          ]
+        ]
+      ],
+      "hero": "zephyr",
+      "method": "projectile_hit",
+      "params": {
+        "crit": true,
+        "damage": 45.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            11.0,
+            0.33999999999999997
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.068
+          ]
+        ]
+      ],
+      "hero": "zephyr",
+      "method": "projectile_hit",
+      "params": {
+        "crit": false,
+        "damage": 180.0
+      }
+    },
+    {
+      "events": [
+        [
+          "shake",
+          [
+            14.0,
+            0.33999999999999997
+          ]
+        ],
+        [
+          "hit_stop",
+          [
+            0.083
+          ]
+        ]
+      ],
+      "hero": "zephyr",
+      "method": "projectile_hit",
+      "params": {
+        "crit": true,
+        "damage": 180.0
+      }
+    }
+  ],
+  "schema": 1,
+  "sources": {
+    "heroes/grimjaw_fx.py": "8677292675484b7e71a1a45b8fc7f0a15574b2ec0cbf9ad7539093e1aa83d2ab",
+    "heroes/kaizen_fx.py": "89eb7c75ad35c1aa7e032b65a2d45c238fc3a34c8f2b5f0df64afbc35b506b9d",
+    "heroes/sylara_fx.py": "f6d4ce3e7263083c5aa530c3b2516fdc7e9b1e36ce38929d8ab822d287957776",
+    "heroes/vex_fx.py": "5409b40c2fbce170ff852f64e0495a81925088f42ae86e4d2ea0a76c3840a8c6",
+    "heroes/zephyr_fx.py": "e300cd26cc37e9a8aa824c07c2a80148c6016caee46c978566179ce109b9e964"
+  }
+}
